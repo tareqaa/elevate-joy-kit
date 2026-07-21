@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>فورت نايت — GX Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app/assets/css/theme.css">
+<link rel="stylesheet" href="/app/assets/css/product.css">
+<link rel="stylesheet" href="/app/assets/css/fortnite.css">
+</head>
+<body>
+
+<div id="navbar-root"></div>
+
+<section class="product-hero" id="productHeroRoot"></section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <div><span class="k">اشتراك شهري</span><h2>Fortnite Crew</h2></div>
+    </div>
+    <div class="vbucks-grid" id="crewGrid"></div>
+  </div>
+</section>
+
+<section class="section" style="background:var(--bg2);">
+  <div class="wrap">
+    <div class="section-head">
+      <div><span class="k">شحن رصيد</span><h2>اختار كمية V-Bucks</h2></div>
+    </div>
+    <div class="vbucks-grid" id="vbucksGrid">
+      <!-- fixed bundles injected here by JS -->
+    </div>
+    <div class="vbucks-grid" style="margin-top:20px;">
+      <div class="custom-vb-card">
+        <div class="cvb-head">
+          <div class="cvb-ic">✏️</div>
+          <div>
+            <div class="cvb-title">كمية مخصصة</div>
+            <div class="cvb-sub">اكتب أي كمية تانية تحتاجها</div>
+          </div>
+        </div>
+        <input type="number" id="customVbAmount" placeholder="مثال: 15000" min="1">
+        <button class="add-cart-btn" id="customVbBtn">أضف الكمية المخصصة</button>
+        <div class="cvb-note">السعر للكميات المخصصة بيتحدد ونأكده إلك مباشرة على واتساب بعد إرسال الطلب.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <div><span class="k">المميزات</span><h2>شو رح تحصل عليه بالضبط</h2><p>اضغط على أي ميزة لتشوف تفاصيلها</p></div>
+    </div>
+    <div class="features-grid" id="featuresGrid"></div>
+  </div>
+</section>
+
+<section class="section" style="background:var(--bg2);">
+  <div class="wrap" id="deliveryRoot"></div>
+</section>
+
+<div id="footer-root"></div>
+<div id="cart-drawer-root"></div>
+
+<script src="/app/assets/js/products-data.js"></script>
+<script src="/app/assets/js/currency.js"></script>
+<script src="/app/assets/js/cart.js"></script>
+<script src="/app/assets/js/layout.js"></script>
+<script src="/app/assets/js/brand-icons.js"></script>
+<script src="/app/assets/js/fortnite-page.js"></script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+/* ============================================================
+   GIFT CARD PLATFORM PAGE — shared by every gift card platform
+   page (PlayStation, Xbox, Google Play, iTunes). Shows a stylised
+   card mockup in the hero, then one section per region with a
+   grid of fixed-value denominations.
+   ============================================================ */
+
+.giftcard-hero{
+  position:relative; padding:40px 0 20px;
+}
+.giftcard-hero-inner{
+  display:flex; align-items:center; gap:36px;
+}
+.giftcard-mockup{
+  position:relative; flex-shrink:0; width:260px; height:164px; border-radius:18px;
+  display:flex; flex-direction:column; justify-content:space-between;
+  padding:20px 22px; overflow:hidden;
+  box-shadow:0 20px 50px -18px rgba(0,0,0,0.6);
+}
+.giftcard-mockup::before{
+  content:""; position:absolute; inset:0;
+  background:
+    radial-gradient(120px 90px at 90% 0%, rgba(255,255,255,0.25), transparent 60%),
+    repeating-linear-gradient(115deg, rgba(255,255,255,0.06) 0 2px, transparent 2px 26px);
+  pointer-events:none;
+}
+.giftcard-mockup .gc-top{display:flex; align-items:center; justify-content:space-between; position:relative; z-index:1;}
+.giftcard-mockup .gc-icon{font-size:26px;}
+.giftcard-mockup .gc-chip{
+  width:38px; height:26px; border-radius:6px;
+  background:linear-gradient(145deg, rgba(255,255,255,0.85), rgba(255,255,255,0.45));
+}
+.giftcard-mockup .gc-name{
+  position:relative; z-index:1; color:#fff; font-family:'Tajawal',sans-serif;
+  font-weight:900; font-size:17px; letter-spacing:.3px; text-shadow:0 2px 10px rgba(0,0,0,0.25);
+}
+.giftcard-mockup .gc-sub{
+  position:relative; z-index:1; color:rgba(255,255,255,0.75); font-size:11px; font-weight:700;
+  letter-spacing:1px; text-transform:uppercase;
+}
+
+.giftcard-hero-text h1{font-size:26px; font-weight:900; margin-bottom:8px;}
+.giftcard-hero-text p{color:var(--gray); font-size:14px; max-width:460px;}
+
+/* ---------- Region sections ---------- */
+.region-section{margin-bottom:8px;}
+.region-head{
+  display:flex; align-items:center; gap:12px; margin-bottom:20px;
+}
+.region-flag{
+  width:40px; height:40px; border-radius:12px; background:var(--card); border:1.5px solid var(--border);
+  display:flex; align-items:center; justify-content:center; font-size:19px;
+}
+.region-name{font-weight:800; font-size:16px;}
+
+.denom-grid{display:flex; flex-wrap:wrap; gap:16px; margin-bottom:44px;}
+.denom-card{
+  flex:1 1 180px; max-width:220px;
+  background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius-md);
+  padding:20px 16px; text-align:center;
+  transition:border-color .2s var(--ease), transform .2s var(--ease);
+}
+.denom-card:hover{border-color:color-mix(in srgb, var(--gc-accent, var(--cyan)) 45%, var(--border)); transform:translateY(-3px);}
+.denom-card .dc-value{
+  font-family:'Tajawal',sans-serif; font-weight:900; font-size:19px; margin-bottom:6px;
+  color:var(--gc-accent, var(--cyan));
+}
+.denom-card .dc-price{font-size:15px; font-weight:800; margin-bottom:12px;}
+.denom-card .add-cart-btn, .denom-card .buy-now-btn{padding:9px; font-size:12px;}
+.denom-card .buy-actions{gap:6px;}
+
+/* ---------- Empty / no-prices-yet state ---------- */
+.giftcard-empty{
+  background:var(--card); border:1.5px dashed var(--border); border-radius:var(--radius-xl);
+  padding:56px 30px; text-align:center;
+}
+.giftcard-empty .ge-icon{font-size:36px; margin-bottom:16px;}
+.giftcard-empty h3{font-size:17px; font-weight:800; margin-bottom:8px;}
+.giftcard-empty p{color:var(--gray); font-size:13.5px; max-width:400px; margin:0 auto;}
+
+@media(max-width:700px){
+  .giftcard-hero-inner{flex-direction:column; text-align:center;}
+  .giftcard-mockup{width:100%; max-width:300px;}
+}

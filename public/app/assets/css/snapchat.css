@@ -1,0 +1,89 @@
+/* ============================================================
+   SNAPCHAT PAGE — layout unique to /snapchat/.
+   A dedicated order box: pick a duration, set number of
+   accounts, and fill a username field per account.
+   ============================================================ */
+
+.snap-plan-grid{display:flex; flex-wrap:wrap; gap:18px;}
+.snap-plan{
+  flex:1 1 210px; max-width:270px;
+  background:linear-gradient(160deg, var(--card) 0%, #10131c 100%);
+  border:1.5px solid var(--border); border-radius:var(--radius-lg);
+  padding:26px 20px 22px; cursor:pointer; text-align:center; position:relative;
+  transition:border-color .25s var(--ease), transform .25s var(--ease), box-shadow .25s var(--ease);
+}
+.snap-plan:hover{border-color:rgba(0,229,255,0.3); transform:translateY(-4px);}
+.snap-plan.selected{
+  border-color:var(--cyan); background:linear-gradient(160deg, rgba(0,229,255,0.10) 0%, var(--card) 100%);
+  box-shadow:0 12px 32px -14px rgba(0,229,255,0.35);
+}
+.snap-plan .sp-icon{
+  width:46px; height:46px; margin:0 auto 10px; border-radius:14px;
+  background:rgba(255,203,71,0.12); display:flex; align-items:center; justify-content:center; font-size:22px;
+  transition:transform .25s var(--ease);
+}
+.snap-plan.selected .sp-icon{transform:scale(1.08);}
+.snap-plan .sp-tag{
+  position:absolute; top:-10px; left:50%; transform:translateX(-50%);
+  background:var(--cyan); color:#05060a; font-weight:900; font-size:10.5px;
+  padding:3px 10px; border-radius:999px; white-space:nowrap;
+}
+.snap-plan .sp-discount{
+  position:absolute; top:12px; right:12px;
+  background:rgba(198,255,61,0.14); color:var(--lime); font-weight:900; font-size:10.5px;
+  padding:3px 9px; border-radius:999px;
+}
+.snap-plan .sp-label{font-weight:800; font-size:17px; margin:6px 0 12px;}
+.snap-plan .sp-price{font-size:24px; font-weight:900; color:var(--cyan);}
+.snap-plan .sp-old{font-size:12px; color:var(--gray); text-decoration:line-through; margin-right:6px;}
+.snap-plan .sp-check{
+  position:absolute; top:12px; left:12px; width:20px; height:20px; border-radius:50%;
+  border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center;
+  font-size:11px; color:transparent; transition:.2s;
+}
+.snap-plan.selected .sp-check{background:var(--cyan); border-color:var(--cyan); color:#05060a;}
+
+.order-box{
+  background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius-xl);
+  padding:32px; display:grid; grid-template-columns:1fr 340px; gap:32px;
+}
+.order-field{margin-bottom:20px;}
+.order-field label{display:block; font-weight:800; font-size:13.5px; margin-bottom:10px;}
+.stepper-row{display:flex; align-items:center; gap:12px;}
+.stepper-row button{
+  width:38px; height:38px; border-radius:10px; background:#0d0f16; border:1.5px solid var(--border);
+  color:var(--white); font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.stepper-row button:hover{border-color:rgba(0,229,255,0.4);}
+.stepper-row .count{font-weight:900; font-size:17px; min-width:26px; text-align:center;}
+.stepper-hint{font-size:11.5px; color:var(--gray); margin-top:8px;}
+
+.username-field{margin-bottom:14px;}
+.username-field label{display:block; font-weight:700; font-size:12.5px; color:var(--gray); margin-bottom:6px;}
+.username-field input{
+  width:100%; background:#0d0f16; border:1.5px solid var(--border); border-radius:10px;
+  padding:12px 14px; color:var(--white); font-family:'Almarai',sans-serif; font-weight:700; font-size:13.5px;
+  outline:none; direction:ltr;
+}
+.username-field input:focus{border-color:var(--cyan);}
+.username-field input.error{border-color:var(--pink);}
+
+.order-summary{
+  background:#0d0f16; border-radius:var(--radius-lg); padding:22px; align-self:start;
+  position:sticky; top:98px;
+}
+.order-summary h3{font-size:15px; font-weight:800; margin-bottom:16px;}
+.os-row{display:flex; justify-content:space-between; font-size:13px; color:var(--gray); font-weight:700; padding:9px 0; border-bottom:1px dashed var(--border);}
+.os-row span:last-child{color:var(--white); font-weight:800;}
+.os-total{display:flex; justify-content:space-between; align-items:center; margin:16px 0;}
+.os-total .lbl{font-weight:800; font-size:14px;}
+.os-total .val{font-weight:900; font-size:24px; color:var(--cyan);}
+.order-error{
+  display:none; background:rgba(255,45,120,0.10); border:1px solid rgba(255,45,120,0.35);
+  color:var(--pink); font-size:12px; font-weight:700; padding:10px 12px; border-radius:10px; margin-bottom:14px;
+}
+
+@media(max-width:900px){
+  .order-box{grid-template-columns:1fr;}
+  .order-summary{position:static;}
+}

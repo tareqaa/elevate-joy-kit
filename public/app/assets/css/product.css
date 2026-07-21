@@ -1,0 +1,66 @@
+/* ============================================================
+   PRODUCT PAGE — layout shared by every product page.
+   Plan cards and feature cards reuse .prod-card / .feature-card
+   from theme.css so every section looks consistent site-wide.
+   ============================================================ */
+
+.product-hero{
+  position:relative; padding:40px 0 50px; overflow:hidden;
+  background:
+    radial-gradient(650px 420px at 88% 10%, rgba(0,229,255,0.14), transparent 60%),
+    radial-gradient(550px 420px at 8% 100%, rgba(255,45,120,0.12), transparent 60%);
+}
+.product-hero-inner{
+  background:linear-gradient(120deg, #12151f 0%, #171b28 100%);
+  border:1.5px solid var(--border); border-radius:var(--radius-xl);
+  padding:50px 56px; display:flex; align-items:center; gap:36px;
+  position:relative; overflow:hidden;
+}
+.product-hero-inner::before{
+  content:""; position:absolute; inset:0;
+  background:radial-gradient(400px 300px at 100% 0%, rgba(0,229,255,0.16), transparent 60%);
+  pointer-events:none;
+}
+.product-icon-badge{
+  position:relative; flex-shrink:0; width:150px; height:150px; border-radius:50%;
+  background:conic-gradient(from 0deg, var(--cyan), var(--pink), var(--lime), var(--cyan));
+  display:flex; align-items:center; justify-content:center; animation:spin 16s linear infinite;
+}
+.product-icon-badge .core{
+  width:126px; height:126px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #1a1e2a, #0a0c12 75%);
+  display:flex; align-items:center; justify-content:center; font-size:56px;
+}
+.product-hero-text{position:relative;}
+.product-hero-text .cat-tag{
+  display:inline-flex; color:var(--cyan); font-weight:800; font-size:12.5px;
+  background:rgba(0,229,255,0.10); padding:5px 14px; border-radius:999px; margin-bottom:14px;
+}
+.product-hero-text h1{font-size:34px; font-weight:900; margin-bottom:10px;}
+.product-hero-text p{color:var(--gray); font-size:15px; max-width:520px;}
+
+.delivery-box{
+  display:flex; align-items:flex-start; gap:18px;
+  background:var(--card); border:1.5px solid rgba(0,229,255,0.25); border-radius:var(--radius-lg);
+  padding:26px 28px;
+}
+.delivery-box .dic{
+  width:46px; height:46px; border-radius:12px; flex-shrink:0;
+  background:rgba(0,229,255,0.12); color:var(--cyan);
+  display:flex; align-items:center; justify-content:center; font-size:22px;
+}
+.delivery-box h3{font-size:16px; font-weight:800; margin-bottom:8px;}
+.delivery-box p{font-size:13.5px; color:var(--gray); line-height:1.8;}
+
+.identifier-note{
+  margin-top:8px; font-size:12.5px; color:var(--gray);
+  display:flex; align-items:center; gap:6px;
+}
+
+.plans-grid{display:flex; flex-wrap:wrap; gap:20px;}
+.plans-grid .prod-card{flex:1 1 260px; max-width:340px;}
+
+@media(max-width:900px){
+  .product-hero-inner{flex-direction:column; text-align:center; padding:36px 26px;}
+  .plans-grid .prod-card{max-width:100%;}
+}
