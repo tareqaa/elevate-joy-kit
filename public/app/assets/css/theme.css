@@ -316,18 +316,30 @@ ul{list-style:none;}
 .trust-item h4{font-size:14px; font-weight:800; margin-bottom:4px;}
 .trust-item p{font-size:12px; color:var(--gray);}
 
-.stat-counter-box{
-  margin-top:16px; display:flex; align-items:center; gap:18px; justify-content:center;
-  background:linear-gradient(120deg, rgba(198,255,61,0.08), rgba(0,229,255,0.06));
-  border:1.5px solid rgba(198,255,61,0.25); border-radius:16px; padding:24px;
+/* Premium counter card variant, sits inside the trust-strip in place
+   of one of the trust items. Matches the site's cyan/dark identity
+   instead of the old lime/green look. */
+.trust-item--stat{
+  background:linear-gradient(140deg, rgba(0,229,255,0.10), rgba(255,45,120,0.06) 60%, var(--card) 100%);
+  border-color:rgba(0,229,255,0.28);
+  box-shadow:0 10px 30px -18px rgba(0,229,255,0.35);
+  position:relative; overflow:hidden;
 }
-.stat-counter-box .stat-ic{
-  width:52px; height:52px; border-radius:14px; flex-shrink:0;
-  background:rgba(198,255,61,0.14); color:var(--lime);
-  display:flex; align-items:center; justify-content:center; font-size:24px;
+.trust-item--stat::before{
+  content:""; position:absolute; inset:0;
+  background:radial-gradient(220px 140px at 100% 0%, rgba(0,229,255,0.14), transparent 65%);
+  pointer-events:none;
 }
-.stat-number{font-family:'Tajawal',sans-serif; font-weight:900; font-size:30px; color:var(--lime); direction:ltr;}
-.stat-label{font-size:13px; color:var(--gray); font-weight:700;}
+.trust-item--stat .stat-ic{
+  background:rgba(0,229,255,0.14); color:var(--cyan);
+}
+.trust-stat-body{min-width:0;}
+.stat-number{
+  font-family:'Tajawal',sans-serif; font-weight:900; font-size:26px;
+  color:var(--cyan); direction:ltr; line-height:1.1; margin-bottom:2px;
+  letter-spacing:.3px;
+}
+.stat-label{font-size:12px; color:var(--gray); font-weight:700;}
 
 /* ---------- FOOTER (shared) ---------- */
 footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(--bg2);}

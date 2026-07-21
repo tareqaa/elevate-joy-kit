@@ -136,7 +136,7 @@ function initTestimonialAutoScroll(grid){
   grid.addEventListener('touchstart', () => paused = true, {passive:true});
   grid.addEventListener('touchend', () => setTimeout(()=>{ scrollPos = grid.scrollLeft; paused = false; }, 2000), {passive:true});
 
-  const SPEED = 0.4; // px per frame — slow/medium pace
+  const SPEED = 0.75; // px per frame — natural, medium pace
   function step(){
     if(!paused && loopWidth > 0){
       // RTL scroll containers in Chrome use negative scrollLeft values
@@ -156,26 +156,32 @@ function initStatCounter(){
   const el = document.getElementById('statCounter');
   if(!el) return;
   const target = 1240;
-  let started = false;
+  let rafId = null;
 
   function animate(){
-    if(started) return;
-    started = true;
-    const duration = 1400;
+    if(rafId) cancelAnimationFrame(rafId);
+    // Slow, smooth count from 0 up to the target (1000+).
+    const duration = 3800;
     const startTime = performance.now();
+    el.textContent = '0';
     function tick(now){
       const progress = Math.min((now - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
+      // easeOutQuint — smooth, gentle deceleration, no jumpy feel.
+      const eased = 1 - Math.pow(1 - progress, 5);
       el.textContent = Math.round(eased * target).toLocaleString('en-US');
-      if(progress < 1) requestAnimationFrame(tick);
+      if(progress < 1) rafId = requestAnimationFrame(tick);
     }
-    requestAnimationFrame(tick);
+    rafId = requestAnimationFrame(tick);
   }
 
+  // Restart the count every time the box scrolls back into view.
   const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => { if(entry.isIntersecting) animate(); });
-  }, {threshold:0.4});
-  observer.observe(el.closest('.stat-counter-box'));
+    entries.forEach(entry => {
+      if(entry.isIntersecting) animate();
+    });
+  }, {threshold:0.5});
+  const host = el.closest('#statTrust') || el.closest('.trust-item') || el.parentElement;
+  if(host) observer.observe(host);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
