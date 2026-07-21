@@ -20,7 +20,7 @@ function renderHomeCategories(){
       : `<div class="cat-ic" style="background:${c.bg}; box-shadow:inset 0 0 0 1.5px ${c.accent}33;">${c.icon}</div>`;
 
     return `
-      <a href="/app/${c.slug}/" class="cat-card-big" style="--accent:${c.accent};">
+      <a href="/app/${c.slug}/index.html" class="cat-card-big" style="--accent:${c.accent};">
         <div class="ccb-top">
           ${iconMarkup}
           <div class="ccb-glow" style="background:${c.accent};"></div>

@@ -24,7 +24,7 @@ function gxRenderNavbar(){
   document.getElementById('navbar-root').innerHTML = `
     <nav class="nav">
       <div class="wrap">
-        <a href="/app/" class="brand">
+        <a href="/app/index.html" class="brand">
           <div class="mark"><img src="/app/assets/img/gx-logo.png" alt="GX"></div>
           <div class="brand-word">GX <span>STORE</span></div>
         </a>
@@ -50,16 +50,16 @@ function gxRenderNavbar(){
             <div class="menu-panel" id="menuPanel">
               <div class="menu-section">
                 <div class="ms-title">الصفحات</div>
-                <a href="/app/" class="menu-link ${isActive('home')}"><span class="mi">🏠</span> الرئيسية</a>
-                <a href="/app/cart/" class="menu-link ${isActive('cart')}"><span class="mi">🛒</span> السلة</a>
-                <a href="/app/faq/" class="menu-link ${isActive('faq')}"><span class="mi">❓</span> الأسئلة الشائعة</a>
-                <a href="/app/policy/" class="menu-link ${isActive('policy')}"><span class="mi">🛡️</span> الضمان والاسترجاع</a>
+                <a href="/app/index.html" class="menu-link ${isActive('home')}"><span class="mi">🏠</span> الرئيسية</a>
+                <a href="/app/cart/index.html" class="menu-link ${isActive('cart')}"><span class="mi">🛒</span> السلة</a>
+                <a href="/app/faq/index.html" class="menu-link ${isActive('faq')}"><span class="mi">❓</span> الأسئلة الشائعة</a>
+                <a href="/app/policy/index.html" class="menu-link ${isActive('policy')}"><span class="mi">🛡️</span> الضمان والاسترجاع</a>
               </div>
               <div class="menu-divider"></div>
               <div class="menu-section">
                 <div class="ms-title">أقسام المنتجات</div>
                 ${CATEGORY_LINKS.map(c => `
-                  <a href="/app/${c.slug}/" class="menu-link ${isActive(c.slug)}"><span class="mi">${c.icon}</span> ${c.name}</a>
+                  <a href="/app/${c.slug}/index.html" class="menu-link ${isActive(c.slug)}"><span class="mi">${c.icon}</span> ${c.name}</a>
                 `).join('')}
               </div>
               <div class="menu-divider"></div>
@@ -97,7 +97,7 @@ function gxRenderCartDrawer(){
           <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.07L2 22l5.06-1.33A9.94 9.94 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.6 0-3.1-.43-4.4-1.19l-.32-.19-3.02.79.8-2.94-.2-.32A7.94 7.94 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8zm4.4-5.85c-.24-.12-1.43-.7-1.65-.79-.22-.08-.38-.12-.54.12-.16.24-.62.79-.76.95-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.35-1.67-.14-.24-.02-.37.11-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.41h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.6 4.12 3.64.58.25 1.03.4 1.38.51.58.18 1.11.16 1.53.1.47-.07 1.43-.58 1.63-1.15.2-.57.2-1.05.14-1.15-.06-.1-.22-.16-.46-.28z"/></svg>
           إتمام الطلب عبر واتساب
         </button>
-        <a href="/app/cart/" class="view-cart-link">أو افتح صفحة السلة الكاملة ‹</a>
+        <a href="/app/cart/index.html" class="view-cart-link">أو افتح صفحة السلة الكاملة ‹</a>
       </div>
     </div>
 
@@ -150,14 +150,14 @@ function gxRenderFooter(){
           </div>
           <div class="footer-col">
             <h5>الأقسام</h5>
-            ${CATEGORY_LINKS.map(c => `<a href="/app/${c.slug}/">${c.name}</a>`).join('')}
+            ${CATEGORY_LINKS.map(c => `<a href="/app/${c.slug}/index.html">${c.name}</a>`).join('')}
           </div>
           <div class="footer-col">
             <h5>روابط</h5>
-            <a href="/app/">الرئيسية</a>
-            <a href="/app/cart/">السلة</a>
-            <a href="/app/faq/">الأسئلة الشائعة</a>
-            <a href="/app/policy/">الضمان والاسترجاع</a>
+            <a href="/app/index.html">الرئيسية</a>
+            <a href="/app/cart/index.html">السلة</a>
+            <a href="/app/faq/index.html">الأسئلة الشائعة</a>
+            <a href="/app/policy/index.html">الضمان والاسترجاع</a>
           </div>
           <div class="footer-col">
             <h5>تواصل معنا</h5>

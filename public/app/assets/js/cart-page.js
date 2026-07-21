@@ -16,7 +16,7 @@ function renderCartPage(){
           <div class="ec-icon">🛒</div>
           <h3>السلة فاضية</h3>
           <p>لسا ما ضفت أي منتج — تصفح المنتجات وابدأ التسوق.</p>
-          <a href="/app/" class="btn btn-primary">تصفح المنتجات</a>
+          <a href="/app/index.html" class="btn btn-primary">تصفح المنتجات</a>
         </div>
       </div>
     `;
