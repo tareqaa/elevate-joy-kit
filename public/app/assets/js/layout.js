@@ -12,9 +12,11 @@
 
 function gxDetectActivePage(){
   const path = window.location.pathname.replace(/\/index\.html$/, '/');
-  if(path === '/' || path === '' || /\/(gxstore)?$/.test(path) && !path.includes('/', 1)) return 'home';
-  const seg = path.split('/').filter(Boolean)[0];
-  return seg || 'home';
+  // Path is now scoped under /app/ (e.g. /app/, /app/cart/, /app/games/fortnite/).
+  const segs = path.split('/').filter(Boolean);
+  if(segs[0] === 'app') segs.shift();
+  if(segs.length === 0) return 'home';
+  return segs[0] || 'home';
 }
 
 function gxRenderNavbar(){
