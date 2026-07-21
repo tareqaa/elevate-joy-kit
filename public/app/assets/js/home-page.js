@@ -48,9 +48,10 @@ function renderHomeProducts(){
 
   grid.innerHTML = featured.map(p => {
     const discount = Math.round((1 - p.price / p.oldPrice) * 100);
-    const actionBtn = p.requiresDetails
-      ? `<a href="${p.link}" class="add-cart-btn" style="text-decoration:none;">اختار الباقة ‹</a>`
-      : gxBuyActionsHtml(p.cartId);
+    // Every featured card here represents a specific pre-selected plan
+    // (e.g. Snapchat 6-months, Adobe 1-month), so it always renders the
+    // standard Add-to-cart / Buy-now action pair used across the site.
+    const actionBtn = gxBuyActionsHtml(p.cartId);
     return `
       <div class="prod-card">
         <a href="${p.link}" style="display:contents;">
