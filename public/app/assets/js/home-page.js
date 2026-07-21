@@ -136,7 +136,7 @@ function initTestimonialAutoScroll(grid){
   grid.addEventListener('touchstart', () => paused = true, {passive:true});
   grid.addEventListener('touchend', () => setTimeout(()=>{ scrollPos = grid.scrollLeft; paused = false; }, 2000), {passive:true});
 
-  const SPEED = 1.25; // px per frame — faster, still smooth and readable
+  const SPEED = 2.5; // px per frame — clearly faster automatic scroll, still smooth
   function step(){
     if(!paused && loopWidth > 0){
       // RTL scroll containers in Chrome use negative scrollLeft values
@@ -155,7 +155,7 @@ function initTestimonialAutoScroll(grid){
 function initStatCounter(){
   const el = document.getElementById('statCounter');
   if(!el) return;
-  const target = 1240;
+  const target = 1000;
   let rafId = null;
 
   function animate(){

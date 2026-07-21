@@ -37,7 +37,7 @@ function initCategoryPage(){
       `;
     }
     return `
-      <a href="/app/${CATEGORY_KEY}/index.html${s.slug}/" class="subcat-card clickable">
+      <a href="/app/${CATEGORY_KEY}/${s.slug}/index.html" class="subcat-card clickable">
         <div class="subcat-ic" style="background:${s.bg};">${s.icon}</div>
         <div>
           <div class="subcat-name">${s.name}</div>
