@@ -37,7 +37,7 @@ const GXCart = (function(){
   // used by "Buy Now" buttons, as opposed to a plain "Add to cart".
   function buyNow(cartId, qty = 1){
     add(cartId, qty);
-    window.location.href = '/cart/';
+    window.location.href = '/app/cart/index.html';
   }
 
   // Adds an item that isn't in the static catalog (e.g. a custom V-Bucks amount).

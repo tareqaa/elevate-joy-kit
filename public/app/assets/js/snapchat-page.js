@@ -144,7 +144,7 @@ function wireAddToCart(){
 
   document.getElementById('buyNowOrderBtn').addEventListener('click', () => {
     if(!validateOrderAndAdd()) return;
-    window.location.href = '/cart/';
+    window.location.href = '/app/cart/index.html';
   });
 }
 
