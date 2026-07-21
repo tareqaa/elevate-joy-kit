@@ -1,0 +1,33 @@
+## Netlify deployment config
+## The entire storefront is a static site under `public/app/`.
+## We publish that folder directly — no build step required.
+
+[build]
+  publish = "public/app"
+  command = "echo 'Static site — no build step'"
+
+# Root URL → main storefront page
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
+
+# SPA-style fallback for pretty URLs like /cart/ → /cart/index.html
+[[redirects]]
+  from = "/*"
+  to = "/:splat/index.html"
+  status = 200
+  conditions = { Path = ["!*.*"] }
+
+# Security & caching headers
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
