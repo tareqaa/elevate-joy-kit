@@ -1,0 +1,47 @@
+/* ============================================================
+   FORTNITE PAGE — layout unique to /games/fortnite/.
+   Reuses .prod-card from theme.css for consistency, adds a
+   custom-quantity V-Bucks card.
+   ============================================================ */
+
+.vbucks-grid{display:flex; flex-wrap:wrap; gap:20px;}
+.vbucks-grid .prod-card{flex:1 1 220px; max-width:280px;}
+.vbucks-grid .prod-thumb{position:relative;}
+.vbucks-grid .prod-thumb svg{filter:drop-shadow(0 6px 14px rgba(0,0,0,0.35));}
+
+
+.custom-vb-card{
+  background:var(--card); border:1.5px dashed rgba(0,229,255,0.35); border-radius:var(--radius-lg);
+  padding:22px; display:flex; flex-direction:column; gap:14px;
+  flex:1 1 260px; max-width:320px;
+}
+.custom-vb-card .cvb-head{display:flex; align-items:center; gap:12px;}
+.custom-vb-card .cvb-ic{
+  width:46px; height:46px; border-radius:12px; flex-shrink:0;
+  background:rgba(0,229,255,0.10); color:var(--cyan);
+  display:flex; align-items:center; justify-content:center; font-size:20px;
+}
+.custom-vb-card .cvb-title{font-weight:800; font-size:14.5px;}
+.custom-vb-card .cvb-sub{font-size:12px; color:var(--gray);}
+.custom-vb-card input{
+  width:100%; background:#0d0f16; border:1.5px solid var(--border); border-radius:10px;
+  padding:12px 14px; color:var(--white); font-family:'Almarai',sans-serif; font-weight:800; font-size:14px;
+  outline:none; direction:ltr; text-align:center;
+}
+.custom-vb-card input:focus{border-color:var(--cyan);}
+.custom-vb-card .cvb-note{font-size:11.5px; color:var(--gray); line-height:1.6;}
+
+/* ---------- Delivery requirements (translated official process) ---------- */
+.delivery-box-wide{align-items:flex-start;}
+.delivery-cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:16px;}
+.delivery-col-title{font-weight:800; font-size:13.5px; margin-bottom:10px;}
+.delivery-list{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:9px;}
+.delivery-list li{
+  position:relative; padding-right:18px; font-size:13px; color:var(--gray); line-height:1.7;
+}
+.delivery-list li::before{
+  content:"›"; position:absolute; right:0; top:0; color:var(--cyan); font-weight:900;
+}
+@media(max-width:700px){
+  .delivery-cols{grid-template-columns:1fr;}
+}

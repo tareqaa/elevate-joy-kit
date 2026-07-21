@@ -1,0 +1,13 @@
+/* ============================================================
+   FAQ PAGE — /faq/
+   Reuses .feature-card accordion styling from theme.css for the
+   Q&A section.
+   ============================================================ */
+
+.faq-hero{padding:44px 0 8px;}
+.faq-hero h1{font-size:28px; font-weight:900; margin-bottom:10px;}
+.faq-hero p{color:var(--gray); font-size:14.5px; max-width:520px;}
+
+.faq-accordion{display:flex; flex-direction:column; gap:14px; max-width:820px;}
+.faq-accordion .feature-card .fbody{max-height:0;}
+.faq-accordion .feature-card.open .fbody{max-height:320px;}

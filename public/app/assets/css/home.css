@@ -1,0 +1,181 @@
+/* ============================================================
+   HOME PAGE — layout unique to the homepage only.
+   Cards, grids, nav, footer, cart all come from theme.css.
+   ============================================================ */
+
+.hero{
+  position:relative; padding:40px 0 56px; overflow:hidden;
+  background:
+    radial-gradient(650px 420px at 88% 10%, rgba(0,229,255,0.14), transparent 60%),
+    radial-gradient(550px 420px at 8% 100%, rgba(255,45,120,0.12), transparent 60%);
+}
+.hero-inner{
+  background:linear-gradient(120deg, #12151f 0%, #171b28 100%);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius-xl);
+  padding:56px 60px;
+  display:flex; align-items:center; justify-content:space-between; gap:40px;
+  position:relative; overflow:hidden;
+}
+.hero-inner::before{
+  content:""; position:absolute; inset:0;
+  background:
+    radial-gradient(400px 300px at 100% 0%, rgba(0,229,255,0.16), transparent 60%),
+    radial-gradient(350px 300px at 0% 100%, rgba(255,45,120,0.14), transparent 60%);
+  pointer-events:none;
+}
+.hero-text{position:relative; max-width:560px;}
+.hero-badge{
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(198,255,61,0.10); color:var(--lime);
+  font-weight:800; font-size:13px; padding:7px 14px; border-radius:999px;
+  margin-bottom:18px;
+}
+.hero-badge .dot{width:6px; height:6px; border-radius:50%; background:var(--lime);}
+.hero h1{font-size:42px; font-weight:900; line-height:1.28; margin-bottom:16px;}
+.hero h1 span{
+  background:linear-gradient(90deg, var(--cyan), var(--lime));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.hero p{color:var(--gray); font-size:15.5px; max-width:440px; margin-bottom:28px;}
+.hero-ctas{display:flex; gap:12px;}
+
+.hero-visual{position:relative; flex-shrink:0; width:260px; height:260px; display:flex; align-items:center; justify-content:center;}
+.orb{
+  position:absolute; width:230px; height:230px; border-radius:50%;
+  background:conic-gradient(from 0deg, var(--cyan), var(--pink), var(--lime), var(--cyan));
+  filter:blur(2px); opacity:0.85; animation:spin 14s linear infinite;
+}
+.orb-core{
+  position:relative; width:190px; height:190px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #1a1e2a, #0a0c12 75%);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:inset 0 0 40px rgba(0,229,255,0.25);
+}
+.orb-core svg{width:90px; height:90px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* big category quick-links (home only — top-level categories) */
+.cat-grid-big{display:grid; grid-template-columns:repeat(4,1fr); gap:20px;}
+.cat-card-big{
+  background:linear-gradient(160deg, var(--card) 0%, #10131c 100%);
+  border:1.5px solid var(--border); border-radius:var(--radius-lg);
+  padding:30px 24px; cursor:pointer;
+  transition:border-color .25s var(--ease), transform .25s var(--ease), box-shadow .25s var(--ease);
+  display:flex; flex-direction:column; gap:20px;
+  position:relative; overflow:hidden;
+}
+.cat-card-big::before{
+  content:""; position:absolute; inset:0; opacity:0; transition:opacity .35s var(--ease);
+  background:radial-gradient(260px 180px at 100% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
+  pointer-events:none;
+}
+.cat-card-big::after{
+  content:""; position:absolute; right:0; top:0; bottom:0; width:3px;
+  background:var(--accent); opacity:0; transition:opacity .25s var(--ease);
+}
+.cat-card-big:hover{
+  border-color:color-mix(in srgb, var(--accent) 45%, var(--border));
+  transform:translateY(-6px);
+  box-shadow:0 16px 40px -12px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.cat-card-big:hover::before{opacity:1;}
+.cat-card-big:hover::after{opacity:1;}
+
+.cat-card-big .ccb-top{position:relative; width:60px; height:60px;}
+.cat-card-big .cat-ic{
+  width:60px; height:60px; font-size:27px; border-radius:16px;
+  display:flex; align-items:center; justify-content:center;
+  position:relative; z-index:1;
+}
+.cat-card-big .ccb-glow{
+  position:absolute; inset:0; border-radius:16px; filter:blur(16px); opacity:0.35; z-index:0;
+}
+
+/* Custom "creative suite" icon grid for the Design/Apps category —
+   evokes a set of creative tools without copying any specific brand. */
+.app-icon-grid{
+  position:relative; z-index:1; width:60px; height:60px; border-radius:16px;
+  display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:3px;
+  padding:5px; background:#0d0f16; border:1px solid var(--border);
+}
+.app-icon-grid span{
+  border-radius:6px; display:flex; align-items:center; justify-content:center;
+  color:#fff; font-family:'Tajawal',sans-serif; font-weight:900; font-size:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.35);
+}
+
+.cat-card-big .cname-modern{
+  font-family:'Tajawal',sans-serif; font-weight:900; font-size:20px; letter-spacing:.2px;
+  color:var(--white);
+}
+.cat-card-big .cdesc{font-size:12.5px; color:var(--gray); margin-top:6px; line-height:1.6;}
+.cat-card-big .carrow{
+  margin-top:auto; font-size:13px; font-weight:800; color:var(--accent);
+  display:flex; align-items:center; gap:6px;
+}
+.cat-card-big .arrow-ic{transition:transform .25s var(--ease);}
+.cat-card-big:hover .arrow-ic{transform:translateX(-4px);}
+
+@media(max-width:900px){
+  .hero-inner{flex-direction:column; text-align:center; padding:40px 28px;}
+  .hero-text{max-width:100%;}
+  .hero-ctas{justify-content:center;}
+  .cat-grid-big{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:560px){
+  .cat-grid-big{grid-template-columns:1fr;}
+}
+
+/* Featured products — always a single row; horizontal scroll keeps it
+   one row at every viewport width instead of wrapping to a second row. */
+.featured-grid{
+  display:flex; gap:20px; overflow-x:auto; padding-bottom:14px;
+  scroll-snap-type:x proximity;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(0,229,255,0.45) rgba(255,255,255,0.06);
+}
+.featured-grid .prod-card{
+  flex:0 0 250px; scroll-snap-align:start;
+}
+.featured-grid::-webkit-scrollbar{height:7px;}
+.featured-grid::-webkit-scrollbar-thumb{
+  background:rgba(0,229,255,0.45); border-radius:99px;
+}
+.featured-grid::-webkit-scrollbar-thumb:hover{background:rgba(0,229,255,0.7);}
+.featured-grid::-webkit-scrollbar-track{background:rgba(255,255,255,0.06); border-radius:99px;}
+@media(max-width:560px){
+  .featured-grid .prod-card{flex:0 0 210px;}
+}
+
+/* ---------- TESTIMONIALS ---------- */
+.testi-grid{
+  display:flex; gap:18px; overflow-x:auto; padding-bottom:14px;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,45,120,0.4) rgba(255,255,255,0.06);
+}
+.testi-grid::-webkit-scrollbar{height:7px;}
+.testi-grid::-webkit-scrollbar-thumb{background:rgba(255,45,120,0.4); border-radius:99px;}
+.testi-grid::-webkit-scrollbar-thumb:hover{background:rgba(255,45,120,0.65);}
+.testi-grid::-webkit-scrollbar-track{background:rgba(255,255,255,0.06); border-radius:99px;}
+.testi-card{
+  flex:0 0 calc(33.333% - 12px); min-width:280px;
+  background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius-lg);
+  padding:22px 20px; display:flex; flex-direction:column; gap:12px;
+  transition:border-color .2s var(--ease), transform .2s var(--ease);
+}
+.testi-card:hover{border-color:rgba(255,45,120,0.35); transform:translateY(-3px);}
+.testi-top{display:flex; align-items:center; gap:12px;}
+.testi-avatar{
+  width:42px; height:42px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Tajawal',sans-serif; font-weight:900; font-size:15px; color:#05060a;
+}
+.testi-name{font-weight:800; font-size:13.5px;}
+.testi-stars{color:var(--lime); font-size:13px; letter-spacing:2px;}
+.testi-quote{font-size:13px; color:var(--gray); line-height:1.6;}
+
+@media(max-width:900px){
+  .testi-card{flex:0 0 260px; min-width:0;}
+}
+

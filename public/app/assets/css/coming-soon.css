@@ -1,0 +1,15 @@
+/* ============================================================
+   COMING SOON — used by subcategory pages with no products yet
+   (e.g. /games/sony/, /games/xbox/).
+   ============================================================ */
+
+.coming-soon-box{
+  background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius-xl);
+  padding:70px 30px; text-align:center;
+}
+.coming-soon-box .cs-icon{
+  width:84px; height:84px; border-radius:24px; margin:0 auto 22px;
+  background:rgba(0,229,255,0.10); display:flex; align-items:center; justify-content:center; font-size:38px;
+}
+.coming-soon-box h2{font-size:22px; font-weight:900; margin-bottom:10px;}
+.coming-soon-box p{color:var(--gray); font-size:14px; max-width:420px; margin:0 auto 26px;}
