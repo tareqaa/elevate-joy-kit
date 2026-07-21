@@ -311,7 +311,13 @@ ul{list-style:none;}
 
 /* ---------- TRUST STRIP (shared) ---------- */
 .trust-strip{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
-.trust-item{background:var(--card); border:1.5px solid var(--border); border-radius:16px; padding:22px; display:flex; align-items:center; gap:14px;}
+.trust-item{
+  background:var(--card); border:1.5px solid var(--border); border-radius:16px;
+  padding:22px; display:flex; align-items:center; gap:14px; min-width:0;
+  transition:border-color .25s var(--ease), transform .25s var(--ease), box-shadow .25s var(--ease);
+}
+.trust-item > div{min-width:0;}
+.trust-item:hover{border-color:rgba(0,229,255,0.28); transform:translateY(-2px);}
 .trust-ic{width:44px; height:44px; border-radius:12px; flex-shrink:0; background:rgba(0,229,255,0.10); color:var(--cyan); display:flex; align-items:center; justify-content:center; font-size:20px;}
 .trust-item h4{font-size:14px; font-weight:800; margin-bottom:4px;}
 .trust-item p{font-size:12px; color:var(--gray);}
@@ -465,15 +471,55 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   .nav-links-inline{display:none;}
 }
 @media(max-width:560px){
+  .wrap{padding:0 16px;}
+  .section{padding:44px 0;}
+  .section-head h2{font-size:22px;}
+  .section-head .k{font-size:12px;}
+
   .cat-grid{grid-template-columns:repeat(2,1fr);}
   .prod-grid{grid-template-columns:1fr 1fr;}
   .cart-drawer{width:100%;}
 
-  .nav .wrap{gap:10px;}
-  .brand-word{font-size:16px;}
+  .nav .wrap{gap:10px; height:66px;}
+  .brand .mark{width:50px; height:34px;}
+  .brand-word{font-size:15px;}
   .currency-pick{padding:8px 10px; font-size:11.5px;}
   .menu-btn{padding:10px 12px;}
   .menu-btn .btn-label{display:none;}
   .menu-panel{width:260px; max-width:calc(100vw - 32px);}
   .icon-btn{width:40px; height:40px;}
+
+  .trust-strip{grid-template-columns:1fr; gap:12px;}
+  .trust-item{padding:16px;}
+  .trust-item h4{font-size:13.5px;}
+  .stat-number{font-size:22px;}
+
+  .prod-card{min-width:0;}
+  .prod-name{font-size:13.5px; min-height:0;}
+  .prod-new{font-size:17px;}
+  .add-cart-btn, .buy-now-btn{padding:10px; font-size:12.5px;}
+
+  .footer-grid{grid-template-columns:1fr; gap:24px;}
+  .footer-brand p{max-width:100%;}
+}
+
+/* ---------- UX POLISH (smooth transitions, subtle feedback) ---------- */
+.btn, .add-cart-btn, .buy-now-btn, .checkout-btn,
+.icon-btn, .menu-btn, .currency-pick, .cat-card, .cat-card-big,
+.prod-card, .trust-item, .testi-card, .feature-card, .social-pill{
+  transition:transform .25s var(--ease), border-color .25s var(--ease),
+             background-color .25s var(--ease), color .25s var(--ease),
+             box-shadow .25s var(--ease), filter .25s var(--ease);
+}
+.btn:active, .add-cart-btn:active, .buy-now-btn:active,
+.icon-btn:active, .menu-btn:active, .currency-pick:active{
+  transform:scale(0.97);
+}
+.prod-card:hover{box-shadow:0 14px 32px -18px rgba(0,229,255,0.35);}
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration:0.001ms !important;
+    transition-duration:0.001ms !important;
+  }
 }
