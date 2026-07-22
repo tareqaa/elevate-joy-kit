@@ -190,7 +190,9 @@ function gxRenderCartItemsInDrawer(){
   if(resolved.length === 0){
     itemsEl.innerHTML = `<div class="cart-empty">السلة فاضية — ضيف أول منتج إلك 🛒</div>`;
   }else{
-    itemsEl.innerHTML = resolved.map(it => `
+    itemsEl.innerHTML = resolved.map(it => {
+      const isSnap = typeof it.cartId === 'string' && it.cartId.startsWith('snap-');
+      return `
       <div class="cart-item">
         <div class="ci-thumb" style="background:${it.bg};">${it.icon}</div>
         <div class="ci-info">
@@ -199,13 +201,13 @@ function gxRenderCartItemsInDrawer(){
           <div class="qty-ctrl">
             <button class="qty-minus" data-id="${it.cartId}">−</button>
             <span>${it.qty}</span>
-            <button class="qty-plus" data-id="${it.cartId}">+</button>
+            <button class="qty-plus" data-id="${it.cartId}" ${isSnap ? 'disabled title="ارجع لصفحة سناب بلس لإضافة حساب جديد مع يوزره"' : ''}>+</button>
           </div>
         </div>
       </div>
-    `).join('');
+    `; }).join('');
 
-    itemsEl.querySelectorAll('.qty-plus').forEach(b => b.addEventListener('click', ()=>GXCart.changeQty(b.dataset.id, 1)));
+    itemsEl.querySelectorAll('.qty-plus').forEach(b => b.addEventListener('click', ()=>{ if(b.disabled) return; GXCart.changeQty(b.dataset.id, 1); }));
     itemsEl.querySelectorAll('.qty-minus').forEach(b => b.addEventListener('click', ()=>GXCart.changeQty(b.dataset.id, -1)));
   }
 
