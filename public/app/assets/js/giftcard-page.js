@@ -50,7 +50,7 @@ function renderGiftcardRegions(gc){
   root.innerHTML = gc.regions.map(region => `
     <div class="region-section">
       <div class="region-head">
-        <div class="region-flag"><img src="https://flagcdn.com/w80/${region.code}.png" srcset="https://flagcdn.com/w160/${region.code}.png 2x" alt="${region.name}" style="width:38px;height:auto;display:block;border-radius:5px;box-shadow:0 2px 6px rgba(0,0,0,0.4);"/></div>
+        <div class="region-flag"><img src="https://flagcdn.com/w160/${region.code}.png" srcset="https://flagcdn.com/w320/${region.code}.png 2x" alt="${region.name}"/></div>
         <div class="region-name">${region.name}</div>
       </div>
       <div class="denom-grid" style="--gc-accent:${gc.accent};">
