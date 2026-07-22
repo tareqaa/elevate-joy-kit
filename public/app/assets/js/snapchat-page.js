@@ -94,11 +94,26 @@ function updateOrderSummary(){
 function wireStepper(){
   document.getElementById('accIncBtn').addEventListener('click', () => {
     if(orderState.accounts >= 10) return;
+    // لا نسمح بإضافة حساب جديد قبل تعبئة كل اليوزرات الحالية
+    const missingIdx = orderState.usernames.findIndex(u => !u || !u.trim());
+    if(missingIdx !== -1){
+      const errBox = document.getElementById('orderError');
+      errBox.textContent = 'عبّي يوزر الحساب الحالي قبل ما تضيف حساب جديد';
+      errBox.style.display = 'block';
+      const input = document.querySelector(`.uname-input[data-idx="${missingIdx}"]`);
+      if(input){ input.classList.add('error'); input.focus(); }
+      return;
+    }
     orderState.accounts += 1;
     orderState.usernames.push('');
     document.getElementById('accCount').textContent = orderState.accounts;
     renderUsernameFields();
     updateOrderSummary();
+    // ركّز على حقل اليوزر الجديد مباشرة
+    setTimeout(() => {
+      const newInput = document.querySelector(`.uname-input[data-idx="${orderState.accounts - 1}"]`);
+      if(newInput) newInput.focus();
+    }, 30);
   });
   document.getElementById('accDecBtn').addEventListener('click', () => {
     if(orderState.accounts <= 1) return;
