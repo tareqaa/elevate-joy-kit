@@ -34,8 +34,9 @@ const PRODUCTS_CATALOG = {
     identifierPlaceholder:'مثال: yazan.q',
     deliveryMethod:'منشحنلك الاشتراك مباشرة عن طريق خاصية "إهداء الاشتراك" الرسمية داخل سناب شات — باستخدام يوزرك فقط، من غير ما نطلب باسورد أو نسجل دخول على حسابك.',
     plans:[
-      {id:'snap-1',  label:'شهر واحد',  price:5,  oldPrice:7,   tag:null},
-      {id:'snap-4',  label:'4 أشهر',   price:13, oldPrice:20,  tag:'الأكثر طلبًا'},
+      {id:'snap-3',  label:'3 أشهر',  price:5,  oldPrice:7,   tag:null},
+      {id:'snap-6',  label:'6 أشهر',  price:9,  oldPrice:14,  tag:'الأكثر طلبًا'},
+      {id:'snap-12', label:'12 شهر',  price:17, oldPrice:26,  tag:null},
     ],
     features:[
       {icon:'⭐', title:'أيقونة حصرية للتطبيق', desc:'بدّل شكل أيقونة سناب شات على شاشتك الرئيسية باختيارك من تصاميم حصرية مو متوفرة للمستخدم العادي.'},
@@ -59,7 +60,8 @@ const PRODUCTS_CATALOG = {
     identifierPlaceholder:'example@email.com',
     deliveryMethod:'منفعّلك الاشتراك مباشرة على حساب Adobe ID تبعك عن طريق الإيميل، من غير ما نطلب الباسورد — بترجعلك رسالة تفعيل رسمية من Adobe نفسها.',
     plans:[
-      {id:'adobe-1', label:'شهر واحد', price:5, oldPrice:8, tag:null},
+      {id:'adobe-1', label:'شهر واحد', price:5,  oldPrice:8,  tag:null},
+      {id:'adobe-4', label:'4 أشهر',   price:13, oldPrice:20, tag:'الأكثر طلبًا'},
     ],
     features:[
       {icon:'🖌️', title:'كل تطبيقات Adobe', desc:'فوتوشوب، إليستريتور، بريمير برو، إنديزاين وأكثر من 20 تطبيق بنفس الاشتراك.'},
@@ -236,11 +238,11 @@ const CATEGORY_META = {
 // used to render the homepage products grid.
 function getFeaturedItems(){
   const picks = [
-    {product:'snapchat', planId:'snap-4'},
-    {product:'adobe',    planId:'adobe-1'},
+    {product:'snapchat', planId:'snap-6'},
+    {product:'adobe',    planId:'adobe-4'},
     {product:'fortnite', planId:'fn-crew'},
     {product:'fortnite', planId:'fn-vb-2400'},
-    {product:'snapchat', planId:'snap-1'},
+    {product:'snapchat', planId:'snap-3'},
     {product:'fortnite', planId:'fn-vb-800'},
   ];
   return picks.map(({product, planId}) => {
