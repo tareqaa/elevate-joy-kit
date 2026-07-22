@@ -125,7 +125,7 @@ function wireStepper(){
   });
 }
 
-function validateOrderAndAdd(){
+function validateOrder(){
   const missingIdx = orderState.usernames.findIndex(u => !u || !u.trim());
   if(missingIdx !== -1){
     const errBox = document.getElementById('orderError');
@@ -135,18 +135,14 @@ function validateOrderAndAdd(){
     if(input){ input.classList.add('error'); input.focus(); }
     return false;
   }
-
-  const plan = getSelectedPlan();
-  GXCart.add(plan.id, orderState.accounts);
-
-  const userLines = orderState.usernames.map((u,i) => `${i+1}. ${u}`).join('\n');
-  GXCart.appendNote(`👻 سناب بلس (${plan.label}) × ${orderState.accounts} حساب — اليوزرات:\n${userLines}`);
   return true;
 }
 
 function wireAddToCart(){
   document.getElementById('addOrderBtn').addEventListener('click', () => {
-    if(!validateOrderAndAdd()) return;
+    if(!validateOrder()) return;
+    const plan = getSelectedPlan();
+    GXCart.addSnap(plan.id, orderState.usernames);
     gxShowAddedToast();
     const btn = document.getElementById('addOrderBtn');
     btn.textContent = '✓ أضيفت للسلة بنجاح';
@@ -158,10 +154,12 @@ function wireAddToCart(){
   });
 
   document.getElementById('buyNowOrderBtn').addEventListener('click', () => {
-    if(!validateOrderAndAdd()) return;
-    window.location.href = '/app/cart/index.html';
+    if(!validateOrder()) return;
+    const plan = getSelectedPlan();
+    GXCart.buyNowSnap(plan.id, orderState.usernames);
   });
 }
+
 
 function renderSnapFeatures(){
   const grid = document.getElementById('featuresGrid');
