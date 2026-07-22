@@ -54,11 +54,12 @@ function renderVbucksPlans(){
   const grid = document.getElementById('vbucksGrid');
   grid.innerHTML = p.vbucksPlans.map(plan => {
     const discount = plan.oldPrice ? Math.round((1 - plan.price / plan.oldPrice) * 100) : 0;
+    const tier = parseInt(plan.id.replace('fn-vb-', ''), 10);
     return `
       <div class="prod-card">
         <div class="prod-thumb" style="background:${p.thumbBg};">
           ${discount ? `<span class="discount-badge">-${discount}%</span>` : ''}
-          ${vbucksIconSvg()}
+          ${vbucksIconSvg(tier)}
         </div>
         <div class="prod-body">
           <div class="prod-name" style="min-height:auto; font-size:15px;">${plan.label}</div>
