@@ -71,18 +71,24 @@ const GXCart = (function(){
     if(!item) return;
     item.qty += delta;
     if(item.qty <= 0){ items = items.filter(i => i.cartId !== cartId); }
+    if(items.length === 0){ setNotesSilent(''); }
     persist();
   }
 
   function remove(cartId){
     items = items.filter(i => i.cartId !== cartId);
+    if(items.length === 0){ setNotesSilent(''); }
     persist();
   }
 
   function clear(){
     items = [];
+    setNotesSilent('');
     persist();
-    setNotes('');
+  }
+
+  function setNotesSilent(text){
+    localStorage.setItem(NOTES_KEY, text);
   }
 
   function count(){
