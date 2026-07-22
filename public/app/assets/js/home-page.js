@@ -38,7 +38,10 @@ function renderHomeCategories(){
 function iconForFeaturedItem(item){
   if(item.product === 'adobe') return adobeIconSvg();
   if(item.product === 'fortnite' && item.cartId.startsWith('fn-crew')) return crewIconSvg();
-  if(item.product === 'fortnite' && item.cartId.startsWith('fn-vb')) return vbucksIconSvg();
+  if(item.product === 'fortnite' && item.cartId.startsWith('fn-vb')){
+    const tier = parseInt(item.cartId.replace('fn-vb-', ''), 10);
+    return vbucksIconSvg(tier);
+  }
   return item.icon;
 }
 

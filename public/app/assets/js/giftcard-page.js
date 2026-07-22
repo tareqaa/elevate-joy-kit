@@ -8,12 +8,15 @@
    ============================================================ */
 
 function renderGiftcardHero(gc){
+  const iconMarkup = gc.iconImg
+    ? `<img src="${gc.iconImg}" alt="${gc.name}" style="width:56px; height:56px; object-fit:contain; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.35));"/>`
+    : `<span style="font-size:44px; line-height:1;">${gc.icon}</span>`;
   document.getElementById('giftcardHeroRoot').innerHTML = `
     <div class="wrap">
       <div class="giftcard-hero-inner fade-in">
         <div class="giftcard-mockup" style="background:${gc.cardGradient};">
           <div class="gc-top">
-            <span class="gc-icon">${gc.icon}</span>
+            <span class="gc-icon">${iconMarkup}</span>
             <div class="gc-chip"></div>
           </div>
           <div>
