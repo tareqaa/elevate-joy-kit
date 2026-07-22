@@ -238,11 +238,11 @@ const CATEGORY_META = {
 // used to render the homepage products grid.
 function getFeaturedItems(){
   const picks = [
-    {product:'snapchat', planId:'snap-4'},
-    {product:'adobe',    planId:'adobe-1'},
+    {product:'snapchat', planId:'snap-6'},
+    {product:'adobe',    planId:'adobe-4'},
     {product:'fortnite', planId:'fn-crew'},
     {product:'fortnite', planId:'fn-vb-2400'},
-    {product:'snapchat', planId:'snap-1'},
+    {product:'snapchat', planId:'snap-3'},
     {product:'fortnite', planId:'fn-vb-800'},
   ];
   return picks.map(({product, planId}) => {
