@@ -34,9 +34,8 @@ const PRODUCTS_CATALOG = {
     identifierPlaceholder:'مثال: yazan.q',
     deliveryMethod:'منشحنلك الاشتراك مباشرة عن طريق خاصية "إهداء الاشتراك" الرسمية داخل سناب شات — باستخدام يوزرك فقط، من غير ما نطلب باسورد أو نسجل دخول على حسابك.',
     plans:[
-      {id:'snap-3',  label:'3 أشهر',  price:5,  oldPrice:7,  tag:null},
-      {id:'snap-6',  label:'6 أشهر',  price:9,  oldPrice:13, tag:'الأكثر طلبًا'},
-      {id:'snap-12', label:'12 شهر',  price:17, oldPrice:24, tag:null},
+      {id:'snap-1',  label:'شهر واحد',  price:5,  oldPrice:7,   tag:null},
+      {id:'snap-4',  label:'4 أشهر',   price:13, oldPrice:20,  tag:'الأكثر طلبًا'},
     ],
     features:[
       {icon:'⭐', title:'أيقونة حصرية للتطبيق', desc:'بدّل شكل أيقونة سناب شات على شاشتك الرئيسية باختيارك من تصاميم حصرية مو متوفرة للمستخدم العادي.'},
