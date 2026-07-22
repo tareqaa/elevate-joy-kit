@@ -1,9 +1,10 @@
 /* ============================================================
    GX STORE — CART MODULE (shared)
    Cart state lives in localStorage under 'gx_cart' as an array
-   of {cartId, qty}. Every page (home, product pages, cart page)
-   reads/writes through this same module, so the cart is always
-   in sync no matter which page the visitor is on.
+   of {cartId, qty, meta?}. For snap-plus items, meta.usernames
+   holds the list of usernames provided per account, so removing
+   or reducing a snap line automatically drops the matching users
+   without leaving stale text behind.
    Requires: products-data.js and currency.js to be loaded first.
    ============================================================ */
 
@@ -12,6 +13,10 @@ const GXCart = (function(){
   const NOTES_KEY = 'gx_cart_notes';
   let items = [];
 
+  function isSnapId(cartId){
+    return typeof cartId === 'string' && cartId.startsWith('snap-');
+  }
+
   function load(){
     try{
       items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -19,6 +24,22 @@ const GXCart = (function(){
     }catch(e){
       items = [];
     }
+    // One-time migration: strip legacy auto-appended snap usernames
+    // from the free-notes field (older versions stored them there).
+    migrateLegacyNotes();
+  }
+
+  function migrateLegacyNotes(){
+    const raw = localStorage.getItem(NOTES_KEY) || '';
+    if(!raw) return;
+    // Legacy auto-blocks always started with "👻 سناب بلس".
+    if(raw.indexOf('👻 سناب بلس') === -1) return;
+    const cleaned = raw
+      .split(/\n(?=👻 سناب بلس)/)
+      .filter(block => !block.startsWith('👻 سناب بلس'))
+      .join('\n')
+      .trim();
+    localStorage.setItem(NOTES_KEY, cleaned);
   }
 
   function persist(){
@@ -30,6 +51,22 @@ const GXCart = (function(){
     const existing = items.find(i => i.cartId === cartId && !i.custom);
     if(existing){ existing.qty += qty; }
     else{ items.push({cartId, qty}); }
+    persist();
+  }
+
+  // Add / merge a snap-plus line together with its per-account usernames.
+  // qty always mirrors usernames.length so the two can never drift apart.
+  function addSnap(cartId, usernames){
+    const clean = (usernames || []).map(u => (u || '').trim()).filter(Boolean);
+    if(clean.length === 0) return;
+    const existing = items.find(i => i.cartId === cartId && !i.custom);
+    if(existing){
+      existing.meta = existing.meta || {};
+      existing.meta.usernames = (existing.meta.usernames || []).concat(clean);
+      existing.qty = existing.meta.usernames.length;
+    }else{
+      items.push({cartId, qty:clean.length, meta:{usernames:clean}});
+    }
     persist();
   }
 
@@ -47,9 +84,17 @@ const GXCart = (function(){
     window.location.href = '/app/cart/index.html';
   }
 
+  // Same as buyNow but for snap-plus (replaces line with the new usernames).
+  function buyNowSnap(cartId, usernames){
+    const clean = (usernames || []).map(u => (u || '').trim()).filter(Boolean);
+    if(clean.length === 0) return;
+    items = items.filter(i => i.cartId !== cartId);
+    items.push({cartId, qty:clean.length, meta:{usernames:clean}});
+    persist();
+    window.location.href = '/app/cart/index.html';
+  }
+
   // Adds an item that isn't in the static catalog (e.g. a custom V-Bucks amount).
-  // `data` must include: name, icon, bg, price. A unique cartId is generated
-  // unless one is provided.
   function addCustom(data, qty = 1){
     const cartId = data.cartId || ('custom-' + Date.now() + '-' + Math.random().toString(36).slice(2,7));
     items.push({
@@ -70,6 +115,12 @@ const GXCart = (function(){
     const item = items.find(i => i.cartId === cartId);
     if(!item) return;
     item.qty += delta;
+    // For snap lines, keep usernames array length aligned with qty.
+    if(item.meta && Array.isArray(item.meta.usernames)){
+      if(item.qty < item.meta.usernames.length){
+        item.meta.usernames = item.meta.usernames.slice(0, Math.max(item.qty, 0));
+      }
+    }
     if(item.qty <= 0){ items = items.filter(i => i.cartId !== cartId); }
     if(items.length === 0){ setNotesSilent(''); }
     persist();
@@ -95,17 +146,23 @@ const GXCart = (function(){
     return items.reduce((s,i)=>s+i.qty, 0);
   }
 
-  // Returns items joined with their live product/plan info (name, icon, price...)
   function getResolvedItems(){
     return items
       .map(i => {
+        const usernames = i.meta && Array.isArray(i.meta.usernames) ? i.meta.usernames.slice() : null;
         if(i.custom){
-          return {cartId:i.cartId, qty:i.qty, name:i.custom.name, icon:i.custom.icon, bg:i.custom.bg, price:i.custom.price};
+          return {cartId:i.cartId, qty:i.qty, name:i.custom.name, icon:i.custom.icon, bg:i.custom.bg, price:i.custom.price, usernames};
         }
         const plan = findPlanByCartId(i.cartId);
-        return plan ? {...plan, qty:i.qty} : null;
+        return plan ? {...plan, qty:i.qty, usernames} : null;
       })
       .filter(Boolean);
+  }
+
+  // Returns the raw usernames array currently stored for a snap-plus plan.
+  function getSnapUsernames(cartId){
+    const item = items.find(i => i.cartId === cartId);
+    return item && item.meta && Array.isArray(item.meta.usernames) ? item.meta.usernames.slice() : [];
   }
 
   function totalJOD(){
@@ -118,14 +175,6 @@ const GXCart = (function(){
 
   function setNotes(text){
     localStorage.setItem(NOTES_KEY, text);
-  }
-
-  // Appends a new line to the stored notes (used by product pages that need
-  // to attach structured info, like Snapchat usernames per account).
-  function appendNote(text){
-    const current = getNotes();
-    const next = current ? (current + '\n' + text) : text;
-    setNotes(next);
   }
 
   function buildWhatsAppUrl(notesOverride){
@@ -142,7 +191,16 @@ const GXCart = (function(){
 
     const lines = resolved.map((it, i) => {
       const lineTotal = it.price * it.qty;
-      return `${i+1}) ${it.name}\n     • الكمية: ${it.qty}\n     • سعر الوحدة: ${GXCurrency.format(it.price)}\n     • المجموع: ${GXCurrency.format(lineTotal)}`;
+      let block =
+`${i+1}) ${it.name}
+     • الكمية: ${it.qty}
+     • سعر الوحدة: ${GXCurrency.format(it.price)}
+     • المجموع: ${GXCurrency.format(lineTotal)}`;
+      if(it.usernames && it.usernames.length){
+        const users = it.usernames.map((u, k) => `        ${k+1}. ${u}`).join('\n');
+        block += `\n     • اليوزرات:\n${users}`;
+      }
+      return block;
     }).join('\n\n');
 
     let msg =
@@ -165,7 +223,7 @@ ${lines}
 
     const notes = notesOverride !== undefined ? notesOverride : getNotes();
     if(notes && notes.trim()){
-      msg += `\n\n📝 *بيانات إضافية / يوزرات:*\n${notes.trim()}\n━━━━━━━━━━━━━━━━━━━━`;
+      msg += `\n\n📝 *ملاحظات إضافية:*\n${notes.trim()}\n━━━━━━━━━━━━━━━━━━━━`;
     }
 
     msg += `\n\n✅ الرجاء تأكيد الطلب ليتم البدء بالتجهيز.\nشكراً لاختيارك GX Store 💙`;
@@ -175,5 +233,5 @@ ${lines}
 
   load();
 
-  return {add, buyNow, addCustom, changeQty, remove, clear, count, getResolvedItems, totalJOD, buildWhatsAppUrl, getNotes, setNotes, appendNote};
+  return {add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear, count, getResolvedItems, getSnapUsernames, totalJOD, buildWhatsAppUrl, getNotes, setNotes};
 })();
