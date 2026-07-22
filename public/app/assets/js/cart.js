@@ -125,23 +125,44 @@ const GXCart = (function(){
   function buildWhatsAppUrl(notesOverride){
     const resolved = getResolvedItems();
     if(resolved.length === 0) return null;
-    const lines = resolved.map((it,i) =>
-      `${i+1}. ${it.name} × ${it.qty} — ${GXCurrency.format(it.price * it.qty)}`
-    ).join('\n');
+
+    const currency = GXCurrency.get();
+    const totalJod = totalJOD();
+    const itemCount = resolved.reduce((n, it) => n + it.qty, 0);
+    const orderId = 'GX-' + Date.now().toString().slice(-6);
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' });
+    const timeStr = now.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' });
+
+    const lines = resolved.map((it, i) => {
+      const lineTotal = it.price * it.qty;
+      return `${i+1}) ${it.name}\n     • الكمية: ${it.qty}\n     • سعر الوحدة: ${GXCurrency.format(it.price)}\n     • المجموع: ${GXCurrency.format(lineTotal)}`;
+    }).join('\n\n');
 
     let msg =
-`🛒 *طلب جديد من GX Store*
+`🧾 *فاتورة طلب جديد — GX Store*
+━━━━━━━━━━━━━━━━━━━━
+🆔 رقم الطلب: ${orderId}
+📅 التاريخ: ${dateStr}
+🕐 الوقت: ${timeStr}
+━━━━━━━━━━━━━━━━━━━━
+
+🛍️ *تفاصيل المنتجات:*
 
 ${lines}
 
-💰 *الإجمالي:* ${GXCurrency.format(totalJOD())}
-💱 *العملة المستخدمة:* ${GXCurrency.get()}`;
+━━━━━━━━━━━━━━━━━━━━
+📦 عدد القطع: ${itemCount}
+💰 *الإجمالي المستحق: ${GXCurrency.format(totalJod)}*
+💱 العملة: ${currency}
+━━━━━━━━━━━━━━━━━━━━`;
 
     const notes = notesOverride !== undefined ? notesOverride : getNotes();
     if(notes && notes.trim()){
-      msg += `\n\n📝 *ملاحظات:*\n${notes.trim()}`;
+      msg += `\n\n📝 *بيانات إضافية / يوزرات:*\n${notes.trim()}\n━━━━━━━━━━━━━━━━━━━━`;
     }
-    msg += `\n\nيرجى تأكيد الطلب وطريقة التسليم 🙏`;
+
+    msg += `\n\n✅ الرجاء تأكيد الطلب ليتم البدء بالتجهيز.\nشكراً لاختيارك GX Store 💙`;
 
     return 'https://wa.me/962776252313?text=' + encodeURIComponent(msg);
   }
