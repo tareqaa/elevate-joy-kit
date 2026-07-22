@@ -54,23 +54,15 @@ function crewIconSvg(){
   return brandBadge('crewGrad', stops, glyph);
 }
 
-// Adobe Creative Cloud — clean, high-quality badge in Adobe's signature
-// red, featuring the recognizable stylized "A" mark (drawn as an
-// original vector triangle-A, not a copy of Adobe's official artwork)
-// and a small "Cc" label so it clearly reads as Creative Cloud.
+// Adobe Creative Cloud — official brand mark rendered from the packaged
+// image asset (the recognizable rainbow-gradient "infinity/CC" logo on a
+// white rounded-square). Kept at the same 52px size as the other badges
+// so it visually aligns with the rest of the product card family.
 function adobeIconSvg(){
-  const stops = `
-    <stop offset="0%" stop-color="#ff3b30"/>
-    <stop offset="55%" stop-color="#e60023"/>
-    <stop offset="100%" stop-color="#990016"/>
+  return `
+    <img src="/app/assets/img/adobe-cc.webp"
+         alt="Adobe Creative Cloud"
+         width="52" height="52"
+         style="display:block; border-radius:14px; background:#fff; padding:4px; box-shadow:0 4px 14px -6px rgba(0,0,0,0.35);"/>
   `;
-  const glyph = `
-    <path d="M27 12 L41 42 L34 42 L31 35 L23 35 L20 42 L13 42 Z
-             M27 22.5 L24.6 29 L29.4 29 Z"
-          fill="#ffffff"/>
-    <text x="27" y="49.5" text-anchor="middle"
-          font-family="Tajawal, sans-serif" font-weight="900" font-size="7"
-          letter-spacing="0.5" fill="#ffffff">Cc</text>
-  `;
-  return brandBadge('ccGrad', stops, glyph);
 }

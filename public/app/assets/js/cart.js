@@ -34,9 +34,16 @@ const GXCart = (function(){
   }
 
   // Adds an item and takes the visitor straight to the cart page —
-  // used by "Buy Now" buttons, as opposed to a plain "Add to cart".
+  // used by "Buy Now" buttons. Unlike plain add(), Buy Now does NOT
+  // stack onto whatever qty already sits in the cart for the same
+  // item; it sets the line to exactly `qty` so clicking "اشتري الآن"
+  // for a single unit always lands you on a cart line of that qty,
+  // even if the same product was previously added and removed.
   function buyNow(cartId, qty = 1){
-    add(cartId, qty);
+    const existing = items.find(i => i.cartId === cartId && !i.custom);
+    if(existing){ existing.qty = qty; }
+    else{ items.push({cartId, qty}); }
+    persist();
     window.location.href = '/app/cart/index.html';
   }
 

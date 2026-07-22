@@ -155,7 +155,7 @@ function initTestimonialAutoScroll(grid){
 function initStatCounter(){
   const el = document.getElementById('statCounter');
   if(!el) return;
-  const target = 1000;
+  const target = 2000;
   let rafId = null;
 
   function animate(){
