@@ -132,6 +132,7 @@ const GIFT_CARDS_CATALOG = {
   playstation:{
     name:'PlayStation Gift Cards',
     icon:'🎮',
+    iconImg:'/app/assets/img/playstation-logo.png',
     accent:'#00a3ff',
     cardGradient:'linear-gradient(135deg,#0a3d91,#0066cc 45%,#00a3ff)',
     regions:[
@@ -162,6 +163,7 @@ const GIFT_CARDS_CATALOG = {
   xbox:{
     name:'Xbox Gift Cards',
     icon:'🕹️',
+    iconImg:'/app/assets/img/xbox-logo.png',
     accent:'#4fdc4f',
     cardGradient:'linear-gradient(135deg,#0e4d0e,#107c10 45%,#4fdc4f)',
     regions:[
@@ -176,6 +178,7 @@ const GIFT_CARDS_CATALOG = {
   'google-play':{
     name:'Google Play Gift Cards',
     icon:'▶️',
+    iconImg:'/app/assets/img/googleplay-logo.png',
     accent:'#34a853',
     cardGradient:'linear-gradient(135deg,#1a73e8,#34a853 35%,#fbbc04 70%,#ea4335)',
     regions:[], // no denominations added yet
@@ -184,6 +187,7 @@ const GIFT_CARDS_CATALOG = {
   itunes:{
     name:'iTunes Gift Cards',
     icon:'🎵',
+    iconImg:'/app/assets/img/itunes-logo.png',
     accent:'#f107a3',
     cardGradient:'linear-gradient(135deg,#7b2ff7,#f107a3 55%,#ff5c8a)',
     regions:[
@@ -199,8 +203,6 @@ const GIFT_CARDS_CATALOG = {
       ]},
     ],
   },
-
-};
 
 /* ---------------- CATEGORY TREE (top-level, shown on homepage) ---------------- */
 const CATEGORY_LINKS = [
