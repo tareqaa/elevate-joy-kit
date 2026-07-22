@@ -60,7 +60,8 @@ const PRODUCTS_CATALOG = {
     identifierPlaceholder:'example@email.com',
     deliveryMethod:'منفعّلك الاشتراك مباشرة على حساب Adobe ID تبعك عن طريق الإيميل، من غير ما نطلب الباسورد — بترجعلك رسالة تفعيل رسمية من Adobe نفسها.',
     plans:[
-      {id:'adobe-1', label:'شهر واحد', price:5, oldPrice:8, tag:null},
+      {id:'adobe-1', label:'شهر واحد', price:5,  oldPrice:8,  tag:null},
+      {id:'adobe-4', label:'4 أشهر',   price:13, oldPrice:20, tag:'الأكثر طلبًا'},
     ],
     features:[
       {icon:'🖌️', title:'كل تطبيقات Adobe', desc:'فوتوشوب، إليستريتور، بريمير برو، إنديزاين وأكثر من 20 تطبيق بنفس الاشتراك.'},
