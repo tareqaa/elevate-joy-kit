@@ -30,22 +30,25 @@ function renderCartPage(){
         <h2>منتجات السلة (${GXCart.count()})</h2>
         <span class="clear-link" id="clearCartBtn">إفراغ السلة</span>
       </div>
-      ${resolved.map(it => `
+      ${resolved.map(it => {
+        const isSnap = typeof it.cartId === 'string' && it.cartId.startsWith('snap-');
+        return `
         <div class="cart-row">
           <div class="cr-thumb" style="background:${it.bg};">${it.icon}</div>
           <div class="cr-info">
             <div class="cr-name">${it.name}</div>
             <div class="cr-unit">سعر الوحدة: <span data-unit="${it.price}">${GXCurrency.format(it.price)}</span></div>
+            ${isSnap ? `<div class="cr-lock-hint">لتعديل عدد الحسابات واليوزرات، <a href="/app/snapchat/index.html">افتح صفحة سناب بلس</a></div>` : ''}
           </div>
           <div class="cr-qty">
             <button class="qty-minus" data-id="${it.cartId}">−</button>
             <span>${it.qty}</span>
-            <button class="qty-plus" data-id="${it.cartId}">+</button>
+            <button class="qty-plus" data-id="${it.cartId}" ${isSnap ? 'disabled title="لإضافة حساب جديد، ارجع لصفحة سناب بلس عشان تكتب اليوزر"' : ''}>+</button>
           </div>
           <div class="cr-price" data-line="${it.price * it.qty}">${GXCurrency.format(it.price * it.qty)}</div>
           <button class="cr-remove" data-id="${it.cartId}">✕</button>
         </div>
-      `).join('')}
+      `; }).join('')}
     </div>
   `;
 
