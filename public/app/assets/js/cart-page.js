@@ -32,13 +32,17 @@ function renderCartPage(){
       </div>
       ${resolved.map(it => {
         const isSnap = typeof it.cartId === 'string' && it.cartId.startsWith('snap-');
+        const usernamesHtml = (isSnap && it.usernames && it.usernames.length)
+          ? `<div class="cr-users"><span class="cr-users-label">اليوزرات:</span> ${it.usernames.map(u => `<span class="cr-user-chip">@${u}</span>`).join(' ')}</div>`
+          : '';
         return `
         <div class="cart-row">
           <div class="cr-thumb" style="background:${it.bg};">${it.icon}</div>
           <div class="cr-info">
             <div class="cr-name">${it.name}</div>
             <div class="cr-unit">سعر الوحدة: <span data-unit="${it.price}">${GXCurrency.format(it.price)}</span></div>
-            ${isSnap ? `<div class="cr-lock-hint">لتعديل عدد الحسابات واليوزرات، <a href="/app/snapchat/index.html">افتح صفحة سناب بلس</a></div>` : ''}
+            ${usernamesHtml}
+            ${isSnap ? `<div class="cr-lock-hint">لإضافة حساب جديد بيوزر، <a href="/app/snapchat/index.html">افتح صفحة سناب بلس</a></div>` : ''}
           </div>
           <div class="cr-qty">
             <button class="qty-minus" data-id="${it.cartId}">−</button>
@@ -61,15 +65,16 @@ function renderCartPage(){
         <span class="val" id="cartPageTotal">${GXCurrency.format(GXCart.totalJOD())}</span>
       </div>
       <div class="notes-field">
-        <label>ملاحظات الطلب (اختياري)</label>
-        <textarea id="orderNotes" placeholder="مثال: يوزرات الحسابات، أو أي طلب خاص...">${GXCart.getNotes()}</textarea>
-        <div class="hint">تقدر تكتب هون يوزرات حساباتك أو أي تفاصيل بتساعدنا نجهز طلبك.</div>
+        <label>ملاحظات إضافية (اختياري)</label>
+        <textarea id="orderNotes" placeholder="أي طلب خاص أو تفاصيل إضافية...">${GXCart.getNotes()}</textarea>
+        <div class="hint">اليوزرات محفوظة تلقائياً مع كل حساب سناب — هون بس للملاحظات الإضافية.</div>
       </div>
       <button class="btn btn-green btn-block" id="pageCheckoutBtn">
         إتمام الطلب عبر واتساب
       </button>
     </div>
   `;
+
 
   wireCartRowEvents();
 }
