@@ -11,8 +11,9 @@ const PRODUCTS = [
     category: "اشتراك سناب بلس",
     url: "/app/snapchat/index.html",
     plans: [
-      { id: "snap-1", label: "شهر واحد", price_jod: 5 },
-      { id: "snap-4", label: "4 أشهر", price_jod: 13 },
+      { id: "snap-3", label: "3 أشهر", price_jod: 5 },
+      { id: "snap-6", label: "6 أشهر", price_jod: 9 },
+      { id: "snap-12", label: "12 شهر", price_jod: 17 },
     ],
   },
   {
@@ -20,7 +21,10 @@ const PRODUCTS = [
     name: "Adobe Creative Cloud",
     category: "البرامج والتطبيقات",
     url: "/app/design/adobe/index.html",
-    plans: [],
+    plans: [
+      { id: "adobe-1", label: "شهر واحد", price_jod: 5 },
+      { id: "adobe-4", label: "4 أشهر", price_jod: 13 },
+    ],
   },
   {
     slug: "fortnite",
