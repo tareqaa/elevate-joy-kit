@@ -224,10 +224,10 @@ const SUBCATEGORIES = {
     {slug:'xbox',      product:null,       name:'إكسبوكس',         icon:'🕹️', bg:'linear-gradient(145deg,#0d2a1a,#081510)', comingSoon:true},
   ],
   'gift-cards':[
-    {slug:'playstation', name:'PlayStation Gift Cards', icon:'🎮', bg:'linear-gradient(145deg, rgba(0,163,255,0.18), rgba(0,163,255,0.04))', cardGradient:'linear-gradient(135deg,#0a3d91,#0066cc 45%,#00a3ff)', accent:'#00a3ff'},
-    {slug:'xbox',         name:'Xbox Gift Cards',        icon:'🕹️', bg:'linear-gradient(145deg, rgba(79,220,79,0.18), rgba(79,220,79,0.04))',  cardGradient:'linear-gradient(135deg,#0e4d0e,#107c10 45%,#4fdc4f)', accent:'#4fdc4f'},
-    {slug:'google-play',  name:'Google Play Gift Cards', icon:'▶️', bg:'linear-gradient(145deg, rgba(52,168,83,0.18), rgba(52,168,83,0.04))',  cardGradient:'linear-gradient(135deg,#1a73e8,#34a853 35%,#fbbc04 70%,#ea4335)', accent:'#34a853'},
-    {slug:'itunes',       name:'iTunes Gift Cards',      icon:'🎵', bg:'linear-gradient(145deg, rgba(241,7,163,0.18), rgba(241,7,163,0.04))',  cardGradient:'linear-gradient(135deg,#7b2ff7,#f107a3 55%,#ff5c8a)', accent:'#f107a3'},
+    {slug:'playstation', name:'PlayStation Gift Cards', icon:'🎮', iconImg:'/app/assets/img/playstation-logo.png', bg:'linear-gradient(145deg, rgba(0,163,255,0.18), rgba(0,163,255,0.04))', cardGradient:'linear-gradient(135deg,#0a3d91,#0066cc 45%,#00a3ff)', accent:'#00a3ff'},
+    {slug:'xbox',         name:'Xbox Gift Cards',        icon:'🕹️', iconImg:'/app/assets/img/xbox-logo.png', bg:'linear-gradient(145deg, rgba(79,220,79,0.18), rgba(79,220,79,0.04))',  cardGradient:'linear-gradient(135deg,#0e4d0e,#107c10 45%,#4fdc4f)', accent:'#4fdc4f'},
+    {slug:'google-play',  name:'Google Play Gift Cards', icon:'▶️', iconImg:'/app/assets/img/googleplay-logo.png', bg:'linear-gradient(145deg, rgba(52,168,83,0.18), rgba(52,168,83,0.04))',  cardGradient:'linear-gradient(135deg,#1a73e8,#34a853 35%,#fbbc04 70%,#ea4335)', accent:'#34a853'},
+    {slug:'itunes',       name:'iTunes Gift Cards',      icon:'🎵', iconImg:'/app/assets/img/itunes-logo.png', bg:'linear-gradient(145deg, rgba(241,7,163,0.18), rgba(241,7,163,0.04))',  cardGradient:'linear-gradient(135deg,#7b2ff7,#f107a3 55%,#ff5c8a)', accent:'#f107a3'},
   ],
 };
 

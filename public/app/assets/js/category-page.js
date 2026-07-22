@@ -24,11 +24,14 @@ function initCategoryPage(){
   `;
 
   document.getElementById('subcatGrid').innerHTML = subs.map(s => {
+    const iconInner = s.iconImg
+      ? `<img src="${s.iconImg}" alt="${s.name}" style="width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.35));"/>`
+      : s.icon;
     if(s.comingSoon){
       return `
         <div class="subcat-card soon">
           <span class="soon-badge">قريبًا</span>
-          <div class="subcat-ic" style="background:${s.bg};">${s.icon}</div>
+          <div class="subcat-ic" style="background:${s.bg};">${iconInner}</div>
           <div>
             <div class="subcat-name">${s.name}</div>
             <div class="subcat-status" style="color:var(--gray);">قيد الإضافة</div>
@@ -38,7 +41,7 @@ function initCategoryPage(){
     }
     return `
       <a href="/app/${CATEGORY_KEY}/${s.slug}/index.html" class="subcat-card clickable">
-        <div class="subcat-ic" style="background:${s.bg};">${s.icon}</div>
+        <div class="subcat-ic" style="background:${s.bg};">${iconInner}</div>
         <div>
           <div class="subcat-name">${s.name}</div>
           <div class="subcat-status">تصفح المنتجات ‹</div>
