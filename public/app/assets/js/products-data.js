@@ -203,6 +203,7 @@ const GIFT_CARDS_CATALOG = {
       ]},
     ],
   },
+};
 
 /* ---------------- CATEGORY TREE (top-level, shown on homepage) ---------------- */
 const CATEGORY_LINKS = [
