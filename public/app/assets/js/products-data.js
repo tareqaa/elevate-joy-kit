@@ -304,7 +304,7 @@ const GIFT_CARDS_CATALOG = {
   xbox:{
     name:'Xbox Gift Cards',
     icon:'🕹️',
-    iconImg:'/app/assets/img/xbox-logo.png',
+    iconImg:'/app/assets/img/xbox-logo.svg',
     accent:'#4fdc4f',
     cardGradient:'linear-gradient(135deg,#0e4d0e,#107c10 45%,#4fdc4f)',
     regions:[
