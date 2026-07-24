@@ -6,7 +6,7 @@
    ============================================================ */
 
 function renderProductHero(p){
-  const iconMarkup = p.slug === 'adobe' ? adobeIconSvg() : p.icon;
+  const iconMarkup = productIconMarkup(p);
   document.getElementById('productHeroRoot').innerHTML = `
     <div class="wrap">
       <div class="product-hero-inner fade-in">
@@ -25,7 +25,7 @@ function renderProductHero(p){
 
 function renderProductPlans(p){
   const grid = document.getElementById('plansGrid');
-  const iconMarkup = p.slug === 'adobe' ? adobeIconSvg() : p.icon;
+  const iconMarkup = productIconMarkup(p);
   grid.innerHTML = p.plans.map(plan => {
     const discount = plan.oldPrice ? Math.round((1 - plan.price / plan.oldPrice) * 100) : 0;
     return `
@@ -79,7 +79,7 @@ function renderDeliveryBox(p){
       <div>
         <h3>كيف توصلك الباقة؟</h3>
         <p>${p.deliveryMethod}</p>
-        <div class="identifier-note">📌 كل ما نحتاجه منك هو <strong>${p.identifierLabel}</strong> — بدون أي باسورد.</div>
+        ${p.identifierLabel ? `<div class="identifier-note">📌 كل ما نحتاجه منك هو <strong>${p.identifierLabel}</strong> — بدون أي باسورد.</div>` : ''}
       </div>
     </div>
   `;

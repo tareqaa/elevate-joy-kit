@@ -71,6 +71,147 @@ const PRODUCTS_CATALOG = {
     ],
   },
 
+  canva: {
+    slug:'canva',
+    name:'Canva Pro',
+    icon:'🎨',
+    iconImg:'/app/assets/img/canva-logo.png',
+    thumbBg:'linear-gradient(145deg,#0a3d4d,#062028)',
+    category:'البرامج والتطبيقات',
+    tagline:'كانفا برو سنة كاملة',
+    description:'كل مميزات Canva Pro على حسابك الشخصي — قوالب بريميوم، خلفيات، خطوط، وإزالة الخلفية.',
+    identifierLabel:'إيميل حساب Canva',
+    identifierPlaceholder:'example@email.com',
+    deliveryMethod:'منفعّلك اشتراك Canva Pro مباشرة على حسابك الشخصي — بترسلنا إيميلك بس، وبتوصلك دعوة رسمية من كانفا للانضمام.',
+    plans:[
+      {id:'canva-12', label:'12 شهر', price:2, oldPrice:4, tag:'الأفضل قيمة'},
+    ],
+    features:[
+      {icon:'✨', title:'قوالب بريميوم', desc:'وصول كامل لأكثر من 100 مليون قالب وصورة وفيديو بريميوم.'},
+      {icon:'🪄', title:'إزالة الخلفية بضغطة', desc:'أداة Background Remover الاحترافية جاهزة داخل التطبيق.'},
+      {icon:'🔤', title:'مكتبة خطوط ضخمة', desc:'آلاف الخطوط الاحترافية بما فيها العربي والإنجليزي.'},
+      {icon:'☁️', title:'1 تيرا تخزين سحابي', desc:'احفظ كل تصاميمك ومشاريعك بأمان ومساحة كبيرة.'},
+    ],
+  },
+
+  linkedin: {
+    slug:'linkedin',
+    name:'LinkedIn Premium Business',
+    icon:'💼',
+    iconImg:'/app/assets/img/linkedin-logo.svg',
+    thumbBg:'linear-gradient(145deg,#082a4a,#03101e)',
+    category:'البرامج والتطبيقات',
+    tagline:'لينكدإن بريميوم بزنس سنة كاملة',
+    description:'وصول InMail، رؤى تفصيلية للشركات، ودورات LinkedIn Learning على حسابك الشخصي.',
+    identifierLabel:'إيميل حساب LinkedIn',
+    identifierPlaceholder:'example@email.com',
+    deliveryMethod:'منفعّلك اشتراك LinkedIn Premium (Business) على حسابك الشخصي مباشرة — كل الي نحتاجه إيميلك المسجّل باللينكدإن.',
+    plans:[
+      {id:'linkedin-12', label:'12 شهر', price:75, oldPrice:120, tag:null},
+    ],
+    features:[
+      {icon:'📩', title:'InMail Messages', desc:'راسل أي شخص على LinkedIn حتى لو مش ضمن شبكتك.'},
+      {icon:'📊', title:'رؤى الشركات والوظائف', desc:'شوف تفاصيل التقديمات، وقارن نفسك بالمتقدمين الآخرين.'},
+      {icon:'🎓', title:'LinkedIn Learning', desc:'وصول كامل لآلاف الدورات الاحترافية بشهادات معتمدة.'},
+      {icon:'👀', title:'مين شاف بروفايلك', desc:'اطّلع على كامل قائمة الأشخاص الي زاروا صفحتك خلال 90 يوم.'},
+    ],
+  },
+
+  microsoft365: {
+    slug:'microsoft365',
+    name:'Microsoft 365',
+    icon:'🅼',
+    iconImg:'/app/assets/img/microsoft365-logo.svg',
+    thumbBg:'linear-gradient(145deg,#3a1208,#180804)',
+    category:'البرامج والتطبيقات',
+    tagline:'مايكروسوفت 365 — أكثر من خيار',
+    description:'Word, Excel, PowerPoint, Outlook والمزيد — اختر الخيار الي بناسبك: حساب من عندنا، مفتاح شخصي، أو باقة عائلية 5 مستخدمين.',
+    identifierLabel:'',
+    deliveryMethod:'حسب الخيار المختار: إما نعطيك بيانات حساب جاهز من عندنا، أو نرسلك مفتاح تفعيل رسمي (Product Key) لتفعّله على حسابك الشخصي مباشرة.',
+    plans:[
+      {id:'ms365-acct-12', label:'حساب من عندنا — 12 شهر', price:7,  oldPrice:12, tag:'الأوفر'},
+      {id:'ms365-key-12',  label:'مفتاح شخصي + 1TB OneDrive — 12 شهر', price:15, oldPrice:22, tag:'الأكثر طلبًا'},
+      {id:'ms365-fam-12',  label:'باقة عائلية 5 مستخدمين — 12 شهر', price:35, oldPrice:55, tag:null},
+    ],
+    features:[
+      {icon:'📝', title:'كل تطبيقات Office', desc:'Word, Excel, PowerPoint, Outlook, OneNote — نسخ كاملة للكمبيوتر والموبايل.'},
+      {icon:'☁️', title:'1 تيرا OneDrive', desc:'مساحة تخزين سحابي 1TB بخيارات المفتاح الشخصي والعائلي.'},
+      {icon:'👨‍👩‍👧', title:'يشتغل لكل الأجهزة', desc:'ويندوز، ماك، iOS، أندرويد — نفس الحساب.'},
+      {icon:'🛡️', title:'تفعيل رسمي 100%', desc:'مفاتيح أصلية من مايكروسوفت وحسابات نظامية.'},
+    ],
+  },
+
+  autodesk: {
+    slug:'autodesk',
+    name:'Autodesk All Apps',
+    icon:'📐',
+    iconImg:'/app/assets/img/autodesk-logo.svg',
+    thumbBg:'linear-gradient(145deg,#1a1a1a,#0a0a0a)',
+    category:'البرامج والتطبيقات',
+    tagline:'كل برامج أوتوديسك سنة كاملة',
+    description:'AutoCAD، 3ds Max، Maya، Revit، Fusion 360 وأكثر من 20 برنامج — اشتراك رسمي على حسابك الشخصي.',
+    identifierLabel:'إيميل حساب Autodesk',
+    identifierPlaceholder:'example@email.com',
+    deliveryMethod:'منفعّلك باقة All Apps الرسمية على حساب Autodesk تبعك بالإيميل، بدون ما نطلب الباسورد.',
+    plans:[
+      {id:'autodesk-12', label:'12 شهر — كل البرامج', price:5, oldPrice:15, tag:'عرض خاص'},
+    ],
+    features:[
+      {icon:'🏗️', title:'AutoCAD & Revit', desc:'أدوات التصميم الهندسي والمعماري الرائدة عالميًا.'},
+      {icon:'🎬', title:'Maya & 3ds Max', desc:'أفضل برامج التحريك ثلاثي الأبعاد وإنشاء المؤثرات.'},
+      {icon:'🔧', title:'Fusion 360', desc:'برنامج CAD/CAM/CAE متكامل للتصميم الميكانيكي.'},
+      {icon:'📦', title:'+20 تطبيق آخر', desc:'وصول كامل لكل تطبيقات Autodesk بنفس الاشتراك.'},
+    ],
+  },
+
+  gemini: {
+    slug:'gemini',
+    name:'Gemini Pro',
+    icon:'✨',
+    iconImg:'/app/assets/img/gemini-logo.svg',
+    thumbBg:'linear-gradient(145deg,#2a1a4a,#0e0820)',
+    category:'البرامج والتطبيقات',
+    tagline:'Gemini Pro سنة ونص',
+    description:'الوصول لنماذج Gemini Advanced، حدود استخدام أعلى، وتكامل مع تطبيقات Google — كله على حسابك الشخصي.',
+    identifierLabel:'إيميل حساب Google',
+    identifierPlaceholder:'example@gmail.com',
+    deliveryMethod:'منرسلك رابط تفعيل (Activation Link) لحساب Google الشخصي تبعك، بتضغط عليه وبينفعّل الاشتراك مباشرة بدون ما نطلب الباسورد.',
+    plans:[
+      {id:'gemini-18', label:'18 شهر', price:8, oldPrice:20, tag:'الأفضل قيمة'},
+    ],
+    features:[
+      {icon:'🧠', title:'Gemini Advanced', desc:'وصول لأقوى نماذج Google بأعلى ذكاء وقدرة على المهام المعقدة.'},
+      {icon:'⚡', title:'حدود استخدام أعلى', desc:'رسائل ومحادثات أكثر بكثير مقارنة بالنسخة المجانية.'},
+      {icon:'📎', title:'رفع ملفات وصور', desc:'حلّل ملفات PDF ووثائق وصور بشكل مباشر داخل المحادثة.'},
+      {icon:'🔗', title:'تكامل مع Google', desc:'يشتغل ضمن Gmail وDocs وSheets لتوفير وقتك.'},
+    ],
+  },
+
+  windows: {
+    slug:'windows',
+    name:'تفعيل ويندوز',
+    icon:'🪟',
+    iconImg:'/app/assets/img/windows-logo.svg',
+    thumbBg:'linear-gradient(145deg,#062a4a,#02101e)',
+    category:'البرامج والتطبيقات',
+    tagline:'مفاتيح تفعيل رسمية لويندوز 10 و 11',
+    description:'اختار النسخة الي بناسبك (Pro أو Home) وطريقة الربط (OEM على الجهاز أو Account على حسابك) — تفعيل رسمي مدى الحياة.',
+    identifierLabel:'',
+    deliveryMethod:'منرسلك مفتاح التفعيل (Product Key) الرسمي مع خطوات مفصّلة للتفعيل. مفاتيح OEM بترتبط بالمذربورد، ومفاتيح Account بترتبط بحساب مايكروسوفت تبعك.',
+    plans:[
+      {id:'win-pro-oem',  label:'Windows 10/11 Pro — OEM (Motherboard)', price:3, oldPrice:6,  tag:null},
+      {id:'win-pro-acct', label:'Windows 10/11 Pro — Account',           price:5, oldPrice:9,  tag:'الأكثر طلبًا'},
+      {id:'win-home-oem', label:'Windows 10/11 Home — OEM (Motherboard)', price:3, oldPrice:6,  tag:null},
+      {id:'win-home-acct',label:'Windows 10/11 Home — Account',           price:5, oldPrice:9,  tag:null},
+    ],
+    features:[
+      {icon:'🔑', title:'مفاتيح رسمية 100%', desc:'كل مفتاح أصلي ومفعّل مباشرة من خوادم مايكروسوفت.'},
+      {icon:'♾️', title:'تفعيل مدى الحياة', desc:'المفتاح دائم — بدون تجديد شهري أو سنوي.'},
+      {icon:'💻', title:'ربط بالمذربورد أو الحساب', desc:'OEM بترتبط بالجهاز، وAccount بترتبط بحساب مايكروسوفت لتنقل بين الأجهزة.'},
+      {icon:'🛡️', title:'ضمان استبدال', desc:'لو المفتاح صار فيه أي مشكلة خلال فترة الضمان، منستبدله فورًا.'},
+    ],
+  },
+
   fortnite: {
     slug:'fortnite',
     name:'فورت نايت',
@@ -163,7 +304,7 @@ const GIFT_CARDS_CATALOG = {
   xbox:{
     name:'Xbox Gift Cards',
     icon:'🕹️',
-    iconImg:'/app/assets/img/xbox-logo.png',
+    iconImg:'/app/assets/img/xbox-logo.svg',
     accent:'#4fdc4f',
     cardGradient:'linear-gradient(135deg,#0e4d0e,#107c10 45%,#4fdc4f)',
     regions:[
@@ -216,12 +357,19 @@ const CATEGORY_LINKS = [
 /* ---------------- SUBCATEGORIES per group category ---------------- */
 const SUBCATEGORIES = {
   design:[
-    {slug:'adobe', product:'adobe', name:'Adobe Creative Cloud', icon:'🎨', bg:'linear-gradient(145deg,#2a0d30,#150818)', comingSoon:false},
+    {slug:'adobe',        product:'adobe',        name:'Adobe Creative Cloud', icon:'🎨', iconImg:'/app/assets/img/adobe-cc.webp',        bg:'linear-gradient(145deg,#2a0d30,#150818)', comingSoon:false},
+    {slug:'canva',        product:'canva',        name:'Canva Pro',            icon:'🎨', iconImg:'/app/assets/img/canva-logo.png',       bg:'linear-gradient(145deg,#0a3d4d,#062028)', comingSoon:false},
+    {slug:'microsoft365', product:'microsoft365', name:'Microsoft 365',        icon:'🅼', iconImg:'/app/assets/img/microsoft365-logo.svg',bg:'linear-gradient(145deg,#3a1208,#180804)', comingSoon:false},
+    {slug:'windows',      product:'windows',      name:'تفعيل ويندوز',          icon:'🪟', iconImg:'/app/assets/img/windows-logo.svg',     bg:'linear-gradient(145deg,#062a4a,#02101e)', comingSoon:false},
+    {slug:'autodesk',     product:'autodesk',     name:'Autodesk',             icon:'📐', iconImg:'/app/assets/img/autodesk-logo.svg',    bg:'linear-gradient(145deg,#1a1a1a,#0a0a0a)', comingSoon:false},
+    {slug:'gemini',       product:'gemini',       name:'Gemini Pro',           icon:'✨', iconImg:'/app/assets/img/gemini-logo.svg',      bg:'linear-gradient(145deg,#2a1a4a,#0e0820)', comingSoon:false},
+    {slug:'linkedin',     product:'linkedin',     name:'LinkedIn Premium',     icon:'💼', iconImg:'/app/assets/img/linkedin-logo.svg',    bg:'linear-gradient(145deg,#082a4a,#03101e)', comingSoon:false},
   ],
   games:[
     {slug:'fortnite', product:'fortnite', name:'فورت نايت',       icon:'🪂', bg:'linear-gradient(145deg,#0d1a30,#080d18)', comingSoon:false},
-    {slug:'sony',      product:null,       name:'بلايستيشن (سوني)', icon:'🎮', bg:'linear-gradient(145deg,#0d1430,#080a18)', comingSoon:true},
-    {slug:'xbox',      product:null,       name:'إكسبوكس',         icon:'🕹️', bg:'linear-gradient(145deg,#0d2a1a,#081510)', comingSoon:true},
+    {slug:'steam',    product:null,       name:'ألعاب Steam',     icon:'🎮', iconImg:'/app/assets/img/steam-logo.svg', bg:'linear-gradient(145deg,#101a24,#05090d)', comingSoon:true},
+    {slug:'sony',     product:null,       name:'ألعاب بلايستيشن', icon:'🎮', iconImg:'/app/assets/img/playstation-logo.png', bg:'linear-gradient(145deg,#0d1430,#080a18)', comingSoon:true},
+    {slug:'xbox',     product:null,       name:'ألعاب إكسبوكس',   icon:'🕹️', iconImg:'/app/assets/img/xbox-logo.svg', bg:'linear-gradient(145deg,#0d2a1a,#081510)', comingSoon:true},
   ],
   'gift-cards':[
     {slug:'playstation', name:'PlayStation Gift Cards', icon:'🎮', iconImg:'/app/assets/img/playstation-logo.png', bg:'linear-gradient(145deg, rgba(0,163,255,0.18), rgba(0,163,255,0.04))', cardGradient:'linear-gradient(135deg,#0a3d91,#0066cc 45%,#00a3ff)', accent:'#00a3ff'},
@@ -252,7 +400,11 @@ function getFeaturedItems(){
     const p = PRODUCTS_CATALOG[product];
     const allPlans = [...(p.plans || []), ...(p.crewPlans || []), ...(p.vbucksPlans || [])];
     const plan = allPlans.find(pl => pl.id === planId);
-    const linkBase = product === 'snapchat' ? '/app/snapchat/index.html' : product === 'adobe' ? '/app/design/adobe/index.html' : '/app/games/fortnite/index.html';
+    const linkBase = (
+      product === 'snapchat' ? '/app/snapchat/index.html' :
+      product === 'fortnite' ? '/app/games/fortnite/index.html' :
+      `/app/design/${product}/index.html`
+    );
     return {
       cartId: plan.id,
       product,

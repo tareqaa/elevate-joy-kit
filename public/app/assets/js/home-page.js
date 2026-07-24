@@ -36,13 +36,13 @@ function renderHomeCategories(){
 }
 
 function iconForFeaturedItem(item){
-  if(item.product === 'adobe') return adobeIconSvg();
   if(item.product === 'fortnite' && item.cartId.startsWith('fn-crew')) return crewIconSvg();
   if(item.product === 'fortnite' && item.cartId.startsWith('fn-vb')){
     const tier = parseInt(item.cartId.replace('fn-vb-', ''), 10);
     return vbucksIconSvg(tier);
   }
-  return item.icon;
+  const p = PRODUCTS_CATALOG[item.product];
+  return productIconMarkup(p) || item.icon;
 }
 
 function renderHomeProducts(){
