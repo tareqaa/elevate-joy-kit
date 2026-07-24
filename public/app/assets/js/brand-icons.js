@@ -54,11 +54,30 @@ function adobeIconSvg(){
   `;
 }
 
-// Generic brand-image tile for products that expose an `iconImg` in the
-// catalog (Canva, Microsoft 365, Windows, Autodesk, Gemini, LinkedIn, …).
-// Keeps the same 52px rounded-square framing as the other brand icons so
-// every product card reads as one consistent family.
-function brandImgTile(src, alt, bgStyle){
+// Fortnite — official F lettermark on the Fortnite signature blue gradient.
+function fortniteIconSvg(){
+  return _brandTileImg(
+    '/app/assets/img/fortnite-logo.png',
+    'Fortnite',
+    'linear-gradient(135deg,#3ba9ff,#0a3d91)'
+  );
+}
+
+// Self-contained brand icon (image already ships its own background/frame,
+// e.g. Canva 3D icon, gold LinkedIn tile). Rendered as a 52px rounded
+// square with a subtle drop shadow so it still fits the icon family.
+function brandImgSelfContained(src, alt){
+  return `
+    <img src="${src}" alt="${alt}" width="52" height="52"
+         style="display:block; width:52px; height:52px; object-fit:cover;
+                border-radius:14px; box-shadow:0 6px 14px -8px rgba(0,0,0,0.5);"/>
+  `;
+}
+
+// Tinted brand tile for icons that ship as flat line/color art on a
+// transparent background (Microsoft 365, Windows, Gemini, Autodesk…).
+// Same 52px rounded-square framing as the other brand icons.
+function brandImgTile(src, alt, bgStyle, extraImgStyle){
   const bg = bgStyle || 'linear-gradient(135deg,#1b1f2c,#0b0d14)';
   return `
     <span style="display:inline-flex; align-items:center; justify-content:center;
@@ -68,26 +87,36 @@ function brandImgTile(src, alt, bgStyle){
                  box-shadow:0 6px 14px -8px rgba(0,0,0,0.5);">
       <img src="${src}" alt="${alt}" width="36" height="36"
            style="display:block; width:36px; height:36px; object-fit:contain;
-                  filter:drop-shadow(0 2px 4px rgba(0,0,0,0.25));"/>
+                  filter:drop-shadow(0 2px 4px rgba(0,0,0,0.25)); ${extraImgStyle || ''}"/>
     </span>
   `;
 }
+
+// Per-slug rendering config so every brand ends up in a visually balanced
+// tile that works with its own artwork (transparent vs baked-in bg).
+const BRAND_ICON_CONFIG = {
+  canva:        {mode:'self'},
+  linkedin:     {mode:'self'},
+  fortnite:     {mode:'self'},
+  microsoft365: {mode:'tile', bg:'linear-gradient(135deg,#ea3e23,#7a1a0a)'},
+  windows:      {mode:'tile', bg:'linear-gradient(135deg,#f5f7fb,#c9d6e8)'},
+  gemini:       {mode:'tile', bg:'linear-gradient(135deg,#8e75b2,#2a1a4a)'},
+  // Autodesk logo ships in solid black — flip it to white so it reads on
+  // the warm dark tile, matching Autodesk's official on-dark treatment.
+  autodesk:     {mode:'tile', bg:'linear-gradient(135deg,#1f1a14,#0a0805)', imgStyle:'filter:invert(1) drop-shadow(0 2px 4px rgba(0,0,0,0.35));'},
+};
 
 // Central dispatcher used by product-page.js and home-page.js so every
 // place that renders a product icon stays consistent as the catalog grows.
 function productIconMarkup(product){
   if(!product) return '';
   if(product.slug === 'adobe') return adobeIconSvg();
-  if(product.iconImg){
-    const tint = {
-      canva:        'linear-gradient(135deg,#00c4cc,#0a3d4d)',
-      linkedin:     'linear-gradient(135deg,#1a86d6,#082a4a)',
-      microsoft365: 'linear-gradient(135deg,#ea3e23,#7a1a0a)',
-      windows:      'linear-gradient(135deg,#00a4ef,#0a3d91)',
-      autodesk:     'linear-gradient(135deg,#333333,#000000)',
-      gemini:       'linear-gradient(135deg,#8e75b2,#2a1a4a)',
-    }[product.slug];
-    return brandImgTile(product.iconImg, product.name, tint);
+  if(product.slug === 'fortnite') return fortniteIconSvg();
+  const cfg = BRAND_ICON_CONFIG[product.slug];
+  if(cfg && product.iconImg){
+    if(cfg.mode === 'self') return brandImgSelfContained(product.iconImg, product.name);
+    return brandImgTile(product.iconImg, product.name, cfg.bg, cfg.imgStyle);
   }
+  if(product.iconImg) return brandImgTile(product.iconImg, product.name);
   return product.icon || '';
 }

@@ -98,7 +98,7 @@ const PRODUCTS_CATALOG = {
     slug:'linkedin',
     name:'LinkedIn Premium Business',
     icon:'💼',
-    iconImg:'/app/assets/img/linkedin-logo.svg',
+    iconImg:'/app/assets/img/linkedin-logo.png',
     thumbBg:'linear-gradient(145deg,#082a4a,#03101e)',
     category:'البرامج والتطبيقات',
     tagline:'لينكدإن بريميوم بزنس سنة كاملة',
@@ -146,7 +146,7 @@ const PRODUCTS_CATALOG = {
     name:'Autodesk All Apps',
     icon:'📐',
     iconImg:'/app/assets/img/autodesk-logo.svg',
-    thumbBg:'linear-gradient(145deg,#1a1a1a,#0a0a0a)',
+    thumbBg:'linear-gradient(145deg,#2a1a10,#140a05)',
     category:'البرامج والتطبيقات',
     tagline:'كل برامج أوتوديسك سنة كاملة',
     description:'AutoCAD، 3ds Max، Maya، Revit، Fusion 360 وأكثر من 20 برنامج — اشتراك رسمي على حسابك الشخصي.',
@@ -170,7 +170,7 @@ const PRODUCTS_CATALOG = {
     icon:'✨',
     iconImg:'/app/assets/img/gemini-logo.svg',
     thumbBg:'linear-gradient(145deg,#2a1a4a,#0e0820)',
-    category:'البرامج والتطبيقات',
+    category:'الذكاء الاصطناعي',
     tagline:'Gemini Pro سنة ونص',
     description:'الوصول لنماذج Gemini Advanced، حدود استخدام أعلى، وتكامل مع تطبيقات Google — كله على حسابك الشخصي.',
     identifierLabel:'إيميل حساب Google',
@@ -192,17 +192,17 @@ const PRODUCTS_CATALOG = {
     name:'تفعيل ويندوز',
     icon:'🪟',
     iconImg:'/app/assets/img/windows-logo.svg',
-    thumbBg:'linear-gradient(145deg,#062a4a,#02101e)',
+    thumbBg:'linear-gradient(145deg,#0a2540,#04101c)',
     category:'البرامج والتطبيقات',
     tagline:'مفاتيح تفعيل رسمية لويندوز 10 و 11',
     description:'اختار النسخة الي بناسبك (Pro أو Home) وطريقة الربط (OEM على الجهاز أو Account على حسابك) — تفعيل رسمي مدى الحياة.',
     identifierLabel:'',
     deliveryMethod:'منرسلك مفتاح التفعيل (Product Key) الرسمي مع خطوات مفصّلة للتفعيل. مفاتيح OEM بترتبط بالمذربورد، ومفاتيح Account بترتبط بحساب مايكروسوفت تبعك.',
     plans:[
-      {id:'win-pro-oem',  label:'Windows 10/11 Pro — OEM (Motherboard)', price:3, oldPrice:6,  tag:null},
-      {id:'win-pro-acct', label:'Windows 10/11 Pro — Account',           price:5, oldPrice:9,  tag:'الأكثر طلبًا'},
-      {id:'win-home-oem', label:'Windows 10/11 Home — OEM (Motherboard)', price:3, oldPrice:6,  tag:null},
-      {id:'win-home-acct',label:'Windows 10/11 Home — Account',           price:5, oldPrice:9,  tag:null},
+      {id:'win-pro-oem',  label:'Windows 10/11 Pro — OEM (Motherboard)',  price:3, oldPrice:140, tag:null},
+      {id:'win-pro-acct', label:'Windows 10/11 Pro — Account',            price:5, oldPrice:140, tag:'الأكثر طلبًا'},
+      {id:'win-home-oem', label:'Windows 10/11 Home — OEM (Motherboard)', price:3, oldPrice:100, tag:null},
+      {id:'win-home-acct',label:'Windows 10/11 Home — Account',           price:5, oldPrice:100, tag:null},
     ],
     features:[
       {icon:'🔑', title:'مفاتيح رسمية 100%', desc:'كل مفتاح أصلي ومفعّل مباشرة من خوادم مايكروسوفت.'},
@@ -309,9 +309,22 @@ const GIFT_CARDS_CATALOG = {
     cardGradient:'linear-gradient(135deg,#0e4d0e,#107c10 45%,#4fdc4f)',
     regions:[
       {code:'tr', flag:'🇹🇷', name:'تركيا (Turkey)', denominations:[
-        {id:'xbox-tr-50',  value:'50 TRY',  price:1.87},
-        {id:'xbox-tr-100', value:'100 TRY', price:2.97},
-        {id:'xbox-tr-300', value:'300 TRY', price:6.67},
+        {id:'xbox-tr-50',  value:'50 TRY',  price:1.15},
+        {id:'xbox-tr-100', value:'100 TRY', price:2.30},
+        {id:'xbox-tr-300', value:'300 TRY', price:6.50},
+      ]},
+      // US region — base cost = value × 0.7 JOD (≈ USD→JOD), plus a
+      // progressive profit margin that scales with value so higher
+      // denominations keep a healthy margin without pricing out the
+      // low ones (margin ≈ 20% at $5, ~40% at $100).
+      {code:'us', flag:'🇺🇸', name:'أمريكا (USA)', denominations:[
+        {id:'xbox-us-5',   value:'5$',   price:4.25},
+        {id:'xbox-us-10',  value:'10$',  price:8.55},
+        {id:'xbox-us-15',  value:'15$',  price:12.95},
+        {id:'xbox-us-20',  value:'20$',  price:17.40},
+        {id:'xbox-us-25',  value:'25$',  price:21.90},
+        {id:'xbox-us-50',  value:'50$',  price:45.50},
+        {id:'xbox-us-100', value:'100$', price:98.00},
       ]},
     ],
   },
@@ -348,32 +361,35 @@ const GIFT_CARDS_CATALOG = {
 
 /* ---------------- CATEGORY TREE (top-level, shown on homepage) ---------------- */
 const CATEGORY_LINKS = [
-  {slug:'snapchat',    name:'سناب بلس',          icon:'👻', type:'direct', accent:'#FFCB47', bg:'linear-gradient(145deg, rgba(255,203,71,0.18), rgba(255,203,71,0.04))', desc:'أيقونة حصرية، ألوان دردشة، وأكثر'},
-  {slug:'design',      name:'البرامج والتطبيقات', icon:'🧩', type:'group',  accent:'#C6FF3D', bg:'linear-gradient(145deg, rgba(198,255,61,0.16), rgba(198,255,61,0.04))', desc:'Adobe Creative Cloud وأكثر قريبًا'},
-  {slug:'games',       name:'الألعاب',           icon:'🎮', type:'group',  accent:'#00E5FF', bg:'linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))',   desc:'فورت نايت، بلايستيشن، إكسبوكس'},
-  {slug:'gift-cards',  name:'بطاقات الهدايا',     icon:'🎁', type:'group',  accent:'#FF2D78', bg:'linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))', desc:'PlayStation، Xbox، Google Play، iTunes'},
+  {slug:'snapchat',    name:'سناب بلس',              icon:'👻', type:'direct', accent:'#FFCB47', bg:'linear-gradient(145deg, rgba(255,203,71,0.18), rgba(255,203,71,0.04))', desc:'أيقونة حصرية، ألوان دردشة، وأكثر'},
+  {slug:'design',      name:'البرامج والتطبيقات',    icon:'🧩', type:'group',  accent:'#C6FF3D', bg:'linear-gradient(145deg, rgba(198,255,61,0.16), rgba(198,255,61,0.04))', desc:'Adobe، Canva، Microsoft 365، Autodesk وأكثر'},
+  {slug:'ai',          name:'الذكاء الاصطناعي',      icon:'🤖', type:'group',  accent:'#b26bff', bg:'linear-gradient(145deg, rgba(178,107,255,0.18), rgba(178,107,255,0.04))', desc:'اشتراكات Gemini Pro وأدوات AI الأخرى'},
+  {slug:'games',       name:'الألعاب',               icon:'🎮', type:'group',  accent:'#00E5FF', bg:'linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))',   desc:'فورت نايت، بلايستيشن، إكسبوكس'},
+  {slug:'gift-cards',  name:'بطاقات الهدايا',         icon:'🎁', type:'group',  accent:'#FF2D78', bg:'linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))', desc:'PlayStation، Xbox، Google Play، iTunes'},
 ];
 
 /* ---------------- SUBCATEGORIES per group category ---------------- */
 const SUBCATEGORIES = {
   design:[
     {slug:'adobe',        product:'adobe',        name:'Adobe Creative Cloud', icon:'🎨', iconImg:'/app/assets/img/adobe-cc.webp',        bg:'linear-gradient(145deg,#2a0d30,#150818)', comingSoon:false},
-    {slug:'canva',        product:'canva',        name:'Canva Pro',            icon:'🎨', iconImg:'/app/assets/img/canva-logo.png',       bg:'linear-gradient(145deg,#0a3d4d,#062028)', comingSoon:false},
+    {slug:'canva',        product:'canva',        name:'Canva Pro',            icon:'🎨', iconImg:'/app/assets/img/canva-logo.png',       bg:'linear-gradient(145deg,#1a2f6b,#0a1230)', comingSoon:false},
     {slug:'microsoft365', product:'microsoft365', name:'Microsoft 365',        icon:'🅼', iconImg:'/app/assets/img/microsoft365-logo.svg',bg:'linear-gradient(145deg,#3a1208,#180804)', comingSoon:false},
-    {slug:'windows',      product:'windows',      name:'تفعيل ويندوز',          icon:'🪟', iconImg:'/app/assets/img/windows-logo.svg',     bg:'linear-gradient(145deg,#062a4a,#02101e)', comingSoon:false},
-    {slug:'autodesk',     product:'autodesk',     name:'Autodesk',             icon:'📐', iconImg:'/app/assets/img/autodesk-logo.svg',    bg:'linear-gradient(145deg,#1a1a1a,#0a0a0a)', comingSoon:false},
+    {slug:'windows',      product:'windows',      name:'تفعيل ويندوز',          icon:'🪟', iconImg:'/app/assets/img/windows-logo.svg',     bg:'linear-gradient(145deg,#0a2540,#04101c)', comingSoon:false},
+    {slug:'autodesk',     product:'autodesk',     name:'Autodesk',             icon:'📐', iconImg:'/app/assets/img/autodesk-logo.svg',    bg:'linear-gradient(145deg,#2a1a10,#140a05)', comingSoon:false},
+    {slug:'linkedin',     product:'linkedin',     name:'LinkedIn Premium',     icon:'💼', iconImg:'/app/assets/img/linkedin-logo.png',    bg:'linear-gradient(145deg,#3a2b08,#1a1305)', comingSoon:false},
+  ],
+  ai:[
     {slug:'gemini',       product:'gemini',       name:'Gemini Pro',           icon:'✨', iconImg:'/app/assets/img/gemini-logo.svg',      bg:'linear-gradient(145deg,#2a1a4a,#0e0820)', comingSoon:false},
-    {slug:'linkedin',     product:'linkedin',     name:'LinkedIn Premium',     icon:'💼', iconImg:'/app/assets/img/linkedin-logo.svg',    bg:'linear-gradient(145deg,#082a4a,#03101e)', comingSoon:false},
   ],
   games:[
-    {slug:'fortnite', product:'fortnite', name:'فورت نايت',       icon:'🪂', bg:'linear-gradient(145deg,#0d1a30,#080d18)', comingSoon:false},
+    {slug:'fortnite', product:'fortnite', name:'فورت نايت',       icon:'🪂', iconImg:'/app/assets/img/fortnite-logo.png', bg:'linear-gradient(145deg,#0d1a30,#080d18)', comingSoon:false},
     {slug:'steam',    product:null,       name:'ألعاب Steam',     icon:'🎮', iconImg:'/app/assets/img/steam-logo.svg', bg:'linear-gradient(145deg,#101a24,#05090d)', comingSoon:true},
     {slug:'sony',     product:null,       name:'ألعاب بلايستيشن', icon:'🎮', iconImg:'/app/assets/img/playstation-logo.png', bg:'linear-gradient(145deg,#0d1430,#080a18)', comingSoon:true},
     {slug:'xbox',     product:null,       name:'ألعاب إكسبوكس',   icon:'🕹️', iconImg:'/app/assets/img/xbox-logo.svg', bg:'linear-gradient(145deg,#0d2a1a,#081510)', comingSoon:true},
   ],
   'gift-cards':[
     {slug:'playstation', name:'PlayStation Gift Cards', icon:'🎮', iconImg:'/app/assets/img/playstation-logo.png', bg:'linear-gradient(145deg, rgba(0,163,255,0.18), rgba(0,163,255,0.04))', cardGradient:'linear-gradient(135deg,#0a3d91,#0066cc 45%,#00a3ff)', accent:'#00a3ff'},
-    {slug:'xbox',         name:'Xbox Gift Cards',        icon:'🕹️', iconImg:'/app/assets/img/xbox-logo.png', bg:'linear-gradient(145deg, rgba(79,220,79,0.18), rgba(79,220,79,0.04))',  cardGradient:'linear-gradient(135deg,#0e4d0e,#107c10 45%,#4fdc4f)', accent:'#4fdc4f'},
+    {slug:'xbox',         name:'Xbox Gift Cards',        icon:'🕹️', iconImg:'/app/assets/img/xbox-logo.svg', bg:'linear-gradient(145deg, rgba(79,220,79,0.18), rgba(79,220,79,0.04))',  cardGradient:'linear-gradient(135deg,#0e4d0e,#107c10 45%,#4fdc4f)', accent:'#4fdc4f'},
     {slug:'google-play',  name:'Google Play Gift Cards', icon:'▶️', iconImg:'/app/assets/img/googleplay-logo.png', bg:'linear-gradient(145deg, rgba(52,168,83,0.18), rgba(52,168,83,0.04))',  cardGradient:'linear-gradient(135deg,#1a73e8,#34a853 35%,#fbbc04 70%,#ea4335)', accent:'#34a853'},
     {slug:'itunes',       name:'iTunes Gift Cards',      icon:'🎵', iconImg:'/app/assets/img/itunes-logo.png', bg:'linear-gradient(145deg, rgba(241,7,163,0.18), rgba(241,7,163,0.04))',  cardGradient:'linear-gradient(135deg,#7b2ff7,#f107a3 55%,#ff5c8a)', accent:'#f107a3'},
   ],
@@ -381,6 +397,7 @@ const SUBCATEGORIES = {
 
 const CATEGORY_META = {
   design:{name:'البرامج والتطبيقات', icon:'🧩', tagline:'برامج التصميم والتطبيقات الاحترافية بأسعار منافسة'},
+  ai:{name:'الذكاء الاصطناعي', icon:'🤖', tagline:'أقوى أدوات الذكاء الاصطناعي بأسعار حصرية'},
   games:{name:'الألعاب', icon:'🎮', tagline:'اشتراكات، عملات، وكروت شحن لأشهر منصات الألعاب'},
   'gift-cards':{name:'بطاقات الهدايا', icon:'🎁', tagline:'بطاقات شحن رقمية لأشهر المنصات — القيم والأسعار قريبًا'},
 };
@@ -403,6 +420,7 @@ function getFeaturedItems(){
     const linkBase = (
       product === 'snapchat' ? '/app/snapchat/index.html' :
       product === 'fortnite' ? '/app/games/fortnite/index.html' :
+      product === 'gemini'   ? '/app/ai/gemini/index.html' :
       `/app/design/${product}/index.html`
     );
     return {
