@@ -79,7 +79,7 @@ function renderDeliveryBox(p){
       <div>
         <h3>كيف توصلك الباقة؟</h3>
         <p>${p.deliveryMethod}</p>
-        <div class="identifier-note">📌 كل ما نحتاجه منك هو <strong>${p.identifierLabel}</strong> — بدون أي باسورد.</div>
+        ${p.identifierLabel ? `<div class="identifier-note">📌 كل ما نحتاجه منك هو <strong>${p.identifierLabel}</strong> — بدون أي باسورد.</div>` : ''}
       </div>
     </div>
   `;
