@@ -357,12 +357,19 @@ const CATEGORY_LINKS = [
 /* ---------------- SUBCATEGORIES per group category ---------------- */
 const SUBCATEGORIES = {
   design:[
-    {slug:'adobe', product:'adobe', name:'Adobe Creative Cloud', icon:'🎨', bg:'linear-gradient(145deg,#2a0d30,#150818)', comingSoon:false},
+    {slug:'adobe',        product:'adobe',        name:'Adobe Creative Cloud', icon:'🎨', iconImg:'/app/assets/img/adobe-cc.webp',        bg:'linear-gradient(145deg,#2a0d30,#150818)', comingSoon:false},
+    {slug:'canva',        product:'canva',        name:'Canva Pro',            icon:'🎨', iconImg:'/app/assets/img/canva-logo.png',       bg:'linear-gradient(145deg,#0a3d4d,#062028)', comingSoon:false},
+    {slug:'microsoft365', product:'microsoft365', name:'Microsoft 365',        icon:'🅼', iconImg:'/app/assets/img/microsoft365-logo.svg',bg:'linear-gradient(145deg,#3a1208,#180804)', comingSoon:false},
+    {slug:'windows',      product:'windows',      name:'تفعيل ويندوز',          icon:'🪟', iconImg:'/app/assets/img/windows-logo.svg',     bg:'linear-gradient(145deg,#062a4a,#02101e)', comingSoon:false},
+    {slug:'autodesk',     product:'autodesk',     name:'Autodesk',             icon:'📐', iconImg:'/app/assets/img/autodesk-logo.svg',    bg:'linear-gradient(145deg,#1a1a1a,#0a0a0a)', comingSoon:false},
+    {slug:'gemini',       product:'gemini',       name:'Gemini Pro',           icon:'✨', iconImg:'/app/assets/img/gemini-logo.svg',      bg:'linear-gradient(145deg,#2a1a4a,#0e0820)', comingSoon:false},
+    {slug:'linkedin',     product:'linkedin',     name:'LinkedIn Premium',     icon:'💼', iconImg:'/app/assets/img/linkedin-logo.svg',    bg:'linear-gradient(145deg,#082a4a,#03101e)', comingSoon:false},
   ],
   games:[
     {slug:'fortnite', product:'fortnite', name:'فورت نايت',       icon:'🪂', bg:'linear-gradient(145deg,#0d1a30,#080d18)', comingSoon:false},
-    {slug:'sony',      product:null,       name:'بلايستيشن (سوني)', icon:'🎮', bg:'linear-gradient(145deg,#0d1430,#080a18)', comingSoon:true},
-    {slug:'xbox',      product:null,       name:'إكسبوكس',         icon:'🕹️', bg:'linear-gradient(145deg,#0d2a1a,#081510)', comingSoon:true},
+    {slug:'steam',    product:null,       name:'ألعاب Steam',     icon:'🎮', iconImg:'/app/assets/img/steam-logo.svg', bg:'linear-gradient(145deg,#101a24,#05090d)', comingSoon:true},
+    {slug:'sony',     product:null,       name:'ألعاب بلايستيشن', icon:'🎮', iconImg:'/app/assets/img/playstation-logo.png', bg:'linear-gradient(145deg,#0d1430,#080a18)', comingSoon:true},
+    {slug:'xbox',     product:null,       name:'ألعاب إكسبوكس',   icon:'🕹️', iconImg:'/app/assets/img/xbox-logo.svg', bg:'linear-gradient(145deg,#0d2a1a,#081510)', comingSoon:true},
   ],
   'gift-cards':[
     {slug:'playstation', name:'PlayStation Gift Cards', icon:'🎮', iconImg:'/app/assets/img/playstation-logo.png', bg:'linear-gradient(145deg, rgba(0,163,255,0.18), rgba(0,163,255,0.04))', cardGradient:'linear-gradient(135deg,#0a3d91,#0066cc 45%,#00a3ff)', accent:'#00a3ff'},
