@@ -170,7 +170,7 @@ const PRODUCTS_CATALOG = {
     icon:'✨',
     iconImg:'/app/assets/img/gemini-logo.svg',
     thumbBg:'linear-gradient(145deg,#2a1a4a,#0e0820)',
-    category:'البرامج والتطبيقات',
+    category:'الذكاء الاصطناعي',
     tagline:'Gemini Pro سنة ونص',
     description:'الوصول لنماذج Gemini Advanced، حدود استخدام أعلى، وتكامل مع تطبيقات Google — كله على حسابك الشخصي.',
     identifierLabel:'إيميل حساب Google',
