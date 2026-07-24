@@ -53,3 +53,41 @@ function adobeIconSvg(){
          style="display:block; border-radius:14px; background:#fff; padding:4px; box-shadow:0 4px 14px -6px rgba(0,0,0,0.35);"/>
   `;
 }
+
+// Generic brand-image tile for products that expose an `iconImg` in the
+// catalog (Canva, Microsoft 365, Windows, Autodesk, Gemini, LinkedIn, …).
+// Keeps the same 52px rounded-square framing as the other brand icons so
+// every product card reads as one consistent family.
+function brandImgTile(src, alt, bgStyle){
+  const bg = bgStyle || 'linear-gradient(135deg,#1b1f2c,#0b0d14)';
+  return `
+    <span style="display:inline-flex; align-items:center; justify-content:center;
+                 width:52px; height:52px; border-radius:14px;
+                 background:${bg};
+                 border:1.5px solid rgba(255,255,255,0.22);
+                 box-shadow:0 6px 14px -8px rgba(0,0,0,0.5);">
+      <img src="${src}" alt="${alt}" width="36" height="36"
+           style="display:block; width:36px; height:36px; object-fit:contain;
+                  filter:drop-shadow(0 2px 4px rgba(0,0,0,0.25));"/>
+    </span>
+  `;
+}
+
+// Central dispatcher used by product-page.js and home-page.js so every
+// place that renders a product icon stays consistent as the catalog grows.
+function productIconMarkup(product){
+  if(!product) return '';
+  if(product.slug === 'adobe') return adobeIconSvg();
+  if(product.iconImg){
+    const tint = {
+      canva:        'linear-gradient(135deg,#00c4cc,#0a3d4d)',
+      linkedin:     'linear-gradient(135deg,#1a86d6,#082a4a)',
+      microsoft365: 'linear-gradient(135deg,#ea3e23,#7a1a0a)',
+      windows:      'linear-gradient(135deg,#00a4ef,#0a3d91)',
+      autodesk:     'linear-gradient(135deg,#333333,#000000)',
+      gemini:       'linear-gradient(135deg,#8e75b2,#2a1a4a)',
+    }[product.slug];
+    return brandImgTile(product.iconImg, product.name, tint);
+  }
+  return product.icon || '';
+}
