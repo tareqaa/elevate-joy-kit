@@ -400,7 +400,11 @@ function getFeaturedItems(){
     const p = PRODUCTS_CATALOG[product];
     const allPlans = [...(p.plans || []), ...(p.crewPlans || []), ...(p.vbucksPlans || [])];
     const plan = allPlans.find(pl => pl.id === planId);
-    const linkBase = product === 'snapchat' ? '/app/snapchat/index.html' : product === 'adobe' ? '/app/design/adobe/index.html' : '/app/games/fortnite/index.html';
+    const linkBase = (
+      product === 'snapchat' ? '/app/snapchat/index.html' :
+      product === 'fortnite' ? '/app/games/fortnite/index.html' :
+      `/app/design/${product}/index.html`
+    );
     return {
       cartId: plan.id,
       product,
