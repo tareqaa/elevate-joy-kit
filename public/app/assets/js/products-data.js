@@ -313,19 +313,17 @@ const GIFT_CARDS_CATALOG = {
         {id:'xbox-tr-100', value:'100 TRY', price:2.30},
         {id:'xbox-tr-300', value:'300 TRY', price:6.50},
       ]},
-      // US region — base cost = value × 0.7 JOD (≈ USD→JOD), plus a
-      // progressive profit margin that scales with value so higher
-      // denominations keep a healthy margin without pricing out the
-      // low ones (margin ≈ 20% at $5, ~40% at $100).
+      // US region — أسعار متوافقة مع باقي بطاقات الدولار
       {code:'us', flag:'🇺🇸', name:'أمريكا (USA)', denominations:[
-        {id:'xbox-us-5',   value:'5$',   price:4.25},
-        {id:'xbox-us-10',  value:'10$',  price:8.55},
-        {id:'xbox-us-15',  value:'15$',  price:12.95},
-        {id:'xbox-us-20',  value:'20$',  price:17.40},
-        {id:'xbox-us-25',  value:'25$',  price:21.90},
-        {id:'xbox-us-50',  value:'50$',  price:45.50},
-        {id:'xbox-us-100', value:'100$', price:98.00},
+        {id:'xbox-us-5',   value:'5$',   price:4},
+        {id:'xbox-us-10',  value:'10$',  price:8},
+        {id:'xbox-us-15',  value:'15$',  price:12},
+        {id:'xbox-us-20',  value:'20$',  price:15},
+        {id:'xbox-us-25',  value:'25$',  price:19},
+        {id:'xbox-us-50',  value:'50$',  price:36},
+        {id:'xbox-us-100', value:'100$', price:71},
       ]},
+
     ],
   },
 
