@@ -332,10 +332,14 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-2 flex-wrap">
             <Button variant="outline" onClick={onClose}>إغلاق</Button>
-            <Button onClick={save}>حفظ</Button>
+            <Button variant="secondary" onClick={save}>حفظ التعديلات</Button>
+            <Button onClick={markDelivered} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              ✅ تسليم الطلب وإشعار العميل
+            </Button>
           </div>
+
         </div>
       </DialogContent>
     </Dialog>
