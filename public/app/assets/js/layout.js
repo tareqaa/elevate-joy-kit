@@ -376,11 +376,19 @@ function gxWireBuyActions(root){
 }
 
 function gxInjectSupabaseBridge(){
-  if(document.querySelector('script[data-gx-supabase]')) return;
+  if(document.querySelector('script[data-gx-supabase]')) return window.gxSupabaseBridgeScriptReady;
+  window.gxSupabaseBridgeScriptReady = new Promise((resolve) => {
+    const finish = () => resolve(window.gxSupabaseReady);
+    const fail = () => resolve(null);
+
   const s = document.createElement('script');
   s.src = '/app/assets/js/supabase-bridge.js';
   s.setAttribute('data-gx-supabase', '1');
+    s.onload = finish;
+    s.onerror = fail;
   document.head.appendChild(s);
+  });
+  return window.gxSupabaseBridgeScriptReady;
 }
 
 function gxInitLayout(){
@@ -570,6 +578,7 @@ function gxOpenAuthModal(){
 async function gxRenderAuthState(){
   gxRenderAccountLink(false, false);
   try{
+    if(!window.gxSupabaseReady && window.gxSupabaseBridgeScriptReady) await window.gxSupabaseBridgeScriptReady;
     if(!window.gxSupabaseReady) return;
     await window.gxSupabaseReady;
     if(!window.gxSupabase) return;
