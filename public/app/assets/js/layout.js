@@ -434,6 +434,7 @@ function gxRenderAccountLink(signedIn, isAdmin, profile){
       <button type="button" class="icon-btn account-avatar-btn" id="accountBtn" title="حسابي" aria-label="حسابي">
         <img src="${avatarUrl}" alt="" />
         <span class="account-lvl-dot">${level}</span>
+        <span class="account-notif-dot" id="accUnreadDot" hidden></span>
       </button>
       <div class="account-panel" id="accountPanel">
         <div class="acc-header">
@@ -452,14 +453,15 @@ function gxRenderAccountLink(signedIn, isAdmin, profile){
         </div>
         <div class="acc-divider"></div>
         <a href="/account?tab=orders" class="acc-link"><span class="ai">📦</span><span>الطلبات</span></a>
+        <a href="/account?tab=notifications" class="acc-link" id="accNotifLink"><span class="ai">🔔</span><span>الإشعارات</span><span class="soon-tag acc-unread-badge" id="accUnreadBadge" hidden>0</span></a>
         <a href="#" class="acc-link acc-soon" data-soon><span class="ai">⭐</span><span>الأمنيات</span><span class="soon-tag">قريباً</span></a>
-        <a href="#" class="acc-link acc-soon" data-soon><span class="ai">🔔</span><span>الإشعارات</span><span class="soon-tag">قريباً</span></a>
         <a href="/account?tab=profile" class="acc-link"><span class="ai">👤</span><span>حسابي</span></a>
         <a href="/account?tab=security" class="acc-link"><span class="ai">⚙️</span><span>الإعدادات</span></a>
         ${isAdmin ? '<div class="acc-divider"></div><a href="/admin" class="acc-link acc-admin"><span class="ai">🛡️</span><span>لوحة التحكم</span></a>' : ''}
         <div class="acc-divider"></div>
         <button type="button" class="acc-link acc-logout" id="accLogout"><span class="ai">↩︎</span><span>تسجيل الخروج</span></button>
       </div>`;
+
   }
   navRight.insertBefore(wrap, navRight.firstChild);
 
@@ -683,7 +685,9 @@ async function gxRenderAuthState(){
         profile = prof;
       }catch(_){}
       gxRenderAccountLink(true, isAdmin, profile || { email: user.email });
+      gxInitNotifications(user);
     };
+
 
     const { data: sessData } = await window.gxSupabase.auth.getSession();
     await applyForSession(sessData && sessData.session);
@@ -707,6 +711,90 @@ async function gxRenderAuthState(){
   }catch(e){ /* keep default login CTA */ }
 }
 
+/* ============================================================
+   Notifications — realtime badge on the navbar avatar + chime.
+   ============================================================ */
+let gxNotifSub = null;
+let gxUnreadCount = 0;
 
+function gxSetUnread(n){
+  gxUnreadCount = Math.max(0, n|0);
+  const dot = document.getElementById('accUnreadDot');
+  const badge = document.getElementById('accUnreadBadge');
+  if(dot) dot.hidden = gxUnreadCount === 0;
+  if(badge){
+    if(gxUnreadCount === 0){ badge.hidden = true; }
+    else { badge.hidden = false; badge.textContent = gxUnreadCount > 99 ? '99+' : String(gxUnreadCount); }
+  }
+}
+
+function gxPlayNotifChime(){
+  try{
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return;
+    const ctx = new Ctx();
+    const now = ctx.currentTime;
+    [ [880, 0], [1320, 0.11] ].forEach(([freq, offset])=>{
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, now + offset);
+      g.gain.exponentialRampToValueAtTime(0.22, now + offset + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.28);
+      o.connect(g).connect(ctx.destination);
+      o.start(now + offset); o.stop(now + offset + 0.3);
+    });
+    setTimeout(()=> ctx.close && ctx.close(), 900);
+  }catch(_){}
+}
+
+async function gxInitNotifications(user){
+  try{
+    if(!window.gxSupabase || !user) return;
+    // Fetch current unread count
+    const { count } = await window.gxSupabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('read_at', null);
+    gxSetUnread(count || 0);
+
+    // Avoid duplicate subscriptions
+    if(gxNotifSub){
+      try{ await window.gxSupabase.removeChannel(gxNotifSub); }catch(_){}
+      gxNotifSub = null;
+    }
+    gxNotifSub = window.gxSupabase
+      .channel('gx-notif-' + user.id)
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        (payload)=>{
+          gxSetUnread(gxUnreadCount + 1);
+          gxPlayNotifChime();
+          const n = payload.new || {};
+          gxShowToast(n.title || 'إشعار جديد', n.body || '');
+        }
+      )
+      .subscribe();
+  }catch(e){ /* silent */ }
+}
+
+function gxShowToast(title, body){
+  let host = document.getElementById('gxToastHost');
+  if(!host){
+    host = document.createElement('div');
+    host.id = 'gxToastHost';
+    host.style.cssText = 'position:fixed;top:76px;left:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+    document.body.appendChild(host);
+  }
+  const t = document.createElement('div');
+  t.setAttribute('dir','rtl');
+  t.style.cssText = 'background:linear-gradient(135deg,#0f172a,#1e293b);color:#f5f6f8;border:1px solid rgba(0,229,255,.35);box-shadow:0 12px 32px rgba(0,229,255,.18);padding:12px 14px;border-radius:12px;min-width:260px;max-width:340px;pointer-events:auto;transform:translateY(-8px);opacity:0;transition:all .25s;';
+  t.innerHTML = `<div style="font-weight:800;color:#00e5ff;font-size:14px;margin-bottom:4px;">🔔 ${title}</div><div style="font-size:13px;color:#c8ccd6;">${body||''}</div>`;
+  host.appendChild(t);
+  requestAnimationFrame(()=>{ t.style.opacity='1'; t.style.transform='translateY(0)'; });
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateY(-8px)'; setTimeout(()=> t.remove(), 300); }, 5500);
+}
 
 document.addEventListener('DOMContentLoaded', gxInitLayout);
+
