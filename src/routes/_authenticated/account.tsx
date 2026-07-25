@@ -63,6 +63,9 @@ function AccountPage() {
     },
   });
 
+  const username = profileQ.data?.username || user.user_metadata?.username || user.email?.split("@")[0] || "gx";
+  const displayName = profileQ.data?.full_name || username;
+
   return (
     <div className="space-y-6">
       {/* Hero */}
@@ -75,8 +78,9 @@ function AccountPage() {
             className="w-24 h-24 rounded-2xl border-4 border-background shadow-xl bg-card object-cover"
           />
           <div className="flex-1">
-            <h1 className="text-2xl font-bold">{profileQ.data?.full_name || "لاعب GX"}</h1>
-            <p className="text-sm text-muted-foreground" dir="ltr">{user.email}</p>
+            <h1 className="text-2xl font-bold">{displayName}</h1>
+            <p className="text-sm text-primary font-semibold" dir="ltr">@{username}</p>
+            <p className="text-xs text-muted-foreground" dir="ltr">{user.email}</p>
           </div>
           <Badge variant="outline" className="text-xs">
             عضو منذ {new Date(profileQ.data?.created_at || Date.now()).toLocaleDateString("ar-EG", { year: "numeric", month: "long" })}
@@ -98,8 +102,11 @@ function AccountPage() {
           <ProfileTab
             userId={user.id}
             userEmail={user.email || ""}
+            currentUsername={username}
             currentName={profileQ.data?.full_name || ""}
             currentAvatar={profileQ.data?.avatar_url || ""}
+            currentLevel={profileQ.data?.level || 1}
+            currentXp={profileQ.data?.xp || 0}
             onSaved={() => qc.invalidateQueries({ queryKey: ["my-profile", user.id] })}
           />
         </TabsContent>
@@ -116,8 +123,8 @@ function AccountPage() {
   );
 }
 
-function ProfileTab({ userId, userEmail, currentName, currentAvatar, onSaved }: {
-  userId: string; userEmail: string; currentName: string; currentAvatar: string; onSaved: () => void;
+function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAvatar, currentLevel, currentXp, onSaved }: {
+  userId: string; userEmail: string; currentUsername: string; currentName: string; currentAvatar: string; currentLevel: number; currentXp: number; onSaved: () => void;
 }) {
   const [name, setName] = useState(currentName);
   const [avatar, setAvatar] = useState(currentAvatar || avatarUrl(AVATAR_SEEDS[0]));
@@ -151,8 +158,11 @@ function ProfileTab({ userId, userEmail, currentName, currentAvatar, onSaved }: 
     toast.success("تم تحديث الملف الشخصي");
     try {
       const profileCache = {
+        username: currentUsername,
         full_name: parsed.data,
         avatar_url: avatar,
+        level: currentLevel,
+        xp: currentXp,
         email: userEmail,
         _cachedAt: Date.now(),
       };
