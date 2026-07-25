@@ -285,7 +285,14 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
       const ok = confirm("ما في أكواد مدخلة. تأكد من تسليم الطلب بدون أكواد؟");
       if (!ok) return;
     }
+    setStatus("delivered");
     onSave(buildPatch("delivered"));
+  }
+  function cancelOrder() {
+    const ok = confirm("متأكد إنك بدك تلغي هالطلب؟");
+    if (!ok) return;
+    setStatus("cancelled");
+    onSave(buildPatch("cancelled"));
   }
 
 
