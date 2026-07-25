@@ -75,6 +75,7 @@ export type Database = {
           level: number
           total_spent: number
           updated_at: string
+          username: string | null
           whatsapp: string | null
           xp: number
         }
@@ -87,6 +88,7 @@ export type Database = {
           level?: number
           total_spent?: number
           updated_at?: string
+          username?: string | null
           whatsapp?: string | null
           xp?: number
         }
@@ -99,6 +101,7 @@ export type Database = {
           level?: number
           total_spent?: number
           updated_at?: string
+          username?: string | null
           whatsapp?: string | null
           xp?: number
         }

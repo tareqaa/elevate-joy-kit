@@ -406,7 +406,7 @@ function gxInitLayout(){
 // Renders an account dropdown in the navbar. Draws the "login" state
 // immediately so the button is always visible, then upgrades to the
 // "account" state (with dropdown menu) once the Supabase bridge loads.
-function gxRenderAccountLink(signedIn, isAdmin){
+function gxRenderAccountLink(signedIn, isAdmin, profile){
   const navRight = document.querySelector('.nav-right');
   if(!navRight) return;
   const existing = document.getElementById('accountWrap');
@@ -422,11 +422,38 @@ function gxRenderAccountLink(signedIn, isAdmin){
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
       </button>`;
   }else{
+    const p = profile || {};
+    const seed = p.username || p.email || 'gx';
+    const avatarUrl = p.avatar_url || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6`;
+    const level = Math.max(1, Number(p.level) || 1);
+    const xp = Math.max(0, Number(p.xp) || 0);
+    const perLevel = 100;
+    const xpInLevel = xp % perLevel;
+    const pct = Math.max(4, Math.min(100, (xpInLevel / perLevel) * 100));
+    const handle = p.username ? '@' + p.username : (p.email || 'حسابي');
+    const displayName = p.full_name || p.username || 'لاعب GX';
+
     wrap.innerHTML = `
-      <button type="button" class="icon-btn account-link account-link--signed" id="accountBtn" title="حسابي" aria-label="حسابي">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <button type="button" class="icon-btn account-avatar-btn" id="accountBtn" title="حسابي" aria-label="حسابي">
+        <img src="${avatarUrl}" alt="" />
+        <span class="account-lvl-dot">${level}</span>
       </button>
       <div class="account-panel" id="accountPanel">
+        <div class="acc-header">
+          <img class="acc-header__avatar" src="${avatarUrl}" alt="" />
+          <div class="acc-header__meta">
+            <div class="acc-header__name">${displayName}</div>
+            <div class="acc-header__handle" dir="ltr">${handle}</div>
+          </div>
+        </div>
+        <div class="acc-xp">
+          <div class="acc-xp__top">
+            <span class="acc-xp__lvl">Lv ${level}</span>
+            <span class="acc-xp__xp">${xpInLevel} / ${perLevel} XP</span>
+          </div>
+          <div class="acc-xp__bar"><span style="width:${pct}%"></span></div>
+        </div>
+        <div class="acc-divider"></div>
         <a href="/account?tab=orders" class="acc-link"><span class="ai">📦</span><span>الطلبات</span></a>
         <a href="#" class="acc-link acc-soon" data-soon><span class="ai">⭐</span><span>الأمنيات</span><span class="soon-tag">قريباً</span></a>
         <a href="#" class="acc-link acc-soon" data-soon><span class="ai">🔔</span><span>الإشعارات</span><span class="soon-tag">قريباً</span></a>
@@ -492,8 +519,8 @@ function gxEnsureAuthModal(){
       <h3 class="gx-auth-modal__title" id="gxAuthTitle">تسجيل الدخول</h3>
 
       <form class="gx-auth-modal__form" id="gxAuthForm">
-        <label data-only="signup">الاسم الكامل</label>
-        <input type="text" id="gxAuthName" placeholder="اسمك" data-only="signup" />
+        <label data-only="signup">اسم المستخدم <span style="opacity:.6;font-weight:500">(3-20 حرف/رقم/_)</span></label>
+        <input type="text" id="gxAuthUsername" dir="ltr" placeholder="your_tag" pattern="[a-zA-Z0-9_]{3,20}" data-only="signup" />
         <label>البريد الإلكتروني</label>
         <input type="email" id="gxAuthEmail" dir="ltr" placeholder="your@email.com" required />
         <label>كلمة السر</label>
@@ -544,10 +571,11 @@ function gxEnsureAuthModal(){
         showMsg('تم الدخول 👋', true);
         setTimeout(()=> window.location.reload(), 500);
       }else{
-        const full_name = el.querySelector('#gxAuthName').value.trim();
+        const username = el.querySelector('#gxAuthUsername').value.trim();
+        if(!/^[a-zA-Z0-9_]{3,20}$/.test(username)){ showMsg('اسم المستخدم: 3-20 حرف/رقم/_'); return; }
         const { error } = await window.gxSupabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: window.location.origin + '/app/index.html', data: { full_name } },
+          options: { emailRedirectTo: window.location.origin + '/app/index.html', data: { username } },
         });
         if(error){ showMsg(error.message); return; }
         showMsg('تم إنشاء الحساب! تحقق من إيميلك.', true);
@@ -575,6 +603,18 @@ function gxOpenAuthModal(){
   if(el) el.classList.add('open');
 }
 
+async function gxFetchProfile(user){
+  if(!user) return null;
+  try{
+    const { data } = await window.gxSupabase
+      .from('profiles')
+      .select('username, full_name, avatar_url, xp, level, email')
+      .eq('id', user.id)
+      .maybeSingle();
+    return data || { email: user.email };
+  }catch(_){ return { email: user.email }; }
+}
+
 async function gxRenderAuthState(){
   gxRenderAccountLink(false, false);
   try{
@@ -585,22 +625,26 @@ async function gxRenderAuthState(){
     const { data } = await window.gxSupabase.auth.getUser();
     const user = data && data.user;
     let isAdmin = false;
+    let profile = null;
     if(user){
-      try{
-        const r = await window.gxSupabase.rpc('has_role', { _user_id: user.id, _role: 'admin' });
-        isAdmin = !!r.data;
-      }catch(_){}
+      const [roleRes, prof] = await Promise.all([
+        window.gxSupabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }).catch(()=>({data:false})),
+        gxFetchProfile(user),
+      ]);
+      isAdmin = !!(roleRes && roleRes.data);
+      profile = prof;
     }
-    gxRenderAccountLink(!!user, isAdmin);
+    gxRenderAccountLink(!!user, isAdmin, profile);
     window.gxSupabase.auth.onAuthStateChange(async (_e, session) => {
-      let admin = false;
+      let admin = false; let prof = null;
       if(session && session.user){
         try{
           const r = await window.gxSupabase.rpc('has_role', { _user_id: session.user.id, _role: 'admin' });
           admin = !!r.data;
         }catch(_){}
+        prof = await gxFetchProfile(session.user);
       }
-      gxRenderAccountLink(!!session, admin);
+      gxRenderAccountLink(!!session, admin, prof);
     });
   }catch(e){ /* keep default login CTA */ }
 }

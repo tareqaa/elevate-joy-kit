@@ -27,7 +27,7 @@ function AuthPage() {
 
   const [siEmail, setSiEmail] = useState("");
   const [siPass, setSiPass] = useState("");
-  const [suName, setSuName] = useState("");
+  const [suUsername, setSuUsername] = useState("");
   const [suEmail, setSuEmail] = useState("");
   const [suPass, setSuPass] = useState("");
 
@@ -43,13 +43,17 @@ function AuthPage() {
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
+    const uname = suUsername.trim();
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(uname)) {
+      return toast.error("اسم المستخدم: 3-20 حرف/رقم/_ (بدون مسافات)");
+    }
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email: suEmail.trim(),
       password: suPass,
       options: {
         emailRedirectTo: `${window.location.origin}/account`,
-        data: { full_name: suName.trim() },
+        data: { username: uname },
       },
     });
     setLoading(false);
@@ -98,8 +102,8 @@ function AuthPage() {
             </form>
           ) : (
             <form onSubmit={handleSignUp} className="gx-auth-form">
-              <label>الاسم الكامل</label>
-              <input type="text" required value={suName} onChange={(e) => setSuName(e.target.value)} placeholder="اسمك" />
+              <label>اسم المستخدم <span className="hint">(3-20 حرف/رقم/_)</span></label>
+              <input type="text" required dir="ltr" value={suUsername} onChange={(e) => setSuUsername(e.target.value)} placeholder="your_tag" pattern="[a-zA-Z0-9_]{3,20}" />
               <label>الإيميل</label>
               <input type="email" required dir="ltr" value={suEmail} onChange={(e) => setSuEmail(e.target.value)} placeholder="you@email.com" />
               <label>كلمة السر <span className="hint">(٦ أحرف على الأقل)</span></label>
