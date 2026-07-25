@@ -425,8 +425,10 @@ function gxRenderAccountLink(signedIn, isAdmin, profile){
     const perLevel = 100;
     const xpInLevel = xp % perLevel;
     const pct = Math.max(4, Math.min(100, (xpInLevel / perLevel) * 100));
+    const emailPrefix = p.email ? p.email.split('@')[0] : '';
+    const displayName = p.full_name || p.username || emailPrefix || 'حسابي';
     const handle = p.username ? '@' + p.username : (p.email || '');
-    const displayName = p.username || p.full_name || (p.email ? p.email.split('@')[0] : 'حسابي');
+
 
     wrap.innerHTML = `
       <button type="button" class="icon-btn account-avatar-btn" id="accountBtn" title="حسابي" aria-label="حسابي">
@@ -641,6 +643,17 @@ async function gxRenderAuthState(){
       if(event !== 'SIGNED_IN' && event !== 'SIGNED_OUT' && event !== 'USER_UPDATED') return;
       applyForSession(session);
     });
+
+    // Refresh navbar when profile is updated from /account
+    const refresh = async () => {
+      try{
+        const { data } = await window.gxSupabase.auth.getSession();
+        await applyForSession(data && data.session);
+      }catch(_){}
+    };
+    window.addEventListener('gx:profile-updated', refresh);
+    window.addEventListener('storage', (e) => { if(e.key === 'gx:profile-updated') refresh(); });
+
   }catch(e){ /* keep default login CTA */ }
 }
 
