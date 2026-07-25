@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { CurrencyProvider } from "@/lib/gx/currency";
 import { CartProvider } from "@/lib/gx/cart";
+import { LanguageProvider } from "@/lib/gx/i18n";
 
 function NotFoundComponent() {
   return (
@@ -123,12 +124,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CurrencyProvider>
-        <CartProvider>
-          <Outlet />
-          <Toaster richColors position="top-center" />
-        </CartProvider>
-      </CurrencyProvider>
+      <LanguageProvider>
+        <CurrencyProvider>
+          <CartProvider>
+            <Outlet />
+            <Toaster richColors position="top-center" />
+          </CartProvider>
+        </CurrencyProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

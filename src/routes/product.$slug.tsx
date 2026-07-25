@@ -5,15 +5,17 @@ import { useCurrency } from "@/lib/gx/currency";
 import { ProductIcon } from "@/lib/gx/brand-icons";
 import { BuyActions } from "@/components/gx/BuyActions";
 import { FeatureAccordion, DeliveryBox, SectionHead } from "@/components/gx/Primitives";
+import { useLang } from "@/lib/gx/i18n";
+import { localizedProduct } from "@/lib/gx/product-locale";
 
 export const Route = createFileRoute("/product/$slug")({
   head: ({ params }) => {
     const p = PRODUCTS_CATALOG[params.slug];
-    const title = p ? `${p.name} — GX Store` : "منتج — GX Store";
+    const title = p ? `${p.name} — GX Store` : "Product — GX Store";
     return {
       meta: [
         { title },
-        { name: "description", content: p?.description || "منتج رقمي على GX Store" },
+        { name: "description", content: p?.description || "GX Store digital product" },
         { property: "og:title", content: title },
         { property: "og:description", content: p?.description || "" },
       ],
@@ -28,7 +30,8 @@ export const Route = createFileRoute("/product/$slug")({
 
 function ProductPage() {
   const { slug } = Route.useLoaderData();
-  const p = PRODUCTS_CATALOG[slug];
+  const { lang, t } = useLang();
+  const p = localizedProduct(PRODUCTS_CATALOG[slug], lang);
   const { format } = useCurrency();
 
   return (
@@ -50,7 +53,7 @@ function ProductPage() {
 
       <section className="section">
         <div className="wrap">
-          <SectionHead eyebrow="الباقات" title="اختار الباقة اللي تناسبك" />
+          <SectionHead eyebrow={t("sec.plans")} title={t("product.pick_plan")} />
           <div className="plans-grid">
             {(p.plans || []).map((plan) => {
               const discount = plan.oldPrice ? Math.round((1 - plan.price / plan.oldPrice) * 100) : 0;
@@ -79,7 +82,7 @@ function ProductPage() {
       {p.features && p.features.length > 0 && (
         <section className="section" style={{ background: "var(--bg2)" }}>
           <div className="wrap">
-            <SectionHead eyebrow="المميزات" title="شو رح تحصل عليه بالضبط" sub="اضغط على أي ميزة لتشوف تفاصيلها" />
+            <SectionHead eyebrow={t("product.features_eyebrow")} title={t("product.features_title")} sub={t("product.features_sub")} />
             <FeatureAccordion features={p.features} />
           </div>
         </section>

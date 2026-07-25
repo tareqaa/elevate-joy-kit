@@ -5,20 +5,23 @@ import { PRODUCTS_CATALOG } from "@/data/products";
 import { useCurrency } from "@/lib/gx/currency";
 import { useCart } from "@/lib/gx/cart";
 import { FeatureAccordion, DeliveryBox, SectionHead } from "@/components/gx/Primitives";
+import { useLang } from "@/lib/gx/i18n";
+import { localizedProduct } from "@/lib/gx/product-locale";
 
 export const Route = createFileRoute("/snapchat")({
   head: () => ({
     meta: [
-      { title: "سناب بلس — GX Store" },
-      { name: "description", content: "فعّل سناب بلس بأسهل وأسرع طريقة — تفعيل رسمي عن طريق الإهداء داخل سناب شات." },
-      { property: "og:title", content: "سناب بلس — GX Store" },
+      { title: "Snapchat+ — GX Store" },
+      { name: "description", content: "Activate Snapchat+ fast and easily — official activation via Snapchat's gifting feature." },
+      { property: "og:title", content: "Snapchat+ — GX Store" },
     ],
   }),
   component: SnapchatPage,
 });
 
 function SnapchatPage() {
-  const sp = PRODUCTS_CATALOG.snapchat;
+  const { lang, t } = useLang();
+  const sp = localizedProduct(PRODUCTS_CATALOG.snapchat, lang);
   const { format } = useCurrency();
   const cart = useCart();
   const defaultPlan = sp.plans!.find((pl) => pl.tag)?.id || sp.plans![0].id;
@@ -38,7 +41,7 @@ function SnapchatPage() {
   function inc() {
     if (usernames.length >= 10) return;
     const missingIdx = usernames.findIndex((u) => !u.trim());
-    if (missingIdx !== -1) { setError("عبّي يوزر الحساب الحالي قبل ما تضيف حساب جديد"); return; }
+    if (missingIdx !== -1) { setError(t("snap.err_fill_current")); return; }
     setUsernames([...usernames, ""]);
   }
   function dec() {
@@ -48,7 +51,7 @@ function SnapchatPage() {
 
   function validate() {
     const missingIdx = usernames.findIndex((u) => !u.trim());
-    if (missingIdx !== -1) { setError("الرجاء إدخال يوزر السناب لكل حساب قبل الإضافة للسلة"); return false; }
+    if (missingIdx !== -1) { setError(t("snap.err_fill_all")); return false; }
     return true;
   }
 
@@ -80,7 +83,7 @@ function SnapchatPage() {
 
       <section className="section">
         <div className="wrap">
-          <SectionHead eyebrow="الباقات" title="اختار الباقة المناسبة إلك" />
+          <SectionHead eyebrow={t("sec.plans")} title={t("snap.pick_plan")} />
           <div className="snap-plan-grid">
             {sp.plans!.map((pl) => {
               const discount = pl.oldPrice ? Math.round((1 - pl.price / pl.oldPrice) * 100) : 0;
@@ -88,7 +91,7 @@ function SnapchatPage() {
                 <div key={pl.id} className={"snap-plan" + (pl.id === planId ? " selected" : "")} onClick={() => setPlanId(pl.id)}>
                   <div className="sp-check">✓</div>
                   {pl.tag && <div className="sp-tag">{pl.tag}</div>}
-                  {discount > 0 && <div className="sp-discount">وفّر {discount}%</div>}
+                  {discount > 0 && <div className="sp-discount">{t("snap.save_pct")} {discount}%</div>}
                   <div className="sp-icon">👻</div>
                   <div className="sp-label">{pl.label}</div>
                   <div>
@@ -104,22 +107,22 @@ function SnapchatPage() {
 
       <section className="section" style={{ background: "var(--bg2)", paddingTop: 0 }}>
         <div className="wrap">
-          <SectionHead eyebrow="بيانات الطلب" title="حدد عدد الحسابات ويوزراتها" />
+          <SectionHead eyebrow={t("snap.order_eyebrow")} title={t("snap.order_title")} />
           <div className="order-box">
             <div>
               <div className="order-field">
-                <label>عدد الحسابات</label>
+                <label>{t("snap.accounts_count")}</label>
                 <div className="stepper-row">
                   <button type="button" onClick={inc}>+</button>
                   <div className="count">{usernames.length}</div>
                   <button type="button" onClick={dec}>−</button>
                 </div>
-                <div className="stepper-hint">إذا بدك تفعّل أكثر من حساب بنفس الطلب، زوّد العدد وبتطلعلك خانة يوزر لكل حساب.</div>
+                <div className="stepper-hint">{t("snap.stepper_hint")}</div>
               </div>
               <div>
                 {usernames.map((val, i) => (
                   <div key={i} className="username-field">
-                    <label>{usernames.length === 1 ? sp.identifierLabel : `${sp.identifierLabel} — حساب ${i + 1}`}</label>
+                    <label>{usernames.length === 1 ? sp.identifierLabel : `${sp.identifierLabel} — ${t("snap.account_n")} ${i + 1}`}</label>
                     <input
                       type="text"
                       className={"uname-input" + (error && !val.trim() ? " error" : "")}
@@ -133,20 +136,20 @@ function SnapchatPage() {
             </div>
 
             <div className="order-summary">
-              <h3>ملخص الطلب</h3>
-              <div className="os-row"><span>المدة</span><span>{plan.label}</span></div>
-              <div className="os-row"><span>سعر الباقة</span><span>{format(plan.price)}</span></div>
-              <div className="os-row"><span>عدد الحسابات</span><span>{usernames.length}</span></div>
+              <h3>{t("cart.summary")}</h3>
+              <div className="os-row"><span>{t("snap.duration")}</span><span>{plan.label}</span></div>
+              <div className="os-row"><span>{t("snap.plan_price")}</span><span>{format(plan.price)}</span></div>
+              <div className="os-row"><span>{t("snap.accounts_count")}</span><span>{usernames.length}</span></div>
               <div className="os-total">
-                <span className="lbl">الإجمالي</span>
+                <span className="lbl">{t("cart.total")}</span>
                 <span className="val">{format(plan.price * usernames.length)}</span>
               </div>
               {error && <div className="order-error" style={{ display: "block" }}>{error}</div>}
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <button className={"btn btn-primary btn-block" + (addedFlash ? " added" : "")} type="button" onClick={addToCart}>
-                  {addedFlash ? "✓ أضيفت للسلة بنجاح" : "🛒 أضف الطلب للسلة"}
+                  {addedFlash ? t("snap.added_ok") : t("snap.add_cart")}
                 </button>
-                <button className="btn btn-ghost btn-block" type="button" onClick={buyNow}>⚡ اشتري الآن</button>
+                <button className="btn btn-ghost btn-block" type="button" onClick={buyNow}>{t("buy.buy_now")}</button>
               </div>
             </div>
           </div>
@@ -155,7 +158,7 @@ function SnapchatPage() {
 
       <section className="section">
         <div className="wrap">
-          <SectionHead eyebrow="المميزات" title="شو رح تحصل عليه بالضبط" sub="اضغط على أي ميزة لتشوف تفاصيلها" />
+          <SectionHead eyebrow={t("product.features_eyebrow")} title={t("product.features_title")} sub={t("product.features_sub")} />
           <FeatureAccordion features={sp.features || []} />
         </div>
       </section>
