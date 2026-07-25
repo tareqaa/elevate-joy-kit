@@ -63,7 +63,7 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
         <form className="gx-auth-modal__form" onSubmit={submit}>
           {mode === "signup" && (
             <>
-              <label>اسم المستخدم <span style={{ opacity: 0.6, fontWeight: 500 }}>(3-20 حرف/رقم/_)</span></label>
+              <label>GameTag</label>
               <input type="text" dir="ltr" placeholder="your_tag" pattern="[a-zA-Z0-9_]{3,20}" value={username} onChange={(e) => setUsername(e.target.value)} />
             </>
           )}
