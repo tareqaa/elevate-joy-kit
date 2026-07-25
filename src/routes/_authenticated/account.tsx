@@ -21,12 +21,12 @@ export const Route = createFileRoute("/_authenticated/account")({
 });
 
 
-const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-  pending: { label: "قيد الانتظار", variant: "secondary" },
-  paid: { label: "تم الدفع", variant: "outline" },
-  processing: { label: "قيد التجهيز", variant: "outline" },
-  delivered: { label: "مُسلَّم", variant: "default" },
-  cancelled: { label: "ملغى", variant: "destructive" },
+const STATUS_LABELS: Record<string, { label: string; className: string }> = {
+  pending: { label: "قيد الانتظار", className: "bg-amber-500/15 text-amber-400 border-amber-500/40" },
+  paid: { label: "تم الدفع", className: "bg-sky-500/15 text-sky-400 border-sky-500/40" },
+  processing: { label: "قيد التجهيز", className: "bg-indigo-500/15 text-indigo-400 border-indigo-500/40" },
+  delivered: { label: "جاهز", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/40" },
+  cancelled: { label: "ملغى", className: "bg-rose-500/15 text-rose-400 border-rose-500/40" },
 };
 
 // Cartoon game-style avatars via DiceBear (no key required)
@@ -283,16 +283,15 @@ type OrderRow = {
 };
 
 const STATUS_TABS: Array<{ key: string; label: string; match: (s: string) => boolean }> = [
-  { key: "all", label: "الكل", match: () => true },
   { key: "pending", label: "قيد الانتظار", match: (s) => s === "pending" },
   { key: "paid", label: "تم الدفع", match: (s) => s === "paid" },
   { key: "processing", label: "قيد التجهيز", match: (s) => s === "processing" },
-  { key: "delivered", label: "مُسلَّم", match: (s) => s === "delivered" },
+  { key: "delivered", label: "جاهز", match: (s) => s === "delivered" },
   { key: "cancelled", label: "ملغى", match: (s) => s === "cancelled" },
 ];
 
 function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }) {
-  const [view, setView] = useState<string>("all");
+  const [view, setView] = useState<string>("pending");
   if (loading) return <p className="text-sm text-muted-foreground">جاري التحميل...</p>;
   const counts = STATUS_TABS.reduce<Record<string, number>>((acc, t) => {
     acc[t.key] = orders.filter((o) => t.match(o.status)).length;
@@ -341,7 +340,7 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
 
 
 function OrderCard({ order: o }: { order: OrderRow }) {
-  const status = STATUS_LABELS[o.status] ?? { label: o.status, variant: "secondary" as const };
+  const status = STATUS_LABELS[o.status] ?? { label: o.status, className: "bg-muted text-muted-foreground border-border" };
   const items = Array.isArray(o.items) ? (o.items as Array<{ name?: string; qty?: number; price?: number }>) : [];
   const delivery = o.delivery_data && typeof o.delivery_data === "object" ? o.delivery_data as Record<string, unknown> : {};
   const codes = Array.isArray((delivery as { codes?: unknown }).codes)
@@ -355,7 +354,7 @@ function OrderCard({ order: o }: { order: OrderRow }) {
             <div className="font-mono text-sm font-semibold">{o.order_number}</div>
             <div className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString("ar-EG")}</div>
           </div>
-          <Badge variant={status.variant}>{status.label}</Badge>
+          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${status.className}`}>{status.label}</span>
         </div>
         <div className="mt-3 space-y-1 text-sm">
           {items.map((it, i) => (
