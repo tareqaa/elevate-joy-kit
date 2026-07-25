@@ -13,6 +13,8 @@ import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
+import { CurrencyProvider } from "@/lib/gx/currency";
+import { CartProvider } from "@/lib/gx/cart";
 
 function NotFoundComponent() {
   return (
@@ -80,6 +82,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: "/app/assets/css/theme.css" },
+      { rel: "stylesheet", href: "/app/assets/css/home.css" },
+      { rel: "stylesheet", href: "/app/assets/css/cart.css" },
+      { rel: "stylesheet", href: "/app/assets/css/faq.css" },
+      { rel: "stylesheet", href: "/app/assets/css/policy.css" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&family=Almarai:wght@400;700;800&display=swap" },
       { rel: "icon", href: "/app/assets/img/gx-logo.png", type: "image/png" },
     ],
   }),
@@ -118,8 +128,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster richColors position="top-center" />
+      <CurrencyProvider>
+        <CartProvider>
+          <Outlet />
+          <Toaster richColors position="top-center" />
+        </CartProvider>
+      </CurrencyProvider>
     </QueryClientProvider>
   );
 }
