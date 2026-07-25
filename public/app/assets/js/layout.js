@@ -36,7 +36,6 @@ function gxRenderNavbar(){
         </div>
         <div class="nav-right">
           <button class="currency-pick" id="currencyBtn" type="button">
-            <span id="currencyBtnFlag">🇯🇴</span>
             <span id="currencyBtnCode">JOD</span>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
           </button>
@@ -314,13 +313,9 @@ function gxWireLayoutEvents(){
 }
 
 function gxUpdateCurrencyButton(){
-  const flagEl = document.getElementById('currencyBtnFlag');
   const codeEl = document.getElementById('currencyBtnCode');
-  if(!flagEl || !codeEl) return;
-  const code = GXCurrency.get();
-  const info = CURRENCIES[code];
-  if(info) flagEl.textContent = info.flag;
-  codeEl.textContent = code;
+  if(!codeEl) return;
+  codeEl.textContent = GXCurrency.get();
 }
 
 // Shown after any "add to cart" action anywhere on the site.
@@ -430,8 +425,8 @@ function gxRenderAccountLink(signedIn, isAdmin, profile){
     const perLevel = 100;
     const xpInLevel = xp % perLevel;
     const pct = Math.max(4, Math.min(100, (xpInLevel / perLevel) * 100));
-    const handle = p.username ? '@' + p.username : (p.email || 'حسابي');
-    const displayName = p.full_name || p.username || 'لاعب GX';
+    const handle = p.username ? '@' + p.username : (p.email || '');
+    const displayName = p.username || p.full_name || (p.email ? p.email.split('@')[0] : 'حسابي');
 
     wrap.innerHTML = `
       <button type="button" class="icon-btn account-avatar-btn" id="accountBtn" title="حسابي" aria-label="حسابي">
