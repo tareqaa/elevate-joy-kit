@@ -1,4 +1,5 @@
-import { createFileRoute, redirect, Outlet, Link } from "@tanstack/react-router";
+import { createFileRoute, redirect, Outlet, Link, useLocation } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -14,6 +15,22 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthedLayout() {
+  const location = useLocation();
+  const { user } = Route.useRouteContext();
+
+  const isAdminArea = location.pathname.startsWith("/admin");
+
+  const adminQ = useQuery({
+    queryKey: ["is-admin", user.id],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+      return !!data;
+    },
+  });
+
+  // Admin area: render bare — the admin layout ships its own themed chrome.
+  if (isAdminArea) return <Outlet />;
+
   async function signOut() {
     await supabase.auth.signOut();
     toast.success("تم تسجيل الخروج");
@@ -29,7 +46,9 @@ function AuthedLayout() {
           </Link>
           <nav className="flex items-center gap-2 text-sm">
             <Link to="/account" className="px-3 py-1.5 rounded hover:bg-accent">حسابي</Link>
-            <Link to="/admin" className="px-3 py-1.5 rounded hover:bg-accent">لوحة التحكم</Link>
+            {adminQ.data && (
+              <Link to="/admin" className="px-3 py-1.5 rounded hover:bg-accent text-primary font-semibold">لوحة التحكم</Link>
+            )}
             <a href="/app/index.html" className="px-3 py-1.5 rounded hover:bg-accent">المتجر</a>
             <Button size="sm" variant="outline" onClick={signOut}>خروج</Button>
           </nav>
