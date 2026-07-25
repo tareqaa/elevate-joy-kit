@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { User as UserIcon, Package, ShieldCheck, Copy, Check } from "lucide-react";
@@ -97,6 +97,7 @@ function AccountPage() {
         <TabsContent value="profile" className="mt-4">
           <ProfileTab
             userId={user.id}
+            userEmail={user.email || ""}
             currentName={profileQ.data?.full_name || ""}
             currentAvatar={profileQ.data?.avatar_url || ""}
             onSaved={() => qc.invalidateQueries({ queryKey: ["my-profile", user.id] })}
@@ -116,13 +117,23 @@ function AccountPage() {
 }
 
 function ProfileTab({ userId, currentName, currentAvatar, onSaved }: {
-  userId: string; currentName: string; currentAvatar: string; onSaved: () => void;
+  userId: string; userEmail: string; currentName: string; currentAvatar: string; onSaved: () => void;
 }) {
   const [name, setName] = useState(currentName);
   const [avatar, setAvatar] = useState(currentAvatar || avatarUrl(AVATAR_SEEDS[0]));
+  const [nameTouched, setNameTouched] = useState(false);
+  const [avatarTouched, setAvatarTouched] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const nameSchema = useMemo(() => z.string().trim().min(2, "الاسم قصير").max(60, "الاسم طويل"), []);
+
+  useEffect(() => {
+    if (!nameTouched) setName(currentName);
+  }, [currentName, nameTouched]);
+
+  useEffect(() => {
+    if (currentAvatar && !avatarTouched) setAvatar(currentAvatar);
+  }, [currentAvatar, avatarTouched]);
 
   async function save() {
     const parsed = nameSchema.safeParse(name);
@@ -139,9 +150,18 @@ function ProfileTab({ userId, currentName, currentAvatar, onSaved }: {
     if (error) { toast.error("فشل الحفظ"); return; }
     toast.success("تم تحديث الملف الشخصي");
     try {
-      window.dispatchEvent(new CustomEvent("gx:profile-updated"));
+      const profileCache = {
+        full_name: parsed.data,
+        avatar_url: avatar,
+        email: userEmail,
+        _cachedAt: Date.now(),
+      };
+      localStorage.setItem(`gx:profile:${userId}`, JSON.stringify(profileCache));
       localStorage.setItem("gx:profile-updated", String(Date.now()));
+      window.dispatchEvent(new CustomEvent("gx:profile-updated", { detail: profileCache }));
     } catch { /* noop */ }
+    setNameTouched(false);
+    setAvatarTouched(false);
     onSaved();
 
   }
@@ -159,7 +179,7 @@ function ProfileTab({ userId, currentName, currentAvatar, onSaved }: {
                 <button
                   key={s}
                   type="button"
-                  onClick={() => setAvatar(url)}
+                  onClick={() => { setAvatar(url); setAvatarTouched(true); }}
                   className={`relative rounded-xl overflow-hidden aspect-square border-2 transition ${active ? "border-primary ring-2 ring-primary/50 scale-105" : "border-transparent hover:border-primary/50"}`}
                 >
                   <img src={url} alt={s} className="w-full h-full object-cover bg-muted" loading="lazy" />
@@ -184,7 +204,7 @@ function ProfileTab({ userId, currentName, currentAvatar, onSaved }: {
           </div>
           <div className="space-y-2">
             <Label htmlFor="name">الاسم المعروض</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="اسمك في اللعبة" maxLength={60} />
+            <Input id="name" value={name} onChange={(e) => { setName(e.target.value); setNameTouched(true); }} placeholder="اسمك في اللعبة" maxLength={60} />
           </div>
           <Button onClick={save} disabled={saving} className="w-full">
             {saving ? "جاري الحفظ..." : "حفظ التعديلات"}
