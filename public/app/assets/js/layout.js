@@ -602,14 +602,24 @@ function gxOpenAuthModal(){
 
 async function gxFetchProfile(user){
   if(!user) return null;
+  let cached = null;
+  try{
+    const raw = localStorage.getItem(`gx:profile:${user.id}`);
+    if(raw) cached = JSON.parse(raw);
+  }catch(_){}
   try{
     const { data } = await window.gxSupabase
       .from('profiles')
       .select('username, full_name, avatar_url, xp, level, email')
       .eq('id', user.id)
       .maybeSingle();
-    return data || { email: user.email };
-  }catch(_){ return { email: user.email }; }
+    if(data){
+      const merged = Object.assign({}, cached || {}, data, { email: data.email || user.email });
+      try{ localStorage.setItem(`gx:profile:${user.id}`, JSON.stringify(Object.assign({}, merged, { _cachedAt: Date.now() }))); }catch(_){}
+      return merged;
+    }
+    return cached || { email: user.email, username: user.user_metadata && user.user_metadata.username };
+  }catch(_){ return cached || { email: user.email, username: user.user_metadata && user.user_metadata.username }; }
 }
 
 async function gxRenderAuthState(){
