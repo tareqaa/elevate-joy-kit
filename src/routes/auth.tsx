@@ -102,7 +102,7 @@ function AuthPage() {
             </form>
           ) : (
             <form onSubmit={handleSignUp} className="gx-auth-form">
-              <label>اسم المستخدم <span className="hint">(3-20 حرف/رقم/_)</span></label>
+              <label>GameTag</label>
               <input type="text" required dir="ltr" value={suUsername} onChange={(e) => setSuUsername(e.target.value)} placeholder="your_tag" pattern="[a-zA-Z0-9_]{3,20}" />
               <label>الإيميل</label>
               <input type="email" required dir="ltr" value={suEmail} onChange={(e) => setSuEmail(e.target.value)} placeholder="you@email.com" />
