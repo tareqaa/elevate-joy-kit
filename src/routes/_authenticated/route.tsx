@@ -48,6 +48,19 @@ function AuthedLayout() {
 
   const isAdminArea = location.pathname.startsWith("/admin");
 
+  const profileQ = useQuery({
+    queryKey: ["my-profile", user.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username, full_name, avatar_url, xp, level, email")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const adminQ = useQuery({
     queryKey: ["is-admin", user.id],
     queryFn: async () => {
@@ -64,6 +77,13 @@ function AuthedLayout() {
     toast.success("تم تسجيل الخروج");
     window.location.href = "/app/index.html";
   }
+
+  const profile = profileQ.data;
+  const username = profile?.username || user.user_metadata?.username || user.email?.split("@")[0] || "gx";
+  const displayName = profile?.full_name || username;
+  const level = Math.max(1, Number(profile?.level) || 1);
+  const avatar = profile?.avatar_url ||
+    `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(username)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6`;
 
   return (
     <div dir="rtl" style={GX_THEME} className="min-h-screen bg-background text-foreground">
@@ -85,9 +105,18 @@ function AuthedLayout() {
             </a>
             <Link
               to="/account"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-white/5 transition"
+              className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-full hover:bg-white/5 transition max-w-[180px]"
             >
-              <User className="w-4 h-4" /> حسابي
+              <span className="relative shrink-0">
+                <img src={avatar} alt="avatar" className="h-8 w-8 rounded-full border border-primary/50 object-cover bg-card" />
+                <span className="absolute -bottom-1 -end-1 min-w-4 h-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-black leading-4 text-center border-2 border-background">
+                  {level}
+                </span>
+              </span>
+              <span className="hidden sm:flex min-w-0 flex-col items-start leading-tight">
+                <span className="max-w-[110px] truncate font-bold">{displayName}</span>
+                <span className="max-w-[110px] truncate text-[11px] text-primary" dir="ltr">@{username}</span>
+              </span>
             </Link>
             {adminQ.data && (
               <Link
