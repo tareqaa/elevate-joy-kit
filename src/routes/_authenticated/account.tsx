@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({ meta: [{ title: "حسابي — GX Store" }] }),
@@ -40,42 +40,18 @@ function AccountPage() {
     },
   });
 
-  const xp = profileQ.data?.xp ?? 0;
-  const level = profileQ.data?.level ?? 1;
-  const nextLevelXp = Math.pow(level, 2) * 100;
-  const prevLevelXp = Math.pow(level - 1, 2) * 100;
-  const progress = Math.min(100, ((xp - prevLevelXp) / Math.max(nextLevelXp - prevLevelXp, 1)) * 100);
-
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>مرحباً {profileQ.data?.full_name || user.email}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-sm text-muted-foreground">
-              <div>الإيميل: <span dir="ltr">{user.email}</span></div>
-              <div>إجمالي مشترياتك: <b>{Number(profileQ.data?.total_spent ?? 0).toFixed(2)} د.أ</b></div>
-            </div>
-          </CardContent>
-        </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>مرحباً {profileQ.data?.full_name || user.email}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <div>الاسم: <b className="text-foreground">{profileQ.data?.full_name || "—"}</b></div>
+          <div>الإيميل: <span dir="ltr" className="text-foreground">{user.email}</span></div>
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center justify-between">
-              <span>المستوى {level}</span>
-              <Badge variant="secondary">{xp} XP</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Progress value={progress} />
-            <p className="text-xs text-muted-foreground mt-2">
-              {Math.max(0, nextLevelXp - xp)} XP للمستوى القادم
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
       <Card>
         <CardHeader>
