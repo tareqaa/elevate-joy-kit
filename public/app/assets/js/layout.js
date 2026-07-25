@@ -425,8 +425,10 @@ function gxRenderAccountLink(signedIn, isAdmin, profile){
     const perLevel = 100;
     const xpInLevel = xp % perLevel;
     const pct = Math.max(4, Math.min(100, (xpInLevel / perLevel) * 100));
+    const emailPrefix = p.email ? p.email.split('@')[0] : '';
+    const displayName = p.full_name || p.username || emailPrefix || 'حسابي';
     const handle = p.username ? '@' + p.username : (p.email || '');
-    const displayName = p.username || p.full_name || (p.email ? p.email.split('@')[0] : 'حسابي');
+
 
     wrap.innerHTML = `
       <button type="button" class="icon-btn account-avatar-btn" id="accountBtn" title="حسابي" aria-label="حسابي">
