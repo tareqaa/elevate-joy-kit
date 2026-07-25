@@ -167,7 +167,9 @@ export function Navbar() {
                 <div className="menu-section">
                   <div className="ms-title">أقسام المنتجات</div>
                   {CATEGORY_LINKS.map(c => (
-                    <MenuLink key={c.slug} to={"/" + c.slug} icon={c.icon} label={c.name} onClick={() => setMenuOpen(false)} />
+                    <a key={c.slug} href={getCategoryLink(c.slug)} className="menu-link" onClick={() => setMenuOpen(false)}>
+                      <span className="mi">{c.icon}</span> {c.name}
+                    </a>
                   ))}
                 </div>
                 <div className="menu-divider" />

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CATEGORY_LINKS } from "@/data/products";
+import { CATEGORY_LINKS, getCategoryLink } from "@/data/products";
 
 export function Footer() {
   return (
@@ -23,7 +23,7 @@ export function Footer() {
           <div className="footer-col">
             <h5>الأقسام</h5>
             {CATEGORY_LINKS.map(c => (
-              <Link key={c.slug} to={("/" + c.slug) as never}>{c.name}</Link>
+              <a key={c.slug} href={getCategoryLink(c.slug)}>{c.name}</a>
             ))}
           </div>
           <div className="footer-col">
