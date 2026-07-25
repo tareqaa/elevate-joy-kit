@@ -169,7 +169,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderRow; onClose: () 
           <div>
             <Label>المنتجات</Label>
             <div className="border rounded p-3 space-y-1 text-sm mt-1">
-              {items.map((it: { name?: string; qty?: number; price?: number; usernames?: string[] }, i: number) => (
+              {(items as Array<{ name?: string; qty?: number; price?: number; usernames?: string[] }>).map((it, i) => (
                 <div key={i}>
                   <div className="flex justify-between">
                     <span>{it.name} × {it.qty}</span>
