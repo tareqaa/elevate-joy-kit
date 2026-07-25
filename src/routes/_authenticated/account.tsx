@@ -414,3 +414,66 @@ function SecurityTab({ email }: { email: string }) {
     </div>
   );
 }
+
+type NotifRow = {
+  id: string; title: string; body: string | null; type: string;
+  order_id: string | null; read_at: string | null; created_at: string;
+};
+
+function NotificationsTab({ userId }: { userId: string }) {
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ["my-notifications", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("notifications").select("*").eq("user_id", userId)
+        .order("created_at", { ascending: false }).limit(100);
+      if (error) throw error;
+      return (data ?? []) as NotifRow[];
+    },
+  });
+
+  // Mark all unread as read once viewed
+  useEffect(() => {
+    const rows = q.data ?? [];
+    const unreadIds = rows.filter((n) => !n.read_at).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+    (async () => {
+      await supabase.from("notifications").update({ read_at: new Date().toISOString() } as never).in("id", unreadIds);
+      qc.invalidateQueries({ queryKey: ["my-notifications", userId] });
+      // Reset navbar badge
+      try {
+        const w = window as unknown as { gxSetUnread?: (n: number) => void };
+        w.gxSetUnread?.(0);
+      } catch { /* noop */ }
+    })();
+  }, [q.data, qc, userId]);
+
+  if (q.isLoading) return <p className="text-sm text-muted-foreground">جاري التحميل...</p>;
+  const rows = q.data ?? [];
+  if (rows.length === 0) return (
+    <Card><CardContent className="py-10 text-center text-muted-foreground">
+      ما في إشعارات لسا 🔕
+    </CardContent></Card>
+  );
+  return (
+    <div className="space-y-2">
+      {rows.map((n) => (
+        <Card key={n.id} className={n.read_at ? "" : "border-primary/50"}>
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="text-2xl">{n.type === "order_delivered" ? "🎁" : "🔔"}</div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="font-semibold">{n.title}</div>
+                {!n.read_at && <Badge variant="default" className="text-[10px]">جديد</Badge>}
+              </div>
+              {n.body && <div className="text-sm text-muted-foreground mt-1">{n.body}</div>}
+              <div className="text-xs text-muted-foreground mt-1">{new Date(n.created_at).toLocaleString("ar-EG")}</div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
