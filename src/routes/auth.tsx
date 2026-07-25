@@ -27,7 +27,7 @@ function AuthPage() {
 
   const [siEmail, setSiEmail] = useState("");
   const [siPass, setSiPass] = useState("");
-  const [suName, setSuName] = useState("");
+  const [suUsername, setSuUsername] = useState("");
   const [suEmail, setSuEmail] = useState("");
   const [suPass, setSuPass] = useState("");
 
@@ -43,13 +43,17 @@ function AuthPage() {
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
+    const uname = suUsername.trim();
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(uname)) {
+      return toast.error("اسم المستخدم: 3-20 حرف/رقم/_ (بدون مسافات)");
+    }
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email: suEmail.trim(),
       password: suPass,
       options: {
         emailRedirectTo: `${window.location.origin}/account`,
-        data: { full_name: suName.trim() },
+        data: { username: uname },
       },
     });
     setLoading(false);
