@@ -284,36 +284,55 @@ type OrderRow = {
   items: unknown; delivery_data: unknown;
 };
 
+const STATUS_TABS: Array<{ key: string; label: string; match: (s: string) => boolean }> = [
+  { key: "all", label: "الكل", match: () => true },
+  { key: "pending", label: "قيد الانتظار", match: (s) => s === "pending" },
+  { key: "paid", label: "تم الدفع", match: (s) => s === "paid" },
+  { key: "processing", label: "قيد التجهيز", match: (s) => s === "processing" },
+  { key: "delivered", label: "مُسلَّم", match: (s) => s === "delivered" },
+  { key: "cancelled", label: "ملغى", match: (s) => s === "cancelled" },
+];
+
 function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }) {
-  const [view, setView] = useState<"active" | "cancelled">("active");
+  const [view, setView] = useState<string>("all");
   if (loading) return <p className="text-sm text-muted-foreground">جاري التحميل...</p>;
-  const active = orders.filter((o) => o.status !== "cancelled");
-  const cancelled = orders.filter((o) => o.status === "cancelled");
-  const list = view === "active" ? active : cancelled;
+  const counts = STATUS_TABS.reduce<Record<string, number>>((acc, t) => {
+    acc[t.key] = orders.filter((o) => t.match(o.status)).length;
+    return acc;
+  }, {});
+  const activeTab = STATUS_TABS.find((t) => t.key === view) ?? STATUS_TABS[0];
+  const list = orders.filter((o) => activeTab.match(o.status));
 
   return (
-    <div className="space-y-3">
-      <div className="inline-flex rounded-lg border p-1 bg-muted/30">
-        <button
-          type="button"
-          onClick={() => setView("active")}
-          className={`px-4 py-1.5 text-sm rounded-md transition ${view === "active" ? "bg-background shadow font-semibold" : "text-muted-foreground"}`}
-        >
-          الطلبات النشطة ({active.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("cancelled")}
-          className={`px-4 py-1.5 text-sm rounded-md transition ${view === "cancelled" ? "bg-background shadow font-semibold" : "text-muted-foreground"}`}
-        >
-          الطلبات الملغاة ({cancelled.length})
-        </button>
+    <div className="space-y-4" dir="rtl">
+      <div className="border-b border-white/10 overflow-x-auto">
+        <div className="flex gap-1 min-w-max">
+          {STATUS_TABS.map((t) => {
+            const on = view === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setView(t.key)}
+                className={`relative px-4 py-2.5 text-sm whitespace-nowrap transition ${
+                  on ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t.label}
+                {counts[t.key] > 0 && (
+                  <span className={`ms-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${on ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                    {counts[t.key]}
+                  </span>
+                )}
+                {on && <span className="absolute inset-x-2 -bottom-px h-0.5 bg-primary rounded-full" />}
+              </button>
+            );
+          })}
+        </div>
       </div>
       {list.length === 0 ? (
         <Card><CardContent className="py-10 text-center text-muted-foreground">
-          {view === "active"
-            ? <>ما عندك طلبات نشطة. <a href="/app/index.html" className="text-primary underline">ابدأ التسوق</a></>
-            : "ما في طلبات ملغاة."}
+          ما في طلبات في هذا القسم. <a href="/app/index.html" className="text-primary underline">تسوّق الآن</a>
         </CardContent></Card>
       ) : (
         list.map((o) => <OrderCard key={o.id} order={o} />)
