@@ -36,7 +36,6 @@ function gxRenderNavbar(){
         </div>
         <div class="nav-right">
           <button class="currency-pick" id="currencyBtn" type="button">
-            <span id="currencyBtnFlag">🇯🇴</span>
             <span id="currencyBtnCode">JOD</span>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
           </button>
