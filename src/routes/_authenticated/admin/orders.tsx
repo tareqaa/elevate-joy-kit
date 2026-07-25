@@ -92,25 +92,48 @@ function OrdersAdmin() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const counts = STATUSES.reduce<Record<string, number>>((acc, s) => {
+    acc[s] = (ordersQ.data ?? []).filter((o) => o.status === s).length;
+    return acc;
+  }, { all: (ordersQ.data ?? []).length } as Record<string, number>);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir="rtl">
       <QuickFulfill onPick={(o) => setSelected(o)} />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3">
           <CardTitle>الطلبات ({filtered.length})</CardTitle>
-          <div className="flex gap-2 flex-wrap">
-            <Input placeholder="بحث برقم الطلب / الاسم / الإيميل / اليوزر / واتساب" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">كل الحالات</SelectItem>
-                {STATUSES.map((s) => <SelectItem key={s} value={s}>{STATUS_AR[s]}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          <Input placeholder="بحث برقم الطلب / الاسم / الإيميل / اليوزر / واتساب" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
         </CardHeader>
         <CardContent>
+          <div className="border-b border-white/10 overflow-x-auto mb-3">
+            <div className="flex gap-1 min-w-max">
+              {(["all", ...STATUSES] as const).map((s) => {
+                const on = statusFilter === s;
+                const label = s === "all" ? "الكل" : STATUS_AR[s];
+                const n = counts[s] ?? 0;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStatusFilter(s)}
+                    className={`relative px-4 py-2.5 text-sm whitespace-nowrap transition ${
+                      on ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                    {n > 0 && (
+                      <span className={`ms-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${on ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        {n}
+                      </span>
+                    )}
+                    {on && <span className="absolute inset-x-2 -bottom-px h-0.5 bg-primary rounded-full" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-muted-foreground border-b">
