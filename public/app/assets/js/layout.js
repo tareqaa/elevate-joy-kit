@@ -437,21 +437,12 @@ function gxRenderAccountLink(signedIn, isAdmin, profile){
         <span class="account-notif-dot" id="accUnreadDot" hidden></span>
       </button>
       <div class="account-panel" id="accountPanel">
-        <div class="acc-header">
-          <img class="acc-header__avatar" src="${avatarUrl}" alt="" />
-          <div class="acc-header__meta">
-            <div class="acc-header__name">${displayName}</div>
-            <div class="acc-header__handle" dir="ltr">${handle}</div>
-          </div>
-        </div>
-        <div class="acc-xp">
-          <div class="acc-xp__top">
-            <span class="acc-xp__lvl">Lv ${level}</span>
-            <span class="acc-xp__xp">${xpInLevel} / ${perLevel} XP</span>
-          </div>
-          <div class="acc-xp__bar"><span style="width:${pct}%"></span></div>
+        <div class="acc-mini">
+          <div class="acc-mini__name">${displayName}</div>
+          <div class="acc-mini__handle" dir="ltr">${handle}</div>
         </div>
         <div class="acc-divider"></div>
+
         <a href="/account?tab=orders" class="acc-link"><span class="ai">📦</span><span>الطلبات</span></a>
         <a href="/account?tab=notifications" class="acc-link" id="accNotifLink"><span class="ai">🔔</span><span>الإشعارات</span><span class="soon-tag acc-unread-badge" id="accUnreadBadge" hidden>0</span></a>
         <a href="#" class="acc-link acc-soon" data-soon><span class="ai">⭐</span><span>الأمنيات</span><span class="soon-tag">قريباً</span></a>
