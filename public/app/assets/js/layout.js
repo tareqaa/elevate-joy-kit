@@ -249,9 +249,24 @@ function gxWireLayoutEvents(){
   cartClose.addEventListener('click', gxCloseCart);
   overlay.addEventListener('click', gxCloseCart);
 
-  document.getElementById('checkoutBtn').addEventListener('click', () => {
-    const url = GXCart.buildWhatsAppUrl();
-    if(url) window.open(url, '_blank');
+  document.getElementById('checkoutBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('checkoutBtn');
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ جاري الحفظ...';
+    try{
+      const submitted = await GXCart.submitOrder();
+      const url = GXCart.buildWhatsAppUrl(undefined, submitted && submitted.order_number);
+      if(submitted) GXCart.clear();
+      if(url) window.open(url, '_blank');
+    }catch(e){
+      console.error(e);
+      const url = GXCart.buildWhatsAppUrl();
+      if(url) window.open(url, '_blank');
+    }finally{
+      btn.disabled = false;
+      btn.innerHTML = original;
+    }
   });
 
   const toast = document.getElementById('addToast');
