@@ -490,6 +490,7 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   .menu-btn .btn-label{display:none;}
   .menu-panel{width:260px; max-width:calc(100vw - 32px);}
   .icon-btn{width:40px; height:40px;}
+  .account-avatar-btn{width:40px; height:40px;}
 
   .trust-strip{grid-template-columns:1fr; gap:12px;}
   .trust-item{padding:16px;}
