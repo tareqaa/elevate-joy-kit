@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { User as UserIcon, Package, ShieldCheck, Copy, Check, Bell } from "lucide-react";
+import { User as UserIcon, Package, ShieldCheck, Copy, Check } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({ meta: [{ title: "حسابي — GX Store" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
-    tab: (typeof s.tab === "string" ? s.tab : "profile") as "profile" | "orders" | "notifications" | "security",
+    tab: (typeof s.tab === "string" ? s.tab : "profile") as "profile" | "orders" | "security",
   }),
   component: AccountPage,
 });
