@@ -49,12 +49,14 @@ export function Navbar() {
   useEffect(() => {
     if (!session) { setProfile(null); setIsAdmin(false); return; }
     (async () => {
-      const [{ data: prof }, { data: adminData }] = await Promise.all([
-        supabase.from("profiles").select("username, full_name, avatar_url, level, email").eq("id", session.userId).maybeSingle(),
-        supabase.rpc("has_role", { _user_id: session.userId, _role: "admin" }).then(r => r).catch(() => ({ data: null })),
-      ]);
-      setProfile(prof ?? { email: session.email });
-      setIsAdmin(!!adminData);
+      try {
+        const { data: prof } = await supabase.from("profiles").select("username, full_name, avatar_url, level, email").eq("id", session.userId).maybeSingle();
+        setProfile(prof ?? { email: session.email });
+      } catch { setProfile({ email: session.email }); }
+      try {
+        const { data: adminData } = await supabase.rpc("has_role", { _user_id: session.userId, _role: "admin" });
+        setIsAdmin(!!adminData);
+      } catch { setIsAdmin(false); }
     })();
   }, [session]);
 
