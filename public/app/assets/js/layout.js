@@ -30,9 +30,10 @@ function gxRenderNavbar(){
           <div class="mark"><img src="/app/assets/img/gx-logo.png" alt="GX"></div>
           <div class="brand-word">GX <span>STORE</span></div>
         </a>
-        <div class="search-box">
+        <div class="search-box" id="gxSearchBox">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-          <input type="text" placeholder="دور على منتج أو اشتراك...">
+          <input type="text" id="gxSearchInput" autocomplete="off" placeholder="دور على منتج أو اشتراك...">
+          <div class="gx-search-results" id="gxSearchResults" hidden></div>
         </div>
         <div class="nav-right">
           <button class="currency-pick" id="currencyBtn" type="button">
@@ -392,10 +393,83 @@ function gxInitLayout(){
   gxRenderCartDrawer();
   gxRenderFooter();
   gxWireLayoutEvents();
+  gxWireSearch();
   gxUpdateCartCount();
   gxRenderCartItemsInDrawer();
   GXCurrency.autoDetect();
   gxRenderAuthState();
+}
+
+// ---------------- Navbar search ----------------
+function gxBuildSearchIndex(){
+  const items = [];
+  const productLink = (slug) => (
+    slug === 'snapchat' ? '/app/snapchat/index.html' :
+    slug === 'fortnite' ? '/app/games/fortnite/index.html' :
+    slug === 'gemini'   ? '/app/ai/gemini/index.html' :
+    `/app/design/${slug}/index.html`
+  );
+  try {
+    if(typeof PRODUCTS_CATALOG !== 'undefined'){
+      for(const slug in PRODUCTS_CATALOG){
+        const p = PRODUCTS_CATALOG[slug];
+        items.push({ name: p.name, sub: 'منتج', icon: p.icon || '🛒', url: productLink(slug) });
+      }
+    }
+    if(typeof CATEGORY_LINKS !== 'undefined'){
+      CATEGORY_LINKS.forEach(c => {
+        items.push({ name: c.name, sub: 'قسم', icon: c.icon || '📂', url: `/app/${c.slug}/index.html` });
+      });
+    }
+    if(typeof GIFT_CARDS_CATALOG !== 'undefined'){
+      for(const k in GIFT_CARDS_CATALOG){
+        const g = GIFT_CARDS_CATALOG[k];
+        items.push({ name: g.name, sub: 'بطاقات هدايا', icon: g.icon || '🎁', url: `/app/gift-cards/${k}/index.html` });
+      }
+    }
+  } catch(e){}
+  return items;
+}
+
+function gxWireSearch(){
+  const input = document.getElementById('gxSearchInput');
+  const box   = document.getElementById('gxSearchResults');
+  if(!input || !box) return;
+  const index = gxBuildSearchIndex();
+
+  const norm = (s) => (s||'').toString().toLowerCase()
+    .replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه')
+    .replace(/[\u064B-\u065F\u0670]/g,'');
+
+  function render(q){
+    const nq = norm(q).trim();
+    if(!nq){ box.hidden = true; box.innerHTML=''; return; }
+    const matches = index.filter(it => norm(it.name).includes(nq)).slice(0,8);
+    if(!matches.length){
+      box.innerHTML = `<div class="gx-search-empty">لا توجد نتائج لـ "${q}"</div>`;
+    } else {
+      box.innerHTML = matches.map(m => `
+        <a href="${m.url}" class="gx-search-item">
+          <span class="gx-search-ico">${m.icon}</span>
+          <span class="gx-search-txt"><b>${m.name}</b><small>${m.sub}</small></span>
+        </a>`).join('');
+    }
+    box.hidden = false;
+  }
+
+  input.addEventListener('input', (e)=> render(e.target.value));
+  input.addEventListener('focus', (e)=> { if(e.target.value) render(e.target.value); });
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('#gxSearchBox')){ box.hidden = true; }
+  });
+  input.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      const first = box.querySelector('.gx-search-item');
+      if(first) window.location.href = first.getAttribute('href');
+    } else if(e.key === 'Escape'){
+      box.hidden = true; input.blur();
+    }
+  });
 }
 
 // Renders an account dropdown in the navbar. Draws the "login" state
