@@ -192,7 +192,8 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
 
         <div className="space-y-4">
           <div className="text-sm space-y-1">
-            <div><b>العميل:</b> {order.customer_name || "زائر"}</div>
+            <div><b>العميل:</b> {order.customer_name || "زائر"} {order.user_username && <span className="text-muted-foreground">(@{order.user_username})</span>}</div>
+            {order.user_email && <div><b>الإيميل:</b> <a href={`mailto:${order.user_email}`} dir="ltr" className="text-primary hover:underline">{order.user_email}</a></div>}
             {order.customer_whatsapp && <div><b>واتساب:</b> <span dir="ltr">{order.customer_whatsapp}</span></div>}
             <div><b>التاريخ:</b> {new Date(order.created_at).toLocaleString("ar-EG")}</div>
             <div><b>الإجمالي:</b> {Number(order.total_jod).toFixed(2)} د.أ</div>
