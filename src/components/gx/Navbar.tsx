@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
-import { CATEGORY_LINKS } from "@/data/products";
+import { CATEGORY_LINKS, getCategoryLink } from "@/data/products";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthModal } from "./AuthModal";
 import { CurrencyModal } from "./CurrencyModal";
