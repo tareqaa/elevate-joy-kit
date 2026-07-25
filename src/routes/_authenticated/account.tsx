@@ -37,7 +37,8 @@ const AVATAR_SEEDS = [
   "Raider", "Sonic", "Volt", "Ember", "Frost", "Storm",
 ];
 const avatarUrl = (seed: string) =>
-  `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6,ec4899,22d3ee,f59e0b&radius=50&scale=90`;
+  `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6,ec4899,22d3ee,f59e0b&radius=50&scale=90&skinColor=f2d3b1,ecad80,9e5622`;
+
 
 
 function AccountPage() {
