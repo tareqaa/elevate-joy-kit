@@ -9,13 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SnapchatRouteImport } from './routes/snapchat'
 import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as FortniteRouteImport } from './routes/fortnite'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProductSlugRouteImport } from './routes/product.$slug'
+import { Route as GiftCardsSlugRouteImport } from './routes/gift-cards.$slug'
+import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -25,6 +30,11 @@ import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 
+const SnapchatRoute = SnapchatRouteImport.update({
+  id: '/snapchat',
+  path: '/snapchat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PolicyRoute = PolicyRouteImport.update({
   id: '/policy',
   path: '/policy',
@@ -33,6 +43,11 @@ const PolicyRoute = PolicyRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FortniteRoute = FortniteRouteImport.update({
+  id: '/fortnite',
+  path: '/fortnite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FaqRoute = FaqRouteImport.update({
@@ -57,6 +72,21 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProductSlugRoute = ProductSlugRouteImport.update({
+  id: '/product/$slug',
+  path: '/product/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GiftCardsSlugRoute = GiftCardsSlugRouteImport.update({
+  id: '/gift-cards/$slug',
+  path: '/gift-cards/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategorySlugRoute = CategorySlugRouteImport.update({
+  id: '/category/$slug',
+  path: '/category/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -109,12 +139,17 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
+  '/fortnite': typeof FortniteRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
+  '/snapchat': typeof SnapchatRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/category/$slug': typeof CategorySlugRoute
+  '/gift-cards/$slug': typeof GiftCardsSlugRoute
+  '/product/$slug': typeof ProductSlugRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -125,11 +160,16 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
+  '/fortnite': typeof FortniteRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
+  '/snapchat': typeof SnapchatRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/account': typeof AuthenticatedAccountRoute
+  '/category/$slug': typeof CategorySlugRoute
+  '/gift-cards/$slug': typeof GiftCardsSlugRoute
+  '/product/$slug': typeof ProductSlugRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -142,12 +182,17 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
+  '/fortnite': typeof FortniteRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
+  '/snapchat': typeof SnapchatRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/category/$slug': typeof CategorySlugRoute
+  '/gift-cards/$slug': typeof GiftCardsSlugRoute
+  '/product/$slug': typeof ProductSlugRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -160,12 +205,17 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/faq'
+    | '/fortnite'
     | '/mcp'
     | '/policy'
+    | '/snapchat'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/account'
     | '/admin'
+    | '/category/$slug'
+    | '/gift-cards/$slug'
+    | '/product/$slug'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/orders'
     | '/admin/users'
@@ -176,11 +226,16 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/faq'
+    | '/fortnite'
     | '/mcp'
     | '/policy'
+    | '/snapchat'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/account'
+    | '/category/$slug'
+    | '/gift-cards/$slug'
+    | '/product/$slug'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/orders'
     | '/admin/users'
@@ -192,12 +247,17 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/faq'
+    | '/fortnite'
     | '/mcp'
     | '/policy'
+    | '/snapchat'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/account'
     | '/_authenticated/admin'
+    | '/category/$slug'
+    | '/gift-cards/$slug'
+    | '/product/$slug'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/orders'
     | '/_authenticated/admin/users'
@@ -210,15 +270,27 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CartRoute: typeof CartRoute
   FaqRoute: typeof FaqRoute
+  FortniteRoute: typeof FortniteRoute
   McpRoute: typeof McpRoute
   PolicyRoute: typeof PolicyRoute
+  SnapchatRoute: typeof SnapchatRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  CategorySlugRoute: typeof CategorySlugRoute
+  GiftCardsSlugRoute: typeof GiftCardsSlugRoute
+  ProductSlugRoute: typeof ProductSlugRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/snapchat': {
+      id: '/snapchat'
+      path: '/snapchat'
+      fullPath: '/snapchat'
+      preLoaderRoute: typeof SnapchatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/policy': {
       id: '/policy'
       path: '/policy'
@@ -231,6 +303,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fortnite': {
+      id: '/fortnite'
+      path: '/fortnite'
+      fullPath: '/fortnite'
+      preLoaderRoute: typeof FortniteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/faq': {
@@ -266,6 +345,27 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/product/$slug': {
+      id: '/product/$slug'
+      path: '/product/$slug'
+      fullPath: '/product/$slug'
+      preLoaderRoute: typeof ProductSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gift-cards/$slug': {
+      id: '/gift-cards/$slug'
+      path: '/gift-cards/$slug'
+      fullPath: '/gift-cards/$slug'
+      preLoaderRoute: typeof GiftCardsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/category/$slug': {
+      id: '/category/$slug'
+      path: '/category/$slug'
+      fullPath: '/category/$slug'
+      preLoaderRoute: typeof CategorySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -361,11 +461,16 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CartRoute: CartRoute,
   FaqRoute: FaqRoute,
+  FortniteRoute: FortniteRoute,
   McpRoute: McpRoute,
   PolicyRoute: PolicyRoute,
+  SnapchatRoute: SnapchatRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  CategorySlugRoute: CategorySlugRoute,
+  GiftCardsSlugRoute: GiftCardsSlugRoute,
+  ProductSlugRoute: ProductSlugRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
 export const routeTree = rootRouteImport
