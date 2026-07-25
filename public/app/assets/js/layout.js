@@ -622,29 +622,29 @@ async function gxRenderAuthState(){
     if(!window.gxSupabaseReady) return;
     await window.gxSupabaseReady;
     if(!window.gxSupabase) return;
-    const { data } = await window.gxSupabase.auth.getUser();
-    const user = data && data.user;
-    let isAdmin = false;
-    let profile = null;
-    if(user){
-      const [roleRes, prof] = await Promise.all([
-        window.gxSupabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }).catch(()=>({data:false})),
-        gxFetchProfile(user),
-      ]);
-      isAdmin = !!(roleRes && roleRes.data);
-      profile = prof;
-    }
-    gxRenderAccountLink(!!user, isAdmin, profile);
-    window.gxSupabase.auth.onAuthStateChange(async (_e, session) => {
-      let admin = false; let prof = null;
-      if(session && session.user){
-        try{
-          const r = await window.gxSupabase.rpc('has_role', { _user_id: session.user.id, _role: 'admin' });
-          admin = !!r.data;
-        }catch(_){}
-        prof = await gxFetchProfile(session.user);
-      }
-      gxRenderAccountLink(!!session, admin, prof);
+
+    const applyForSession = async (session) => {
+      const user = session && session.user;
+      if(!user){ gxRenderAccountLink(false, false); return; }
+      let isAdmin = false; let profile = null;
+      try{
+        const [roleRes, prof] = await Promise.all([
+          window.gxSupabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }).catch(()=>({data:false})),
+          gxFetchProfile(user),
+        ]);
+        isAdmin = !!(roleRes && roleRes.data);
+        profile = prof;
+      }catch(_){}
+      gxRenderAccountLink(true, isAdmin, profile || { email: user.email });
+    };
+
+    const { data: sessData } = await window.gxSupabase.auth.getSession();
+    await applyForSession(sessData && sessData.session);
+
+    window.gxSupabase.auth.onAuthStateChange((event, session) => {
+      // Only react to identity transitions; ignore TOKEN_REFRESHED to avoid flicker
+      if(event !== 'SIGNED_IN' && event !== 'SIGNED_OUT' && event !== 'USER_UPDATED') return;
+      applyForSession(session);
     });
   }catch(e){ /* keep default login CTA */ }
 }
