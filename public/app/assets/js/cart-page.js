@@ -95,9 +95,23 @@ function wireCartRowEvents(){
   });
 
   const checkoutBtn = document.getElementById('pageCheckoutBtn');
-  if(checkoutBtn) checkoutBtn.addEventListener('click', () => {
-    const url = GXCart.buildWhatsAppUrl();
-    if(url) window.open(url, '_blank');
+  if(checkoutBtn) checkoutBtn.addEventListener('click', async () => {
+    const original = checkoutBtn.innerHTML;
+    checkoutBtn.disabled = true;
+    checkoutBtn.innerHTML = '⏳ جاري الحفظ...';
+    try{
+      const submitted = await GXCart.submitOrder();
+      const url = GXCart.buildWhatsAppUrl(undefined, submitted && submitted.order_number);
+      if(submitted) GXCart.clear();
+      if(url) window.open(url, '_blank');
+    }catch(e){
+      console.error(e);
+      const url = GXCart.buildWhatsAppUrl();
+      if(url) window.open(url, '_blank');
+    }finally{
+      checkoutBtn.disabled = false;
+      checkoutBtn.innerHTML = original;
+    }
   });
 }
 
