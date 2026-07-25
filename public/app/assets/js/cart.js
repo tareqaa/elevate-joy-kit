@@ -228,7 +228,12 @@ ${lines}
 
     msg += `\n\n✅ الرجاء تأكيد الطلب ليتم البدء بالتجهيز.\nشكراً لاختيارك GX Store 💙`;
 
-    return 'https://wa.me/962776252313?text=' + encodeURIComponent(msg);
+    const encodedMsg = encodeURIComponent(msg);
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+    if(isMobile){
+      return 'https://wa.me/962776252313?text=' + encodedMsg;
+    }
+    return 'https://web.whatsapp.com/send?phone=962776252313&text=' + encodedMsg;
   }
 
   // Persists the current cart into the `orders` table (via Supabase bridge).
