@@ -92,73 +92,133 @@ function OrdersAdmin() {
   });
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3">
-        <CardTitle>الطلبات ({filtered.length})</CardTitle>
-        <div className="flex gap-2 flex-wrap">
-          <Input placeholder="بحث برقم الطلب / الاسم / الإيميل / اليوزر / واتساب" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل الحالات</SelectItem>
-              {STATUSES.map((s) => <SelectItem key={s} value={s}>{STATUS_AR[s]}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="space-y-4">
+      <QuickFulfill onPick={(o) => setSelected(o)} />
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3">
+          <CardTitle>الطلبات ({filtered.length})</CardTitle>
+          <div className="flex gap-2 flex-wrap">
+            <Input placeholder="بحث برقم الطلب / الاسم / الإيميل / اليوزر / واتساب" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الحالات</SelectItem>
+                {STATUSES.map((s) => <SelectItem key={s} value={s}>{STATUS_AR[s]}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-muted-foreground border-b">
+                <tr className="text-right">
+                  <th className="p-2">رقم الطلب</th>
+                  <th className="p-2">التاريخ</th>
+                  <th className="p-2">العميل</th>
+                  <th className="p-2">الإيميل</th>
+                  <th className="p-2">الإجمالي</th>
+                  <th className="p-2">الحالة</th>
+                  <th className="p-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((o) => (
+                  <tr key={o.id} className="border-b hover:bg-accent/30">
+                    <td className="p-2 font-mono">{o.order_number}</td>
+                    <td className="p-2 text-xs">{new Date(o.created_at).toLocaleString("ar-EG")}</td>
+                    <td className="p-2">
+                      {o.customer_name || (o.user_id ? "مستخدم مسجّل" : "زائر")}
+                      {o.user_username && <div className="text-xs text-muted-foreground">@{o.user_username}</div>}
+                    </td>
+                    <td className="p-2 text-xs" dir="ltr">
+                      {o.user_email ? (
+                        <a href={`mailto:${o.user_email}`} className="hover:text-primary underline-offset-2 hover:underline">{o.user_email}</a>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="p-2">{Number(o.total_jod).toFixed(2)} د.أ</td>
+                    <td className="p-2"><Badge>{STATUS_AR[o.status] ?? o.status}</Badge></td>
+                    <td className="p-2"><Button size="sm" variant="outline" onClick={() => setSelected(o)}>إكمال / تعديل</Button></td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={7} className="text-center p-6 text-muted-foreground">لا يوجد طلبات</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+
+        {selected && (
+          <OrderDialog
+            order={selected}
+            onClose={() => setSelected(null)}
+            onSave={(patch) => updateMut.mutate({ id: selected.id, patch }, { onSuccess: () => setSelected(null) })}
+          />
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function QuickFulfill({ onPick }: { onPick: (o: OrderWithEmail) => void }) {
+  const [q, setQ] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function lookup() {
+    const raw = q.trim();
+    if (!raw) return;
+    // Accept "GX-246686" or "246686" or full number; do case-insensitive match
+    const term = raw.toUpperCase();
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .or(`order_number.eq.${term},order_number.ilike.%${term}%`)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setLoading(false);
+    if (error || !data) { toast.error("لم يتم العثور على الطلب"); return; }
+    const row = data as OrderRow;
+    let email: string | null = null;
+    let uname: string | null = null;
+    if (row.user_id) {
+      const { data: p } = await supabase.from("profiles").select("email,username").eq("id", row.user_id).maybeSingle();
+      email = p?.email ?? null; uname = p?.username ?? null;
+    }
+    onPick({ ...row, user_email: email, user_username: uname });
+  }
+
+  return (
+    <Card className="border-primary/40">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">⚡ إكمال طلب برقم الطلب</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-muted-foreground border-b">
-              <tr className="text-right">
-                <th className="p-2">رقم الطلب</th>
-                <th className="p-2">التاريخ</th>
-                <th className="p-2">العميل</th>
-                <th className="p-2">الإيميل</th>
-                <th className="p-2">الإجمالي</th>
-                <th className="p-2">الحالة</th>
-                <th className="p-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((o) => (
-                <tr key={o.id} className="border-b hover:bg-accent/30">
-                  <td className="p-2 font-mono">{o.order_number}</td>
-                  <td className="p-2 text-xs">{new Date(o.created_at).toLocaleString("ar-EG")}</td>
-                  <td className="p-2">
-                    {o.customer_name || (o.user_id ? "مستخدم مسجّل" : "زائر")}
-                    {o.user_username && <div className="text-xs text-muted-foreground">@{o.user_username}</div>}
-                  </td>
-                  <td className="p-2 text-xs" dir="ltr">
-                    {o.user_email ? (
-                      <a href={`mailto:${o.user_email}`} className="hover:text-primary underline-offset-2 hover:underline">{o.user_email}</a>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="p-2">{Number(o.total_jod).toFixed(2)} د.أ</td>
-                  <td className="p-2"><Badge>{STATUS_AR[o.status] ?? o.status}</Badge></td>
-                  <td className="p-2"><Button size="sm" variant="outline" onClick={() => setSelected(o)}>تفاصيل</Button></td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={7} className="text-center p-6 text-muted-foreground">لا يوجد طلبات</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <form onSubmit={(e) => { e.preventDefault(); lookup(); }} className="flex gap-2 flex-wrap">
+          <Input
+            placeholder="مثال: GX-246686"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="max-w-xs font-mono"
+            dir="ltr"
+          />
+          <Button type="submit" disabled={loading || !q.trim()}>
+            {loading ? "جاري البحث..." : "فتح الطلب"}
+          </Button>
+          <span className="text-xs text-muted-foreground self-center">
+            بيظهرلك الإيميل المرتبط + المنتجات، وبتقدر تحط الأكواد وتعلّمه "مُسلَّم" فيوصل إشعار للعميل تلقائياً.
+          </span>
+        </form>
       </CardContent>
-
-      {selected && (
-        <OrderDialog
-          order={selected}
-          onClose={() => setSelected(null)}
-          onSave={(patch) => updateMut.mutate({ id: selected.id, patch }, { onSuccess: () => setSelected(null) })}
-        />
-      )}
     </Card>
   );
 }
+
 
 
 function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
