@@ -212,7 +212,9 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
     unameCheck.status === "checking" ? "text-muted-foreground" : "text-muted-foreground";
 
   return (
-    <div className="grid md:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      <PlayerSearch />
+      <div className="grid md:grid-cols-2 gap-4">
       <Card>
         <CardHeader><CardTitle className="text-base">اختر شخصيتك</CardTitle></CardHeader>
         <CardContent>
