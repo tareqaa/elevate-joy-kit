@@ -249,7 +249,7 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
             <Input id="name" value={name} onChange={(e) => { setName(e.target.value); setNameTouched(true); }} placeholder="اسمك في اللعبة" maxLength={60} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="uname">اليوزر (Tag) — يظهر في المتصدرين</Label>
+            <Label htmlFor="uname">GameTag</Label>
             <div className="relative">
               <span className="absolute inset-y-0 start-3 flex items-center text-muted-foreground pointer-events-none" dir="ltr">@</span>
               <Input
@@ -262,9 +262,11 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
                 maxLength={20}
               />
             </div>
-            <p className={`text-xs ${unameColor}`}>
-              {unameCheck.status === "checking" ? "جاري التحقق..." : unameCheck.msg || "3-20 حرف: أحرف إنجليزية/أرقام/_ — يجب أن يكون فريداً"}
-            </p>
+            {unameCheck.msg && (
+              <p className={`text-xs ${unameColor}`}>
+                {unameCheck.status === "checking" ? "جاري التحقق..." : unameCheck.msg}
+              </p>
+            )}
           </div>
           <Button onClick={save} disabled={saving || unameCheck.status === "taken" || unameCheck.status === "invalid" || unameCheck.status === "checking"} className="w-full">
             {saving ? "جاري الحفظ..." : "حفظ التعديلات"}
