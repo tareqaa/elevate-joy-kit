@@ -29,7 +29,7 @@ const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   cancelled: { label: "ملغى", className: "bg-rose-500/15 text-rose-400 border-rose-500/40" },
 };
 
-// Cool mecha/robot gaming avatars (DiceBear bottts) — sharp, neon, game-ready
+// Human gaming avatars (DiceBear adventurer) — varied looks, vibrant neon backgrounds
 const AVATAR_SEEDS = [
   "Nova", "Vortex", "Cipher", "Blade", "Reactor", "Havoc",
   "Specter", "Pulse", "Rogue", "Titan", "Onyx", "Vanta",
@@ -37,7 +37,8 @@ const AVATAR_SEEDS = [
   "Raider", "Sonic", "Volt", "Ember", "Frost", "Storm",
 ];
 const avatarUrl = (seed: string) =>
-  `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6,ec4899&radius=20`;
+  `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6,ec4899,22d3ee,f59e0b&radius=50&scale=90`;
+
 
 function AccountPage() {
   const { user } = Route.useRouteContext();
