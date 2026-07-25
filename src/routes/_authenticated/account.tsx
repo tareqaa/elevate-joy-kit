@@ -10,15 +10,16 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { User as UserIcon, Package, ShieldCheck, Copy, Check } from "lucide-react";
+import { User as UserIcon, Package, ShieldCheck, Copy, Check, Bell } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({ meta: [{ title: "حسابي — GX Store" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
-    tab: (typeof s.tab === "string" ? s.tab : "profile") as "profile" | "orders" | "security",
+    tab: (typeof s.tab === "string" ? s.tab : "profile") as "profile" | "orders" | "notifications" | "security",
   }),
   component: AccountPage,
 });
+
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
   pending: { label: "قيد الانتظار", variant: "secondary" },
@@ -90,11 +91,12 @@ function AccountPage() {
 
       <Tabs
         value={tab}
-        onValueChange={(v) => navigate({ search: { tab: v as "profile" | "orders" | "security" } })}
+        onValueChange={(v) => navigate({ search: { tab: v as "profile" | "orders" | "notifications" | "security" } })}
       >
-        <TabsList className="grid grid-cols-3 w-full max-w-md">
+        <TabsList className="grid grid-cols-4 w-full max-w-xl">
           <TabsTrigger value="profile"><UserIcon className="w-4 h-4 ml-1" />الملف</TabsTrigger>
           <TabsTrigger value="orders"><Package className="w-4 h-4 ml-1" />طلباتي</TabsTrigger>
+          <TabsTrigger value="notifications"><Bell className="w-4 h-4 ml-1" />الإشعارات</TabsTrigger>
           <TabsTrigger value="security"><ShieldCheck className="w-4 h-4 ml-1" />الأمان</TabsTrigger>
         </TabsList>
 
@@ -115,10 +117,15 @@ function AccountPage() {
           <OrdersTab loading={ordersQ.isLoading} orders={ordersQ.data ?? []} />
         </TabsContent>
 
+        <TabsContent value="notifications" className="mt-4">
+          <NotificationsTab userId={user.id} />
+        </TabsContent>
+
         <TabsContent value="security" className="mt-4">
           <SecurityTab email={user.email || ""} />
         </TabsContent>
       </Tabs>
+
     </div>
   );
 }
