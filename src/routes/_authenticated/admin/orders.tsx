@@ -161,7 +161,7 @@ function OrdersAdmin() {
 }
 
 
-function OrderDialog({ order, onClose, onSave }: { order: OrderRow; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
+function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
   const [status, setStatus] = useState(order.status);
   const [notes, setNotes] = useState(order.admin_notes ?? "");
   const items = Array.isArray(order.items) ? order.items : [];
