@@ -492,8 +492,8 @@ function gxEnsureAuthModal(){
       <h3 class="gx-auth-modal__title" id="gxAuthTitle">تسجيل الدخول</h3>
 
       <form class="gx-auth-modal__form" id="gxAuthForm">
-        <label data-only="signup">الاسم الكامل</label>
-        <input type="text" id="gxAuthName" placeholder="اسمك" data-only="signup" />
+        <label data-only="signup">اسم المستخدم <span style="opacity:.6;font-weight:500">(3-20 حرف/رقم/_)</span></label>
+        <input type="text" id="gxAuthUsername" dir="ltr" placeholder="your_tag" pattern="[a-zA-Z0-9_]{3,20}" data-only="signup" />
         <label>البريد الإلكتروني</label>
         <input type="email" id="gxAuthEmail" dir="ltr" placeholder="your@email.com" required />
         <label>كلمة السر</label>
