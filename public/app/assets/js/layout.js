@@ -395,44 +395,88 @@ function gxInitLayout(){
   gxRenderAuthState();
 }
 
-// Renders an account/login link in the navbar. Draws the "login" state
+// Renders an account dropdown in the navbar. Draws the "login" state
 // immediately so the button is always visible, then upgrades to the
-// "account" state once the Supabase bridge finishes loading.
-function gxRenderAccountLink(signedIn){
+// "account" state (with dropdown menu) once the Supabase bridge loads.
+function gxRenderAccountLink(signedIn, isAdmin){
   const navRight = document.querySelector('.nav-right');
   if(!navRight) return;
-  const existing = document.getElementById('accountLink');
+  const existing = document.getElementById('accountWrap');
   if(existing) existing.remove();
-  const link = document.createElement('a');
-  link.id = 'accountLink';
-  link.className = 'icon-btn account-link';
-  if(signedIn){
-    link.href = '/account';
-    link.title = 'حسابي';
-    link.setAttribute('aria-label','حسابي');
-    link.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
-    link.classList.add('account-link--signed');
+
+  const wrap = document.createElement('div');
+  wrap.id = 'accountWrap';
+  wrap.className = 'account-wrap';
+
+  if(!signedIn){
+    wrap.innerHTML = `
+      <a href="/auth" class="icon-btn account-link" title="تسجيل الدخول" aria-label="تسجيل الدخول">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+      </a>`;
   }else{
-    link.href = '/auth';
-    link.title = 'تسجيل الدخول';
-    link.setAttribute('aria-label','تسجيل الدخول');
-    link.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
+    wrap.innerHTML = `
+      <button type="button" class="icon-btn account-link account-link--signed" id="accountBtn" title="حسابي" aria-label="حسابي">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </button>
+      <div class="account-panel" id="accountPanel">
+        <a href="/account" class="acc-link"><span class="ai">📦</span><span>الطلبات</span></a>
+        <a href="#" class="acc-link acc-soon" data-soon><span class="ai">⭐</span><span>الأمنيات</span><span class="soon-tag">قريباً</span></a>
+        <a href="#" class="acc-link acc-soon" data-soon><span class="ai">🔔</span><span>الإشعارات</span><span class="soon-tag">قريباً</span></a>
+        <a href="/account" class="acc-link"><span class="ai">👤</span><span>حسابي</span></a>
+        <a href="/account" class="acc-link"><span class="ai">⚙️</span><span>الإعدادات</span></a>
+        ${isAdmin ? '<div class="acc-divider"></div><a href="/admin" class="acc-link acc-admin"><span class="ai">🛡️</span><span>لوحة التحكم</span></a>' : ''}
+        <div class="acc-divider"></div>
+        <button type="button" class="acc-link acc-logout" id="accLogout"><span class="ai">↩︎</span><span>تسجيل الخروج</span></button>
+      </div>`;
   }
-  navRight.insertBefore(link, navRight.firstChild);
+  navRight.insertBefore(wrap, navRight.firstChild);
+
+  if(signedIn){
+    const btn = wrap.querySelector('#accountBtn');
+    const panel = wrap.querySelector('#accountPanel');
+    btn.addEventListener('click', (e)=>{ e.stopPropagation(); panel.classList.toggle('open'); });
+    document.addEventListener('click', (e)=>{ if(!wrap.contains(e.target)) panel.classList.remove('open'); });
+    wrap.querySelectorAll('[data-soon]').forEach(a => a.addEventListener('click', (e)=>{
+      e.preventDefault();
+      panel.classList.remove('open');
+      alert('هاي الميزة قريباً 🚀');
+    }));
+    const logout = wrap.querySelector('#accLogout');
+    if(logout) logout.addEventListener('click', async ()=>{
+      try{
+        if(window.gxSupabaseReady) await window.gxSupabaseReady;
+        if(window.gxSupabase) await window.gxSupabase.auth.signOut();
+      }catch(_){}
+      window.location.href = '/auth';
+    });
+  }
 }
 
 async function gxRenderAuthState(){
-  // Show the login CTA immediately (bridge may not be loaded yet).
-  gxRenderAccountLink(false);
+  gxRenderAccountLink(false, false);
   try{
     if(!window.gxSupabaseReady) return;
     await window.gxSupabaseReady;
     if(!window.gxSupabase) return;
     const { data } = await window.gxSupabase.auth.getUser();
-    gxRenderAccountLink(!!(data && data.user));
-    // Keep it in sync with auth changes.
-    window.gxSupabase.auth.onAuthStateChange((_e, session) => {
-      gxRenderAccountLink(!!session);
+    const user = data && data.user;
+    let isAdmin = false;
+    if(user){
+      try{
+        const r = await window.gxSupabase.rpc('has_role', { _user_id: user.id, _role: 'admin' });
+        isAdmin = !!r.data;
+      }catch(_){}
+    }
+    gxRenderAccountLink(!!user, isAdmin);
+    window.gxSupabase.auth.onAuthStateChange(async (_e, session) => {
+      let admin = false;
+      if(session && session.user){
+        try{
+          const r = await window.gxSupabase.rpc('has_role', { _user_id: session.user.id, _role: 'admin' });
+          admin = !!r.data;
+        }catch(_){}
+      }
+      gxRenderAccountLink(!!session, admin);
     });
   }catch(e){ /* keep default login CTA */ }
 }
