@@ -76,12 +76,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "اشتراكات، بطاقات ألعاب، وتفعيل فوري." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "theme-color", content: "#090b10" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/app/assets/img/gx-logo.png", type: "image/png" },
     ],
-    meta_extra: [{ name: "theme-color", content: "#090b10" }],
   }),
   shellComponent: RootShell,
   component: RootComponent,
