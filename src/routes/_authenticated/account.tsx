@@ -340,7 +340,7 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
 
 
 function OrderCard({ order: o }: { order: OrderRow }) {
-  const status = STATUS_LABELS[o.status] ?? { label: o.status, variant: "secondary" as const };
+  const status = STATUS_LABELS[o.status] ?? { label: o.status, className: "bg-muted text-muted-foreground border-border" };
   const items = Array.isArray(o.items) ? (o.items as Array<{ name?: string; qty?: number; price?: number }>) : [];
   const delivery = o.delivery_data && typeof o.delivery_data === "object" ? o.delivery_data as Record<string, unknown> : {};
   const codes = Array.isArray((delivery as { codes?: unknown }).codes)
