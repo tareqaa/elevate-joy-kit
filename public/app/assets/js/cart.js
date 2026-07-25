@@ -177,14 +177,14 @@ const GXCart = (function(){
     localStorage.setItem(NOTES_KEY, text);
   }
 
-  function buildWhatsAppUrl(notesOverride){
+  function buildWhatsAppUrl(notesOverride, orderNumberOverride){
     const resolved = getResolvedItems();
     if(resolved.length === 0) return null;
 
     const currency = GXCurrency.get();
     const totalJod = totalJOD();
     const itemCount = resolved.reduce((n, it) => n + it.qty, 0);
-    const orderId = 'GX-' + Date.now().toString().slice(-6);
+    const orderId = orderNumberOverride || ('GX-' + Date.now().toString().slice(-6));
     const now = new Date();
     const dateStr = now.toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' });
     const timeStr = now.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit' });
@@ -231,7 +231,46 @@ ${lines}
     return 'https://wa.me/962776252313?text=' + encodeURIComponent(msg);
   }
 
+  // Persists the current cart into the `orders` table (via Supabase bridge).
+  // Returns the inserted row (including the DB-generated order_number)
+  // or null when there is no bridge / no items / an error occurs.
+  async function submitOrder(){
+    const resolved = getResolvedItems();
+    if(resolved.length === 0) return null;
+    if(!window.gxSupabaseReady) return null;
+    try{
+      await window.gxSupabaseReady;
+      const sb = window.gxSupabase;
+      if(!sb) return null;
+      const { data: userData } = await sb.auth.getUser();
+      const user = userData && userData.user;
+      const items = resolved.map(it => ({
+        cartId: it.cartId,
+        name: it.name,
+        qty: it.qty,
+        price: it.price,
+        usernames: it.usernames || null,
+      }));
+      const payload = {
+        user_id: user ? user.id : null,
+        customer_name: user ? (user.user_metadata && user.user_metadata.full_name) || null : null,
+        customer_whatsapp: null,
+        items,
+        total_jod: totalJOD(),
+        currency_snapshot: GXCurrency.get(),
+        notes: getNotes() || null,
+        status: 'pending',
+      };
+      const { data, error } = await sb.from('orders').insert(payload).select().single();
+      if(error){ console.warn('[GX] order insert error', error); return null; }
+      return data;
+    }catch(e){
+      console.warn('[GX] submitOrder failed', e);
+      return null;
+    }
+  }
+
   load();
 
-  return {add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear, count, getResolvedItems, getSnapUsernames, totalJOD, buildWhatsAppUrl, getNotes, setNotes};
+  return {add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear, count, getResolvedItems, getSnapUsernames, totalJOD, buildWhatsAppUrl, getNotes, setNotes, submitOrder};
 })();
