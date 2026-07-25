@@ -584,11 +584,12 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
 /* Avatar-style account button */
 .account-avatar-btn{
   position:relative; padding:0; overflow:visible;
+  width:44px; height:44px; border-radius:50%;
   border:1.5px solid color-mix(in oklab, var(--cyan) 55%, var(--border));
   background:var(--card);
 }
 .account-avatar-btn img{
-  width:100%; height:100%; border-radius:inherit; object-fit:cover; display:block;
+  width:100%; height:100%; border-radius:50%; object-fit:cover; display:block;
 }
 .account-avatar-btn:hover{
   box-shadow:0 0 0 4px color-mix(in oklab, var(--cyan) 22%, transparent);
