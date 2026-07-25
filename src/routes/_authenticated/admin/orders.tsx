@@ -226,7 +226,20 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
   const [notes, setNotes] = useState(order.admin_notes ?? "");
   const items = Array.isArray(order.items) ? order.items : [];
   const existingDelivery = order.delivery_data && typeof order.delivery_data === "object" ? order.delivery_data as { codes?: Array<{ label: string; value: string }> } : {};
-  const [codes, setCodes] = useState<Array<{ label: string; value: string }>>(existingDelivery.codes ?? [{ label: "", value: "" }]);
+
+  // Pre-populate one code slot per (item × qty) when nothing was saved yet
+  const initialCodes = (() => {
+    if (existingDelivery.codes && existingDelivery.codes.length > 0) return existingDelivery.codes;
+    const seeded: Array<{ label: string; value: string }> = [];
+    (items as Array<{ name?: string; qty?: number }>).forEach((it) => {
+      const qty = Math.max(1, Number(it.qty) || 1);
+      for (let k = 0; k < qty; k++) {
+        seeded.push({ label: qty > 1 ? `${it.name || "منتج"} (${k + 1}/${qty})` : (it.name || "منتج"), value: "" });
+      }
+    });
+    return seeded.length > 0 ? seeded : [{ label: "", value: "" }];
+  })();
+  const [codes, setCodes] = useState<Array<{ label: string; value: string }>>(initialCodes);
 
   function addCode() { setCodes([...codes, { label: "", value: "" }]); }
   function updateCode(i: number, patch: Partial<{ label: string; value: string }>) {
@@ -234,14 +247,24 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
   }
   function removeCode(i: number) { setCodes(codes.filter((_, idx) => idx !== i)); }
 
-  function save() {
+  function buildPatch(nextStatus: string) {
     const cleanCodes = codes.filter((c) => c.label.trim() || c.value.trim());
-    onSave({
-      status,
+    return {
+      status: nextStatus,
       admin_notes: notes.trim() || null,
       delivery_data: { codes: cleanCodes },
-    });
+    };
   }
+  function save() { onSave(buildPatch(status)); }
+  function markDelivered() {
+    const anyValue = codes.some((c) => c.value.trim());
+    if (!anyValue) {
+      const ok = confirm("ما في أكواد مدخلة. تأكد من تسليم الطلب بدون أكواد؟");
+      if (!ok) return;
+    }
+    onSave(buildPatch("delivered"));
+  }
+
 
   return (
     <Dialog open onOpenChange={onClose}>
