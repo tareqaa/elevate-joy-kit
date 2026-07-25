@@ -585,7 +585,7 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
 /* Avatar-style account button */
 .account-avatar-btn{
   position:relative; padding:0; overflow:visible;
-  width:44px; height:44px; border-radius:50%;
+  width:38px; height:38px; border-radius:50%;
   border:1.5px solid color-mix(in oklab, var(--cyan) 55%, var(--border));
   background:var(--card);
 }
@@ -593,17 +593,22 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   width:100%; height:100%; border-radius:50%; object-fit:cover; display:block;
 }
 .account-avatar-btn:hover{
-  box-shadow:0 0 0 4px color-mix(in oklab, var(--cyan) 22%, transparent);
+  box-shadow:0 0 0 3px color-mix(in oklab, var(--cyan) 22%, transparent);
   transform:translateY(-1px);
 }
 .account-lvl-dot{
-  position:absolute; bottom:-4px; inset-inline-end:-4px;
-  min-width:18px; height:18px; padding:0 5px;
+  position:absolute; bottom:-3px; inset-inline-end:-3px;
+  min-width:16px; height:16px; padding:0 4px;
   background:linear-gradient(135deg, var(--cyan), #7c5cff);
-  color:#05060a; font-size:10px; font-weight:900;
+  color:#05060a; font-size:9px; font-weight:900;
   border-radius:999px; display:flex; align-items:center; justify-content:center;
   border:2px solid var(--card); line-height:1;
 }
+@media (max-width: 720px){
+  .account-avatar-btn{width:34px; height:34px;}
+  .account-lvl-dot{min-width:14px; height:14px; font-size:8.5px;}
+}
+
 
 /* Dropdown header with avatar + username */
 .acc-header{
