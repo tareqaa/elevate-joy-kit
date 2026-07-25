@@ -476,6 +476,13 @@ function gxRenderAccountLink(signedIn, isAdmin, profile){
     panel.classList.remove('open');
     alert('هاي الميزة قريباً 🚀');
   }));
+  const notifBtn = wrap.querySelector('#accNotifLink');
+  if(notifBtn) notifBtn.addEventListener('click', (e)=>{
+    e.preventDefault(); e.stopPropagation();
+    panel.classList.remove('open');
+    gxOpenNotifCenter();
+  });
+
   const logout = wrap.querySelector('#accLogout');
   if(logout) logout.addEventListener('click', async ()=>{
     try{
