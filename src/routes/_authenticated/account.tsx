@@ -291,7 +291,7 @@ const STATUS_TABS: Array<{ key: string; label: string; match: (s: string) => boo
 ];
 
 function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }) {
-  const [view, setView] = useState<string>("all");
+  const [view, setView] = useState<string>("pending");
   if (loading) return <p className="text-sm text-muted-foreground">جاري التحميل...</p>;
   const counts = STATUS_TABS.reduce<Record<string, number>>((acc, t) => {
     acc[t.key] = orders.filter((o) => t.match(o.status)).length;
