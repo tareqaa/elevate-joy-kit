@@ -60,7 +60,7 @@ function OrdersAdmin() {
 
   const updateMut = useMutation({
     mutationFn: async (payload: { id: string; patch: Record<string, unknown> }) => {
-      const { error } = await supabase.from("orders").update(payload.patch).eq("id", payload.id);
+      const { error } = await supabase.from("orders").update(payload.patch as never).eq("id", payload.id);
       if (error) throw error;
     },
     onSuccess: () => {

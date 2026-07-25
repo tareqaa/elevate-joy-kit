@@ -13,11 +13,11 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 function AdminLayout() {
   const location = useLocation();
-  const tabs = [
+  const tabs: Array<{ to: "/admin" | "/admin/orders" | "/admin/users"; label: string; exact?: boolean }> = [
     { to: "/admin", label: "نظرة عامة", exact: true },
     { to: "/admin/orders", label: "الطلبات" },
     { to: "/admin/users", label: "المستخدمون" },
-  ] as const;
+  ];
   return (
     <div className="space-y-6">
       <div className="border-b flex gap-1 overflow-x-auto">

@@ -104,7 +104,7 @@ function AccountPage() {
                     <Badge variant={status.variant}>{status.label}</Badge>
                   </div>
                   <div className="mt-3 space-y-1 text-sm">
-                    {items.map((it: { name?: string; qty?: number; price?: number }, i: number) => (
+                    {(items as Array<{ name?: string; qty?: number; price?: number }>).map((it, i) => (
                       <div key={i} className="flex justify-between">
                         <span>{it.name} × {it.qty}</span>
                         <span>{((it.price ?? 0) * (it.qty ?? 1)).toFixed(2)} د.أ</span>
