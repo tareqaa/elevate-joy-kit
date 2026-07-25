@@ -313,13 +313,9 @@ function gxWireLayoutEvents(){
 }
 
 function gxUpdateCurrencyButton(){
-  const flagEl = document.getElementById('currencyBtnFlag');
   const codeEl = document.getElementById('currencyBtnCode');
-  if(!flagEl || !codeEl) return;
-  const code = GXCurrency.get();
-  const info = CURRENCIES[code];
-  if(info) flagEl.textContent = info.flag;
-  codeEl.textContent = code;
+  if(!codeEl) return;
+  codeEl.textContent = GXCurrency.get();
 }
 
 // Shown after any "add to cart" action anywhere on the site.
