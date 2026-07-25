@@ -544,10 +544,11 @@ function gxEnsureAuthModal(){
         showMsg('تم الدخول 👋', true);
         setTimeout(()=> window.location.reload(), 500);
       }else{
-        const full_name = el.querySelector('#gxAuthName').value.trim();
+        const username = el.querySelector('#gxAuthUsername').value.trim();
+        if(!/^[a-zA-Z0-9_]{3,20}$/.test(username)){ showMsg('اسم المستخدم: 3-20 حرف/رقم/_'); return; }
         const { error } = await window.gxSupabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: window.location.origin + '/app/index.html', data: { full_name } },
+          options: { emailRedirectTo: window.location.origin + '/app/index.html', data: { username } },
         });
         if(error){ showMsg(error.message); return; }
         showMsg('تم إنشاء الحساب! تحقق من إيميلك.', true);
