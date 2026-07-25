@@ -444,7 +444,7 @@ function gxRenderAccountLink(signedIn, isAdmin, profile){
         <div class="acc-divider"></div>
 
         <a href="/account?tab=orders" class="acc-link"><span class="ai">📦</span><span>الطلبات</span></a>
-        <a href="/account?tab=notifications" class="acc-link" id="accNotifLink"><span class="ai">🔔</span><span>الإشعارات</span><span class="soon-tag acc-unread-badge" id="accUnreadBadge" hidden>0</span></a>
+        <button type="button" class="acc-link" id="accNotifLink"><span class="ai">🔔</span><span>الإشعارات</span><span class="soon-tag acc-unread-badge" id="accUnreadBadge" hidden>0</span></button>
         <a href="#" class="acc-link acc-soon" data-soon><span class="ai">⭐</span><span>الأمنيات</span><span class="soon-tag">قريباً</span></a>
         <a href="/account?tab=profile" class="acc-link"><span class="ai">👤</span><span>حسابي</span></a>
         <a href="/account?tab=security" class="acc-link"><span class="ai">⚙️</span><span>الإعدادات</span></a>
