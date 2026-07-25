@@ -362,13 +362,25 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 flex-wrap">
-            <Button variant="outline" onClick={onClose}>إغلاق</Button>
-            <Button variant="secondary" onClick={save}>حفظ التعديلات</Button>
-            <Button onClick={markDelivered} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              ✅ تسليم الطلب وإشعار العميل
-            </Button>
+          <div className="flex justify-between items-center gap-2 pt-2 flex-wrap border-t border-white/10 mt-2">
+            <div className="flex gap-2 flex-wrap">
+              {status !== "cancelled" && (
+                <Button variant="outline" onClick={cancelOrder} className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300">
+                  ✖ إلغاء الطلب
+                </Button>
+              )}
+              {status !== "delivered" && status !== "cancelled" && (
+                <Button onClick={markDelivered} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  ✅ تسليم + إشعار العميل
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="ghost" onClick={onClose}>إغلاق</Button>
+              <Button onClick={save}>حفظ التعديلات</Button>
+            </div>
           </div>
+
 
         </div>
       </DialogContent>
