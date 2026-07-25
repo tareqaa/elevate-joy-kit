@@ -76,6 +76,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "اشتراكات، بطاقات ألعاب، وتفعيل فوري." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "theme-color", content: "#090b10" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -90,11 +91,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" className="dark" style={{ backgroundColor: "#090b10" }}>
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body style={{ backgroundColor: "#090b10", color: "#f5f6f8" }}>
         {children}
         <Scripts />
       </body>
