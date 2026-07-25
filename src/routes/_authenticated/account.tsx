@@ -127,61 +127,83 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
   userId: string; userEmail: string; currentUsername: string; currentName: string; currentAvatar: string; currentLevel: number; currentXp: number; onSaved: () => void;
 }) {
   const [name, setName] = useState(currentName);
+  const [uname, setUname] = useState(currentUsername);
   const [avatar, setAvatar] = useState(currentAvatar || avatarUrl(AVATAR_SEEDS[0]));
   const [nameTouched, setNameTouched] = useState(false);
+  const [unameTouched, setUnameTouched] = useState(false);
   const [avatarTouched, setAvatarTouched] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [unameCheck, setUnameCheck] = useState<{ status: "idle" | "checking" | "ok" | "taken" | "invalid"; msg?: string }>({ status: "idle" });
 
   const nameSchema = useMemo(() => z.string().trim().min(2, "الاسم قصير").max(60, "الاسم طويل"), []);
+  const usernameSchema = useMemo(
+    () => z.string().trim().min(3, "اليوزر قصير جداً (3 أحرف على الأقل)").max(20, "اليوزر طويل (20 حرف كحد أقصى)")
+      .regex(/^[a-zA-Z0-9_]+$/, "أحرف إنجليزية وأرقام و _ فقط"),
+    [],
+  );
 
-  useEffect(() => {
-    if (!nameTouched) setName(currentName);
-  }, [currentName, nameTouched]);
+  useEffect(() => { if (!nameTouched) setName(currentName); }, [currentName, nameTouched]);
+  useEffect(() => { if (!unameTouched) setUname(currentUsername); }, [currentUsername, unameTouched]);
+  useEffect(() => { if (currentAvatar && !avatarTouched) setAvatar(currentAvatar); }, [currentAvatar, avatarTouched]);
 
+  // Debounced availability check while typing
   useEffect(() => {
-    if (currentAvatar && !avatarTouched) setAvatar(currentAvatar);
-  }, [currentAvatar, avatarTouched]);
+    if (!unameTouched) { setUnameCheck({ status: "idle" }); return; }
+    const parsed = usernameSchema.safeParse(uname);
+    if (!parsed.success) { setUnameCheck({ status: "invalid", msg: parsed.error.issues[0].message }); return; }
+    if (parsed.data.toLowerCase() === (currentUsername || "").toLowerCase()) {
+      setUnameCheck({ status: "ok", msg: "هذا يوزرك الحالي" }); return;
+    }
+    setUnameCheck({ status: "checking" });
+    const t = setTimeout(async () => {
+      const { data, error } = await supabase
+        .from("profiles").select("id").ilike("username", parsed.data).neq("id", userId).maybeSingle();
+      if (error) { setUnameCheck({ status: "idle" }); return; }
+      setUnameCheck(data ? { status: "taken", msg: "هذا اليوزر محجوز" } : { status: "ok", msg: "متاح ✓" });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [uname, unameTouched, currentUsername, userId, usernameSchema]);
 
   async function save() {
-    const parsed = nameSchema.safeParse(name);
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
-      return;
-    }
+    const parsedName = nameSchema.safeParse(name);
+    if (!parsedName.success) { toast.error(parsedName.error.issues[0].message); return; }
+    const parsedUname = usernameSchema.safeParse(uname);
+    if (!parsedUname.success) { toast.error(parsedUname.error.issues[0].message); return; }
+    if (unameCheck.status === "taken") { toast.error("هذا اليوزر محجوز"); return; }
+
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ full_name: parsed.data, avatar_url: avatar })
+      .update({ full_name: parsedName.data, username: parsedUname.data, avatar_url: avatar })
       .eq("id", userId);
     setSaving(false);
-    if (error) { toast.error("فشل الحفظ"); return; }
+    if (error) {
+      // 23505 = unique_violation on username (race)
+      if ((error as { code?: string }).code === "23505") toast.error("هذا اليوزر محجوز");
+      else toast.error("فشل الحفظ");
+      return;
+    }
     await supabase.auth.updateUser({
-      data: {
-        username: currentUsername,
-        full_name: parsed.data,
-        avatar_url: avatar,
-      },
+      data: { username: parsedUname.data, full_name: parsedName.data, avatar_url: avatar },
     });
     toast.success("تم تحديث الملف الشخصي");
     try {
       const profileCache = {
-        username: currentUsername,
-        full_name: parsed.data,
-        avatar_url: avatar,
-        level: currentLevel,
-        xp: currentXp,
-        email: userEmail,
-        _cachedAt: Date.now(),
+        username: parsedUname.data, full_name: parsedName.data, avatar_url: avatar,
+        level: currentLevel, xp: currentXp, email: userEmail, _cachedAt: Date.now(),
       };
       localStorage.setItem(`gx:profile:${userId}`, JSON.stringify(profileCache));
       localStorage.setItem("gx:profile-updated", String(Date.now()));
       window.dispatchEvent(new CustomEvent("gx:profile-updated", { detail: profileCache }));
     } catch { /* noop */ }
-    setNameTouched(false);
-    setAvatarTouched(false);
+    setNameTouched(false); setUnameTouched(false); setAvatarTouched(false);
     onSaved();
-
   }
+
+  const unameColor =
+    unameCheck.status === "ok" ? "text-emerald-500" :
+    unameCheck.status === "taken" || unameCheck.status === "invalid" ? "text-destructive" :
+    unameCheck.status === "checking" ? "text-muted-foreground" : "text-muted-foreground";
 
   return (
     <div className="grid md:grid-cols-2 gap-4">
@@ -223,7 +245,25 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
             <Label htmlFor="name">الاسم المعروض</Label>
             <Input id="name" value={name} onChange={(e) => { setName(e.target.value); setNameTouched(true); }} placeholder="اسمك في اللعبة" maxLength={60} />
           </div>
-          <Button onClick={save} disabled={saving} className="w-full">
+          <div className="space-y-2">
+            <Label htmlFor="uname">اليوزر (Tag) — يظهر في المتصدرين</Label>
+            <div className="relative">
+              <span className="absolute inset-y-0 start-3 flex items-center text-muted-foreground pointer-events-none" dir="ltr">@</span>
+              <Input
+                id="uname"
+                dir="ltr"
+                className="ps-7"
+                value={uname}
+                onChange={(e) => { setUname(e.target.value.replace(/\s+/g, "")); setUnameTouched(true); }}
+                placeholder="your_tag"
+                maxLength={20}
+              />
+            </div>
+            <p className={`text-xs ${unameColor}`}>
+              {unameCheck.status === "checking" ? "جاري التحقق..." : unameCheck.msg || "3-20 حرف: أحرف إنجليزية/أرقام/_ — يجب أن يكون فريداً"}
+            </p>
+          </div>
+          <Button onClick={save} disabled={saving || unameCheck.status === "taken" || unameCheck.status === "invalid" || unameCheck.status === "checking"} className="w-full">
             {saving ? "جاري الحفظ..." : "حفظ التعديلات"}
           </Button>
         </CardContent>
