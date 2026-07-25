@@ -620,6 +620,7 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
 .acc-unread-badge{
   background:#ff4757 !important; color:#fff !important; border:0 !important;
   font-weight:800; padding:2px 7px !important; border-radius:999px !important;
+}
 
 @media (max-width: 720px){
   .account-avatar-btn{width:34px; height:34px;}
