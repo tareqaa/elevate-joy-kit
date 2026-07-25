@@ -602,6 +602,7 @@ function gxOpenAuthModal(){
 
 async function gxFetchProfile(user){
   if(!user) return null;
+  const meta = user.user_metadata || {};
   let cached = null;
   try{
     const raw = localStorage.getItem(`gx:profile:${user.id}`);
@@ -614,12 +615,43 @@ async function gxFetchProfile(user){
       .eq('id', user.id)
       .maybeSingle();
     if(data){
-      const merged = Object.assign({}, cached || {}, data, { email: data.email || user.email });
+      const merged = Object.assign(
+        {},
+        cached || {},
+        {
+          username: meta.username,
+          full_name: meta.full_name || meta.name,
+          avatar_url: meta.avatar_url,
+          email: user.email,
+        },
+        data,
+        { email: data.email || user.email }
+      );
       try{ localStorage.setItem(`gx:profile:${user.id}`, JSON.stringify(Object.assign({}, merged, { _cachedAt: Date.now() }))); }catch(_){}
       return merged;
     }
-    return cached || { email: user.email, username: user.user_metadata && user.user_metadata.username };
-  }catch(_){ return cached || { email: user.email, username: user.user_metadata && user.user_metadata.username }; }
+    return Object.assign(
+      {},
+      cached || {},
+      {
+        email: user.email,
+        username: meta.username,
+        full_name: meta.full_name || meta.name,
+        avatar_url: meta.avatar_url,
+      }
+    );
+  }catch(_){
+    return Object.assign(
+      {},
+      cached || {},
+      {
+        email: user.email,
+        username: meta.username,
+        full_name: meta.full_name || meta.name,
+        avatar_url: meta.avatar_url,
+      }
+    );
+  }
 }
 
 async function gxRenderAuthState(){

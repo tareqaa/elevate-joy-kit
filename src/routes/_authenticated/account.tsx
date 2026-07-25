@@ -155,6 +155,13 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
       .eq("id", userId);
     setSaving(false);
     if (error) { toast.error("فشل الحفظ"); return; }
+    await supabase.auth.updateUser({
+      data: {
+        username: currentUsername,
+        full_name: parsed.data,
+        avatar_url: avatar,
+      },
+    });
     toast.success("تم تحديث الملف الشخصي");
     try {
       const profileCache = {
