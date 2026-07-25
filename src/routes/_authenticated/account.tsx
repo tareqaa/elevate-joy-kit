@@ -138,7 +138,12 @@ function ProfileTab({ userId, currentName, currentAvatar, onSaved }: {
     setSaving(false);
     if (error) { toast.error("فشل الحفظ"); return; }
     toast.success("تم تحديث الملف الشخصي");
+    try {
+      window.dispatchEvent(new CustomEvent("gx:profile-updated"));
+      localStorage.setItem("gx:profile-updated", String(Date.now()));
+    } catch { /* noop */ }
     onSaved();
+
   }
 
   return (
