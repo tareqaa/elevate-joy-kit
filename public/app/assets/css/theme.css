@@ -799,3 +799,26 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
 .gx-notif__t{ font-weight:800; font-size:13.5px; color:var(--white); margin-bottom:3px; }
 .gx-notif__b{ font-size:12.5px; color:#c8ccd6; line-height:1.55; }
 .gx-notif__time{ font-size:11px; color:#8b90a0; margin-top:6px; font-weight:600; }
+
+/* ============================================================
+   LTR OVERRIDES — applied when html[dir="ltr"]
+   ============================================================ */
+html[dir="ltr"] body,
+html[dir="ltr"] .wrap,
+html[dir="ltr"] .section,
+html[dir="ltr"] .hero,
+html[dir="ltr"] .nav { text-align: left; }
+html[dir="ltr"] .nav .wrap { direction: ltr; }
+html[dir="ltr"] .nav-right { flex-direction: row; }
+html[dir="ltr"] .section-head,
+html[dir="ltr"] .hero-inner,
+html[dir="ltr"] .trust-strip,
+html[dir="ltr"] .featured-grid,
+html[dir="ltr"] .cat-grid-big,
+html[dir="ltr"] .footer-grid { direction: ltr; }
+html[dir="ltr"] .menu-panel,
+html[dir="ltr"] .account-panel,
+html[dir="ltr"] .currency-modal,
+html[dir="ltr"] .gx-notif-drawer { direction: ltr; text-align: left; }
+html[dir="ltr"] .badge-count { right: auto; left: -4px; }
+html[dir="ltr"] .carrow .arrow-ic { transform: scaleX(-1); }
