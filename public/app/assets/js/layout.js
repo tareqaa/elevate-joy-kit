@@ -643,6 +643,17 @@ async function gxRenderAuthState(){
       if(event !== 'SIGNED_IN' && event !== 'SIGNED_OUT' && event !== 'USER_UPDATED') return;
       applyForSession(session);
     });
+
+    // Refresh navbar when profile is updated from /account
+    const refresh = async () => {
+      try{
+        const { data } = await window.gxSupabase.auth.getSession();
+        await applyForSession(data && data.session);
+      }catch(_){}
+    };
+    window.addEventListener('gx:profile-updated', refresh);
+    window.addEventListener('storage', (e) => { if(e.key === 'gx:profile-updated') refresh(); });
+
   }catch(e){ /* keep default login CTA */ }
 }
 
