@@ -667,11 +667,19 @@ async function gxRenderAuthState(){
       if(!user){ gxRenderAccountLink(false, false); return; }
       let isAdmin = false; let profile = null;
       try{
-        const [roleRes, prof] = await Promise.all([
-          window.gxSupabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }).catch(()=>({data:false})),
+        const checkAdmin = async () => {
+          try{
+            const { data } = await window.gxSupabase.rpc('has_role', { _user_id: user.id, _role: 'admin' });
+            return !!data;
+          }catch(_){
+            return false;
+          }
+        };
+        const [adminAllowed, prof] = await Promise.all([
+          checkAdmin(),
           gxFetchProfile(user),
         ]);
-        isAdmin = !!(roleRes && roleRes.data);
+        isAdmin = adminAllowed;
         profile = prof;
       }catch(_){}
       gxRenderAccountLink(true, isAdmin, profile || { email: user.email });
