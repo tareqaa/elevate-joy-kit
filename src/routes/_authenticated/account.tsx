@@ -116,7 +116,7 @@ function AccountPage() {
   );
 }
 
-function ProfileTab({ userId, currentName, currentAvatar, onSaved }: {
+function ProfileTab({ userId, userEmail, currentName, currentAvatar, onSaved }: {
   userId: string; userEmail: string; currentName: string; currentAvatar: string; onSaved: () => void;
 }) {
   const [name, setName] = useState(currentName);
