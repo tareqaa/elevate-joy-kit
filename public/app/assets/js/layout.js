@@ -444,7 +444,7 @@ function gxRenderAccountLink(signedIn, isAdmin, profile){
         <div class="acc-divider"></div>
 
         <a href="/account?tab=orders" class="acc-link"><span class="ai">📦</span><span>الطلبات</span></a>
-        <a href="/account?tab=notifications" class="acc-link" id="accNotifLink"><span class="ai">🔔</span><span>الإشعارات</span><span class="soon-tag acc-unread-badge" id="accUnreadBadge" hidden>0</span></a>
+        <button type="button" class="acc-link" id="accNotifLink"><span class="ai">🔔</span><span>الإشعارات</span><span class="soon-tag acc-unread-badge" id="accUnreadBadge" hidden>0</span></button>
         <a href="#" class="acc-link acc-soon" data-soon><span class="ai">⭐</span><span>الأمنيات</span><span class="soon-tag">قريباً</span></a>
         <a href="/account?tab=profile" class="acc-link"><span class="ai">👤</span><span>حسابي</span></a>
         <a href="/account?tab=security" class="acc-link"><span class="ai">⚙️</span><span>الإعدادات</span></a>
@@ -476,6 +476,13 @@ function gxRenderAccountLink(signedIn, isAdmin, profile){
     panel.classList.remove('open');
     alert('هاي الميزة قريباً 🚀');
   }));
+  const notifBtn = wrap.querySelector('#accNotifLink');
+  if(notifBtn) notifBtn.addEventListener('click', (e)=>{
+    e.preventDefault(); e.stopPropagation();
+    panel.classList.remove('open');
+    gxOpenNotifCenter();
+  });
+
   const logout = wrap.querySelector('#accLogout');
   if(logout) logout.addEventListener('click', async ()=>{
     try{
@@ -788,4 +795,96 @@ function gxShowToast(title, body){
 }
 
 document.addEventListener('DOMContentLoaded', gxInitLayout);
+
+/* ============================================================
+   Notifications Center — right-side sliding drawer.
+   ============================================================ */
+function gxEnsureNotifCenter(){
+  if(document.getElementById('gxNotifCenter')) return document.getElementById('gxNotifCenter');
+  const el = document.createElement('div');
+  el.id = 'gxNotifCenter';
+  el.className = 'gx-notif';
+  el.setAttribute('dir','rtl');
+  el.innerHTML = `
+    <div class="gx-notif__scrim" data-close></div>
+    <aside class="gx-notif__panel" role="dialog" aria-modal="true" aria-label="الإشعارات">
+      <header class="gx-notif__head">
+        <div class="gx-notif__title"><span>🔔</span><span>الإشعارات</span></div>
+        <button type="button" class="gx-notif__close" data-close aria-label="إغلاق">✕</button>
+      </header>
+      <div class="gx-notif__list" id="gxNotifList">
+        <div class="gx-notif__empty">جاري التحميل…</div>
+      </div>
+    </aside>`;
+  document.body.appendChild(el);
+  el.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', ()=> el.classList.remove('open')));
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') el.classList.remove('open'); });
+  return el;
+}
+
+function gxRelTime(iso){
+  try{
+    const t = new Date(iso).getTime();
+    const s = Math.max(1, Math.floor((Date.now() - t)/1000));
+    if(s < 60) return 'الآن';
+    const m = Math.floor(s/60); if(m < 60) return `قبل ${m} د`;
+    const h = Math.floor(m/60); if(h < 24) return `قبل ${h} س`;
+    const d = Math.floor(h/24); if(d < 30) return `قبل ${d} ي`;
+    return new Date(iso).toLocaleDateString('ar-EG');
+  }catch(_){ return ''; }
+}
+
+function gxNotifIcon(type){
+  if(type === 'order_delivered') return '✅';
+  if(type === 'order_pending') return '⏳';
+  return '🔔';
+}
+
+async function gxOpenNotifCenter(){
+  const el = gxEnsureNotifCenter();
+  el.classList.add('open');
+  const list = el.querySelector('#gxNotifList');
+  list.innerHTML = '<div class="gx-notif__empty">جاري التحميل…</div>';
+  try{
+    if(window.gxSupabaseReady) await window.gxSupabaseReady;
+    const sb = window.gxSupabase;
+    if(!sb){ list.innerHTML = '<div class="gx-notif__empty">تعذّر التحميل.</div>'; return; }
+    const { data: userData } = await sb.auth.getUser();
+    const user = userData && userData.user;
+    if(!user){ list.innerHTML = '<div class="gx-notif__empty">سجّل دخول لعرض الإشعارات.</div>'; return; }
+    const { data, error } = await sb
+      .from('notifications')
+      .select('id, type, title, body, read_at, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if(error) throw error;
+    if(!data || data.length === 0){
+      list.innerHTML = '<div class="gx-notif__empty">لا توجد إشعارات بعد.</div>';
+    } else {
+      list.innerHTML = data.map(n => `
+        <div class="gx-notif__item ${n.read_at ? '' : 'is-unread'}">
+          <div class="gx-notif__ico">${gxNotifIcon(n.type)}</div>
+          <div class="gx-notif__body">
+            <div class="gx-notif__t">${n.title || 'إشعار'}</div>
+            ${n.body ? `<div class="gx-notif__b">${n.body}</div>` : ''}
+            <div class="gx-notif__time">${gxRelTime(n.created_at)}</div>
+          </div>
+        </div>`).join('');
+    }
+    // Mark unread as read
+    const unreadIds = (data || []).filter(n => !n.read_at).map(n => n.id);
+    if(unreadIds.length){
+      try{
+        await sb.from('notifications').update({ read_at: new Date().toISOString() }).in('id', unreadIds);
+        gxSetUnread(0);
+      }catch(_){}
+    }
+  }catch(e){
+    list.innerHTML = '<div class="gx-notif__empty">تعذّر تحميل الإشعارات.</div>';
+  }
+}
+window.gxOpenNotifCenter = gxOpenNotifCenter;
+
+
 
