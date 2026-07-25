@@ -6,14 +6,16 @@ import { useCurrency } from "@/lib/gx/currency";
 import { ProductIcon, CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
 import { PRODUCTS_CATALOG } from "@/data/products";
 import { BuyActions } from "@/components/gx/BuyActions";
+import { useLang } from "@/lib/gx/i18n";
+import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-locale";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "GX Store — متجر الألعاب والاشتراكات الرقمية" },
-      { name: "description", content: "اشتراكات، بطاقات ألعاب، وتفعيل فوري — GX Store." },
+      { title: "GX Store — Games & digital subscriptions store" },
+      { name: "description", content: "Subscriptions, game cards, and instant activation — GX Store." },
       { property: "og:title", content: "GX Store" },
-      { property: "og:description", content: "متجرك الرقمي لكل الاشتراكات وبطاقات الألعاب." },
+      { property: "og:description", content: "Your digital store for all subscriptions and game cards." },
     ],
   }),
   component: Home,
@@ -32,17 +34,18 @@ function Home() {
 }
 
 function Hero() {
+  const { t } = useLang();
   return (
     <section className="hero">
       <div className="wrap">
         <div className="hero-inner fade-in">
           <div className="hero-text">
-            <div className="hero-badge"><span className="dot" /> أكثر من 500 عميل وثقوا فينا</div>
-            <h1>كل اشتراكاتك <span>وشحن ألعابك</span><br />بمكان واحد</h1>
-            <p>اشتراكات، بطاقات هدايا، عملات ألعاب، وحسابات — تفعيل فوري وأسعار منافسة.</p>
+            <div className="hero-badge"><span className="dot" /> {t("home.hero_badge")}</div>
+            <h1>{t("home.hero_title_a")} <span>{t("home.hero_title_b")}</span><br />{t("home.hero_title_c")}</h1>
+            <p>{t("home.hero_desc")}</p>
             <div className="hero-ctas">
-              <a href="#products" className="btn btn-primary">تصفح المنتجات</a>
-              <a href="#categories" className="btn btn-ghost">شوف الأقسام</a>
+              <a href="#products" className="btn btn-primary">{t("home.browse_products")}</a>
+              <a href="#categories" className="btn btn-ghost">{t("home.see_categories")}</a>
             </div>
           </div>
           <div className="hero-visual">
@@ -58,35 +61,39 @@ function Hero() {
 }
 
 function Categories() {
+  const { t, lang } = useLang();
   return (
     <section className="section" id="categories">
       <div className="wrap">
         <div className="section-head">
-          <div><span className="k">تصفح حسب القسم</span><h2>وين بدك تبدأ؟</h2></div>
+          <div><span className="k">{t("home.cat_eyebrow")}</span><h2>{t("home.cat_title")}</h2></div>
         </div>
         <div className="cat-grid-big">
-          {CATEGORY_LINKS.map(c => (
-            <a key={c.slug} href={getCategoryLink(c.slug)} className="cat-card-big" style={{ ["--accent" as string]: c.accent } as React.CSSProperties}>
-              <div className="ccb-top">
-                {c.slug === "design" ? (
-                  <div className="app-icon-grid">
-                    <span style={{ background: "linear-gradient(135deg,#3b7bf6,#1e4fd1)" }}>Ps</span>
-                    <span style={{ background: "linear-gradient(135deg,#ff7a3d,#e0402a)" }}>Ai</span>
-                    <span style={{ background: "linear-gradient(135deg,#8b5cf6,#5b21b6)" }}>Pr</span>
-                    <span style={{ background: "linear-gradient(135deg,#22c1a8,#0e7a6a)" }}>Id</span>
-                  </div>
-                ) : (
-                  <div className="cat-ic" style={{ background: c.bg, boxShadow: `inset 0 0 0 1.5px ${c.accent}33` }}>{c.icon}</div>
-                )}
-                <div className="ccb-glow" style={{ background: c.accent }} />
-              </div>
-              <div>
-                <div className="cname-modern">{c.name}</div>
-                <div className="cdesc">{c.desc}</div>
-              </div>
-              <div className="carrow">تصفح القسم <span className="arrow-ic">‹</span></div>
-            </a>
-          ))}
+          {CATEGORY_LINKS.map(c0 => {
+            const c = localizedCategoryLink(c0, lang);
+            return (
+              <a key={c.slug} href={getCategoryLink(c.slug)} className="cat-card-big" style={{ ["--accent" as string]: c.accent } as React.CSSProperties}>
+                <div className="ccb-top">
+                  {c.slug === "design" ? (
+                    <div className="app-icon-grid">
+                      <span style={{ background: "linear-gradient(135deg,#3b7bf6,#1e4fd1)" }}>Ps</span>
+                      <span style={{ background: "linear-gradient(135deg,#ff7a3d,#e0402a)" }}>Ai</span>
+                      <span style={{ background: "linear-gradient(135deg,#8b5cf6,#5b21b6)" }}>Pr</span>
+                      <span style={{ background: "linear-gradient(135deg,#22c1a8,#0e7a6a)" }}>Id</span>
+                    </div>
+                  ) : (
+                    <div className="cat-ic" style={{ background: c.bg, boxShadow: `inset 0 0 0 1.5px ${c.accent}33` }}>{c.icon}</div>
+                  )}
+                  <div className="ccb-glow" style={{ background: c.accent }} />
+                </div>
+                <div>
+                  <div className="cname-modern">{c.name}</div>
+                  <div className="cdesc">{c.desc}</div>
+                </div>
+                <div className="carrow">{t("home.browse_category")} <span className="arrow-ic">‹</span></div>
+              </a>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -95,12 +102,13 @@ function Categories() {
 
 function Featured() {
   const { format } = useCurrency();
+  const { t, lang } = useLang();
   const items = getFeaturedItems();
   return (
     <section className="section" id="products" style={{ background: "var(--bg2)" }}>
       <div className="wrap">
         <div className="section-head">
-          <div><span className="k">🔥 الأكثر طلبًا</span><h2>منتجاتنا الأكثر مبيعًا</h2></div>
+          <div><span className="k">{t("home.featured_eyebrow")}</span><h2>{t("home.featured_title")}</h2></div>
         </div>
         <div className="featured-grid">
           {items.map(p => {
@@ -122,7 +130,7 @@ function Featured() {
                 </a>
                 <div className="prod-body">
                   <div className="prod-stars">★★★★★</div>
-                  <div className="prod-name">{p.name}</div>
+                  <div className="prod-name">{localizeResolvedName(p.name, lang)}</div>
                   <div className="prod-prices">
                     <span className="prod-old">{format(p.oldPrice)}</span>
                     <span className="prod-new">{format(p.price)}</span>
@@ -139,6 +147,7 @@ function Featured() {
 }
 
 function TrustStrip() {
+  const { t } = useLang();
   const counterRef = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const el = counterRef.current;
@@ -170,18 +179,18 @@ function TrustStrip() {
         <div className="trust-strip">
           <div className="trust-item trust-item--stat">
             <div className="trust-ic stat-ic">⚡</div>
-            <div className="trust-stat-body"><h4>تفعيل فوري</h4><p>خلال دقائق من تأكيد الطلب</p></div>
+            <div className="trust-stat-body"><h4>{t("home.trust_instant")}</h4><p>{t("home.trust_instant_desc")}</p></div>
           </div>
           <div className="trust-item trust-item--stat">
             <div className="trust-ic stat-ic">🛒</div>
             <div className="trust-stat-body">
               <h4 className="stat-number"><span ref={counterRef}>0</span>+</h4>
-              <p className="stat-label">عملية شراء آمنة تمت عبر المتجر</p>
+              <p className="stat-label">{t("home.trust_stat_desc")}</p>
             </div>
           </div>
           <div className="trust-item trust-item--stat">
             <div className="trust-ic stat-ic">💬</div>
-            <div className="trust-stat-body"><h4>دعم 24/7</h4><p>تواصل مباشر على واتساب</p></div>
+            <div className="trust-stat-body"><h4>{t("home.trust_support")}</h4><p>{t("home.trust_support_desc")}</p></div>
           </div>
         </div>
       </div>
@@ -190,20 +199,21 @@ function TrustStrip() {
 }
 
 const TESTIMONIALS = [
-  { name: "يوسف المومني", initial: "ي", color: "linear-gradient(135deg,#00e5ff,#0a6e8c)", quote: "أفضل متجر بالأسعار" },
-  { name: "يزن القضاة", initial: "ي", color: "linear-gradient(135deg,#ff2d78,#b0195a)", quote: null },
-  { name: "زهير زامل", initial: "ز", color: "linear-gradient(135deg,#c6ff3d,#7ea62a)", quote: "التفعيل كان فوري" },
-  { name: "Wessam", initial: "W", color: "linear-gradient(135deg,#b26bff,#6a2df0)", quote: "أنصح فيه بشدة" },
-  { name: "علي", initial: "ع", color: "linear-gradient(135deg,#ffcb47,#c98a12)", quote: null },
-  { name: "افنان عمر", initial: "ا", color: "linear-gradient(135deg,#4fdc4f,#0e7a3c)", quote: "خدمة ممتازة" },
-  { name: "طارق دوعر", initial: "ط", color: "linear-gradient(135deg,#ff8a3d,#c9530f)", quote: "تعامل راقي" },
-  { name: "Sara Alasmar", initial: "S", color: "linear-gradient(135deg,#ff5ea8,#c91e6b)", quote: null },
-  { name: "Kh H", initial: "K", color: "linear-gradient(135deg,#38bdf8,#1d6fa8)", quote: "سريع وموثوق" },
-  { name: "Rami Awad", initial: "R", color: "linear-gradient(135deg,#a3e635,#5c8a12)", quote: "تجربة ممتازة" },
-  { name: "أحمد زامل", initial: "أ", color: "linear-gradient(135deg,#818cf8,#4338ca)", quote: "خدمة رائعة وسريعة" },
+  { name: "يوسف المومني", initial: "ي", color: "linear-gradient(135deg,#00e5ff,#0a6e8c)", quote: "أفضل متجر بالأسعار", quote_en: "Best store for pricing" },
+  { name: "يزن القضاة", initial: "ي", color: "linear-gradient(135deg,#ff2d78,#b0195a)", quote: null, quote_en: null },
+  { name: "زهير زامل", initial: "ز", color: "linear-gradient(135deg,#c6ff3d,#7ea62a)", quote: "التفعيل كان فوري", quote_en: "Activation was instant" },
+  { name: "Wessam", initial: "W", color: "linear-gradient(135deg,#b26bff,#6a2df0)", quote: "أنصح فيه بشدة", quote_en: "Highly recommended" },
+  { name: "علي", initial: "ع", color: "linear-gradient(135deg,#ffcb47,#c98a12)", quote: null, quote_en: null },
+  { name: "افنان عمر", initial: "ا", color: "linear-gradient(135deg,#4fdc4f,#0e7a3c)", quote: "خدمة ممتازة", quote_en: "Excellent service" },
+  { name: "طارق دوعر", initial: "ط", color: "linear-gradient(135deg,#ff8a3d,#c9530f)", quote: "تعامل راقي", quote_en: "Great to deal with" },
+  { name: "Sara Alasmar", initial: "S", color: "linear-gradient(135deg,#ff5ea8,#c91e6b)", quote: null, quote_en: null },
+  { name: "Kh H", initial: "K", color: "linear-gradient(135deg,#38bdf8,#1d6fa8)", quote: "سريع وموثوق", quote_en: "Fast and reliable" },
+  { name: "Rami Awad", initial: "R", color: "linear-gradient(135deg,#a3e635,#5c8a12)", quote: "تجربة ممتازة", quote_en: "Great experience" },
+  { name: "أحمد زامل", initial: "أ", color: "linear-gradient(135deg,#818cf8,#4338ca)", quote: "خدمة رائعة وسريعة", quote_en: "Amazing and fast service" },
 ];
 
 function Testimonials() {
+  const { t, lang } = useLang();
   const gridRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const grid = gridRef.current;
@@ -239,20 +249,23 @@ function Testimonials() {
   return (
     <section className="section" style={{ background: "var(--bg2)" }}>
       <div className="wrap">
-        <div className="section-head"><div><span className="k">قالوا عنا</span><h2>آراء عملائنا</h2></div></div>
+        <div className="section-head"><div><span className="k">{t("home.testi_eyebrow")}</span><h2>{t("home.testi_title")}</h2></div></div>
         <div className="testi-grid" ref={gridRef}>
-          {cards.map((t, i) => (
-            <div key={i} className="testi-card">
-              <div className="testi-top">
-                <div className="testi-avatar" style={{ background: t.color }}>{t.initial}</div>
-                <div>
-                  <div className="testi-name">{t.name}</div>
-                  <div className="testi-stars">★★★★★</div>
+          {cards.map((tItem, i) => {
+            const quote = lang === "en" ? tItem.quote_en : tItem.quote;
+            return (
+              <div key={i} className="testi-card">
+                <div className="testi-top">
+                  <div className="testi-avatar" style={{ background: tItem.color }}>{tItem.initial}</div>
+                  <div>
+                    <div className="testi-name">{tItem.name}</div>
+                    <div className="testi-stars">★★★★★</div>
+                  </div>
                 </div>
+                {quote && <div className="testi-quote">{quote}</div>}
               </div>
-              {t.quote && <div className="testi-quote">{t.quote}</div>}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

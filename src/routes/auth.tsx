@@ -3,18 +3,20 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
+import { useLang } from "@/lib/gx/i18n";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "تسجيل الدخول — GX Store" },
-      { name: "description", content: "سجّل الدخول أو أنشئ حساب جديد للوصول لسجل طلباتك." },
+      { title: "Sign in — GX Store" },
+      { name: "description", content: "Sign in or create an account to track your orders." },
     ],
   }),
   component: AuthPage,
 });
 
 function AuthPage() {
+  const { t } = useLang();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -37,7 +39,7 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email: siEmail.trim(), password: siPass });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("أهلاً فيك 👋");
+    toast.success(t("auth.hello"));
     navigate({ to: "/account" });
   }
 
@@ -45,7 +47,7 @@ function AuthPage() {
     e.preventDefault();
     const uname = suUsername.trim();
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(uname)) {
-      return toast.error("اسم المستخدم: 3-20 حرف/رقم/_ (بدون مسافات)");
+      return toast.error(t("auth.username_pattern_err"));
     }
     setLoading(true);
     const { error } = await supabase.auth.signUp({
@@ -58,7 +60,7 @@ function AuthPage() {
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("تم إنشاء الحساب! تحقق من إيميلك.");
+    toast.success(t("auth.signup_ok"));
   }
 
   async function handleGoogle() {
@@ -70,7 +72,7 @@ function AuthPage() {
   }
 
   return (
-    <div dir="rtl" className="gx-auth-root">
+    <div className="gx-auth-root">
       <style>{cssBlock}</style>
       <div className="gx-auth-bg" />
       <div className="gx-auth-wrap">
@@ -81,40 +83,40 @@ function AuthPage() {
 
         <div className="gx-auth-card">
           <div className="gx-auth-tabs">
-            <button className={mode === "signin" ? "on" : ""} onClick={() => setMode("signin")} type="button">دخول</button>
-            <button className={mode === "signup" ? "on" : ""} onClick={() => setMode("signup")} type="button">حساب جديد</button>
+            <button className={mode === "signin" ? "on" : ""} onClick={() => setMode("signin")} type="button">{t("auth.tab_signin")}</button>
+            <button className={mode === "signup" ? "on" : ""} onClick={() => setMode("signup")} type="button">{t("auth.tab_signup")}</button>
           </div>
 
-          <h1 className="gx-auth-title">{mode === "signin" ? "مرحباً بعودتك" : "أنشئ حسابك"}</h1>
+          <h1 className="gx-auth-title">{mode === "signin" ? t("auth.welcome_back") : t("auth.create_account")}</h1>
           <p className="gx-auth-sub">
-            {mode === "signin" ? "سجّل الدخول لمتابعة طلباتك واستلام أكوادك." : "أنشئ حسابك لحفظ طلباتك واستلام الأكواد."}
+            {mode === "signin" ? t("auth.signin_desc") : t("auth.signup_desc")}
           </p>
 
           {mode === "signin" ? (
             <form onSubmit={handleSignIn} className="gx-auth-form">
-              <label>الإيميل</label>
+              <label>{t("auth.email")}</label>
               <input type="email" required dir="ltr" value={siEmail} onChange={(e) => setSiEmail(e.target.value)} placeholder="you@email.com" />
-              <label>كلمة السر</label>
+              <label>{t("auth.password")}</label>
               <input type="password" required minLength={6} dir="ltr" value={siPass} onChange={(e) => setSiPass(e.target.value)} placeholder="••••••" />
               <button type="submit" className="gx-auth-btn primary" disabled={loading}>
-                {loading ? "..." : "دخول"}
+                {loading ? "..." : t("auth.signin_btn")}
               </button>
             </form>
           ) : (
             <form onSubmit={handleSignUp} className="gx-auth-form">
               <label>GameTag</label>
               <input type="text" required dir="ltr" value={suUsername} onChange={(e) => setSuUsername(e.target.value)} placeholder="your_tag" pattern="[a-zA-Z0-9_]{3,20}" />
-              <label>الإيميل</label>
+              <label>{t("auth.email")}</label>
               <input type="email" required dir="ltr" value={suEmail} onChange={(e) => setSuEmail(e.target.value)} placeholder="you@email.com" />
-              <label>كلمة السر <span className="hint">(٦ أحرف على الأقل)</span></label>
+              <label>{t("auth.password")} <span className="hint">{t("auth.password_hint")}</span></label>
               <input type="password" required minLength={6} dir="ltr" value={suPass} onChange={(e) => setSuPass(e.target.value)} placeholder="••••••" />
               <button type="submit" className="gx-auth-btn primary" disabled={loading}>
-                {loading ? "..." : "إنشاء حساب"}
+                {loading ? "..." : t("auth.signup_btn")}
               </button>
             </form>
           )}
 
-          <div className="gx-auth-divider"><span>أو</span></div>
+          <div className="gx-auth-divider"><span>{t("auth.or")}</span></div>
 
           <button className="gx-auth-btn google" onClick={handleGoogle} disabled={loading} type="button">
             <svg width="18" height="18" viewBox="0 0 24 24">
@@ -123,10 +125,10 @@ function AuthPage() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            متابعة بحساب Google
+            {t("auth.google")}
           </button>
 
-          <a href="/app/index.html" className="gx-auth-back">← العودة للمتجر</a>
+          <Link to="/" className="gx-auth-back">{t("auth.back_to_store")}</Link>
         </div>
       </div>
     </div>
