@@ -285,18 +285,43 @@ type OrderRow = {
 };
 
 function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }) {
+  const [view, setView] = useState<"active" | "cancelled">("active");
   if (loading) return <p className="text-sm text-muted-foreground">جاري التحميل...</p>;
-  if (orders.length === 0) return (
-    <Card><CardContent className="py-10 text-center text-muted-foreground">
-      ما عندك طلبات لسا. <a href="/app/index.html" className="text-primary underline">ابدأ التسوق</a>
-    </CardContent></Card>
-  );
+  const active = orders.filter((o) => o.status !== "cancelled");
+  const cancelled = orders.filter((o) => o.status === "cancelled");
+  const list = view === "active" ? active : cancelled;
+
   return (
     <div className="space-y-3">
-      {orders.map((o) => <OrderCard key={o.id} order={o} />)}
+      <div className="inline-flex rounded-lg border p-1 bg-muted/30">
+        <button
+          type="button"
+          onClick={() => setView("active")}
+          className={`px-4 py-1.5 text-sm rounded-md transition ${view === "active" ? "bg-background shadow font-semibold" : "text-muted-foreground"}`}
+        >
+          الطلبات النشطة ({active.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("cancelled")}
+          className={`px-4 py-1.5 text-sm rounded-md transition ${view === "cancelled" ? "bg-background shadow font-semibold" : "text-muted-foreground"}`}
+        >
+          الطلبات الملغاة ({cancelled.length})
+        </button>
+      </div>
+      {list.length === 0 ? (
+        <Card><CardContent className="py-10 text-center text-muted-foreground">
+          {view === "active"
+            ? <>ما عندك طلبات نشطة. <a href="/app/index.html" className="text-primary underline">ابدأ التسوق</a></>
+            : "ما في طلبات ملغاة."}
+        </CardContent></Card>
+      ) : (
+        list.map((o) => <OrderCard key={o.id} order={o} />)
+      )}
     </div>
   );
 }
+
 
 function OrderCard({ order: o }: { order: OrderRow }) {
   const status = STATUS_LABELS[o.status] ?? { label: o.status, variant: "secondary" as const };
