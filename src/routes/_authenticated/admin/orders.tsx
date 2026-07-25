@@ -36,11 +36,13 @@ type OrderRow = {
   created_at: string;
 };
 
+type OrderWithEmail = OrderRow & { user_email: string | null; user_username: string | null };
+
 function OrdersAdmin() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selected, setSelected] = useState<OrderRow | null>(null);
+  const [selected, setSelected] = useState<OrderWithEmail | null>(null);
 
   const ordersQ = useQuery({
     queryKey: ["admin-orders", statusFilter],
@@ -49,14 +51,32 @@ function OrdersAdmin() {
       if (statusFilter !== "all") q = q.eq("status", statusFilter as typeof STATUSES[number]);
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []) as OrderRow[];
+      const rows = (data ?? []) as OrderRow[];
+      const userIds = Array.from(new Set(rows.map((r) => r.user_id).filter(Boolean))) as string[];
+      let profilesMap: Record<string, { email: string | null; username: string | null }> = {};
+      if (userIds.length) {
+        const { data: profs } = await supabase.from("profiles").select("id,email,username").in("id", userIds);
+        profilesMap = Object.fromEntries((profs ?? []).map((p) => [p.id, { email: p.email, username: p.username }]));
+      }
+      return rows.map<OrderWithEmail>((r) => ({
+        ...r,
+        user_email: r.user_id ? profilesMap[r.user_id]?.email ?? null : null,
+        user_username: r.user_id ? profilesMap[r.user_id]?.username ?? null : null,
+      }));
     },
   });
 
-  const filtered = (ordersQ.data ?? []).filter((o) =>
-    !search || o.order_number.toLowerCase().includes(search.toLowerCase()) ||
-    (o.customer_name ?? "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = (ordersQ.data ?? []).filter((o) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (
+      o.order_number.toLowerCase().includes(s) ||
+      (o.customer_name ?? "").toLowerCase().includes(s) ||
+      (o.user_email ?? "").toLowerCase().includes(s) ||
+      (o.user_username ?? "").toLowerCase().includes(s) ||
+      (o.customer_whatsapp ?? "").toLowerCase().includes(s)
+    );
+  });
 
   const updateMut = useMutation({
     mutationFn: async (payload: { id: string; patch: Record<string, unknown> }) => {
@@ -76,7 +96,7 @@ function OrdersAdmin() {
       <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3">
         <CardTitle>الطلبات ({filtered.length})</CardTitle>
         <div className="flex gap-2 flex-wrap">
-          <Input placeholder="بحث برقم الطلب أو الاسم" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
+          <Input placeholder="بحث برقم الطلب / الاسم / الإيميل / اليوزر / واتساب" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -94,6 +114,7 @@ function OrdersAdmin() {
                 <th className="p-2">رقم الطلب</th>
                 <th className="p-2">التاريخ</th>
                 <th className="p-2">العميل</th>
+                <th className="p-2">الإيميل</th>
                 <th className="p-2">الإجمالي</th>
                 <th className="p-2">الحالة</th>
                 <th className="p-2"></th>
@@ -104,14 +125,24 @@ function OrdersAdmin() {
                 <tr key={o.id} className="border-b hover:bg-accent/30">
                   <td className="p-2 font-mono">{o.order_number}</td>
                   <td className="p-2 text-xs">{new Date(o.created_at).toLocaleString("ar-EG")}</td>
-                  <td className="p-2">{o.customer_name || (o.user_id ? "مستخدم مسجّل" : "زائر")}</td>
+                  <td className="p-2">
+                    {o.customer_name || (o.user_id ? "مستخدم مسجّل" : "زائر")}
+                    {o.user_username && <div className="text-xs text-muted-foreground">@{o.user_username}</div>}
+                  </td>
+                  <td className="p-2 text-xs" dir="ltr">
+                    {o.user_email ? (
+                      <a href={`mailto:${o.user_email}`} className="hover:text-primary underline-offset-2 hover:underline">{o.user_email}</a>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
                   <td className="p-2">{Number(o.total_jod).toFixed(2)} د.أ</td>
                   <td className="p-2"><Badge>{STATUS_AR[o.status] ?? o.status}</Badge></td>
                   <td className="p-2"><Button size="sm" variant="outline" onClick={() => setSelected(o)}>تفاصيل</Button></td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={6} className="text-center p-6 text-muted-foreground">لا يوجد طلبات</td></tr>
+                <tr><td colSpan={7} className="text-center p-6 text-muted-foreground">لا يوجد طلبات</td></tr>
               )}
             </tbody>
           </table>
@@ -129,7 +160,8 @@ function OrdersAdmin() {
   );
 }
 
-function OrderDialog({ order, onClose, onSave }: { order: OrderRow; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
+
+function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
   const [status, setStatus] = useState(order.status);
   const [notes, setNotes] = useState(order.admin_notes ?? "");
   const items = Array.isArray(order.items) ? order.items : [];
@@ -160,7 +192,8 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderRow; onClose: () 
 
         <div className="space-y-4">
           <div className="text-sm space-y-1">
-            <div><b>العميل:</b> {order.customer_name || "زائر"}</div>
+            <div><b>العميل:</b> {order.customer_name || "زائر"} {order.user_username && <span className="text-muted-foreground">(@{order.user_username})</span>}</div>
+            {order.user_email && <div><b>الإيميل:</b> <a href={`mailto:${order.user_email}`} dir="ltr" className="text-primary hover:underline">{order.user_email}</a></div>}
             {order.customer_whatsapp && <div><b>واتساب:</b> <span dir="ltr">{order.customer_whatsapp}</span></div>}
             <div><b>التاريخ:</b> {new Date(order.created_at).toLocaleString("ar-EG")}</div>
             <div><b>الإجمالي:</b> {Number(order.total_jod).toFixed(2)} د.أ</div>
