@@ -90,14 +90,14 @@ function AccountPage() {
       </Card>
 
       <Tabs
+        dir="rtl"
         value={tab}
-        onValueChange={(v) => navigate({ search: { tab: v as "profile" | "orders" | "notifications" | "security" } })}
+        onValueChange={(v) => navigate({ search: { tab: v as "profile" | "orders" | "security" } })}
       >
-        <TabsList className="grid grid-cols-4 w-full max-w-xl">
-          <TabsTrigger value="profile"><UserIcon className="w-4 h-4 ml-1" />الملف</TabsTrigger>
-          <TabsTrigger value="orders"><Package className="w-4 h-4 ml-1" />طلباتي</TabsTrigger>
-          <TabsTrigger value="notifications"><Bell className="w-4 h-4 ml-1" />الإشعارات</TabsTrigger>
-          <TabsTrigger value="security"><ShieldCheck className="w-4 h-4 ml-1" />الأمان</TabsTrigger>
+        <TabsList className="grid grid-cols-3 w-full max-w-lg">
+          <TabsTrigger value="profile"><UserIcon className="w-4 h-4 ms-1" />الملف</TabsTrigger>
+          <TabsTrigger value="orders"><Package className="w-4 h-4 ms-1" />طلباتي</TabsTrigger>
+          <TabsTrigger value="security"><ShieldCheck className="w-4 h-4 ms-1" />الأمان</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-4">
@@ -115,10 +115,6 @@ function AccountPage() {
 
         <TabsContent value="orders" className="mt-4">
           <OrdersTab loading={ordersQ.isLoading} orders={ordersQ.data ?? []} />
-        </TabsContent>
-
-        <TabsContent value="notifications" className="mt-4">
-          <NotificationsTab userId={user.id} />
         </TabsContent>
 
         <TabsContent value="security" className="mt-4">
