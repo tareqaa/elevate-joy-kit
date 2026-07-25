@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { CATEGORY_META, SUBCATEGORIES, getProductLink, getGiftCardLink } from "@/data/products";
 
@@ -65,13 +65,13 @@ function CategoryPage() {
               }
               const href = isGiftCards ? getGiftCardLink(s.slug) : getProductLink(s.product || s.slug);
               return (
-                <Link key={s.slug} to={href as never} className="subcat-card clickable">
+                <a key={s.slug} href={href} className="subcat-card clickable">
                   <div className="subcat-ic" style={{ background: s.bg }}>{iconInner}</div>
                   <div>
                     <div className="subcat-name">{s.name}</div>
                     <div className="subcat-status">تصفح المنتجات ‹</div>
                   </div>
-                </Link>
+                </a>
               );
             })}
           </div>
