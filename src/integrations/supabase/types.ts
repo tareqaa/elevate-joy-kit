@@ -174,6 +174,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_cancel_stale_orders: { Args: never; Returns: number }
       generate_order_number: { Args: never; Returns: string }
       has_role: {
         Args: {
