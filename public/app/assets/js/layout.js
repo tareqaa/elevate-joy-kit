@@ -427,11 +427,11 @@ function gxRenderAccountLink(signedIn, isAdmin){
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </button>
       <div class="account-panel" id="accountPanel">
-        <a href="/account" class="acc-link"><span class="ai">📦</span><span>الطلبات</span></a>
+        <a href="/account?tab=orders" class="acc-link"><span class="ai">📦</span><span>الطلبات</span></a>
         <a href="#" class="acc-link acc-soon" data-soon><span class="ai">⭐</span><span>الأمنيات</span><span class="soon-tag">قريباً</span></a>
         <a href="#" class="acc-link acc-soon" data-soon><span class="ai">🔔</span><span>الإشعارات</span><span class="soon-tag">قريباً</span></a>
-        <a href="/account" class="acc-link"><span class="ai">👤</span><span>حسابي</span></a>
-        <a href="/account" class="acc-link"><span class="ai">⚙️</span><span>الإعدادات</span></a>
+        <a href="/account?tab=profile" class="acc-link"><span class="ai">👤</span><span>حسابي</span></a>
+        <a href="/account?tab=security" class="acc-link"><span class="ai">⚙️</span><span>الإعدادات</span></a>
         ${isAdmin ? '<div class="acc-divider"></div><a href="/admin" class="acc-link acc-admin"><span class="ai">🛡️</span><span>لوحة التحكم</span></a>' : ''}
         <div class="acc-divider"></div>
         <button type="button" class="acc-link acc-logout" id="accLogout"><span class="ai">↩︎</span><span>تسجيل الخروج</span></button>

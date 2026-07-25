@@ -1,12 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { useState, useMemo } from "react";
+import { toast } from "sonner";
+import { z } from "zod";
+import { User as UserIcon, Package, ShieldCheck, Copy, Check } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({ meta: [{ title: "حسابي — GX Store" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    tab: (typeof s.tab === "string" ? s.tab : "profile") as "profile" | "orders" | "security",
+  }),
   component: AccountPage,
 });
 
@@ -18,8 +28,21 @@ const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secon
   cancelled: { label: "ملغى", variant: "destructive" },
 };
 
+// Cartoon game-style avatars via DiceBear (no key required)
+const AVATAR_SEEDS = [
+  "Kratos", "Aloy", "Ezio", "Master-Chief", "Link", "Zelda",
+  "Cloud", "Tifa", "Mario", "Luigi", "Sonic", "Pikachu",
+  "Ryu", "Chun-Li", "Lara", "Nathan", "Geralt", "Ciri",
+  "Bayonetta", "Samus", "Kirby", "Yoshi", "Peach", "Bowser",
+];
+const avatarUrl = (seed: string) =>
+  `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6`;
+
 function AccountPage() {
   const { user } = Route.useRouteContext();
+  const { tab } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const qc = useQueryClient();
 
   const profileQ = useQuery({
     queryKey: ["my-profile", user.id],
@@ -42,75 +65,261 @@ function AccountPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>مرحباً {profileQ.data?.full_name || user.email}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <div>الاسم: <b className="text-foreground">{profileQ.data?.full_name || "—"}</b></div>
-          <div>الإيميل: <span dir="ltr" className="text-foreground">{user.email}</span></div>
+      {/* Hero */}
+      <Card className="overflow-hidden border-primary/20">
+        <div className="h-24 bg-gradient-to-l from-primary/30 via-purple-500/20 to-cyan-500/20" />
+        <CardContent className="pt-0 -mt-12 flex flex-col sm:flex-row sm:items-end gap-4">
+          <img
+            src={profileQ.data?.avatar_url || avatarUrl(user.email || "gx")}
+            alt="avatar"
+            className="w-24 h-24 rounded-2xl border-4 border-background shadow-xl bg-card object-cover"
+          />
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold">{profileQ.data?.full_name || "لاعب GX"}</h1>
+            <p className="text-sm text-muted-foreground" dir="ltr">{user.email}</p>
+          </div>
+          <Badge variant="outline" className="text-xs">
+            عضو منذ {new Date(profileQ.data?.created_at || Date.now()).toLocaleDateString("ar-EG", { year: "numeric", month: "long" })}
+          </Badge>
         </CardContent>
       </Card>
 
+      <Tabs
+        value={tab}
+        onValueChange={(v) => navigate({ search: { tab: v as "profile" | "orders" | "security" } })}
+      >
+        <TabsList className="grid grid-cols-3 w-full max-w-md">
+          <TabsTrigger value="profile"><UserIcon className="w-4 h-4 ml-1" />الملف</TabsTrigger>
+          <TabsTrigger value="orders"><Package className="w-4 h-4 ml-1" />طلباتي</TabsTrigger>
+          <TabsTrigger value="security"><ShieldCheck className="w-4 h-4 ml-1" />الأمان</TabsTrigger>
+        </TabsList>
 
+        <TabsContent value="profile" className="mt-4">
+          <ProfileTab
+            userId={user.id}
+            currentName={profileQ.data?.full_name || ""}
+            currentAvatar={profileQ.data?.avatar_url || ""}
+            onSaved={() => qc.invalidateQueries({ queryKey: ["my-profile", user.id] })}
+          />
+        </TabsContent>
+
+        <TabsContent value="orders" className="mt-4">
+          <OrdersTab loading={ordersQ.isLoading} orders={ordersQ.data ?? []} />
+        </TabsContent>
+
+        <TabsContent value="security" className="mt-4">
+          <SecurityTab email={user.email || ""} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function ProfileTab({ userId, currentName, currentAvatar, onSaved }: {
+  userId: string; currentName: string; currentAvatar: string; onSaved: () => void;
+}) {
+  const [name, setName] = useState(currentName);
+  const [avatar, setAvatar] = useState(currentAvatar || avatarUrl(AVATAR_SEEDS[0]));
+  const [saving, setSaving] = useState(false);
+
+  const nameSchema = useMemo(() => z.string().trim().min(2, "الاسم قصير").max(60, "الاسم طويل"), []);
+
+  async function save() {
+    const parsed = nameSchema.safeParse(name);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: parsed.data, avatar_url: avatar })
+      .eq("id", userId);
+    setSaving(false);
+    if (error) { toast.error("فشل الحفظ"); return; }
+    toast.success("تم تحديث الملف الشخصي");
+    onSaved();
+  }
+
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
       <Card>
-        <CardHeader>
-          <CardTitle>سجل الطلبات</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-base">اختر شخصيتك</CardTitle></CardHeader>
         <CardContent>
-          {ordersQ.isLoading && <p className="text-sm text-muted-foreground">جاري التحميل...</p>}
-          {ordersQ.data && ordersQ.data.length === 0 && (
-            <p className="text-sm text-muted-foreground">ما عندك طلبات لسا. <a href="/app/index.html" className="text-primary underline">ابدأ التسوق</a></p>
-          )}
-          <div className="space-y-3">
-            {ordersQ.data?.map((o) => {
-              const status = STATUS_LABELS[o.status] ?? { label: o.status, variant: "secondary" as const };
-              const items = Array.isArray(o.items) ? o.items : [];
-              const delivery = o.delivery_data && typeof o.delivery_data === "object" ? o.delivery_data as Record<string, unknown> : {};
-              const codes = Array.isArray((delivery as { codes?: unknown }).codes) ? (delivery as { codes: Array<{ label?: string; value?: string }> }).codes : [];
+          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+            {AVATAR_SEEDS.map((s) => {
+              const url = avatarUrl(s);
+              const active = avatar === url;
               return (
-                <div key={o.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div>
-                      <div className="font-mono text-sm">{o.order_number}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(o.created_at).toLocaleString("ar-EG")}
-                      </div>
-                    </div>
-                    <Badge variant={status.variant}>{status.label}</Badge>
-                  </div>
-                  <div className="mt-3 space-y-1 text-sm">
-                    {(items as Array<{ name?: string; qty?: number; price?: number }>).map((it, i) => (
-                      <div key={i} className="flex justify-between">
-                        <span>{it.name} × {it.qty}</span>
-                        <span>{((it.price ?? 0) * (it.qty ?? 1)).toFixed(2)} د.أ</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-3 flex justify-between font-bold border-t pt-2">
-                    <span>الإجمالي</span>
-                    <span>{Number(o.total_jod).toFixed(2)} د.أ</span>
-                  </div>
-                  {o.status === "delivered" && codes.length > 0 && (
-                    <div className="mt-3 bg-muted/50 rounded p-3 space-y-2">
-                      <div className="text-sm font-semibold">🎁 تفاصيل التسليم:</div>
-                      {codes.map((c, i) => (
-                        <div key={i} className="text-sm">
-                          <div className="text-muted-foreground">{c.label}</div>
-                          <div className="font-mono bg-background border rounded p-2 mt-1 select-all" dir="ltr">{c.value}</div>
-                        </div>
-                      ))}
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setAvatar(url)}
+                  className={`relative rounded-xl overflow-hidden aspect-square border-2 transition ${active ? "border-primary ring-2 ring-primary/50 scale-105" : "border-transparent hover:border-primary/50"}`}
+                >
+                  <img src={url} alt={s} className="w-full h-full object-cover bg-muted" loading="lazy" />
+                  {active && (
+                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                      <Check className="w-6 h-6 text-primary" />
                     </div>
                   )}
-                  {o.admin_notes && (
-                    <div className="mt-3 text-sm bg-muted/30 rounded p-2">
-                      <span className="font-semibold">ملاحظة:</span> {o.admin_notes}
-                    </div>
-                  )}
-                </div>
+                </button>
               );
             })}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">معلومات الحساب</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <img src={avatar} alt="preview" className="w-16 h-16 rounded-xl border" />
+            <div className="text-sm text-muted-foreground">معاينة الأفاتار الجديد</div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">الاسم المعروض</Label>
+            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="اسمك في اللعبة" maxLength={60} />
+          </div>
+          <Button onClick={save} disabled={saving} className="w-full">
+            {saving ? "جاري الحفظ..." : "حفظ التعديلات"}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+type OrderRow = {
+  id: string; order_number: string; status: string; created_at: string; total_jod: number;
+  items: unknown; delivery_data: unknown;
+};
+
+function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }) {
+  if (loading) return <p className="text-sm text-muted-foreground">جاري التحميل...</p>;
+  if (orders.length === 0) return (
+    <Card><CardContent className="py-10 text-center text-muted-foreground">
+      ما عندك طلبات لسا. <a href="/app/index.html" className="text-primary underline">ابدأ التسوق</a>
+    </CardContent></Card>
+  );
+  return (
+    <div className="space-y-3">
+      {orders.map((o) => <OrderCard key={o.id} order={o} />)}
+    </div>
+  );
+}
+
+function OrderCard({ order: o }: { order: OrderRow }) {
+  const status = STATUS_LABELS[o.status] ?? { label: o.status, variant: "secondary" as const };
+  const items = Array.isArray(o.items) ? (o.items as Array<{ name?: string; qty?: number; price?: number }>) : [];
+  const delivery = o.delivery_data && typeof o.delivery_data === "object" ? o.delivery_data as Record<string, unknown> : {};
+  const codes = Array.isArray((delivery as { codes?: unknown }).codes)
+    ? (delivery as { codes: Array<{ label?: string; value?: string }> }).codes : [];
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div>
+            <div className="font-mono text-sm font-semibold">{o.order_number}</div>
+            <div className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString("ar-EG")}</div>
+          </div>
+          <Badge variant={status.variant}>{status.label}</Badge>
+        </div>
+        <div className="mt-3 space-y-1 text-sm">
+          {items.map((it, i) => (
+            <div key={i} className="flex justify-between">
+              <span>{it.name} × {it.qty}</span>
+              <span>{((it.price ?? 0) * (it.qty ?? 1)).toFixed(2)} د.أ</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex justify-between font-bold border-t pt-2">
+          <span>الإجمالي</span>
+          <span>{Number(o.total_jod).toFixed(2)} د.أ</span>
+        </div>
+        {o.status === "delivered" && codes.length > 0 && (
+          <div className="mt-3 bg-muted/40 rounded-lg p-3 space-y-2 border">
+            <div className="text-sm font-semibold">🎁 الأكواد الخاصة بك</div>
+            {codes.map((c, i) => <CodeBox key={i} label={c.label} value={c.value} />)}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CodeBox({ label, value }: { label?: string; value?: string }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    if (!value) return;
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    toast.success("تم النسخ");
+    setTimeout(() => setCopied(false), 1500);
+  }
+  return (
+    <div className="text-sm">
+      {label && <div className="text-muted-foreground text-xs mb-1">{label}</div>}
+      <div className="flex items-center gap-2">
+        <div className="flex-1 font-mono bg-background border rounded p-2 select-all break-all" dir="ltr">{value}</div>
+        <Button size="icon" variant="outline" onClick={copy} className="shrink-0">
+          {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function SecurityTab({ email }: { email: string }) {
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function change() {
+    if (pw.length < 6) { toast.error("كلمة المرور يجب أن تكون 6 أحرف فأكثر"); return; }
+    if (pw !== pw2) { toast.error("كلمتا المرور غير متطابقتين"); return; }
+    setSaving(true);
+    const { error } = await supabase.auth.updateUser({ password: pw });
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    setPw(""); setPw2("");
+    toast.success("تم تغيير كلمة المرور");
+  }
+
+  async function sendReset() {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth`,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("تم إرسال رابط إعادة التعيين لبريدك");
+  }
+
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
+      <Card>
+        <CardHeader><CardTitle className="text-base">تغيير كلمة المرور</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-2">
+            <Label htmlFor="pw">كلمة المرور الجديدة</Label>
+            <Input id="pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pw2">تأكيد كلمة المرور</Label>
+            <Input id="pw2" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
+          </div>
+          <Button onClick={change} disabled={saving} className="w-full">
+            {saving ? "جاري الحفظ..." : "تحديث كلمة المرور"}
+          </Button>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle className="text-base">نسيت كلمة المرور؟</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            نرسل رابط إعادة تعيين إلى بريدك: <span dir="ltr" className="text-foreground">{email}</span>
+          </p>
+          <Button variant="outline" onClick={sendReset} className="w-full">إرسال رابط الاستعادة</Button>
         </CardContent>
       </Card>
     </div>
