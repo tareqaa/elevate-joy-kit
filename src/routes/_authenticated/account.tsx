@@ -354,7 +354,7 @@ function OrderCard({ order: o }: { order: OrderRow }) {
             <div className="font-mono text-sm font-semibold">{o.order_number}</div>
             <div className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString("ar-EG")}</div>
           </div>
-          <Badge variant={status.variant}>{status.label}</Badge>
+          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${status.className}`}>{status.label}</span>
         </div>
         <div className="mt-3 space-y-1 text-sm">
           {items.map((it, i) => (
