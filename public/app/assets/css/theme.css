@@ -525,3 +525,24 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
     transition-duration:0.001ms !important;
   }
 }
+
+/* Account/login link in navbar */
+.account-link{
+  display:inline-flex; align-items:center; gap:6px;
+  width:auto; padding:0 12px; height:38px;
+  color:var(--white); text-decoration:none;
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:var(--radius-sm); font-size:13px; font-weight:700;
+  transition:all .18s var(--ease);
+}
+.account-link:hover{ border-color:var(--cyan); color:var(--cyan); }
+.account-link--cta{
+  background:linear-gradient(135deg, var(--cyan), #00b8d4);
+  color:#05060a; border-color:transparent;
+}
+.account-link--cta:hover{ filter:brightness(1.08); color:#05060a; }
+.account-link .al-label{ line-height:1; }
+@media (max-width: 520px){
+  .account-link .al-label{ display:none; }
+  .account-link{ padding:0 10px; }
+}
