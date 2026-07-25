@@ -46,11 +46,9 @@ function OrdersAdmin() {
   const [selected, setSelected] = useState<OrderWithEmail | null>(null);
 
   const ordersQ = useQuery({
-    queryKey: ["admin-orders", statusFilter],
+    queryKey: ["admin-orders"],
     queryFn: async () => {
-      let q = supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(200);
-      if (statusFilter !== "all") q = q.eq("status", statusFilter as typeof STATUSES[number]);
-      const { data, error } = await q;
+      const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(500);
       if (error) throw error;
       const rows = (data ?? []) as OrderRow[];
       const userIds = Array.from(new Set(rows.map((r) => r.user_id).filter(Boolean))) as string[];
@@ -68,6 +66,7 @@ function OrdersAdmin() {
   });
 
   const filtered = (ordersQ.data ?? []).filter((o) => {
+    if (statusFilter !== "all" && o.status !== statusFilter) return false;
     if (!search) return true;
     const s = search.toLowerCase();
     return (
