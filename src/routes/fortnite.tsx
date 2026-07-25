@@ -7,20 +7,23 @@ import { useCart } from "@/lib/gx/cart";
 import { BuyActions } from "@/components/gx/BuyActions";
 import { CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
 import { FeatureAccordion, SectionHead } from "@/components/gx/Primitives";
+import { useLang } from "@/lib/gx/i18n";
+import { localizedProduct } from "@/lib/gx/product-locale";
 
 export const Route = createFileRoute("/fortnite")({
   head: () => ({
     meta: [
-      { title: "فورت نايت — GX Store" },
-      { name: "description", content: "اشتراك Fortnite Crew ورصيد V-Bucks — يوصلك على حساب Epic Games مباشرة." },
-      { property: "og:title", content: "فورت نايت — GX Store" },
+      { title: "Fortnite — GX Store" },
+      { name: "description", content: "Fortnite Crew subscription and V-Bucks — delivered to your Epic Games account." },
+      { property: "og:title", content: "Fortnite — GX Store" },
     ],
   }),
   component: FortnitePage,
 });
 
 function FortnitePage() {
-  const p = PRODUCTS_CATALOG.fortnite;
+  const { lang, t } = useLang();
+  const p = localizedProduct(PRODUCTS_CATALOG.fortnite, lang);
   const { format } = useCurrency();
   const cart = useCart();
   const [customVb, setCustomVb] = useState("");
@@ -29,8 +32,9 @@ function FortnitePage() {
   function submitCustom() {
     const amount = parseInt(customVb, 10);
     if (!amount || amount <= 0) return;
-    cart.addCustom({ name: `V-Bucks — كمية مخصصة (${amount.toLocaleString("en-US")})`, icon: "🪙", bg: p.thumbBg, price: 0 });
-    cart.setNotes((cart.notes ? cart.notes + "\n" : "") + `طلب كمية V-Bucks مخصصة: ${amount.toLocaleString("en-US")} وحدة — الرجاء تأكيد السعر`);
+    const amountStr = amount.toLocaleString("en-US");
+    cart.addCustom({ name: `${t("fn.custom_name")} (${amountStr})`, icon: "🪙", bg: p.thumbBg, price: 0 });
+    cart.setNotes((cart.notes ? cart.notes + "\n" : "") + `${t("fn.custom_note_a")} ${amountStr} ${t("fn.custom_note_b")}`);
     setCustomFlash(true);
     setCustomVb("");
     setTimeout(() => setCustomFlash(false), 1600);
@@ -53,7 +57,7 @@ function FortnitePage() {
 
       <section className="section">
         <div className="wrap">
-          <SectionHead eyebrow="Fortnite Crew" title="اشتراك الكرو الشهري" />
+          <SectionHead eyebrow={t("fn.crew_eyebrow")} title={t("fn.crew_title")} />
           <div className="plans-grid">
             {(p.crewPlans || []).map((pl) => {
               const discount = pl.oldPrice ? Math.round((1 - pl.price / pl.oldPrice) * 100) : 0;
@@ -81,7 +85,7 @@ function FortnitePage() {
 
       <section className="section" style={{ background: "var(--bg2)" }}>
         <div className="wrap">
-          <SectionHead eyebrow="V-Bucks" title="اشحن رصيد V-Bucks" />
+          <SectionHead eyebrow={t("fn.vb_eyebrow")} title={t("fn.vb_title")} />
           <div className="plans-grid">
             {(p.vbucksPlans || []).map((pl) => {
               const discount = pl.oldPrice ? Math.round((1 - pl.price / pl.oldPrice) * 100) : 0;
@@ -107,19 +111,19 @@ function FortnitePage() {
           <div className="delivery-box fade-in" style={{ marginTop: 24 }}>
             <div className="dic">🪙</div>
             <div style={{ flex: 1 }}>
-              <h3>كمية V-Bucks مخصصة</h3>
-              <p>اكتب الكمية اللي بدك ياها ومنأكدلك السعر عالواتساب.</p>
+              <h3>{t("fn.custom_title")}</h3>
+              <p>{t("fn.custom_desc")}</p>
               <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
                 <input
                   type="number" min={1}
                   value={customVb}
                   onChange={(e) => setCustomVb(e.target.value)}
                   className="uname-input"
-                  placeholder="مثال: 5000"
+                  placeholder={t("fn.custom_placeholder")}
                   style={{ flex: "1 1 200px", minWidth: 180 }}
                 />
                 <button type="button" className={"btn btn-primary" + (customFlash ? " added" : "")} onClick={submitCustom}>
-                  {customFlash ? "✓ أضيفت — بنأكدلك السعر" : "أضف الكمية المخصصة"}
+                  {customFlash ? t("fn.custom_added") : t("fn.custom_add")}
                 </button>
               </div>
             </div>
@@ -130,7 +134,7 @@ function FortnitePage() {
       {p.features && p.features.length > 0 && (
         <section className="section">
           <div className="wrap">
-            <SectionHead eyebrow="المميزات" title="شو يشمل الاشتراك" />
+            <SectionHead eyebrow={t("product.features_eyebrow")} title={t("fn.features_title")} />
             <FeatureAccordion features={p.features} />
           </div>
         </section>
@@ -142,19 +146,19 @@ function FortnitePage() {
             <div className="delivery-box fade-in delivery-box-wide">
               <div className="dic">🔒</div>
               <div>
-                <h3>كيف توصلك الباقة؟</h3>
+                <h3>{t("fn.delivery_title")}</h3>
                 <p>{p.delivery.intro}</p>
                 <div className="delivery-cols">
                   <div className="delivery-col">
-                    <div className="delivery-col-title">📋 المطلوب منك بعد الطلب</div>
+                    <div className="delivery-col-title">{t("fn.req_title")}</div>
                     <ul className="delivery-list">{p.delivery.requirements.map((r, i) => <li key={i}>{r}</li>)}</ul>
                   </div>
                   <div className="delivery-col">
-                    <div className="delivery-col-title">🛡️ الأمان والموثوقية</div>
+                    <div className="delivery-col-title">{t("fn.safety_title")}</div>
                     <ul className="delivery-list">{p.delivery.safety.map((s, i) => <li key={i}>{s}</li>)}</ul>
                   </div>
                 </div>
-                <div className="delivery-col-title" style={{ marginTop: 18 }}>🎮 يشمل رصيد V-Bucks</div>
+                <div className="delivery-col-title" style={{ marginTop: 18 }}>{t("fn.platform_title")}</div>
                 <ul className="delivery-list">{p.delivery.platformNotes.map((n, i) => <li key={i}>{n}</li>)}</ul>
               </div>
             </div>

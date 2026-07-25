@@ -3,15 +3,17 @@ import { StoreShell } from "@/components/gx/StoreShell";
 import { GIFT_CARDS_CATALOG } from "@/data/products";
 import { useCurrency } from "@/lib/gx/currency";
 import { BuyActions } from "@/components/gx/BuyActions";
+import { useLang } from "@/lib/gx/i18n";
+import { localizedGiftCard } from "@/lib/gx/product-locale";
 
 export const Route = createFileRoute("/gift-cards/$slug")({
   head: ({ params }) => {
     const g = GIFT_CARDS_CATALOG[params.slug];
-    const title = g ? `${g.name} — GX Store` : "بطاقات هدايا — GX Store";
+    const title = g ? `${g.name} — GX Store` : "Gift Cards — GX Store";
     return {
       meta: [
         { title },
-        { name: "description", content: g ? `بطاقات ${g.name} بأسعار منافسة — تسليم رقمي فوري.` : "بطاقات هدايا رقمية." },
+        { name: "description", content: g ? `${g.name} at competitive prices — instant digital delivery.` : "Digital gift cards." },
         { property: "og:title", content: title },
       ],
     };
@@ -25,7 +27,8 @@ export const Route = createFileRoute("/gift-cards/$slug")({
 
 function GiftCardPage() {
   const { slug } = Route.useLoaderData();
-  const gc = GIFT_CARDS_CATALOG[slug];
+  const { lang, t } = useLang();
+  const gc = localizedGiftCard(GIFT_CARDS_CATALOG[slug], lang);
   const { format } = useCurrency();
 
   const iconMarkup = gc.iconImg ? (
@@ -46,12 +49,12 @@ function GiftCardPage() {
               </div>
               <div>
                 <div className="gc-name">{gc.name}</div>
-                <div className="gc-sub">Digital Gift Card</div>
+                <div className="gc-sub">{t("gc.digital_card")}</div>
               </div>
             </div>
             <div className="giftcard-hero-text">
               <h1>{gc.name}</h1>
-              <p>اختار المنطقة والقيمة المناسبة إلك — تسليم الكود الرقمي بيوصلك مباشرة بعد تأكيد الطلب.</p>
+              <p>{t("gc.pick_region")}</p>
             </div>
           </div>
         </div>
@@ -62,8 +65,8 @@ function GiftCardPage() {
           {(!gc.regions || gc.regions.length === 0) ? (
             <div className="giftcard-empty fade-in">
               <div className="ge-icon">🕓</div>
-              <h3>القيم والأسعار جاية قريبًا</h3>
-              <p>عم نجهز باقات {gc.name} — لو حابب تطلب قيمة معينة هلق، تواصل معنا مباشرة عالواتساب وبنساعدك.</p>
+              <h3>{t("gc.empty_title")}</h3>
+              <p>{t("gc.empty_desc_a")} {gc.name} {t("gc.empty_desc_b")}</p>
             </div>
           ) : (
             gc.regions.map((region) => (
