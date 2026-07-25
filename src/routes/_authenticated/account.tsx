@@ -278,7 +278,79 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
           </Button>
         </CardContent>
       </Card>
+      </div>
     </div>
+  );
+}
+
+function PlayerSearch() {
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState<Array<{ id: string; username: string; full_name: string | null; avatar_url: string | null; level: number | null }>>([]);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const query = q.replace(/^@+/, "").trim();
+    if (query.length < 2) { setResults([]); return; }
+    setLoading(true);
+    const t = setTimeout(async () => {
+      const { data, error } = await supabase.rpc("search_public_profiles", { _q: query, _limit: 8 });
+      setLoading(false);
+      if (error) { setResults([]); return; }
+      setResults((data as typeof results) ?? []);
+      setOpen(true);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Search className="w-4 h-4 text-primary" />
+          <span className="text-sm font-bold">ابحث عن لاعب</span>
+        </div>
+        <div className="relative">
+          <span className="absolute inset-y-0 start-3 flex items-center text-muted-foreground pointer-events-none text-sm" dir="ltr">@</span>
+          <Input
+            dir="ltr"
+            className="ps-7"
+            placeholder="game_tag"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onFocus={() => results.length && setOpen(true)}
+            onBlur={() => setTimeout(() => setOpen(false), 150)}
+          />
+          {open && (loading || results.length > 0) && (
+            <div className="absolute z-10 mt-1 w-full rounded-lg border bg-popover shadow-xl overflow-hidden">
+              {loading && <div className="p-3 text-xs text-muted-foreground text-center">جاري البحث...</div>}
+              {!loading && results.map((r) => {
+                const av = r.avatar_url || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(r.username)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6`;
+                return (
+                  <Link
+                    key={r.id}
+                    to="/u/$username"
+                    params={{ username: r.username }}
+                    className="flex items-center gap-3 p-2.5 hover:bg-accent transition"
+                    onClick={() => setOpen(false)}
+                  >
+                    <img src={av} alt={r.username} className="w-9 h-9 rounded-lg object-cover bg-card" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold truncate">{r.full_name || r.username}</div>
+                      <div className="text-xs text-primary truncate" dir="ltr">@{r.username}</div>
+                    </div>
+                    <Badge variant="outline" className="text-[10px]">Lv.{Math.max(1, Number(r.level) || 1)}</Badge>
+                  </Link>
+                );
+              })}
+              {!loading && q.trim().length >= 2 && results.length === 0 && (
+                <div className="p-3 text-xs text-muted-foreground text-center">لا توجد نتائج</div>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
