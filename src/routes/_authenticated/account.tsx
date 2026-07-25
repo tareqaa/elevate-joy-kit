@@ -283,11 +283,10 @@ type OrderRow = {
 };
 
 const STATUS_TABS: Array<{ key: string; label: string; match: (s: string) => boolean }> = [
-  { key: "all", label: "الكل", match: () => true },
   { key: "pending", label: "قيد الانتظار", match: (s) => s === "pending" },
   { key: "paid", label: "تم الدفع", match: (s) => s === "paid" },
   { key: "processing", label: "قيد التجهيز", match: (s) => s === "processing" },
-  { key: "delivered", label: "مُسلَّم", match: (s) => s === "delivered" },
+  { key: "delivered", label: "جاهز", match: (s) => s === "delivered" },
   { key: "cancelled", label: "ملغى", match: (s) => s === "cancelled" },
 ];
 
