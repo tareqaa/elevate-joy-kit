@@ -251,6 +251,7 @@ ${lines}
         price: it.price,
         usernames: it.usernames || null,
       }));
+      const customerNotes = getNotes() || null;
       const payload = {
         user_id: user ? user.id : null,
         customer_name: user ? (user.user_metadata && user.user_metadata.full_name) || null : null,
@@ -258,9 +259,10 @@ ${lines}
         items,
         total_jod: totalJOD(),
         currency_snapshot: GXCurrency.get(),
-        notes: getNotes() || null,
+        delivery_data: customerNotes ? { customer_notes: customerNotes } : {},
         status: 'pending',
       };
+
       const { data, error } = await sb.from('orders').insert(payload).select().single();
       if(error){ console.warn('[GX] order insert error', error); return null; }
       return data;
