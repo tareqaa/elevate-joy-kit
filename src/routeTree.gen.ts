@@ -18,6 +18,7 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as GiftCardsSlugRouteImport } from './routes/gift-cards.$slug'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
@@ -72,6 +73,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductSlugRoute = ProductSlugRouteImport.update({
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/category/$slug': typeof CategorySlugRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/u/$username': typeof UUsernameRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -170,6 +177,7 @@ export interface FileRoutesByTo {
   '/category/$slug': typeof CategorySlugRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/u/$username': typeof UUsernameRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -193,6 +201,7 @@ export interface FileRoutesById {
   '/category/$slug': typeof CategorySlugRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/u/$username': typeof UUsernameRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -216,6 +225,7 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/gift-cards/$slug'
     | '/product/$slug'
+    | '/u/$username'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/orders'
     | '/admin/users'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/gift-cards/$slug'
     | '/product/$slug'
+    | '/u/$username'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/orders'
     | '/admin/users'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/gift-cards/$slug'
     | '/product/$slug'
+    | '/u/$username'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/orders'
     | '/_authenticated/admin/users'
@@ -279,6 +291,7 @@ export interface RootRouteChildren {
   CategorySlugRoute: typeof CategorySlugRoute
   GiftCardsSlugRoute: typeof GiftCardsSlugRoute
   ProductSlugRoute: typeof ProductSlugRoute
+  UUsernameRoute: typeof UUsernameRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
 
@@ -345,6 +358,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/product/$slug': {
@@ -471,6 +491,7 @@ const rootRouteChildren: RootRouteChildren = {
   CategorySlugRoute: CategorySlugRoute,
   GiftCardsSlugRoute: GiftCardsSlugRoute,
   ProductSlugRoute: ProductSlugRoute,
+  UUsernameRoute: UUsernameRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
 export const routeTree = rootRouteImport

@@ -176,12 +176,35 @@ export type Database = {
     Functions: {
       auto_cancel_stale_orders: { Args: never; Returns: number }
       generate_order_number: { Args: never; Returns: string }
+      get_public_profile: {
+        Args: { _username: string }
+        Returns: {
+          avatar_url: string
+          created_at: string
+          full_name: string
+          id: string
+          level: number
+          rank: number
+          username: string
+          xp: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      search_public_profiles: {
+        Args: { _limit?: number; _q: string }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          id: string
+          level: number
+          username: string
+        }[]
       }
     }
     Enums: {
