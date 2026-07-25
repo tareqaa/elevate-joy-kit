@@ -360,7 +360,16 @@ function gxWireBuyActions(root){
   });
 }
 
+function gxInjectSupabaseBridge(){
+  if(document.querySelector('script[data-gx-supabase]')) return;
+  const s = document.createElement('script');
+  s.src = '/app/assets/js/supabase-bridge.js';
+  s.setAttribute('data-gx-supabase', '1');
+  document.head.appendChild(s);
+}
+
 function gxInitLayout(){
+  gxInjectSupabaseBridge();
   gxRenderNavbar();
   gxRenderCartDrawer();
   gxRenderFooter();
@@ -368,6 +377,37 @@ function gxInitLayout(){
   gxUpdateCartCount();
   gxRenderCartItemsInDrawer();
   GXCurrency.autoDetect();
+  gxRenderAuthState();
+}
+
+// Swaps in an "account" icon in the navbar when a user is signed in.
+async function gxRenderAuthState(){
+  const bridge = window.gxSupabaseReady;
+  if(!bridge) return;
+  await bridge;
+  if(!window.gxSupabase) return;
+  const { data } = await window.gxSupabase.auth.getUser();
+  const navRight = document.querySelector('.nav-right');
+  if(!navRight) return;
+  const existing = document.getElementById('accountLink');
+  if(existing) existing.remove();
+  const link = document.createElement('a');
+  link.id = 'accountLink';
+  link.className = 'icon-btn';
+  link.style.textDecoration = 'none';
+  link.style.fontSize = '13px';
+  link.style.padding = '0 10px';
+  link.style.width = 'auto';
+  if(data && data.user){
+    link.href = '/account';
+    link.title = 'حسابي';
+    link.textContent = '👤';
+  }else{
+    link.href = '/auth';
+    link.title = 'تسجيل الدخول';
+    link.textContent = '🔐';
+  }
+  navRight.insertBefore(link, navRight.firstChild);
 }
 
 document.addEventListener('DOMContentLoaded', gxInitLayout);
