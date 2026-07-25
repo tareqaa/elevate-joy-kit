@@ -627,48 +627,17 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
 }
 
 
-/* Dropdown header with avatar + username */
-.acc-header{
-  display:flex; align-items:center; gap:10px;
-  padding:10px 10px 8px;
-}
-.acc-header__avatar{
-  width:42px; height:42px; border-radius:12px; object-fit:cover;
-  border:1.5px solid color-mix(in oklab, var(--cyan) 40%, var(--border));
-  background:var(--muted);
-}
-.acc-header__meta{ min-width:0; flex:1; }
-.acc-header__name{
-  font-size:13.5px; font-weight:800; color:var(--white);
+/* Compact dropdown header (name + handle only) */
+.acc-mini{ padding:10px 12px 8px; }
+.acc-mini__name{
+  font-size:13px; font-weight:800; color:var(--white);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.acc-header__handle{
-  font-size:12px; color:var(--cyan); font-weight:700; margin-top:2px;
+.acc-mini__handle{
+  font-size:11.5px; color:var(--cyan); font-weight:700; margin-top:2px;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 
-/* XP bar */
-.acc-xp{ padding:2px 10px 8px; }
-.acc-xp__top{
-  display:flex; justify-content:space-between; align-items:center;
-  font-size:11px; font-weight:700; color:var(--muted-fg, #8b90a0); margin-bottom:5px;
-}
-.acc-xp__lvl{
-  color:#05060a; background:linear-gradient(135deg,#ffd166,#ff9f43);
-  padding:2px 8px; border-radius:6px; font-weight:900; font-size:10.5px;
-  letter-spacing:.3px;
-}
-.acc-xp__xp{ color:var(--cyan); }
-.acc-xp__bar{
-  height:6px; border-radius:99px; overflow:hidden;
-  background:color-mix(in oklab, var(--cyan) 12%, transparent);
-}
-.acc-xp__bar > span{
-  display:block; height:100%; border-radius:99px;
-  background:linear-gradient(90deg, var(--cyan), #7c5cff);
-  box-shadow:0 0 12px color-mix(in oklab, var(--cyan) 60%, transparent);
-  transition:width .8s cubic-bezier(.2,.7,.2,1);
-}
 
 /* ============================================================
    In-page Auth Modal
