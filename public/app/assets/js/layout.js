@@ -410,9 +410,9 @@ function gxRenderAccountLink(signedIn, isAdmin){
 
   if(!signedIn){
     wrap.innerHTML = `
-      <a href="/auth" class="icon-btn account-link" title="تسجيل الدخول" aria-label="تسجيل الدخول">
+      <button type="button" class="icon-btn account-link" id="accountLoginBtn" title="تسجيل الدخول" aria-label="تسجيل الدخول">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-      </a>`;
+      </button>`;
   }else{
     wrap.innerHTML = `
       <button type="button" class="icon-btn account-link account-link--signed" id="accountBtn" title="حسابي" aria-label="حسابي">
@@ -431,25 +431,140 @@ function gxRenderAccountLink(signedIn, isAdmin){
   }
   navRight.insertBefore(wrap, navRight.firstChild);
 
-  if(signedIn){
-    const btn = wrap.querySelector('#accountBtn');
-    const panel = wrap.querySelector('#accountPanel');
-    btn.addEventListener('click', (e)=>{ e.stopPropagation(); panel.classList.toggle('open'); });
-    document.addEventListener('click', (e)=>{ if(!wrap.contains(e.target)) panel.classList.remove('open'); });
-    wrap.querySelectorAll('[data-soon]').forEach(a => a.addEventListener('click', (e)=>{
-      e.preventDefault();
-      panel.classList.remove('open');
-      alert('هاي الميزة قريباً 🚀');
-    }));
-    const logout = wrap.querySelector('#accLogout');
-    if(logout) logout.addEventListener('click', async ()=>{
-      try{
-        if(window.gxSupabaseReady) await window.gxSupabaseReady;
-        if(window.gxSupabase) await window.gxSupabase.auth.signOut();
-      }catch(_){}
-      window.location.href = '/auth';
-    });
+  if(!signedIn){
+    const loginBtn = wrap.querySelector('#accountLoginBtn');
+    if(loginBtn) loginBtn.addEventListener('click', (e)=>{ e.preventDefault(); gxOpenAuthModal(); });
+    return;
   }
+
+  const btn = wrap.querySelector('#accountBtn');
+  const panel = wrap.querySelector('#accountPanel');
+  let hoverTimer = null;
+  const open = ()=>{ clearTimeout(hoverTimer); panel.classList.add('open'); };
+  const closeSoon = ()=>{ hoverTimer = setTimeout(()=> panel.classList.remove('open'), 180); };
+  btn.addEventListener('click', (e)=>{ e.stopPropagation(); panel.classList.toggle('open'); });
+  wrap.addEventListener('mouseenter', open);
+  wrap.addEventListener('mouseleave', closeSoon);
+  document.addEventListener('click', (e)=>{ if(!wrap.contains(e.target)) panel.classList.remove('open'); });
+  wrap.querySelectorAll('[data-soon]').forEach(a => a.addEventListener('click', (e)=>{
+    e.preventDefault();
+    panel.classList.remove('open');
+    alert('هاي الميزة قريباً 🚀');
+  }));
+  const logout = wrap.querySelector('#accLogout');
+  if(logout) logout.addEventListener('click', async ()=>{
+    try{
+      if(window.gxSupabaseReady) await window.gxSupabaseReady;
+      if(window.gxSupabase) await window.gxSupabase.auth.signOut();
+    }catch(_){}
+    window.location.reload();
+  });
+}
+
+/* ============================================================
+   In-page Auth Modal (login / signup) — opens over the store.
+   ============================================================ */
+function gxEnsureAuthModal(){
+  if(document.getElementById('gxAuthModal')) return;
+  const el = document.createElement('div');
+  el.id = 'gxAuthModal';
+  el.className = 'gx-auth-modal';
+  el.setAttribute('dir', 'rtl');
+  el.innerHTML = `
+    <div class="gx-auth-modal__scrim" data-close></div>
+    <div class="gx-auth-modal__card" role="dialog" aria-modal="true">
+      <button type="button" class="gx-auth-modal__close" data-close aria-label="إغلاق">✕</button>
+      <div class="gx-auth-modal__avatar">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+      </div>
+      <div class="gx-auth-modal__tabs">
+        <button type="button" class="on" data-tab="signin">دخول</button>
+        <button type="button" data-tab="signup">حساب جديد</button>
+      </div>
+      <h3 class="gx-auth-modal__title" id="gxAuthTitle">تسجيل الدخول</h3>
+
+      <form class="gx-auth-modal__form" id="gxAuthForm">
+        <label data-only="signup">الاسم الكامل</label>
+        <input type="text" id="gxAuthName" placeholder="اسمك" data-only="signup" />
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="gxAuthEmail" dir="ltr" placeholder="your@email.com" required />
+        <label>كلمة السر</label>
+        <input type="password" id="gxAuthPass" dir="ltr" placeholder="••••••" minlength="6" required />
+        <button type="submit" class="gx-auth-modal__submit" id="gxAuthSubmit">دخول</button>
+      </form>
+
+      <div class="gx-auth-modal__divider"><span>أو تابع بحسابك في</span></div>
+      <div class="gx-auth-modal__social">
+        <button type="button" class="gx-social-btn" id="gxAuthGoogle" title="Google">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        </button>
+      </div>
+      <div class="gx-auth-modal__msg" id="gxAuthMsg"></div>
+    </div>`;
+  document.body.appendChild(el);
+
+  const close = ()=> el.classList.remove('open');
+  el.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', close));
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') close(); });
+
+  const tabs = el.querySelectorAll('.gx-auth-modal__tabs button');
+  const setMode = (mode)=>{
+    el.dataset.mode = mode;
+    tabs.forEach(b => b.classList.toggle('on', b.dataset.tab === mode));
+    el.querySelector('#gxAuthTitle').textContent = mode === 'signin' ? 'تسجيل الدخول' : 'إنشاء حساب';
+    el.querySelector('#gxAuthSubmit').textContent = mode === 'signin' ? 'دخول' : 'إنشاء حساب';
+    el.querySelectorAll('[data-only="signup"]').forEach(n => n.style.display = mode === 'signup' ? '' : 'none');
+  };
+  tabs.forEach(b => b.addEventListener('click', ()=> setMode(b.dataset.tab)));
+  setMode('signin');
+
+  const msg = el.querySelector('#gxAuthMsg');
+  const showMsg = (t, ok=false)=>{ msg.textContent = t; msg.className = 'gx-auth-modal__msg ' + (ok?'ok':'err'); };
+
+  el.querySelector('#gxAuthForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    showMsg('...');
+    try{
+      if(window.gxSupabaseReady) await window.gxSupabaseReady;
+      if(!window.gxSupabase){ showMsg('تعذّر الاتصال، حاول لاحقاً'); return; }
+      const email = el.querySelector('#gxAuthEmail').value.trim();
+      const password = el.querySelector('#gxAuthPass').value;
+      const mode = el.dataset.mode;
+      if(mode === 'signin'){
+        const { error } = await window.gxSupabase.auth.signInWithPassword({ email, password });
+        if(error){ showMsg(error.message); return; }
+        showMsg('تم الدخول 👋', true);
+        setTimeout(()=> window.location.reload(), 500);
+      }else{
+        const full_name = el.querySelector('#gxAuthName').value.trim();
+        const { error } = await window.gxSupabase.auth.signUp({
+          email, password,
+          options: { emailRedirectTo: window.location.origin + '/app/index.html', data: { full_name } },
+        });
+        if(error){ showMsg(error.message); return; }
+        showMsg('تم إنشاء الحساب! تحقق من إيميلك.', true);
+      }
+    }catch(err){ showMsg((err && err.message) || 'خطأ غير متوقع'); }
+  });
+
+  el.querySelector('#gxAuthGoogle').addEventListener('click', async ()=>{
+    showMsg('...');
+    try{
+      if(window.gxSupabaseReady) await window.gxSupabaseReady;
+      if(!window.gxSupabase){ showMsg('تعذّر الاتصال'); return; }
+      const { error } = await window.gxSupabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin + '/app/index.html' },
+      });
+      if(error) showMsg(error.message);
+    }catch(err){ showMsg((err && err.message) || 'خطأ'); }
+  });
+}
+
+function gxOpenAuthModal(){
+  gxEnsureAuthModal();
+  const el = document.getElementById('gxAuthModal');
+  if(el) el.classList.add('open');
 }
 
 async function gxRenderAuthState(){
