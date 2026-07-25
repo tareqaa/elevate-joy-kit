@@ -2,18 +2,13 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "تسجيل الدخول — GX Store" },
-      { name: "description", content: "سجّل الدخول أو أنشئ حساب جديد للوصول لسجل طلباتك ومكافآتك." },
+      { name: "description", content: "سجّل الدخول أو أنشئ حساب جديد للوصول لسجل طلباتك." },
     ],
   }),
   component: AuthPage,
@@ -22,6 +17,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -29,19 +25,16 @@ function AuthPage() {
     });
   }, [navigate]);
 
-  const [signInEmail, setSignInEmail] = useState("");
-  const [signInPassword, setSignInPassword] = useState("");
-  const [signUpName, setSignUpName] = useState("");
-  const [signUpEmail, setSignUpEmail] = useState("");
-  const [signUpPassword, setSignUpPassword] = useState("");
+  const [siEmail, setSiEmail] = useState("");
+  const [siPass, setSiPass] = useState("");
+  const [suName, setSuName] = useState("");
+  const [suEmail, setSuEmail] = useState("");
+  const [suPass, setSuPass] = useState("");
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: signInEmail.trim(),
-      password: signInPassword,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email: siEmail.trim(), password: siPass });
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("أهلاً فيك 👋");
@@ -52,112 +45,119 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signUp({
-      email: signUpEmail.trim(),
-      password: signUpPassword,
+      email: suEmail.trim(),
+      password: suPass,
       options: {
         emailRedirectTo: `${window.location.origin}/account`,
-        data: { full_name: signUpName.trim() },
+        data: { full_name: suName.trim() },
       },
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("تم إنشاء الحساب! تحقق من إيميلك لتأكيد التسجيل.");
+    toast.success("تم إنشاء الحساب! تحقق من إيميلك.");
   }
 
   async function handleGoogle() {
     setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/auth",
-    });
-    if (result.error) {
-      setLoading(false);
-      toast.error(result.error.message);
-      return;
-    }
+    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
+    if (result.error) { setLoading(false); toast.error(result.error.message); return; }
     if (result.redirected) return;
     navigate({ to: "/account" });
   }
 
   return (
-    <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-6">
-          <Link to="/" className="inline-flex items-center gap-2 justify-center">
-            <img src="/app/assets/img/gx-logo.png" alt="GX" className="h-12 w-12" />
-            <span className="text-2xl font-bold">GX <span className="text-primary">STORE</span></span>
-          </Link>
+    <div dir="rtl" className="gx-auth-root">
+      <style>{cssBlock}</style>
+      <div className="gx-auth-bg" />
+      <div className="gx-auth-wrap">
+        <Link to="/" className="gx-auth-brand">
+          <img src="/app/assets/img/gx-logo.png" alt="GX" />
+          <span>GX <b>STORE</b></span>
+        </Link>
+
+        <div className="gx-auth-card">
+          <div className="gx-auth-tabs">
+            <button className={mode === "signin" ? "on" : ""} onClick={() => setMode("signin")} type="button">دخول</button>
+            <button className={mode === "signup" ? "on" : ""} onClick={() => setMode("signup")} type="button">حساب جديد</button>
+          </div>
+
+          <h1 className="gx-auth-title">{mode === "signin" ? "مرحباً بعودتك" : "أنشئ حسابك"}</h1>
+          <p className="gx-auth-sub">
+            {mode === "signin" ? "سجّل الدخول لمتابعة طلباتك واستلام أكوادك." : "أنشئ حسابك لحفظ طلباتك واستلام الأكواد."}
+          </p>
+
+          {mode === "signin" ? (
+            <form onSubmit={handleSignIn} className="gx-auth-form">
+              <label>الإيميل</label>
+              <input type="email" required dir="ltr" value={siEmail} onChange={(e) => setSiEmail(e.target.value)} placeholder="you@email.com" />
+              <label>كلمة السر</label>
+              <input type="password" required minLength={6} dir="ltr" value={siPass} onChange={(e) => setSiPass(e.target.value)} placeholder="••••••" />
+              <button type="submit" className="gx-auth-btn primary" disabled={loading}>
+                {loading ? "..." : "دخول"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSignUp} className="gx-auth-form">
+              <label>الاسم الكامل</label>
+              <input type="text" required value={suName} onChange={(e) => setSuName(e.target.value)} placeholder="اسمك" />
+              <label>الإيميل</label>
+              <input type="email" required dir="ltr" value={suEmail} onChange={(e) => setSuEmail(e.target.value)} placeholder="you@email.com" />
+              <label>كلمة السر <span className="hint">(٦ أحرف على الأقل)</span></label>
+              <input type="password" required minLength={6} dir="ltr" value={suPass} onChange={(e) => setSuPass(e.target.value)} placeholder="••••••" />
+              <button type="submit" className="gx-auth-btn primary" disabled={loading}>
+                {loading ? "..." : "إنشاء حساب"}
+              </button>
+            </form>
+          )}
+
+          <div className="gx-auth-divider"><span>أو</span></div>
+
+          <button className="gx-auth-btn google" onClick={handleGoogle} disabled={loading} type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            متابعة بحساب Google
+          </button>
+
+          <a href="/app/index.html" className="gx-auth-back">← العودة للمتجر</a>
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>مرحباً في GX Store</CardTitle>
-            <CardDescription>سجل الدخول أو أنشئ حساب جديد للاستفادة من نظام النقاط والمكافآت.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid grid-cols-2 w-full">
-                <TabsTrigger value="signin">دخول</TabsTrigger>
-                <TabsTrigger value="signup">حساب جديد</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="signin" className="space-y-4 pt-4">
-                <form onSubmit={handleSignIn} className="space-y-3">
-                  <div>
-                    <Label htmlFor="si-email">الإيميل</Label>
-                    <Input id="si-email" type="email" required value={signInEmail} onChange={(e) => setSignInEmail(e.target.value)} dir="ltr" />
-                  </div>
-                  <div>
-                    <Label htmlFor="si-pass">كلمة السر</Label>
-                    <Input id="si-pass" type="password" required minLength={6} value={signInPassword} onChange={(e) => setSignInPassword(e.target.value)} dir="ltr" />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "جاري الدخول..." : "دخول"}
-                  </Button>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="signup" className="space-y-4 pt-4">
-                <form onSubmit={handleSignUp} className="space-y-3">
-                  <div>
-                    <Label htmlFor="su-name">الاسم الكامل</Label>
-                    <Input id="su-name" required value={signUpName} onChange={(e) => setSignUpName(e.target.value)} />
-                  </div>
-                  <div>
-                    <Label htmlFor="su-email">الإيميل</Label>
-                    <Input id="su-email" type="email" required value={signUpEmail} onChange={(e) => setSignUpEmail(e.target.value)} dir="ltr" />
-                  </div>
-                  <div>
-                    <Label htmlFor="su-pass">كلمة السر (٦ أحرف على الأقل)</Label>
-                    <Input id="su-pass" type="password" required minLength={6} value={signUpPassword} onChange={(e) => setSignUpPassword(e.target.value)} dir="ltr" />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "جاري إنشاء الحساب..." : "إنشاء حساب"}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-              <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">أو</span></div>
-            </div>
-
-            <Button variant="outline" className="w-full" onClick={handleGoogle} disabled={loading}>
-              <svg className="w-4 h-4 ml-2" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-              الدخول بحساب جوجل
-            </Button>
-
-            <div className="text-center mt-4 text-sm">
-              <Link to="/" className="text-muted-foreground hover:text-foreground">← العودة للمتجر</Link>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
 }
+
+const cssBlock = `
+.gx-auth-root{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:#090b10;color:#f5f6f8;font-family:'Cairo','Tajawal',system-ui,sans-serif;overflow:hidden;}
+.gx-auth-bg{position:absolute;inset:0;background:
+  radial-gradient(600px 400px at 20% 10%, rgba(0,229,255,0.14), transparent 60%),
+  radial-gradient(500px 350px at 85% 90%, rgba(255,45,120,0.10), transparent 60%),
+  linear-gradient(180deg, #0b0e15 0%, #090b10 100%);pointer-events:none;}
+.gx-auth-wrap{position:relative;width:100%;max-width:440px;}
+.gx-auth-brand{display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;color:#f5f6f8;font-weight:900;font-size:20px;margin-bottom:20px;}
+.gx-auth-brand img{width:44px;height:44px;object-fit:contain;}
+.gx-auth-brand b{color:#00e5ff;}
+.gx-auth-card{background:#12151f;border:1.5px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px 22px;box-shadow:0 20px 60px -20px rgba(0,229,255,0.15);}
+.gx-auth-tabs{display:grid;grid-template-columns:1fr 1fr;background:#0d1018;border:1.5px solid rgba(255,255,255,0.08);border-radius:12px;padding:4px;margin-bottom:20px;}
+.gx-auth-tabs button{background:transparent;border:0;padding:10px;border-radius:9px;color:#8b90a0;font-weight:700;font-size:14px;cursor:pointer;transition:all .18s;font-family:inherit;}
+.gx-auth-tabs button.on{background:#00e5ff;color:#05060a;}
+.gx-auth-title{font-size:22px;font-weight:900;margin:0 0 6px;}
+.gx-auth-sub{font-size:13px;color:#8b90a0;margin:0 0 20px;}
+.gx-auth-form{display:flex;flex-direction:column;gap:6px;}
+.gx-auth-form label{font-size:13px;font-weight:700;color:#c8ccd6;margin-top:10px;}
+.gx-auth-form label .hint{font-weight:500;color:#8b90a0;font-size:11px;}
+.gx-auth-form input{background:#0d1018;border:1.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 14px;color:#f5f6f8;font-size:14px;outline:none;transition:border-color .18s;font-family:inherit;}
+.gx-auth-form input:focus{border-color:#00e5ff;}
+.gx-auth-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;border-radius:11px;font-weight:800;font-size:14px;border:0;cursor:pointer;margin-top:16px;transition:all .18s;font-family:inherit;}
+.gx-auth-btn.primary{background:linear-gradient(135deg,#00e5ff,#00b8d4);color:#05060a;}
+.gx-auth-btn.primary:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px);}
+.gx-auth-btn.google{background:#0d1018;color:#f5f6f8;border:1.5px solid rgba(255,255,255,0.1);}
+.gx-auth-btn.google:hover:not(:disabled){border-color:#00e5ff;}
+.gx-auth-btn:disabled{opacity:0.6;cursor:not-allowed;}
+.gx-auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0 4px;color:#8b90a0;font-size:12px;}
+.gx-auth-divider::before,.gx-auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.08);}
+.gx-auth-back{display:block;text-align:center;margin-top:18px;color:#8b90a0;font-size:13px;text-decoration:none;transition:color .18s;}
+.gx-auth-back:hover{color:#00e5ff;}
+`;
