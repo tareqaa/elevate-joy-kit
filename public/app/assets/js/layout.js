@@ -603,6 +603,18 @@ function gxOpenAuthModal(){
   if(el) el.classList.add('open');
 }
 
+async function gxFetchProfile(user){
+  if(!user) return null;
+  try{
+    const { data } = await window.gxSupabase
+      .from('profiles')
+      .select('username, full_name, avatar_url, xp, level, email')
+      .eq('id', user.id)
+      .maybeSingle();
+    return data || { email: user.email };
+  }catch(_){ return { email: user.email }; }
+}
+
 async function gxRenderAuthState(){
   gxRenderAccountLink(false, false);
   try{
@@ -613,22 +625,26 @@ async function gxRenderAuthState(){
     const { data } = await window.gxSupabase.auth.getUser();
     const user = data && data.user;
     let isAdmin = false;
+    let profile = null;
     if(user){
-      try{
-        const r = await window.gxSupabase.rpc('has_role', { _user_id: user.id, _role: 'admin' });
-        isAdmin = !!r.data;
-      }catch(_){}
+      const [roleRes, prof] = await Promise.all([
+        window.gxSupabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }).catch(()=>({data:false})),
+        gxFetchProfile(user),
+      ]);
+      isAdmin = !!(roleRes && roleRes.data);
+      profile = prof;
     }
-    gxRenderAccountLink(!!user, isAdmin);
+    gxRenderAccountLink(!!user, isAdmin, profile);
     window.gxSupabase.auth.onAuthStateChange(async (_e, session) => {
-      let admin = false;
+      let admin = false; let prof = null;
       if(session && session.user){
         try{
           const r = await window.gxSupabase.rpc('has_role', { _user_id: session.user.id, _role: 'admin' });
           admin = !!r.data;
         }catch(_){}
+        prof = await gxFetchProfile(session.user);
       }
-      gxRenderAccountLink(!!session, admin);
+      gxRenderAccountLink(!!session, admin, prof);
     });
   }catch(e){ /* keep default login CTA */ }
 }
