@@ -29,15 +29,15 @@ const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   cancelled: { label: "ملغى", className: "bg-rose-500/15 text-rose-400 border-rose-500/40" },
 };
 
-// Cartoon game-style avatars via DiceBear (no key required)
+// Retro pixel-art gaming avatars (DiceBear pixel-art — heroes, ninjas, mages…)
 const AVATAR_SEEDS = [
-  "Kratos", "Aloy", "Ezio", "Master-Chief", "Link", "Zelda",
-  "Cloud", "Tifa", "Mario", "Luigi", "Sonic", "Pikachu",
-  "Ryu", "Chun-Li", "Lara", "Nathan", "Geralt", "Ciri",
-  "Bayonetta", "Samus", "Kirby", "Yoshi", "Peach", "Bowser",
+  "Ninja", "Samurai", "Cyber-Ronin", "Mage", "Warlock", "Paladin",
+  "Ranger", "Assassin", "Berserker", "Knight", "Dragon-Slayer", "Shadow",
+  "Phoenix", "Warrior", "Sorcerer", "Gladiator", "Reaper", "Hunter",
+  "Viking", "Titan", "Guardian", "Necromancer", "Bounty", "Rogue",
 ];
 const avatarUrl = (seed: string) =>
-  `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6`;
+  `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6,ec4899&scale=90`;
 
 function AccountPage() {
   const { user } = Route.useRouteContext();
