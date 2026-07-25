@@ -125,6 +125,7 @@ ul{list-style:none;}
   display:flex; align-items:center; gap:10px;
   background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius-sm);
   padding:11px 16px;
+  position:relative;
 }
 .search-box input{
   flex:1; background:transparent; border:none; outline:none; color:var(--white);
@@ -132,6 +133,25 @@ ul{list-style:none;}
 }
 .search-box input::placeholder{color:var(--gray);}
 .search-box svg{flex-shrink:0; opacity:0.6;}
+.gx-search-results{
+  position:absolute; top:calc(100% + 8px); left:0; right:0;
+  background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius-sm);
+  box-shadow:0 20px 40px rgba(0,0,0,.45); z-index:1000;
+  max-height:380px; overflow-y:auto; padding:6px;
+}
+.gx-search-item{
+  display:flex; align-items:center; gap:12px; padding:10px 12px;
+  border-radius:10px; color:var(--white); text-decoration:none; transition:background .15s;
+}
+.gx-search-item:hover{ background:rgba(0,229,255,.08); }
+.gx-search-ico{
+  width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.05); font-size:18px; flex-shrink:0;
+}
+.gx-search-txt{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
+.gx-search-txt b{ font-size:13px; font-weight:800; color:var(--white); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gx-search-txt small{ font-size:11px; color:var(--gray); font-weight:700; }
+.gx-search-empty{ padding:14px; text-align:center; color:var(--gray); font-size:13px; font-weight:700; }
 
 .nav-right{display:flex; align-items:center; gap:14px; margin-right:auto; position:relative;}
 .icon-btn{
