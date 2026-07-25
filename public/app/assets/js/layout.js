@@ -30,9 +30,10 @@ function gxRenderNavbar(){
           <div class="mark"><img src="/app/assets/img/gx-logo.png" alt="GX"></div>
           <div class="brand-word">GX <span>STORE</span></div>
         </a>
-        <div class="search-box">
+        <div class="search-box" id="gxSearchBox">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-          <input type="text" placeholder="دور على منتج أو اشتراك...">
+          <input type="text" id="gxSearchInput" autocomplete="off" placeholder="دور على منتج أو اشتراك...">
+          <div class="gx-search-results" id="gxSearchResults" hidden></div>
         </div>
         <div class="nav-right">
           <button class="currency-pick" id="currencyBtn" type="button">
