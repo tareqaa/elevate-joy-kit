@@ -395,13 +395,10 @@ function gxInitLayout(){
   gxRenderAuthState();
 }
 
-// Swaps in an "account" icon in the navbar when a user is signed in.
-async function gxRenderAuthState(){
-  const bridge = window.gxSupabaseReady;
-  if(!bridge) return;
-  await bridge;
-  if(!window.gxSupabase) return;
-  const { data } = await window.gxSupabase.auth.getUser();
+// Renders an account/login link in the navbar. Draws the "login" state
+// immediately so the button is always visible, then upgrades to the
+// "account" state once the Supabase bridge finishes loading.
+function gxRenderAccountLink(signedIn){
   const navRight = document.querySelector('.nav-right');
   if(!navRight) return;
   const existing = document.getElementById('accountLink');
@@ -409,10 +406,10 @@ async function gxRenderAuthState(){
   const link = document.createElement('a');
   link.id = 'accountLink';
   link.className = 'icon-btn account-link';
-  if(data && data.user){
+  if(signedIn){
     link.href = '/account';
     link.title = 'حسابي';
-    link.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+    link.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="al-label">حسابي</span>';
   }else{
     link.href = '/auth';
     link.title = 'تسجيل الدخول';
@@ -421,6 +418,23 @@ async function gxRenderAuthState(){
   }
   navRight.insertBefore(link, navRight.firstChild);
 }
+
+async function gxRenderAuthState(){
+  // Show the login CTA immediately (bridge may not be loaded yet).
+  gxRenderAccountLink(false);
+  try{
+    if(!window.gxSupabaseReady) return;
+    await window.gxSupabaseReady;
+    if(!window.gxSupabase) return;
+    const { data } = await window.gxSupabase.auth.getUser();
+    gxRenderAccountLink(!!(data && data.user));
+    // Keep it in sync with auth changes.
+    window.gxSupabase.auth.onAuthStateChange((_e, session) => {
+      gxRenderAccountLink(!!session);
+    });
+  }catch(e){ /* keep default login CTA */ }
+}
+
 
 
 document.addEventListener('DOMContentLoaded', gxInitLayout);
