@@ -534,9 +534,20 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   .menu-btn{padding:8px 9px;}
   .menu-btn .btn-label{display:none;}
   .menu-panel{
-    width:calc(100vw - 24px); max-width:300px;
+    position:fixed; top:64px;
+    width:calc(100vw - 24px); max-width:320px;
     max-height:calc(100vh - 80px);
+    left:auto; right:auto;
   }
+  html[dir="rtl"] .menu-panel{ right:12px; left:auto; }
+  html[dir="ltr"] .menu-panel{ left:12px; right:auto; }
+  .account-panel{
+    position:fixed; top:64px;
+    width:calc(100vw - 24px); max-width:280px;
+    left:auto; right:auto;
+  }
+  html[dir="rtl"] .account-panel{ right:12px; left:auto; }
+  html[dir="ltr"] .account-panel{ left:12px; right:auto; }
   .icon-btn{width:34px; height:34px;}
   .icon-btn svg{width:17px; height:17px;}
   .account-avatar-btn{width:32px; height:32px;}
