@@ -26,6 +26,7 @@ function SnapchatPage() {
   const sp = localizedProduct(PRODUCTS_CATALOG.snapchat, lang);
   const { format } = useCurrency();
   const cart = useCart();
+  const navigate = useNavigate();
   const defaultPlan = sp.plans!.find((pl) => pl.tag)?.id || sp.plans![0].id;
   const [planId, setPlanId] = useState(defaultPlan);
   const [usernames, setUsernames] = useState<string[]>([""]);
