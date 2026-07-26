@@ -253,6 +253,8 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "nav.faq": "FAQ",
     "nav.policy": "Warranty & Refunds",
     "nav.whatsapp": "WhatsApp",
+    "nav.store": "Store",
+    "auth.signed_out": "Signed out",
     "home.hero_badge": "Trusted by 500+ customers",
     "home.hero_title_a": "All your subscriptions",
     "home.hero_title_b": "and game top-ups",
