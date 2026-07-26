@@ -45,6 +45,8 @@ const GX_THEME: React.CSSProperties = {
 
 function AuthedLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = Route.useRouteContext();
   const { t, dir } = useLang();
 
