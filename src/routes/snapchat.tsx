@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { PRODUCTS_CATALOG } from "@/data/products";
@@ -26,6 +26,7 @@ function SnapchatPage() {
   const sp = localizedProduct(PRODUCTS_CATALOG.snapchat, lang);
   const { format } = useCurrency();
   const cart = useCart();
+  const navigate = useNavigate();
   const defaultPlan = sp.plans!.find((pl) => pl.tag)?.id || sp.plans![0].id;
   const [planId, setPlanId] = useState(defaultPlan);
   const [usernames, setUsernames] = useState<string[]>([""]);
@@ -66,6 +67,7 @@ function SnapchatPage() {
   function buyNow() {
     if (!validate()) return;
     cart.buyNowSnap(plan.id, usernames);
+    navigate({ to: "/cart" });
   }
 
   return (
