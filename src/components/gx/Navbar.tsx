@@ -24,7 +24,7 @@ type Profile = {
 export function Navbar() {
   const cart = useCart();
   const { currency } = useCurrency();
-  const { t, lang } = useLang();
+  const { t, lang, setLang } = useLang();
   const [menuOpen, setMenuOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
