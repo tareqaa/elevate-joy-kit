@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { Link } from "@tanstack/react-router";
+
 
 export function CartDrawer() {
   const cart = useCart();
