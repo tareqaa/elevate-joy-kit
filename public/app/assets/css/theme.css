@@ -184,10 +184,27 @@ ul{list-style:none;}
   background:#0e1119; border:1.5px solid var(--border); border-radius:var(--radius-md);
   box-shadow:0 20px 50px rgba(0,0,0,0.5);
   padding:10px; z-index:2100;
+  max-height:calc(100vh - 90px); overflow-y:auto; overscroll-behavior:contain;
   opacity:0; pointer-events:none; transform:translateY(-8px);
   transition:opacity .2s var(--ease), transform .2s var(--ease);
 }
 .menu-panel.open{opacity:1; pointer-events:auto; transform:translateY(0);}
+
+/* Combined currency + language chip */
+.currency-lang-combo{
+  padding:0; gap:0; overflow:hidden;
+}
+.currency-lang-combo .cl-part{
+  background:transparent; border:none; color:var(--white);
+  font:inherit; padding:10px 12px; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center;
+  transition:background .15s var(--ease);
+}
+.currency-lang-combo .cl-part:hover{background:rgba(0,229,255,0.08);}
+.currency-lang-combo .cl-sep{
+  color:var(--gray); opacity:.55; font-weight:700; align-self:center;
+  pointer-events:none;
+}
 .menu-section{padding:8px 10px;}
 .menu-section .ms-title{
   font-size:11.5px; font-weight:800; color:var(--gray); letter-spacing:.5px;
