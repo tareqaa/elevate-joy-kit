@@ -154,6 +154,8 @@
   display:flex; gap:18px; overflow-x:auto; padding-bottom:14px;
   scrollbar-width:thin;
   scrollbar-color:rgba(0,229,255,0.45) rgba(255,255,255,0.06);
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
 }
 .testi-grid::-webkit-scrollbar{height:7px;}
 .testi-grid::-webkit-scrollbar-thumb{background:rgba(0,229,255,0.45); border-radius:99px;}
