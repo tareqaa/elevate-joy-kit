@@ -528,7 +528,6 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   .brand{gap:6px;}
   .brand .mark{width:36px; height:26px;}
   .brand-word{font-size:13px;}
-  .brand-word span{display:none;}
   .nav-right{gap:6px; margin-right:auto; flex-wrap:nowrap;}
   .currency-pick{padding:6px 8px; font-size:11px;}
   .currency-lang-combo .cl-part{padding:6px 7px; font-size:11px;}
@@ -859,7 +858,7 @@ html[dir="ltr"] .section,
 html[dir="ltr"] .hero,
 html[dir="ltr"] .nav { text-align: left; }
 html[dir="ltr"] .nav .wrap { direction: ltr; }
-html[dir="ltr"] .nav-right { flex-direction: row; }
+html[dir="ltr"] .nav-right { flex-direction: row; margin-right: 0; margin-left: auto; }
 html[dir="ltr"] .section-head,
 html[dir="ltr"] .hero-inner,
 html[dir="ltr"] .trust-strip,
@@ -872,3 +871,7 @@ html[dir="ltr"] .currency-modal,
 html[dir="ltr"] .gx-notif-drawer { direction: ltr; text-align: left; }
 html[dir="ltr"] .badge-count { right: auto; left: -4px; }
 html[dir="ltr"] .carrow .arrow-ic { transform: scaleX(-1); }
+
+@media(max-width:640px){
+  html[dir="ltr"] .nav-right { margin-right: 0; margin-left: auto; }
+}
