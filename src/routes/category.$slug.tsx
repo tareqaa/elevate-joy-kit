@@ -3,6 +3,7 @@ import { StoreShell } from "@/components/gx/StoreShell";
 import { CATEGORY_META, SUBCATEGORIES, getProductLink, getGiftCardLink } from "@/data/products";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryMeta, localizedSubcategory } from "@/lib/gx/product-locale";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/category/$slug")({
   head: ({ params }) => {
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/category/$slug")({
         { property: "og:title", content: title },
         { property: "og:description", content: m?.tagline || "" },
       ],
+        links: STORE_HEAD_LINKS,
     };
   },
   loader: ({ params }) => {

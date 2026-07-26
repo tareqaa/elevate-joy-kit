@@ -7,6 +7,7 @@ import { useCart } from "@/lib/gx/cart";
 import { FeatureAccordion, DeliveryBox, SectionHead } from "@/components/gx/Primitives";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedProduct } from "@/lib/gx/product-locale";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/snapchat")({
   head: () => ({
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/snapchat")({
       { name: "description", content: "Activate Snapchat+ fast and easily — official activation via Snapchat's gifting feature." },
       { property: "og:title", content: "Snapchat+ — GX Store" },
     ],
+    links: STORE_HEAD_LINKS,
   }),
   component: SnapchatPage,
 });

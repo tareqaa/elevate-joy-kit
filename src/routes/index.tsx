@@ -8,6 +8,7 @@ import { PRODUCTS_CATALOG } from "@/data/products";
 import { BuyActions } from "@/components/gx/BuyActions";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-locale";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "GX Store" },
       { property: "og:description", content: "Your digital store for all subscriptions and game cards." },
     ],
+    links: STORE_HEAD_LINKS,
   }),
   component: Home,
 });
