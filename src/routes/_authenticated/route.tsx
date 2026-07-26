@@ -78,8 +78,9 @@ function AuthedLayout() {
 
   async function signOut() {
     await supabase.auth.signOut();
+    queryClient.clear();
     toast.success(t("auth.signed_out"));
-    window.location.href = "/";
+    navigate({ to: "/" });
   }
 
   const profile = profileQ.data;
