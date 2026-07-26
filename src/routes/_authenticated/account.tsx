@@ -406,7 +406,7 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
       </div>
       {list.length === 0 ? (
         <Card><CardContent className="py-10 text-center text-muted-foreground">
-          ما في طلبات في هذا القسم. <a href="/app/index.html" className="text-primary underline">تسوّق الآن</a>
+          ما في طلبات في هذا القسم. <Link to="/" className="text-primary underline">تسوّق الآن</Link>
         </CardContent></Card>
       ) : (
         list.map((o) => <OrderCard key={o.id} order={o} />)

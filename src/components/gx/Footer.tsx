@@ -27,7 +27,7 @@ export function Footer() {
             <h5>{t("footer.sections")}</h5>
             {CATEGORY_LINKS.map(c => {
               const lc = localizedCategoryLink(c, lang);
-              return <a key={c.slug} href={getCategoryLink(c.slug)}>{lc.name}</a>;
+              return <Link key={c.slug} to={getCategoryLink(c.slug) as never}>{lc.name}</Link>;
             })}
           </div>
           <div className="footer-col">
