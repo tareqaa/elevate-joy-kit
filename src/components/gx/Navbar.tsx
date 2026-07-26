@@ -70,9 +70,17 @@ export function Navbar() {
       if (!tgt.closest(".menu-wrap")) setMenuOpen(false);
       if (!tgt.closest(".account-wrap")) setAccountOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setMenuOpen(false); setAccountOpen(false); }
+    };
     document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("click", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [menuOpen, accountOpen]);
+
 
   const displayName = profile?.full_name || profile?.username || (profile?.email?.split("@")[0]) || t("nav.account");
   const username = profile?.username;

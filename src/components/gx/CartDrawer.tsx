@@ -1,13 +1,27 @@
+import { useEffect } from "react";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { Link } from "@tanstack/react-router";
 
+
 export function CartDrawer() {
   const cart = useCart();
   const { format } = useCurrency();
   const { t, lang } = useLang();
+
+  useEffect(() => {
+    if (!cart.isDrawerOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") cart.closeDrawer(); };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [cart.isDrawerOpen, cart.closeDrawer]);
 
   async function checkout() {
     const submitted = await cart.submitOrder();
@@ -16,13 +30,14 @@ export function CartDrawer() {
     if (url) window.open(url, "_blank");
   }
 
+
   return (
     <>
       <div className={"overlay" + (cart.isDrawerOpen ? " open" : "")} onClick={cart.closeDrawer} />
       <div className={"cart-drawer" + (cart.isDrawerOpen ? " open" : "")}>
         <div className="cart-head">
           <h3>{t("cart.title")}</h3>
-          <div className="cart-close" onClick={cart.closeDrawer}>✕</div>
+          <button type="button" className="cart-close" onClick={cart.closeDrawer} aria-label={t("common.close")} title={t("common.close")}>✕</button>
         </div>
         <div className="cart-items">
           {cart.items.length === 0 ? (

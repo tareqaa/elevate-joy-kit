@@ -215,7 +215,7 @@ const TESTIMONIALS = [
 ];
 
 function Testimonials() {
-  const { t, lang } = useLang();
+  const { t, lang, dir } = useLang();
   const gridRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const grid = gridRef.current;
@@ -223,7 +223,9 @@ function Testimonials() {
     let paused = false;
     let resumeAt = 0;
     let loopWidth = grid.scrollWidth / 2;
-    let pos = 0;
+    // Start from a neutral position (RTL: near 0-negative; LTR: near 0)
+    let pos = dir === "rtl" ? 0 : 0;
+    grid.scrollLeft = 0;
     const onResize = () => { loopWidth = grid.scrollWidth / 2; };
     window.addEventListener("resize", onResize);
     const pause = () => { paused = true; };
@@ -243,8 +245,13 @@ function Testimonials() {
       const active = !paused || now >= resumeAt;
       if (paused && now >= resumeAt) { paused = false; }
       if (active && loopWidth > 0) {
-        pos -= SPEED;
-        if (pos <= -loopWidth) pos += loopWidth;
+        if (dir === "rtl") {
+          pos -= SPEED;
+          if (pos <= -loopWidth) pos += loopWidth;
+        } else {
+          pos += SPEED;
+          if (pos >= loopWidth) pos -= loopWidth;
+        }
         grid.scrollLeft = pos;
       }
       raf = requestAnimationFrame(step);
@@ -254,7 +261,8 @@ function Testimonials() {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
     };
-  }, []);
+  }, [dir]);
+
   const cards = [...TESTIMONIALS, ...TESTIMONIALS];
   return (
     <section className="section" style={{ background: "var(--bg2)" }}>
