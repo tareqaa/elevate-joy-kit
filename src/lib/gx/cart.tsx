@@ -134,10 +134,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     (cartId: string, qty = 1) => {
       const next = [...rawItems];
       const ex = next.find((i) => i.cartId === cartId && !i.custom);
-      if (ex) ex.qty = qty;
+      if (ex) ex.qty = Math.max(qty, ex.qty);
       else next.push({ cartId, qty });
       persist(next);
-      window.location.href = "/cart";
     },
     [rawItems, persist]
   );
@@ -149,7 +148,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const next = rawItems.filter((i) => i.cartId !== cartId);
       next.push({ cartId, qty: clean.length, meta: { usernames: clean } });
       persist(next);
-      window.location.href = "/cart";
     },
     [rawItems, persist]
   );
