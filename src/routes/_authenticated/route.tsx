@@ -1,5 +1,5 @@
-import { createFileRoute, redirect, Outlet, Link, useLocation } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, redirect, Outlet, Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Store, LogOut, LayoutDashboard, User } from "lucide-react";
