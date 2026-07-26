@@ -28,15 +28,22 @@ function detectFromBrowser(): Lang | null {
   return null;
 }
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("ar");
+function readSaved(): Lang | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if (s === "ar" || s === "en") return s;
+  } catch { /* noop */ }
+  return null;
+}
 
-  // Load from storage or detect (once)
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState<Lang>(() => readSaved() ?? "ar");
+
+  // Detect only when nothing is saved yet
   useEffect(() => {
     if (typeof window === "undefined") return;
-    let saved: string | null = null;
-    try { saved = localStorage.getItem(STORAGE_KEY); } catch { /* noop */ }
-    if (saved === "ar" || saved === "en") { setLangState(saved); return; }
+    if (readSaved()) return; // already persisted — respect user choice forever
 
     const browserLang = detectFromBrowser();
     if (browserLang) {
@@ -44,7 +51,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       try { localStorage.setItem(STORAGE_KEY, browserLang); } catch { /* noop */ }
       return;
     }
-    // Only geolocate when we truly have no signal
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 2500);
     (async () => {

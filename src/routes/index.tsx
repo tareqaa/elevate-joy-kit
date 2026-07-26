@@ -221,18 +221,28 @@ function Testimonials() {
     const grid = gridRef.current;
     if (!grid) return;
     let paused = false;
+    let resumeAt = 0;
     let loopWidth = grid.scrollWidth / 2;
     let pos = 0;
     const onResize = () => { loopWidth = grid.scrollWidth / 2; };
     window.addEventListener("resize", onResize);
-    const enter = () => { paused = true; };
-    const leave = () => { pos = grid.scrollLeft; paused = false; };
-    grid.addEventListener("mouseenter", enter);
-    grid.addEventListener("mouseleave", leave);
+    const pause = () => { paused = true; };
+    const resumeSoon = () => {
+      pos = grid.scrollLeft;
+      resumeAt = performance.now() + 1500;
+    };
+    grid.addEventListener("mouseenter", pause);
+    grid.addEventListener("mouseleave", () => { pos = grid.scrollLeft; paused = false; });
+    grid.addEventListener("touchstart", pause, { passive: true });
+    grid.addEventListener("touchend", resumeSoon, { passive: true });
+    grid.addEventListener("touchcancel", resumeSoon, { passive: true });
     let raf = 0;
     const SPEED = 2.5;
     const step = () => {
-      if (!paused && loopWidth > 0) {
+      const now = performance.now();
+      const active = !paused || now >= resumeAt;
+      if (paused && now >= resumeAt) { paused = false; }
+      if (active && loopWidth > 0) {
         pos -= SPEED;
         if (pos <= -loopWidth) pos += loopWidth;
         grid.scrollLeft = pos;
@@ -243,8 +253,6 @@ function Testimonials() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
-      grid.removeEventListener("mouseenter", enter);
-      grid.removeEventListener("mouseleave", leave);
     };
   }, []);
   const cards = [...TESTIMONIALS, ...TESTIMONIALS];
