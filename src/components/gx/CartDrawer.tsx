@@ -37,7 +37,7 @@ export function CartDrawer() {
       <div className={"cart-drawer" + (cart.isDrawerOpen ? " open" : "")}>
         <div className="cart-head">
           <h3>{t("cart.title")}</h3>
-          <div className="cart-close" onClick={cart.closeDrawer}>✕</div>
+          <button type="button" className="cart-close" onClick={cart.closeDrawer} aria-label={t("common.close")} title={t("common.close")}>✕</button>
         </div>
         <div className="cart-items">
           {cart.items.length === 0 ? (
