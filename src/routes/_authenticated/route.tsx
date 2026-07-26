@@ -1,5 +1,5 @@
-import { createFileRoute, redirect, Outlet, Link, useLocation } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, redirect, Outlet, Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Store, LogOut, LayoutDashboard, User } from "lucide-react";
@@ -45,6 +45,8 @@ const GX_THEME: React.CSSProperties = {
 
 function AuthedLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = Route.useRouteContext();
   const { t, dir } = useLang();
 
@@ -76,8 +78,9 @@ function AuthedLayout() {
 
   async function signOut() {
     await supabase.auth.signOut();
+    queryClient.clear();
     toast.success(t("auth.signed_out"));
-    window.location.href = "/";
+    navigate({ to: "/" });
   }
 
   const profile = profileQ.data;
