@@ -16,6 +16,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { CurrencyProvider } from "@/lib/gx/currency";
 import { CartProvider } from "@/lib/gx/cart";
 import { LanguageProvider } from "@/lib/gx/i18n";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+
+// Ensure legacy store stylesheets are present regardless of entry route.
+// Without this, refreshing on /account or /admin loads the app without the
+// store CSS, and navigating back to the storefront renders unstyled until
+// the browser fetches the sheets.
+if (typeof document !== "undefined") {
+  for (const l of STORE_HEAD_LINKS) {
+    if (document.head.querySelector(`link[data-gx-store="${l.href}"]`)) continue;
+    const el = document.createElement("link");
+    el.rel = l.rel;
+    el.href = l.href;
+    el.setAttribute("data-gx-store", l.href);
+    document.head.appendChild(el);
+  }
+}
 
 function NotFoundComponent() {
   return (
