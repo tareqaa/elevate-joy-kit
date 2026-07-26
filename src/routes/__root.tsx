@@ -114,7 +114,7 @@ const PRE_HYDRATE_LANG = `
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className="dark" style={{ backgroundColor: "#090b10" }}>
+    <html lang="ar" dir="rtl" className="dark" style={{ backgroundColor: "#090b10" }} suppressHydrationWarning>
       <head>
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: PRE_HYDRATE_LANG }} />
