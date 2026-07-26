@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Store, LogOut, LayoutDashboard, User } from "lucide-react";
+import { useLang } from "@/lib/gx/i18n";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -45,6 +46,7 @@ const GX_THEME: React.CSSProperties = {
 function AuthedLayout() {
   const location = useLocation();
   const { user } = Route.useRouteContext();
+  const { t, dir } = useLang();
 
   const isAdminArea = location.pathname.startsWith("/admin");
 
@@ -74,7 +76,7 @@ function AuthedLayout() {
 
   async function signOut() {
     await supabase.auth.signOut();
-    toast.success("تم تسجيل الخروج");
+    toast.success(t("auth.signed_out"));
     window.location.href = "/";
   }
 
@@ -86,7 +88,7 @@ function AuthedLayout() {
     `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(username)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6`;
 
   return (
-    <div dir="rtl" style={GX_THEME} className="min-h-screen bg-background text-foreground">
+    <div dir={dir} style={GX_THEME} className="min-h-screen bg-background text-foreground">
       <header
         className="sticky top-0 z-20 backdrop-blur-xl border-b"
         style={{ background: "rgba(9,11,16,0.85)", borderColor: "rgba(255,255,255,0.08)" }}
@@ -101,7 +103,7 @@ function AuthedLayout() {
               to="/"
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-white/5 transition"
             >
-              <Store className="w-4 h-4" /> المتجر
+              <Store className="w-4 h-4" /> {t("nav.store")}
             </Link>
             <Link
               to="/account"
@@ -124,17 +126,17 @@ function AuthedLayout() {
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg font-semibold transition"
                 style={{ color: "#00e5ff", border: "1px solid rgba(0,229,255,0.3)" }}
               >
-                <LayoutDashboard className="w-4 h-4" /> لوحة التحكم
+                <LayoutDashboard className="w-4 h-4" /> {t("nav.admin_panel")}
               </Link>
             )}
             <button
               type="button"
               onClick={signOut}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-white/5 transition text-[color:var(--muted-foreground)] hover:text-white"
-              aria-label="تسجيل الخروج"
+              aria-label={t("nav.logout")}
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">خروج</span>
+              <span className="hidden sm:inline">{t("nav.logout")}</span>
             </button>
           </nav>
         </div>
