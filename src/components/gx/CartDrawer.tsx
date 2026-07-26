@@ -11,12 +11,25 @@ export function CartDrawer() {
   const { format } = useCurrency();
   const { t, lang } = useLang();
 
+  useEffect(() => {
+    if (!cart.isDrawerOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") cart.closeDrawer(); };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [cart.isDrawerOpen, cart.closeDrawer]);
+
   async function checkout() {
     const submitted = await cart.submitOrder();
     const url = cart.buildWhatsAppUrl(submitted?.order_number);
     if (submitted) cart.clear();
     if (url) window.open(url, "_blank");
   }
+
 
   return (
     <>
