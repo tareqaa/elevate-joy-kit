@@ -1,8 +1,9 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { CATEGORY_META, SUBCATEGORIES, getProductLink, getGiftCardLink } from "@/data/products";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryMeta, localizedSubcategory } from "@/lib/gx/product-locale";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/category/$slug")({
   head: ({ params }) => {
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/category/$slug")({
         { property: "og:title", content: title },
         { property: "og:description", content: m?.tagline || "" },
       ],
+        links: STORE_HEAD_LINKS,
     };
   },
   loader: ({ params }) => {
@@ -69,13 +71,13 @@ function CategoryPage() {
               }
               const href = isGiftCards ? getGiftCardLink(s.slug) : getProductLink(s.product || s.slug);
               return (
-                <a key={s.slug} href={href} className="subcat-card clickable">
+                <Link key={s.slug} to={href as never} className="subcat-card clickable">
                   <div className="subcat-ic" style={{ background: s.bg }}>{iconInner}</div>
                   <div>
                     <div className="subcat-name">{s.name}</div>
                     <div className="subcat-status">{t("cat.browse_products")}</div>
                   </div>
-                </a>
+                </Link>
               );
             })}
           </div>

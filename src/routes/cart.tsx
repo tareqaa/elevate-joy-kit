@@ -4,6 +4,7 @@ import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useState } from "react";
 
 export const Route = createFileRoute("/cart")({
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/cart")({
       { title: "Cart — GX Store" },
       { name: "description", content: "Review your order before checking out — GX Store." },
     ],
+    links: STORE_HEAD_LINKS,
   }),
   component: CartPage,
 });

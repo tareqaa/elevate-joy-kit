@@ -64,10 +64,10 @@ function PublicProfilePage() {
     <div dir="rtl" style={GX_THEME} className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-20 backdrop-blur-xl border-b" style={{ background: "rgba(9,11,16,0.85)", borderColor: "rgba(255,255,255,0.08)" }}>
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2 font-extrabold text-lg tracking-wide">
+          <Link to="/" className="flex items-center gap-2 font-extrabold text-lg tracking-wide">
             <img src="/app/assets/img/gx-logo.png" alt="GX" className="h-9 w-9" />
             <span>GX <span style={{ color: "#00e5ff" }}>STORE</span></span>
-          </a>
+          </Link>
           <Link to="/account" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
             حسابي <ArrowRight className="w-4 h-4" />
           </Link>

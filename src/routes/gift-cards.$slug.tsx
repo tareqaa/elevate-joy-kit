@@ -5,6 +5,7 @@ import { useCurrency } from "@/lib/gx/currency";
 import { BuyActions } from "@/components/gx/BuyActions";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedGiftCard } from "@/lib/gx/product-locale";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/gift-cards/$slug")({
   head: ({ params }) => {
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/gift-cards/$slug")({
         { name: "description", content: g ? `${g.name} at competitive prices — instant digital delivery.` : "Digital gift cards." },
         { property: "og:title", content: title },
       ],
+        links: STORE_HEAD_LINKS,
     };
   },
   loader: ({ params }) => {

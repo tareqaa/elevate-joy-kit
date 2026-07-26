@@ -9,6 +9,7 @@ import { CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
 import { FeatureAccordion, SectionHead } from "@/components/gx/Primitives";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedProduct } from "@/lib/gx/product-locale";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/fortnite")({
   head: () => ({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/fortnite")({
       { name: "description", content: "Fortnite Crew subscription and V-Bucks — delivered to your Epic Games account." },
       { property: "og:title", content: "Fortnite — GX Store" },
     ],
+    links: STORE_HEAD_LINKS,
   }),
   component: FortnitePage,
 });

@@ -175,9 +175,9 @@ export function Navbar() {
                   {CATEGORY_LINKS.map(c0 => {
                     const c = localizedCategoryLink(c0, lang);
                     return (
-                      <a key={c.slug} href={getCategoryLink(c.slug)} className="menu-link" onClick={() => setMenuOpen(false)}>
+                      <Link key={c.slug} to={getCategoryLink(c.slug) as never} className="menu-link" onClick={() => setMenuOpen(false)}>
                         <span className="mi">{c.icon}</span> {c.name}
-                      </a>
+                      </Link>
                     );
                   })}
                 </div>

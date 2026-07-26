@@ -7,6 +7,7 @@ import { BuyActions } from "@/components/gx/BuyActions";
 import { FeatureAccordion, DeliveryBox, SectionHead } from "@/components/gx/Primitives";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedProduct } from "@/lib/gx/product-locale";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/product/$slug")({
   head: ({ params }) => {
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/product/$slug")({
         { property: "og:title", content: title },
         { property: "og:description", content: p?.description || "" },
       ],
+        links: STORE_HEAD_LINKS,
     };
   },
   loader: ({ params }) => {

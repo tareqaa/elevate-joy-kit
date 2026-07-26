@@ -8,6 +8,7 @@ import { PRODUCTS_CATALOG } from "@/data/products";
 import { BuyActions } from "@/components/gx/BuyActions";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-locale";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "GX Store" },
       { property: "og:description", content: "Your digital store for all subscriptions and game cards." },
     ],
+    links: STORE_HEAD_LINKS,
   }),
   component: Home,
 });
@@ -72,7 +74,7 @@ function Categories() {
           {CATEGORY_LINKS.map(c0 => {
             const c = localizedCategoryLink(c0, lang);
             return (
-              <a key={c.slug} href={getCategoryLink(c.slug)} className="cat-card-big" style={{ ["--accent" as string]: c.accent } as React.CSSProperties}>
+              <Link key={c.slug} to={getCategoryLink(c.slug) as never} className="cat-card-big" style={{ ["--accent" as string]: c.accent } as React.CSSProperties}>
                 <div className="ccb-top">
                   {c.slug === "design" ? (
                     <div className="app-icon-grid">
@@ -91,7 +93,7 @@ function Categories() {
                   <div className="cdesc">{c.desc}</div>
                 </div>
                 <div className="carrow">{t("home.browse_category")} <span className="arrow-ic">‹</span></div>
-              </a>
+              </Link>
             );
           })}
         </div>
@@ -122,12 +124,12 @@ function Featured() {
             }
             return (
               <div key={p.cartId} className="prod-card">
-                <a href={p.link} style={{ display: "contents" }}>
+                <Link to={p.link as never} style={{ display: "contents" }}>
                   <div className="prod-thumb" style={{ background: p.bg }}>
                     <span className="discount-badge">-{discount}%</span>
                     {iconEl}
                   </div>
-                </a>
+                </Link>
                 <div className="prod-body">
                   <div className="prod-stars">★★★★★</div>
                   <div className="prod-name">{localizeResolvedName(p.name, lang)}</div>

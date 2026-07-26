@@ -57,7 +57,7 @@ function AdminLayout() {
         </nav>
 
         <div className="gx-side-foot">
-          <a href="/app/index.html" className="gx-side-link"><span className="ni">🏬</span><span>المتجر</span></a>
+          <Link to="/" className="gx-side-link"><span className="ni">🏬</span><span>المتجر</span></Link>
           <Link to="/account" className="gx-side-link"><span className="ni">👤</span><span>حسابي</span></Link>
           <button className="gx-side-link gx-side-logout" onClick={signOut}>
             <span className="ni">↩︎</span><span>تسجيل الخروج</span>

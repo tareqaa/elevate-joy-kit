@@ -75,7 +75,7 @@ function AuthedLayout() {
   async function signOut() {
     await supabase.auth.signOut();
     toast.success("تم تسجيل الخروج");
-    window.location.href = "/app/index.html";
+    window.location.href = "/";
   }
 
   const profile = profileQ.data;
@@ -92,17 +92,17 @@ function AuthedLayout() {
         style={{ background: "rgba(9,11,16,0.85)", borderColor: "rgba(255,255,255,0.08)" }}
       >
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-          <a href="/app/index.html" className="flex items-center gap-2 font-extrabold text-lg tracking-wide">
+          <Link to="/" className="flex items-center gap-2 font-extrabold text-lg tracking-wide">
             <img src="/app/assets/img/gx-logo.png" alt="GX" className="h-9 w-9" />
             <span>GX <span style={{ color: "#00e5ff" }}>STORE</span></span>
-          </a>
+          </Link>
           <nav className="flex items-center gap-1.5 text-sm">
-            <a
-              href="/app/index.html"
+            <Link
+              to="/"
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-white/5 transition"
             >
               <Store className="w-4 h-4" /> المتجر
-            </a>
+            </Link>
             <Link
               to="/account"
               className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-full hover:bg-white/5 transition max-w-[180px]"

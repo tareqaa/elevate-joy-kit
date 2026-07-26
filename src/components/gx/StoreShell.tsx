@@ -8,7 +8,11 @@ import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 // so navigating between store routes never flashes unstyled content.
 if (typeof document !== "undefined") {
   for (const l of STORE_HEAD_LINKS) {
-    if (document.querySelector(`link[data-gx-store="${l.href}"]`)) continue;
+    const alreadyLoaded = Array.from(document.head.querySelectorAll("link[rel='stylesheet']")).some((link) => {
+      const href = link.getAttribute("href");
+      return href === l.href || href?.endsWith(l.href);
+    });
+    if (alreadyLoaded) continue;
     const el = document.createElement("link");
     el.rel = l.rel;
     el.href = l.href;
