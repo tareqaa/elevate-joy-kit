@@ -23,6 +23,8 @@ function ensureStoreStyles() {
 ensureStoreStyles();
 
 export function StoreShell({ children }: { children: ReactNode }) {
+  // Re-assert styles on every render so returning from /account or /admin restores them.
+  ensureStoreStyles();
   return (
     <>
       <Navbar />
