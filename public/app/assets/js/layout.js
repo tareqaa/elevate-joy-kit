@@ -295,6 +295,18 @@ function gxWireLayoutEvents(){
   }
 
   currencyBtn.addEventListener('click', openCurrencyModal);
+
+  // Language toggle (persists to gx_lang; React app reads this)
+  const langBtn = document.getElementById('langBtn');
+  const langCode = document.getElementById('langBtnCode');
+  function currentLang(){ try { return localStorage.getItem('gx_lang') || 'ar'; } catch { return 'ar'; } }
+  function syncLangBtn(){ if(langCode) langCode.textContent = currentLang() === 'ar' ? 'EN' : 'ع'; }
+  syncLangBtn();
+  if (langBtn) langBtn.addEventListener('click', () => {
+    const next = currentLang() === 'ar' ? 'en' : 'ar';
+    try { localStorage.setItem('gx_lang', next); } catch {}
+    location.reload();
+  });
   document.getElementById('currencyModalClose').addEventListener('click', closeCurrencyModal);
   currencyModalOverlay.addEventListener('click', (e) => {
     if(e.target === currencyModalOverlay) closeCurrencyModal();
