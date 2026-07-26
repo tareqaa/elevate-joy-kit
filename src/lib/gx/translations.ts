@@ -36,6 +36,8 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "nav.faq": "الأسئلة الشائعة",
     "nav.policy": "الضمان والاسترجاع",
     "nav.whatsapp": "واتساب",
+    "nav.store": "المتجر",
+    "auth.signed_out": "تم تسجيل الخروج",
     // Home
     "home.hero_badge": "أكثر من 500 عميل وثقوا فينا",
     "home.hero_title_a": "كل اشتراكاتك",
