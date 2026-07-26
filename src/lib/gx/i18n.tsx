@@ -68,12 +68,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return () => { clearTimeout(timer); ctrl.abort(); };
   }, []);
 
-  // Reflect on <html>
+  // Reflect on <html> and lift the pre-hydration gate
   useEffect(() => {
     if (typeof document === "undefined") return;
     const html = document.documentElement;
     html.setAttribute("lang", lang);
     html.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
+    html.removeAttribute("data-lang-pending");
+    const gate = document.getElementById("gx-lang-gate");
+    if (gate) gate.remove();
   }, [lang]);
 
   const setLang = useCallback((l: Lang) => {

@@ -95,11 +95,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+const PRE_HYDRATE_LANG = `
+(function(){try{
+  var s=localStorage.getItem('gx_lang');
+  if(s!=='ar'&&s!=='en')return;
+  var h=document.documentElement;
+  h.setAttribute('lang',s);
+  h.setAttribute('dir',s==='ar'?'rtl':'ltr');
+  if(s!=='ar'){
+    h.setAttribute('data-lang-pending','1');
+    var st=document.createElement('style');
+    st.id='gx-lang-gate';
+    st.textContent='html[data-lang-pending] body{visibility:hidden!important}';
+    document.head.appendChild(st);
+  }
+}catch(e){}})();
+`;
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="ar" dir="rtl" className="dark" style={{ backgroundColor: "#090b10" }}>
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: PRE_HYDRATE_LANG }} />
       </head>
       <body style={{ backgroundColor: "#090b10", color: "#f5f6f8" }}>
         {children}
