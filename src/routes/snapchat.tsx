@@ -66,6 +66,7 @@ function SnapchatPage() {
   function buyNow() {
     if (!validate()) return;
     cart.buyNowSnap(plan.id, usernames);
+    navigate({ to: "/cart" });
   }
 
   return (
