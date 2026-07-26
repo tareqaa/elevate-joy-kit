@@ -528,7 +528,6 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   .brand{gap:6px;}
   .brand .mark{width:36px; height:26px;}
   .brand-word{font-size:13px;}
-  .brand-word span{display:none;}
   .nav-right{gap:6px; margin-right:auto; flex-wrap:nowrap;}
   .currency-pick{padding:6px 8px; font-size:11px;}
   .currency-lang-combo .cl-part{padding:6px 7px; font-size:11px;}
