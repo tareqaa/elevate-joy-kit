@@ -871,3 +871,7 @@ html[dir="ltr"] .currency-modal,
 html[dir="ltr"] .gx-notif-drawer { direction: ltr; text-align: left; }
 html[dir="ltr"] .badge-count { right: auto; left: -4px; }
 html[dir="ltr"] .carrow .arrow-ic { transform: scaleX(-1); }
+
+@media(max-width:640px){
+  html[dir="ltr"] .nav-right { margin-right: 0; margin-left: auto; }
+}
