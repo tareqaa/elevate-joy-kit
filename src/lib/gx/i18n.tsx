@@ -31,27 +31,35 @@ function detectFromBrowser(): Lang | null {
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("ar");
 
-  // Load from storage or detect
+  // Load from storage or detect (once)
   useEffect(() => {
-    const saved = typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-    if (saved === "ar" || saved === "en") {
-      setLangState(saved);
+    if (typeof window === "undefined") return;
+    let saved: string | null = null;
+    try { saved = localStorage.getItem(STORAGE_KEY); } catch { /* noop */ }
+    if (saved === "ar" || saved === "en") { setLangState(saved); return; }
+
+    const browserLang = detectFromBrowser();
+    if (browserLang) {
+      setLangState(browserLang);
+      try { localStorage.setItem(STORAGE_KEY, browserLang); } catch { /* noop */ }
       return;
     }
-    // Try browser first
-    const browserLang = detectFromBrowser();
-    if (browserLang) setLangState(browserLang);
-    // Then override via IP geolocation on first-ever visit
+    // Only geolocate when we truly have no signal
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2500);
     (async () => {
       try {
-        const res = await fetch("https://ipwho.is/");
+        const res = await fetch("https://ipwho.is/", { signal: ctrl.signal });
         const data = await res.json();
         if (data?.success && data.country_code) {
           const detected: Lang = ARAB_COUNTRIES.has(String(data.country_code).toUpperCase()) ? "ar" : "en";
           setLangState(detected);
+          try { localStorage.setItem(STORAGE_KEY, detected); } catch { /* noop */ }
         }
       } catch { /* silent */ }
+      finally { clearTimeout(timer); }
     })();
+    return () => { clearTimeout(timer); ctrl.abort(); };
   }, []);
 
   // Reflect on <html>
