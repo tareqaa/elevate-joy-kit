@@ -131,12 +131,13 @@
    one row at every viewport width instead of wrapping to a second row. */
 .featured-grid{
   display:flex; gap:20px; overflow-x:auto; padding-bottom:14px;
-  scroll-snap-type:x proximity;
   scrollbar-width:thin;
   scrollbar-color:rgba(0,229,255,0.45) rgba(255,255,255,0.06);
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
 }
 .featured-grid .prod-card{
-  flex:0 0 250px; scroll-snap-align:start;
+  flex:0 0 250px;
 }
 .featured-grid::-webkit-scrollbar{height:7px;}
 .featured-grid::-webkit-scrollbar-thumb{
