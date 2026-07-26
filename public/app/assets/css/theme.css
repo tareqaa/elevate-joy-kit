@@ -519,31 +519,36 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   .prod-grid{grid-template-columns:1fr 1fr;}
   .cart-drawer{width:100%;}
 
-  /* Mobile navbar: two rows — brand+actions on top, search full-width below */
+  /* Mobile navbar: single row — brand + compact actions, search hidden by default */
   .nav .wrap{
-    gap:8px; height:auto; min-height:60px;
-    padding-top:10px; padding-bottom:10px;
+    gap:6px; height:auto; min-height:56px;
+    padding-top:8px; padding-bottom:8px;
     flex-wrap:wrap;
   }
-  .brand{gap:8px;}
-  .brand .mark{width:42px; height:30px;}
-  .brand-word{font-size:14px;}
-  .nav-right{gap:8px; margin-right:auto;}
-  .currency-pick{padding:7px 8px; font-size:11px;}
-  .menu-btn{padding:9px 10px;}
+  .brand{gap:6px;}
+  .brand .mark{width:36px; height:26px;}
+  .brand-word{font-size:13px;}
+  .brand-word span{display:none;}
+  .nav-right{gap:6px; margin-right:auto; flex-wrap:nowrap;}
+  .currency-pick{padding:6px 8px; font-size:11px;}
+  .currency-lang-combo .cl-part{padding:6px 7px; font-size:11px;}
+  .menu-btn{padding:8px 9px;}
   .menu-btn .btn-label{display:none;}
-  .menu-panel{width:calc(100vw - 24px); max-width:300px;}
-  .icon-btn{width:36px; height:36px;}
-  .icon-btn svg{width:18px; height:18px;}
+  .menu-panel{
+    width:calc(100vw - 24px); max-width:300px;
+    max-height:calc(100vh - 80px);
+  }
+  .icon-btn{width:34px; height:34px;}
+  .icon-btn svg{width:17px; height:17px;}
   .account-avatar-btn{width:32px; height:32px;}
-  .account-link{width:36px; height:36px;}
-  .badge-count{width:17px; height:17px; font-size:9.5px; top:-5px; left:-5px;}
+  .account-link{width:34px; height:34px;}
+  .badge-count{width:16px; height:16px; font-size:9px; top:-4px; left:-4px;}
 
   /* Show search as a full-width second row on mobile */
   .search-box{
     display:flex !important;
     order:99; flex:0 0 100%; max-width:100%;
-    padding:9px 12px;
+    padding:8px 12px;
   }
   .search-box input{font-size:13px;}
 
@@ -559,6 +564,17 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
 
   .footer-grid{grid-template-columns:1fr; gap:24px;}
   .footer-brand p{max-width:100%;}
+}
+
+@media(max-width:380px){
+  .nav .wrap{gap:4px; padding-left:8px; padding-right:8px;}
+  .brand .mark{width:30px; height:22px;}
+  .brand-word{font-size:12px;}
+  .icon-btn{width:32px; height:32px;}
+  .account-avatar-btn{width:30px; height:30px;}
+  .currency-lang-combo .cl-part{padding:5px 6px; font-size:10.5px;}
+  .menu-btn{padding:7px 8px;}
+  .nav-right{gap:5px;}
 }
 
 /* ---------- UX POLISH (smooth transitions, subtle feedback) ---------- */
