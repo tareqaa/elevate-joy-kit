@@ -38,12 +38,14 @@ function readSaved(): Lang | null {
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => readSaved() ?? "ar");
+  // Must match SSR on first render to avoid hydration mismatch.
+  const [lang, setLangState] = useState<Lang>("ar");
 
-  // Detect only when nothing is saved yet
+  // Apply saved language after hydration
   useEffect(() => {
+    const saved = readSaved();
+    if (saved) { setLangState(saved); return; }
     if (typeof window === "undefined") return;
-    if (readSaved()) return; // already persisted — respect user choice forever
 
     const browserLang = detectFromBrowser();
     if (browserLang) {
