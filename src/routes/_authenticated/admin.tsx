@@ -26,8 +26,8 @@ const NAV: NavItem[] = [
   { to: "/admin/users", label: "المستخدمون", Icon: Users },
   { to: "/admin/products", label: "المنتجات", Icon: ShoppingBag },
   { to: "/admin/categories", label: "الأقسام", Icon: FolderTree },
-  { to: "/admin/activity", label: "سجل النشاطات", Icon: Activity, soon: true },
-  { to: "/admin/settings", label: "الإعدادات", Icon: Settings, soon: true },
+  { to: "/admin/activity", label: "سجل النشاطات", Icon: Activity },
+  { to: "/admin/settings", label: "الإعدادات", Icon: Settings },
 ];
 
 function AdminLayout() {
