@@ -49,6 +49,7 @@ export type Database = {
       }
       categories: {
         Row: {
+          accent_color: string | null
           created_at: string
           description_ar: string | null
           description_en: string | null
@@ -66,6 +67,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accent_color?: string | null
           created_at?: string
           description_ar?: string | null
           description_en?: string | null
@@ -83,6 +85,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accent_color?: string | null
           created_at?: string
           description_ar?: string | null
           description_en?: string | null
