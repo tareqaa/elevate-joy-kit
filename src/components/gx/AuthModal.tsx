@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useLang } from "@/lib/gx/i18n";
 
 export function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -42,12 +43,19 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
 
   async function google() {
     setMsg({ text: "..." });
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin + "/" },
-    });
-    if (error) setMsg({ text: error.message });
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin + "/",
+      });
+      if (result.error) return setMsg({ text: (result.error as Error).message || "Google sign-in failed" });
+      if (result.redirected) return;
+      setMsg({ text: t("auth.signed_in_ok"), ok: true });
+      setTimeout(() => { onClose(); window.location.reload(); }, 400);
+    } catch (err) {
+      setMsg({ text: (err as Error).message || "Google sign-in failed" });
+    }
   }
+
 
   return (
     <div className={"gx-auth-modal" + (open ? " open" : "")}>
