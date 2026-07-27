@@ -27,7 +27,7 @@
   --ease:cubic-bezier(.4,0,.2,1);
 }
 
-*:not(.gx-account-main):not(.gx-account-main *){margin:0; padding:0; box-sizing:border-box;}
+*:where(:not(.gx-account-main):not(.gx-account-main *)){margin:0; padding:0; box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{
   background:var(--bg); color:var(--white);
