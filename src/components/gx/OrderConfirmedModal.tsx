@@ -33,14 +33,16 @@ export function OrderConfirmedModal({
   }
 
   function goWa() {
-    if (waUrl) window.open(waUrl, "_blank");
+    if (!waUrl) return;
+    const opened = window.open(waUrl, "_blank", "noopener,noreferrer");
+    if (!opened) window.location.href = waUrl;
   }
 
   return (
     <div
       onClick={onClose}
       style={{
-        position: "fixed", inset: 0, zIndex: 200,
+        position: "fixed", inset: 0, zIndex: 10050,
         background: "rgba(3,5,10,0.78)", backdropFilter: "blur(6px)",
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: 16, animation: "gxFadeIn .18s ease-out",

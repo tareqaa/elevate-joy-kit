@@ -179,6 +179,17 @@ export function Navbar() {
     };
   }, [menuOpen, accountOpen]);
 
+  useEffect(() => {
+    if (!accountOpen) return;
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
+      const tgt = e.target as HTMLElement | null;
+      if (!tgt?.closest(".account-wrap")) setAccountOpen(false);
+    };
+    document.addEventListener("pointermove", onPointerMove);
+    return () => document.removeEventListener("pointermove", onPointerMove);
+  }, [accountOpen]);
+
 
   const displayName = profile?.full_name || profile?.username || (profile?.email?.split("@")[0]) || t("nav.account");
   const username = profile?.username;

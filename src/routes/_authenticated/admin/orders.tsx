@@ -327,6 +327,25 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="rounded-xl border border-primary/35 bg-primary/10 p-3 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <div className="text-xs text-muted-foreground">إكمال سريع لهذا الرقم</div>
+                <div className="font-mono text-lg text-primary" dir="ltr">{order.order_number}</div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button type="button" size="sm" variant="outline" onClick={addCode}>+ كود</Button>
+                <Button type="button" size="sm" variant="outline" onClick={addAccount}>+ حساب (إيميل)</Button>
+                <Button type="button" size="sm" onClick={markDelivered} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  تسليم الطلب
+                </Button>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              إذا وصلك رقم الطلب من واتساب أو إنستغرام أو فيسبوك، افتح الطلب من البحث ثم أضف الكود أو حساب الإيميل من هنا واحفظه كـ مُسلَّم.
+            </p>
+          </div>
+
           <div className="text-sm space-y-1">
             <div><b>العميل:</b> {order.customer_name || "زائر"} {order.user_username && <span className="text-muted-foreground">(@{order.user_username})</span>}</div>
             {order.user_email && <div><b>الإيميل:</b> <a href={`mailto:${order.user_email}`} dir="ltr" className="text-primary hover:underline">{order.user_email}</a></div>}
