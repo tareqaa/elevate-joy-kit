@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { findPlanByCartId, type ResolvedPlan } from "@/data/products";
-import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "./currency";
+import { submitStoreOrder } from "./orders.functions";
 
 type CartItem = {
   cartId: string;
@@ -75,6 +76,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [notes, setNotesState] = useState("");
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const { currency, format } = useCurrency();
+  const submitStoreOrderFn = useServerFn(submitStoreOrder);
 
   useEffect(() => {
     setRawItems(loadRaw());
@@ -263,8 +265,6 @@ ${lines}
   const submitOrder = useCallback(async () => {
     if (items.length === 0) return null;
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData?.user;
       const payloadItems = items.map((it) => ({
         cartId: it.cartId,
         name: it.name,
@@ -272,27 +272,19 @@ ${lines}
         price: it.price,
         usernames: it.usernames || null,
       }));
-      const payload = {
-        user_id: user ? user.id : null,
-        customer_name: user ? (user.user_metadata?.full_name as string | undefined) || null : null,
-        customer_whatsapp: null,
-        items: payloadItems,
-        total_jod: totalJOD,
-        currency_snapshot: currency,
-        delivery_data: notes ? { customer_notes: notes } : {},
-        status: "pending" as const,
-      };
-      const { data, error } = await supabase.from("orders").insert(payload).select().single();
-      if (error) {
-        console.warn("[GX] order insert error", error);
-        return null;
-      }
-      return data as { order_number: string };
+      return await submitStoreOrderFn({
+        data: {
+          items: payloadItems,
+          totalJOD,
+          currency,
+          notes,
+        },
+      });
     } catch (e) {
       console.warn("[GX] submitOrder failed", e);
       return null;
     }
-  }, [items, totalJOD, currency, notes]);
+  }, [items, totalJOD, currency, notes, submitStoreOrderFn]);
 
   const value = useMemo<Ctx>(
     () => ({
