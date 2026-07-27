@@ -51,7 +51,7 @@ function getAdminClient() {
 
 export async function createStoreOrder(input: CreateOrderInput) {
   const supabase = getAdminClient();
-  const privateClient = supabase.schema("private" as never) as {
+  const privateClient = supabase.schema("private" as never) as unknown as {
     rpc: (
       fn: "create_order",
       args: {
@@ -63,7 +63,7 @@ export async function createStoreOrder(input: CreateOrderInput) {
         p_delivery_data: Json;
         p_user_id: string | null;
       },
-    ) => Promise<{ data: Array<{ id: string; order_number: string }> | null; error: { message: string } | null }>;
+    ) => PromiseLike<{ data: Array<{ id: string; order_number: string }> | null; error: { message: string } | null }>;
   };
 
   const { data, error } = await privateClient.rpc("create_order", {
