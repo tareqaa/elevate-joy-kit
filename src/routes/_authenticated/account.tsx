@@ -65,7 +65,7 @@ function AccountPage() {
   const displayName = profileQ.data?.full_name || username;
   const locale = lang === "ar" ? "ar-EG" : "en-US";
 
-  const marginSideStart = dir === "rtl" ? "ms-1" : "me-1";
+  void dir;
 
   return (
     <div className="space-y-6" dir={dir}>
@@ -441,7 +441,7 @@ function OrderCard({ order: o }: { order: OrderRow }) {
   const items = Array.isArray(o.items) ? (o.items as Array<{ name?: string; qty?: number; price?: number }>) : [];
   const delivery = o.delivery_data && typeof o.delivery_data === "object" ? o.delivery_data as Record<string, unknown> : {};
   const codes = Array.isArray((delivery as { codes?: unknown }).codes)
-    ? (delivery as { codes: Array<{ label?: string; value?: string }> }).codes : [];
+    ? (delivery as { codes: Array<{ label?: string; value?: string; email?: string; password?: string; kind?: string }> }).codes : [];
   const locale = lang === "ar" ? "ar-EG" : "en-US";
   const currencyLabel = lang === "ar" ? "د.أ" : "JOD";
 
@@ -468,13 +468,30 @@ function OrderCard({ order: o }: { order: OrderRow }) {
           <span>{Number(o.total_jod).toFixed(2)} {currencyLabel}</span>
         </div>
         {o.status === "delivered" && codes.length > 0 && (
-          <div className="mt-3 bg-muted/40 rounded-lg p-3 space-y-2 border">
+          <div className="mt-3 bg-muted/40 rounded-lg p-3 space-y-3 border">
             <div className="text-sm font-semibold">{t("acc.your_codes")}</div>
-            {codes.map((c, i) => <CodeBox key={i} label={c.label} value={c.value} />)}
+            {codes.map((c, i) => <DeliveryBlock key={i} data={c} />)}
           </div>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function DeliveryBlock({ data }: { data: { label?: string; value?: string; email?: string; password?: string; kind?: string } }) {
+  const isAccount = data.kind === "account" || (!!data.email && !data.value);
+  return (
+    <div className="rounded-md border bg-background/40 p-2.5 space-y-2">
+      {data.label && <div className="text-xs font-semibold text-primary">{data.label}</div>}
+      {isAccount ? (
+        <>
+          {data.email && <CodeBox label="acc.your_email_label" value={data.email} />}
+          {data.password && <CodeBox label="acc.your_password_label" value={data.password} />}
+        </>
+      ) : (
+        data.value && <CodeBox label="acc.your_code_label" value={data.value} />
+      )}
+    </div>
   );
 }
 
@@ -488,9 +505,10 @@ function CodeBox({ label, value }: { label?: string; value?: string }) {
     toast.success(t("acc.copied"));
     setTimeout(() => setCopied(false), 1500);
   }
+  const labelText = label && label.startsWith("acc.") ? t(label) : label;
   return (
     <div className="text-sm">
-      {label && <div className="text-muted-foreground text-xs mb-1">{label}</div>}
+      {labelText && <div className="text-muted-foreground text-xs mb-1">{labelText}</div>}
       <div className="flex items-center gap-2">
         <div className="flex-1 font-mono bg-background border rounded p-2 select-all break-all" dir="ltr">{value}</div>
         <Button size="icon" variant="outline" onClick={copy} className="shrink-0">
