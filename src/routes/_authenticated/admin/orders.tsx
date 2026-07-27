@@ -106,8 +106,8 @@ function OrdersAdmin() {
           <Input placeholder="بحث برقم الطلب / الاسم / الإيميل / اليوزر / واتساب" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
         </CardHeader>
         <CardContent>
-          <div className="border-b border-white/10 overflow-x-auto mb-3">
-            <div className="flex gap-1 min-w-max">
+          <div className="border-b border-white/10 mb-3">
+            <div className="flex flex-wrap gap-1">
               {(["all", ...STATUSES] as const).map((s) => {
                 const on = statusFilter === s;
                 const label = s === "all" ? "الكل" : STATUS_AR[s];
