@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.auto_cancel_stale_orders() FROM PUBLIC, anon, authenticated;

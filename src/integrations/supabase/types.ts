@@ -49,39 +49,68 @@ export type Database = {
       }
       categories: {
         Row: {
+          accent_color: string | null
           created_at: string
+          description_ar: string | null
+          description_en: string | null
           icon_url: string | null
           id: string
           is_active: boolean
+          is_main: boolean
           name_ar: string
           name_en: string
+          parent_id: string | null
           slug: string
           sort_order: number
+          theme_color: string | null
+          theme_gradient: string | null
           updated_at: string
         }
         Insert: {
+          accent_color?: string | null
           created_at?: string
+          description_ar?: string | null
+          description_en?: string | null
           icon_url?: string | null
           id?: string
           is_active?: boolean
+          is_main?: boolean
           name_ar: string
           name_en: string
+          parent_id?: string | null
           slug: string
           sort_order?: number
+          theme_color?: string | null
+          theme_gradient?: string | null
           updated_at?: string
         }
         Update: {
+          accent_color?: string | null
           created_at?: string
+          description_ar?: string | null
+          description_en?: string | null
           icon_url?: string | null
           id?: string
           is_active?: boolean
+          is_main?: boolean
           name_ar?: string
           name_en?: string
+          parent_id?: string | null
           slug?: string
           sort_order?: number
+          theme_color?: string | null
+          theme_gradient?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {

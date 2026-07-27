@@ -4,6 +4,7 @@ import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
+import { useSiteSettings } from "@/lib/gx/site-settings";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { OrderConfirmedModal } from "@/components/gx/OrderConfirmedModal";
 import { useState } from "react";
@@ -100,9 +101,15 @@ function CartSummary() {
   const { t } = useLang();
   const [busy, setBusy] = useState(false);
   const [confirmed, setConfirmed] = useState<{ orderNumber: string; waUrl: string | null } | null>(null);
+  const site = useSiteSettings();
   if (cart.items.length === 0 && !confirmed) return null;
 
   async function checkout() {
+    if (site.maintenance_mode) {
+      const { toast } = await import("sonner");
+      toast.error(site.maintenance_message || "الموقع تحت الصيانة حالياً");
+      return;
+    }
     setBusy(true);
     try {
       const submitted = await cart.submitOrder();
