@@ -216,17 +216,17 @@ export function Navbar() {
           </div>
           <div className="nav-right">
             {session ? (
-              <div className="account-wrap" onMouseLeave={() => setAccountOpen(false)}>
+              <div className="account-wrap" onMouseEnter={cancelClose} onMouseLeave={scheduleClose}>
                 <button
                   type="button" className="icon-btn account-avatar-btn"
-                  onClick={(e) => { e.stopPropagation(); setAccountOpen(v => !v); }}
-                  onMouseEnter={() => setAccountOpen(true)}
+                  onClick={(e) => { e.stopPropagation(); cancelClose(); setAccountOpen(v => !v); }}
+                  onMouseEnter={() => { cancelClose(); setAccountOpen(true); }}
                   aria-label={t("nav.account")}
                 >
                   {avatarUrl ? <img src={avatarUrl} alt="" /> : <span className="account-avatar-fallback">{initials}</span>}
                   <span className="account-lvl-dot">{level}</span>
                 </button>
-                <div className={"account-panel" + (accountOpen ? " open" : "")}>
+                <div className={"account-panel" + (accountOpen ? " open" : "")} onMouseEnter={cancelClose} onMouseLeave={scheduleClose}>
                   <div className="acc-mini">
                     <div className="acc-mini__name">{displayName}</div>
                     <div className="acc-mini__handle" dir="ltr">{username ? "@" + username : profile?.email}</div>
