@@ -680,6 +680,16 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   .account-panel{ inset-inline-end:0; min-width:230px; }
 }
 
+@media (max-width: 760px){
+  .account-panel{
+    position:fixed; top:76px;
+    width:calc(100vw - 24px); max-width:280px; min-width:0;
+    left:auto; right:auto; inset-inline-end:auto;
+  }
+  html[dir="rtl"] .account-panel{ right:12px; left:auto; }
+  html[dir="ltr"] .account-panel{ left:12px; right:auto; }
+}
+
 /* Avatar-style account button */
 .account-avatar-btn{
   position:relative; padding:0; overflow:visible;
