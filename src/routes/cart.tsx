@@ -5,6 +5,7 @@ import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { OrderConfirmedModal } from "@/components/gx/OrderConfirmedModal";
 import { useState } from "react";
 
 export const Route = createFileRoute("/cart")({
@@ -98,15 +99,17 @@ function CartSummary() {
   const { format } = useCurrency();
   const { t } = useLang();
   const [busy, setBusy] = useState(false);
-  if (cart.items.length === 0) return null;
+  const [confirmed, setConfirmed] = useState<{ orderNumber: string; waUrl: string | null } | null>(null);
+  if (cart.items.length === 0 && !confirmed) return null;
 
   async function checkout() {
     setBusy(true);
     try {
       const submitted = await cart.submitOrder();
-      const url = cart.buildWhatsAppUrl(submitted?.order_number);
-      if (submitted) cart.clear();
-      if (url) window.open(url, "_blank");
+      const orderNumber = submitted?.order_number || ("GX-" + Date.now().toString().slice(-6));
+      const url = cart.buildWhatsAppUrl(orderNumber);
+      cart.clear();
+      setConfirmed({ orderNumber, waUrl: url });
     } finally {
       setBusy(false);
     }
@@ -124,9 +127,16 @@ function CartSummary() {
         <textarea placeholder={t("cart.notes_placeholder")} value={cart.notes} onChange={(e) => cart.setNotes(e.target.value)} />
         <div className="hint">{t("cart.notes_hint")}</div>
       </div>
-      <button className="btn btn-green btn-block" disabled={busy} onClick={checkout}>
+      <button className="btn btn-green btn-block" disabled={busy || cart.items.length === 0} onClick={checkout}>
         {busy ? t("cart.checkout_saving") : t("cart.checkout_wa")}
       </button>
+      {confirmed && (
+        <OrderConfirmedModal
+          orderNumber={confirmed.orderNumber}
+          waUrl={confirmed.waUrl}
+          onClose={() => setConfirmed(null)}
+        />
+      )}
     </div>
   );
 }
