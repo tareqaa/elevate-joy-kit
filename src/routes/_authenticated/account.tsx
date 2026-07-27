@@ -70,22 +70,35 @@ function AccountPage() {
   return (
     <div className="space-y-6" dir={dir}>
       {/* Hero */}
-      <Card className="overflow-hidden border-primary/20">
-        <div className={`h-24 ${dir === "rtl" ? "bg-gradient-to-l" : "bg-gradient-to-r"} from-primary/30 via-purple-500/20 to-cyan-500/20`} />
-        <CardContent className="pt-0 -mt-12 flex flex-col sm:flex-row sm:items-end gap-4">
-          <img
-            src={profileQ.data?.avatar_url || avatarUrl(user.email || "gx")}
-            alt="avatar"
-            className="w-24 h-24 rounded-2xl border-4 border-background shadow-xl bg-card object-cover"
-          />
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">{displayName}</h1>
-            <p className="text-sm text-primary font-semibold" dir="ltr">@{username}</p>
-            <p className="text-xs text-muted-foreground" dir="ltr">{user.email}</p>
+      <Card className="overflow-hidden border-primary/20 relative">
+        <div
+          className="h-28"
+          style={{
+            background:
+              "radial-gradient(circle at 20% 20%, rgba(0,229,255,0.35), transparent 60%), radial-gradient(circle at 80% 40%, rgba(124,58,237,0.35), transparent 55%), linear-gradient(135deg,#0b0e17,#12151f)",
+          }}
+        />
+        <CardContent className="pt-0 -mt-14 pb-5">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+            <div className="relative shrink-0">
+              <img
+                src={profileQ.data?.avatar_url || avatarUrl(user.email || "gx")}
+                alt="avatar"
+                className="w-24 h-24 rounded-2xl border-4 border-background shadow-xl bg-card object-cover"
+              />
+              <span className="absolute -bottom-1 -end-1 min-w-7 h-7 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-black leading-7 text-center border-4 border-background">
+                {Math.max(1, Number(profileQ.data?.level) || 1)}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold truncate">{displayName}</h1>
+              <p className="text-sm text-primary font-semibold truncate" dir="ltr">@{username}</p>
+              <p className="text-xs text-muted-foreground truncate" dir="ltr">{user.email}</p>
+            </div>
+            <Badge variant="outline" className="text-xs self-start sm:self-end whitespace-nowrap">
+              {t("acc.member_since")} {new Date(profileQ.data?.created_at || Date.now()).toLocaleDateString(locale, { year: "numeric", month: "long" })}
+            </Badge>
           </div>
-          <Badge variant="outline" className="text-xs">
-            {t("acc.member_since")} {new Date(profileQ.data?.created_at || Date.now()).toLocaleDateString(locale, { year: "numeric", month: "long" })}
-          </Badge>
         </CardContent>
       </Card>
 
@@ -94,10 +107,10 @@ function AccountPage() {
         value={tab}
         onValueChange={(v) => navigate({ search: { tab: v as "profile" | "orders" | "security" } })}
       >
-        <TabsList className="grid grid-cols-3 w-full max-w-lg">
-          <TabsTrigger value="profile"><UserIcon className={`w-4 h-4 ${marginSideStart}`} />{t("acc.tab_profile")}</TabsTrigger>
-          <TabsTrigger value="orders"><Package className={`w-4 h-4 ${marginSideStart}`} />{t("acc.tab_orders")}</TabsTrigger>
-          <TabsTrigger value="security"><ShieldCheck className={`w-4 h-4 ${marginSideStart}`} />{t("acc.tab_security")}</TabsTrigger>
+        <TabsList className="grid grid-cols-3 w-full max-w-lg h-11">
+          <TabsTrigger value="profile" className="gap-2"><UserIcon className="w-4 h-4" />{t("acc.tab_profile")}</TabsTrigger>
+          <TabsTrigger value="orders" className="gap-2"><Package className="w-4 h-4" />{t("acc.tab_orders")}</TabsTrigger>
+          <TabsTrigger value="security" className="gap-2"><ShieldCheck className="w-4 h-4" />{t("acc.tab_security")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-4">
