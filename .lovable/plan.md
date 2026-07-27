@@ -1,75 +1,72 @@
-# خطة بانل الأدمن الاحترافي — GX Admin Pro
+# خطة العمل — ربط الإعدادات + إعادة هيكلة الأقسام
 
-هدفنا نبني بانل أدمن بمستوى منتج SaaS حقيقي: سريع، منظم، بهوية GX (Neon Cyan)، مع أدوات فعلية تسرّع شغلك اليومي.
+## 1) ربط `/admin/settings` بالواجهة العامة
 
-## الهوية والشكل العام
+**قاعدة البيانات**: تعبئة القيم الافتراضية في `site_settings` (store_name, default_currency=JOD, support_whatsapp, support_email, social_*, maintenance_mode=false, maintenance_message, order_completion_hours=24).
 
-- **الألوان**: خلفية داكنة `#0a0a1a` → `#0f1830`، أكسنت `#00d4ff` مع توهج `#7dfffe`، نصوص فاتحة عالية التباين.
-- **التخطيط**: Sidebar جانبي كلاسيكي (RTL) قابل للطي، هيدر علوي رفيع فيه: بحث سريع (Ctrl+K)، جرس إشعارات، مبدّل حالة الاتصال Realtime، الأفاتار.
-- **المكونات**: بطاقات زجاجية خفيفة، حدود متوهجة سيان، أنيميشن نبض للحالات الحيّة، جداول احترافية بسطر تفاصيل قابل للتوسّع.
-- **Sidebar RTL** بعناصر: Dashboard، Orders، Products، Categories، Users، Notifications، Activity Log، Settings.
+**Provider جديد** `src/lib/gx/site-settings.tsx`:
+- Hook `useSiteSettings()` يقرأ الجدول مرة واحدة عبر React Query ويكاش في `localStorage` لمنع flash.
+- يفعّل realtime عبر `postgres_changes` على `site_settings`.
 
-## المراحل (كل مرحلة بتشتغل لحالها ونراجعها)
+**التطبيق على الواجهة**:
+- **Maintenance mode**: banner علوي في `StoreShell` + بلوك على الصفحة الرئيسية يمنع الطلبات (يعطّل زر "اشتري الآن" + السلة) ويعرض `maintenance_message`. الأدمن يتجاوز.
+- **WhatsApp دعم**: `Footer` + `Navbar` + رابط الاتصال بالصفحة الرئيسية + زر واتساب عائم يقرأ `support_whatsapp`.
+- **Email دعم**: `Footer` + صفحة FAQ.
+- **Social links**: `Footer` يقرأ من الإعدادات بدل الثابتة.
+- **Default currency**: `CurrencyProvider` يستعمل `default_currency` كـ fallback أول زيارة.
+- **Auto-cancel hours**: cron job DB يقرأ الرقم من الإعدادات (تعديل `auto_cancel_stale_orders`).
+- **Store name**: يستعمل في `<title>` عبر head defaults + الشعار النصي.
 
-### المرحلة 1 — الأساس + Dashboard + Sidebar الجديد
-- بناء Layout جديد `AdminShell` بـ Sidebar جانبي RTL قابل للطي/التوسيع + هيدر ثابت.
-- صفحة Dashboard رئيسية فيها:
-  - **بطاقات KPI**: مبيعات اليوم، مبيعات الشهر، طلبات معلّقة، طلبات مكتملة، مستخدمين جدد.
-  - **رسم بياني** (Line/Area) للمبيعات آخر 30 يوم.
-  - **رسم دائري** لتوزيع الطلبات حسب الحالة.
-  - **Top 5 منتجات** الأكثر مبيعاً.
-  - **آخر 10 طلبات** مع اختصار للتفاصيل.
-- بحث سريع Ctrl+K (Command Palette) يفتح من أي مكان — يقفز لطلب/مستخدم/صفحة.
+## 2) إعادة هيكلة الأقسام (هرمية + ثيم)
 
-### المرحلة 2 — إدارة الطلبات المتقدمة
-- جدول طلبات احترافي:
-  - فلاتر: الحالة، التاريخ، نوع التسليم (كود/حساب)، طريقة الطلب (زبون مسجّل/زائر)، بحث نصي.
-  - أعمدة قابلة للفرز، Pagination، تحديد جماعي.
-  - أزرار سريعة لكل صف: تحديث حالة، فتح واتساب، نسخ رقم الطلب.
-- **مودال طلب** موسّع: كل التفاصيل + المنتجات + بيانات التسليم + سجل التغييرات + ملاحظات إدارية.
-- **إشعارات صوتية Realtime**: رنة + Toast لمّا يصل طلب جديد (باستخدام Supabase Realtime).
-- **تصدير CSV/Excel** للطلبات المفلترة.
-- **Auto-refresh** كل 30 ثانية اختياري.
+**Migration**:
+- إضافة أعمدة لـ `categories`:
+  - `parent_id uuid` (self-FK, nullable)
+  - `is_main boolean default false` (يظهر بالصفحة الرئيسية كقسم رئيسي)
+  - `theme_color text` (hex لون التدرّج/الأيقونة)
+  - `theme_gradient text` (اختياري: linear gradient CSS)
+  - `description_ar text`, `description_en text`
+- Seed للأقسام الحالية من `products-data.js`: games, design, gift-cards, snapchat, ai, apps + الفرعية (fortnite, sony, xbox, steam, adobe, canva, autodesk, microsoft365, linkedin, windows, itunes, google-play, playstation, xbox-gc, gemini).
+- ربط `products.category_id` بجميع المنتجات الحالية (تلقائي عبر slug).
 
-### المرحلة 3 — إدارة الأقسام والمنتجات والأسعار
-جدول جديد `categories` بالداتابيس (Main/Sub) مع صور، وجدول `product_pricing` لدعم السعر الموحّد أو سعر خاص لكل دولة/عملة.
+**واجهة الأدمن `/admin/categories`** (إعادة بناء كاملة):
+- **شجرة هرمية** (Tree view) قابلة للطي — 3 مستويات.
+- زر "قسم فرعي" على كل عنصر لإضافة تحته.
+- **Dialog محسّن** يحتوي: parent picker (dropdown هرمي), toggle "قسم رئيسي (يظهر بالواجهة)", color picker (نص + swatch), gradient preview, وصف عربي/إنجليزي, أيقونة, ترتيب, حالة.
+- سحب وإفلات (drag-reorder) للترتيب داخل نفس المستوى.
+- Live preview لبطاقة القسم كما ستظهر بالواجهة.
+- بحث + إحصائيات (عدد المنتجات لكل قسم).
 
-- **الأقسام**:
-  - إضافة/تعديل/حذف قسم رئيسي أو فرعي (شجرة).
-  - رفع صورة القسم (Supabase Storage bucket جديد).
-  - ترتيب بالسحب والإفلات، تفعيل/إخفاء.
-- **المنتجات**:
-  - جدول كامل + بحث + فلترة حسب القسم.
-  - نموذج تعديل: العنوان (AR/EN)، الوصف، الصورة، القسم، الشارات (Premium/New/Sale).
-  - **الأسعار**:
-    - وضع أول: سعر موحّد بكل الدول (يتحوّل تلقائياً حسب سعر الصرف).
-    - وضع ثاني: سعر خاص لكل دولة/عملة (JOD, USD, SAR, AED, TRY...).
-  - تفعيل/إخفاء، ترتيب.
+**واجهة الأدمن `/admin/products`**:
+- إضافة **Category picker هرمي** (breadcrumb selector) بدل ما هو موجود.
+- فلترة بالشجرة الجانبية.
 
-### المرحلة 4 — المستخدمين + سجل النشاطات + الإعدادات
-- **جدول المستخدمين**: بحث، فلترة حسب الدور، عرض طلبات كل مستخدم، تغيير الدور (admin/user)، تعديل بروفايل، حظر (اختياري لاحق).
-- **Audit Log** (جدول جديد `admin_activity_log`): يسجّل كل عملية أدمن (تحديث حالة، حذف قسم، تغيير سعر...) مع اليوزر والوقت.
-- **الإعدادات**: مبدّل الإشعارات الصوتية، مدة auto-refresh، إعدادات عامة للمتجر.
+**الواجهة العامة**:
+- الصفحة الرئيسية تقرأ `is_main=true` من DB وتبني بطاقات الأقسام ديناميكياً بلون/تدرّج كل قسم.
+- صفحة `/category/$slug` تقرأ الأقسام الفرعية + المنتجات من DB (مع fallback على `products-data.js` للانتقال التدريجي).
 
-## التفاصيل التقنية
+## 3) تحسين واجهات الأدمن الداخلية (كما بالصورة)
 
-- **Realtime**: `supabase.channel('orders').on('postgres_changes', ...)` للإشعارات الحيّة.
-- **Charts**: `recharts` (موجود بالمشروع أصلاً غالباً، وإلا نضيفه).
-- **Command Palette**: `cmdk` أو نبنيه بمكونات shadcn `Command`.
-- **CSV Export**: تحويل client-side بدون مكتبات ثقيلة.
-- **Storage**: bucket جديد `category-images` (public) و `product-images` (public).
-- **جداول جديدة**:
-  - `categories(id, parent_id, slug, name_ar, name_en, image_url, sort_order, is_active)`
-  - `product_pricing(id, product_slug, currency, price, is_default)`
-  - `admin_activity_log(id, admin_id, action, target_type, target_id, details, created_at)`
-- **RLS**: القراءة عامة للـ categories والـ pricing، الكتابة للأدمن فقط. `admin_activity_log` للأدمن فقط قراءة، والكتابة عبر server functions.
-- **Server Functions**: كل عمليات الكتابة (تحديث طلب، حذف قسم، تغيير سعر) تمر بـ `createServerFn` مع `requireSupabaseAuth` + تحقق `has_role admin` + كتابة audit log.
+- توحيد header الصفحات: أيقونة gradient + عنوان + وصف + CTA يمين.
+- إضافة **stat strip** أعلى كل صفحة (عدد الأقسام / الرئيسية / المخفية).
+- Cards بحواف neon محسّنة + hover glow.
+- Empty states احترافية.
+- Skeleton loaders بدل نص "جاري التحميل".
+- Breadcrumb علوي داخل AdminShell.
 
-## ترتيب التنفيذ المقترح
+## تفاصيل تقنية
 
-نبدأ **المرحلة 1** كاملة (الشكل + Dashboard + Sidebar + Command Palette) في هالجولة — عشان تشوف الهوية الجديدة وتوافق عليها قبل ما نغرق في المراحل الباقية.
+- Migration واحدة لـ (columns + seed categories + link products + settings defaults + update cron).
+- كل تغييرات DB تتبع نمط RLS/GRANT الموجود.
+- Realtime subscription واحدة على `site_settings` + `categories` للتحديث الفوري.
+- الحفاظ على `products-data.js` كـ fallback؛ لا نكسر الصفحات الثابتة القديمة.
 
-بعدها نمشي مرحلة مرحلة، وكل مرحلة نعرضلك النتيجة ونمشي للي بعدها.
+## ترتيب التنفيذ
 
----
-**موافق نبدأ بالمرحلة 1؟** أو بدك نعدّل شي بالخطة قبل ما نبلش؟
+1. Migration (schema + seed + defaults).
+2. `useSiteSettings` provider + تطبيقه على Footer/Shell/Cart/Currency.
+3. Maintenance banner + gating.
+4. إعادة بناء `/admin/categories` (tree + hierarchical dialog + theming).
+5. تحديث `/admin/products` (hierarchical picker).
+6. ربط الصفحة الرئيسية بأقسام DB.
+7. تحسينات UI العامة على صفحات الأدمن.
