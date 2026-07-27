@@ -45,7 +45,6 @@ function profileFromUser(user?: StoredAuthUser | null): Profile | null {
     id: user.id ?? null,
     username: typeof meta.username === "string" ? meta.username : null,
     full_name: typeof meta.full_name === "string" ? meta.full_name : null,
-    avatar_url: typeof meta.avatar_url === "string" ? meta.avatar_url : null,
     email: user.email ?? null,
   };
 }
@@ -184,6 +183,7 @@ export function Navbar() {
   const displayName = profile?.full_name || profile?.username || (profile?.email?.split("@")[0]) || t("nav.account");
   const username = profile?.username;
   const initials = (displayName || profile?.email || "GX").trim().slice(0, 2).toUpperCase();
+  const avatarUrl = profile?.avatar_url || "";
   const level = Math.max(1, Number(profile?.level) || 1);
 
   async function signOut() {
@@ -214,7 +214,7 @@ export function Navbar() {
                   onMouseEnter={() => setAccountOpen(true)}
                   aria-label={t("nav.account")}
                 >
-                  <img src={avatarUrl} alt="" />
+                  {avatarUrl ? <img src={avatarUrl} alt="" /> : <span className="account-avatar-fallback">{initials}</span>}
                   <span className="account-lvl-dot">{level}</span>
                 </button>
                 <div className={"account-panel" + (accountOpen ? " open" : "")}>
