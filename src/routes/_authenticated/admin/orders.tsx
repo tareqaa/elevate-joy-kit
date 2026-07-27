@@ -244,34 +244,57 @@ function QuickFulfill({ onPick }: { onPick: (o: OrderWithEmail) => void }) {
 
 
 
+type DeliveryCode = { label: string; value: string; email?: string; password?: string; kind?: "code" | "account" };
+
 function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
   const [status, setStatus] = useState(order.status);
   const [notes, setNotes] = useState(order.admin_notes ?? "");
   const items = Array.isArray(order.items) ? order.items : [];
-  const existingDelivery = order.delivery_data && typeof order.delivery_data === "object" ? order.delivery_data as { codes?: Array<{ label: string; value: string }> } : {};
+  const existingDelivery = order.delivery_data && typeof order.delivery_data === "object" ? order.delivery_data as { codes?: DeliveryCode[] } : {};
 
   // Pre-populate one code slot per (item × qty) when nothing was saved yet
   const initialCodes = (() => {
-    if (existingDelivery.codes && existingDelivery.codes.length > 0) return existingDelivery.codes;
-    const seeded: Array<{ label: string; value: string }> = [];
+    if (existingDelivery.codes && existingDelivery.codes.length > 0) {
+      return existingDelivery.codes.map((c) => ({
+        kind: (c.kind || (c.email ? "account" : "code")) as "code" | "account",
+        label: c.label || "",
+        value: c.value || "",
+        email: c.email || "",
+        password: c.password || "",
+      }));
+    }
+    const seeded: DeliveryCode[] = [];
     (items as Array<{ name?: string; qty?: number }>).forEach((it) => {
       const qty = Math.max(1, Number(it.qty) || 1);
       for (let k = 0; k < qty; k++) {
-        seeded.push({ label: qty > 1 ? `${it.name || "منتج"} (${k + 1}/${qty})` : (it.name || "منتج"), value: "" });
+        seeded.push({
+          kind: "code",
+          label: qty > 1 ? `${it.name || "منتج"} (${k + 1}/${qty})` : (it.name || "منتج"),
+          value: "", email: "", password: "",
+        });
       }
     });
-    return seeded.length > 0 ? seeded : [{ label: "", value: "" }];
+    return seeded.length > 0 ? seeded : [{ kind: "code" as const, label: "", value: "", email: "", password: "" }];
   })();
-  const [codes, setCodes] = useState<Array<{ label: string; value: string }>>(initialCodes);
+  const [codes, setCodes] = useState<DeliveryCode[]>(initialCodes);
 
-  function addCode() { setCodes([...codes, { label: "", value: "" }]); }
-  function updateCode(i: number, patch: Partial<{ label: string; value: string }>) {
+  function addCode() { setCodes([...codes, { kind: "code", label: "", value: "", email: "", password: "" }]); }
+  function addAccount() { setCodes([...codes, { kind: "account", label: "", value: "", email: "", password: "" }]); }
+  function updateCode(i: number, patch: Partial<DeliveryCode>) {
     setCodes(codes.map((c, idx) => idx === i ? { ...c, ...patch } : c));
   }
   function removeCode(i: number) { setCodes(codes.filter((_, idx) => idx !== i)); }
 
   function buildPatch(nextStatus: string) {
-    const cleanCodes = codes.filter((c) => c.label.trim() || c.value.trim());
+    const cleanCodes = codes
+      .map((c) => ({
+        kind: c.kind || "code",
+        label: (c.label || "").trim(),
+        value: (c.value || "").trim(),
+        email: (c.email || "").trim(),
+        password: (c.password || "").trim(),
+      }))
+      .filter((c) => c.label || c.value || c.email || c.password);
     return {
       status: nextStatus,
       admin_notes: notes.trim() || null,
@@ -280,9 +303,9 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
   }
   function save() { onSave(buildPatch(status)); }
   function markDelivered() {
-    const anyValue = codes.some((c) => c.value.trim());
+    const anyValue = codes.some((c) => (c.value || "").trim() || (c.email || "").trim() || (c.password || "").trim());
     if (!anyValue) {
-      const ok = confirm("ما في أكواد مدخلة. تأكد من تسليم الطلب بدون أكواد؟");
+      const ok = confirm("ما في أكواد/حسابات مدخلة. تأكد من تسليم الطلب بدون بيانات؟");
       if (!ok) return;
     }
     setStatus("delivered");
@@ -342,18 +365,36 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           </div>
 
           <div>
-            <div className="flex items-center justify-between">
-              <Label>أكواد/بيانات التسليم للعميل</Label>
-              <Button type="button" size="sm" variant="outline" onClick={addCode}>+ إضافة</Button>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <Label>بيانات التسليم للعميل</Label>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" variant="outline" onClick={addCode}>+ كود</Button>
+                <Button type="button" size="sm" variant="outline" onClick={addAccount}>+ حساب (إيميل)</Button>
+              </div>
             </div>
-            <div className="space-y-2 mt-2">
-              {codes.map((c, i) => (
-                <div key={i} className="flex gap-2">
-                  <Input placeholder="الوصف (مثلاً: كود PlayStation 25$)" value={c.label} onChange={(e) => updateCode(i, { label: e.target.value })} />
-                  <Input placeholder="القيمة" dir="ltr" value={c.value} onChange={(e) => updateCode(i, { value: e.target.value })} />
-                  <Button type="button" size="sm" variant="ghost" onClick={() => removeCode(i)}>×</Button>
-                </div>
-              ))}
+            <div className="space-y-3 mt-2">
+              {codes.map((c, i) => {
+                const isAccount = c.kind === "account";
+                return (
+                  <div key={i} className="border rounded-lg p-3 space-y-2 bg-muted/20">
+                    <div className="flex gap-2 items-center">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isAccount ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"}`}>
+                        {isAccount ? "حساب" : "كود"}
+                      </span>
+                      <Input placeholder="الوصف (مثلاً: حساب Netflix / كود PS 25$)" value={c.label} onChange={(e) => updateCode(i, { label: e.target.value })} className="flex-1" />
+                      <Button type="button" size="sm" variant="ghost" onClick={() => removeCode(i)}>×</Button>
+                    </div>
+                    {isAccount ? (
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        <Input placeholder="الإيميل" dir="ltr" value={c.email || ""} onChange={(e) => updateCode(i, { email: e.target.value })} />
+                        <Input placeholder="كلمة السر" dir="ltr" value={c.password || ""} onChange={(e) => updateCode(i, { password: e.target.value })} />
+                      </div>
+                    ) : (
+                      <Input placeholder="القيمة (الكود)" dir="ltr" value={c.value} onChange={(e) => updateCode(i, { value: e.target.value })} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
