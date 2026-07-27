@@ -207,7 +207,7 @@ export function Navbar() {
           </div>
           <div className="nav-right">
             {session ? (
-              <div className="account-wrap">
+              <div className="account-wrap" onMouseLeave={() => setAccountOpen(false)}>
                 <button
                   type="button" className="icon-btn account-avatar-btn"
                   onClick={(e) => { e.stopPropagation(); setAccountOpen(v => !v); }}
