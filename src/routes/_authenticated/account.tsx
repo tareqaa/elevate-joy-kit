@@ -33,6 +33,53 @@ const AVATAR_SEEDS = [
 const avatarUrl = (seed: string) =>
   `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6,ec4899,22d3ee,f59e0b&radius=50&scale=90&skinColor=f2d3b1,ecad80,9e5622`;
 
+type CachedProfile = {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  level: number;
+  xp: number;
+  email: string | null;
+  created_at: string;
+  updated_at: string;
+  total_spent: number;
+  whatsapp: string | null;
+};
+
+function readProfileCache(userId: string): CachedProfile | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = localStorage.getItem(`gx:profile:${userId}`) || localStorage.getItem("gx_profile_cache");
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw) as Partial<CachedProfile>;
+    if (!parsed || typeof parsed !== "object") return undefined;
+    if (parsed.id && parsed.id !== userId) return undefined;
+    return {
+      id: userId,
+      username: parsed.username ?? null,
+      full_name: parsed.full_name ?? null,
+      avatar_url: parsed.avatar_url ?? null,
+      level: Number(parsed.level) || 1,
+      xp: Number(parsed.xp) || 0,
+      email: parsed.email ?? null,
+      created_at: parsed.created_at ?? new Date().toISOString(),
+      updated_at: parsed.updated_at ?? new Date().toISOString(),
+      total_spent: Number(parsed.total_spent) || 0,
+      whatsapp: parsed.whatsapp ?? null,
+    };
+  } catch { /* noop */ }
+  return undefined;
+}
+
+function cacheProfile(profile: CachedProfile) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(`gx:profile:${profile.id}`, JSON.stringify(profile));
+    localStorage.setItem("gx_profile_cache", JSON.stringify(profile));
+  } catch { /* noop */ }
+}
+
 
 
 function AccountPage() {
@@ -44,9 +91,11 @@ function AccountPage() {
 
   const profileQ = useQuery({
     queryKey: ["my-profile", user.id],
+    initialData: () => readProfileCache(user.id),
     queryFn: async () => {
       const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
       if (error) throw error;
+      if (data) cacheProfile(data);
       return data;
     },
   });
@@ -63,6 +112,8 @@ function AccountPage() {
 
   const username = profileQ.data?.username || user.user_metadata?.username || user.email?.split("@")[0] || "gx";
   const displayName = profileQ.data?.full_name || username;
+  const heroAvatar = profileQ.data?.avatar_url || "";
+  const heroInitials = (displayName || user.email || "GX").trim().slice(0, 2).toUpperCase();
   const locale = lang === "ar" ? "ar-EG" : "en-US";
 
   void dir;
@@ -81,11 +132,17 @@ function AccountPage() {
         <CardContent className="pt-0 -mt-14 pb-5">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4">
             <div className="relative shrink-0">
-              <img
-                src={profileQ.data?.avatar_url || avatarUrl(user.email || "gx")}
-                alt="avatar"
-                className="w-24 h-24 rounded-2xl border-4 border-background shadow-xl bg-card object-cover"
-              />
+              {heroAvatar ? (
+                <img
+                  src={heroAvatar}
+                  alt="avatar"
+                  className="w-24 h-24 rounded-2xl border-4 border-background shadow-xl bg-card object-cover"
+                />
+              ) : (
+                <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-4 border-background bg-card text-xl font-black text-primary shadow-xl">
+                  {heroInitials}
+                </div>
+              )}
               <span className="absolute -bottom-1 -end-1 min-w-7 h-7 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-black leading-7 text-center border-4 border-background">
                 {Math.max(1, Number(profileQ.data?.level) || 1)}
               </span>
@@ -145,7 +202,7 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
   const { t } = useLang();
   const [name, setName] = useState(currentName);
   const [uname, setUname] = useState(currentUsername);
-  const [avatar, setAvatar] = useState(currentAvatar || avatarUrl(AVATAR_SEEDS[0]));
+  const [avatar, setAvatar] = useState(currentAvatar);
   const [nameTouched, setNameTouched] = useState(false);
   const [unameTouched, setUnameTouched] = useState(false);
   const [avatarTouched, setAvatarTouched] = useState(false);
@@ -189,9 +246,10 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
     if (unameCheck.status === "taken") { toast.error(t("acc.uname_taken")); return; }
 
     setSaving(true);
+    const savedAvatar = avatar || currentAvatar;
     const { error } = await supabase
       .from("profiles")
-      .update({ full_name: parsedName.data, username: parsedUname.data, avatar_url: avatar })
+      .update({ full_name: parsedName.data, username: parsedUname.data, avatar_url: savedAvatar || null })
       .eq("id", userId);
     setSaving(false);
     if (error) {
@@ -200,15 +258,16 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
       return;
     }
     await supabase.auth.updateUser({
-      data: { username: parsedUname.data, full_name: parsedName.data, avatar_url: avatar },
+      data: { username: parsedUname.data, full_name: parsedName.data },
     });
     toast.success(t("acc.saved_ok"));
     try {
       const profileCache = {
-        username: parsedUname.data, full_name: parsedName.data, avatar_url: avatar,
-        level: currentLevel, xp: currentXp, email: userEmail, _cachedAt: Date.now(),
+        id: userId, username: parsedUname.data, full_name: parsedName.data, avatar_url: savedAvatar || null,
+        level: currentLevel, xp: currentXp, email: userEmail, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), total_spent: 0, whatsapp: null, _cachedAt: Date.now(),
       };
       localStorage.setItem(`gx:profile:${userId}`, JSON.stringify(profileCache));
+      localStorage.setItem("gx_profile_cache", JSON.stringify(profileCache));
       localStorage.setItem("gx:profile-updated", String(Date.now()));
       window.dispatchEvent(new CustomEvent("gx:profile-updated", { detail: profileCache }));
     } catch { /* noop */ }
@@ -256,7 +315,13 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
         <CardHeader><CardTitle className="text-base">{t("acc.account_info")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3">
-            <img src={avatar} alt="preview" className="w-16 h-16 rounded-xl border" />
+            {avatar ? (
+              <img src={avatar} alt="preview" className="w-16 h-16 rounded-xl border object-cover" />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-xl border bg-card text-sm font-black text-primary">
+                GX
+              </div>
+            )}
             <div className="text-sm text-muted-foreground">{t("acc.avatar_preview")}</div>
           </div>
           <div className="space-y-2">
