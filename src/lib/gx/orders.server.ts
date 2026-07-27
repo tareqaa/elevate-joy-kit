@@ -51,33 +51,22 @@ function getAdminClient() {
 
 export async function createStoreOrder(input: CreateOrderInput) {
   const supabase = getAdminClient();
-  const privateClient = supabase.schema("private" as never) as unknown as {
-    rpc: (
-      fn: "create_order",
-      args: {
-        p_items: Json;
-        p_total_jod: number;
-        p_currency_snapshot: string;
-        p_customer_name: string | null;
-        p_customer_whatsapp: string | null;
-        p_delivery_data: Json;
-        p_user_id: string | null;
-      },
-    ) => PromiseLike<{ data: Array<{ id: string; order_number: string }> | null; error: { message: string } | null }>;
-  };
-
-  const { data, error } = await privateClient.rpc("create_order", {
-    p_items: input.items,
-    p_total_jod: input.totalJOD,
-    p_currency_snapshot: input.currency,
-    p_customer_name: input.customerName ?? null,
-    p_customer_whatsapp: input.customerWhatsapp ?? null,
-    p_delivery_data: input.deliveryData ?? {},
-    p_user_id: input.userId ?? null,
-  });
+  const { data, error } = await supabase
+    .from("orders")
+    .insert({
+      user_id: input.userId ?? null,
+      customer_name: input.customerName ?? null,
+      customer_whatsapp: input.customerWhatsapp ?? null,
+      items: input.items,
+      total_jod: input.totalJOD,
+      currency_snapshot: input.currency,
+      delivery_data: input.deliveryData ?? {},
+      status: "pending",
+    })
+    .select("id, order_number")
+    .single();
 
   if (error) throw new Error(error.message);
-  const row = data?.[0];
-  if (!row?.order_number) throw new Error("Order was not created");
-  return { id: row.id, order_number: row.order_number };
+  if (!data?.order_number) throw new Error("Order was not created");
+  return { id: data.id, order_number: data.order_number };
 }
