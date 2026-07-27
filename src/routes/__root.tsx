@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CurrencyProvider } from "@/lib/gx/currency";
 import { CartProvider } from "@/lib/gx/cart";
 import { LanguageProvider } from "@/lib/gx/i18n";
+import { SiteSettingsProvider } from "@/lib/gx/site-settings";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 // Ensure legacy store stylesheets are present regardless of entry route.
@@ -158,14 +159,16 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <CurrencyProvider>
-          <CartProvider>
-            <Outlet />
-            <Toaster richColors position="top-center" />
-          </CartProvider>
-        </CurrencyProvider>
-      </LanguageProvider>
+      <SiteSettingsProvider>
+        <LanguageProvider>
+          <CurrencyProvider>
+            <CartProvider>
+              <Outlet />
+              <Toaster richColors position="top-center" />
+            </CartProvider>
+          </CurrencyProvider>
+        </LanguageProvider>
+      </SiteSettingsProvider>
     </QueryClientProvider>
   );
 }
