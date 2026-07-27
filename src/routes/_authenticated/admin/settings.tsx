@@ -48,13 +48,13 @@ function SettingsPage() {
   const save = useMutation({
     mutationFn: async () => {
       if (dirty.size === 0) return;
-      const rows = Array.from(dirty).map((key) => ({ key, value: form[key] }));
+      const rows = Array.from(dirty).map((key) => ({ key, value: form[key] as never }));
       const { error } = await supabase.from("site_settings").upsert(rows, { onConflict: "key" });
       if (error) throw error;
       await supabase.rpc("log_admin_action", {
         _action: "settings.updated",
         _entity_type: "settings",
-        _entity_id: null,
+        _entity_id: undefined as unknown as string,
         _metadata: { keys: Array.from(dirty) },
       });
     },
