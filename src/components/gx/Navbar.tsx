@@ -14,12 +14,67 @@ const waLogo = (
 );
 
 type Profile = {
+  id?: string | null;
   username?: string | null;
   full_name?: string | null;
   avatar_url?: string | null;
   level?: number | null;
   email?: string | null;
 };
+
+type StoredAuthUser = {
+  id?: string;
+  email?: string;
+  user_metadata?: Record<string, unknown>;
+};
+
+function parseProfile(raw: string | null): Profile | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Profile;
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function profileFromUser(user?: StoredAuthUser | null): Profile | null {
+  if (!user) return null;
+  const meta = user.user_metadata ?? {};
+  return {
+    id: user.id ?? null,
+    username: typeof meta.username === "string" ? meta.username : null,
+    full_name: typeof meta.full_name === "string" ? meta.full_name : null,
+    avatar_url: typeof meta.avatar_url === "string" ? meta.avatar_url : null,
+    email: user.email ?? null,
+  };
+}
+
+function readStoredAuthUser(): StoredAuthUser | null {
+  if (typeof window === "undefined") return null;
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key || !key.includes("auth-token")) continue;
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw) as { user?: StoredAuthUser; currentSession?: { user?: StoredAuthUser } };
+      const user = parsed.user ?? parsed.currentSession?.user;
+      if (user?.id) return user;
+    }
+  } catch { /* noop */ }
+  return null;
+}
+
+function readCachedProfile(userId?: string): Profile | null {
+  if (typeof window === "undefined") return null;
+  const userCache = userId ? parseProfile(localStorage.getItem(`gx:profile:${userId}`)) : null;
+  if (userCache) return userCache;
+  const genericCache = parseProfile(localStorage.getItem("gx_profile_cache"));
+  if (!genericCache) return null;
+  if (!userId || !genericCache.id || genericCache.id === userId) return genericCache;
+  return null;
+}
 
 export function Navbar() {
   const cart = useCart();
@@ -30,8 +85,8 @@ export function Navbar() {
   const [authOpen, setAuthOpen] = useState(false);
   const [session, setSession] = useState<{ userId: string; email?: string } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(() => {
-    if (typeof window === "undefined") return null;
-    try { const raw = localStorage.getItem("gx_profile_cache"); return raw ? JSON.parse(raw) as Profile : null; } catch { return null; }
+    const storedUser = readStoredAuthUser();
+    return readCachedProfile(storedUser?.id) ?? profileFromUser(storedUser);
   });
   const [accountOpen, setAccountOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
@@ -44,11 +99,18 @@ export function Navbar() {
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
       const u = data.session?.user;
-      if (u) setSession({ userId: u.id, email: u.email ?? undefined });
+      if (u) {
+        setProfile(readCachedProfile(u.id) ?? profileFromUser(u));
+        setSession({ userId: u.id, email: u.email ?? undefined });
+      } else {
+        setSession(null);
+        setProfile(null);
+      }
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
         const u = s?.user;
+        setProfile(u ? (readCachedProfile(u.id) ?? profileFromUser(u)) : null);
         setSession(u ? { userId: u.id, email: u.email ?? undefined } : null);
       }
     });
@@ -64,9 +126,12 @@ export function Navbar() {
     (async () => {
       try {
         const { data: prof } = await supabase.from("profiles").select("username, full_name, avatar_url, level, email").eq("id", session.userId).maybeSingle();
-        const next = prof ?? { email: session.email };
+        const next = prof ? { ...prof, id: session.userId } : { id: session.userId, email: session.email };
         setProfile(next);
-        try { localStorage.setItem("gx_profile_cache", JSON.stringify(next)); } catch { /* noop */ }
+        try {
+          localStorage.setItem(`gx:profile:${session.userId}`, JSON.stringify(next));
+          localStorage.setItem("gx_profile_cache", JSON.stringify(next));
+        } catch { /* noop */ }
       } catch { setProfile((p) => p ?? { email: session.email }); }
       try {
         const { data: adminData } = await supabase.rpc("has_role", { _user_id: session.userId, _role: "admin" });
@@ -75,6 +140,27 @@ export function Navbar() {
       } catch { /* keep cached */ }
     })();
   }, [session]);
+
+  useEffect(() => {
+    const applyProfile = (candidate: Profile | null) => {
+      if (!candidate) return;
+      setProfile((current) => ({ ...(current ?? {}), ...candidate }));
+    };
+    const onProfileUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<Profile>).detail;
+      applyProfile(detail ?? readCachedProfile(session?.userId));
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (!event.key || (!event.key.startsWith("gx:profile:") && event.key !== "gx_profile_cache" && event.key !== "gx:profile-updated")) return;
+      applyProfile(readCachedProfile(session?.userId));
+    };
+    window.addEventListener("gx:profile-updated", onProfileUpdated);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("gx:profile-updated", onProfileUpdated);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [session?.userId]);
 
   useEffect(() => {
     if (!menuOpen && !accountOpen) return;
@@ -97,8 +183,7 @@ export function Navbar() {
 
   const displayName = profile?.full_name || profile?.username || (profile?.email?.split("@")[0]) || t("nav.account");
   const username = profile?.username;
-  const avatarUrl = profile?.avatar_url ||
-    `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(username || profile?.email || "gx")}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6`;
+  const initials = (displayName || profile?.email || "GX").trim().slice(0, 2).toUpperCase();
   const level = Math.max(1, Number(profile?.level) || 1);
 
   async function signOut() {
