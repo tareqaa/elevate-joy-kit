@@ -3,12 +3,10 @@ import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { CartDrawer } from "./CartDrawer";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { useSiteSettings } from "@/lib/gx/site-settings";
 
 // Inject store stylesheets ONCE at module load (synchronously, before first render)
 // so navigating between store routes never flashes unstyled content.
-// Always inject a persistent copy tagged `data-gx-store` — TanStack Router
-// removes head()-managed <link>s when navigating to routes that omit them
-// (e.g. /account, /admin), so we can't rely on their presence at load time.
 function ensureStoreStyles() {
   if (typeof document === "undefined") return;
   for (const l of STORE_HEAD_LINKS) {
@@ -22,11 +20,32 @@ function ensureStoreStyles() {
 }
 ensureStoreStyles();
 
+function MaintenanceBanner() {
+  const s = useSiteSettings();
+  if (!s.maintenance_mode) return null;
+  return (
+    <div style={{
+      background: "linear-gradient(90deg,#3a1a05,#2a0f08)",
+      borderBottom: "1px solid rgba(255,180,60,.35)",
+      color: "#ffcf8a",
+      padding: "10px 16px",
+      textAlign: "center",
+      fontSize: 14,
+      fontWeight: 700,
+      position: "relative",
+      zIndex: 60,
+    }}>
+      <span style={{ marginInlineEnd: 8 }}>🛠️</span>
+      {s.maintenance_message}
+    </div>
+  );
+}
+
 export function StoreShell({ children }: { children: ReactNode }) {
-  // Re-assert styles on every render so returning from /account or /admin restores them.
   ensureStoreStyles();
   return (
     <>
+      <MaintenanceBanner />
       <Navbar />
       {children}
       <Footer />
@@ -34,5 +53,6 @@ export function StoreShell({ children }: { children: ReactNode }) {
     </>
   );
 }
+
 
 
