@@ -29,9 +29,15 @@ export function Navbar() {
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [session, setSession] = useState<{ userId: string; email?: string } | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    if (typeof window === "undefined") return null;
+    try { const raw = localStorage.getItem("gx_profile_cache"); return raw ? JSON.parse(raw) as Profile : null; } catch { return null; }
+  });
   const [accountOpen, setAccountOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("gx_is_admin") === "1";
+  });
 
   useEffect(() => {
     let active = true;
@@ -50,16 +56,23 @@ export function Navbar() {
   }, []);
 
   useEffect(() => {
-    if (!session) { setProfile(null); setIsAdmin(false); return; }
+    if (!session) {
+      setProfile(null); setIsAdmin(false);
+      try { localStorage.removeItem("gx_profile_cache"); localStorage.removeItem("gx_is_admin"); } catch { /* noop */ }
+      return;
+    }
     (async () => {
       try {
         const { data: prof } = await supabase.from("profiles").select("username, full_name, avatar_url, level, email").eq("id", session.userId).maybeSingle();
-        setProfile(prof ?? { email: session.email });
-      } catch { setProfile({ email: session.email }); }
+        const next = prof ?? { email: session.email };
+        setProfile(next);
+        try { localStorage.setItem("gx_profile_cache", JSON.stringify(next)); } catch { /* noop */ }
+      } catch { setProfile((p) => p ?? { email: session.email }); }
       try {
         const { data: adminData } = await supabase.rpc("has_role", { _user_id: session.userId, _role: "admin" });
         setIsAdmin(!!adminData);
-      } catch { setIsAdmin(false); }
+        try { localStorage.setItem("gx_is_admin", adminData ? "1" : "0"); } catch { /* noop */ }
+      } catch { /* keep cached */ }
     })();
   }, [session]);
 
