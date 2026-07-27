@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
