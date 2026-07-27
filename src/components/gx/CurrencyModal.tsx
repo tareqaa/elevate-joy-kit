@@ -22,8 +22,8 @@ export function CurrencyModal({ open, onClose }: { open: boolean; onClose: () =>
         <p className="cm-sub">{t("common.pick_language_desc")}</p>
         <div className="cm-select-wrap">
           <select value={langValue} onChange={(e) => setLangValue(e.target.value as Lang)}>
-            <option value="ar">🇸🇦 {t("common.arabic")}</option>
-            <option value="en">🇬🇧 {t("common.english")}</option>
+            <option value="ar">{t("common.arabic")} — AR</option>
+            <option value="en">{t("common.english")} — EN</option>
           </select>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M6 9l6 6 6-6" /></svg>
         </div>
@@ -31,7 +31,7 @@ export function CurrencyModal({ open, onClose }: { open: boolean; onClose: () =>
         <div className="cm-select-wrap">
           <select value={value} onChange={(e) => setValue(e.target.value)}>
             {Object.entries(CURRENCIES).map(([code, info]) => (
-              <option key={code} value={code}>{info.flag} {code} — {info.label}</option>
+              <option key={code} value={code}>{code} — {info.label}</option>
             ))}
           </select>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M6 9l6 6 6-6" /></svg>

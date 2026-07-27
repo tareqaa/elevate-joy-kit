@@ -65,27 +65,40 @@ function AccountPage() {
   const displayName = profileQ.data?.full_name || username;
   const locale = lang === "ar" ? "ar-EG" : "en-US";
 
-  const marginSideStart = dir === "rtl" ? "ms-1" : "me-1";
+  void dir;
 
   return (
     <div className="space-y-6" dir={dir}>
       {/* Hero */}
-      <Card className="overflow-hidden border-primary/20">
-        <div className={`h-24 ${dir === "rtl" ? "bg-gradient-to-l" : "bg-gradient-to-r"} from-primary/30 via-purple-500/20 to-cyan-500/20`} />
-        <CardContent className="pt-0 -mt-12 flex flex-col sm:flex-row sm:items-end gap-4">
-          <img
-            src={profileQ.data?.avatar_url || avatarUrl(user.email || "gx")}
-            alt="avatar"
-            className="w-24 h-24 rounded-2xl border-4 border-background shadow-xl bg-card object-cover"
-          />
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">{displayName}</h1>
-            <p className="text-sm text-primary font-semibold" dir="ltr">@{username}</p>
-            <p className="text-xs text-muted-foreground" dir="ltr">{user.email}</p>
+      <Card className="overflow-hidden border-primary/20 relative">
+        <div
+          className="h-28"
+          style={{
+            background:
+              "radial-gradient(circle at 20% 20%, rgba(0,229,255,0.35), transparent 60%), radial-gradient(circle at 80% 40%, rgba(124,58,237,0.35), transparent 55%), linear-gradient(135deg,#0b0e17,#12151f)",
+          }}
+        />
+        <CardContent className="pt-0 -mt-14 pb-5">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+            <div className="relative shrink-0">
+              <img
+                src={profileQ.data?.avatar_url || avatarUrl(user.email || "gx")}
+                alt="avatar"
+                className="w-24 h-24 rounded-2xl border-4 border-background shadow-xl bg-card object-cover"
+              />
+              <span className="absolute -bottom-1 -end-1 min-w-7 h-7 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-black leading-7 text-center border-4 border-background">
+                {Math.max(1, Number(profileQ.data?.level) || 1)}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold truncate">{displayName}</h1>
+              <p className="text-sm text-primary font-semibold truncate" dir="ltr">@{username}</p>
+              <p className="text-xs text-muted-foreground truncate" dir="ltr">{user.email}</p>
+            </div>
+            <Badge variant="outline" className="text-xs self-start sm:self-end whitespace-nowrap">
+              {t("acc.member_since")} {new Date(profileQ.data?.created_at || Date.now()).toLocaleDateString(locale, { year: "numeric", month: "long" })}
+            </Badge>
           </div>
-          <Badge variant="outline" className="text-xs">
-            {t("acc.member_since")} {new Date(profileQ.data?.created_at || Date.now()).toLocaleDateString(locale, { year: "numeric", month: "long" })}
-          </Badge>
         </CardContent>
       </Card>
 
@@ -94,10 +107,10 @@ function AccountPage() {
         value={tab}
         onValueChange={(v) => navigate({ search: { tab: v as "profile" | "orders" | "security" } })}
       >
-        <TabsList className="grid grid-cols-3 w-full max-w-lg">
-          <TabsTrigger value="profile"><UserIcon className={`w-4 h-4 ${marginSideStart}`} />{t("acc.tab_profile")}</TabsTrigger>
-          <TabsTrigger value="orders"><Package className={`w-4 h-4 ${marginSideStart}`} />{t("acc.tab_orders")}</TabsTrigger>
-          <TabsTrigger value="security"><ShieldCheck className={`w-4 h-4 ${marginSideStart}`} />{t("acc.tab_security")}</TabsTrigger>
+        <TabsList className="grid grid-cols-3 w-full max-w-lg h-11">
+          <TabsTrigger value="profile" className="gap-2"><UserIcon className="w-4 h-4" />{t("acc.tab_profile")}</TabsTrigger>
+          <TabsTrigger value="orders" className="gap-2"><Package className="w-4 h-4" />{t("acc.tab_orders")}</TabsTrigger>
+          <TabsTrigger value="security" className="gap-2"><ShieldCheck className="w-4 h-4" />{t("acc.tab_security")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-4">
@@ -428,7 +441,7 @@ function OrderCard({ order: o }: { order: OrderRow }) {
   const items = Array.isArray(o.items) ? (o.items as Array<{ name?: string; qty?: number; price?: number }>) : [];
   const delivery = o.delivery_data && typeof o.delivery_data === "object" ? o.delivery_data as Record<string, unknown> : {};
   const codes = Array.isArray((delivery as { codes?: unknown }).codes)
-    ? (delivery as { codes: Array<{ label?: string; value?: string }> }).codes : [];
+    ? (delivery as { codes: Array<{ label?: string; value?: string; email?: string; password?: string; kind?: string }> }).codes : [];
   const locale = lang === "ar" ? "ar-EG" : "en-US";
   const currencyLabel = lang === "ar" ? "د.أ" : "JOD";
 
@@ -455,13 +468,30 @@ function OrderCard({ order: o }: { order: OrderRow }) {
           <span>{Number(o.total_jod).toFixed(2)} {currencyLabel}</span>
         </div>
         {o.status === "delivered" && codes.length > 0 && (
-          <div className="mt-3 bg-muted/40 rounded-lg p-3 space-y-2 border">
+          <div className="mt-3 bg-muted/40 rounded-lg p-3 space-y-3 border">
             <div className="text-sm font-semibold">{t("acc.your_codes")}</div>
-            {codes.map((c, i) => <CodeBox key={i} label={c.label} value={c.value} />)}
+            {codes.map((c, i) => <DeliveryBlock key={i} data={c} />)}
           </div>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function DeliveryBlock({ data }: { data: { label?: string; value?: string; email?: string; password?: string; kind?: string } }) {
+  const isAccount = data.kind === "account" || (!!data.email && !data.value);
+  return (
+    <div className="rounded-md border bg-background/40 p-2.5 space-y-2">
+      {data.label && <div className="text-xs font-semibold text-primary">{data.label}</div>}
+      {isAccount ? (
+        <>
+          {data.email && <CodeBox label="acc.your_email_label" value={data.email} />}
+          {data.password && <CodeBox label="acc.your_password_label" value={data.password} />}
+        </>
+      ) : (
+        data.value && <CodeBox label="acc.your_code_label" value={data.value} />
+      )}
+    </div>
   );
 }
 
@@ -475,9 +505,10 @@ function CodeBox({ label, value }: { label?: string; value?: string }) {
     toast.success(t("acc.copied"));
     setTimeout(() => setCopied(false), 1500);
   }
+  const labelText = label && label.startsWith("acc.") ? t(label) : label;
   return (
     <div className="text-sm">
-      {label && <div className="text-muted-foreground text-xs mb-1">{label}</div>}
+      {labelText && <div className="text-muted-foreground text-xs mb-1">{labelText}</div>}
       <div className="flex items-center gap-2">
         <div className="flex-1 font-mono bg-background border rounded p-2 select-all break-all" dir="ltr">{value}</div>
         <Button size="icon" variant="outline" onClick={copy} className="shrink-0">
