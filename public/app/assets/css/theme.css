@@ -27,7 +27,7 @@
   --ease:cubic-bezier(.4,0,.2,1);
 }
 
-*{margin:0; padding:0; box-sizing:border-box;}
+*:where(:not(.gx-account-main):not(.gx-account-main *)){margin:0; padding:0; box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{
   background:var(--bg); color:var(--white);
@@ -509,6 +509,23 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   .nav-links-inline{display:none;}
   .section-head h2{font-size:24px;}
 }
+@media(max-width:760px){
+  .menu-panel{
+    position:fixed; top:76px;
+    width:calc(100vw - 24px); max-width:320px;
+    max-height:calc(100vh - 92px);
+    left:auto; right:auto;
+  }
+  html[dir="rtl"] .menu-panel{ right:12px; left:auto; }
+  html[dir="ltr"] .menu-panel{ left:12px; right:auto; }
+  .account-panel{
+    position:fixed; top:76px;
+    width:calc(100vw - 24px); max-width:280px;
+    left:auto; right:auto;
+  }
+  html[dir="rtl"] .account-panel{ right:12px; left:auto; }
+  html[dir="ltr"] .account-panel{ left:12px; right:auto; }
+}
 @media(max-width:560px){
   .wrap{padding:0 12px;}
   .section{padding:44px 0;}
@@ -661,6 +678,16 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
 
 @media (max-width: 520px){
   .account-panel{ inset-inline-end:0; min-width:230px; }
+}
+
+@media (max-width: 760px){
+  .account-panel{
+    position:fixed; top:76px;
+    width:calc(100vw - 24px); max-width:280px; min-width:0;
+    left:auto; right:auto; inset-inline-end:auto;
+  }
+  html[dir="rtl"] .account-panel{ right:12px; left:auto; }
+  html[dir="ltr"] .account-panel{ left:12px; right:auto; }
 }
 
 /* Avatar-style account button */
@@ -882,6 +909,33 @@ html[dir="ltr"] .currency-modal,
 html[dir="ltr"] .gx-notif-drawer { direction: ltr; text-align: left; }
 html[dir="ltr"] .badge-count { right: auto; left: -4px; }
 html[dir="ltr"] .carrow .arrow-ic { transform: scaleX(-1); }
+
+/* React account pages share the store navbar, while preserving Tailwind/shadcn spacing. */
+.gx-auth-page-shell{
+  --background:#090b10;
+  --foreground:#f5f6f8;
+  --card:#12151f;
+  --card-foreground:#f5f6f8;
+  --popover:#12151f;
+  --popover-foreground:#f5f6f8;
+  --primary:#00e5ff;
+  --primary-foreground:#05060a;
+  --secondary:#161a26;
+  --secondary-foreground:#f5f6f8;
+  --muted:#161a26;
+  --muted-foreground:#8b90a0;
+  --accent:#1b2030;
+  --accent-foreground:#f5f6f8;
+  --destructive:#ff2d78;
+  --destructive-foreground:#ffffff;
+  --border:rgba(255,255,255,0.08);
+  --input:rgba(255,255,255,0.1);
+  --ring:#00e5ff;
+  color-scheme:dark;
+  background:var(--background);
+  color:var(--foreground);
+}
+.gx-auth-page-shell .gx-account-main{ box-sizing:border-box; }
 
 @media(max-width:640px){
   html[dir="ltr"] .nav-right { margin-right: 0; margin-left: auto; }
