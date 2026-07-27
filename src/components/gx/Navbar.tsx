@@ -179,7 +179,7 @@ export function Navbar() {
     };
   }, [menuOpen, accountOpen]);
 
-  const closeTimerRef = useMemoRef();
+  const closeTimerRef = useRef<number | null>(null);
   const scheduleClose = () => {
     if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
     closeTimerRef.current = window.setTimeout(() => setAccountOpen(false), 260);
