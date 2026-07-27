@@ -31,7 +31,12 @@ export function CartDrawer() {
     setBusy(true);
     try {
       const submitted = await cart.submitOrder();
-      const orderNumber = submitted?.order_number || ("GX-" + Date.now().toString().slice(-6));
+      if (!submitted?.order_number) {
+        const { toast } = await import("sonner");
+        toast.error(t("cart.checkout_saving"));
+        return;
+      }
+      const orderNumber = submitted.order_number;
       const url = cart.buildWhatsAppUrl(orderNumber);
       cart.clear();
       cart.closeDrawer();
