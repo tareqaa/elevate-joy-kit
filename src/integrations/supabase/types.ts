@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          created_at: string
+          icon_url: string | null
+          id: string
+          is_active: boolean
+          name_ar: string
+          name_en: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          name_en: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          name_en?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -105,6 +141,162 @@ export type Database = {
           xp_awarded?: number
         }
         Relationships: []
+      }
+      product_country_prices: {
+        Row: {
+          country_code: string
+          created_at: string
+          currency: string
+          id: string
+          price_jod: number | null
+          price_local: number
+          updated_at: string
+          variant_id: string
+        }
+        Insert: {
+          country_code: string
+          created_at?: string
+          currency: string
+          id?: string
+          price_jod?: number | null
+          price_local: number
+          updated_at?: string
+          variant_id: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          price_jod?: number | null
+          price_local?: number
+          updated_at?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_country_prices_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variants: {
+        Row: {
+          created_at: string
+          face_currency: string | null
+          face_value: number | null
+          id: string
+          is_active: boolean
+          label_ar: string
+          label_en: string
+          price_jod: number
+          product_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          face_currency?: string | null
+          face_value?: number | null
+          id?: string
+          is_active?: boolean
+          label_ar: string
+          label_en: string
+          price_jod: number
+          product_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          face_currency?: string | null
+          face_value?: number | null
+          id?: string
+          is_active?: boolean
+          label_ar?: string
+          label_en?: string
+          price_jod?: number
+          product_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          badge: string | null
+          base_price_jod: number | null
+          category_id: string | null
+          created_at: string
+          description_ar: string | null
+          description_en: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          is_featured: boolean
+          name_ar: string
+          name_en: string
+          purchases_count: number
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          badge?: string | null
+          base_price_jod?: number | null
+          category_id?: string | null
+          created_at?: string
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_featured?: boolean
+          name_ar: string
+          name_en: string
+          purchases_count?: number
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          badge?: string | null
+          base_price_jod?: number | null
+          category_id?: string | null
+          created_at?: string
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_featured?: boolean
+          name_ar?: string
+          name_en?: string
+          purchases_count?: number
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
