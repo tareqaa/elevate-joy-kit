@@ -24,8 +24,8 @@ const NAV: NavItem[] = [
   { to: "/admin", label: "لوحة التحكم", Icon: LayoutDashboard, exact: true },
   { to: "/admin/orders", label: "الطلبات", Icon: Package },
   { to: "/admin/users", label: "المستخدمون", Icon: Users },
-  { to: "/admin/products", label: "المنتجات", Icon: ShoppingBag, soon: true },
-  { to: "/admin/categories", label: "الأقسام", Icon: FolderTree, soon: true },
+  { to: "/admin/products", label: "المنتجات", Icon: ShoppingBag },
+  { to: "/admin/categories", label: "الأقسام", Icon: FolderTree },
   { to: "/admin/activity", label: "سجل النشاطات", Icon: Activity, soon: true },
   { to: "/admin/settings", label: "الإعدادات", Icon: Settings, soon: true },
 ];
