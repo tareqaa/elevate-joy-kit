@@ -5,17 +5,15 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { createStoreOrder } from "./orders.server";
 
-const orderItemSchema = z.object({
-  cartId: z.string().min(1).max(120),
-  name: z.string().min(1).max(240),
-  qty: z.number().int().min(1).max(99),
-  price: z.number().min(0).max(10000),
-  usernames: z.array(z.string().trim().min(1).max(80)).nullable(),
-});
-
 export const submitStoreOrder = createServerFn({ method: "POST" })
   .validator((data) => z.object({
-    items: z.array(orderItemSchema).min(1).max(80),
+    items: z.array(z.object({
+      cartId: z.string().min(1).max(120),
+      name: z.string().min(1).max(240),
+      qty: z.number().int().min(1).max(99),
+      price: z.number().min(0).max(10000),
+      usernames: z.array(z.string().trim().min(1).max(80)).nullable(),
+    })).min(1).max(80),
     totalJOD: z.number().min(0).max(100000),
     currency: z.string().trim().min(1).max(12),
     notes: z.string().max(2000).optional(),
