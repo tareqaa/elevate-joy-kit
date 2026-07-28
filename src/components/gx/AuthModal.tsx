@@ -5,7 +5,7 @@ import { useLang } from "@/lib/gx/i18n";
 
 export function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useLang();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [username, setUsername] = useState("");
