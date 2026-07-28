@@ -210,6 +210,79 @@ export function Navbar() {
     if (closeTimerRef.current) { window.clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
   };
 
+  // ---- Search ----
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement | null>(null);
+
+  const searchIndex = useMemo<SearchEntry[]>(() => {
+    const out: SearchEntry[] = [];
+    for (const [slug, raw] of Object.entries(PRODUCTS_CATALOG)) {
+      const p = localizedProduct(raw, lang);
+      out.push({
+        key: `p:${slug}`,
+        title: p.name,
+        sub: p.category,
+        icon: p.icon,
+        iconImg: p.iconImg,
+        link: getProductLink(slug),
+        hay: normalizeQuery([p.name, raw.name, slug, p.category, p.tagline].join(" ")),
+      });
+    }
+    for (const [slug, raw] of Object.entries(GIFT_CARDS_CATALOG)) {
+      const g = localizedGiftCard(raw, lang);
+      out.push({
+        key: `g:${slug}`,
+        title: g.name,
+        sub: lang === "ar" ? "بطاقات الهدايا" : "Gift Cards",
+        icon: g.icon,
+        iconImg: g.iconImg,
+        link: getGiftCardLink(slug),
+        hay: normalizeQuery([g.name, raw.name, slug, "gift card بطاقة"].join(" ")),
+      });
+    }
+    for (const raw of CATEGORY_LINKS) {
+      const c = localizedCategoryLink(raw, lang);
+      out.push({
+        key: `c:${c.slug}`,
+        title: c.name,
+        sub: lang === "ar" ? "قسم" : "Category",
+        icon: c.icon,
+        link: getCategoryLink(c.slug),
+        hay: normalizeQuery([c.name, raw.name, c.slug, c.desc].join(" ")),
+      });
+    }
+    return out;
+  }, [lang]);
+
+  const results = useMemo(() => {
+    const q = normalizeQuery(query);
+    if (q.length < 1) return [];
+    const terms = q.split(" ").filter(Boolean);
+    return searchIndex.filter((e) => terms.every((tm) => e.hay.includes(tm))).slice(0, 8);
+  }, [query, searchIndex]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!searchRef.current?.contains(e.target as Node)) setSearchOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSearchOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [searchOpen]);
+
+  const goToResult = (link: string) => {
+    setSearchOpen(false);
+    setQuery("");
+    navigate({ to: link });
+  };
+
 
   const displayName = profile?.full_name || profile?.username || (profile?.email?.split("@")[0]) || t("nav.account");
   const username = profile?.username;
