@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { PRODUCTS_CATALOG } from "@/data/products";
 import { useCurrency } from "@/lib/gx/currency";
@@ -109,26 +108,6 @@ function FortnitePage() {
                 </div>
               );
             })}
-          </div>
-          <div className="delivery-box fade-in" style={{ marginTop: 24 }}>
-            <div className="dic">🪙</div>
-            <div style={{ flex: 1 }}>
-              <h3>{t("fn.custom_title")}</h3>
-              <p>{t("fn.custom_desc")}</p>
-              <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
-                <input
-                  type="number" min={1}
-                  value={customVb}
-                  onChange={(e) => setCustomVb(e.target.value)}
-                  className="uname-input"
-                  placeholder={t("fn.custom_placeholder")}
-                  style={{ flex: "1 1 200px", minWidth: 180 }}
-                />
-                <button type="button" className={"btn btn-primary" + (customFlash ? " added" : "")} onClick={submitCustom}>
-                  {customFlash ? t("fn.custom_added") : t("fn.custom_add")}
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </section>
