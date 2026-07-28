@@ -804,6 +804,11 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   font-weight:800; font-size:14px; font-family:inherit; transition:all .18s var(--ease);
 }
 .gx-auth-modal__submit:hover{ filter:brightness(1.08); transform:translateY(-1px); }
+.gx-auth-modal__link{
+  margin-top:10px; background:none; border:0; cursor:pointer; color:#8b90a0;
+  font-size:12.5px; font-family:inherit; font-weight:600; transition:color .18s var(--ease);
+}
+.gx-auth-modal__link:hover{ color:var(--cyan); }
 .gx-auth-modal__divider{ display:flex; align-items:center; gap:10px; margin:16px 0 10px; color:#8b90a0; font-size:12px; }
 .gx-auth-modal__divider::before, .gx-auth-modal__divider::after{ content:''; flex:1; height:1px; background:var(--border); }
 .gx-auth-modal__social{ display:flex; align-items:center; justify-content:center; gap:12px; }

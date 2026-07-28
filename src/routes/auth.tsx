@@ -19,7 +19,7 @@ function AuthPage() {
   const { t } = useLang();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -63,6 +63,17 @@ function AuthPage() {
     toast.success(t("auth.signup_ok"));
   }
 
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(siEmail.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) return toast.error(error.message);
+    toast.success(t("auth.reset_sent"));
+  }
+
   async function handleGoogle() {
     setLoading(true);
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
@@ -87,9 +98,9 @@ function AuthPage() {
             <button className={mode === "signup" ? "on" : ""} onClick={() => setMode("signup")} type="button">{t("auth.tab_signup")}</button>
           </div>
 
-          <h1 className="gx-auth-title">{mode === "signin" ? t("auth.welcome_back") : t("auth.create_account")}</h1>
+          <h1 className="gx-auth-title">{mode === "signin" ? t("auth.welcome_back") : mode === "signup" ? t("auth.create_account") : t("auth.reset_title")}</h1>
           <p className="gx-auth-sub">
-            {mode === "signin" ? t("auth.signin_desc") : t("auth.signup_desc")}
+            {mode === "signin" ? t("auth.signin_desc") : mode === "signup" ? t("auth.signup_desc") : t("auth.reset_btn")}
           </p>
 
           {mode === "signin" ? (
@@ -101,6 +112,16 @@ function AuthPage() {
               <button type="submit" className="gx-auth-btn primary" disabled={loading}>
                 {loading ? "..." : t("auth.signin_btn")}
               </button>
+              <button type="button" className="gx-auth-linkbtn" onClick={() => setMode("reset")}>{t("auth.forgot")}</button>
+            </form>
+          ) : mode === "reset" ? (
+            <form onSubmit={handleReset} className="gx-auth-form">
+              <label>{t("auth.email")}</label>
+              <input type="email" required dir="ltr" value={siEmail} onChange={(e) => setSiEmail(e.target.value)} placeholder="you@email.com" />
+              <button type="submit" className="gx-auth-btn primary" disabled={loading}>
+                {loading ? "..." : t("auth.reset_btn")}
+              </button>
+              <button type="button" className="gx-auth-linkbtn" onClick={() => setMode("signin")}>{t("auth.back_signin")}</button>
             </form>
           ) : (
             <form onSubmit={handleSignUp} className="gx-auth-form">
@@ -166,4 +187,6 @@ const cssBlock = `
 .gx-auth-divider::before,.gx-auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.08);}
 .gx-auth-back{display:block;text-align:center;margin-top:18px;color:#8b90a0;font-size:13px;text-decoration:none;transition:color .18s;}
 .gx-auth-back:hover{color:#00e5ff;}
+.gx-auth-linkbtn{background:none;border:0;cursor:pointer;color:#8b90a0;font-size:13px;font-weight:600;font-family:inherit;margin-top:12px;transition:color .18s;}
+.gx-auth-linkbtn:hover{color:#00e5ff;}
 `;

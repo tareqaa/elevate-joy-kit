@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SnapchatRouteImport } from './routes/snapchat'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as FortniteRouteImport } from './routes/fortnite'
@@ -38,6 +39,11 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 const SnapchatRoute = SnapchatRouteImport.update({
   id: '/snapchat',
   path: '/snapchat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PolicyRoute = PolicyRouteImport.update({
@@ -176,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/fortnite': typeof FortniteRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/snapchat': typeof SnapchatRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -202,6 +209,7 @@ export interface FileRoutesByTo {
   '/fortnite': typeof FortniteRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/snapchat': typeof SnapchatRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/fortnite': typeof FortniteRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/snapchat': typeof SnapchatRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -257,6 +266,7 @@ export interface FileRouteTypes {
     | '/fortnite'
     | '/mcp'
     | '/policy'
+    | '/reset-password'
     | '/snapchat'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -283,6 +293,7 @@ export interface FileRouteTypes {
     | '/fortnite'
     | '/mcp'
     | '/policy'
+    | '/reset-password'
     | '/snapchat'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -309,6 +320,7 @@ export interface FileRouteTypes {
     | '/fortnite'
     | '/mcp'
     | '/policy'
+    | '/reset-password'
     | '/snapchat'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -337,6 +349,7 @@ export interface RootRouteChildren {
   FortniteRoute: typeof FortniteRoute
   McpRoute: typeof McpRoute
   PolicyRoute: typeof PolicyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SnapchatRoute: typeof SnapchatRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -354,6 +367,13 @@ declare module '@tanstack/react-router' {
       path: '/snapchat'
       fullPath: '/snapchat'
       preLoaderRoute: typeof SnapchatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/policy': {
@@ -572,6 +592,7 @@ const rootRouteChildren: RootRouteChildren = {
   FortniteRoute: FortniteRoute,
   McpRoute: McpRoute,
   PolicyRoute: PolicyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SnapchatRoute: SnapchatRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
