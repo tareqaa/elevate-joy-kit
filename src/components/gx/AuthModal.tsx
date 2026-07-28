@@ -76,7 +76,7 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
           <button type="button" className={mode === "signin" ? "on" : ""} onClick={() => setMode("signin")}>{t("auth.tab_signin")}</button>
           <button type="button" className={mode === "signup" ? "on" : ""} onClick={() => setMode("signup")}>{t("auth.tab_signup")}</button>
         </div>
-        <h3 className="gx-auth-modal__title">{mode === "signin" ? t("auth.signin_btn") : t("auth.signup_btn")}</h3>
+        <h3 className="gx-auth-modal__title">{mode === "signin" ? t("auth.signin_btn") : mode === "signup" ? t("auth.signup_btn") : t("auth.reset_title")}</h3>
         <form className="gx-auth-modal__form" onSubmit={submit}>
           {mode === "signup" && (
             <>
@@ -86,9 +86,19 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
           )}
           <label>{t("auth.email2")}</label>
           <input type="email" dir="ltr" placeholder="your@email.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          <label>{t("auth.password")}</label>
-          <input type="password" dir="ltr" placeholder="••••••" minLength={6} required value={pass} onChange={(e) => setPass(e.target.value)} />
-          <button type="submit" className="gx-auth-modal__submit">{mode === "signin" ? t("auth.signin_btn") : t("auth.signup_btn")}</button>
+          {mode !== "reset" && (
+            <>
+              <label>{t("auth.password")}</label>
+              <input type="password" dir="ltr" placeholder="••••••" minLength={6} required value={pass} onChange={(e) => setPass(e.target.value)} />
+            </>
+          )}
+          <button type="submit" className="gx-auth-modal__submit">{mode === "signin" ? t("auth.signin_btn") : mode === "signup" ? t("auth.signup_btn") : t("auth.reset_btn")}</button>
+          {mode === "signin" && (
+            <button type="button" className="gx-auth-modal__link" onClick={() => { setMode("reset"); setMsg(null); }}>{t("auth.forgot")}</button>
+          )}
+          {mode === "reset" && (
+            <button type="button" className="gx-auth-modal__link" onClick={() => { setMode("signin"); setMsg(null); }}>{t("auth.back_signin")}</button>
+          )}
         </form>
         <div className="gx-auth-modal__divider"><span>{t("auth.or_social")}</span></div>
         <div className="gx-auth-modal__social">
