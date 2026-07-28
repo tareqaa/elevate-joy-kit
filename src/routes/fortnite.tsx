@@ -26,20 +26,8 @@ function FortnitePage() {
   const { lang, t } = useLang();
   const p = localizedProduct(PRODUCTS_CATALOG.fortnite, lang);
   const { format } = useCurrency();
-  const cart = useCart();
-  const [customVb, setCustomVb] = useState("");
-  const [customFlash, setCustomFlash] = useState(false);
 
-  function submitCustom() {
-    const amount = parseInt(customVb, 10);
-    if (!amount || amount <= 0) return;
-    const amountStr = amount.toLocaleString("en-US");
-    cart.addCustom({ name: `${t("fn.custom_name")} (${amountStr})`, icon: "🪙", bg: p.thumbBg, price: 0 });
-    cart.setNotes((cart.notes ? cart.notes + "\n" : "") + `${t("fn.custom_note_a")} ${amountStr} ${t("fn.custom_note_b")}`);
-    setCustomFlash(true);
-    setCustomVb("");
-    setTimeout(() => setCustomFlash(false), 1600);
-  }
+
 
   return (
     <StoreShell>
