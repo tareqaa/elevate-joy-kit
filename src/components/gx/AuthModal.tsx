@@ -22,6 +22,13 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
     e.preventDefault();
     setMsg({ text: "..." });
     try {
+      if (mode === "reset") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: window.location.origin + "/reset-password",
+        });
+        if (error) return setMsg({ text: error.message });
+        return setMsg({ text: t("auth.reset_sent"), ok: true });
+      }
       if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pass });
         if (error) return setMsg({ text: error.message });
