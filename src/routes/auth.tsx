@@ -98,9 +98,9 @@ function AuthPage() {
             <button className={mode === "signup" ? "on" : ""} onClick={() => setMode("signup")} type="button">{t("auth.tab_signup")}</button>
           </div>
 
-          <h1 className="gx-auth-title">{mode === "signin" ? t("auth.welcome_back") : t("auth.create_account")}</h1>
+          <h1 className="gx-auth-title">{mode === "signin" ? t("auth.welcome_back") : mode === "signup" ? t("auth.create_account") : t("auth.reset_title")}</h1>
           <p className="gx-auth-sub">
-            {mode === "signin" ? t("auth.signin_desc") : t("auth.signup_desc")}
+            {mode === "signin" ? t("auth.signin_desc") : mode === "signup" ? t("auth.signup_desc") : t("auth.reset_btn")}
           </p>
 
           {mode === "signin" ? (
@@ -112,6 +112,16 @@ function AuthPage() {
               <button type="submit" className="gx-auth-btn primary" disabled={loading}>
                 {loading ? "..." : t("auth.signin_btn")}
               </button>
+              <button type="button" className="gx-auth-linkbtn" onClick={() => setMode("reset")}>{t("auth.forgot")}</button>
+            </form>
+          ) : mode === "reset" ? (
+            <form onSubmit={handleReset} className="gx-auth-form">
+              <label>{t("auth.email")}</label>
+              <input type="email" required dir="ltr" value={siEmail} onChange={(e) => setSiEmail(e.target.value)} placeholder="you@email.com" />
+              <button type="submit" className="gx-auth-btn primary" disabled={loading}>
+                {loading ? "..." : t("auth.reset_btn")}
+              </button>
+              <button type="button" className="gx-auth-linkbtn" onClick={() => setMode("signin")}>{t("auth.back_signin")}</button>
             </form>
           ) : (
             <form onSubmit={handleSignUp} className="gx-auth-form">
