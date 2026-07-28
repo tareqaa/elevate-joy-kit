@@ -19,7 +19,7 @@ function AuthPage() {
   const { t } = useLang();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
