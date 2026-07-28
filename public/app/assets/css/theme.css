@@ -200,7 +200,8 @@ ul{list-style:none;}
   display:inline-flex; align-items:center; justify-content:center;
   transition:background .15s var(--ease);
 }
-.currency-lang-combo .cl-part:hover{background:rgba(0,229,255,0.08);}
+.currency-lang-combo:hover{background:rgba(0,229,255,0.08); border-color:rgba(0,229,255,0.4);}
+.currency-lang-combo .cl-part:hover{background:transparent;}
 .currency-lang-combo .cl-sep{
   color:var(--gray); opacity:.55; font-weight:700; align-self:center;
   pointer-events:none;
