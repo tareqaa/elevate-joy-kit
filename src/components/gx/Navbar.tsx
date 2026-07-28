@@ -1,13 +1,35 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
-import { CATEGORY_LINKS, getCategoryLink } from "@/data/products";
+import {
+  CATEGORY_LINKS,
+  getCategoryLink,
+  PRODUCTS_CATALOG,
+  GIFT_CARDS_CATALOG,
+  getProductLink,
+  getGiftCardLink,
+} from "@/data/products";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthModal } from "./AuthModal";
 import { CurrencyModal } from "./CurrencyModal";
 import { useLang } from "@/lib/gx/i18n";
-import { localizedCategoryLink } from "@/lib/gx/product-locale";
+import { localizedCategoryLink, localizedProduct, localizedGiftCard } from "@/lib/gx/product-locale";
+
+type SearchEntry = { key: string; title: string; sub: string; icon: string; iconImg?: string; link: string; hay: string };
+
+function normalizeQuery(v: string): string {
+  return v
+    .toLowerCase()
+    .replace(/[\u064B-\u0652\u0640]/g, "")
+    .replace(/[أإآٱ]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/ؤ/g, "و")
+    .replace(/ئ/g, "ي")
+    .replace(/ة/g, "ه")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 const waLogo = (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.07L2 22l5.06-1.33A9.94 9.94 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.6 0-3.1-.43-4.4-1.19l-.32-.19-3.02.79.8-2.94-.2-.32A7.94 7.94 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8zm4.4-5.85c-.24-.12-1.43-.7-1.65-.79-.22-.08-.38-.12-.54.12-.16.24-.62.79-.76.95-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.35-1.67-.14-.24-.02-.37.11-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.41h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.6 4.12 3.64.58.25 1.03.4 1.38.51.58.18 1.11.16 1.53.1.47-.07 1.43-.58 1.63-1.15.2-.57.2-1.05.14-1.15-.06-.1-.22-.16-.46-.28z"/></svg>
