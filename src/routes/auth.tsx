@@ -63,6 +63,17 @@ function AuthPage() {
     toast.success(t("auth.signup_ok"));
   }
 
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(siEmail.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) return toast.error(error.message);
+    toast.success(t("auth.reset_sent"));
+  }
+
   async function handleGoogle() {
     setLoading(true);
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
