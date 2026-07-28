@@ -20,13 +20,7 @@ type Ctx = {
 
 const LangContext = createContext<Ctx | null>(null);
 
-function detectFromBrowser(): Lang | null {
-  if (typeof navigator === "undefined") return null;
-  const langs = (navigator.languages || [navigator.language || ""]).map((l) => l.toLowerCase());
-  if (langs.some((l) => l.startsWith("ar"))) return "ar";
-  if (langs.some((l) => l.startsWith("en"))) return "en";
-  return null;
-}
+const GEO_KEY = "gx_lang_geo_cc";
 
 function readSaved(): Lang | null {
   if (typeof window === "undefined") return null;
@@ -37,38 +31,66 @@ function readSaved(): Lang | null {
   return null;
 }
 
+function langFromCountry(cc: string): Lang {
+  return ARAB_COUNTRIES.has(cc.toUpperCase()) ? "ar" : "en";
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   // Must match SSR on first render to avoid hydration mismatch.
   const [lang, setLangState] = useState<Lang>("ar");
 
-  // Apply saved language after hydration
+  // Saved choice wins; otherwise detect by visitor location (NOT device language)
   useEffect(() => {
     const saved = readSaved();
     if (saved) { setLangState(saved); return; }
     if (typeof window === "undefined") return;
 
-    const browserLang = detectFromBrowser();
-    if (browserLang) {
-      setLangState(browserLang);
-      try { localStorage.setItem(STORAGE_KEY, browserLang); } catch { /* noop */ }
-      return;
+    // Cached country from a previous visit
+    try {
+      const cc = localStorage.getItem(GEO_KEY);
+      if (cc) {
+        const detected = langFromCountry(cc);
+        setLangState(detected);
+        localStorage.setItem(STORAGE_KEY, detected);
+        return;
+      }
+    } catch { /* noop */ }
+
+    // Hide content briefly to avoid an AR -> EN flash on first visit
+    const html = document.documentElement;
+    html.setAttribute("data-lang-pending", "1");
+    if (!document.getElementById("gx-lang-gate")) {
+      const st = document.createElement("style");
+      st.id = "gx-lang-gate";
+      st.textContent = "html[data-lang-pending] body{visibility:hidden!important}";
+      document.head.appendChild(st);
     }
+
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 2500);
+    const timer = setTimeout(() => ctrl.abort(), 1500);
     (async () => {
       try {
         const res = await fetch("https://ipwho.is/", { signal: ctrl.signal });
         const data = await res.json();
-        if (data?.success && data.country_code) {
-          const detected: Lang = ARAB_COUNTRIES.has(String(data.country_code).toUpperCase()) ? "ar" : "en";
+        const cc = data?.success ? String(data.country_code || "") : "";
+        if (cc) {
+          const detected = langFromCountry(cc);
+          try {
+            localStorage.setItem(GEO_KEY, cc.toUpperCase());
+            localStorage.setItem(STORAGE_KEY, detected);
+          } catch { /* noop */ }
           setLangState(detected);
-          try { localStorage.setItem(STORAGE_KEY, detected); } catch { /* noop */ }
         }
-      } catch { /* silent */ }
-      finally { clearTimeout(timer); }
+      } catch { /* silent — keep Arabic default */ }
+      finally {
+        clearTimeout(timer);
+        html.removeAttribute("data-lang-pending");
+        document.getElementById("gx-lang-gate")?.remove();
+      }
     })();
     return () => { clearTimeout(timer); ctrl.abort(); };
   }, []);
+
 
   // Reflect on <html> and lift the pre-hydration gate
   useEffect(() => {
