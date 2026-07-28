@@ -81,7 +81,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "cart.notes_label": "ملاحظات إضافية (اختياري)",
     "cart.notes_placeholder": "أي طلب خاص أو تفاصيل إضافية...",
     "cart.notes_hint": "اليوزرات محفوظة تلقائياً مع كل حساب سناب — هون بس للملاحظات الإضافية.",
-    "cart.checkout_wa": "إتمام الطلب عبر واتساب",
+    "cart.checkout_wa": "إتمام الطلب",
     "cart.checkout_saving": "⏳ جاري الحفظ...",
     "cart.open_full": "أو افتح صفحة السلة الكاملة ‹",
     // Categories page
