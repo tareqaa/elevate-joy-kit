@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { PRODUCTS_CATALOG } from "@/data/products";
 import { useCurrency } from "@/lib/gx/currency";
-import { useCart } from "@/lib/gx/cart";
+
 import { BuyActions } from "@/components/gx/BuyActions";
 import { CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
 import { FeatureAccordion, SectionHead } from "@/components/gx/Primitives";
