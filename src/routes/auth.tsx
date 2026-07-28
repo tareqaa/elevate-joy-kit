@@ -187,4 +187,6 @@ const cssBlock = `
 .gx-auth-divider::before,.gx-auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.08);}
 .gx-auth-back{display:block;text-align:center;margin-top:18px;color:#8b90a0;font-size:13px;text-decoration:none;transition:color .18s;}
 .gx-auth-back:hover{color:#00e5ff;}
+.gx-auth-linkbtn{background:none;border:0;cursor:pointer;color:#8b90a0;font-size:13px;font-weight:600;font-family:inherit;margin-top:12px;transition:color .18s;}
+.gx-auth-linkbtn:hover{color:#00e5ff;}
 `;
