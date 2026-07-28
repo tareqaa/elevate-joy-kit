@@ -305,10 +305,39 @@ export function Navbar() {
             <div className="mark"><img src="/app/assets/img/gx-logo.png" alt="GX" /></div>
             <div className="brand-word">GX <span>STORE</span></div>
           </Link>
-          <div className="search-box">
+          <div className="search-box" ref={searchRef}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
-            <input type="text" placeholder={t("nav.search_placeholder")} />
+            <input
+              type="text"
+              value={query}
+              placeholder={t("nav.search_placeholder")}
+              onChange={(e) => { setQuery(e.target.value); setSearchOpen(true); }}
+              onFocus={() => setSearchOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && results[0]) goToResult(results[0].link);
+              }}
+            />
+            {searchOpen && query.trim().length > 0 && (
+              <div className="gx-search-results">
+                {results.length === 0 ? (
+                  <div className="gx-search-empty">{lang === "ar" ? "لا توجد نتائج" : "No results"}</div>
+                ) : (
+                  results.map((r) => (
+                    <button key={r.key} type="button" className="gx-search-item" onClick={() => goToResult(r.link)}>
+                      <span className="gx-search-ico">
+                        {r.iconImg ? <img src={r.iconImg} alt="" style={{ width: 22, height: 22, objectFit: "contain" }} /> : r.icon}
+                      </span>
+                      <span className="gx-search-txt">
+                        <b>{r.title}</b>
+                        <small>{r.sub}</small>
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
+
           <div className="nav-right">
             {session ? (
               <div className="account-wrap" onMouseEnter={cancelClose} onMouseLeave={scheduleClose}>
