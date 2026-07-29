@@ -261,6 +261,8 @@ function CartSummary() {
         )}
       </div>
 
+      <CoinsBlock />
+
       <div className="summary-line"><span>{t("cart.item_count")}</span><span>{cart.count}</span></div>
       <div className="summary-line"><span>المجموع الفرعي</span><span>{format(cart.subtotalJOD)}</span></div>
       {cart.coupon && (
@@ -269,10 +271,17 @@ function CartSummary() {
           <span>-{format(cart.coupon.discount_jod)}</span>
         </div>
       )}
+      {cart.coins && (
+        <div className="summary-line" style={{ color: "#ffc400" }}>
+          <span>GX Coins ({cart.coins.coins.toLocaleString("en-US")})</span>
+          <span>-{format(cart.coins.discount_jod)}</span>
+        </div>
+      )}
       <div className="summary-total">
         <span className="lbl">{t("cart.total")}</span>
         <span className="val">{format(cart.totalJOD)}</span>
       </div>
+
       <div className="notes-field">
         <label>{t("cart.notes_label")}</label>
         <textarea placeholder={t("cart.notes_placeholder")} value={cart.notes} onChange={(e) => cart.setNotes(e.target.value)} />
