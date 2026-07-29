@@ -270,14 +270,54 @@ function ProductsAdmin() {
           <Input placeholder="بحث بالاسم أو المعرّف أو رقم المنتج (SKU)" value={search} onChange={(e) => setSearch(e.target.value)} className="gx-adm-input ps-9" />
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="gx-adm-input w-60"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="gx-adm-input w-56"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">كل الأقسام</SelectItem>
             {(catsQ.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+          <SelectTrigger className="gx-adm-input w-44"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="order">حسب الترتيب</SelectItem>
+            <SelectItem value="name">حسب الاسم</SelectItem>
+            <SelectItem value="price">الأعلى سعراً</SelectItem>
+            <SelectItem value="sales">الأكثر مبيعاً</SelectItem>
+          </SelectContent>
+        </Select>
         <span className="text-sm text-cyan-100/60">{filtered.length} منتج</span>
       </div>
+
+      <div className="flex gap-2 flex-wrap items-center">
+        {([["all", "الكل"], ["active", "ظاهر"], ["hidden", "مخفي"], ["featured", "مميّز"]] as const).map(([k, label]) => (
+          <button key={k} className={`gx-chip ${statusFilter === k ? "on" : ""}`} onClick={() => setStatusFilter(k)}>{label}</button>
+        ))}
+        <button
+          className="gx-chip"
+          onClick={() => setSelected(selected.length === filtered.length ? [] : filtered.map((p) => p.id))}
+        >
+          {selected.length === filtered.length && filtered.length > 0 ? "إلغاء تحديد الكل" : "تحديد الكل"}
+        </button>
+      </div>
+
+      {selected.length > 0 && (
+        <div className="gx-bulk">
+          <b className="text-cyan-100 text-sm">{selected.length} محدّد</b>
+          <button className="gx-btn outline" onClick={() => bulkMut.mutate({ ids: selected, patch: { is_active: true } })}><Eye size={12} /> إظهار</button>
+          <button className="gx-btn outline" onClick={() => bulkMut.mutate({ ids: selected, patch: { is_active: false } })}><EyeOff size={12} /> إخفاء</button>
+          <button className="gx-btn outline" onClick={() => bulkMut.mutate({ ids: selected, patch: { is_featured: true } })}><Star size={12} /> تمييز</button>
+          <button className="gx-btn outline" onClick={() => bulkMut.mutate({ ids: selected, patch: { is_featured: false } })}>إلغاء التمييز</button>
+          <Select value="" onValueChange={(v) => bulkMut.mutate({ ids: selected, patch: { category_id: v } })}>
+            <SelectTrigger className="gx-adm-input w-48 h-9"><SelectValue placeholder="نقل إلى قسم..." /></SelectTrigger>
+            <SelectContent>
+              {(catsQ.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <button className="gx-btn danger" onClick={() => { if (confirm(`حذف ${selected.length} منتج؟`)) bulkDeleteMut.mutate(selected); }}><Trash2 size={12} /> حذف</button>
+          <button className="gx-btn outline" onClick={() => setSelected([])}>إلغاء التحديد</button>
+        </div>
+      )}
+
 
       {prodsQ.isLoading ? (
         <div className="text-center py-20 text-cyan-100/60">جاري التحميل...</div>
