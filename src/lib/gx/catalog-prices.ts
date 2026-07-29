@@ -86,6 +86,8 @@ export function applyCatalogPrices(map: CatalogPrices | null | undefined) {
     if (typeof old === "number" && old > 0) t.obj.oldPrice = old;
     else delete t.obj.oldPrice;
   }
+  // Let live surfaces (cart totals) recompute against the new prices.
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("gx:prices-updated"));
 }
 
 export function readCachedCatalogPrices(): CatalogPrices {
