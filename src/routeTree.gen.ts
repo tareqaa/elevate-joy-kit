@@ -35,6 +35,7 @@ import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminReviewsRouteImport } from './routes/_authenticated/admin/reviews'
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
+import { Route as AuthenticatedAdminLoyaltyRouteImport } from './routes/_authenticated/admin/loyalty'
 import { Route as AuthenticatedAdminHomeRouteImport } from './routes/_authenticated/admin/home'
 import { Route as AuthenticatedAdminCouponsRouteImport } from './routes/_authenticated/admin/coupons'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
@@ -176,6 +177,12 @@ const AuthenticatedAdminOrdersRoute =
     path: '/orders',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminLoyaltyRoute =
+  AuthenticatedAdminLoyaltyRouteImport.update({
+    id: '/loyalty',
+    path: '/loyalty',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminHomeRoute = AuthenticatedAdminHomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -231,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/home': typeof AuthenticatedAdminHomeRoute
+  '/admin/loyalty': typeof AuthenticatedAdminLoyaltyRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/reviews': typeof AuthenticatedAdminReviewsRoute
@@ -262,6 +270,7 @@ export interface FileRoutesByTo {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/home': typeof AuthenticatedAdminHomeRoute
+  '/admin/loyalty': typeof AuthenticatedAdminLoyaltyRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/reviews': typeof AuthenticatedAdminReviewsRoute
@@ -296,6 +305,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/_authenticated/admin/home': typeof AuthenticatedAdminHomeRoute
+  '/_authenticated/admin/loyalty': typeof AuthenticatedAdminLoyaltyRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
   '/_authenticated/admin/reviews': typeof AuthenticatedAdminReviewsRoute
@@ -330,6 +340,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/home'
+    | '/admin/loyalty'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/reviews'
@@ -361,6 +372,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/home'
+    | '/admin/loyalty'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/reviews'
@@ -394,6 +406,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/coupons'
     | '/_authenticated/admin/home'
+    | '/_authenticated/admin/loyalty'
     | '/_authenticated/admin/orders'
     | '/_authenticated/admin/products'
     | '/_authenticated/admin/reviews'
@@ -608,6 +621,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminOrdersRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/loyalty': {
+      id: '/_authenticated/admin/loyalty'
+      path: '/loyalty'
+      fullPath: '/admin/loyalty'
+      preLoaderRoute: typeof AuthenticatedAdminLoyaltyRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/home': {
       id: '/_authenticated/admin/home'
       path: '/home'
@@ -651,6 +671,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminCouponsRoute: typeof AuthenticatedAdminCouponsRoute
   AuthenticatedAdminHomeRoute: typeof AuthenticatedAdminHomeRoute
+  AuthenticatedAdminLoyaltyRoute: typeof AuthenticatedAdminLoyaltyRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
   AuthenticatedAdminReviewsRoute: typeof AuthenticatedAdminReviewsRoute
@@ -664,6 +685,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminCouponsRoute: AuthenticatedAdminCouponsRoute,
   AuthenticatedAdminHomeRoute: AuthenticatedAdminHomeRoute,
+  AuthenticatedAdminLoyaltyRoute: AuthenticatedAdminLoyaltyRoute,
   AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
   AuthenticatedAdminProductsRoute: AuthenticatedAdminProductsRoute,
   AuthenticatedAdminReviewsRoute: AuthenticatedAdminReviewsRoute,
