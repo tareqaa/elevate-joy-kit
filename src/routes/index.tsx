@@ -3,6 +3,7 @@ import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { SECTION_REGISTRY } from "@/lib/gx/sections/registry";
+import { containerMaxWidth, sectionWrapperStyle, themeToCssVars } from "@/lib/gx/sections/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -20,14 +21,25 @@ export const Route = createFileRoute("/")({
 function Home() {
   const { home_layout } = useSiteSettings();
   const sections = home_layout.sections.filter((s) => s.enabled);
+  const themeVars = themeToCssVars(home_layout.theme);
   return (
     <StoreShell>
-      {sections.map((s) => {
-        const def = SECTION_REGISTRY[s.type];
-        if (!def) return null;
-        const { Renderer } = def;
-        return <Renderer key={s.id} data={s.data} />;
-      })}
+      <div className="gx-home-root" style={themeVars}>
+        {sections.map((s) => {
+          const def = SECTION_REGISTRY[s.type];
+          if (!def) return null;
+          const { Renderer } = def;
+          const wrapStyle = sectionWrapperStyle(s.style);
+          const maxW = containerMaxWidth(s.style?.container);
+          return (
+            <section key={s.id} style={wrapStyle} data-section={s.type}>
+              <div style={{ maxWidth: maxW, margin: "0 auto", width: "100%" }}>
+                <Renderer data={s.data} />
+              </div>
+            </section>
+          );
+        })}
+      </div>
     </StoreShell>
   );
 }
