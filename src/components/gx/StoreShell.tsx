@@ -53,7 +53,9 @@ export function StoreShell({ children }: { children: ReactNode }) {
       <Footer />
       <CartDrawer />
       <AdminFab />
+      <InlineTextEditor />
     </>
+
   );
 }
 
