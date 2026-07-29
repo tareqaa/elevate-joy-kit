@@ -1,66 +1,41 @@
-# خطة التنفيذ
+# تحسينات المتجر والبانل
 
-## 1. نظام الكوبونات (Coupons)
+## 1) إصلاح شعار الواتساب في الفوتر
+- الأيقونة في `Footer.tsx`/`layout.js` مقصوصة (viewBox/حجم). إعادة رسمها بـSVG كامل مضبوط.
 
-### قاعدة البيانات
-جدول `coupons`:
-- `code` (unique, uppercase)
-- `discount_type`: `percent` أو `fixed`
-- `discount_value` (نسبة 1-100 أو مبلغ JOD)
-- `max_discount_jod` (سقف اختياري للنسبة)
-- `min_order_jod` (حد أدنى للطلب)
-- `expires_at` (تاريخ انتهاء اختياري)
-- `usage_limit` (عدد استخدامات إجمالي، اختياري)
-- `usage_count` (تلقائي)
-- `per_user_limit` (كم مرة يستخدمه نفس المستخدم، مثلاً 1 = مرة واحدة فقط)
-- `applies_to`: `all` أو `products` أو `categories`
-- `product_ids` (uuid[])
-- `category_ids` (uuid[])
-- `is_active`
+## 2) محرر الصفحة الرئيسية من الأدمن
+جدول جديد `home_content` في `site_settings` (استخدام مفاتيح موجودة) يخزن:
+- `home_hero`: badge, title, title_highlight, subtitle, cta_primary_{text,link}, cta_secondary_{text,link}, image_url (اختياري)
+- `home_banners`: مصفوفة (max 4) — {id, image_url, title, link, active, sort}
+- `home_categories_meta`: لكل قسم رئيسي {slug, name_override, description_override, sort_order, visible}
+- `home_subcategories_meta`: نفس الشيء للفرعية
 
-جدول `coupon_redemptions`: (coupon_id, user_id, order_id, discount_jod) لتتبع الاستخدام ومنع التكرار.
+صفحة أدمن جديدة `/admin/home` فيها 4 تبويبات:
+1. **Hero** — حقول نص + رفع صورة (Supabase storage bucket موجود)
+2. **Banners/Carousel** — سحب وإفلات ترتيب + رفع صور + رابط + toggle
+3. **Categories** — قائمة الأقسام الرئيسية، تعديل الاسم/الوصف/الترتيب
+4. **Subcategories** — نفس الشيء داخل كل قسم
 
-دالة `validate_and_apply_coupon(code, cart_items, user_id, total)` → ترجع الخصم أو خطأ.
+## 3) الصفحة الرئيسية (React)
+- إنشاء `src/routes/index.tsx` React كامل بدل الـstatic HTML (إذا لسا بيستخدم static)، أو تحديث المكوّن الحالي لقراءة من DB.
+- إضافة كاروسيل بانرات (Embla carousel — موجود بالمشروع) مع autoplay.
+- Hero يقرأ من `site_settings.home_hero`.
+- قسم الأقسام يقرأ overrides من `home_categories_meta`.
+- الأقسام الفرعية داخل صفحات الأقسام تقرأ overrides.
 
-### بانل الأدمن
-صفحة `/admin/coupons`: جدول + نموذج إنشاء/تعديل بكل الخيارات أعلاه، وقائمة اختيار منتجات/أقسام.
+## 4) الأكثر مبيعاً — تلقائي + تثبيت يدوي
+- إضافة عمود `is_pinned_bestseller boolean` و`pinned_sort int` على `products`.
+- إنشاء view/query يرتب: المثبتة أولاً حسب `pinned_sort`, ثم البقية حسب `COUNT(orders)` النازل (احتساب من `orders.items` jsonb → إما trigger يحدّث `purchases_count` عند تحويل الطلب لـpaid/delivered، أو استعلام مباشر).
+- استخدام العمود الموجود `products.purchases_count` وربطه بـtrigger على `orders` عند تغيير الحالة لـdelivered.
+- في `/admin/products` إضافة زر "تثبيت كأكثر مبيعاً" لكل منتج.
+- الصفحة الرئيسية تعرض أول 8 من هذا الترتيب.
 
-### السلة
-حقل "أدخل كود الكوبون" مع زر "تطبيق". عند النجاح يظهر سطر الخصم قبل الإجمالي، ويُخزن في بيانات الطلب.
+## Technical
+- Migration: أعمدة `is_pinned_bestseller`, `pinned_sort` + trigger `increment_purchases_on_delivered()` + مفاتيح `site_settings`.
+- Storage bucket `home-assets` (إذا مش موجود) للـhero/banners.
+- Server fn `getHomeContent()` (public, publishable client) يجمع كل شي بطلب واحد.
+- Server fn `updateHomeContent()` (admin only) للحفظ.
+- Embla موجود — استخدام `<Carousel>` من `@/components/ui/carousel`.
 
-## 2. حقول التواصل الإلزامية عند الشراء
-
-في السلة قبل "إتمام الطلب":
-- **الاسم** (موجود)
-- **رمز الدولة + رقم الواتساب/تيليجرام** — قائمة رموز دول (+962، +966، +971…) + input للرقم
-- **نوع التواصل**: WhatsApp / Telegram (radio)
-
-الحقول إلزامية. تُخزن في `orders.customer_whatsapp` (كامل مع رمز الدولة) و `orders.delivery_data.contact_type`.
-
-## 3. تحسين عرض الطلبات في الأدمن
-
-في `/admin/orders`:
-- **حجم الكرت**: طلبات > 3 منتجات أو > 50 JOD تظهر بكرت أكبر مميز (badge "طلب كبير").
-- **معلومات الرأس**: رقم الطلب + العملة + عدد المنتجات + المبلغ + بادج نوع التواصل (📱 واتساب / ✈️ تيليجرام).
-- **موقع العميل**: عرض الدولة (من عملة الطلب أو IP إن توفر).
-- **قائمة منتجات مرتبة**: جدول واضح بأيقونة، اسم، كمية، سعر، مجموع الصف.
-- زر نسخ رقم التواصل مباشرة.
-
-## تفاصيل تقنية
-
-- Migration واحدة تنشئ الجدولين + RLS + GRANTs + دوال التحقق.
-- ملفات جديدة:
-  - `src/routes/_authenticated/admin/coupons.tsx`
-  - `src/lib/gx/coupons.functions.ts` (تحقق وتطبيق)
-  - `src/components/gx/CouponField.tsx` (في السلة)
-  - `src/components/gx/CheckoutContactFields.tsx`
-- تعديلات:
-  - `src/routes/cart.tsx` — إضافة الحقول والكوبون
-  - `src/lib/gx/cart.tsx` — تمرير الكوبون والاتصال للـ server fn
-  - `src/lib/gx/orders.functions.ts` + `orders.server.ts` — validation + خصم + تسجيل استخدام
-  - `src/routes/_authenticated/admin/orders.tsx` — تخطيط جديد
-  - `src/routes/_authenticated/admin.tsx` — إضافة رابط Coupons في السايدبار
-
-الأسماء والنصوص موحدة بالعربي في كل المتجر والبانل.
-
-هل أبدأ التنفيذ؟
+## نطاق واحد لهاي الجولة
+كل النقاط أعلاه دفعة وحدة. صفحات الأقسام الداخلية (Design/Games/etc) بتقرأ overrides تلقائياً بعد المايجريشن.
