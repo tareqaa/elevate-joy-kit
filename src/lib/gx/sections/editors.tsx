@@ -39,13 +39,6 @@ function TextField({ label, value, onChange, placeholder }: { label: string; val
 
 /* ---------------- HERO ---------------- */
 export function HeroEditor({ data, onChange }: { data: HeroData; onChange: (d: HeroData) => void }) {
-  const [uploading, setUploading] = useState(false);
-  async function up(file: File) {
-    setUploading(true);
-    const url = await uploadTo("hero", file);
-    if (url) { onChange({ ...data, image_url: url }); toast.success("تم رفع الصورة"); }
-    setUploading(false);
-  }
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2">
@@ -67,23 +60,15 @@ export function HeroEditor({ data, onChange }: { data: HeroData; onChange: (d: H
       </div>
       <div>
         <Label className="text-slate-100 text-xs">صورة الهيرو</Label>
-        <div className="mt-2 flex items-center gap-2 flex-wrap">
-          {data.image_url && (
-            <div className="relative">
-              <img src={data.image_url} alt="" className="h-20 rounded-lg border border-slate-800" />
-              <button onClick={() => onChange({ ...data, image_url: null })}
-                className="absolute -top-2 -end-2 w-6 h-6 rounded-full bg-red-500 text-white grid place-items-center"><Trash2 size={12} /></button>
-            </div>
-          )}
-          <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700 bg-slate-950/60 text-slate-200 hover:bg-slate-800 text-xs">
-            <Upload size={13} /> {uploading ? "جاري الرفع..." : "رفع"}
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) up(f); }} />
-          </label>
+        <div className="mt-2">
+          <MediaPicker folder="hero" value={data.image_url}
+            onPick={(url) => onChange({ ...data, image_url: url })} label="من المكتبة" />
         </div>
       </div>
     </div>
   );
 }
+
 
 /* ---------------- ANNOUNCEMENT ---------------- */
 export function AnnouncementEditor({ data, onChange }: { data: AnnouncementData; onChange: (d: AnnouncementData) => void }) {
@@ -114,13 +99,6 @@ export function AnnouncementEditor({ data, onChange }: { data: AnnouncementData;
 /* ---------------- CAROUSEL ---------------- */
 export function CarouselEditor({ data, onChange }: { data: CarouselData; onChange: (d: CarouselData) => void }) {
   const items = data.items || [];
-  const [busy, setBusy] = useState<string | null>(null);
-  async function up(id: string, file: File) {
-    setBusy(id);
-    const url = await uploadTo("banners", file);
-    if (url) onChange({ ...data, items: items.map((b) => b.id === id ? { ...b, image_url: url } : b) });
-    setBusy(null);
-  }
   function add() { onChange({ ...data, items: [...items, { id: crypto.randomUUID(), image_url: "", title: "", subtitle: "", link: "" }] }); }
   function remove(id: string) { onChange({ ...data, items: items.filter((b) => b.id !== id) }); }
   function update(id: string, patch: Partial<CarouselSlide>) { onChange({ ...data, items: items.map((b) => b.id === id ? { ...b, ...patch } : b) }); }
@@ -158,10 +136,8 @@ export function CarouselEditor({ data, onChange }: { data: CarouselData; onChang
                   className="bg-slate-900/60 border-slate-800 text-slate-100 h-8 text-xs" />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 rounded border border-slate-700 bg-slate-900/60 text-slate-200 hover:bg-slate-800 text-[10px]">
-                  <Upload size={10} /> {busy === b.id ? "..." : "رفع"}
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) up(b.id, f); }} />
-                </label>
+                <MediaPicker compact folder="banners" value={b.image_url}
+                  onPick={(url) => update(b.id, { image_url: url || "" })} />
                 <div className="flex gap-1">
                   <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => move(b.id, -1)} disabled={i === 0}><ArrowUp size={10} /></Button>
                   <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => move(b.id, 1)} disabled={i === items.length - 1}><ArrowDown size={10} /></Button>
@@ -178,6 +154,7 @@ export function CarouselEditor({ data, onChange }: { data: CarouselData; onChang
     </div>
   );
 }
+
 
 /* ---------------- CATEGORIES ---------------- */
 export function CategoriesEditor({ data, onChange }: { data: CategoriesData; onChange: (d: CategoriesData) => void }) {
