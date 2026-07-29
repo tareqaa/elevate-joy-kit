@@ -10,9 +10,11 @@ import { ProductIcon, CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
 import { BuyActions } from "@/components/gx/BuyActions";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-locale";
+import { supabase } from "@/integrations/supabase/client";
+import { initialOf, avatarColorFor } from "@/lib/gx/reviews";
 import type {
   HeroData, AnnouncementData, CarouselData, CategoriesData,
-  BestsellersData, ProductsData, TrustData, ReviewsData, FaqData, NewsletterData,
+  BestsellersData, ProductsData, TrustData, ReviewsData, ReviewItem, FaqData, NewsletterData,
 } from "./types";
 import { activeCarouselSlides } from "./types";
 import { RichHtml } from "./rich-text";
