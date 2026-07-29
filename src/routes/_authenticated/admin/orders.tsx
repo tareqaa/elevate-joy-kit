@@ -686,6 +686,11 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="ملاحظة اختيارية تظهر للعميل عند التسليم..." className="gx-adm-input" />
           </div>
 
+          {/* Refund */}
+          <RefundBlock order={order} />
+
+
+
           {/* Actions */}
           <div className="gx-od-actions flex justify-between items-center gap-2 flex-wrap border-t border-white/10 pt-4">
             <div className="flex gap-2 flex-wrap">
