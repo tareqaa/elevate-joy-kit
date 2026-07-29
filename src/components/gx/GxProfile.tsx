@@ -212,7 +212,22 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                   )}
                 </div>
 
-
+                {isOwner && editOpen && (
+                  <IdentityEditor
+                    isAr={isAr}
+                    userId={myId!}
+                    currentName={p.full_name || ""}
+                    currentUsername={p.username}
+                    onSaved={(newTag) => {
+                      setEditOpen(false);
+                      qc.invalidateQueries({ queryKey: ["gx-profile"] });
+                      qc.invalidateQueries({ queryKey: ["my-gametag", myId] });
+                      qc.invalidateQueries({ queryKey: ["my-profile", myId] });
+                      window.dispatchEvent(new CustomEvent("gx:profile-updated"));
+                      if (newTag && !usernameProp) { /* stays on same page */ }
+                    }}
+                  />
+                )}
 
 
                 {isOwner && (
