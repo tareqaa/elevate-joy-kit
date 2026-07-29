@@ -84,27 +84,24 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
     if (!userId) return;
     if (!orderId) { toast.error("اختر الطلب الذي تريد تقييمه"); return; }
     setSaving(true);
-    const chosen = items.find((i) => i.slug === productSlug) || items[0];
     const { error } = await supabase.from("reviews").insert({
       user_id: userId,
       order_id: orderId,
       order_number: currentOrder?.order_number ?? null,
-      product_slug: chosen?.slug || null,
-      product_name: chosen?.name || null,
       display_name: displayName.trim() || "عميل GX",
       rating,
       comment: comment.trim(),
     });
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success(
-      isAutoEligible(rating, comment)
-        ? "شكراً! مراجعتك وصلت وستظهر بعد اعتماد الإدارة."
-        : "شكراً على ملاحظتك! وصلت للإدارة وسنتواصل معك."
-    );
+    if (error) {
+      toast.error(error.message.includes("duplicate") ? "قيّمت هذا الطلب مسبقاً" : error.message);
+      return;
+    }
+    toast.success("شكراً على تقييمك! ❤️ وصلت مراجعتك وسيتم مراجعتها قبل النشر.");
     setComment(""); setRating(5);
     onClose();
   }
+
 
   return (
     <div className="gx-rv-ov" dir="rtl" onClick={onClose}>
