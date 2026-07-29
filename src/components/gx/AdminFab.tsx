@@ -82,7 +82,9 @@ export function AdminFab() {
 }
 
 const fabCss = `
-.gx-edit-home-btn{position:fixed;bottom:22px;inset-inline-start:22px;z-index:70;display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:99px;background:linear-gradient(135deg,#00d4ff,#7dfffe);color:#031018;font-weight:900;font-size:13.5px;text-decoration:none;box-shadow:0 10px 30px rgba(0,212,255,.45),inset 0 0 0 1px rgba(255,255,255,.25);transition:transform .18s ease, box-shadow .18s ease;}
+.gx-edit-pills{position:fixed;bottom:22px;inset-inline-start:22px;z-index:70;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.gx-edit-home-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border:0;cursor:pointer;font-family:inherit;border-radius:99px;background:linear-gradient(135deg,#00d4ff,#7dfffe);color:#031018;font-weight:900;font-size:13.5px;text-decoration:none;box-shadow:0 10px 30px rgba(0,212,255,.45),inset 0 0 0 1px rgba(255,255,255,.25);transition:transform .18s ease, box-shadow .18s ease;}
+.gx-edit-home-btn.ghost{background:rgba(10,14,24,.94);color:#7dfffe;box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 0 1px rgba(0,212,255,.35);}
 .gx-edit-home-btn:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(0,212,255,.55);}
 
 .gx-fab-wrap{position:fixed;bottom:22px;inset-inline-end:22px;z-index:70;display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
