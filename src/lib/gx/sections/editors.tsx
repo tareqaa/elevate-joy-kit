@@ -124,7 +124,7 @@ export function CarouselEditor({ data, onChange }: { data: CarouselData; onChang
       </div>
       <div className="space-y-2">
         {items.map((b, i) => (
-          <div key={b.id} className="rounded-lg border border-slate-800 bg-slate-950/40 p-2">
+          <div key={b.id} className="rounded-lg border border-slate-800 bg-slate-950/40 p-2 space-y-2">
             <div className="flex items-start gap-2">
               <div className="w-20 h-12 rounded-md overflow-hidden bg-slate-900 grid place-items-center border border-slate-800 shrink-0">
                 {b.image_url ? <img src={b.image_url} alt="" className="w-full h-full object-cover" /> : <ImageIcon size={16} className="text-slate-600" />}
@@ -143,6 +143,34 @@ export function CarouselEditor({ data, onChange }: { data: CarouselData; onChang
                   <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => move(b.id, 1)} disabled={i === items.length - 1}><ArrowDown size={10} /></Button>
                   <Button size="sm" variant="destructive" className="h-6 w-6 p-0" onClick={() => remove(b.id)}><Trash2 size={10} /></Button>
                 </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/60">
+              <div>
+                <Label className="text-[10px] text-slate-400">صورة التابلت (اختياري)</Label>
+                <MediaPicker compact folder="banners" value={b.image_url_tablet ?? ""}
+                  onPick={(url) => update(b.id, { image_url_tablet: url || null })} />
+              </div>
+              <div>
+                <Label className="text-[10px] text-slate-400">صورة الجوال (اختياري)</Label>
+                <MediaPicker compact folder="banners" value={b.image_url_mobile ?? ""}
+                  onPick={(url) => update(b.id, { image_url_mobile: url || null })} />
+              </div>
+              <div>
+                <Label className="text-[10px] text-slate-400">يبدأ (اختياري)</Label>
+                <Input type="datetime-local" value={b.starts_at ? b.starts_at.slice(0, 16) : ""}
+                  onChange={(e) => update(b.id, { starts_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                  className="bg-slate-900/60 border-slate-800 text-slate-100 h-8 text-xs" />
+              </div>
+              <div>
+                <Label className="text-[10px] text-slate-400">ينتهي (اختياري)</Label>
+                <Input type="datetime-local" value={b.ends_at ? b.ends_at.slice(0, 16) : ""}
+                  onChange={(e) => update(b.id, { ends_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                  className="bg-slate-900/60 border-slate-800 text-slate-100 h-8 text-xs" />
+              </div>
+              <div className="col-span-2 flex items-center justify-between rounded-md bg-slate-950/40 border border-slate-800 px-2 py-1">
+                <Label className="text-[10px] text-slate-300">مفعّل</Label>
+                <Switch checked={b.enabled !== false} onCheckedChange={(v) => update(b.id, { enabled: v })} />
               </div>
             </div>
           </div>

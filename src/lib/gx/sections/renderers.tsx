@@ -14,6 +14,7 @@ import type {
   HeroData, AnnouncementData, CarouselData, CategoriesData,
   BestsellersData, TrustData, ReviewsData, FaqData, NewsletterData,
 } from "./types";
+import { activeCarouselSlides } from "./types";
 
 /* ---------------- HERO ---------------- */
 export function HeroRenderer({ data }: { data: HeroData }) {
@@ -76,8 +77,14 @@ export function AnnouncementRenderer({ data }: { data: AnnouncementData }) {
 
 /* ---------------- CAROUSEL ---------------- */
 export function CarouselRenderer({ data }: { data: CarouselData }) {
-  const items = data.items || [];
+  const items = activeCarouselSlides(data.items);
   const [idx, setIdx] = useState(0);
+  const [vw, setVw] = useState<number>(typeof window === "undefined" ? 1280 : window.innerWidth);
+  useEffect(() => {
+    const onR = () => setVw(window.innerWidth);
+    window.addEventListener("resize", onR);
+    return () => window.removeEventListener("resize", onR);
+  }, []);
   const autoplay = data.autoplay ?? true;
   const interval = Math.max(2000, data.interval_ms || 5000);
   useEffect(() => {
@@ -86,13 +93,15 @@ export function CarouselRenderer({ data }: { data: CarouselData }) {
     return () => clearInterval(id);
   }, [autoplay, interval, items.length]);
   if (items.length === 0) return null;
+  const pickSrc = (b: (typeof items)[number]) =>
+    (vw < 640 ? b.image_url_mobile : vw < 1024 ? b.image_url_tablet : null) || b.image_url;
   return (
     <section className="section" style={{ paddingTop: 12, paddingBottom: 0 }}>
       <div className="wrap">
         <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", aspectRatio: "21/8", background: "#0b0f1a", boxShadow: "0 20px 60px rgba(0,0,0,.35)" }}>
           {items.map((b, i) => (
             <a key={b.id} href={b.link || "#"} style={{ position: "absolute", inset: 0, opacity: i === idx ? 1 : 0, transition: "opacity .6s ease", display: "block" }}>
-              <img src={b.image_url} alt={b.title || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img src={pickSrc(b)} alt={b.title || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               {(b.title || b.subtitle) && (
                 <div style={{ position: "absolute", insetInlineStart: 24, bottom: 24, background: "rgba(0,0,0,.45)", padding: "10px 16px", borderRadius: 12, color: "#fff", backdropFilter: "blur(6px)" }}>
                   {b.title && <div style={{ fontWeight: 900, fontSize: 20 }}>{b.title}</div>}
