@@ -389,26 +389,37 @@ function CategoriesAdmin() {
 }
 
 function TreeNode({
-  node, byParent, expanded, onToggle, onEdit, onAddChild, onDelete, onToggleActive, depth,
+  node, byParent, expanded, counts, onToggle, onEdit, onAddChild, onDelete, onToggleActive, onDuplicate, onMove, bounds, depth,
 }: {
   node: Category;
   byParent: Map<string | "root", Category[]>;
   expanded: Set<string>;
+  counts: Record<string, number>;
   onToggle: (id: string) => void;
   onEdit: (c: Category) => void;
   onAddChild: (parentId: string) => void;
   onDelete: (id: string, name: string) => void;
   onToggleActive: (id: string, next: boolean) => void;
+  onDuplicate: (c: Category) => void;
+  onMove: (c: Category, dir: -1 | 1) => void;
+  bounds: (c: Category) => { first: boolean; last: boolean };
   depth: number;
 }) {
   const children = byParent.get(node.id) ?? [];
   const isOpen = expanded.has(node.id);
   const canHaveChildren = depth < 2;
+  const b = bounds(node);
+  const productCount = counts[node.id] ?? 0;
 
   return (
     <div>
       <div className={`gx-row ${node.is_active ? "" : "off"}`}>
         <div className="gx-row-inner">
+          <div className="gx-ord">
+            <button disabled={b.first} onClick={() => onMove(node, -1)} title="تقديم"><ChevronUp size={11} /></button>
+            <button disabled={b.last} onClick={() => onMove(node, 1)} title="تأخير"><ChevronDown size={11} /></button>
+          </div>
+
           {children.length > 0 ? (
             <button className={`gx-caret ${isOpen ? "open" : ""}`} data-dir="rtl" onClick={() => onToggle(node.id)} aria-label="فتح">
               <ChevronLeft size={16} />
@@ -429,6 +440,8 @@ function TreeNode({
               <span className="text-xs text-cyan-100/60">— {node.name_en}</span>
               {node.is_main && <span className="gx-chip main"><Home size={9} /> رئيسي بالواجهة</span>}
               {depth > 0 && <span className="gx-chip sub">L{depth + 1}</span>}
+              <span className="gx-count"><Package size={9} /> {productCount} منتج</span>
+              {children.length > 0 && <span className="gx-count"><FolderTree size={9} /> {children.length} فرعي</span>}
             </div>
             <div className="gx-row-meta">/{node.slug} · ترتيب: {node.sort_order}</div>
           </div>
@@ -439,11 +452,12 @@ function TreeNode({
                 <Plus size={11} /> فرعي
               </button>
             )}
-            <button className="gx-btn outline" onClick={() => onEdit(node)}><Pencil size={11} /></button>
-            <button className="gx-btn outline" onClick={() => onToggleActive(node.id, !node.is_active)}>
+            <button className="gx-btn outline" onClick={() => onEdit(node)} title="تعديل"><Pencil size={11} /></button>
+            <button className="gx-btn ghost" onClick={() => onDuplicate(node)} title="نسخ"><Copy size={11} /></button>
+            <button className="gx-btn outline" onClick={() => onToggleActive(node.id, !node.is_active)} title={node.is_active ? "إخفاء" : "إظهار"}>
               {node.is_active ? <Eye size={11} /> : <EyeOff size={11} />}
             </button>
-            <button className="gx-btn danger" onClick={() => onDelete(node.id, node.name_ar)}><Trash2 size={11} /></button>
+            <button className="gx-btn danger" onClick={() => onDelete(node.id, node.name_ar)} title="حذف"><Trash2 size={11} /></button>
           </div>
         </div>
       </div>
@@ -452,9 +466,10 @@ function TreeNode({
         <div className="gx-children mt-1.5 space-y-1.5">
           {children.map((c) => (
             <TreeNode
-              key={c.id} node={c} byParent={byParent} expanded={expanded}
+              key={c.id} node={c} byParent={byParent} expanded={expanded} counts={counts}
               onToggle={onToggle} onEdit={onEdit} onAddChild={onAddChild}
-              onDelete={onDelete} onToggleActive={onToggleActive} depth={depth + 1}
+              onDelete={onDelete} onToggleActive={onToggleActive}
+              onDuplicate={onDuplicate} onMove={onMove} bounds={bounds} depth={depth + 1}
             />
           ))}
         </div>
@@ -462,6 +477,7 @@ function TreeNode({
     </div>
   );
 }
+
 
 function FlatRow({
   node, parent, onEdit, onDelete, onToggleActive,
