@@ -20,6 +20,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
   const isAr = lang === "ar";
   const qc = useQueryClient();
   const [myId, setMyId] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMyId(data.session?.user.id ?? null));
@@ -171,7 +172,11 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                         </span>
                       </div>
                     </div>
-                    {isOwner && <Link to="/account" search={{ tab: "profile" } as never} className="btn btn-ghost gxp-edit">{isAr ? "تعديل الملف" : "Edit profile"}</Link>}
+                    {isOwner && (
+                      <button type="button" className="btn btn-ghost gxp-edit" onClick={() => setEditOpen((v) => !v)}>
+                        {editOpen ? (isAr ? "إغلاق التعديل" : "Close editor") : (isAr ? "تعديل الملف" : "Edit profile")}
+                      </button>
+                    )}
                   </div>
 
                   <div className="gxp-bar">
@@ -207,7 +212,22 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                   )}
                 </div>
 
-
+                {isOwner && editOpen && (
+                  <IdentityEditor
+                    isAr={isAr}
+                    userId={myId!}
+                    currentName={p.full_name || ""}
+                    currentUsername={p.username}
+                    onSaved={(newTag) => {
+                      setEditOpen(false);
+                      qc.invalidateQueries({ queryKey: ["gx-profile"] });
+                      qc.invalidateQueries({ queryKey: ["my-gametag", myId] });
+                      qc.invalidateQueries({ queryKey: ["my-profile", myId] });
+                      window.dispatchEvent(new CustomEvent("gx:profile-updated"));
+                      if (newTag && !usernameProp) { /* stays on same page */ }
+                    }}
+                  />
+                )}
 
 
                 {isOwner && (
@@ -380,6 +400,77 @@ function Rule({ icon, title, text }: { icon: string; title: string; text: string
   );
 }
 
+function IdentityEditor({ isAr, userId, currentName, currentUsername, onSaved }: {
+  isAr: boolean; userId: string; currentName: string; currentUsername: string; onSaved: (tag: string) => void;
+}) {
+  const [name, setName] = useState(currentName);
+  const [tag, setTag] = useState(currentUsername);
+  const [saving, setSaving] = useState(false);
+  const [check, setCheck] = useState<{ s: "idle" | "checking" | "ok" | "taken" | "invalid"; m?: string }>({ s: "idle" });
+
+  useEffect(() => {
+    const v = tag.trim();
+    if (v.toLowerCase() === currentUsername.toLowerCase()) { setCheck({ s: "idle" }); return; }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(v)) {
+      setCheck({ s: "invalid", m: isAr ? "3-20 حرف إنجليزي/أرقام/شرطة سفلية" : "3-20 letters, numbers or underscore" });
+      return;
+    }
+    setCheck({ s: "checking" });
+    const to = setTimeout(async () => {
+      const { data, error } = await supabase.from("profiles").select("id").ilike("username", v).neq("id", userId).maybeSingle();
+      if (error) { setCheck({ s: "idle" }); return; }
+      setCheck(data
+        ? { s: "taken", m: isAr ? "هذا الـ GameTag محجوز" : "GameTag is taken" }
+        : { s: "ok", m: isAr ? "متاح ✓" : "Available ✓" });
+    }, 400);
+    return () => clearTimeout(to);
+  }, [tag, currentUsername, userId, isAr]);
+
+  async function save() {
+    const n = name.trim();
+    const v = tag.trim();
+    if (n.length < 2) { toast.error(isAr ? "الاسم قصير جداً" : "Name is too short"); return; }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(v)) { toast.error(isAr ? "GameTag غير صالح" : "Invalid GameTag"); return; }
+    if (check.s === "taken") { toast.error(isAr ? "هذا الـ GameTag محجوز" : "GameTag is taken"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("profiles").update({ full_name: n, username: v }).eq("id", userId);
+    if (!error) await supabase.auth.updateUser({ data: { full_name: n, username: v } });
+    setSaving(false);
+    if (error) {
+      toast.error((error as { code?: string }).code === "23505"
+        ? (isAr ? "هذا الـ GameTag محجوز" : "GameTag is taken")
+        : error.message);
+      return;
+    }
+    toast.success(isAr ? "تم حفظ الملف" : "Profile saved");
+    onSaved(v);
+  }
+
+  return (
+    <div className="gxp-card gxp-edit-card">
+      <h3 className="gxp-h">✏️ {isAr ? "تعديل الملف الشخصي" : "Edit profile"}</h3>
+      <div className="gxp-fields">
+        <label>
+          <span>{isAr ? "الاسم الظاهر" : "Display name"}</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60}
+            placeholder={isAr ? "اسمك" : "Your name"} />
+        </label>
+        <label>
+          <span>GameTag</span>
+          <input dir="ltr" value={tag} onChange={(e) => setTag(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
+            maxLength={20} placeholder="your_tag" />
+          {check.m && <em className={check.s === "ok" ? "ok" : check.s === "checking" ? "" : "bad"}>{check.s === "checking" ? (isAr ? "جاري التحقق…" : "Checking…") : check.m}</em>}
+        </label>
+      </div>
+      <button type="button" className="btn btn-primary gxp-save" onClick={save}
+        disabled={saving || check.s === "taken" || check.s === "invalid" || check.s === "checking"}>
+        {saving ? (isAr ? "جاري الحفظ…" : "Saving…") : (isAr ? "حفظ التغييرات" : "Save changes")}
+      </button>
+      <p className="gxp-muted">{isAr ? "غيّر صورتك من قسم شخصيات الأفاتار بالأسفل." : "Change your picture from the avatar characters section below."}</p>
+    </div>
+  );
+}
+
 function PlayerSearch({ isAr }: { isAr: boolean }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Array<{ id: string; username: string; full_name: string | null; avatar_url: string | null; level: number | null }>>([]);
@@ -501,4 +592,15 @@ const css = `
 .gxp-brow img{width:30px;height:30px;border-radius:50%;background:#0b1220}
 .gxp-brow .n{flex:1;min-width:0;font-size:12.5px;color:#e6f7ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gxp-brow .x{font-size:11.5px;font-weight:900;color:#00e5ff}
+.gxp-edit-card{border-color:rgba(0,229,255,.28);background:linear-gradient(180deg,rgba(0,229,255,.05),rgba(0,229,255,.01))}
+.gxp-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.gxp-fields label{display:block;font-size:12px;color:#8b90a0}
+.gxp-fields label span{display:block;margin-bottom:6px;font-weight:800;color:#c8d6e2}
+.gxp-fields input{width:100%;height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#e6f7ff;padding:0 12px;font-size:13.5px;outline:none}
+.gxp-fields input:focus{border-color:#00e5ff}
+.gxp-fields em{font-style:normal;display:block;margin-top:5px;font-size:11.5px;color:#8b90a0}
+.gxp-fields em.ok{color:#6ee7b7}
+.gxp-fields em.bad{color:#fca5a5}
+.gxp-save{margin-top:12px}
+.gxp-save:disabled{opacity:.5;cursor:not-allowed}
 `;
