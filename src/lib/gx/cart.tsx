@@ -4,6 +4,8 @@ import { findPlanByCartId, type ResolvedPlan } from "@/data/products";
 import { useCurrency } from "./currency";
 import { submitStoreOrder } from "./orders.functions";
 import { validateCouponFn } from "./coupons.functions";
+import { supabase } from "@/integrations/supabase/client";
+
 
 type CartItem = {
   cartId: string;
@@ -126,7 +128,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setRawItems(loadRaw());
     setNotesState(localStorage.getItem(NOTES_KEY) || "");
-    setContactState(loadContact());
+    const initialContact = loadContact();
+    setContactState(initialContact);
     setCouponState(loadCoupon());
     const onStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY) setRawItems(loadRaw());
@@ -135,8 +138,41 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (e.key === COUPON_KEY) setCouponState(loadCoupon());
     };
     window.addEventListener("storage", onStorage);
+
+    // Prefill from the signed-in user's profile when local contact is empty.
+    (async () => {
+      try {
+        const { data: sess } = await supabase.auth.getSession();
+        const uid = sess.session?.user?.id;
+        if (!uid) return;
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("full_name, whatsapp")
+          .eq("id", uid)
+          .maybeSingle();
+        if (!prof) return;
+        setContactState((prev) => {
+          const needsName = !prev.name.trim();
+          const needsPhone = !prev.phone.trim();
+          if (!needsName && !needsPhone) return prev;
+          const next = { ...prev };
+          if (needsName && prof.full_name) next.name = prof.full_name;
+          if (needsPhone && prof.whatsapp) {
+            // stored as "+962XXXXXXX" — split code from digits
+            const raw = String(prof.whatsapp).trim();
+            const m = raw.match(/^(\+\d{1,4})(\d+)$/);
+            if (m) { next.countryCode = m[1]; next.phone = m[2]; next.type = "whatsapp"; }
+            else { next.phone = raw.replace(/^@+/, ""); }
+          }
+          try { localStorage.setItem(CONTACT_KEY, JSON.stringify(next)); } catch { /* noop */ }
+          return next;
+        });
+      } catch { /* noop */ }
+    })();
+
     return () => window.removeEventListener("storage", onStorage);
   }, []);
+
 
   const persist = useCallback((next: CartItem[]) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -397,7 +433,7 @@ ${lines}
         price: it.price,
         usernames: it.usernames || null,
       }));
-      return await submitStoreOrderFn({
+      const result = await submitStoreOrderFn({
         data: {
           items: payloadItems,
           totalJOD,
@@ -409,10 +445,23 @@ ${lines}
           coupon: coupon ? { id: coupon.id, code: coupon.code, discount_jod: coupon.discount_jod } : null,
         },
       });
+      // Persist contact to the signed-in user's profile so it auto-fills next time.
+      try {
+        const { data: sess } = await supabase.auth.getSession();
+        const uid = sess.session?.user?.id;
+        if (uid) {
+          await supabase.from("profiles").update({
+            full_name: contact.name.trim(),
+            whatsapp: contactValue,
+          }).eq("id", uid);
+        }
+      } catch { /* noop */ }
+      return result;
     } catch (e) {
       console.warn("[GX] submitOrder failed", e);
       return null;
     }
+
   }, [items, totalJOD, currency, notes, contact, coupon, submitStoreOrderFn]);
 
   const value = useMemo<Ctx>(
