@@ -427,16 +427,23 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
         <div className="testi-grid" ref={gridRef}>
           {cards.map((it, i) => {
             const q = lang === "en" ? it.quote_en : it.quote_ar;
+            const stars = Math.max(1, Math.min(5, it.rating ?? 5));
             return (
               <div key={`${it.id}-${i}`} className="testi-card">
                 <div className="testi-top">
                   <div className="testi-avatar" style={{ background: it.color }}>{it.initial}</div>
                   <div>
                     <div className="testi-name">{it.name}</div>
-                    <div className="testi-stars">★★★★★</div>
+                    <div className="testi-stars">{"★".repeat(stars)}<span style={{ opacity: .25 }}>{"★".repeat(5 - stars)}</span></div>
                   </div>
                 </div>
                 {q && <div className="testi-quote">{q}</div>}
+                {(it.product || it.date) && (
+                  <div style={{ marginTop: 8, fontSize: 11, color: "var(--muted,#7d92a8)", display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {it.product && <span>{it.product}</span>}
+                    {it.date && <span dir="ltr">{new Date(it.date).toLocaleDateString(lang === "en" ? "en-GB" : "ar")}</span>}
+                  </div>
+                )}
               </div>
             );
           })}
