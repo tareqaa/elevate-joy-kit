@@ -391,12 +391,12 @@ export function Navbar() {
                     <div className="acc-bal">
                       <span className="acc-bal__l">🪙 GX Coins</span>
                       <b className="acc-bal__v coins">{Number(profile?.gx_coins ?? 0).toLocaleString("en-US")}</b>
-                      <small>≈ {(Number(profile?.gx_coins ?? 0) / 1000).toFixed(2)} {lang === "en" ? "JOD" : "د.أ"}</small>
+                      <small>≈ {formatCoins(Number(profile?.gx_coins ?? 0))}</small>
                     </div>
                     <div className="acc-bal">
                       <span className="acc-bal__l">💳 {lang === "en" ? "Store credit" : "رصيد المتجر"}</span>
-                      <b className="acc-bal__v credit">{Number(profile?.store_credit_jod ?? 0).toFixed(2)}</b>
-                      <small>{lang === "en" ? "JOD" : "د.أ"}</small>
+                      <b className="acc-bal__v credit">{format(Number(profile?.store_credit_jod ?? 0))}</b>
+                      <small>{currency}</small>
                     </div>
                   </div>
 
