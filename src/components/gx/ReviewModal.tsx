@@ -83,7 +83,6 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
   async function submit() {
     if (!userId) return;
     if (!orderId) { toast.error("اختر الطلب الذي تريد تقييمه"); return; }
-    if (comment.trim().length < 5) { toast.error("اكتب مراجعة من 5 أحرف على الأقل"); return; }
     setSaving(true);
     const chosen = items.find((i) => i.slug === productSlug) || items[0];
     const { error } = await supabase.from("reviews").insert({
@@ -170,10 +169,10 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
               </div>
 
               <div>
-                <label className="gx-rv-lb">مراجعتك</label>
+                <label className="gx-rv-lb">مراجعتك (اختياري)</label>
                 <textarea className="gx-rv-in" rows={4} maxLength={180} value={comment}
                   onChange={(e) => setComment(e.target.value.slice(0, 180))}
-                  placeholder="احكِ لنا عن تجربتك باختصار..." />
+                  placeholder="اختياري — تقدر ترسل التقييم بالنجوم فقط" />
                 <div className="gx-rv-hint" style={{ textAlign: "left" }} dir="ltr">{comment.length}/180</div>
               </div>
             </>
