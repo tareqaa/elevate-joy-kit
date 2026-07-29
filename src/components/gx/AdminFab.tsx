@@ -51,11 +51,16 @@ export function AdminFab() {
       <div className={`gx-fab-wrap ${open ? "open" : ""}`}>
         {open && (
           <div className="gx-fab-menu">
+            <button className="gx-fab-item"
+              onClick={() => { window.dispatchEvent(new Event("gx:toggle-text-edit")); setOpen(false); }}>
+              <Pencil size={15} /><span>تحرير نصوص هذه الصفحة</span>
+            </button>
             <Link to="/admin" className="gx-fab-item"><LayoutDashboard size={15} /><span>لوحة التحكم</span></Link>
             <Link to="/admin/home" className="gx-fab-item on"><HomeIcon size={15} /><span>الصفحة الرئيسية</span></Link>
             <Link to="/admin/orders" className="gx-fab-item"><Package size={15} /><span>الطلبات</span></Link>
             <Link to="/admin/settings" className="gx-fab-item"><SettingsIcon size={15} /><span>الإعدادات</span></Link>
           </div>
+
         )}
         <button className="gx-fab-btn" onClick={() => setOpen((v) => !v)} aria-label="أدوات الأدمن">
           {open ? <X size={20} /> : <span className="gx-fab-mark">GX</span>}
@@ -75,7 +80,7 @@ const fabCss = `
 .gx-fab-mark{font-weight:900;letter-spacing:.5px;font-size:13px;text-shadow:0 0 12px rgba(0,212,255,.6);}
 .gx-fab-menu{background:rgba(10,14,24,.94);backdrop-filter:blur(14px);border:1px solid rgba(0,212,255,.2);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:2px;min-width:200px;box-shadow:0 20px 50px rgba(0,0,0,.5);animation:gxFabIn .16s ease;}
 @keyframes gxFabIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
-.gx-fab-item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;color:#c8ceda;text-decoration:none;font-size:13px;font-weight:700;transition:all .14s;}
+.gx-fab-item{appearance:none;background:transparent;border:0;width:100%;text-align:start;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;color:#c8ceda;text-decoration:none;font-size:13px;font-weight:700;transition:all .14s;}
 .gx-fab-item:hover{background:rgba(0,212,255,.08);color:#00d4ff;}
 .gx-fab-item.on{background:linear-gradient(135deg,rgba(0,212,255,.14),rgba(0,212,255,.04));color:#00d4ff;box-shadow:inset 0 0 0 1px rgba(0,212,255,.25);}
 @media(max-width:560px){

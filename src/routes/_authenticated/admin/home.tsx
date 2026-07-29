@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -241,88 +240,117 @@ function HomeBuilder() {
 
 
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-950 text-slate-100 -m-4 sm:-m-6 lg:-m-8">
-      {/* Top bar */}
-      <div className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/95 backdrop-blur px-4 py-3 flex items-center gap-3 flex-wrap">
+    <div dir="rtl" className="h-screen flex flex-col bg-slate-950 text-slate-100 -m-4 sm:-m-6 lg:-m-8 overflow-hidden">
+      {/* Top bar — minimal: identity, undo/redo, device, publish */}
+      <div className="shrink-0 border-b border-slate-800 bg-slate-950/95 px-4 py-2.5 flex items-center gap-3">
         <Link to="/admin" className="text-slate-400 hover:text-slate-200 flex items-center gap-1 text-sm">
-          <ChevronLeft size={16} /> رجوع
+          <ChevronLeft size={16} />
         </Link>
-        <div className="w-9 h-9 rounded-lg bg-cyan-500/15 border border-cyan-500/30 grid place-items-center">
-          <HomeIcon className="text-cyan-400" size={18} />
+        <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/30 grid place-items-center">
+          <HomeIcon className="text-cyan-400" size={16} />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-slate-100 font-black text-lg leading-tight">محرر الصفحة الرئيسية</div>
-          <div className="text-xs text-slate-500">اسحب لإعادة الترتيب • اضغط قسم للتعديل • Ctrl+Z للتراجع</div>
+        <div className="min-w-0">
+          <div className="text-slate-100 font-black text-sm leading-tight">محرر الصفحة الرئيسية</div>
+          <div className="text-[11px] text-slate-500">{dirty ? "تغييرات غير منشورة" : "كل شيء محفوظ"}</div>
         </div>
+
+        <div className="flex-1" />
+
         <div className="flex items-center gap-0.5 rounded-md border border-slate-800 bg-slate-900/60 p-0.5">
           <button onClick={undo} disabled={past.length === 0} title="تراجع (Ctrl+Z)"
-            className="p-1.5 rounded text-slate-300 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed">
-            <Undo2 size={14} />
-          </button>
+            className="p-1.5 rounded text-slate-300 hover:bg-slate-800 disabled:opacity-30"><Undo2 size={14} /></button>
           <button onClick={redo} disabled={future.length === 0} title="إعادة (Ctrl+Y)"
-            className="p-1.5 rounded text-slate-300 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed">
-            <Redo2 size={14} />
-          </button>
+            className="p-1.5 rounded text-slate-300 hover:bg-slate-800 disabled:opacity-30"><Redo2 size={14} /></button>
         </div>
+
         <div className="hidden md:flex items-center gap-1 rounded-md border border-slate-800 bg-slate-900/60 p-0.5">
           {(["desktop", "tablet", "mobile"] as const).map((d) => {
             const Ic = d === "desktop" ? Monitor : d === "tablet" ? Tablet : Smartphone;
             return (
-              <button key={d} onClick={() => setDevice(d)}
-                className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 transition ${device === d ? "bg-cyan-500 text-slate-950 font-bold" : "text-slate-400 hover:text-slate-200"}`}>
-                <Ic size={12} /> {d === "desktop" ? "سطح المكتب" : d === "tablet" ? "تابلت" : "جوال"}
+              <button key={d} onClick={() => setDevice(d)} title={d}
+                className={`p-1.5 rounded transition ${device === d ? "bg-cyan-500 text-slate-950" : "text-slate-400 hover:text-slate-200"}`}>
+                <Ic size={14} />
               </button>
             );
           })}
         </div>
-        <Button variant="outline" onClick={() => saveDraft.mutate()} disabled={saveDraft.isPending}
-          className="border-slate-700 text-slate-200 hover:bg-slate-900">
-          {saveDraft.isPending ? "..." : "حفظ كمسودة"}
-        </Button>
-        <a href="/?preview=draft" target="_blank" rel="noreferrer" className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-amber-600/50 text-amber-300 hover:bg-amber-500/10 text-xs">
-          <Eye size={12} /> معاينة المسودة
+
+        <a href="/?preview=draft" target="_blank" rel="noreferrer" title="معاينة المسودة"
+          className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-slate-800 text-slate-300 hover:bg-slate-900 text-xs">
+          <Eye size={13} />
         </a>
-        <a href="/" target="_blank" rel="noreferrer" className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-slate-800 text-slate-300 hover:bg-slate-900 text-xs">
-          <ExternalLink size={12} /> فتح الموقع
-        </a>
-        <Button onClick={() => save.mutate()} disabled={!dirty || save.isPending}
-          className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold">
-          <Save size={15} className="ms-2" /> {save.isPending ? "..." : "نشر"} {dirty && <span className="ms-1 w-2 h-2 rounded-full bg-slate-950/60" />}
+        <Button variant="outline" size="sm" onClick={() => saveDraft.mutate()} disabled={saveDraft.isPending}
+          className="border-slate-700 text-slate-200 hover:bg-slate-900 h-8 text-xs">مسودة</Button>
+        <Button size="sm" onClick={() => save.mutate()} disabled={!dirty || save.isPending}
+          className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold h-8">
+          <Save size={14} className="ms-1.5" /> {save.isPending ? "..." : "نشر"}
         </Button>
       </div>
 
       {restorable && (
-        <div className="mx-4 mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 flex items-center justify-between gap-2">
-          <div className="text-xs text-amber-200">
-            هناك مسودة غير محفوظة من جلسة سابقة — هل تريد استعادتها؟
-          </div>
+        <div className="shrink-0 border-b border-amber-500/30 bg-amber-500/10 px-4 py-1.5 flex items-center justify-between gap-2">
+          <div className="text-xs text-amber-200">هناك مسودة غير محفوظة من جلسة سابقة</div>
           <div className="flex gap-1">
             <Button size="sm" onClick={() => { pushDraft(restorable); setRestorable(null); toast.success("تمت استعادة المسودة"); }}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 h-7 text-xs">استعادة</Button>
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 h-6 text-[11px]">استعادة</Button>
             <Button size="sm" variant="outline" onClick={() => { try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ } setRestorable(null); }}
-              className="border-slate-700 text-slate-300 h-7 text-xs">تجاهل</Button>
+              className="border-slate-700 text-slate-300 h-6 text-[11px]">تجاهل</Button>
           </div>
         </div>
       )}
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="px-4 pt-3">
-        <TabsList className="bg-slate-900/60 border border-slate-800">
-          <TabsTrigger value="builder"><Settings2 size={13} className="ms-2" /> البنّاء</TabsTrigger>
-          <TabsTrigger value="theme"><Palette size={13} className="ms-2" /> الثيم</TabsTrigger>
-          <TabsTrigger value="history"><History size={13} className="ms-2" /> السجل</TabsTrigger>
-        </TabsList>
+      {/* Body: [icon rail][side panel][preview] */}
+      <div className="flex-1 min-h-0 flex">
+        {/* Icon rail */}
+        <div className="shrink-0 w-14 border-s border-slate-800 bg-slate-950 flex flex-col items-center gap-1 py-3">
+          {([
+            { v: "builder", Ic: Settings2, l: "الأقسام" },
+            { v: "theme", Ic: Palette, l: "الثيم" },
+            { v: "history", Ic: History, l: "السجل" },
+          ] as const).map(({ v, Ic, l }) => (
+            <button key={v} onClick={() => setTab(v)} title={l}
+              className={`w-10 h-10 rounded-xl grid place-items-center transition ${tab === v ? "bg-cyan-500/15 text-cyan-400 shadow-[inset_0_0_0_1px_rgba(34,211,238,.4)]" : "text-slate-500 hover:text-slate-200 hover:bg-slate-900"}`}>
+              <Ic size={17} />
+            </button>
+          ))}
+          <div className="flex-1" />
+          <a href="/" target="_blank" rel="noreferrer" title="فتح الموقع"
+            className="w-10 h-10 rounded-xl grid place-items-center text-slate-500 hover:text-slate-200 hover:bg-slate-900">
+            <ExternalLink size={16} />
+          </a>
+        </div>
 
-        <TabsContent value="builder" className="mt-3">
-          <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-3">
-            {/* Left: sections list */}
-            <div className="space-y-3">
-              <Card className="bg-slate-900/60 border-slate-800">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-slate-100 flex items-center gap-2">
-                    <Eye size={14} /> أقسام الصفحة ({draft.sections.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-1.5">
+        {/* Side panel */}
+        <aside className="shrink-0 w-[340px] border-s border-slate-800 bg-slate-900/40 overflow-y-auto">
+          {tab === "builder" && (
+            selected ? (
+              <div>
+                <div className="sticky top-0 z-10 bg-slate-950/95 border-b border-slate-800 px-3 py-2.5">
+                  <button onClick={() => setSelectedId(null)} className="text-[11px] text-slate-400 hover:text-cyan-400 flex items-center gap-1 mb-2">
+                    <ChevronLeft size={12} /> كل الأقسام
+                  </button>
+                  <div className="text-sm font-black text-slate-100">{SECTION_REGISTRY[selected.type]?.label ?? selected.type}</div>
+                  <div className="flex gap-1 mt-2 rounded-lg bg-slate-900/80 border border-slate-800 p-0.5">
+                    <button onClick={() => setRightTab("content")}
+                      className={`flex-1 px-2 py-1 rounded-md text-xs flex items-center justify-center gap-1 ${rightTab === "content" ? "bg-cyan-500 text-slate-950 font-bold" : "text-slate-400"}`}>
+                      <Settings2 size={11} /> المحتوى
+                    </button>
+                    <button onClick={() => setRightTab("style")}
+                      className={`flex-1 px-2 py-1 rounded-md text-xs flex items-center justify-center gap-1 ${rightTab === "style" ? "bg-cyan-500 text-slate-950 font-bold" : "text-slate-400"}`}>
+                      <SlidersHorizontal size={11} /> التنسيق
+                    </button>
+                  </div>
+                </div>
+                <div className="p-3">
+                  {rightTab === "content"
+                    ? <EditorPanel section={selected} onChange={(data) => updateSectionData(selected.id, data)} />
+                    : <StylePanel style={selected.style} onChange={(st) => updateSectionStyle(selected.id, st)} />}
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 space-y-3">
+                <div className="text-[11px] text-slate-500">اسحب لإعادة الترتيب • اضغط قسماً لتعديله</div>
+                <div className="space-y-1.5">
                   <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
                     <SortableContext items={draft.sections.map((s) => s.id)} strategy={verticalListSortingStrategy}>
                       {draft.sections.map((s) => (
@@ -335,66 +363,35 @@ function HomeBuilder() {
                       ))}
                     </SortableContext>
                   </DndContext>
-                </CardContent>
-              </Card>
+                </div>
+                <AddSectionCard onAdd={addSection} existing={draft.sections.map((s) => s.type)} />
+              </div>
+            )
+          )}
 
-              <AddSectionCard onAdd={addSection} existing={draft.sections.map((s) => s.type)} />
-
-              {selected && (
-                <Card className="bg-slate-900/60 border-slate-800">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-slate-100 flex items-center justify-between">
-                      <span>تعديل: {SECTION_REGISTRY[selected.type]?.label ?? selected.type}</span>
-                    </CardTitle>
-                    <div className="flex gap-1 mt-2 rounded-md bg-slate-950/60 border border-slate-800 p-0.5">
-                      <button onClick={() => setRightTab("content")}
-                        className={`flex-1 px-2 py-1 rounded text-xs flex items-center justify-center gap-1 ${rightTab === "content" ? "bg-cyan-500 text-slate-950 font-bold" : "text-slate-400"}`}>
-                        <Settings2 size={11} /> المحتوى
-                      </button>
-                      <button onClick={() => setRightTab("style")}
-                        className={`flex-1 px-2 py-1 rounded text-xs flex items-center justify-center gap-1 ${rightTab === "style" ? "bg-cyan-500 text-slate-950 font-bold" : "text-slate-400"}`}>
-                        <SlidersHorizontal size={11} /> التنسيق
-                      </button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {rightTab === "content"
-                      ? <EditorPanel section={selected} onChange={(data) => updateSectionData(selected.id, data)} />
-                      : <StylePanel style={selected.style} onChange={(st) => updateSectionStyle(selected.id, st)} />
-                    }
-                  </CardContent>
-                </Card>
-              )}
+          {tab === "theme" && (
+            <div className="p-3">
+              <ThemeEditor theme={draft.theme || DEFAULT_THEME} onChange={updateTheme} />
             </div>
+          )}
 
-            {/* Right: live preview */}
-            <Card className="bg-slate-900/40 border-slate-800 overflow-hidden">
-              <CardHeader className="pb-2 border-b border-slate-800 bg-slate-950/60">
-                <CardTitle className="text-xs text-slate-400 flex items-center justify-between">
-                  <span className="flex items-center gap-2"><Eye size={12} /> معاينة مباشرة</span>
-                  <span className="text-[10px] uppercase">{device}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <LivePreview layout={draft} device={device} onSectionClick={(id) => { setSelectedId(id); setRightTab("content"); }} selectedId={selectedId} />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+          {tab === "history" && (
+            <div className="p-3">
+              <HistoryTab onRestore={(v) => { pushDraft(v); setDirty(true); setTab("builder"); toast.success("تمت الاستعادة — اضغط نشر للتطبيق"); }} />
+            </div>
+          )}
+        </aside>
 
-        <TabsContent value="theme" className="mt-3">
-          <ThemeEditor theme={draft.theme || DEFAULT_THEME} onChange={updateTheme} />
-        </TabsContent>
-
-        <TabsContent value="history" className="mt-3">
-          <HistoryTab
-            onRestore={(v) => { pushDraft(v); setDirty(true); setTab("builder"); toast.success("تمت الاستعادة — اضغط نشر للتطبيق"); }}
-          />
-        </TabsContent>
-      </Tabs>
+        {/* Preview */}
+        <main className="flex-1 min-w-0 bg-slate-950/70 overflow-y-auto">
+          <LivePreview layout={draft} device={device} selectedId={selectedId}
+            onSectionClick={(id) => { setSelectedId(id); setRightTab("content"); }} />
+        </main>
+      </div>
     </div>
   );
 }
+
 
 /* ---------------------------------- ROW ---------------------------------- */
 
@@ -592,7 +589,7 @@ const THEME_PRESETS: { name: string; theme: ThemeConfig }[] = [
 function ThemeEditor({ theme, onChange }: { theme: ThemeConfig; onChange: (p: Partial<ThemeConfig>) => void }) {
   const t = { ...DEFAULT_THEME, ...theme };
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-3">
+    <div className="space-y-3">
       <Card className="bg-slate-900/60 border-slate-800">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm text-slate-100 flex items-center gap-2"><Palette size={14} /> ثيم المتجر</CardTitle>
@@ -692,7 +689,7 @@ function LivePreview({ layout, device, onSectionClick, selectedId }: {
   const themeVars = themeToCssVars(layout.theme);
   const w = DEVICE_WIDTH[device];
   return (
-    <div className="bg-slate-950/70 max-h-[calc(100vh-260px)] overflow-y-auto p-3">
+    <div className="p-3">
       <div style={{ maxWidth: w ?? "100%", margin: "0 auto", boxShadow: w ? "0 0 0 1px rgba(148,163,184,.15)" : undefined, borderRadius: w ? 12 : 0, overflow: "hidden" }}>
         <div className="gx-home-root" style={{ ...themeVars, background: "var(--gx-bg)", color: "var(--gx-text)", fontFamily: "var(--gx-font)" }}>
           {enabled.length === 0 && (
