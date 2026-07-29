@@ -433,3 +433,94 @@ function BestTab({ order, onChange }: { order: string[]; onChange: (o: string[])
     </Card>
   );
 }
+
+/* --------------------------------- HISTORY -------------------------------- */
+
+type HistoryRow = { id: string; key: string; value: unknown; actor_email: string | null; created_at: string };
+
+function HistoryTab() {
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ["home-settings-history"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("home_settings_history")
+        .select("id,key,value,actor_email,created_at")
+        .in("key", ["home_hero", "home_banners", "home_categories_meta", "home_bestseller_order"])
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data ?? []) as HistoryRow[];
+    },
+  });
+
+  const restore = useMutation({
+    mutationFn: async (row: HistoryRow) => {
+      // Snapshot current value first, then overwrite with the restored one.
+      const { data: current } = await supabase.from("site_settings").select("key,value").eq("key", row.key).maybeSingle();
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id ?? null;
+      const email = sess.session?.user?.email ?? null;
+      if (current) {
+        await supabase.from("home_settings_history").insert({
+          key: current.key, value: current.value as never, actor_id: uid, actor_email: email, note: "snapshot before restore",
+        });
+      }
+      const { error } = await supabase.from("site_settings").upsert({ key: row.key, value: row.value as never }, { onConflict: "key" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم استعادة الإعداد");
+      qc.invalidateQueries({ queryKey: ["home-admin-settings"] });
+      qc.invalidateQueries({ queryKey: ["home-settings-history"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "فشل الاستعادة"),
+  });
+
+  const labels: Record<string, string> = {
+    home_hero: "الهيرو",
+    home_banners: "السلايدر",
+    home_categories_meta: "الأقسام",
+    home_bestseller_order: "الأكثر مبيعاً",
+  };
+
+  return (
+    <Card className="bg-slate-900/60 border-slate-800">
+      <CardHeader>
+        <CardTitle className="text-slate-100">سجل التعديلات</CardTitle>
+        <CardDescription>آخر 50 لقطة — اضغط "استعادة" لإرجاع أي قسم لنسخته السابقة.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {q.isLoading && <div className="text-slate-500 text-sm text-center py-6">جارٍ التحميل...</div>}
+        {!q.isLoading && (q.data?.length ?? 0) === 0 && (
+          <div className="text-slate-500 text-sm text-center py-8">لا يوجد سجل بعد — التعديلات القادمة ستُحفظ هنا تلقائياً.</div>
+        )}
+        {q.data?.map((row) => (
+          <div key={row.id} className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+            <div className="w-10 h-10 rounded-md bg-cyan-500/10 border border-cyan-500/25 grid place-items-center shrink-0">
+              <History size={16} className="text-cyan-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-slate-100 font-bold text-sm">{labels[row.key] || row.key}</div>
+              <div className="text-xs text-slate-500">
+                {formatDistanceToNow(new Date(row.created_at), { addSuffix: true, locale: ar })}
+                {row.actor_email && <> — {row.actor_email}</>}
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10"
+              onClick={() => {
+                if (confirm(`استعادة "${labels[row.key] || row.key}" لهذه النسخة؟`)) restore.mutate(row);
+              }}
+              disabled={restore.isPending}
+            >
+              <RotateCcw size={13} className="ms-1" /> استعادة
+            </Button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
