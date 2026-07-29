@@ -40,47 +40,47 @@ export const SECTION_REGISTRY: Record<SectionType, SectionDef> = {
   hero: {
     type: "hero", label: "الهيرو", description: "البانر الرئيسي أعلى الصفحة", Icon: Sparkles,
     defaultData: {},
-    Renderer: anyComp(HeroRenderer), Editor: anyComp(HeroEditor),
+    Renderer: asRenderer(HeroRenderer), Editor: asEditor(HeroEditor),
   },
   announcement: {
     type: "announcement", label: "شريط إعلان", description: "شريط رفيع لعرض إشعار أو عرض", Icon: Megaphone,
     defaultData: { text: "عرض جديد!", link: "", bg: "#0f172a", color: "#ffffff" },
-    Renderer: anyComp(AnnouncementRenderer), Editor: anyComp(AnnouncementEditor),
+    Renderer: asRenderer(AnnouncementRenderer), Editor: asEditor(AnnouncementEditor),
   },
   carousel: {
     type: "carousel", label: "سلايدر الصور", description: "شرائح تلقائية لعروض وبانرات", Icon: GalleryHorizontal,
     defaultData: { autoplay: true, interval_ms: 5000, items: [] },
-    Renderer: anyComp(CarouselRenderer), Editor: anyComp(CarouselEditor),
+    Renderer: asRenderer(CarouselRenderer), Editor: asEditor(CarouselEditor),
   },
   categories: {
     type: "categories", label: "الأقسام", description: "شبكة الأقسام الرئيسية", Icon: LayoutGrid,
     defaultData: {},
-    Renderer: anyComp(CategoriesRenderer), Editor: anyComp(CategoriesEditor),
+    Renderer: asRenderer(CategoriesRenderer), Editor: asEditor(CategoriesEditor),
   },
   bestsellers: {
     type: "bestsellers", label: "الأكثر مبيعاً", description: "المنتجات المميّزة", Icon: Star,
     defaultData: {},
-    Renderer: anyComp(BestsellersRenderer), Editor: anyComp(BestsellersEditor),
+    Renderer: asRenderer(BestsellersRenderer), Editor: asEditor(BestsellersEditor),
   },
   trust: {
     type: "trust", label: "شارات الثقة", description: "التفعيل الفوري والعدّاد والدعم", Icon: ShieldCheck,
     defaultData: {},
-    Renderer: anyComp(TrustRenderer), Editor: anyComp(TrustEditor),
+    Renderer: asRenderer(TrustRenderer), Editor: asEditor(TrustEditor),
   },
   reviews: {
     type: "reviews", label: "المراجعات", description: "شريط تقييمات العملاء", Icon: MessageSquare,
     defaultData: {},
-    Renderer: anyComp(ReviewsRenderer), Editor: anyComp(ReviewsEditor),
+    Renderer: asRenderer(ReviewsRenderer), Editor: asEditor(ReviewsEditor),
   },
   faq: {
     type: "faq", label: "الأسئلة الشائعة", description: "قائمة أسئلة/أجوبة قابلة للطي", Icon: HelpCircle,
     defaultData: { title: "الأسئلة الشائعة", items: [] },
-    Renderer: anyComp(FaqRenderer), Editor: anyComp(FaqEditor),
+    Renderer: asRenderer(FaqRenderer), Editor: asEditor(FaqEditor),
   },
   newsletter: {
     type: "newsletter", label: "النشرة البريدية", description: "نموذج اشتراك بالبريد", Icon: Mail,
     defaultData: { title: "اشترك بالنشرة", subtitle: "أول من يعرف عن العروض", cta: "اشترك", placeholder: "بريدك الإلكتروني" },
-    Renderer: anyComp(NewsletterRenderer), Editor: anyComp(NewsletterEditor),
+    Renderer: asRenderer(NewsletterRenderer), Editor: asEditor(NewsletterEditor),
   },
 };
 
