@@ -179,7 +179,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setRawItems(next);
   }, []);
 
-  const items = useMemo(() => resolve(rawItems), [rawItems]);
+  // Catalog prices are edited live from the admin panel; re-resolve when they change.
+  const [priceVersion, setPriceVersion] = useState(0);
+  useEffect(() => {
+    const on = () => setPriceVersion((v) => v + 1);
+    window.addEventListener("gx:prices-updated", on);
+    return () => window.removeEventListener("gx:prices-updated", on);
+  }, []);
+  const items = useMemo(() => resolve(rawItems), [rawItems, priceVersion]);
   const count = items.reduce((s, i) => s + i.qty, 0);
   const subtotalJOD = items.reduce((s, i) => s + i.price * i.qty, 0);
   const totalJOD = Math.max(0, subtotalJOD - (coupon?.discount_jod ?? 0));
