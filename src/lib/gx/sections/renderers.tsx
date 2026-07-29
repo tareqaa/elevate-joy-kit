@@ -390,6 +390,28 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
       : (data.items && data.items.length > 0 ? data.items : DEFAULT_REVIEWS);
   const gridRef = useRef<HTMLDivElement>(null);
 
+  // Auto-translate customer reviews into the page language (Google Translate).
+  const [tr, setTr] = useState<Record<string, { text: string; from: string }>>({});
+  useEffect(() => {
+    const sources = items
+      .map((it) => ({ id: it.id, text: (lang === "en" ? it.quote_en : it.quote_ar) || "" }))
+      .filter((s) => s.text.trim().length > 1);
+    if (sources.length === 0) return;
+    let alive = true;
+    (async () => {
+      try {
+        const res = await translateTexts({ data: { texts: sources.map((s) => s.text), target: lang } });
+        if (!alive) return;
+        const next: Record<string, { text: string; from: string }> = {};
+        res.forEach((r, i) => { if (r.from) next[sources[i].id] = { text: r.text, from: r.from }; });
+        setTr(next);
+      } catch { /* keep original text */ }
+    })();
+    return () => { alive = false; };
+  }, [lang, items]);
+
+
+
   useEffect(() => {
     const grid = gridRef.current; if (!grid) return;
     let paused = false; let resumeAt = 0;
