@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/gx/i18n";
 import { useCurrency } from "@/lib/gx/currency";
-import { fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM } from "@/lib/gx/loyalty";
+import { fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM, XP_PER_JOD } from "@/lib/gx/loyalty";
 
 type PublicProfile = {
   id: string; username: string; full_name: string | null; avatar_url: string | null;
@@ -371,6 +371,15 @@ function Stat({ icon, label, value, hint, hidden }: { icon: string; label: strin
   );
 }
 
+function Rule({ icon, title, text }: { icon: string; title: string; text: string }) {
+  return (
+    <div className="gxp-rule">
+      <span className="ico">{icon}</span>
+      <div><b>{title}</b><em>{text}</em></div>
+    </div>
+  );
+}
+
 function PlayerSearch({ isAr }: { isAr: boolean }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Array<{ id: string; username: string; full_name: string | null; avatar_url: string | null; level: number | null }>>([]);
@@ -439,6 +448,11 @@ const css = `
 .gxp-stat b{display:block;font-size:18px;color:#e6f7ff;margin-top:2px}
 .gxp-stat em{font-style:normal;font-size:11px;color:#8b90a0}
 .gxp-note{margin:0;padding:0 16px 16px;font-size:11.5px;color:#8b90a0;line-height:1.7}
+.gxp-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.gxp-rule{display:flex;gap:10px;align-items:flex-start;border:1px solid rgba(0,229,255,.18);background:linear-gradient(180deg,rgba(0,229,255,.06),rgba(0,229,255,.01));border-radius:14px;padding:12px}
+.gxp-rule .ico{font-size:20px;line-height:1}
+.gxp-rule b{display:block;font-size:13px;color:#e6f7ff}
+.gxp-rule em{font-style:normal;display:block;font-size:11.5px;color:#a3b6c9;line-height:1.6;margin-top:3px}
 .gxp-levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
 .gxp-level{border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:11px;opacity:.6}
 .gxp-level.on{opacity:1;border-color:rgba(0,229,255,.35);background:rgba(0,229,255,.05)}
