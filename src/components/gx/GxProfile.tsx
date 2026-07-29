@@ -168,10 +168,10 @@ export function GxProfile({ username }: { username?: string }) {
 
                   <div className="gxp-stats">
                     <Stat label="GX Coins" value={(isOwner ? loyaltyQ.data?.coins ?? 0 : 0).toLocaleString("en-US")}
-                      hint={isOwner ? `≈ ${coinsToJod(loyaltyQ.data?.coins ?? 0).toFixed(2)} ${isAr ? "د.أ" : "JOD"}` : undefined}
+                      hint={isOwner ? `≈ ${formatCoins(loyaltyQ.data?.coins ?? 0)}` : undefined}
                       hidden={!isOwner} icon="🪙" />
                     <Stat label={isAr ? "رصيد المتجر" : "Store credit"}
-                      value={`${Number(loyaltyQ.data?.store_credit ?? 0).toFixed(2)}`} hint={isAr ? "د.أ" : "JOD"}
+                      value={format(Number(loyaltyQ.data?.store_credit ?? 0))} hint={currency}
                       hidden={!isOwner} icon="💳" />
                     <Stat label="XP" value={xp.toLocaleString("en-US")} icon="⚡" />
                     <Stat label={isAr ? "الطلبات" : "Orders"} value={String(loyaltyQ.data?.orders_count ?? p.orders_count ?? 0)} icon="📦" />
