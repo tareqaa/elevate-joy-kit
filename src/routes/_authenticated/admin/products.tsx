@@ -145,6 +145,9 @@ function ProductsAdmin() {
         </button>
       </div>
 
+      <CatalogPrices />
+
+
       <div className="flex gap-2 flex-wrap items-center">
         <div className="relative flex-1 min-w-[240px] max-w-md">
           <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400/70 pointer-events-none" />
