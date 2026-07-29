@@ -287,13 +287,27 @@ export function ReviewsEditor({ data, onChange }: { data: ReviewsData; onChange:
   function add() { onChange({ ...data, items: [...items, { id: crypto.randomUUID(), name: "", initial: "؟", color: "linear-gradient(135deg,#00e5ff,#0a6e8c)", quote_ar: "" }] }); }
   function update(id: string, patch: Partial<ReviewItem>) { onChange({ ...data, items: items.map((r) => r.id === id ? { ...r, ...patch } : r) }); }
   function remove(id: string) { onChange({ ...data, items: items.filter((r) => r.id !== id) }); }
+  const source = data.source ?? "auto";
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
         <TextField label="العنوان" value={data.title ?? null} onChange={(v) => onChange({ ...data, title: v ?? undefined })} />
         <TextField label="النص العلوي" value={data.eyebrow ?? null} onChange={(v) => onChange({ ...data, eyebrow: v ?? undefined })} />
       </div>
-      {items.length === 0 && <div className="text-xs text-slate-500 text-center py-3">(يستخدم قائمة افتراضية — أضف مراجعات لتخصيصها)</div>}
+      <div className="grid grid-cols-2 gap-2">
+        <Button size="sm" variant={source === "auto" ? "default" : "outline"} onClick={() => onChange({ ...data, source: "auto" })}>
+          مراجعات العملاء (تلقائي)
+        </Button>
+        <Button size="sm" variant={source === "manual" ? "default" : "outline"} onClick={() => onChange({ ...data, source: "manual" })}>
+          مراجعات يدوية
+        </Button>
+      </div>
+      {source === "auto" && (
+        <div className="text-[11px] text-slate-400 leading-relaxed">
+          يعرض تلقائياً المراجعات المعتمَدة من لوحة التحكم (4 نجوم فأكثر). تحكّم بها من صفحة «المراجعات».
+        </div>
+      )}
+      {items.length === 0 && source === "manual" && <div className="text-xs text-slate-500 text-center py-3">(يستخدم قائمة افتراضية — أضف مراجعات لتخصيصها)</div>}
       <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
         {items.map((r) => (
           <div key={r.id} className="rounded-md border border-slate-800 bg-slate-950/40 p-2 space-y-1">
