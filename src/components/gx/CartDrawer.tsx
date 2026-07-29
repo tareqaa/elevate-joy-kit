@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
-import { useSiteSettings } from "@/lib/gx/site-settings";
 import { Link } from "@tanstack/react-router";
-import { OrderConfirmedModal } from "./OrderConfirmedModal";
+
 
 
 
