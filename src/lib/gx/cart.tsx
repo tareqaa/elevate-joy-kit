@@ -4,6 +4,8 @@ import { findPlanByCartId, type ResolvedPlan } from "@/data/products";
 import { useCurrency } from "./currency";
 import { submitStoreOrder } from "./orders.functions";
 import { validateCouponFn } from "./coupons.functions";
+import { supabase } from "@/integrations/supabase/client";
+
 
 type CartItem = {
   cartId: string;
