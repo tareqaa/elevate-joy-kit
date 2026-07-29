@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { CartDrawer } from "./CartDrawer";
+import { AdminFab } from "./AdminFab";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 
