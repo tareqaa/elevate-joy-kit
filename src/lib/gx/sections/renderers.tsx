@@ -363,10 +363,10 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
     (async () => {
       const { data: rows } = await supabase
         .from("reviews")
-        .select("id, display_name, comment, rating, product_name, created_at, is_featured")
+        .select("id, display_name, comment, rating, created_at, is_featured")
         .eq("status", "approved")
+        .eq("is_featured", true)
         .gte("rating", 4)
-        .order("is_featured", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(30);
       if (!alive || !rows) return;
