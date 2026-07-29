@@ -379,7 +379,6 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
         quote_en: r.comment || undefined,
         rating: r.rating,
         date: r.created_at,
-        product: r.product_name || undefined,
       })));
     })();
     return () => { alive = false; };
