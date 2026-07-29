@@ -80,6 +80,7 @@ const css = `
 .gx-row:hover{background:rgba(0,229,255,.04)}
 .gx-skel{height:92px;border-radius:16px;background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.09),rgba(255,255,255,.04));background-size:200% 100%;animation:gxsk 1.2s infinite}
 @keyframes gxsk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+`;
 
 
 
