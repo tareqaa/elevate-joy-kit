@@ -283,7 +283,50 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                 )}
               </>
             )}
+
+            {/* How GX Rewards works — always visible (merged from the old /rewards page) */}
+            <div className="gxp-card">
+              <h3 className="gxp-h">🎁 {isAr ? "كيف يعمل نظام GX Rewards" : "How GX Rewards works"}</h3>
+              <div className="gxp-rules">
+                <Rule icon="⚡" title={isAr ? "اكسب XP" : "Earn XP"}
+                  text={isAr ? `كل 1 دينار تنفقه = ${XP_PER_JOD} نقطة خبرة.` : `Every 1 JOD spent = ${XP_PER_JOD} XP.`} />
+                <Rule icon="🪙" title="GX Coins"
+                  text={isAr ? "كل 1 دينار مدفوع = 10 عملات × مضاعف مستواك." : "Every 1 JOD paid = 10 coins × your level multiplier."} />
+                <Rule icon="💸" title={isAr ? "استبدال العملات" : "Redeem coins"}
+                  text={isAr ? `${COINS_PER_JOD_REDEEM} عملة = 1 دينار خصم (حتى 50% من الطلب).` : `${COINS_PER_JOD_REDEEM} coins = 1 JOD off (up to 50% per order).`} />
+                <Rule icon="🏅" title={isAr ? "مكافآت المستوى" : "Level rewards"}
+                  text={isAr ? "كل مستوى يمنحك عملات وكوبون خصم وأفاتارات حصرية." : "Each level unlocks coins, a coupon and exclusive avatars."} />
+              </div>
+            </div>
+
+            {/* Levels ladder */}
+            <div className="gxp-card">
+              <h3 className="gxp-h">{isAr ? "سلّم المستويات" : "Levels"}</h3>
+              <div className="gxp-levels">
+                {levels.map((l) => {
+                  const reached = !!p && (l.sort_order ?? 0) <= currentSort;
+                  return (
+                    <div key={l.id} className={`gxp-level${reached ? " on" : ""}`}>
+                      <div className="gxp-level-top">
+                        <span className="ico">{l.icon}</span>
+                        <div>
+                          <b style={{ color: l.color }}>{levelName(l, lang)}</b>
+                          <em>{l.min_xp.toLocaleString("en-US")} XP</em>
+                        </div>
+                        <span className="gxp-level-state">{reached ? "✓" : "🔒"}</span>
+                      </div>
+                      <div className="gxp-tags">
+                        {l.reward_coins > 0 && <span className="t amber">+{l.reward_coins} Coins</span>}
+                        {l.coupon_percent > 0 && <span className="t cyan">{isAr ? "كوبون" : "Coupon"} {l.coupon_percent}%</span>}
+                        <span className="t violet">×{(1 + Number(l.coins_bonus_pct) / 100).toFixed(2)} Coins</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
+
 
           {/* Sidebar: search + leaderboard */}
           <aside className="gxp-side">
