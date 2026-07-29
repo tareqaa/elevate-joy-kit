@@ -320,7 +320,9 @@ function ProductsAdmin() {
 
 
       {prodsQ.isLoading ? (
-        <div className="text-center py-20 text-cyan-100/60">جاري التحميل...</div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="gx-skel" />)}
+        </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-cyan-100/60">
           <ShoppingBag size={48} className="mx-auto opacity-30 mb-3" />
@@ -328,8 +330,9 @@ function ProductsAdmin() {
         </div>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          {filtered.map((p) => (
-            <div key={p.id} className={`gx-prod-card ${p.is_active ? "" : "off"}`}>
+          {filtered.map((p, i) => (
+            <div key={p.id} className={`gx-prod-card ${p.is_active ? "" : "off"} ${selected.includes(p.id) ? "sel" : ""}`}>
+              <input type="checkbox" className="gx-check" checked={selected.includes(p.id)} onChange={() => toggleSel(p.id)} />
               <div className="gx-prod-img">
                 {p.image_url ? <img src={p.image_url} alt="" /> : <ShoppingBag size={26} className="text-cyan-400/50" />}
               </div>
@@ -357,6 +360,7 @@ function ProductsAdmin() {
                   <span className="gx-pill">{p.category_id ? categoriesMap[p.category_id]?.name_ar ?? "بدون قسم" : "بدون قسم"}</span>
                   {p.base_price_jod !== null && <span className="gx-pill gx-price">{Number(p.base_price_jod).toFixed(2)} د.أ</span>}
                   <span className="gx-pill">مشتريات: {p.purchases_count}</span>
+                  <span className="gx-pill">خيارات: {variantCounts[p.id] ?? 0}</span>
                 </div>
                 <div className="gx-prod-actions">
                   <button className="gx-btn primary" onClick={() => setManagingVariants(p)}>
@@ -369,6 +373,12 @@ function ProductsAdmin() {
                   <button className="gx-btn outline" onClick={() => toggleMut.mutate({ id: p.id, patch: { is_active: !p.is_active } })}>
                     {p.is_active ? <><Eye size={12} /> ظاهر</> : <><EyeOff size={12} /> مخفي</>}
                   </button>
+                  {sortBy === "order" && (
+                    <>
+                      <button className="gx-btn outline" title="تقديم" disabled={i === 0} onClick={() => move(i, -1)}><ArrowUp size={12} /></button>
+                      <button className="gx-btn outline" title="تأخير" disabled={i === filtered.length - 1} onClick={() => move(i, 1)}><ArrowDown size={12} /></button>
+                    </>
+                  )}
                   <button className="gx-btn danger" onClick={() => { if (confirm(`حذف "${p.name_ar}"؟`)) deleteMut.mutate(p.id); }}><Trash2 size={12} /></button>
                 </div>
               </div>
@@ -376,6 +386,7 @@ function ProductsAdmin() {
           ))}
         </div>
       )}
+
       </div>
       )}
 
