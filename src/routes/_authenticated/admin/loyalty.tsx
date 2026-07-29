@@ -271,9 +271,90 @@ function CustomersTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!creditTarget} onOpenChange={(o) => !o && setCreditTarget(null)}>
+        <DialogContent dir="rtl" className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>رصيد المتجر / الاسترجاع</DialogTitle>
+            <DialogDescription>
+              {creditTarget?.name} — الرصيد الحالي: {(creditTarget?.balance ?? 0).toFixed(2)} د.أ
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Field label="المبلغ بالدينار (موجب = إضافة، سالب = خصم)">
+              <Input type="number" step="0.01" value={credit} onChange={(e) => setCredit(e.target.value)} />
+            </Field>
+            <div className="flex gap-2">
+              {[1, 5, 10].map((v) => (
+                <Button key={v} type="button" size="sm" variant="outline" onClick={() => setCredit(String(v))}>+{v}</Button>
+              ))}
+            </div>
+            <Field label="السبب">
+              <Input value={creditReason} onChange={(e) => setCreditReason(e.target.value)} placeholder="مثال: استرجاع طلب ملغى" />
+            </Field>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreditTarget(null)}>إلغاء</Button>
+            <Button className="bg-sky-500 hover:bg-sky-400 text-black" disabled={adjustCredit.isPending} onClick={() => adjustCredit.mutate()}>
+              تطبيق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
+
+function CreditTab() {
+  const listQ = useQuery({
+    queryKey: ["admin-store-credit-tx"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("store_credit_transactions")
+        .select("id, user_id, amount_jod, balance_after, kind, reason, created_at")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader className="pb-2"><CardTitle className="text-base">حركات رصيد المتجر (الاسترجاعات)</CardTitle></CardHeader>
+      <CardContent className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="text-muted-foreground border-b">
+            <tr className="text-right">
+              <th className="p-2 font-medium">المبلغ</th>
+              <th className="p-2 font-medium">النوع</th>
+              <th className="p-2 font-medium">الرصيد بعدها</th>
+              <th className="p-2 font-medium">السبب</th>
+              <th className="p-2 font-medium">التاريخ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(listQ.data ?? []).map((t) => (
+              <tr key={t.id} className="border-b border-white/5">
+                <td className={"p-2 font-bold " + (Number(t.amount_jod) >= 0 ? "text-emerald-300" : "text-rose-300")}>
+                  {Number(t.amount_jod) >= 0 ? "+" : ""}{Number(t.amount_jod).toFixed(2)} د.أ
+                </td>
+                <td className="p-2"><Badge variant="outline" className="text-[10px] font-mono">{t.kind}</Badge></td>
+                <td className="p-2">{t.balance_after === null ? "—" : Number(t.balance_after).toFixed(2)}</td>
+                <td className="p-2 text-muted-foreground">{t.reason || "—"}</td>
+                <td className="p-2 text-[11px] text-muted-foreground">{new Date(t.created_at).toLocaleString("ar-JO")}</td>
+              </tr>
+            ))}
+            {!listQ.isLoading && (listQ.data ?? []).length === 0 && (
+              <tr><td colSpan={5} className="text-center p-8 text-muted-foreground">لا حركات بعد</td></tr>
+            )}
+          </tbody>
+        </table>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 function CouponsTab() {
   const listQ = useQuery({
