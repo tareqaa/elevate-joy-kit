@@ -400,6 +400,77 @@ function Rule({ icon, title, text }: { icon: string; title: string; text: string
   );
 }
 
+function IdentityEditor({ isAr, userId, currentName, currentUsername, onSaved }: {
+  isAr: boolean; userId: string; currentName: string; currentUsername: string; onSaved: (tag: string) => void;
+}) {
+  const [name, setName] = useState(currentName);
+  const [tag, setTag] = useState(currentUsername);
+  const [saving, setSaving] = useState(false);
+  const [check, setCheck] = useState<{ s: "idle" | "checking" | "ok" | "taken" | "invalid"; m?: string }>({ s: "idle" });
+
+  useEffect(() => {
+    const v = tag.trim();
+    if (v.toLowerCase() === currentUsername.toLowerCase()) { setCheck({ s: "idle" }); return; }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(v)) {
+      setCheck({ s: "invalid", m: isAr ? "3-20 حرف إنجليزي/أرقام/شرطة سفلية" : "3-20 letters, numbers or underscore" });
+      return;
+    }
+    setCheck({ s: "checking" });
+    const to = setTimeout(async () => {
+      const { data, error } = await supabase.from("profiles").select("id").ilike("username", v).neq("id", userId).maybeSingle();
+      if (error) { setCheck({ s: "idle" }); return; }
+      setCheck(data
+        ? { s: "taken", m: isAr ? "هذا الـ GameTag محجوز" : "GameTag is taken" }
+        : { s: "ok", m: isAr ? "متاح ✓" : "Available ✓" });
+    }, 400);
+    return () => clearTimeout(to);
+  }, [tag, currentUsername, userId, isAr]);
+
+  async function save() {
+    const n = name.trim();
+    const v = tag.trim();
+    if (n.length < 2) { toast.error(isAr ? "الاسم قصير جداً" : "Name is too short"); return; }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(v)) { toast.error(isAr ? "GameTag غير صالح" : "Invalid GameTag"); return; }
+    if (check.s === "taken") { toast.error(isAr ? "هذا الـ GameTag محجوز" : "GameTag is taken"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("profiles").update({ full_name: n, username: v }).eq("id", userId);
+    if (!error) await supabase.auth.updateUser({ data: { full_name: n, username: v } });
+    setSaving(false);
+    if (error) {
+      toast.error((error as { code?: string }).code === "23505"
+        ? (isAr ? "هذا الـ GameTag محجوز" : "GameTag is taken")
+        : error.message);
+      return;
+    }
+    toast.success(isAr ? "تم حفظ الملف" : "Profile saved");
+    onSaved(v);
+  }
+
+  return (
+    <div className="gxp-card gxp-edit-card">
+      <h3 className="gxp-h">✏️ {isAr ? "تعديل الملف الشخصي" : "Edit profile"}</h3>
+      <div className="gxp-fields">
+        <label>
+          <span>{isAr ? "الاسم الظاهر" : "Display name"}</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60}
+            placeholder={isAr ? "اسمك" : "Your name"} />
+        </label>
+        <label>
+          <span>GameTag</span>
+          <input dir="ltr" value={tag} onChange={(e) => setTag(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
+            maxLength={20} placeholder="your_tag" />
+          {check.m && <em className={check.s === "ok" ? "ok" : check.s === "checking" ? "" : "bad"}>{check.s === "checking" ? (isAr ? "جاري التحقق…" : "Checking…") : check.m}</em>}
+        </label>
+      </div>
+      <button type="button" className="btn btn-primary gxp-save" onClick={save}
+        disabled={saving || check.s === "taken" || check.s === "invalid" || check.s === "checking"}>
+        {saving ? (isAr ? "جاري الحفظ…" : "Saving…") : (isAr ? "حفظ التغييرات" : "Save changes")}
+      </button>
+      <p className="gxp-muted">{isAr ? "غيّر صورتك من قسم شخصيات الأفاتار بالأسفل." : "Change your picture from the avatar characters section below."}</p>
+    </div>
+  );
+}
+
 function PlayerSearch({ isAr }: { isAr: boolean }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Array<{ id: string; username: string; full_name: string | null; avatar_url: string | null; level: number | null }>>([]);
