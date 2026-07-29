@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_HOME_LAYOUT, type HomeLayout } from "./sections/types";
 
 export type HomeHero = {
   enabled: boolean;
@@ -54,6 +55,7 @@ export type SiteSettings = {
   home_categories_meta: Record<string, HomeCategoryOverride>;
   home_subcategories_meta: Record<string, HomeCategoryOverride>;
   home_bestseller_order: string[];
+  home_layout: HomeLayout;
 };
 
 const DEFAULT_HERO: HomeHero = {
@@ -79,6 +81,7 @@ const DEFAULTS: SiteSettings = {
   home_categories_meta: {},
   home_subcategories_meta: {},
   home_bestseller_order: [],
+  home_layout: DEFAULT_HOME_LAYOUT,
 };
 
 const CACHE_KEY = "gx_site_settings_v2";
@@ -115,6 +118,11 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
       merged.home_categories_meta = merged.home_categories_meta || {};
       merged.home_subcategories_meta = merged.home_subcategories_meta || {};
       merged.home_bestseller_order = Array.isArray(merged.home_bestseller_order) ? merged.home_bestseller_order : [];
+      // Normalize home_layout — accept partial rows and fill missing sections keys.
+      const rawLayout = merged.home_layout as unknown;
+      if (!rawLayout || typeof rawLayout !== "object" || !Array.isArray((rawLayout as HomeLayout).sections)) {
+        merged.home_layout = DEFAULT_HOME_LAYOUT;
+      }
       setSettings(merged);
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(merged)); } catch { /* noop */ }
     }
