@@ -10,9 +10,11 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Home as HomeIcon, Save, Image as ImageIcon, LayoutGrid, Star, Upload, Trash2, Plus, ArrowUp, ArrowDown } from "lucide-react";
+import { Home as HomeIcon, Save, Image as ImageIcon, LayoutGrid, Star, Upload, Trash2, Plus, ArrowUp, ArrowDown, History, RotateCcw } from "lucide-react";
 import { CATEGORY_LINKS, getFeaturedItems } from "@/data/products";
 import type { HomeHero, HomeBanners, HomeBannerItem, HomeCategoryOverride } from "@/lib/gx/site-settings";
+import { formatDistanceToNow } from "date-fns";
+import { ar } from "date-fns/locale";
 
 export const Route = createFileRoute("/_authenticated/admin/home")({
   head: () => ({ meta: [{ title: "الصفحة الرئيسية — لوحة التحكم" }] }),
