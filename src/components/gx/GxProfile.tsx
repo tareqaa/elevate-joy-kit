@@ -15,6 +15,7 @@ type PublicProfile = {
 /** Unified GX profile: identity + loyalty + coupons + badges + avatars + search + leaderboard. */
 export function GxProfile({ username }: { username?: string }) {
   const { lang, dir } = useLang();
+  const { format, formatCoins, currency } = useCurrency();
   const isAr = lang === "ar";
   const qc = useQueryClient();
   const [myId, setMyId] = useState<string | null>(null);
