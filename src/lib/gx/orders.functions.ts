@@ -60,5 +60,6 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       deliveryData: data.notes?.trim() ? { customer_notes: data.notes.trim() } : {},
       userId,
       coupon: data.coupon ?? null,
+      coins: data.coins ?? null,
     });
   });

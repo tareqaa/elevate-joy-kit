@@ -11,8 +11,13 @@ type CreateOrderInput = {
   deliveryData?: Record<string, unknown>;
   userId?: string | null;
   coupon?: {
-    id: string;
+    id: string | null;
+    userCouponId?: string | null;
     code: string;
+    discount_jod: number;
+  } | null;
+  coins?: {
+    coins: number;
     discount_jod: number;
   } | null;
 };
