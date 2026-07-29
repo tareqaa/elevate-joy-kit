@@ -126,6 +126,7 @@ function HomeAdmin() {
           <TabsTrigger value="banners"><LayoutGrid size={14} className="ms-2" /> السلايدر</TabsTrigger>
           <TabsTrigger value="cats"><LayoutGrid size={14} className="ms-2" /> الأقسام</TabsTrigger>
           <TabsTrigger value="best"><Star size={14} className="ms-2" /> الأكثر مبيعاً</TabsTrigger>
+          <TabsTrigger value="history"><History size={14} className="ms-2" /> السجل</TabsTrigger>
         </TabsList>
 
         <TabsContent value="hero" className="mt-4">
@@ -139,6 +140,9 @@ function HomeAdmin() {
         </TabsContent>
         <TabsContent value="best" className="mt-4">
           <BestTab order={state.home_bestseller_order} onChange={(o) => patch("home_bestseller_order", o)} />
+        </TabsContent>
+        <TabsContent value="history" className="mt-4">
+          <HistoryTab />
         </TabsContent>
       </Tabs>
     </div>
