@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Ticket, Plus, Trash2, Save, X, Search, Percent, DollarSign, Calendar, Users, ShoppingBag, Copy, Check } from "lucide-react";
+import { ProductPicker } from "@/components/gx/admin/ProductPicker";
 
 export const Route = createFileRoute("/_authenticated/admin/coupons")({
   component: AdminCouponsPage,
