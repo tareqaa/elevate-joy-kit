@@ -930,6 +930,63 @@ export type Database = {
         }
         Relationships: []
       }
+      refund_log: {
+        Row: {
+          admin_email: string | null
+          admin_id: string | null
+          amount_jod: number
+          avatars_locked: number
+          badges_removed: number
+          coins_removed: number
+          coupons_revoked: number
+          created_at: string
+          id: string
+          level_after: string | null
+          level_before: string | null
+          order_id: string
+          order_number: string | null
+          reason: string
+          user_id: string | null
+          xp_removed: number
+        }
+        Insert: {
+          admin_email?: string | null
+          admin_id?: string | null
+          amount_jod?: number
+          avatars_locked?: number
+          badges_removed?: number
+          coins_removed?: number
+          coupons_revoked?: number
+          created_at?: string
+          id?: string
+          level_after?: string | null
+          level_before?: string | null
+          order_id: string
+          order_number?: string | null
+          reason: string
+          user_id?: string | null
+          xp_removed?: number
+        }
+        Update: {
+          admin_email?: string | null
+          admin_id?: string | null
+          amount_jod?: number
+          avatars_locked?: number
+          badges_removed?: number
+          coins_removed?: number
+          coupons_revoked?: number
+          created_at?: string
+          id?: string
+          level_after?: string | null
+          level_before?: string | null
+          order_id?: string
+          order_number?: string | null
+          reason?: string
+          user_id?: string | null
+          xp_removed?: number
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           admin_notes: string | null
@@ -1227,6 +1284,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_refund_order: {
+        Args: { _amount: number; _order_id: string; _reason: string }
+        Returns: Json
+      }
       auto_cancel_stale_orders: { Args: never; Returns: number }
       award_badges: { Args: { _user_id: string }; Returns: undefined }
       generate_order_number: { Args: never; Returns: string }
@@ -1313,6 +1374,7 @@ export type Database = {
         Args: { _coins: number; _subtotal_jod: number }
         Returns: Json
       }
+      revoke_ineligible_rewards: { Args: { _user_id: string }; Returns: Json }
       search_public_profiles: {
         Args: { _limit?: number; _q: string }
         Returns: {
@@ -1353,6 +1415,7 @@ export type Database = {
         | "processing"
         | "delivered"
         | "cancelled"
+        | "refunded"
       review_status: "pending" | "approved" | "rejected" | "hidden"
     }
     CompositeTypes: {
@@ -1484,7 +1547,14 @@ export const Constants = {
       app_role: ["admin", "user"],
       coupon_discount_type: ["percent", "fixed"],
       coupon_scope: ["all", "products", "categories"],
-      order_status: ["pending", "paid", "processing", "delivered", "cancelled"],
+      order_status: [
+        "pending",
+        "paid",
+        "processing",
+        "delivered",
+        "cancelled",
+        "refunded",
+      ],
       review_status: ["pending", "approved", "rejected", "hidden"],
     },
   },
