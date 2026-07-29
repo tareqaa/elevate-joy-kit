@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -590,7 +589,7 @@ const THEME_PRESETS: { name: string; theme: ThemeConfig }[] = [
 function ThemeEditor({ theme, onChange }: { theme: ThemeConfig; onChange: (p: Partial<ThemeConfig>) => void }) {
   const t = { ...DEFAULT_THEME, ...theme };
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-3">
+    <div className="space-y-3">
       <Card className="bg-slate-900/60 border-slate-800">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm text-slate-100 flex items-center gap-2"><Palette size={14} /> ثيم المتجر</CardTitle>
@@ -690,7 +689,7 @@ function LivePreview({ layout, device, onSectionClick, selectedId }: {
   const themeVars = themeToCssVars(layout.theme);
   const w = DEVICE_WIDTH[device];
   return (
-    <div className="bg-slate-950/70 max-h-[calc(100vh-260px)] overflow-y-auto p-3">
+    <div className="p-3">
       <div style={{ maxWidth: w ?? "100%", margin: "0 auto", boxShadow: w ? "0 0 0 1px rgba(148,163,184,.15)" : undefined, borderRadius: w ? 12 : 0, overflow: "hidden" }}>
         <div className="gx-home-root" style={{ ...themeVars, background: "var(--gx-bg)", color: "var(--gx-text)", fontFamily: "var(--gx-font)" }}>
           {enabled.length === 0 && (
