@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.increment_purchases_on_delivered() TO authenticated;
