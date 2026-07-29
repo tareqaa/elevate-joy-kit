@@ -404,7 +404,7 @@ ${lines}
           currency,
           notes,
           customerName: contact.name.trim(),
-          customerWhatsapp: fullPhone,
+          customerWhatsapp: contactValue,
           contactType: contact.type,
           coupon: coupon ? { id: coupon.id, code: coupon.code, discount_jod: coupon.discount_jod } : null,
         },
