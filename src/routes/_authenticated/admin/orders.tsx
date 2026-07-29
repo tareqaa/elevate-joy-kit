@@ -689,7 +689,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           </div>
 
           {/* Refund */}
-          <RefundBlock order={order} />
+          <RefundBlock order={order} onDone={onClose} />
 
 
 
