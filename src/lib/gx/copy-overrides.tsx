@@ -201,10 +201,12 @@ export function InlineTextEditor() {
   }, [editing, isAdmin, pathname]);
 
   async function save() {
+    setSaving(true);
     const merged: CopyMap = { ...copy, ...pending };
     const { error } = await supabase.from("site_settings")
       .upsert({ key: "site_copy", value: merged as never }, { onConflict: "key" });
-    if (error) { toast.error("فشل الحفظ — تأكد أنك أدمن"); return; }
+    setSaving(false);
+    if (error) { toast.error(`فشل الحفظ: ${error.message}`); return; }
     setCopy(merged);
     try { localStorage.setItem(COPY_CACHE, JSON.stringify(merged)); } catch { /* noop */ }
     setPending({});
