@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/gx/i18n";
 import { useCurrency } from "@/lib/gx/currency";
-import { coinsToJod, fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM } from "@/lib/gx/loyalty";
+import { fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM } from "@/lib/gx/loyalty";
 
 type PublicProfile = {
   id: string; username: string; full_name: string | null; avatar_url: string | null;
