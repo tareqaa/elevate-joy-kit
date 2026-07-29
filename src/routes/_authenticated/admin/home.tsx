@@ -226,6 +226,15 @@ function HomeBuilder() {
         <div className="flex-1 min-w-0">
           <div className="text-slate-100 font-black text-lg leading-tight">محرر الصفحة الرئيسية</div>
           <div className="text-xs text-slate-500">اسحب لإعادة الترتيب • اضغط قسم للتعديل • كل تعديل يظهر مباشرة</div>
+        <div className="flex items-center gap-0.5 rounded-md border border-slate-800 bg-slate-900/60 p-0.5">
+          <button onClick={undo} disabled={past.length === 0} title="تراجع (Ctrl+Z)"
+            className="p-1.5 rounded text-slate-300 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed">
+            <Undo2 size={14} />
+          </button>
+          <button onClick={redo} disabled={future.length === 0} title="إعادة (Ctrl+Y)"
+            className="p-1.5 rounded text-slate-300 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed">
+            <Redo2 size={14} />
+          </button>
         </div>
         <div className="hidden md:flex items-center gap-1 rounded-md border border-slate-800 bg-slate-900/60 p-0.5">
           {(["desktop", "tablet", "mobile"] as const).map((d) => {
@@ -254,7 +263,21 @@ function HomeBuilder() {
           <TabsTrigger value="history"><History size={13} className="ms-2" /> السجل</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="builder" className="mt-3">
+      {restorable && (
+        <div className="mx-4 mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 flex items-center justify-between gap-2">
+          <div className="text-xs text-amber-200">
+            هناك مسودة غير محفوظة من جلسة سابقة — هل تريد استعادتها؟
+          </div>
+          <div className="flex gap-1">
+            <Button size="sm" onClick={() => { pushDraft(restorable); setRestorable(null); toast.success("تمت استعادة المسودة"); }}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 h-7 text-xs">استعادة</Button>
+            <Button size="sm" variant="outline" onClick={() => { try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ } setRestorable(null); }}
+              className="border-slate-700 text-slate-300 h-7 text-xs">تجاهل</Button>
+          </div>
+        </div>
+      )}
+
+      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="px-4 pt-3">
           <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-3">
             {/* Left: sections list */}
             <div className="space-y-3">
