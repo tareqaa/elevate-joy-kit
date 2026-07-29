@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { CATEGORY_LINKS, getCategoryLink, getFeaturedItems } from "@/data/products";
+import { CATEGORY_LINKS, getCategoryLink, getFeaturedItems, type FeaturedItem } from "@/data/products";
 import { useCurrency } from "@/lib/gx/currency";
 import { ProductIcon, CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
 import { PRODUCTS_CATALOG } from "@/data/products";
@@ -9,6 +9,7 @@ import { BuyActions } from "@/components/gx/BuyActions";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-locale";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { useSiteSettings } from "@/lib/gx/site-settings";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,6 +28,7 @@ function Home() {
   return (
     <StoreShell>
       <Hero />
+      <BannerCarousel />
       <Categories />
       <Featured />
       <TrustStrip />
@@ -37,25 +39,82 @@ function Home() {
 
 function Hero() {
   const { t } = useLang();
+  const { home_hero } = useSiteSettings();
+  if (!home_hero.enabled) return null;
+  const badge = home_hero.badge || t("home.hero_badge");
+  const titleA = home_hero.title_a || t("home.hero_title_a");
+  const titleB = home_hero.title_b || t("home.hero_title_b");
+  const titleC = home_hero.title_c || t("home.hero_title_c");
+  const subtitle = home_hero.subtitle || t("home.hero_desc");
+  const ctaAText = home_hero.cta_primary_text || t("home.browse_products");
+  const ctaALink = home_hero.cta_primary_link || "#products";
+  const ctaBText = home_hero.cta_secondary_text || t("home.see_categories");
+  const ctaBLink = home_hero.cta_secondary_link || "#categories";
   return (
     <section className="hero">
       <div className="wrap">
         <div className="hero-inner fade-in">
           <div className="hero-text">
-            <div className="hero-badge"><span className="dot" /> {t("home.hero_badge")}</div>
-            <h1>{t("home.hero_title_a")} <span>{t("home.hero_title_b")}</span><br />{t("home.hero_title_c")}</h1>
-            <p>{t("home.hero_desc")}</p>
+            <div className="hero-badge"><span className="dot" /> {badge}</div>
+            <h1>{titleA} <span>{titleB}</span><br />{titleC}</h1>
+            <p>{subtitle}</p>
             <div className="hero-ctas">
-              <a href="#products" className="btn btn-primary">{t("home.browse_products")}</a>
-              <a href="#categories" className="btn btn-ghost">{t("home.see_categories")}</a>
+              <a href={ctaALink} className="btn btn-primary">{ctaAText}</a>
+              <a href={ctaBLink} className="btn btn-ghost">{ctaBText}</a>
             </div>
           </div>
           <div className="hero-visual">
-            <div className="orb" />
-            <div className="orb-core">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth={1.4}><rect x="2" y="7" width="20" height="12" rx="4" /><circle cx="8" cy="13" r="1.6" fill="#00e5ff" stroke="none" /><circle cx="6" cy="11" r="0.4" fill="#00e5ff" stroke="none" /><path d="M15 11h4M17 9v4" stroke="#ff2d78" /></svg>
-            </div>
+            {home_hero.image_url ? (
+              <img src={home_hero.image_url} alt="" style={{ maxWidth: "100%", borderRadius: 20, boxShadow: "0 20px 60px rgba(0,0,0,.35)" }} />
+            ) : (
+              <>
+                <div className="orb" />
+                <div className="orb-core">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth={1.4}><rect x="2" y="7" width="20" height="12" rx="4" /><circle cx="8" cy="13" r="1.6" fill="#00e5ff" stroke="none" /><circle cx="6" cy="11" r="0.4" fill="#00e5ff" stroke="none" /><path d="M15 11h4M17 9v4" stroke="#ff2d78" /></svg>
+                </div>
+              </>
+            )}
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BannerCarousel() {
+  const { home_banners } = useSiteSettings();
+  const [idx, setIdx] = useState(0);
+  const items = home_banners.items || [];
+  const enabled = home_banners.enabled && items.length > 0;
+  useEffect(() => {
+    if (!enabled || !home_banners.autoplay || items.length < 2) return;
+    const id = setInterval(() => setIdx((v) => (v + 1) % items.length), Math.max(2000, home_banners.interval_ms || 5000));
+    return () => clearInterval(id);
+  }, [enabled, home_banners.autoplay, home_banners.interval_ms, items.length]);
+  if (!enabled) return null;
+  return (
+    <section className="section" style={{ paddingTop: 12, paddingBottom: 0 }}>
+      <div className="wrap">
+        <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", aspectRatio: "21/8", background: "#0b0f1a", boxShadow: "0 20px 60px rgba(0,0,0,.35)" }}>
+          {items.map((b, i) => (
+            <a key={b.id} href={b.link || "#"} style={{ position: "absolute", inset: 0, opacity: i === idx ? 1 : 0, transition: "opacity .6s ease", display: "block" }}>
+              <img src={b.image_url} alt={b.title || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {(b.title || b.subtitle) && (
+                <div style={{ position: "absolute", insetInlineStart: 24, bottom: 24, background: "rgba(0,0,0,.45)", padding: "10px 16px", borderRadius: 12, color: "#fff", backdropFilter: "blur(6px)" }}>
+                  {b.title && <div style={{ fontWeight: 900, fontSize: 20 }}>{b.title}</div>}
+                  {b.subtitle && <div style={{ fontSize: 13, opacity: .9 }}>{b.subtitle}</div>}
+                </div>
+              )}
+            </a>
+          ))}
+          {items.length > 1 && (
+            <div style={{ position: "absolute", bottom: 10, insetInlineEnd: 16, display: "flex", gap: 6 }}>
+              {items.map((_, i) => (
+                <button key={i} onClick={() => setIdx(i)} aria-label={`Slide ${i + 1}`}
+                  style={{ width: i === idx ? 24 : 10, height: 10, borderRadius: 99, background: i === idx ? "#00e5ff" : "rgba(255,255,255,.5)", border: 0, cursor: "pointer", transition: "all .2s" }} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -64,6 +123,21 @@ function Hero() {
 
 function Categories() {
   const { t, lang } = useLang();
+  const { home_categories_meta } = useSiteSettings();
+  const links = CATEGORY_LINKS
+    .map((c) => {
+      const meta = home_categories_meta[c.slug] || {};
+      if (meta.hidden) return null;
+      return {
+        ...c,
+        _override_name: meta.name,
+        _override_desc: meta.desc,
+        _override_accent: meta.accent,
+        _sort: typeof meta.sort === "number" ? meta.sort : 999,
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => !!x)
+    .sort((a, b) => a._sort - b._sort);
   return (
     <section className="section" id="categories">
       <div className="wrap">
@@ -71,10 +145,13 @@ function Categories() {
           <div><span className="k">{t("home.cat_eyebrow")}</span><h2>{t("home.cat_title")}</h2></div>
         </div>
         <div className="cat-grid-big">
-          {CATEGORY_LINKS.map(c0 => {
+          {links.map(c0 => {
             const c = localizedCategoryLink(c0, lang);
+            const name = c0._override_name || c.name;
+            const desc = c0._override_desc || c.desc;
+            const accent = c0._override_accent || c.accent;
             return (
-              <Link key={c.slug} to={getCategoryLink(c.slug) as never} className="cat-card-big" style={{ ["--accent" as string]: c.accent } as React.CSSProperties}>
+              <Link key={c.slug} to={getCategoryLink(c.slug) as never} className="cat-card-big" style={{ ["--accent" as string]: accent } as React.CSSProperties}>
                 <div className="ccb-top">
                   {c.slug === "design" ? (
                     <div className="app-icon-grid">
@@ -84,13 +161,13 @@ function Categories() {
                       <span style={{ background: "linear-gradient(135deg,#22c1a8,#0e7a6a)" }}>Id</span>
                     </div>
                   ) : (
-                    <div className="cat-ic" style={{ background: c.bg, boxShadow: `inset 0 0 0 1.5px ${c.accent}33` }}>{c.icon}</div>
+                    <div className="cat-ic" style={{ background: c.bg, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>{c.icon}</div>
                   )}
-                  <div className="ccb-glow" style={{ background: c.accent }} />
+                  <div className="ccb-glow" style={{ background: accent }} />
                 </div>
                 <div>
-                  <div className="cname-modern">{c.name}</div>
-                  <div className="cdesc">{c.desc}</div>
+                  <div className="cname-modern">{name}</div>
+                  <div className="cdesc">{desc}</div>
                 </div>
                 <div className="carrow">{t("home.browse_category")} <span className="arrow-ic">‹</span></div>
               </Link>
@@ -105,7 +182,12 @@ function Categories() {
 function Featured() {
   const { format } = useCurrency();
   const { t, lang } = useLang();
-  const items = getFeaturedItems();
+  const { home_bestseller_order } = useSiteSettings();
+  const base = getFeaturedItems();
+  const items: FeaturedItem[] = home_bestseller_order.length > 0
+    ? [...home_bestseller_order.map((id) => base.find((b) => b.cartId === id)).filter((x): x is FeaturedItem => !!x),
+       ...base.filter((b) => !home_bestseller_order.includes(b.cartId))]
+    : base;
   return (
     <section className="section" id="products" style={{ background: "var(--bg2)" }}>
       <div className="wrap">
@@ -223,8 +305,7 @@ function Testimonials() {
     let paused = false;
     let resumeAt = 0;
     let loopWidth = grid.scrollWidth / 2;
-    // Start from a neutral position (RTL: near 0-negative; LTR: near 0)
-    let pos = dir === "rtl" ? 0 : 0;
+    let pos = 0;
     grid.scrollLeft = 0;
     const onResize = () => { loopWidth = grid.scrollWidth / 2; };
     window.addEventListener("resize", onResize);
