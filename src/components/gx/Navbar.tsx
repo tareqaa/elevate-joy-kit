@@ -103,7 +103,7 @@ function readCachedProfile(userId?: string): Profile | null {
 
 export function Navbar() {
   const cart = useCart();
-  const { currency } = useCurrency();
+  const { currency, format, formatCoins } = useCurrency();
   const { t, lang, setLang } = useLang();
   const [menuOpen, setMenuOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
