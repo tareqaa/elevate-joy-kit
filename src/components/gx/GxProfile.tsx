@@ -207,32 +207,8 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                   )}
                 </div>
 
-                {/* Levels ladder */}
-                <div className="gxp-card">
-                  <h3 className="gxp-h">{isAr ? "سلّم المستويات" : "Levels"}</h3>
-                  <div className="gxp-levels">
-                    {levels.map((l) => {
-                      const reached = (l.sort_order ?? 0) <= currentSort;
-                      return (
-                        <div key={l.id} className={`gxp-level${reached ? " on" : ""}`}>
-                          <div className="gxp-level-top">
-                            <span className="ico">{l.icon}</span>
-                            <div>
-                              <b style={{ color: l.color }}>{levelName(l, lang)}</b>
-                              <em>{l.min_xp.toLocaleString("en-US")} XP</em>
-                            </div>
-                            <span className="gxp-level-state">{reached ? "✓" : "🔒"}</span>
-                          </div>
-                          <div className="gxp-tags">
-                            {l.reward_coins > 0 && <span className="t amber">+{l.reward_coins} Coins</span>}
-                            {l.coupon_percent > 0 && <span className="t cyan">{isAr ? "كوبون" : "Coupon"} {l.coupon_percent}%</span>}
-                            <span className="t violet">×{(1 + Number(l.coins_bonus_pct) / 100).toFixed(2)} Coins</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+
+
 
                 {isOwner && (
                   <>
