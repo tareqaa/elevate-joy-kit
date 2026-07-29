@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import {
   Save, Home as HomeIcon, GripVertical, Trash2, Plus, Eye,
   History, RotateCcw, Settings2, ExternalLink, ChevronLeft,
-  Palette, Monitor, Tablet, Smartphone, SlidersHorizontal,
+  Palette, Monitor, Tablet, Smartphone, SlidersHorizontal, Undo2, Redo2,
 } from "lucide-react";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
