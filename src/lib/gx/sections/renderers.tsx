@@ -448,7 +448,9 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
         <div className="section-head"><div><span className="k">{data.eyebrow || t("home.testi_eyebrow")}</span><h2>{data.title || t("home.testi_title")}</h2></div></div>
         <div className="testi-grid" ref={gridRef}>
           {cards.map((it, i) => {
-            const q = lang === "en" ? it.quote_en : it.quote_ar;
+            const original = lang === "en" ? it.quote_en : it.quote_ar;
+            const trans = tr[it.id];
+            const q = trans?.text || original;
             const stars = Math.max(1, Math.min(5, it.rating ?? 5));
             return (
               <div key={`${it.id}-${i}`} className="testi-card">
