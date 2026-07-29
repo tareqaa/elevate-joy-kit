@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FolderTree, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronLeft, Home, Palette } from "lucide-react";
+import { FolderTree, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronUp, ChevronLeft, Home, Palette, Search, Package, Copy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
   head: () => ({ meta: [{ title: "الأقسام — لوحة التحكم" }] }),
