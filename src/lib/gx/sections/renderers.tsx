@@ -12,6 +12,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-locale";
 import { supabase } from "@/integrations/supabase/client";
 import { initialOf, avatarColorFor } from "@/lib/gx/reviews";
+import { translateTexts } from "@/lib/gx/translate.functions";
 import type {
   HeroData, AnnouncementData, CarouselData, CategoriesData,
   BestsellersData, ProductsData, TrustData, ReviewsData, ReviewItem, FaqData, NewsletterData,
@@ -390,6 +391,28 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
       : (data.items && data.items.length > 0 ? data.items : DEFAULT_REVIEWS);
   const gridRef = useRef<HTMLDivElement>(null);
 
+  // Auto-translate customer reviews into the page language (Google Translate).
+  const [tr, setTr] = useState<Record<string, { text: string; from: string }>>({});
+  useEffect(() => {
+    const sources = items
+      .map((it) => ({ id: it.id, text: (lang === "en" ? it.quote_en : it.quote_ar) || "" }))
+      .filter((s) => s.text.trim().length > 1);
+    if (sources.length === 0) return;
+    let alive = true;
+    (async () => {
+      try {
+        const res = await translateTexts({ data: { texts: sources.map((s) => s.text), target: lang } });
+        if (!alive) return;
+        const next: Record<string, { text: string; from: string }> = {};
+        res.forEach((r, i) => { if (r.from) next[sources[i].id] = { text: r.text, from: r.from }; });
+        setTr(next);
+      } catch { /* keep original text */ }
+    })();
+    return () => { alive = false; };
+  }, [lang, items]);
+
+
+
   useEffect(() => {
     const grid = gridRef.current; if (!grid) return;
     let paused = false; let resumeAt = 0;
@@ -425,7 +448,9 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
         <div className="section-head"><div><span className="k">{data.eyebrow || t("home.testi_eyebrow")}</span><h2>{data.title || t("home.testi_title")}</h2></div></div>
         <div className="testi-grid" ref={gridRef}>
           {cards.map((it, i) => {
-            const q = lang === "en" ? it.quote_en : it.quote_ar;
+            const original = lang === "en" ? it.quote_en : it.quote_ar;
+            const trans = tr[it.id];
+            const q = trans?.text || original;
             const stars = Math.max(1, Math.min(5, it.rating ?? 5));
             return (
               <div key={`${it.id}-${i}`} className="testi-card">
@@ -442,7 +467,18 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
                     <div className="testi-stars">{"★".repeat(stars)}<span style={{ opacity: .25 }}>{"★".repeat(5 - stars)}</span></div>
                   </div>
                 </div>
-                {q && <div className="testi-quote testi-clamp">{q}</div>}
+                {q && (
+                  <div className="testi-quote testi-clamp">
+                    {q}
+                    {trans && (
+                      <span style={{ display: "block", marginTop: 6, fontSize: 11, opacity: .6 }}>
+                        {lang === "en"
+                          ? `Translated from ${trans.from === "ar" ? "Arabic" : trans.from.toUpperCase()} · Google`
+                          : `مُترجم من ${trans.from === "en" ? "الإنجليزية" : trans.from.toUpperCase()} · Google`}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
             );

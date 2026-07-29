@@ -31,12 +31,58 @@ type Ctx = {
   currency: string;
   setCurrency: (c: string) => void;
   format: (jod: number) => string;
+  /** 1000 GX Coins = 1 JOD, formatted in the active currency. */
+  formatCoins: (coins: number) => string;
+  /** Live market rate for 1 JOD in the active currency. */
+  rate: number;
 };
 
 const CurrencyContext = createContext<Ctx | null>(null);
 
+const RATES_CACHE_KEY = "gx_fx_rates_v1";
+const RATES_TTL_MS = 6 * 60 * 60 * 1000; // refresh live market rates every 6h
+
+function readCachedRates(): { at: number; rates: Record<string, number> } | null {
+  try {
+    const raw = localStorage.getItem(RATES_CACHE_KEY);
+    const v = raw ? JSON.parse(raw) : null;
+    return v && typeof v === "object" && v.rates ? v : null;
+  } catch { return null; }
+}
+
+/** Live market rates (base JOD). Falls back silently to the built-in table. */
+async function fetchLiveRates(): Promise<Record<string, number> | null> {
+  try {
+    const res = await fetch("https://open.er-api.com/v6/latest/JOD");
+    const data = await res.json();
+    if (data?.result !== "success" || !data?.rates) return null;
+    const out: Record<string, number> = {};
+    for (const code of Object.keys(CURRENCIES)) {
+      const r = Number(data.rates[code]);
+      if (Number.isFinite(r) && r > 0) out[code] = r;
+    }
+    out.JOD = 1;
+    return Object.keys(out).length > 1 ? out : null;
+  } catch { return null; }
+}
+
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState<string>("JOD");
+  const [rates, setRates] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const cached = readCachedRates();
+    if (cached?.rates) setRates(cached.rates);
+    if (cached && Date.now() - cached.at < RATES_TTL_MS) return;
+    let alive = true;
+    (async () => {
+      const live = await fetchLiveRates();
+      if (!live || !alive) return;
+      setRates(live);
+      try { localStorage.setItem(RATES_CACHE_KEY, JSON.stringify({ at: Date.now(), rates: live })); } catch { /* noop */ }
+    })();
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -63,20 +109,32 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, code);
   }, []);
 
+  const rate = useMemo(() => {
+    const live = rates[currency];
+    if (Number.isFinite(live) && live > 0) return live;
+    return (CURRENCIES[currency] || CURRENCIES.JOD).rate;
+  }, [rates, currency]);
+
   const format = useCallback(
     (jod: number) => {
       const c = CURRENCIES[currency] || CURRENCIES.JOD;
-      const val = jod * c.rate;
+      const val = jod * rate;
       const formatted = val.toLocaleString("en-US", {
         minimumFractionDigits: c.decimals,
         maximumFractionDigits: c.decimals,
       });
       return `${formatted} ${currency}`;
     },
-    [currency]
+    [currency, rate]
   );
 
-  const value = useMemo(() => ({ currency, setCurrency, format }), [currency, setCurrency, format]);
+  /** GX Coins are stored as coins; 1000 coins = 1 JOD, shown in the active currency. */
+  const formatCoins = useCallback((coins: number) => format((Number(coins) || 0) / 1000), [format]);
+
+  const value = useMemo(
+    () => ({ currency, setCurrency, format, formatCoins, rate }),
+    [currency, setCurrency, format, formatCoins, rate]
+  );
   return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>;
 }
 

@@ -4,7 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/gx/i18n";
-import { coinsToJod, fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM } from "@/lib/gx/loyalty";
+import { useCurrency } from "@/lib/gx/currency";
+import { fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM } from "@/lib/gx/loyalty";
 
 type PublicProfile = {
   id: string; username: string; full_name: string | null; avatar_url: string | null;
@@ -15,6 +16,7 @@ type PublicProfile = {
 /** Unified GX profile: identity + loyalty + coupons + badges + avatars + search + leaderboard. */
 export function GxProfile({ username }: { username?: string }) {
   const { lang, dir } = useLang();
+  const { format, formatCoins, currency } = useCurrency();
   const isAr = lang === "ar";
   const qc = useQueryClient();
   const [myId, setMyId] = useState<string | null>(null);
@@ -168,10 +170,10 @@ export function GxProfile({ username }: { username?: string }) {
 
                   <div className="gxp-stats">
                     <Stat label="GX Coins" value={(isOwner ? loyaltyQ.data?.coins ?? 0 : 0).toLocaleString("en-US")}
-                      hint={isOwner ? `≈ ${coinsToJod(loyaltyQ.data?.coins ?? 0).toFixed(2)} ${isAr ? "د.أ" : "JOD"}` : undefined}
+                      hint={isOwner ? `≈ ${formatCoins(loyaltyQ.data?.coins ?? 0)}` : undefined}
                       hidden={!isOwner} icon="🪙" />
                     <Stat label={isAr ? "رصيد المتجر" : "Store credit"}
-                      value={`${Number(loyaltyQ.data?.store_credit ?? 0).toFixed(2)}`} hint={isAr ? "د.أ" : "JOD"}
+                      value={format(Number(loyaltyQ.data?.store_credit ?? 0))} hint={currency}
                       hidden={!isOwner} icon="💳" />
                     <Stat label="XP" value={xp.toLocaleString("en-US")} icon="⚡" />
                     <Stat label={isAr ? "الطلبات" : "Orders"} value={String(loyaltyQ.data?.orders_count ?? p.orders_count ?? 0)} icon="📦" />
