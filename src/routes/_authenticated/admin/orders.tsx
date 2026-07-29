@@ -40,6 +40,7 @@ type OrderRow = {
   user_id: string | null;
   customer_name: string | null;
   customer_whatsapp: string | null;
+  contact_type: string | null;
   items: unknown;
   total_jod: number;
   status: string;
@@ -47,6 +48,7 @@ type OrderRow = {
   delivery_data: unknown;
   created_at: string;
 };
+
 type OrderWithEmail = OrderRow & { user_email: string | null; user_username: string | null };
 
 type DateRange = "all" | "today" | "7d" | "30d";
@@ -348,6 +350,7 @@ function OrdersAdmin() {
                 <th>التاريخ</th>
                 <th>العميل</th>
                 <th>الإيميل</th>
+                <th>التواصل</th>
                 <th>الإجمالي</th>
                 <th>الحالة</th>
                 <th></th>
@@ -356,6 +359,13 @@ function OrdersAdmin() {
             <tbody>
               {filtered.map((o) => {
                 const Ico = STATUS_ICON[o.status] || Clock;
+                const isTg = o.contact_type === "telegram";
+                const contactLabel = isTg ? "تيليجرام" : "واتساب";
+                const contactHref = o.customer_whatsapp
+                  ? (isTg
+                      ? `https://t.me/${o.customer_whatsapp.replace(/^@+/, "")}`
+                      : `https://wa.me/${o.customer_whatsapp.replace(/[^\d]/g, "")}`)
+                  : null;
                 return (
                   <tr key={o.id} className={`gx-adm-row ${flashIds.has(o.id) ? "new" : ""}`}>
                     <td>
@@ -376,6 +386,24 @@ function OrdersAdmin() {
                         <span className="text-cyan-100/40">—</span>
                       )}
                     </td>
+                    <td className="text-xs whitespace-nowrap">
+                      {o.customer_whatsapp ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] uppercase text-cyan-400/60">{contactLabel}</span>
+                          <a
+                            href={contactHref ?? "#"}
+                            target="_blank"
+                            rel="noreferrer"
+                            dir="ltr"
+                            className="text-cyan-300 hover:text-cyan-100 hover:underline font-mono"
+                          >
+                            {o.customer_whatsapp}
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-cyan-100/40">—</span>
+                      )}
+                    </td>
                     <td className="font-bold">{Number(o.total_jod).toFixed(2)}<span className="text-xs text-cyan-400/70 me-1"> د.أ</span></td>
                     <td>
                       <span className={`gx-adm-badge ${STATUS_COLOR[o.status]}`}>
@@ -390,8 +418,9 @@ function OrdersAdmin() {
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="gx-adm-empty">لا يوجد طلبات ضمن الفلاتر الحالية</td></tr>
+                <tr><td colSpan={8} className="gx-adm-empty">لا يوجد طلبات ضمن الفلاتر الحالية</td></tr>
               )}
+
             </tbody>
           </table>
         </div>
@@ -531,7 +560,23 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           <div className="text-sm space-y-1">
             <div><b>العميل:</b> {order.customer_name || "زائر"} {order.user_username && <span className="text-muted-foreground">(@{order.user_username})</span>}</div>
             {order.user_email && <div><b>الإيميل:</b> <a href={`mailto:${order.user_email}`} dir="ltr" className="text-cyan-400 hover:underline">{order.user_email}</a></div>}
-            {order.customer_whatsapp && <div><b>واتساب:</b> <span dir="ltr">{order.customer_whatsapp}</span></div>}
+            {order.customer_whatsapp && (
+              <div>
+                <b>{order.contact_type === "telegram" ? "تيليجرام" : "واتساب"}:</b>{" "}
+                <a
+                  href={order.contact_type === "telegram"
+                    ? `https://t.me/${order.customer_whatsapp.replace(/^@+/, "")}`
+                    : `https://wa.me/${order.customer_whatsapp.replace(/[^\d]/g, "")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  dir="ltr"
+                  className="text-cyan-400 hover:underline font-mono"
+                >
+                  {order.customer_whatsapp}
+                </a>
+              </div>
+            )}
+
             <div><b>التاريخ:</b> {new Date(order.created_at).toLocaleString("ar-EG")}</div>
             <div><b>الإجمالي:</b> {Number(order.total_jod).toFixed(2)} د.أ</div>
           </div>
