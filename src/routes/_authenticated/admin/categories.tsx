@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FolderTree, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronLeft, Home, Palette } from "lucide-react";
+import { FolderTree, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronUp, ChevronLeft, Home, Palette, Search, Package, Copy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
   head: () => ({ meta: [{ title: "الأقسام — لوحة التحكم" }] }),
@@ -76,10 +76,30 @@ const css = `
 .gx-tabs{display:flex;gap:2px;background:rgba(0,0,0,.3);padding:4px;border-radius:10px;border:1px solid rgba(0,229,255,.15)}
 .gx-tab{flex:1;padding:8px 12px;border-radius:7px;background:transparent;border:none;color:#7d92a8;font-weight:600;font-size:13px;cursor:pointer}
 .gx-tab.active{background:rgba(0,229,255,.12);color:#00e5ff}
+.gx-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:760px){.gx-stats{grid-template-columns:repeat(2,1fr)}}
+.gx-stat{background:linear-gradient(180deg,rgba(16,24,32,.85),rgba(10,15,22,.9));border:1px solid rgba(0,229,255,.15);border-radius:14px;padding:12px 14px}
+.gx-stat b{display:block;font-size:22px;color:#00e5ff;line-height:1.2}
+.gx-stat span{font-size:11px;color:#7d92a8;font-weight:700}
+.gx-count{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(255,255,255,.06);color:#9fb4c7;border:1px solid rgba(255,255,255,.08)}
+.gx-skel{height:62px;border-radius:14px;background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.09),rgba(255,255,255,.04));background-size:200% 100%;animation:gxsk 1.2s linear infinite}
+@keyframes gxsk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.gx-ord{display:flex;flex-direction:column;gap:2px}
+.gx-ord button{background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.18);color:#00e5ff;border-radius:6px;width:22px;height:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.gx-ord button:disabled{opacity:.25;cursor:not-allowed}
 `;
+
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+}
+
+function norm(s: string) {
+  return (s || "")
+    .toLowerCase()
+    .replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه")
+    .replace(/[\u064B-\u0652\u0640]/g, "")
+    .trim();
 }
 
 function CategoriesAdmin() {
@@ -88,6 +108,8 @@ function CategoriesAdmin() {
   const [creating, setCreating] = useState<{ parentId: string | null } | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<"tree" | "flat">("tree");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "hidden" | "main">("all");
 
   const q = useQuery({
     queryKey: ["admin-categories"],
@@ -101,6 +123,20 @@ function CategoriesAdmin() {
       return (data ?? []) as Category[];
     },
   });
+
+  const countsQ = useQuery({
+    queryKey: ["admin-categories-product-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("products").select("category_id");
+      if (error) throw error;
+      const m: Record<string, number> = {};
+      for (const r of (data ?? []) as { category_id: string | null }[]) {
+        if (r.category_id) m[r.category_id] = (m[r.category_id] ?? 0) + 1;
+      }
+      return m;
+    },
+  });
+  const counts = countsQ.data ?? {};
 
   const deleteMut = useMutation({
     mutationFn: async (id: string) => {
@@ -120,17 +156,91 @@ function CategoriesAdmin() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const reorderMut = useMutation({
+    mutationFn: async ({ a, b }: { a: Category; b: Category }) => {
+      const aOrder = a.sort_order;
+      const bOrder = b.sort_order === aOrder ? aOrder + 1 : b.sort_order;
+      const r1 = await supabase.from("categories").update({ sort_order: bOrder }).eq("id", a.id);
+      if (r1.error) throw r1.error;
+      const r2 = await supabase.from("categories").update({ sort_order: aOrder }).eq("id", b.id);
+      if (r2.error) throw r2.error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-categories"] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const duplicateMut = useMutation({
+    mutationFn: async (c: Category) => {
+      const { error } = await supabase.from("categories").insert({
+        slug: `${c.slug}-copy-${Math.random().toString(36).slice(2, 6)}`,
+        name_ar: `${c.name_ar} (نسخة)`,
+        name_en: `${c.name_en} (copy)`,
+        icon_url: c.icon_url,
+        sort_order: c.sort_order + 1,
+        is_active: false,
+        parent_id: c.parent_id,
+        is_main: false,
+        accent_color: c.accent_color,
+        theme_gradient: c.theme_gradient,
+        description_ar: c.description_ar,
+        description_en: c.description_en,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تم إنشاء نسخة (مخفية)"); qc.invalidateQueries({ queryKey: ["admin-categories"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const all = q.data ?? [];
+
+  const stats = useMemo(() => ({
+    total: all.length,
+    main: all.filter((c) => c.is_main).length,
+    active: all.filter((c) => c.is_active).length,
+    hidden: all.filter((c) => !c.is_active).length,
+  }), [all]);
+
+  const matches = useMemo(() => {
+    const s = norm(search);
+    return (c: Category) => {
+      if (filter === "active" && !c.is_active) return false;
+      if (filter === "hidden" && c.is_active) return false;
+      if (filter === "main" && !c.is_main) return false;
+      if (!s) return true;
+      return norm(c.name_ar).includes(s) || norm(c.name_en).includes(s) || norm(c.slug).includes(s);
+    };
+  }, [search, filter]);
+
+  const filteredFlat = useMemo(() => all.filter(matches), [all, matches]);
+
+  // Keep ancestors of matched nodes visible in tree view
+  const visibleIds = useMemo(() => {
+    if (!search.trim() && filter === "all") return null;
+    const byId = new Map(all.map((c) => [c.id, c]));
+    const keep = new Set<string>();
+    for (const c of filteredFlat) {
+      let cur: Category | undefined = c;
+      const guard = new Set<string>();
+      while (cur && !guard.has(cur.id)) {
+        guard.add(cur.id);
+        keep.add(cur.id);
+        cur = cur.parent_id ? byId.get(cur.parent_id) : undefined;
+      }
+    }
+    return keep;
+  }, [all, filteredFlat, search, filter]);
+
   const byParent = useMemo(() => {
     const map = new Map<string | "root", Category[]>();
     for (const c of all) {
+      if (visibleIds && !visibleIds.has(c.id)) continue;
       const k = c.parent_id ?? "root";
       const arr = map.get(k) ?? [];
       arr.push(c);
       map.set(k, arr);
     }
     return map;
-  }, [all]);
+  }, [all, visibleIds]);
 
   const roots = byParent.get("root") ?? [];
 
@@ -142,8 +252,23 @@ function CategoriesAdmin() {
     });
   }
 
+  function move(node: Category, dir: -1 | 1) {
+    const siblings = (all.filter((c) => (c.parent_id ?? null) === (node.parent_id ?? null)));
+    const idx = siblings.findIndex((c) => c.id === node.id);
+    const target = siblings[idx + dir];
+    if (!target) return;
+    reorderMut.mutate({ a: node, b: target });
+  }
+
+  function siblingBounds(node: Category) {
+    const siblings = all.filter((c) => (c.parent_id ?? null) === (node.parent_id ?? null));
+    const idx = siblings.findIndex((c) => c.id === node.id);
+    return { first: idx <= 0, last: idx === siblings.length - 1 };
+  }
+
   function expandAll() { setExpanded(new Set(all.map((c) => c.id))); }
   function collapseAll() { setExpanded(new Set()); }
+
 
   return (
     <div className="gx-cats space-y-4" dir="rtl">
@@ -171,18 +296,46 @@ function CategoriesAdmin() {
         </div>
       </div>
 
-      <div className="gx-tabs" style={{ maxWidth: 320 }}>
-        <button className={`gx-tab ${tab === "tree" ? "active" : ""}`} onClick={() => setTab("tree")}>عرض شجري</button>
-        <button className={`gx-tab ${tab === "flat" ? "active" : ""}`} onClick={() => setTab("flat")}>عرض كامل</button>
+      <div className="gx-stats">
+        <div className="gx-stat"><b>{stats.total}</b><span>إجمالي الأقسام</span></div>
+        <div className="gx-stat"><b>{stats.main}</b><span>أقسام رئيسية بالواجهة</span></div>
+        <div className="gx-stat"><b>{stats.active}</b><span>مفعّلة</span></div>
+        <div className="gx-stat"><b>{stats.hidden}</b><span>مخفية</span></div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="gx-tabs" style={{ maxWidth: 260 }}>
+          <button className={`gx-tab ${tab === "tree" ? "active" : ""}`} onClick={() => setTab("tree")}>عرض شجري</button>
+          <button className={`gx-tab ${tab === "flat" ? "active" : ""}`} onClick={() => setTab("flat")}>عرض كامل</button>
+        </div>
+        <div className="gx-tabs" style={{ maxWidth: 380 }}>
+          {([["all", "الكل"], ["active", "مفعّلة"], ["hidden", "مخفية"], ["main", "رئيسية"]] as const).map(([k, label]) => (
+            <button key={k} className={`gx-tab ${filter === k ? "active" : ""}`} onClick={() => setFilter(k)}>{label}</button>
+          ))}
+        </div>
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={14} className="absolute top-1/2 -translate-y-1/2 right-3 text-cyan-100/40" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="ابحث بالاسم أو المعرّف..."
+            className="gx-adm-input"
+            style={{ paddingInlineStart: 34 }}
+          />
+        </div>
       </div>
 
       {q.isLoading ? (
-        <div className="text-center py-20 text-cyan-100/60">جاري التحميل...</div>
+        <div className="gx-tree">
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="gx-skel" />)}
+        </div>
       ) : all.length === 0 ? (
         <div className="text-center py-20 text-cyan-100/60">
           <FolderTree size={48} className="mx-auto opacity-30 mb-3" />
           <p>لا يوجد أقسام بعد. ابدأ بإضافة قسم رئيسي.</p>
         </div>
+      ) : (tab === "tree" ? roots.length === 0 : filteredFlat.length === 0) ? (
+        <div className="text-center py-16 text-cyan-100/60">لا توجد نتائج مطابقة.</div>
       ) : tab === "tree" ? (
         <div className="gx-tree">
           {roots.map((c) => (
@@ -191,28 +344,35 @@ function CategoriesAdmin() {
               node={c}
               byParent={byParent}
               expanded={expanded}
+              counts={counts}
               onToggle={toggle}
               onEdit={setEditing}
               onAddChild={(parentId) => setCreating({ parentId })}
               onDelete={(id, name) => { if (confirm(`حذف "${name}" وكل الأقسام الفرعية داخله؟`)) deleteMut.mutate(id); }}
               onToggleActive={(id, next) => toggleMut.mutate({ id, is_active: next })}
+              onDuplicate={(n) => duplicateMut.mutate(n)}
+              onMove={move}
+              bounds={siblingBounds}
               depth={0}
             />
           ))}
         </div>
       ) : (
         <div className="gx-tree">
-          {all.map((c) => (
+          {filteredFlat.map((c) => (
             <FlatRow
               key={c.id}
               node={c}
+              count={counts[c.id] ?? 0}
               parent={all.find((x) => x.id === c.parent_id) ?? null}
               onEdit={setEditing}
               onDelete={(id, name) => { if (confirm(`حذف "${name}"؟`)) deleteMut.mutate(id); }}
               onToggleActive={(id, next) => toggleMut.mutate({ id, is_active: next })}
+              onDuplicate={(n) => duplicateMut.mutate(n)}
             />
           ))}
         </div>
+
       )}
 
       {(editing || creating) && (
@@ -229,26 +389,37 @@ function CategoriesAdmin() {
 }
 
 function TreeNode({
-  node, byParent, expanded, onToggle, onEdit, onAddChild, onDelete, onToggleActive, depth,
+  node, byParent, expanded, counts, onToggle, onEdit, onAddChild, onDelete, onToggleActive, onDuplicate, onMove, bounds, depth,
 }: {
   node: Category;
   byParent: Map<string | "root", Category[]>;
   expanded: Set<string>;
+  counts: Record<string, number>;
   onToggle: (id: string) => void;
   onEdit: (c: Category) => void;
   onAddChild: (parentId: string) => void;
   onDelete: (id: string, name: string) => void;
   onToggleActive: (id: string, next: boolean) => void;
+  onDuplicate: (c: Category) => void;
+  onMove: (c: Category, dir: -1 | 1) => void;
+  bounds: (c: Category) => { first: boolean; last: boolean };
   depth: number;
 }) {
   const children = byParent.get(node.id) ?? [];
   const isOpen = expanded.has(node.id);
   const canHaveChildren = depth < 2;
+  const b = bounds(node);
+  const productCount = counts[node.id] ?? 0;
 
   return (
     <div>
       <div className={`gx-row ${node.is_active ? "" : "off"}`}>
         <div className="gx-row-inner">
+          <div className="gx-ord">
+            <button disabled={b.first} onClick={() => onMove(node, -1)} title="تقديم"><ChevronUp size={11} /></button>
+            <button disabled={b.last} onClick={() => onMove(node, 1)} title="تأخير"><ChevronDown size={11} /></button>
+          </div>
+
           {children.length > 0 ? (
             <button className={`gx-caret ${isOpen ? "open" : ""}`} data-dir="rtl" onClick={() => onToggle(node.id)} aria-label="فتح">
               <ChevronLeft size={16} />
@@ -269,6 +440,8 @@ function TreeNode({
               <span className="text-xs text-cyan-100/60">— {node.name_en}</span>
               {node.is_main && <span className="gx-chip main"><Home size={9} /> رئيسي بالواجهة</span>}
               {depth > 0 && <span className="gx-chip sub">L{depth + 1}</span>}
+              <span className="gx-count"><Package size={9} /> {productCount} منتج</span>
+              {children.length > 0 && <span className="gx-count"><FolderTree size={9} /> {children.length} فرعي</span>}
             </div>
             <div className="gx-row-meta">/{node.slug} · ترتيب: {node.sort_order}</div>
           </div>
@@ -279,11 +452,12 @@ function TreeNode({
                 <Plus size={11} /> فرعي
               </button>
             )}
-            <button className="gx-btn outline" onClick={() => onEdit(node)}><Pencil size={11} /></button>
-            <button className="gx-btn outline" onClick={() => onToggleActive(node.id, !node.is_active)}>
+            <button className="gx-btn outline" onClick={() => onEdit(node)} title="تعديل"><Pencil size={11} /></button>
+            <button className="gx-btn ghost" onClick={() => onDuplicate(node)} title="نسخ"><Copy size={11} /></button>
+            <button className="gx-btn outline" onClick={() => onToggleActive(node.id, !node.is_active)} title={node.is_active ? "إخفاء" : "إظهار"}>
               {node.is_active ? <Eye size={11} /> : <EyeOff size={11} />}
             </button>
-            <button className="gx-btn danger" onClick={() => onDelete(node.id, node.name_ar)}><Trash2 size={11} /></button>
+            <button className="gx-btn danger" onClick={() => onDelete(node.id, node.name_ar)} title="حذف"><Trash2 size={11} /></button>
           </div>
         </div>
       </div>
@@ -292,9 +466,10 @@ function TreeNode({
         <div className="gx-children mt-1.5 space-y-1.5">
           {children.map((c) => (
             <TreeNode
-              key={c.id} node={c} byParent={byParent} expanded={expanded}
+              key={c.id} node={c} byParent={byParent} expanded={expanded} counts={counts}
               onToggle={onToggle} onEdit={onEdit} onAddChild={onAddChild}
-              onDelete={onDelete} onToggleActive={onToggleActive} depth={depth + 1}
+              onDelete={onDelete} onToggleActive={onToggleActive}
+              onDuplicate={onDuplicate} onMove={onMove} bounds={bounds} depth={depth + 1}
             />
           ))}
         </div>
@@ -303,14 +478,17 @@ function TreeNode({
   );
 }
 
+
 function FlatRow({
-  node, parent, onEdit, onDelete, onToggleActive,
+  node, parent, count, onEdit, onDelete, onToggleActive, onDuplicate,
 }: {
   node: Category;
   parent: Category | null;
+  count: number;
   onEdit: (c: Category) => void;
   onDelete: (id: string, name: string) => void;
   onToggleActive: (id: string, next: boolean) => void;
+  onDuplicate: (c: Category) => void;
 }) {
   return (
     <div className={`gx-row ${node.is_active ? "" : "off"}`}>
@@ -324,16 +502,19 @@ function FlatRow({
             {parent && <span className="text-xs text-cyan-100/50">{parent.name_ar} ›</span>}
             <span className="gx-row-title">{node.name_ar}</span>
             {node.is_main && <span className="gx-chip main"><Home size={9} /> رئيسي</span>}
+            <span className="gx-count"><Package size={9} /> {count} منتج</span>
           </div>
-          <div className="gx-row-meta">/{node.slug}</div>
+          <div className="gx-row-meta">/{node.slug} · ترتيب: {node.sort_order}</div>
         </div>
         <div className="flex items-center gap-1">
-          <button className="gx-btn outline" onClick={() => onEdit(node)}><Pencil size={11} /></button>
+          <button className="gx-btn outline" onClick={() => onEdit(node)} title="تعديل"><Pencil size={11} /></button>
+          <button className="gx-btn ghost" onClick={() => onDuplicate(node)} title="نسخ"><Copy size={11} /></button>
           <button className="gx-btn outline" onClick={() => onToggleActive(node.id, !node.is_active)}>
             {node.is_active ? <Eye size={11} /> : <EyeOff size={11} />}
           </button>
-          <button className="gx-btn danger" onClick={() => onDelete(node.id, node.name_ar)}><Trash2 size={11} /></button>
+          <button className="gx-btn danger" onClick={() => onDelete(node.id, node.name_ar)} title="حذف"><Trash2 size={11} /></button>
         </div>
+
       </div>
     </div>
   );
