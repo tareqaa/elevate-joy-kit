@@ -133,22 +133,17 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
               </div>
 
               <div>
-                <label className="gx-rv-lb">الطلب</label>
-                <select className="gx-rv-in" value={orderId} onChange={(e) => setOrderId(e.target.value)}>
-                  {orders.map((o) => (
-                    <option key={o.id} value={o.id}>{o.order_number}</option>
-                  ))}
-                </select>
-              </div>
-
-              {items.length > 0 && (
-                <div>
-                  <label className="gx-rv-lb">المنتج</label>
-                  <select className="gx-rv-in" value={productSlug} onChange={(e) => setProductSlug(e.target.value)}>
-                    {items.map((i, idx) => <option key={`${i.slug}-${idx}`} value={i.slug}>{i.name}</option>)}
+                <label className="gx-rv-lb">رقم الطلب</label>
+                {orders.length > 1 ? (
+                  <select className="gx-rv-in" value={orderId} onChange={(e) => setOrderId(e.target.value)}>
+                    {orders.map((o) => (
+                      <option key={o.id} value={o.id}>{o.order_number}</option>
+                    ))}
                   </select>
-                </div>
-              )}
+                ) : (
+                  <input className="gx-rv-in" value={currentOrder?.order_number || ""} readOnly dir="ltr" />
+                )}
+              </div>
 
               <div>
                 <label className="gx-rv-lb">التقييم</label>
@@ -167,9 +162,12 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
                 <label className="gx-rv-lb">مراجعتك (اختياري)</label>
                 <textarea className="gx-rv-in" rows={4} maxLength={180} value={comment}
                   onChange={(e) => setComment(e.target.value.slice(0, 180))}
-                  placeholder="اختياري — تقدر ترسل التقييم بالنجوم فقط" />
+                  placeholder="شاركنا تجربتك مع GX Store (اختياري)" />
                 <div className="gx-rv-hint" style={{ textAlign: "left" }} dir="ltr">{comment.length}/180</div>
               </div>
+
+              <div className="gx-rv-hint">سيتم مراجعة تقييمك قبل ظهوره على الموقع.</div>
+
             </>
 
           )}
