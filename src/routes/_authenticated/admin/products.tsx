@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Star, Search, Layers, Globe } from "lucide-react";
+import { CatalogPrices } from "@/components/gx/admin/CatalogPrices";
 
 export const Route = createFileRoute("/_authenticated/admin/products")({
   head: () => ({ meta: [{ title: "المنتجات — لوحة التحكم" }] }),
@@ -144,6 +145,9 @@ function ProductsAdmin() {
           <Plus size={14} /> منتج جديد
         </button>
       </div>
+
+      <CatalogPrices />
+
 
       <div className="flex gap-2 flex-wrap items-center">
         <div className="relative flex-1 min-w-[240px] max-w-md">

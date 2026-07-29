@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Ticket, Plus, Trash2, Save, X, Search, Percent, DollarSign, Calendar, Users, ShoppingBag, Copy, Check } from "lucide-react";
+import { ProductPicker } from "@/components/gx/admin/ProductPicker";
 
 export const Route = createFileRoute("/_authenticated/admin/coupons")({
   component: AdminCouponsPage,
@@ -368,8 +369,11 @@ function CouponEditor({
               ))}
             </div>
             {editing.scope === "products" && (
-              <Field label="سلاجز المنتجات (مفصولة بفاصلة)">
-                <input value={(editing.product_slugs || []).join(",")} onChange={(e) => set({ product_slugs: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })} placeholder="fortnite,snapchat-plus" className="cp-input font-mono text-xs" />
+              <Field label="اختر المنتجات (كل منتج له رقم/كود ثابت)">
+                <ProductPicker
+                  selected={editing.product_slugs || []}
+                  onChange={(v) => set({ product_slugs: v })}
+                />
               </Field>
             )}
             {editing.scope === "categories" && (

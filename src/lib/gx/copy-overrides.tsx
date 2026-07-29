@@ -49,23 +49,40 @@ export function keyFor(pathname: string, el: Element) {
   return `${pathname}|${cssPath(el)}`;
 }
 
+const COPY_CACHE = "gx_site_copy_v1";
+
+function readCopyCache(): CopyMap {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(COPY_CACHE);
+    const v = raw ? JSON.parse(raw) : null;
+    return v && typeof v === "object" ? (v as CopyMap) : {};
+  } catch {
+    return {};
+  }
+}
+
 async function fetchCopy(): Promise<CopyMap> {
   const { data } = await supabase.from("site_settings").select("value").eq("key", "site_copy").maybeSingle();
   const v = data?.value as unknown;
-  return v && typeof v === "object" ? (v as CopyMap) : {};
+  const map = v && typeof v === "object" ? (v as CopyMap) : {};
+  try { localStorage.setItem(COPY_CACHE, JSON.stringify(map)); } catch { /* noop */ }
+  return map;
 }
 
 /** Applies stored overrides + (for admins) provides click-to-edit. */
 export function InlineTextEditor() {
   const location = useLocation();
   const pathname = location.pathname;
-  const [copy, setCopy] = useState<CopyMap>({});
+  // Seed from cache so edited copy is on screen at first paint (no flash of
+  // the old wording while the database round-trip is in flight).
+  const [copy, setCopy] = useState<CopyMap>(readCopyCache);
   const [isAdmin, setIsAdmin] = useState(false);
   const [editing, setEditing] = useState(false);
   const [pending, setPending] = useState<CopyMap>({});
   const applying = useRef(false);
 
-  // Load overrides once.
+  // Refresh overrides from the database.
   useEffect(() => { fetchCopy().then(setCopy).catch(() => {}); }, []);
 
   // Admin check.
@@ -171,6 +188,7 @@ export function InlineTextEditor() {
       .upsert({ key: "site_copy", value: merged as never }, { onConflict: "key" });
     if (error) { toast.error("فشل الحفظ — تأكد أنك أدمن"); return; }
     setCopy(merged);
+    try { localStorage.setItem(COPY_CACHE, JSON.stringify(merged)); } catch { /* noop */ }
     setPending({});
     toast.success("تم حفظ النصوص");
   }
@@ -182,6 +200,7 @@ export function InlineTextEditor() {
       .upsert({ key: "site_copy", value: merged as never }, { onConflict: "key" });
     if (error) { toast.error("فشل الاستعادة"); return; }
     setCopy(merged);
+    try { localStorage.setItem(COPY_CACHE, JSON.stringify(merged)); } catch { /* noop */ }
     setPending({});
     toast.success("تمت استعادة نصوص هذه الصفحة");
     window.location.reload();

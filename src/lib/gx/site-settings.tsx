@@ -1,6 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_HOME_LAYOUT, type HomeLayout } from "./sections/types";
+import {
+  applyCatalogPrices,
+  cacheCatalogPrices,
+  type CatalogPrices,
+} from "./catalog-prices";
 
 export type HomeHero = {
   enabled: boolean;
@@ -56,6 +61,7 @@ export type SiteSettings = {
   home_subcategories_meta: Record<string, HomeCategoryOverride>;
   home_bestseller_order: string[];
   home_layout: HomeLayout;
+  catalog_prices: CatalogPrices;
 };
 
 const DEFAULT_HERO: HomeHero = {
@@ -82,6 +88,7 @@ const DEFAULTS: SiteSettings = {
   home_subcategories_meta: {},
   home_bestseller_order: [],
   home_layout: DEFAULT_HOME_LAYOUT,
+  catalog_prices: {},
 };
 
 const CACHE_KEY = "gx_site_settings_v2";
@@ -127,6 +134,12 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
         const l = merged.home_layout as HomeLayout;
         if (!l.theme) merged.home_layout = { ...l, theme: DEFAULT_HOME_LAYOUT.theme };
       }
+      merged.catalog_prices =
+        merged.catalog_prices && typeof merged.catalog_prices === "object" ? merged.catalog_prices : {};
+      // Live prices: mutate the catalog before rendering so product pages,
+      // search and the cart all read the same edited price.
+      applyCatalogPrices(merged.catalog_prices);
+      cacheCatalogPrices(merged.catalog_prices);
       setSettings(merged);
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(merged)); } catch { /* noop */ }
     }
