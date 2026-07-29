@@ -48,11 +48,8 @@ export function HeroEditor({ data, onChange }: { data: HeroData; onChange: (d: H
         <TextField label="السطر الثاني (مميز)" value={data.title_b} onChange={(v) => onChange({ ...data, title_b: v })} />
         <TextField label="السطر الثالث" value={data.title_c} onChange={(v) => onChange({ ...data, title_c: v })} />
       </div>
-      <div>
-        <Label className="text-slate-100 text-xs">الوصف</Label>
-        <Textarea rows={2} value={data.subtitle ?? ""} onChange={(e) => onChange({ ...data, subtitle: e.target.value || null })}
-          className="mt-1 bg-slate-950/60 border-slate-800 text-slate-100" placeholder="اترك فارغاً للنص الافتراضي" />
-      </div>
+      <RichTextField label="الوصف" value={data.subtitle ?? ""} onChange={(v) => onChange({ ...data, subtitle: v || null })} rows={2} />
+
       <div className="grid grid-cols-2 gap-2">
         <TextField label="زر أساسي — نص" value={data.cta_primary_text} onChange={(v) => onChange({ ...data, cta_primary_text: v })} />
         <TextField label="زر أساسي — رابط" value={data.cta_primary_link} onChange={(v) => onChange({ ...data, cta_primary_link: v })} placeholder="#products" />
