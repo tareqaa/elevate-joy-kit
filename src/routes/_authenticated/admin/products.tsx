@@ -175,6 +175,49 @@ function ProductsAdmin() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const bulkMut = useMutation({
+    mutationFn: async ({ ids, patch }: { ids: string[]; patch: Partial<Product> }) => {
+      const { error } = await supabase.from("products").update(patch as never).in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تم تطبيق التعديل"); setSelected([]); qc.invalidateQueries({ queryKey: ["admin-products"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const bulkDeleteMut = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.from("products").delete().in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تم الحذف"); setSelected([]); qc.invalidateQueries({ queryKey: ["admin-products"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const reorderMut = useMutation({
+    mutationFn: async ({ a, b }: { a: Product; b: Product }) => {
+      const r1 = await supabase.from("products").update({ sort_order: b.sort_order } as never).eq("id", a.id);
+      if (r1.error) throw r1.error;
+      const r2 = await supabase.from("products").update({ sort_order: a.sort_order } as never).eq("id", b.id);
+      if (r2.error) throw r2.error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-products"] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function move(index: number, dir: -1 | 1) {
+    const a = filtered[index];
+    const b = filtered[index + dir];
+    if (!a || !b) return;
+    if (a.sort_order === b.sort_order) {
+      toast.error("عدّل «ترتيب الظهور» يدوياً — الترتيب متطابق");
+      return;
+    }
+    reorderMut.mutate({ a, b });
+  }
+
+  const toggleSel = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+
+
   const stats = useMemo(() => {
     const all = prodsQ.data ?? [];
     return {
