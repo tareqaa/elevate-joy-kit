@@ -433,7 +433,7 @@ ${lines}
         price: it.price,
         usernames: it.usernames || null,
       }));
-      return await submitStoreOrderFn({
+      const result = await submitStoreOrderFn({
         data: {
           items: payloadItems,
           totalJOD,
@@ -445,10 +445,23 @@ ${lines}
           coupon: coupon ? { id: coupon.id, code: coupon.code, discount_jod: coupon.discount_jod } : null,
         },
       });
+      // Persist contact to the signed-in user's profile so it auto-fills next time.
+      try {
+        const { data: sess } = await supabase.auth.getSession();
+        const uid = sess.session?.user?.id;
+        if (uid) {
+          await supabase.from("profiles").update({
+            full_name: contact.name.trim(),
+            whatsapp: contactValue,
+          }).eq("id", uid);
+        }
+      } catch { /* noop */ }
+      return result;
     } catch (e) {
       console.warn("[GX] submitOrder failed", e);
       return null;
     }
+
   }, [items, totalJOD, currency, notes, contact, coupon, submitStoreOrderFn]);
 
   const value = useMemo<Ctx>(
