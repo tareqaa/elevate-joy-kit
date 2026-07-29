@@ -2,26 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Star, X, Loader2 } from "lucide-react";
-import { isAutoEligible } from "@/lib/gx/reviews";
 
 type OrderLite = {
   id: string;
   order_number: string;
   created_at: string;
-  items: unknown;
 };
 
-type ItemLite = { slug: string; name: string };
-
-function parseItems(items: unknown): ItemLite[] {
-  if (!Array.isArray(items)) return [];
-  return items.map((raw) => {
-    const it = (raw || {}) as Record<string, unknown>;
-    const slug = String(it.product_slug ?? it.productSlug ?? it.slug ?? it.product ?? "");
-    const name = String(it.name ?? it.title ?? it.product_name ?? slug ?? "منتج");
-    return { slug, name };
-  }).filter((i) => i.name);
-}
 
 const css = `
 .gx-rv-ov{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}
