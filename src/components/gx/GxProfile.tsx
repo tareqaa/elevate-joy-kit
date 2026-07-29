@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/gx/i18n";
+import { useCurrency } from "@/lib/gx/currency";
 import { coinsToJod, fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM } from "@/lib/gx/loyalty";
 
 type PublicProfile = {
