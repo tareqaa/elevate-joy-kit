@@ -12,7 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Sparkles, Coins, Search, Trophy, Save, Ticket } from "lucide-react";
+import { Sparkles, Coins, Search, Trophy, Save, Ticket, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/loyalty")({
   head: () => ({ meta: [{ title: "نظام الولاء — لوحة التحكم" }] }),
