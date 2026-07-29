@@ -20,6 +20,9 @@ export type PriceRow = {
   code: string;
   productSlug: string;
   productName: string;
+  productIcon: string;
+  productImg: string | null;
+  productKind: "plan" | "giftcard";
   group: string;
   label: string;
   basePrice: number;
@@ -51,7 +54,15 @@ for (const slug in PRODUCTS_CATALOG) {
   ];
   for (const [group, list] of groups) {
     for (const plan of list ?? []) {
-      register(plan.id, plan, { productSlug: slug, productName: p.name, group, label: plan.label });
+      register(plan.id, plan, {
+        productSlug: slug,
+        productName: p.name,
+        productIcon: p.icon,
+        productImg: p.iconImg ?? null,
+        productKind: "plan",
+        group,
+        label: plan.label,
+      });
     }
   }
 }
@@ -63,12 +74,16 @@ for (const slug in GIFT_CARDS_CATALOG) {
       register(d.id, d, {
         productSlug: slug,
         productName: gc.name,
+        productIcon: gc.icon,
+        productImg: gc.iconImg ?? null,
+        productKind: "giftcard",
         group: `${region.flag} ${region.name}`,
         label: d.value,
       });
     }
   }
 }
+
 
 /** Every editable price in the store, with its stable code. */
 export function listPriceRows(): PriceRow[] {

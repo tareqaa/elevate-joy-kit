@@ -37,16 +37,23 @@ type CountryPrice = {
 
 const css = `
 .gx-prod{color:#e6f7ff}
-.gx-prod-card{background:linear-gradient(180deg,rgba(16,24,32,.85),rgba(10,15,22,.9));border:1px solid rgba(0,229,255,.12);border-radius:16px;padding:14px;transition:all .2s;position:relative;display:flex;gap:12px}
+.gx-panel{background:linear-gradient(180deg,rgba(16,24,32,.85),rgba(10,15,22,.92));border:1px solid rgba(0,229,255,.14);border-radius:18px}
+.gx-stat{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.06)}
+.gx-stat b{font-size:18px;color:#e6f7ff;line-height:1}
+.gx-stat span{font-size:11.5px;color:#7d92a8}
+.gx-tab{padding:9px 16px;border-radius:12px;font-size:13px;font-weight:800;border:1px solid rgba(255,255,255,.08);color:#7d92a8;background:transparent;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.gx-tab.on{background:rgba(0,229,255,.13);border-color:rgba(0,229,255,.4);color:#8fe9ff}
+.gx-prod-card{background:linear-gradient(180deg,rgba(16,24,32,.85),rgba(10,15,22,.9));border:1px solid rgba(0,229,255,.12);border-radius:16px;padding:14px;transition:all .2s;position:relative;display:flex;gap:12px;align-items:flex-start}
 .gx-prod-card:hover{border-color:rgba(0,229,255,.35);box-shadow:0 8px 24px rgba(0,229,255,.1)}
 .gx-prod-card.off{opacity:.55}
-.gx-prod-img{width:80px;height:80px;flex-shrink:0;border-radius:12px;background:rgba(0,229,255,.08);display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid rgba(0,229,255,.15)}
+.gx-prod-img{width:64px;height:64px;flex-shrink:0;border-radius:12px;background:rgba(0,229,255,.08);display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid rgba(0,229,255,.15)}
 .gx-prod-img img{width:100%;height:100%;object-fit:cover}
 .gx-prod-body{flex:1;min-width:0}
-.gx-prod-name{font-size:15px;font-weight:800;color:#e6f7ff;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.gx-prod-en{font-size:12px;color:#7d92a8}
-.gx-prod-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:#a3b6c9}
-.gx-prod-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.gx-prod-name{font-size:14.5px;font-weight:800;color:#e6f7ff;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.gx-prod-en{font-size:11.5px;color:#7d92a8;margin-top:2px}
+.gx-prod-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:#a3b6c9}
+.gx-pill{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:3px 8px}
+.gx-prod-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)}
 .gx-badge-featured{background:linear-gradient(135deg,#ffd54f,#ff9800);color:#001018;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:800}
 .gx-badge-off{background:rgba(255,80,80,.15);color:#ff8080;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:800;border:1px solid rgba(255,80,80,.3)}
 .gx-badge-custom{background:linear-gradient(135deg,#a259ff,#00e5ff);color:#001018;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:800}
@@ -60,9 +67,12 @@ const css = `
 .gx-btn.danger:hover{background:rgba(255,80,80,.1)}
 .gx-adm-input{background:rgba(0,0,0,.35)!important;border:1px solid rgba(0,229,255,.18)!important;color:#e6f7ff!important;border-radius:12px!important;height:40px}
 .gx-adm-input:focus-visible{outline:none;border-color:rgba(0,229,255,.55)!important;box-shadow:0 0 0 3px rgba(0,229,255,.15)!important}
+.gx-fieldset{border:1px solid rgba(255,255,255,.07);background:rgba(0,0,0,.22);border-radius:14px;padding:14px}
+.gx-fieldset>legend,.gx-fs-title{font-size:11.5px;font-weight:800;color:#8fe9ff;letter-spacing:.3px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .gx-variant{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.15);border-radius:10px;padding:10px;margin-bottom:8px}
 .gx-country{background:rgba(0,0,0,.3);border:1px dashed rgba(0,229,255,.2);border-radius:8px;padding:8px;font-size:12px}
 `;
+
 
 const CURRENCIES = ["JOD", "USD", "EUR", "SAR", "AED", "TRY", "EGP", "KWD", "QAR", "OMR", "BHD"];
 const COUNTRIES = ["US", "SA", "AE", "TR", "EG", "KW", "QA", "OM", "BH", "JO"];
@@ -78,6 +88,8 @@ function ProductsAdmin() {
   const [managingVariants, setManagingVariants] = useState<Product | null>(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [tab, setTab] = useState<"catalog" | "prices">("prices");
+
 
   const catsQ = useQuery({
     queryKey: ["admin-categories-list"],
@@ -130,6 +142,16 @@ function ProductsAdmin() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const stats = useMemo(() => {
+    const all = prodsQ.data ?? [];
+    return {
+      total: all.length,
+      active: all.filter((p) => p.is_active).length,
+      featured: all.filter((p) => p.is_featured).length,
+      sales: all.reduce((n, p) => n + (p.purchases_count || 0), 0),
+    };
+  }, [prodsQ.data]);
+
   return (
     <div className="gx-prod space-y-4" dir="rtl">
       <style dangerouslySetInnerHTML={{ __html: css }} />
@@ -139,16 +161,33 @@ function ProductsAdmin() {
           <h1 className="text-2xl font-bold text-cyan-100 flex items-center gap-2">
             <ShoppingBag size={22} className="text-cyan-400" /> المنتجات
           </h1>
-          <p className="text-sm text-cyan-100/60 mt-1">إدارة المنتجات مع خيارات وأسعار متعددة حسب الدولة</p>
+          <p className="text-sm text-cyan-100/60 mt-1">إدارة المنتجات وأسعار المتجر من مكان واحد</p>
         </div>
-        <button className="gx-btn primary" onClick={() => setCreating(true)}>
-          <Plus size={14} /> منتج جديد
+        {tab === "catalog" && (
+          <button className="gx-btn primary" onClick={() => setCreating(true)}>
+            <Plus size={14} /> منتج جديد
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="gx-stat"><ShoppingBag size={18} className="text-cyan-400" /><div><b>{stats.total}</b><span className="block">إجمالي المنتجات</span></div></div>
+        <div className="gx-stat"><Eye size={18} className="text-emerald-400" /><div><b>{stats.active}</b><span className="block">ظاهر للزبائن</span></div></div>
+        <div className="gx-stat"><Star size={18} className="text-amber-400" /><div><b>{stats.featured}</b><span className="block">منتج مميّز</span></div></div>
+        <div className="gx-stat"><Layers size={18} className="text-fuchsia-400" /><div><b>{stats.sales}</b><span className="block">عمليات شراء</span></div></div>
+      </div>
+
+      <div className="flex gap-2 flex-wrap">
+        <button className={`gx-tab ${tab === "catalog" ? "on" : ""}`} onClick={() => setTab("catalog")}>
+          <ShoppingBag size={14} /> منتجات قاعدة البيانات
+        </button>
+        <button className={`gx-tab ${tab === "prices" ? "on" : ""}`} onClick={() => setTab("prices")}>
+          <Layers size={14} /> أسعار المتجر الحيّة
         </button>
       </div>
 
-      <CatalogPrices />
-
-
+      {tab === "prices" ? <CatalogPrices /> : (
+      <div className="gx-panel p-4 space-y-4">
       <div className="flex gap-2 flex-wrap items-center">
         <div className="relative flex-1 min-w-[240px] max-w-md">
           <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400/70 pointer-events-none" />
@@ -172,11 +211,11 @@ function ProductsAdmin() {
           <p>{(prodsQ.data ?? []).length === 0 ? "لا يوجد منتجات بعد. ابدأ بإضافة منتج أول." : "لا يوجد منتجات ضمن الفلاتر."}</p>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid gap-3 md:grid-cols-2">
           {filtered.map((p) => (
             <div key={p.id} className={`gx-prod-card ${p.is_active ? "" : "off"}`}>
               <div className="gx-prod-img">
-                {p.image_url ? <img src={p.image_url} alt="" /> : <ShoppingBag size={28} className="text-cyan-400/50" />}
+                {p.image_url ? <img src={p.image_url} alt="" /> : <ShoppingBag size={26} className="text-cyan-400/50" />}
               </div>
               <div className="gx-prod-body">
                 <div className="gx-prod-name">
@@ -185,16 +224,16 @@ function ProductsAdmin() {
                   {p.badge && <span className="gx-badge-custom">{p.badge}</span>}
                   {!p.is_active && <span className="gx-badge-off">مخفي</span>}
                 </div>
-                <div className="gx-prod-en">{p.name_en}</div>
+                <div className="gx-prod-en" dir="ltr" style={{ textAlign: "right" }}>{p.name_en}</div>
                 <div className="gx-prod-meta">
                   <span
                     title="اضغط لنسخ المعرّف — استخدمه في الكوبونات"
                     onClick={() => { navigator.clipboard.writeText(p.slug); toast.success(`تم نسخ: ${p.slug}`); }}
-                    style={{ cursor: "pointer", fontFamily: "ui-monospace,monospace", background: "rgba(0,229,255,.1)", color: "#00e5ff", padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(0,229,255,.25)", fontWeight: 700 }}
+                    style={{ cursor: "pointer", fontFamily: "ui-monospace,monospace", background: "rgba(0,229,255,.1)", color: "#00e5ff", padding: "3px 8px", borderRadius: 8, border: "1px solid rgba(0,229,255,.25)", fontWeight: 700 }}
                   >#{p.slug}</span>
-                  <span>القسم: {p.category_id ? categoriesMap[p.category_id]?.name_ar ?? "—" : "—"}</span>
-                  {p.base_price_jod !== null && <span className="gx-price">{Number(p.base_price_jod).toFixed(2)} د.أ</span>}
-                  <span>مشتريات: {p.purchases_count}</span>
+                  <span className="gx-pill">{p.category_id ? categoriesMap[p.category_id]?.name_ar ?? "بدون قسم" : "بدون قسم"}</span>
+                  {p.base_price_jod !== null && <span className="gx-pill gx-price">{Number(p.base_price_jod).toFixed(2)} د.أ</span>}
+                  <span className="gx-pill">مشتريات: {p.purchases_count}</span>
                 </div>
                 <div className="gx-prod-actions">
                   <button className="gx-btn primary" onClick={() => setManagingVariants(p)}>
@@ -214,6 +253,9 @@ function ProductsAdmin() {
           ))}
         </div>
       )}
+      </div>
+      )}
+
 
       {(editing || creating) && (
         <ProductDialog
@@ -291,61 +333,80 @@ function ProductDialog({ product, categories, onClose, onSaved }: { product: Pro
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
-        <DialogHeader><DialogTitle>{product ? "تعديل منتج" : "منتج جديد"}</DialogTitle></DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" dir="rtl">
+        <style dangerouslySetInnerHTML={{ __html: css }} />
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShoppingBag size={17} className="text-cyan-400" /> {product ? `تعديل: ${product.name_ar}` : "منتج جديد"}
+          </DialogTitle>
+        </DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>الاسم (عربي)</Label><Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} className="gx-adm-input" /></div>
-            <div><Label>الاسم (English)</Label><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} className="gx-adm-input" dir="ltr" /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>المعرّف (slug)</Label><Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={slugify(nameEn)} className="gx-adm-input" dir="ltr" /></div>
-            <div>
-              <Label>القسم</Label>
-              <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger className="gx-adm-input"><SelectValue placeholder="اختر قسم" /></SelectTrigger>
-                <SelectContent>
-                  {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>الوصف (عربي)</Label><Textarea value={descAr} onChange={(e) => setDescAr(e.target.value)} rows={2} /></div>
-            <div><Label>الوصف (English)</Label><Textarea value={descEn} onChange={(e) => setDescEn(e.target.value)} rows={2} dir="ltr" /></div>
-          </div>
-          <div>
-            <Label>الصورة</Label>
-            <div className="flex items-center gap-3">
-              {imageUrl && <img src={imageUrl} alt="" className="w-16 h-16 rounded-lg object-cover border border-cyan-400/20" />}
-              <div className="flex-1 space-y-2">
-                <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="رابط الصورة أو ارفع ملف" className="gx-adm-input" dir="ltr" />
-                <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} className="text-xs text-cyan-100/70" />
+          <div className="gx-fieldset">
+            <div className="gx-fs-title"><Pencil size={12} /> المعلومات الأساسية</div>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div><Label>الاسم (عربي)</Label><Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} className="gx-adm-input" /></div>
+              <div><Label>الاسم (English)</Label><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} className="gx-adm-input" dir="ltr" /></div>
+              <div>
+                <Label>المعرّف (slug)</Label>
+                <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={slugify(nameEn)} className="gx-adm-input" dir="ltr" />
+                <p className="text-[11px] text-cyan-100/45 mt-1">يُستخدم بالرابط وبالكوبونات</p>
+              </div>
+              <div>
+                <Label>القسم</Label>
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger className="gx-adm-input"><SelectValue placeholder="اختر قسم" /></SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div><Label>سعر أساسي (د.أ)</Label><Input type="number" step="0.01" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="اختياري لو في خيارات" className="gx-adm-input" /></div>
-            <div><Label>شارة</Label><Input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="Premium / Hot / New" className="gx-adm-input" /></div>
-            <div><Label>ترتيب</Label><Input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value) || 0)} className="gx-adm-input" /></div>
+
+          <div className="gx-fieldset">
+            <div className="gx-fs-title"><ShoppingBag size={12} /> الصورة والوصف</div>
+            <div className="flex items-start gap-3 flex-wrap">
+              <div className="gx-prod-img" style={{ width: 92, height: 92 }}>
+                {imageUrl ? <img src={imageUrl} alt="" /> : <ShoppingBag size={30} className="text-cyan-400/40" />}
+              </div>
+              <div className="flex-1 min-w-[220px] space-y-2">
+                <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="رابط الصورة" className="gx-adm-input" dir="ltr" />
+                <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} className="text-xs text-cyan-100/70" />
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-3 mt-3">
+              <div><Label>الوصف (عربي)</Label><Textarea value={descAr} onChange={(e) => setDescAr(e.target.value)} rows={3} /></div>
+              <div><Label>الوصف (English)</Label><Textarea value={descEn} onChange={(e) => setDescEn(e.target.value)} rows={3} dir="ltr" /></div>
+            </div>
           </div>
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="accent-cyan-400 w-4 h-4" />
-              <span className="text-sm">مفعّل (ظاهر للزبائن)</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} className="accent-cyan-400 w-4 h-4" />
-              <span className="text-sm">منتج مميّز (يظهر بالواجهة)</span>
-            </label>
+
+          <div className="gx-fieldset">
+            <div className="gx-fs-title"><Layers size={12} /> السعر والعرض</div>
+            <div className="grid sm:grid-cols-3 gap-3">
+              <div><Label>سعر أساسي (د.أ)</Label><Input type="number" step="0.01" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="اختياري لو في خيارات" className="gx-adm-input" /></div>
+              <div><Label>شارة</Label><Input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="Premium / Hot / New" className="gx-adm-input" /></div>
+              <div><Label>ترتيب الظهور</Label><Input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value) || 0)} className="gx-adm-input" /></div>
+            </div>
+            <div className="flex gap-6 flex-wrap mt-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="accent-cyan-400 w-4 h-4" />
+                <span className="text-sm">مفعّل (ظاهر للزبائن)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} className="accent-cyan-400 w-4 h-4" />
+                <span className="text-sm">منتج مميّز (يظهر بالواجهة)</span>
+              </label>
+            </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+
+          <div className="flex justify-end gap-2 pt-1">
             <button className="gx-btn outline" onClick={onClose}>إلغاء</button>
-            <button className="gx-btn primary" onClick={save} disabled={saving}>{saving ? "جاري الحفظ..." : "حفظ"}</button>
+            <button className="gx-btn primary" onClick={save} disabled={saving}>{saving ? "جاري الحفظ..." : "حفظ المنتج"}</button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
+
   );
 }
 
