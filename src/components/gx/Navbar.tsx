@@ -43,7 +43,10 @@ type Profile = {
   avatar_url?: string | null;
   level?: number | null;
   email?: string | null;
+  gx_coins?: number | null;
+  store_credit_jod?: number | null;
 };
+
 
 type StoredAuthUser = {
   id?: string;
