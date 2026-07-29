@@ -12,10 +12,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, Trash2, Plus, ArrowUp, ArrowDown, Image as ImageIcon } from "lucide-react";
 import { CATEGORY_LINKS, getFeaturedItems } from "@/data/products";
+import { MediaPicker } from "./media-library";
 import type {
   HeroData, AnnouncementData, CarouselData, CarouselSlide, CategoriesData,
   BestsellersData, TrustData, ReviewsData, ReviewItem, FaqData, FaqItem, NewsletterData, CategoryOverride,
 } from "./types";
+
 
 async function uploadTo(folder: string, file: File): Promise<string | null> {
   const path = `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
