@@ -100,7 +100,7 @@ export function InlineTextEditor() {
         try { el = document.body.querySelector(`:scope>${sel}`) ?? document.querySelector(sel); } catch { el = null; }
         if (!el && entry.orig) {
           el = Array.from(document.body.querySelectorAll<HTMLElement>("*"))
-            .find((n) => n.childElementCount === 0 && (n.textContent ?? "").trim() === entry.orig) ?? null;
+            .find((n) => isEditableText(n) && (n.textContent ?? "").trim() === entry.orig) ?? null;
         }
         if (el && (el.textContent ?? "") !== entry.text) el.textContent = entry.text;
       }
