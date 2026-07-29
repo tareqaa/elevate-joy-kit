@@ -97,7 +97,8 @@ const fabCss = `
 .gx-fab-item:hover{background:rgba(0,212,255,.08);color:#00d4ff;}
 .gx-fab-item.on{background:linear-gradient(135deg,rgba(0,212,255,.14),rgba(0,212,255,.04));color:#00d4ff;box-shadow:inset 0 0 0 1px rgba(0,212,255,.25);}
 @media(max-width:560px){
-  .gx-edit-home-btn{bottom:80px;padding:10px 14px;font-size:12.5px;}
+  .gx-edit-pills{bottom:80px;max-width:60vw;}
+  .gx-edit-home-btn{padding:10px 14px;font-size:12.5px;}
   .gx-fab-wrap{bottom:80px;}
 }
 `;
