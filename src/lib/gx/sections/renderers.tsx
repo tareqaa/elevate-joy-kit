@@ -433,11 +433,18 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
                   <div className="testi-avatar" style={{ background: it.color }}>{it.initial}</div>
                   <div>
                     <div className="testi-name">{it.name}</div>
+                    <div className="testi-verified">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2l2.4 1.8 3-.2.9 2.9 2.5 1.7-1.2 2.8 1.2 2.8-2.5 1.7-.9 2.9-3-.2L12 22l-2.4-1.8-3 .2-.9-2.9L3.2 15.8 4.4 13 3.2 10.2l2.5-1.7.9-2.9 3 .2L12 2zm-1 13.6l5.3-5.3-1.4-1.4-3.9 3.9-1.9-1.9-1.4 1.4 3.3 3.3z" />
+                      </svg>
+                      {lang === "en" ? "Verified Purchase" : "عملية شراء موثّقة"}
+                    </div>
                     <div className="testi-stars">{"★".repeat(stars)}<span style={{ opacity: .25 }}>{"★".repeat(5 - stars)}</span></div>
                   </div>
                 </div>
-                {q && <div className="testi-quote">{q}</div>}
+                {q && <div className="testi-quote testi-clamp">{q}</div>}
               </div>
+
             );
           })}
         </div>
