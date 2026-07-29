@@ -453,10 +453,12 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "acc.your_email_label": "Email",
     "acc.your_password_label": "Password",
     "acc.your_code_label": "Code",
-    "cart.order_created": "Order created successfully 🎉",
-    "cart.order_saved_note": "Save your order number — you can continue on WhatsApp, or send it to us on Instagram and we'll pick it up.",
-    "cart.your_order_number": "Your order number",
-    "cart.copy_number": "Copy number",
-    "cart.continue_wa": "Continue on WhatsApp",
+   "cart.order_created": "Order created successfully 🎉",
+   "cart.order_saved_note": "Save your order number — reach out to us on any platform (WhatsApp, Telegram, Instagram, Facebook, TikTok) and we'll continue with you. Or create an account and track your order status directly from \"My Orders\".",
+   "cart.your_order_number": "Your order number",
+   "cart.copy_number": "Copy number",
+   "cart.continue_wa": "Continue on WhatsApp",
+   "cart.track_order": "Track order in my account",
+
   },
 };
