@@ -592,4 +592,15 @@ const css = `
 .gxp-brow img{width:30px;height:30px;border-radius:50%;background:#0b1220}
 .gxp-brow .n{flex:1;min-width:0;font-size:12.5px;color:#e6f7ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gxp-brow .x{font-size:11.5px;font-weight:900;color:#00e5ff}
+.gxp-edit-card{border-color:rgba(0,229,255,.28);background:linear-gradient(180deg,rgba(0,229,255,.05),rgba(0,229,255,.01))}
+.gxp-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.gxp-fields label{display:block;font-size:12px;color:#8b90a0}
+.gxp-fields label span{display:block;margin-bottom:6px;font-weight:800;color:#c8d6e2}
+.gxp-fields input{width:100%;height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#e6f7ff;padding:0 12px;font-size:13.5px;outline:none}
+.gxp-fields input:focus{border-color:#00e5ff}
+.gxp-fields em{font-style:normal;display:block;margin-top:5px;font-size:11.5px;color:#8b90a0}
+.gxp-fields em.ok{color:#6ee7b7}
+.gxp-fields em.bad{color:#fca5a5}
+.gxp-save{margin-top:12px}
+.gxp-save:disabled{opacity:.5;cursor:not-allowed}
 `;
