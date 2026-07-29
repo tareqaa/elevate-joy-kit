@@ -4,6 +4,7 @@ import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { SECTION_REGISTRY } from "@/lib/gx/sections/registry";
 import { containerMaxWidth, sectionWrapperStyle, themeToCssVars } from "@/lib/gx/sections/types";
+import { AnimatedSection } from "@/components/gx/AnimatedSection";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,14 +33,22 @@ function Home() {
           const wrapStyle = sectionWrapperStyle(s.style);
           const maxW = containerMaxWidth(s.style?.container);
           return (
-            <section key={s.id} style={wrapStyle} data-section={s.type}>
+            <AnimatedSection
+              key={s.id}
+              animation={s.style?.animation ?? "none"}
+              duration={s.style?.animation_duration ?? 600}
+              delay={s.style?.animation_delay ?? 0}
+              style={wrapStyle}
+              dataAttrs={{ "data-section": s.type }}
+            >
               <div style={{ maxWidth: maxW, margin: "0 auto", width: "100%" }}>
                 <Renderer data={s.data} />
               </div>
-            </section>
+            </AnimatedSection>
           );
         })}
       </div>
     </StoreShell>
   );
 }
+

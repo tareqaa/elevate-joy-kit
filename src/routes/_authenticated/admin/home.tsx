@@ -501,6 +501,42 @@ function StylePanel({ style, onChange }: { style?: SectionStyle; onChange: (s: S
           ))}
         </div>
       </div>
+
+      <div className="pt-2 border-t border-slate-800/60">
+        <Label className="text-xs text-slate-400 block mb-1">حركة الظهور</Label>
+        <div className="grid grid-cols-4 gap-1">
+          {([
+            { v: "none", l: "بدون" },
+            { v: "fade", l: "تلاشي" },
+            { v: "slide-up", l: "أعلى" },
+            { v: "slide-down", l: "أسفل" },
+            { v: "slide-left", l: "يمين" },
+            { v: "slide-right", l: "يسار" },
+            { v: "zoom-in", l: "تكبير" },
+          ] as const).map((a) => (
+            <button key={a.v} onClick={() => patch({ animation: a.v })}
+              className={`px-1.5 py-1.5 rounded text-[10px] border ${(s.animation ?? "none") === a.v ? "bg-cyan-500 border-cyan-500 text-slate-950 font-bold" : "bg-slate-950/60 border-slate-800 text-slate-400"}`}>
+              {a.l}
+            </button>
+          ))}
+        </div>
+        {(s.animation && s.animation !== "none") && (
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <div>
+              <Label className="text-[10px] text-slate-500">المدة (ms)</Label>
+              <Input type="number" value={s.animation_duration ?? 600}
+                onChange={(e) => patch({ animation_duration: Number(e.target.value) || 600 })}
+                className="bg-slate-950 border-slate-800 text-slate-100 h-7 text-xs" />
+            </div>
+            <div>
+              <Label className="text-[10px] text-slate-500">التأخير (ms)</Label>
+              <Input type="number" value={s.animation_delay ?? 0}
+                onChange={(e) => patch({ animation_delay: Number(e.target.value) || 0 })}
+                className="bg-slate-950 border-slate-800 text-slate-100 h-7 text-xs" />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

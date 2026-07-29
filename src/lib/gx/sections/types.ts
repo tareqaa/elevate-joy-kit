@@ -16,12 +16,16 @@ export type SectionType =
   | "newsletter";
 
 // Per-section visual controls applied by the wrapper (no code editing).
+export type SectionAnimation = "none" | "fade" | "slide-up" | "slide-down" | "slide-left" | "slide-right" | "zoom-in";
 export type SectionStyle = {
   padding_top?: number;      // px
   padding_bottom?: number;   // px
   bg?: string | null;        // CSS color / gradient; null = inherit theme bg
   container?: "full" | "wide" | "normal" | "narrow";
   align?: "start" | "center" | "end";
+  animation?: SectionAnimation;
+  animation_duration?: number; // ms
+  animation_delay?: number;    // ms
 };
 
 export type Section = {
