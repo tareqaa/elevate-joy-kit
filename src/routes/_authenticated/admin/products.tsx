@@ -99,7 +99,9 @@ function ProductsAdmin() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [tab, setTab] = useState<"catalog" | "prices">("prices");
-
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "hidden" | "featured">("all");
+  const [sortBy, setSortBy] = useState<"order" | "name" | "price" | "sales">("order");
+  const [selected, setSelected] = useState<string[]>([]);
 
   const catsQ = useQuery({
     queryKey: ["admin-categories-list"],
@@ -119,6 +121,18 @@ function ProductsAdmin() {
     },
   });
 
+  const variantCountQ = useQuery({
+    queryKey: ["admin-variant-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("product_variants").select("product_id");
+      if (error) throw error;
+      const m: Record<string, number> = {};
+      (data ?? []).forEach((r: { product_id: string }) => { m[r.product_id] = (m[r.product_id] ?? 0) + 1; });
+      return m;
+    },
+  });
+  const variantCounts = variantCountQ.data ?? {};
+
   const categoriesMap = useMemo(() => {
     const m: Record<string, Category> = {};
     (catsQ.data ?? []).forEach((c) => { m[c.id] = c; });
@@ -127,12 +141,21 @@ function ProductsAdmin() {
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
-    return (prodsQ.data ?? []).filter((p) => {
+    const list = (prodsQ.data ?? []).filter((p) => {
       if (categoryFilter !== "all" && p.category_id !== categoryFilter) return false;
+      if (statusFilter === "active" && !p.is_active) return false;
+      if (statusFilter === "hidden" && p.is_active) return false;
+      if (statusFilter === "featured" && !p.is_featured) return false;
       if (!s) return true;
       return p.name_ar.toLowerCase().includes(s) || p.name_en.toLowerCase().includes(s) || p.slug.toLowerCase().includes(s) || (p.sku || "").toLowerCase().includes(s);
     });
-  }, [prodsQ.data, categoryFilter, search]);
+    const sorted = [...list];
+    if (sortBy === "name") sorted.sort((a, b) => a.name_ar.localeCompare(b.name_ar, "ar"));
+    else if (sortBy === "price") sorted.sort((a, b) => (Number(b.base_price_jod) || 0) - (Number(a.base_price_jod) || 0));
+    else if (sortBy === "sales") sorted.sort((a, b) => (b.purchases_count || 0) - (a.purchases_count || 0));
+    return sorted;
+  }, [prodsQ.data, categoryFilter, search, statusFilter, sortBy]);
+
 
   const deleteMut = useMutation({
     mutationFn: async (id: string) => {
