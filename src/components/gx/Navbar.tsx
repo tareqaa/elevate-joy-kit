@@ -389,49 +389,38 @@ export function Navbar() {
 
                   <div className="acc-balances">
                     <div className="acc-bal">
-                      <span className="acc-bal__l">🪙 GX Coins</span>
-                      <b className="acc-bal__v coins">{Number(profile?.gx_coins ?? 0).toLocaleString("en-US")}</b>
-                      <small>≈ {formatCoins(Number(profile?.gx_coins ?? 0))}</small>
-                    </div>
-                    <div className="acc-bal">
-                      <span className="acc-bal__l">💳 {lang === "en" ? "Store credit" : "رصيد المتجر"}</span>
+                      <span className="acc-bal__l">💳 {lang === "en" ? "Balance" : "الرصيد"}</span>
                       <b className="acc-bal__v credit">{format(Number(profile?.store_credit_jod ?? 0))}</b>
                       <small>{currency}</small>
                     </div>
+                    {username ? (
+                      <Link to="/u/$username" params={{ username }} className="acc-bal acc-bal--link" onClick={() => setAccountOpen(false)}>
+                        <span className="acc-bal__l">🪙 GX Coins ›</span>
+                        <b className="acc-bal__v coins">{Number(profile?.gx_coins ?? 0).toLocaleString("en-US")}</b>
+                        <small>≈ {formatCoins(Number(profile?.gx_coins ?? 0))}</small>
+                      </Link>
+                    ) : (
+                      <Link to="/rewards" className="acc-bal acc-bal--link" onClick={() => setAccountOpen(false)}>
+                        <span className="acc-bal__l">🪙 GX Coins ›</span>
+                        <b className="acc-bal__v coins">{Number(profile?.gx_coins ?? 0).toLocaleString("en-US")}</b>
+                        <small>≈ {formatCoins(Number(profile?.gx_coins ?? 0))}</small>
+                      </Link>
+                    )}
                   </div>
 
-
+                  <div className="acc-divider" />
 
                   <div className="acc-group">
-                    <div className="acc-group__label">{lang === "en" ? "Account" : "الحساب"}</div>
-                    <Link to="/account" search={{ tab: "orders" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
-                      <span className="ai">📦</span><span>{t("nav.orders")}</span>
-                    </Link>
                     <Link to="/account" search={{ tab: "profile" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">👤</span><span>{t("nav.account")}</span>
                     </Link>
-                    {username ? (
-                      <Link to="/u/$username" params={{ username }} className="acc-link" onClick={() => setAccountOpen(false)}>
-                        <span className="ai">✨</span><span>{lang === "en" ? "My GX profile & rewards" : "ملفي ومكافآت GX"}</span>
-                      </Link>
-                    ) : (
-                      <Link to="/leaderboard" className="acc-link" onClick={() => setAccountOpen(false)}>
-                        <span className="ai">✨</span><span>{lang === "en" ? "GX Rewards" : "مكافآت GX"}</span>
-                      </Link>
-                    )}
-                    <Link to="/leaderboard" className="acc-link" onClick={() => setAccountOpen(false)}>
-                      <span className="ai">🏆</span><span>{lang === "en" ? "Leaderboard" : "المتصدرون"}</span>
+                    <Link to="/account" search={{ tab: "orders" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
+                      <span className="ai">📦</span><span>{t("nav.orders")}</span>
                     </Link>
-
                     <Link to="/account" search={{ tab: "security" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">⚙️</span><span>{t("nav.settings")}</span>
                     </Link>
-
-                  </div>
-
-                  {canReview && (
-                    <>
-                      <div className="acc-divider" />
+                    {canReview && (
                       <button
                         type="button"
                         className="acc-link"
@@ -439,19 +428,17 @@ export function Navbar() {
                       >
                         <span className="ai">⭐</span><span>{lang === "en" ? "Leave a Review" : "اكتب مراجعة"}</span>
                       </button>
-                    </>
-                  )}
-                  {isAdmin && (
-                    <>
-                      <div className="acc-divider" />
+                    )}
+                    {isAdmin && (
                       <Link to="/admin" className="acc-link acc-admin" onClick={() => setAccountOpen(false)}>
                         <span className="ai">🛡️</span><span>{t("nav.admin_panel")}</span>
                       </Link>
-                    </>
-                  )}
+                    )}
+                  </div>
+
                   <div className="acc-divider" />
                   <button type="button" className="acc-link acc-logout" onClick={signOut}>
-                    <span className="ai">↩︎</span><span>{t("nav.logout")}</span>
+                    <span className="ai">🚪</span><span>{t("nav.logout")}</span>
                   </button>
                 </div>
 
