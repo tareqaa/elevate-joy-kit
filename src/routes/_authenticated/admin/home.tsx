@@ -147,31 +147,31 @@ function HomeBuilder() {
   const selected = useMemo(() => draft.sections.find((s) => s.id === selectedId) ?? null, [draft.sections, selectedId]);
 
   function updateSection(id: string, patch: Partial<Section>) {
-    setDraft((d) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, ...patch } : s) }));
+    pushDraft((d: HomeLayout) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, ...patch } : s) }));
     setDirty(true);
   }
   function updateSectionData(id: string, data: Record<string, unknown>) {
-    setDraft((d) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, data } : s) }));
+    pushDraft((d: HomeLayout) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, data } : s) }));
     setDirty(true);
   }
   function updateSectionStyle(id: string, style: SectionStyle) {
-    setDraft((d) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, style } : s) }));
+    pushDraft((d: HomeLayout) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, style } : s) }));
     setDirty(true);
   }
   function removeSection(id: string) {
-    setDraft((d) => ({ ...d, sections: d.sections.filter((s) => s.id !== id) }));
+    pushDraft((d: HomeLayout) => ({ ...d, sections: d.sections.filter((s) => s.id !== id) }));
     if (selectedId === id) setSelectedId(null);
     setDirty(true);
   }
   function addSection(type: SectionType) {
     const def = SECTION_REGISTRY[type];
     const s: Section = { id: `sec_${crypto.randomUUID().slice(0, 8)}`, type, enabled: true, data: { ...def.defaultData } };
-    setDraft((d) => ({ ...d, sections: [...d.sections, s] }));
+    pushDraft((d: HomeLayout) => ({ ...d, sections: [...d.sections, s] }));
     setSelectedId(s.id);
     setDirty(true);
   }
   function updateTheme(patch: Partial<ThemeConfig>) {
-    setDraft((d) => ({ ...d, theme: { ...DEFAULT_THEME, ...(d.theme || {}), ...patch } }));
+    pushDraft((d: HomeLayout) => ({ ...d, theme: { ...DEFAULT_THEME, ...(d.theme || {}), ...patch } }));
     setDirty(true);
   }
 
@@ -179,7 +179,7 @@ function HomeBuilder() {
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    setDraft((d) => {
+    pushDraft((d: HomeLayout) => {
       const oldIndex = d.sections.findIndex((s) => s.id === active.id);
       const newIndex = d.sections.findIndex((s) => s.id === over.id);
       return { ...d, sections: arrayMove(d.sections, oldIndex, newIndex) };
@@ -326,7 +326,7 @@ function HomeBuilder() {
 
         <TabsContent value="history" className="mt-3">
           <HistoryTab
-            onRestore={(v) => { setDraft(v); setDirty(true); setTab("builder"); toast.success("تمت الاستعادة — اضغط نشر للتطبيق"); }}
+            onRestore={(v) => { pushDraft(v); setDirty(true); setTab("builder"); toast.success("تمت الاستعادة — اضغط نشر للتطبيق"); }}
           />
         </TabsContent>
       </Tabs>
