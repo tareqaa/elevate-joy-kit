@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Star, Search, Layers, Globe } from "lucide-react";
+import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Star, Search, Layers, Globe, ArrowUp, ArrowDown } from "lucide-react";
 import { CatalogPrices } from "@/components/gx/admin/CatalogPrices";
 
 export const Route = createFileRoute("/_authenticated/admin/products")({
@@ -71,7 +71,17 @@ const css = `
 .gx-fieldset>legend,.gx-fs-title{font-size:11.5px;font-weight:800;color:#8fe9ff;letter-spacing:.3px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .gx-variant{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.15);border-radius:10px;padding:10px;margin-bottom:8px}
 .gx-country{background:rgba(0,0,0,.3);border:1px dashed rgba(0,229,255,.2);border-radius:8px;padding:8px;font-size:12px}
+.gx-prod-card.sel{border-color:rgba(0,229,255,.55);box-shadow:0 0 0 2px rgba(0,229,255,.18)}
+.gx-check{width:17px;height:17px;accent-color:#00e5ff;cursor:pointer;margin-top:2px}
+.gx-bulk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border-radius:14px;background:linear-gradient(90deg,rgba(0,229,255,.12),rgba(162,89,255,.08));border:1px solid rgba(0,229,255,.3)}
+.gx-chip{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:800;border:1px solid rgba(255,255,255,.08);color:#7d92a8;background:transparent;cursor:pointer}
+.gx-chip.on{background:rgba(0,229,255,.13);border-color:rgba(0,229,255,.4);color:#8fe9ff}
+.gx-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.gx-row:hover{background:rgba(0,229,255,.04)}
+.gx-skel{height:92px;border-radius:16px;background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.09),rgba(255,255,255,.04));background-size:200% 100%;animation:gxsk 1.2s infinite}
+@keyframes gxsk{0%{background-position:200% 0}100%{background-position:-200% 0}}
 `;
+
 
 
 const CURRENCIES = ["JOD", "USD", "EUR", "SAR", "AED", "TRY", "EGP", "KWD", "QAR", "OMR", "BHD"];
@@ -89,7 +99,9 @@ function ProductsAdmin() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [tab, setTab] = useState<"catalog" | "prices">("prices");
-
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "hidden" | "featured">("all");
+  const [sortBy, setSortBy] = useState<"order" | "name" | "price" | "sales">("order");
+  const [selected, setSelected] = useState<string[]>([]);
 
   const catsQ = useQuery({
     queryKey: ["admin-categories-list"],
@@ -109,6 +121,18 @@ function ProductsAdmin() {
     },
   });
 
+  const variantCountQ = useQuery({
+    queryKey: ["admin-variant-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("product_variants").select("product_id");
+      if (error) throw error;
+      const m: Record<string, number> = {};
+      (data ?? []).forEach((r: { product_id: string }) => { m[r.product_id] = (m[r.product_id] ?? 0) + 1; });
+      return m;
+    },
+  });
+  const variantCounts = variantCountQ.data ?? {};
+
   const categoriesMap = useMemo(() => {
     const m: Record<string, Category> = {};
     (catsQ.data ?? []).forEach((c) => { m[c.id] = c; });
@@ -117,12 +141,21 @@ function ProductsAdmin() {
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
-    return (prodsQ.data ?? []).filter((p) => {
+    const list = (prodsQ.data ?? []).filter((p) => {
       if (categoryFilter !== "all" && p.category_id !== categoryFilter) return false;
+      if (statusFilter === "active" && !p.is_active) return false;
+      if (statusFilter === "hidden" && p.is_active) return false;
+      if (statusFilter === "featured" && !p.is_featured) return false;
       if (!s) return true;
       return p.name_ar.toLowerCase().includes(s) || p.name_en.toLowerCase().includes(s) || p.slug.toLowerCase().includes(s) || (p.sku || "").toLowerCase().includes(s);
     });
-  }, [prodsQ.data, categoryFilter, search]);
+    const sorted = [...list];
+    if (sortBy === "name") sorted.sort((a, b) => a.name_ar.localeCompare(b.name_ar, "ar"));
+    else if (sortBy === "price") sorted.sort((a, b) => (Number(b.base_price_jod) || 0) - (Number(a.base_price_jod) || 0));
+    else if (sortBy === "sales") sorted.sort((a, b) => (b.purchases_count || 0) - (a.purchases_count || 0));
+    return sorted;
+  }, [prodsQ.data, categoryFilter, search, statusFilter, sortBy]);
+
 
   const deleteMut = useMutation({
     mutationFn: async (id: string) => {
@@ -141,6 +174,49 @@ function ProductsAdmin() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-products"] }),
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const bulkMut = useMutation({
+    mutationFn: async ({ ids, patch }: { ids: string[]; patch: Partial<Product> }) => {
+      const { error } = await supabase.from("products").update(patch as never).in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تم تطبيق التعديل"); setSelected([]); qc.invalidateQueries({ queryKey: ["admin-products"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const bulkDeleteMut = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.from("products").delete().in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تم الحذف"); setSelected([]); qc.invalidateQueries({ queryKey: ["admin-products"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const reorderMut = useMutation({
+    mutationFn: async ({ a, b }: { a: Product; b: Product }) => {
+      const r1 = await supabase.from("products").update({ sort_order: b.sort_order } as never).eq("id", a.id);
+      if (r1.error) throw r1.error;
+      const r2 = await supabase.from("products").update({ sort_order: a.sort_order } as never).eq("id", b.id);
+      if (r2.error) throw r2.error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-products"] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function move(index: number, dir: -1 | 1) {
+    const a = filtered[index];
+    const b = filtered[index + dir];
+    if (!a || !b) return;
+    if (a.sort_order === b.sort_order) {
+      toast.error("عدّل «ترتيب الظهور» يدوياً — الترتيب متطابق");
+      return;
+    }
+    reorderMut.mutate({ a, b });
+  }
+
+  const toggleSel = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+
 
   const stats = useMemo(() => {
     const all = prodsQ.data ?? [];
@@ -194,17 +270,59 @@ function ProductsAdmin() {
           <Input placeholder="بحث بالاسم أو المعرّف أو رقم المنتج (SKU)" value={search} onChange={(e) => setSearch(e.target.value)} className="gx-adm-input ps-9" />
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="gx-adm-input w-60"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="gx-adm-input w-56"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">كل الأقسام</SelectItem>
             {(catsQ.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+          <SelectTrigger className="gx-adm-input w-44"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="order">حسب الترتيب</SelectItem>
+            <SelectItem value="name">حسب الاسم</SelectItem>
+            <SelectItem value="price">الأعلى سعراً</SelectItem>
+            <SelectItem value="sales">الأكثر مبيعاً</SelectItem>
+          </SelectContent>
+        </Select>
         <span className="text-sm text-cyan-100/60">{filtered.length} منتج</span>
       </div>
 
+      <div className="flex gap-2 flex-wrap items-center">
+        {([["all", "الكل"], ["active", "ظاهر"], ["hidden", "مخفي"], ["featured", "مميّز"]] as const).map(([k, label]) => (
+          <button key={k} className={`gx-chip ${statusFilter === k ? "on" : ""}`} onClick={() => setStatusFilter(k)}>{label}</button>
+        ))}
+        <button
+          className="gx-chip"
+          onClick={() => setSelected(selected.length === filtered.length ? [] : filtered.map((p) => p.id))}
+        >
+          {selected.length === filtered.length && filtered.length > 0 ? "إلغاء تحديد الكل" : "تحديد الكل"}
+        </button>
+      </div>
+
+      {selected.length > 0 && (
+        <div className="gx-bulk">
+          <b className="text-cyan-100 text-sm">{selected.length} محدّد</b>
+          <button className="gx-btn outline" onClick={() => bulkMut.mutate({ ids: selected, patch: { is_active: true } })}><Eye size={12} /> إظهار</button>
+          <button className="gx-btn outline" onClick={() => bulkMut.mutate({ ids: selected, patch: { is_active: false } })}><EyeOff size={12} /> إخفاء</button>
+          <button className="gx-btn outline" onClick={() => bulkMut.mutate({ ids: selected, patch: { is_featured: true } })}><Star size={12} /> تمييز</button>
+          <button className="gx-btn outline" onClick={() => bulkMut.mutate({ ids: selected, patch: { is_featured: false } })}>إلغاء التمييز</button>
+          <Select value="" onValueChange={(v) => bulkMut.mutate({ ids: selected, patch: { category_id: v } })}>
+            <SelectTrigger className="gx-adm-input w-48 h-9"><SelectValue placeholder="نقل إلى قسم..." /></SelectTrigger>
+            <SelectContent>
+              {(catsQ.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <button className="gx-btn danger" onClick={() => { if (confirm(`حذف ${selected.length} منتج؟`)) bulkDeleteMut.mutate(selected); }}><Trash2 size={12} /> حذف</button>
+          <button className="gx-btn outline" onClick={() => setSelected([])}>إلغاء التحديد</button>
+        </div>
+      )}
+
+
       {prodsQ.isLoading ? (
-        <div className="text-center py-20 text-cyan-100/60">جاري التحميل...</div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="gx-skel" />)}
+        </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-cyan-100/60">
           <ShoppingBag size={48} className="mx-auto opacity-30 mb-3" />
@@ -212,8 +330,9 @@ function ProductsAdmin() {
         </div>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          {filtered.map((p) => (
-            <div key={p.id} className={`gx-prod-card ${p.is_active ? "" : "off"}`}>
+          {filtered.map((p, i) => (
+            <div key={p.id} className={`gx-prod-card ${p.is_active ? "" : "off"} ${selected.includes(p.id) ? "sel" : ""}`}>
+              <input type="checkbox" className="gx-check" checked={selected.includes(p.id)} onChange={() => toggleSel(p.id)} />
               <div className="gx-prod-img">
                 {p.image_url ? <img src={p.image_url} alt="" /> : <ShoppingBag size={26} className="text-cyan-400/50" />}
               </div>
@@ -241,6 +360,7 @@ function ProductsAdmin() {
                   <span className="gx-pill">{p.category_id ? categoriesMap[p.category_id]?.name_ar ?? "بدون قسم" : "بدون قسم"}</span>
                   {p.base_price_jod !== null && <span className="gx-pill gx-price">{Number(p.base_price_jod).toFixed(2)} د.أ</span>}
                   <span className="gx-pill">مشتريات: {p.purchases_count}</span>
+                  <span className="gx-pill">خيارات: {variantCounts[p.id] ?? 0}</span>
                 </div>
                 <div className="gx-prod-actions">
                   <button className="gx-btn primary" onClick={() => setManagingVariants(p)}>
@@ -253,6 +373,12 @@ function ProductsAdmin() {
                   <button className="gx-btn outline" onClick={() => toggleMut.mutate({ id: p.id, patch: { is_active: !p.is_active } })}>
                     {p.is_active ? <><Eye size={12} /> ظاهر</> : <><EyeOff size={12} /> مخفي</>}
                   </button>
+                  {sortBy === "order" && (
+                    <>
+                      <button className="gx-btn outline" title="تقديم" disabled={i === 0} onClick={() => move(i, -1)}><ArrowUp size={12} /></button>
+                      <button className="gx-btn outline" title="تأخير" disabled={i === filtered.length - 1} onClick={() => move(i, 1)}><ArrowDown size={12} /></button>
+                    </>
+                  )}
                   <button className="gx-btn danger" onClick={() => { if (confirm(`حذف "${p.name_ar}"؟`)) deleteMut.mutate(p.id); }}><Trash2 size={12} /></button>
                 </div>
               </div>
@@ -260,6 +386,7 @@ function ProductsAdmin() {
           ))}
         </div>
       )}
+
       </div>
       )}
 
