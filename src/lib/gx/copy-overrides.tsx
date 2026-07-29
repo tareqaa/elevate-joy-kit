@@ -80,6 +80,7 @@ export function InlineTextEditor() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [editing, setEditing] = useState(false);
   const [pending, setPending] = useState<CopyMap>({});
+  const [saving, setSaving] = useState(false);
   const applying = useRef(false);
 
   // Refresh overrides from the database.
@@ -157,15 +158,31 @@ export function InlineTextEditor() {
       el.classList.add("gx-text-editing");
       el.focus();
 
+      // Record the edit while typing, not only on blur: clicking the save
+      // button while it is still disabled never blurs the field, so a
+      // blur-only commit could leave the button permanently disabled.
+      const record = () => {
+        const text = (el.textContent ?? "").trim();
+        const key = keyFor(pathname, el);
+        setPending((p) => {
+          if (!text || text === orig.trim()) {
+            if (!(key in p)) return p;
+            const n = { ...p };
+            delete n[key];
+            return n;
+          }
+          if (p[key]?.text === text) return p;
+          return { ...p, [key]: { text, orig: orig.trim() } };
+        });
+      };
+
       const commit = () => {
         el.contentEditable = "false";
         el.classList.remove("gx-text-editing");
-        const text = (el.textContent ?? "").trim();
-        if (text && text !== orig.trim()) {
-          setPending((p) => ({ ...p, [keyFor(pathname, el)]: { text, orig: orig.trim() } }));
-        }
+        record();
         el.removeEventListener("blur", commit);
         el.removeEventListener("keydown", onKey);
+        el.removeEventListener("input", record);
       };
       const onKey = (ev: KeyboardEvent) => {
         if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); el.blur(); }
@@ -173,6 +190,7 @@ export function InlineTextEditor() {
       };
       el.addEventListener("blur", commit);
       el.addEventListener("keydown", onKey);
+      el.addEventListener("input", record);
     }
 
     document.addEventListener("click", onClick, true);
@@ -183,10 +201,12 @@ export function InlineTextEditor() {
   }, [editing, isAdmin, pathname]);
 
   async function save() {
+    setSaving(true);
     const merged: CopyMap = { ...copy, ...pending };
     const { error } = await supabase.from("site_settings")
       .upsert({ key: "site_copy", value: merged as never }, { onConflict: "key" });
-    if (error) { toast.error("فشل الحفظ — تأكد أنك أدمن"); return; }
+    setSaving(false);
+    if (error) { toast.error(`فشل الحفظ: ${error.message}`); return; }
     setCopy(merged);
     try { localStorage.setItem(COPY_CACHE, JSON.stringify(merged)); } catch { /* noop */ }
     setPending({});
@@ -212,11 +232,20 @@ export function InlineTextEditor() {
     <>
       <style>{editCss}</style>
       {editing && isAdmin && (
-        <div className="gx-text-edit-bar" dir="rtl" data-gx-noedit>
+        <div
+          className="gx-text-edit-bar"
+          dir="rtl"
+          data-gx-noedit
+          // Keep the caret in the field being edited; the bar's own clicks
+          // must not steal focus before the handler runs.
+          onMouseDown={(e) => e.preventDefault()}
+        >
           <span className="gx-teb-dot" />
           <span className="gx-teb-label">وضع تحرير النصوص — اضغط أي نص لتعديله</span>
           {count > 0 && <span className="gx-teb-count">{count} تعديل</span>}
-          <button className="gx-teb-btn primary" onClick={save} disabled={count === 0}>حفظ</button>
+          <button className="gx-teb-btn primary" onClick={save} disabled={count === 0 || saving}>
+            {saving ? "جاري الحفظ..." : "حفظ"}
+          </button>
           <button className="gx-teb-btn" onClick={() => { setPending({}); window.location.reload(); }}>تراجع</button>
           <button className="gx-teb-btn danger" onClick={resetPage}>استعادة الأصل</button>
           <button className="gx-teb-btn" onClick={() => setEditing(false)}>خروج</button>
