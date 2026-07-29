@@ -112,6 +112,111 @@ export type Database = {
           },
         ]
       }
+      coupon_redemptions: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          discount_jod: number
+          id: string
+          order_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          discount_jod?: number
+          id?: string
+          order_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          discount_jod?: number
+          id?: string
+          order_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          category_slugs: string[]
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount_type: Database["public"]["Enums"]["coupon_discount_type"]
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_discount_jod: number | null
+          min_order_jod: number
+          per_user_limit: number
+          product_slugs: string[]
+          scope: Database["public"]["Enums"]["coupon_scope"]
+          updated_at: string
+          usage_count: number
+          usage_limit: number | null
+        }
+        Insert: {
+          category_slugs?: string[]
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_type?: Database["public"]["Enums"]["coupon_discount_type"]
+          discount_value: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount_jod?: number | null
+          min_order_jod?: number
+          per_user_limit?: number
+          product_slugs?: string[]
+          scope?: Database["public"]["Enums"]["coupon_scope"]
+          updated_at?: string
+          usage_count?: number
+          usage_limit?: number | null
+        }
+        Update: {
+          category_slugs?: string[]
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_type?: Database["public"]["Enums"]["coupon_discount_type"]
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount_jod?: number | null
+          min_order_jod?: number
+          per_user_limit?: number
+          product_slugs?: string[]
+          scope?: Database["public"]["Enums"]["coupon_scope"]
+          updated_at?: string
+          usage_count?: number
+          usage_limit?: number | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -156,11 +261,15 @@ export type Database = {
       orders: {
         Row: {
           admin_notes: string | null
+          contact_type: string | null
+          coupon_code: string | null
+          coupon_id: string | null
           created_at: string
           currency_snapshot: string | null
           customer_name: string | null
           customer_whatsapp: string | null
           delivery_data: Json | null
+          discount_jod: number
           id: string
           items: Json
           order_number: string
@@ -172,11 +281,15 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          contact_type?: string | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           currency_snapshot?: string | null
           customer_name?: string | null
           customer_whatsapp?: string | null
           delivery_data?: Json | null
+          discount_jod?: number
           id?: string
           items?: Json
           order_number?: string
@@ -188,11 +301,15 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          contact_type?: string | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           currency_snapshot?: string | null
           customer_name?: string | null
           customer_whatsapp?: string | null
           delivery_data?: Json | null
+          discount_jod?: number
           id?: string
           items?: Json
           order_number?: string
@@ -202,7 +319,15 @@ export type Database = {
           user_id?: string | null
           xp_awarded?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_country_prices: {
         Row: {
@@ -493,9 +618,21 @@ export type Database = {
           username: string
         }[]
       }
+      validate_coupon: {
+        Args: {
+          _category_slugs: string[]
+          _code: string
+          _product_slugs: string[]
+          _subtotal_jod: number
+          _user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "user"
+      coupon_discount_type: "percent" | "fixed"
+      coupon_scope: "all" | "products" | "categories"
       order_status:
         | "pending"
         | "paid"
@@ -630,6 +767,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      coupon_discount_type: ["percent", "fixed"],
+      coupon_scope: ["all", "products", "categories"],
       order_status: ["pending", "paid", "processing", "delivered", "cancelled"],
     },
   },
