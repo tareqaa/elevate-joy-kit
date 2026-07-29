@@ -42,12 +42,23 @@ export function AdminFab() {
   return (
     <>
       <style>{fabCss}</style>
-      {onHome && (
-        <Link to="/admin/home" className="gx-edit-home-btn" title="تحرير الصفحة الرئيسية">
+      <div className="gx-edit-pills">
+        {onHome && (
+          <Link to="/admin/home" className="gx-edit-home-btn" title="تحرير الصفحة الرئيسية">
+            <Pencil size={16} />
+            <span>تحرير الصفحة</span>
+          </Link>
+        )}
+        <button
+          className="gx-edit-home-btn ghost"
+          title="تحرير نصوص هذه الصفحة"
+          onClick={() => window.dispatchEvent(new Event("gx:toggle-text-edit"))}
+        >
           <Pencil size={16} />
-          <span>تحرير الصفحة</span>
-        </Link>
-      )}
+          <span>تحرير النصوص</span>
+        </button>
+      </div>
+
       <div className={`gx-fab-wrap ${open ? "open" : ""}`}>
         {open && (
           <div className="gx-fab-menu">
