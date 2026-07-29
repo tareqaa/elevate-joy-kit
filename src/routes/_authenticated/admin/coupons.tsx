@@ -368,8 +368,11 @@ function CouponEditor({
               ))}
             </div>
             {editing.scope === "products" && (
-              <Field label="سلاجز المنتجات (مفصولة بفاصلة)">
-                <input value={(editing.product_slugs || []).join(",")} onChange={(e) => set({ product_slugs: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })} placeholder="fortnite,snapchat-plus" className="cp-input font-mono text-xs" />
+              <Field label="اختر المنتجات (كل منتج له رقم/كود ثابت)">
+                <ProductPicker
+                  selected={editing.product_slugs || []}
+                  onChange={(v) => set({ product_slugs: v })}
+                />
               </Field>
             )}
             {editing.scope === "categories" && (
