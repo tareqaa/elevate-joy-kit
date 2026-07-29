@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { AuthModal } from "./AuthModal";
 import { CurrencyModal } from "./CurrencyModal";
+import { ReviewModal } from "./ReviewModal";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizedProduct, localizedGiftCard } from "@/lib/gx/product-locale";
 
@@ -110,6 +111,8 @@ export function Navbar() {
     return readCachedProfile(storedUser?.id) ?? profileFromUser(storedUser);
   });
   const [accountOpen, setAccountOpen] = useState(false);
+  const [canReview, setCanReview] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("gx_is_admin") === "1";
@@ -140,7 +143,7 @@ export function Navbar() {
 
   useEffect(() => {
     if (!session) {
-      setProfile(null); setIsAdmin(false);
+      setProfile(null); setIsAdmin(false); setCanReview(false);
       try { localStorage.removeItem("gx_profile_cache"); localStorage.removeItem("gx_is_admin"); } catch { /* noop */ }
       return;
     }
@@ -159,6 +162,12 @@ export function Navbar() {
         setIsAdmin(!!adminData);
         try { localStorage.setItem("gx_is_admin", adminData ? "1" : "0"); } catch { /* noop */ }
       } catch { /* keep cached */ }
+      try {
+        const { count } = await supabase.from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", session.userId).eq("status", "delivered");
+        setCanReview((count ?? 0) > 0);
+      } catch { /* noop */ }
     })();
   }, [session]);
 
@@ -365,6 +374,15 @@ export function Navbar() {
                   <Link to="/account" search={{ tab: "security" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                     <span className="ai">⚙️</span><span>{t("nav.settings")}</span>
                   </Link>
+                  {canReview && (
+                    <button
+                      type="button"
+                      className="acc-link"
+                      onClick={() => { setAccountOpen(false); setReviewOpen(true); }}
+                    >
+                      <span className="ai">⭐</span><span>{lang === "en" ? "Leave a Review" : "اكتب مراجعة"}</span>
+                    </button>
+                  )}
                   {isAdmin && (
                     <>
                       <div className="acc-divider" />
@@ -438,6 +456,7 @@ export function Navbar() {
       </nav>
       <CurrencyModal open={currencyOpen} onClose={() => setCurrencyOpen(false)} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <ReviewModal open={reviewOpen} onClose={() => setReviewOpen(false)} userId={session?.userId ?? null} />
     </>
   );
 }

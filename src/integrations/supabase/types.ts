@@ -467,6 +467,7 @@ export type Database = {
           name_en: string
           pinned_sort: number
           purchases_count: number
+          sku: string | null
           slug: string
           sort_order: number
           updated_at: string
@@ -487,6 +488,7 @@ export type Database = {
           name_en: string
           pinned_sort?: number
           purchases_count?: number
+          sku?: string | null
           slug: string
           sort_order?: number
           updated_at?: string
@@ -507,6 +509,7 @@ export type Database = {
           name_en?: string
           pinned_sort?: number
           purchases_count?: number
+          sku?: string | null
           slug?: string
           sort_order?: number
           updated_at?: string
@@ -562,6 +565,65 @@ export type Database = {
           xp?: number
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          admin_notes: string | null
+          comment: string
+          created_at: string
+          display_name: string | null
+          id: string
+          is_featured: boolean
+          order_id: string | null
+          order_number: string | null
+          product_name: string | null
+          product_slug: string | null
+          rating: number
+          status: Database["public"]["Enums"]["review_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          comment?: string
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_featured?: boolean
+          order_id?: string | null
+          order_number?: string | null
+          product_name?: string | null
+          product_slug?: string | null
+          rating: number
+          status?: Database["public"]["Enums"]["review_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          comment?: string
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_featured?: boolean
+          order_id?: string | null
+          order_number?: string | null
+          product_name?: string | null
+          product_slug?: string | null
+          rating?: number
+          status?: Database["public"]["Enums"]["review_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_settings: {
         Row: {
@@ -675,6 +737,7 @@ export type Database = {
         | "processing"
         | "delivered"
         | "cancelled"
+      review_status: "pending" | "approved" | "rejected" | "hidden"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -806,6 +869,7 @@ export const Constants = {
       coupon_discount_type: ["percent", "fixed"],
       coupon_scope: ["all", "products", "categories"],
       order_status: ["pending", "paid", "processing", "delivered", "cancelled"],
+      review_status: ["pending", "approved", "rejected", "hidden"],
     },
   },
 } as const
