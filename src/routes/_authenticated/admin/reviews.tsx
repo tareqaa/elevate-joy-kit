@@ -37,7 +37,7 @@ function AdminReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | ReviewStatus | "featured">("pending");
   const [q, setQ] = useState("");
-  const [drafts, setDrafts] = useState<Record<string, { comment: string; rating: number }>>({});
+  const [drafts, setDrafts] = useState<Record<string, { comment: string; rating: number; name: string }>>({});
 
   async function load() {
     setLoading(true);
@@ -117,15 +117,20 @@ function AdminReviewsPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {filtered.map((r) => {
-            const draft = drafts[r.id] ?? { comment: r.comment, rating: r.rating };
-            const dirty = draft.comment !== r.comment || draft.rating !== r.rating;
+            const draft = drafts[r.id] ?? { comment: r.comment, rating: r.rating, name: r.display_name || "" };
+            const dirty = draft.comment !== r.comment || draft.rating !== r.rating || draft.name !== (r.display_name || "");
             const flagged = containsProfanity(r.comment);
             const eligible = isAutoEligible(r.rating, r.comment);
             return (
               <div key={r.id} className="rv-card space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-white font-bold text-sm">{r.display_name || "عميل GX"}</div>
+                    <input
+                      className="rv-input !py-1.5 !text-sm font-bold text-white mb-1"
+                      value={draft.name}
+                      placeholder="عميل GX"
+                      onChange={(e) => setDrafts((d) => ({ ...d, [r.id]: { ...draft, name: e.target.value } }))}
+                    />
                     <div className="flex gap-1.5 flex-wrap mt-1.5">
                       <span className="rv-pill">{new Date(r.created_at).toLocaleDateString("ar")}</span>
                       {r.order_number && <span className="rv-pill" dir="ltr">{r.order_number}</span>}
@@ -161,7 +166,7 @@ function AdminReviewsPage() {
 
                 <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
                   {dirty && (
-                    <button className="rv-btn rv-ok" onClick={() => patch(r.id, { comment: draft.comment, rating: draft.rating })}>
+                    <button className="rv-btn rv-ok" onClick={() => patch(r.id, { comment: draft.comment, rating: draft.rating, display_name: draft.name.trim() || null })}>
                       <Save size={13} /> حفظ التعديل
                     </button>
                   )}
