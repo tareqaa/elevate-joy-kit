@@ -438,11 +438,6 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
                   </div>
                 </div>
                 {q && <div className="testi-quote">{q}</div>}
-                {it.product && (
-                  <div style={{ marginTop: 8, fontSize: 11, color: "var(--muted,#7d92a8)", display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span>{it.product}</span>
-                  </div>
-                )}
               </div>
             );
           })}
