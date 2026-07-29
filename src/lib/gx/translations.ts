@@ -233,11 +233,13 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "acc.your_email_label": "الإيميل",
     "acc.your_password_label": "كلمة السر",
     "acc.your_code_label": "الكود",
-    "cart.order_created": "تم إنشاء طلبك بنجاح 🎉",
-    "cart.order_saved_note": "احفظ رقم الطلب — بتقدر تكمل من واتساب أو تبعتلنا الرقم على الإنستا وبنكمل معك.",
-    "cart.your_order_number": "رقم طلبك",
-    "cart.copy_number": "نسخ الرقم",
-    "cart.continue_wa": "أكمل عبر واتساب",
+   "cart.order_created": "تم إنشاء طلبك بنجاح 🎉",
+   "cart.order_saved_note": "احفظ رقم الطلب — بتقدر تتواصل معنا على أي منصة (واتساب، تيليجرام، إنستغرام، فيسبوك، تيك توك) وبنكمل الطلب معك. أو أنشئ حساب وتابع حالة طلبك مباشرة من صفحة \"طلباتي\".",
+   "cart.your_order_number": "رقم طلبك",
+   "cart.copy_number": "نسخ الرقم",
+   "cart.continue_wa": "أكمل عبر واتساب",
+   "cart.track_order": "تتبع الطلب من حسابي",
+
   },
   en: {
     "common.currency": "Currency",
