@@ -10,12 +10,11 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { User as UserIcon, Package, ShieldCheck, Copy, Check, Search, Sparkles } from "lucide-react";
+import { User as UserIcon, Package, ShieldCheck, Copy, Check, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
-import { LoyaltyTab } from "@/components/gx/LoyaltyTab";
 
-type AccountTab = "profile" | "loyalty" | "orders" | "security";
+type AccountTab = "profile" | "orders" | "security";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({ meta: [{ title: "حسابي — GX Store" }] }),
@@ -25,16 +24,6 @@ export const Route = createFileRoute("/_authenticated/account")({
   component: AccountPage,
 });
 
-
-// Human gaming avatars (DiceBear adventurer) — varied looks, vibrant neon backgrounds
-const AVATAR_SEEDS = [
-  "Nova", "Vortex", "Cipher", "Blade", "Reactor", "Havoc",
-  "Specter", "Pulse", "Rogue", "Titan", "Onyx", "Vanta",
-  "Fury", "Ghost", "Hyper", "Zenith", "Krypton", "Phantom",
-  "Raider", "Sonic", "Volt", "Ember", "Frost", "Storm",
-];
-const avatarUrl = (seed: string) =>
-  `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6,ec4899,22d3ee,f59e0b&radius=50&scale=90&skinColor=f2d3b1,ecad80,9e5622`;
 
 type CachedProfile = {
   id: string;
@@ -167,16 +156,11 @@ function AccountPage() {
         value={tab}
         onValueChange={(v) => navigate({ search: { tab: v as AccountTab } })}
       >
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl h-11">
+        <TabsList className="grid grid-cols-3 w-full max-w-xl h-11">
           <TabsTrigger value="profile" className="gap-2"><UserIcon className="w-4 h-4" />{t("acc.tab_profile")}</TabsTrigger>
-          <TabsTrigger value="loyalty" className="gap-2"><Sparkles className="w-4 h-4" />{lang === "ar" ? "الولاء" : "Loyalty"}</TabsTrigger>
           <TabsTrigger value="orders" className="gap-2"><Package className="w-4 h-4" />{t("acc.tab_orders")}</TabsTrigger>
           <TabsTrigger value="security" className="gap-2"><ShieldCheck className="w-4 h-4" />{t("acc.tab_security")}</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="loyalty" className="mt-4">
-          <LoyaltyTab userId={user.id} />
-        </TabsContent>
 
 
         <TabsContent value="profile" className="mt-4">
@@ -291,34 +275,26 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
 
   return (
     <div className="space-y-4">
-      <PlayerSearch />
       <div className="grid md:grid-cols-2 gap-4">
       <Card>
         <CardHeader><CardTitle className="text-base">{t("acc.pick_character")}</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-            {AVATAR_SEEDS.map((s) => {
-              const url = avatarUrl(s);
-              const active = avatar === url;
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => { setAvatar(url); setAvatarTouched(true); }}
-                  className={`relative rounded-xl overflow-hidden aspect-square border-2 transition ${active ? "border-primary ring-2 ring-primary/50 scale-105" : "border-transparent hover:border-primary/50"}`}
-                >
-                  <img src={url} alt={s} className="w-full h-full object-cover bg-muted" loading="lazy" />
-                  {active && (
-                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                      <Check className="w-6 h-6 text-primary" />
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-3">
+            <img src={avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(currentUsername || "gx")}`} alt="" className="w-16 h-16 rounded-xl border object-cover bg-muted" />
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {t("dir") === "ltr"
+                ? "Avatars, levels, GX Coins and badges now live on your GX profile page."
+                : "الأفاتار والمستويات و GX Coins والشارات صارت كلها في صفحة ملفك في GX."}
+            </p>
           </div>
+          {currentUsername ? (
+            <Link to="/u/$username" params={{ username: currentUsername }}>
+              <Button variant="outline" className="w-full gap-2"><Sparkles className="w-4 h-4" />@{currentUsername}</Button>
+            </Link>
+          ) : null}
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader><CardTitle className="text-base">{t("acc.account_info")}</CardTitle></CardHeader>
@@ -364,78 +340,6 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
       </Card>
       </div>
     </div>
-  );
-}
-
-function PlayerSearch() {
-  const { t } = useLang();
-  const [q, setQ] = useState("");
-  const [results, setResults] = useState<Array<{ id: string; username: string; full_name: string | null; avatar_url: string | null; level: number | null }>>([]);
-  const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const query = q.replace(/^@+/, "").trim();
-    if (query.length < 2) { setResults([]); return; }
-    setLoading(true);
-    const to = setTimeout(async () => {
-      const { data, error } = await supabase.rpc("search_public_profiles", { _q: query, _limit: 8 });
-      setLoading(false);
-      if (error) { setResults([]); return; }
-      setResults((data as typeof results) ?? []);
-      setOpen(true);
-    }, 300);
-    return () => clearTimeout(to);
-  }, [q]);
-
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Search className="w-4 h-4 text-primary" />
-          <span className="text-sm font-bold">{t("acc.search_player")}</span>
-        </div>
-        <div className="relative">
-          <span className="absolute inset-y-0 start-3 flex items-center text-muted-foreground pointer-events-none text-sm" dir="ltr">@</span>
-          <Input
-            dir="ltr"
-            className="ps-7"
-            placeholder="game_tag"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onFocus={() => results.length && setOpen(true)}
-            onBlur={() => setTimeout(() => setOpen(false), 150)}
-          />
-          {open && (loading || results.length > 0) && (
-            <div className="absolute z-10 mt-1 w-full rounded-lg border bg-popover shadow-xl overflow-hidden">
-              {loading && <div className="p-3 text-xs text-muted-foreground text-center">{t("acc.searching")}</div>}
-              {!loading && results.map((r) => {
-                const av = r.avatar_url || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(r.username)}&backgroundType=gradientLinear&backgroundColor=0ea5e9,6366f1,8b5cf6`;
-                return (
-                  <Link
-                    key={r.id}
-                    to="/u/$username"
-                    params={{ username: r.username }}
-                    className="flex items-center gap-3 p-2.5 hover:bg-accent transition"
-                    onClick={() => setOpen(false)}
-                  >
-                    <img src={av} alt={r.username} className="w-9 h-9 rounded-lg object-cover bg-card" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold truncate">{r.full_name || r.username}</div>
-                      <div className="text-xs text-primary truncate" dir="ltr">@{r.username}</div>
-                    </div>
-                    <Badge variant="outline" className="text-[10px]">Lv.{Math.max(1, Number(r.level) || 1)}</Badge>
-                  </Link>
-                );
-              })}
-              {!loading && q.trim().length >= 2 && results.length === 0 && (
-                <div className="p-3 text-xs text-muted-foreground text-center">{t("acc.no_results")}</div>
-              )}
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 

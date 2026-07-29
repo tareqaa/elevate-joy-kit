@@ -7,6 +7,7 @@ export type MyLoyalty = {
   ok: boolean;
   xp: number;
   coins: number;
+  store_credit: number;
   total_spent: number;
   orders_count: number;
   rank: number;
@@ -16,10 +17,13 @@ export type MyLoyalty = {
 
 /** 1 JOD spent = 100 XP */
 export const XP_PER_JOD = 100;
-/** 1 قرش (0.01 JOD) = 1 GX Coin */
-export const COINS_PER_JOD = 100;
+/** 1 JOD actually paid = 10 GX Coins (before level bonus) */
+export const COINS_PER_JOD = 10;
 /** 1000 GX Coins = 1 JOD */
 export const COINS_PER_JOD_REDEEM = 1000;
+/** GX Coins can cover at most 50% of an order */
+export const MAX_COINS_DISCOUNT_RATIO = 0.5;
+
 
 export function coinsToJod(coins: number): number {
   return Math.round((Math.max(0, coins) / COINS_PER_JOD_REDEEM) * 100) / 100;
@@ -46,6 +50,8 @@ export async function fetchMyLoyalty(): Promise<MyLoyalty | null> {
     ...row,
     xp: Number(row.xp || 0),
     coins: Number(row.coins || 0),
+    store_credit: Number(row.store_credit || 0),
+
     total_spent: Number(row.total_spent || 0),
     orders_count: Number(row.orders_count || 0),
     rank: Number(row.rank || 0),

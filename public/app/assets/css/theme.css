@@ -791,7 +791,20 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   background:linear-gradient(135deg, var(--cyan), #7c5cff);
   box-shadow:0 0 14px -4px rgba(0,229,255,.8);
 }
+.acc-balances{
+  display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:8px 11px 4px;
+}
+.acc-bal{
+  border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:8px 10px;
+  background:rgba(255,255,255,.03);
+}
+.acc-bal__l{ display:block; font-size:10px; color:#8b90a0; font-weight:700; }
+.acc-bal__v{ display:block; font-size:15px; font-weight:900; line-height:1.2; margin-top:2px; }
+.acc-bal__v.coins{ color:#ffc44d; }
+.acc-bal__v.credit{ color:#34d399; }
+.acc-bal small{ font-size:9.5px; color:#7c8394; }
 .acc-group{ padding:2px 0; }
+
 .acc-group__label{
   font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
   color:#7c8394; padding:6px 13px 3px;

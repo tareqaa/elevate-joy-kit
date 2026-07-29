@@ -43,7 +43,10 @@ type Profile = {
   avatar_url?: string | null;
   level?: number | null;
   email?: string | null;
+  gx_coins?: number | null;
+  store_credit_jod?: number | null;
 };
+
 
 type StoredAuthUser = {
   id?: string;
@@ -149,7 +152,7 @@ export function Navbar() {
     }
     (async () => {
       try {
-        const { data: prof } = await supabase.from("profiles").select("username, full_name, avatar_url, level, email").eq("id", session.userId).maybeSingle();
+        const { data: prof } = await supabase.from("profiles").select("username, full_name, avatar_url, level, email, gx_coins, store_credit_jod").eq("id", session.userId).maybeSingle();
         const next = prof ? { ...prof, id: session.userId } : { id: session.userId, email: session.email };
         setProfile(next);
         try {
@@ -384,6 +387,21 @@ export function Navbar() {
                     </Link>
                   )}
 
+                  <div className="acc-balances">
+                    <div className="acc-bal">
+                      <span className="acc-bal__l">🪙 GX Coins</span>
+                      <b className="acc-bal__v coins">{Number(profile?.gx_coins ?? 0).toLocaleString("en-US")}</b>
+                      <small>≈ {(Number(profile?.gx_coins ?? 0) / 1000).toFixed(2)} {lang === "en" ? "JOD" : "د.أ"}</small>
+                    </div>
+                    <div className="acc-bal">
+                      <span className="acc-bal__l">💳 {lang === "en" ? "Store credit" : "رصيد المتجر"}</span>
+                      <b className="acc-bal__v credit">{Number(profile?.store_credit_jod ?? 0).toFixed(2)}</b>
+                      <small>{lang === "en" ? "JOD" : "د.أ"}</small>
+                    </div>
+                  </div>
+
+
+
                   <div className="acc-group">
                     <div className="acc-group__label">{lang === "en" ? "Account" : "الحساب"}</div>
                     <Link to="/account" search={{ tab: "orders" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
@@ -392,12 +410,19 @@ export function Navbar() {
                     <Link to="/account" search={{ tab: "profile" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">👤</span><span>{t("nav.account")}</span>
                     </Link>
-                    <Link to="/account" search={{ tab: "loyalty" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
-                      <span className="ai">✨</span><span>{lang === "en" ? "GX Rewards" : "مكافآت GX"}</span>
-                    </Link>
+                    {username ? (
+                      <Link to="/u/$username" params={{ username }} className="acc-link" onClick={() => setAccountOpen(false)}>
+                        <span className="ai">✨</span><span>{lang === "en" ? "My GX profile & rewards" : "ملفي ومكافآت GX"}</span>
+                      </Link>
+                    ) : (
+                      <Link to="/leaderboard" className="acc-link" onClick={() => setAccountOpen(false)}>
+                        <span className="ai">✨</span><span>{lang === "en" ? "GX Rewards" : "مكافآت GX"}</span>
+                      </Link>
+                    )}
                     <Link to="/leaderboard" className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">🏆</span><span>{lang === "en" ? "Leaderboard" : "المتصدرون"}</span>
                     </Link>
+
                     <Link to="/account" search={{ tab: "security" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">⚙️</span><span>{t("nav.settings")}</span>
                     </Link>
