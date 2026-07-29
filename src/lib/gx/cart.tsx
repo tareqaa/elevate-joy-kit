@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { findPlanByCartId, type ResolvedPlan } from "@/data/products";
 import { useCurrency } from "./currency";
 import { submitStoreOrder } from "./orders.functions";
+import { validateCouponFn } from "./coupons.functions";
 
 type CartItem = {
   cartId: string;
@@ -16,15 +17,38 @@ export type ResolvedItem = ResolvedPlan & {
   usernames: string[] | null;
 };
 
+export type AppliedCoupon = {
+  id: string;
+  code: string;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  discount_jod: number;
+};
+
+export type ContactInfo = {
+  name: string;
+  countryCode: string;
+  phone: string;
+  type: "whatsapp" | "telegram";
+};
+
 const STORAGE_KEY = "gx_cart";
 const NOTES_KEY = "gx_cart_notes";
+const CONTACT_KEY = "gx_cart_contact";
+const COUPON_KEY = "gx_cart_coupon";
 
 type Ctx = {
   items: ResolvedItem[];
   count: number;
+  subtotalJOD: number;
   totalJOD: number;
   notes: string;
   setNotes: (n: string) => void;
+  contact: ContactInfo;
+  setContact: (c: Partial<ContactInfo>) => void;
+  coupon: AppliedCoupon | null;
+  applyCoupon: (code: string) => Promise<{ ok: boolean; message: string }>;
+  removeCoupon: () => void;
   add: (cartId: string, qty?: number) => void;
   addSnap: (cartId: string, usernames: string[]) => void;
   buyNow: (cartId: string, qty?: number) => void;
@@ -42,11 +66,29 @@ type Ctx = {
 
 const CartContext = createContext<Ctx | null>(null);
 
+const DEFAULT_CONTACT: ContactInfo = { name: "", countryCode: "+962", phone: "", type: "whatsapp" };
+
 function loadRaw(): CartItem[] {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     return Array.isArray(raw) ? raw : [];
   } catch { return []; }
+}
+
+function loadContact(): ContactInfo {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CONTACT_KEY) || "null");
+    if (raw && typeof raw === "object") return { ...DEFAULT_CONTACT, ...raw };
+  } catch { /* noop */ }
+  return { ...DEFAULT_CONTACT };
+}
+
+function loadCoupon(): AppliedCoupon | null {
+  try {
+    const raw = JSON.parse(localStorage.getItem(COUPON_KEY) || "null");
+    if (raw && typeof raw === "object" && raw.code) return raw as AppliedCoupon;
+  } catch { /* noop */ }
+  return null;
 }
 
 function resolve(items: CartItem[]): ResolvedItem[] {
@@ -74,16 +116,23 @@ function resolve(items: CartItem[]): ResolvedItem[] {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [rawItems, setRawItems] = useState<CartItem[]>([]);
   const [notes, setNotesState] = useState("");
+  const [contact, setContactState] = useState<ContactInfo>(DEFAULT_CONTACT);
+  const [coupon, setCouponState] = useState<AppliedCoupon | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const { currency, format } = useCurrency();
   const submitStoreOrderFn = useServerFn(submitStoreOrder);
+  const validateCouponRpc = useServerFn(validateCouponFn);
 
   useEffect(() => {
     setRawItems(loadRaw());
     setNotesState(localStorage.getItem(NOTES_KEY) || "");
+    setContactState(loadContact());
+    setCouponState(loadCoupon());
     const onStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY) setRawItems(loadRaw());
       if (e.key === NOTES_KEY) setNotesState(localStorage.getItem(NOTES_KEY) || "");
+      if (e.key === CONTACT_KEY) setContactState(loadContact());
+      if (e.key === COUPON_KEY) setCouponState(loadCoupon());
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -96,12 +145,75 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const items = useMemo(() => resolve(rawItems), [rawItems]);
   const count = items.reduce((s, i) => s + i.qty, 0);
-  const totalJOD = items.reduce((s, i) => s + i.price * i.qty, 0);
+  const subtotalJOD = items.reduce((s, i) => s + i.price * i.qty, 0);
+  const totalJOD = Math.max(0, subtotalJOD - (coupon?.discount_jod ?? 0));
 
   const setNotes = useCallback((n: string) => {
     localStorage.setItem(NOTES_KEY, n);
     setNotesState(n);
   }, []);
+
+  const setContact = useCallback((patch: Partial<ContactInfo>) => {
+    setContactState((prev) => {
+      const next = { ...prev, ...patch };
+      try { localStorage.setItem(CONTACT_KEY, JSON.stringify(next)); } catch { /* noop */ }
+      return next;
+    });
+  }, []);
+
+  const persistCoupon = useCallback((c: AppliedCoupon | null) => {
+    try {
+      if (c) localStorage.setItem(COUPON_KEY, JSON.stringify(c));
+      else localStorage.removeItem(COUPON_KEY);
+    } catch { /* noop */ }
+    setCouponState(c);
+  }, []);
+
+  const removeCoupon = useCallback(() => persistCoupon(null), [persistCoupon]);
+
+  const applyCoupon = useCallback(async (code: string) => {
+    const trimmed = (code || "").trim();
+    if (!trimmed) return { ok: false, message: "أدخل كود الكوبون" };
+    if (items.length === 0) return { ok: false, message: "السلة فاضية" };
+    try {
+      const productSlugs = Array.from(new Set(items.map((i) => i.product).filter(Boolean)));
+      const res = await validateCouponRpc({
+        data: {
+          code: trimmed,
+          subtotal_jod: subtotalJOD,
+          product_slugs: productSlugs,
+          category_slugs: [],
+        },
+      });
+      if (!res.valid || !res.coupon_id) return { ok: false, message: res.message || "الكوبون غير صالح" };
+      persistCoupon({
+        id: res.coupon_id,
+        code: res.code || trimmed.toUpperCase(),
+        discount_type: (res.discount_type || "percent"),
+        discount_value: Number(res.discount_value || 0),
+        discount_jod: Number(res.discount_jod || 0),
+      });
+      return { ok: true, message: res.message || "تم تطبيق الكوبون" };
+    } catch (e) {
+      console.warn("[GX] applyCoupon failed", e);
+      return { ok: false, message: "تعذّر التحقق من الكوبون" };
+    }
+  }, [items, subtotalJOD, persistCoupon, validateCouponRpc]);
+
+  // Re-validate discount when subtotal changes
+  useEffect(() => {
+    if (!coupon) return;
+    if (subtotalJOD <= 0) { persistCoupon(null); return; }
+    // recompute discount amount based on type
+    let d = coupon.discount_type === "percent"
+      ? Math.round((subtotalJOD * coupon.discount_value) / 100 * 100) / 100
+      : coupon.discount_value;
+    if (d > subtotalJOD) d = subtotalJOD;
+    if (Math.abs(d - coupon.discount_jod) > 0.001) {
+      persistCoupon({ ...coupon, discount_jod: d });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtotalJOD]);
 
   const add = useCallback(
     (cartId: string, qty = 1) => {
@@ -180,10 +292,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (next.length === 0) {
         localStorage.setItem(NOTES_KEY, "");
         setNotesState("");
+        persistCoupon(null);
       }
       persist(next);
     },
-    [rawItems, persist]
+    [rawItems, persist, persistCoupon]
   );
 
   const remove = useCallback(
@@ -192,17 +305,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (next.length === 0) {
         localStorage.setItem(NOTES_KEY, "");
         setNotesState("");
+        persistCoupon(null);
       }
       persist(next);
     },
-    [rawItems, persist]
+    [rawItems, persist, persistCoupon]
   );
 
   const clear = useCallback(() => {
     localStorage.setItem(NOTES_KEY, "");
     setNotesState("");
+    persistCoupon(null);
     persist([]);
-  }, [persist]);
+  }, [persist, persistCoupon]);
 
   const openDrawer = useCallback(() => setDrawerOpen(true), []);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
@@ -243,8 +358,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 ${lines}
 
 ━━━━━━━━━━━━━━━━━━━━
-📦 عدد القطع: ${itemCount}
-💰 *الإجمالي المستحق: ${format(totalJOD)}*
+📦 عدد القطع: ${itemCount}`;
+      if (coupon) msg += `\n🏷️ كوبون (${coupon.code}): -${format(coupon.discount_jod)}`;
+      msg += `\n💰 *الإجمالي المستحق: ${format(totalJOD)}*
 💱 العملة: ${currency}
 ━━━━━━━━━━━━━━━━━━━━`;
 
@@ -259,11 +375,17 @@ ${lines}
         ? "https://wa.me/962776252313?text=" + encoded
         : "https://web.whatsapp.com/send?phone=962776252313&text=" + encoded;
     },
-    [items, notes, currency, format, totalJOD]
+    [items, notes, currency, format, totalJOD, coupon]
   );
 
   const submitOrder = useCallback(async () => {
     if (items.length === 0) return null;
+    const fullPhone = (contact.countryCode + contact.phone).replace(/\s+/g, "");
+    if (!contact.name.trim() || contact.phone.trim().length < 4) {
+      const { toast } = await import("sonner");
+      toast.error("عبّي الاسم ورقم التواصل قبل إتمام الطلب");
+      return null;
+    }
     try {
       const payloadItems = items.map((it) => ({
         cartId: it.cartId,
@@ -278,22 +400,27 @@ ${lines}
           totalJOD,
           currency,
           notes,
+          customerName: contact.name.trim(),
+          customerWhatsapp: fullPhone,
+          contactType: contact.type,
+          coupon: coupon ? { id: coupon.id, code: coupon.code, discount_jod: coupon.discount_jod } : null,
         },
       });
     } catch (e) {
       console.warn("[GX] submitOrder failed", e);
       return null;
     }
-  }, [items, totalJOD, currency, notes, submitStoreOrderFn]);
+  }, [items, totalJOD, currency, notes, contact, coupon, submitStoreOrderFn]);
 
   const value = useMemo<Ctx>(
     () => ({
-      items, count, totalJOD, notes, setNotes,
+      items, count, subtotalJOD, totalJOD, notes, setNotes,
+      contact, setContact, coupon, applyCoupon, removeCoupon,
       add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear,
       isDrawerOpen, openDrawer, closeDrawer,
       submitOrder, buildWhatsAppUrl,
     }),
-    [items, count, totalJOD, notes, setNotes, add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear, isDrawerOpen, openDrawer, closeDrawer, submitOrder, buildWhatsAppUrl]
+    [items, count, subtotalJOD, totalJOD, notes, setNotes, contact, setContact, coupon, applyCoupon, removeCoupon, add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear, isDrawerOpen, openDrawer, closeDrawer, submitOrder, buildWhatsAppUrl]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
