@@ -76,7 +76,7 @@ function AdminReviewsPage() {
   const stats = useMemo(() => ({
     total: rows.length,
     pending: rows.filter((r) => r.status === "pending").length,
-    published: rows.filter((r) => r.status === "approved" && r.rating >= 4).length,
+    published: rows.filter((r) => r.status === "approved" && r.is_featured && r.rating >= 4).length,
     avg: rows.length ? (rows.reduce((s, r) => s + r.rating, 0) / rows.length).toFixed(1) : "—",
   }), [rows]);
 
