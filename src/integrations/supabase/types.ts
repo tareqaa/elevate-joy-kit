@@ -217,6 +217,36 @@ export type Database = {
         }
         Relationships: []
       }
+      home_settings_history: {
+        Row: {
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          id: string
+          key: string
+          note: string | null
+          value: Json
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          key: string
+          note?: string | null
+          value: Json
+        }
+        Update: {
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          key?: string
+          note?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null

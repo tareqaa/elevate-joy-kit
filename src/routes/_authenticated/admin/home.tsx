@@ -10,9 +10,11 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Home as HomeIcon, Save, Image as ImageIcon, LayoutGrid, Star, Upload, Trash2, Plus, ArrowUp, ArrowDown } from "lucide-react";
+import { Home as HomeIcon, Save, Image as ImageIcon, LayoutGrid, Star, Upload, Trash2, Plus, ArrowUp, ArrowDown, History, RotateCcw } from "lucide-react";
 import { CATEGORY_LINKS, getFeaturedItems } from "@/data/products";
 import type { HomeHero, HomeBanners, HomeBannerItem, HomeCategoryOverride } from "@/lib/gx/site-settings";
+import { formatDistanceToNow } from "date-fns";
+import { ar } from "date-fns/locale";
 
 export const Route = createFileRoute("/_authenticated/admin/home")({
   head: () => ({ meta: [{ title: "الصفحة الرئيسية — لوحة التحكم" }] }),
@@ -67,13 +69,34 @@ function HomeAdmin() {
   const save = useMutation({
     mutationFn: async () => {
       if (dirty.size === 0) return;
-      const rows = Array.from(dirty).map((k) => ({ key: k as string, value: state[k] as never }));
+      // Snapshot the CURRENT server value of each dirty key before overwriting,
+      // so admins can restore an older version from the history tab.
+      const dirtyKeys = Array.from(dirty).map((k) => k as string);
+      const { data: current } = await supabase
+        .from("site_settings")
+        .select("key,value")
+        .in("key", dirtyKeys);
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id ?? null;
+      const email = sess.session?.user?.email ?? null;
+      if (current && current.length > 0) {
+        const snapshots = current.map((r) => ({
+          key: r.key,
+          value: r.value as never,
+          actor_id: uid,
+          actor_email: email,
+          note: "snapshot before save",
+        }));
+        await supabase.from("home_settings_history").insert(snapshots);
+      }
+      const rows = dirtyKeys.map((k) => ({ key: k, value: state[k as keyof SettingsMap] as never }));
       const { error } = await supabase.from("site_settings").upsert(rows, { onConflict: "key" });
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("تم الحفظ");
       qc.invalidateQueries({ queryKey: ["home-admin-settings"] });
+      qc.invalidateQueries({ queryKey: ["home-settings-history"] });
       setDirty(new Set());
     },
     onError: (e: Error) => toast.error(e.message || "فشل الحفظ"),
@@ -103,6 +126,7 @@ function HomeAdmin() {
           <TabsTrigger value="banners"><LayoutGrid size={14} className="ms-2" /> السلايدر</TabsTrigger>
           <TabsTrigger value="cats"><LayoutGrid size={14} className="ms-2" /> الأقسام</TabsTrigger>
           <TabsTrigger value="best"><Star size={14} className="ms-2" /> الأكثر مبيعاً</TabsTrigger>
+          <TabsTrigger value="history"><History size={14} className="ms-2" /> السجل</TabsTrigger>
         </TabsList>
 
         <TabsContent value="hero" className="mt-4">
@@ -116,6 +140,9 @@ function HomeAdmin() {
         </TabsContent>
         <TabsContent value="best" className="mt-4">
           <BestTab order={state.home_bestseller_order} onChange={(o) => patch("home_bestseller_order", o)} />
+        </TabsContent>
+        <TabsContent value="history" className="mt-4">
+          <HistoryTab />
         </TabsContent>
       </Tabs>
     </div>
@@ -402,6 +429,97 @@ function BestTab({ order, onChange }: { order: string[]; onChange: (o: string[])
         {order.length > 0 && (
           <Button variant="outline" onClick={() => onChange([])} className="w-full border-slate-700 text-slate-300">إعادة الترتيب الافتراضي</Button>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* --------------------------------- HISTORY -------------------------------- */
+
+type HistoryRow = { id: string; key: string; value: unknown; actor_email: string | null; created_at: string };
+
+function HistoryTab() {
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ["home-settings-history"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("home_settings_history")
+        .select("id,key,value,actor_email,created_at")
+        .in("key", ["home_hero", "home_banners", "home_categories_meta", "home_bestseller_order"])
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data ?? []) as HistoryRow[];
+    },
+  });
+
+  const restore = useMutation({
+    mutationFn: async (row: HistoryRow) => {
+      // Snapshot current value first, then overwrite with the restored one.
+      const { data: current } = await supabase.from("site_settings").select("key,value").eq("key", row.key).maybeSingle();
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id ?? null;
+      const email = sess.session?.user?.email ?? null;
+      if (current) {
+        await supabase.from("home_settings_history").insert({
+          key: current.key, value: current.value as never, actor_id: uid, actor_email: email, note: "snapshot before restore",
+        });
+      }
+      const { error } = await supabase.from("site_settings").upsert({ key: row.key, value: row.value as never }, { onConflict: "key" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم استعادة الإعداد");
+      qc.invalidateQueries({ queryKey: ["home-admin-settings"] });
+      qc.invalidateQueries({ queryKey: ["home-settings-history"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "فشل الاستعادة"),
+  });
+
+  const labels: Record<string, string> = {
+    home_hero: "الهيرو",
+    home_banners: "السلايدر",
+    home_categories_meta: "الأقسام",
+    home_bestseller_order: "الأكثر مبيعاً",
+  };
+
+  return (
+    <Card className="bg-slate-900/60 border-slate-800">
+      <CardHeader>
+        <CardTitle className="text-slate-100">سجل التعديلات</CardTitle>
+        <CardDescription>آخر 50 لقطة — اضغط "استعادة" لإرجاع أي قسم لنسخته السابقة.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {q.isLoading && <div className="text-slate-500 text-sm text-center py-6">جارٍ التحميل...</div>}
+        {!q.isLoading && (q.data?.length ?? 0) === 0 && (
+          <div className="text-slate-500 text-sm text-center py-8">لا يوجد سجل بعد — التعديلات القادمة ستُحفظ هنا تلقائياً.</div>
+        )}
+        {q.data?.map((row) => (
+          <div key={row.id} className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+            <div className="w-10 h-10 rounded-md bg-cyan-500/10 border border-cyan-500/25 grid place-items-center shrink-0">
+              <History size={16} className="text-cyan-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-slate-100 font-bold text-sm">{labels[row.key] || row.key}</div>
+              <div className="text-xs text-slate-500">
+                {formatDistanceToNow(new Date(row.created_at), { addSuffix: true, locale: ar })}
+                {row.actor_email && <> — {row.actor_email}</>}
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10"
+              onClick={() => {
+                if (confirm(`استعادة "${labels[row.key] || row.key}" لهذه النسخة؟`)) restore.mutate(row);
+              }}
+              disabled={restore.isPending}
+            >
+              <RotateCcw size={13} className="ms-1" /> استعادة
+            </Button>
+          </div>
+        ))}
       </CardContent>
     </Card>
   );
