@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import {
   Save, Home as HomeIcon, GripVertical, Trash2, Plus, Eye,
   History, RotateCcw, Settings2, ExternalLink, ChevronLeft,
-  Palette, Monitor, Tablet, Smartphone, SlidersHorizontal,
+  Palette, Monitor, Tablet, Smartphone, SlidersHorizontal, Undo2, Redo2,
 } from "lucide-react";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
@@ -43,6 +43,8 @@ export const Route = createFileRoute("/_authenticated/admin/home")({
 
 type Device = "desktop" | "tablet" | "mobile";
 const DEVICE_WIDTH: Record<Device, number | null> = { desktop: null, tablet: 820, mobile: 390 };
+const DRAFT_KEY = "gx_home_layout_draft_v1";
+const MAX_HISTORY = 50;
 
 function HomeBuilder() {
   const qc = useQueryClient();
@@ -57,43 +59,119 @@ function HomeBuilder() {
     },
   });
 
-  const [draft, setDraft] = useState<HomeLayout>(DEFAULT_HOME_LAYOUT);
+  const [draft, setDraftState] = useState<HomeLayout>(DEFAULT_HOME_LAYOUT);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [tab, setTab] = useState<"builder" | "theme" | "history">("builder");
   const [device, setDevice] = useState<Device>("desktop");
   const [rightTab, setRightTab] = useState<"content" | "style">("content");
 
-  useEffect(() => { if (q.data) { setDraft({ ...q.data, theme: { ...DEFAULT_THEME, ...(q.data.theme || {}) } }); setDirty(false); } }, [q.data]);
+  // Undo/redo stacks — snapshots of full HomeLayout.
+  const [past, setPast] = useState<HomeLayout[]>([]);
+  const [future, setFuture] = useState<HomeLayout[]>([]);
+  const [restorable, setRestorable] = useState<HomeLayout | null>(null);
+
+  // History-aware setter: any user edit pushes prev draft to `past`.
+  function pushDraft(next: HomeLayout | ((d: HomeLayout) => HomeLayout)) {
+    setDraftState((prev) => {
+      const val = typeof next === "function" ? (next as (d: HomeLayout) => HomeLayout)(prev) : next;
+      setPast((p) => [...p.slice(-MAX_HISTORY + 1), prev]);
+      setFuture([]);
+      return val;
+    });
+    setDirty(true);
+  }
+  function undo() {
+    setPast((p) => {
+      if (p.length === 0) return p;
+      const prev = p[p.length - 1];
+      setFuture((f) => [draft, ...f].slice(0, MAX_HISTORY));
+      setDraftState(prev);
+      setDirty(true);
+      return p.slice(0, -1);
+    });
+  }
+  function redo() {
+    setFuture((f) => {
+      if (f.length === 0) return f;
+      const next = f[0];
+      setPast((p) => [...p, draft].slice(-MAX_HISTORY));
+      setDraftState(next);
+      setDirty(true);
+      return f.slice(1);
+    });
+  }
+
+  useEffect(() => {
+    if (!q.data) return;
+    const server: HomeLayout = { ...q.data, theme: { ...DEFAULT_THEME, ...(q.data.theme || {}) } };
+    // Restore an unsaved draft if it differs from server data.
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw) as HomeLayout;
+        if (JSON.stringify(saved) !== JSON.stringify(server) && Array.isArray(saved.sections)) {
+          setRestorable(saved);
+        }
+      }
+    } catch { /* noop */ }
+    setDraftState(server);
+    setPast([]); setFuture([]);
+    setDirty(false);
+  }, [q.data]);
+
+  // Autosave draft to localStorage (debounced).
+  useEffect(() => {
+    if (!dirty) return;
+    const t = setTimeout(() => {
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { /* noop */ }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [draft, dirty]);
+
+  // Keyboard shortcuts.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      else if ((e.key === "y") || (e.key === "z" && e.shiftKey)) { e.preventDefault(); redo(); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [draft, past, future]);
+
 
   const selected = useMemo(() => draft.sections.find((s) => s.id === selectedId) ?? null, [draft.sections, selectedId]);
 
   function updateSection(id: string, patch: Partial<Section>) {
-    setDraft((d) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, ...patch } : s) }));
+    pushDraft((d: HomeLayout) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, ...patch } : s) }));
     setDirty(true);
   }
   function updateSectionData(id: string, data: Record<string, unknown>) {
-    setDraft((d) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, data } : s) }));
+    pushDraft((d: HomeLayout) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, data } : s) }));
     setDirty(true);
   }
   function updateSectionStyle(id: string, style: SectionStyle) {
-    setDraft((d) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, style } : s) }));
+    pushDraft((d: HomeLayout) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, style } : s) }));
     setDirty(true);
   }
   function removeSection(id: string) {
-    setDraft((d) => ({ ...d, sections: d.sections.filter((s) => s.id !== id) }));
+    pushDraft((d: HomeLayout) => ({ ...d, sections: d.sections.filter((s) => s.id !== id) }));
     if (selectedId === id) setSelectedId(null);
     setDirty(true);
   }
   function addSection(type: SectionType) {
     const def = SECTION_REGISTRY[type];
     const s: Section = { id: `sec_${crypto.randomUUID().slice(0, 8)}`, type, enabled: true, data: { ...def.defaultData } };
-    setDraft((d) => ({ ...d, sections: [...d.sections, s] }));
+    pushDraft((d: HomeLayout) => ({ ...d, sections: [...d.sections, s] }));
     setSelectedId(s.id);
     setDirty(true);
   }
   function updateTheme(patch: Partial<ThemeConfig>) {
-    setDraft((d) => ({ ...d, theme: { ...DEFAULT_THEME, ...(d.theme || {}), ...patch } }));
+    pushDraft((d: HomeLayout) => ({ ...d, theme: { ...DEFAULT_THEME, ...(d.theme || {}), ...patch } }));
     setDirty(true);
   }
 
@@ -101,7 +179,7 @@ function HomeBuilder() {
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    setDraft((d) => {
+    pushDraft((d: HomeLayout) => {
       const oldIndex = d.sections.findIndex((s) => s.id === active.id);
       const newIndex = d.sections.findIndex((s) => s.id === over.id);
       return { ...d, sections: arrayMove(d.sections, oldIndex, newIndex) };
@@ -127,10 +205,13 @@ function HomeBuilder() {
       toast.success("تم نشر التغييرات");
       qc.invalidateQueries({ queryKey: ["home-layout"] });
       qc.invalidateQueries({ queryKey: ["home-layout-history"] });
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ }
+      setRestorable(null);
       setDirty(false);
     },
     onError: (e: Error) => toast.error(e.message || "فشل الحفظ"),
   });
+
 
   return (
     <div dir="rtl" className="min-h-screen bg-slate-950 text-slate-100 -m-4 sm:-m-6 lg:-m-8">
@@ -144,7 +225,17 @@ function HomeBuilder() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-slate-100 font-black text-lg leading-tight">محرر الصفحة الرئيسية</div>
-          <div className="text-xs text-slate-500">اسحب لإعادة الترتيب • اضغط قسم للتعديل • كل تعديل يظهر مباشرة</div>
+          <div className="text-xs text-slate-500">اسحب لإعادة الترتيب • اضغط قسم للتعديل • Ctrl+Z للتراجع</div>
+        </div>
+        <div className="flex items-center gap-0.5 rounded-md border border-slate-800 bg-slate-900/60 p-0.5">
+          <button onClick={undo} disabled={past.length === 0} title="تراجع (Ctrl+Z)"
+            className="p-1.5 rounded text-slate-300 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed">
+            <Undo2 size={14} />
+          </button>
+          <button onClick={redo} disabled={future.length === 0} title="إعادة (Ctrl+Y)"
+            className="p-1.5 rounded text-slate-300 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed">
+            <Redo2 size={14} />
+          </button>
         </div>
         <div className="hidden md:flex items-center gap-1 rounded-md border border-slate-800 bg-slate-900/60 p-0.5">
           {(["desktop", "tablet", "mobile"] as const).map((d) => {
@@ -165,6 +256,20 @@ function HomeBuilder() {
           <Save size={15} className="ms-2" /> {save.isPending ? "..." : "نشر"} {dirty && <span className="ms-1 w-2 h-2 rounded-full bg-slate-950/60" />}
         </Button>
       </div>
+
+      {restorable && (
+        <div className="mx-4 mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 flex items-center justify-between gap-2">
+          <div className="text-xs text-amber-200">
+            هناك مسودة غير محفوظة من جلسة سابقة — هل تريد استعادتها؟
+          </div>
+          <div className="flex gap-1">
+            <Button size="sm" onClick={() => { pushDraft(restorable); setRestorable(null); toast.success("تمت استعادة المسودة"); }}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 h-7 text-xs">استعادة</Button>
+            <Button size="sm" variant="outline" onClick={() => { try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ } setRestorable(null); }}
+              className="border-slate-700 text-slate-300 h-7 text-xs">تجاهل</Button>
+          </div>
+        </div>
+      )}
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="px-4 pt-3">
         <TabsList className="bg-slate-900/60 border border-slate-800">
@@ -248,7 +353,7 @@ function HomeBuilder() {
 
         <TabsContent value="history" className="mt-3">
           <HistoryTab
-            onRestore={(v) => { setDraft(v); setDirty(true); setTab("builder"); toast.success("تمت الاستعادة — اضغط نشر للتطبيق"); }}
+            onRestore={(v) => { pushDraft(v); setDirty(true); setTab("builder"); toast.success("تمت الاستعادة — اضغط نشر للتطبيق"); }}
           />
         </TabsContent>
       </Tabs>
