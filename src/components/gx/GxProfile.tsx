@@ -150,7 +150,7 @@ export function GxProfile({ username }: { username?: string }) {
                       <span className="gxp-tag" dir="ltr">@{p.username}</span>
                       <div className="gxp-chips">
                         {lvl && <span className="gxp-chip" style={{ background: lvl.gradient }}>{lvl.icon} {levelName(lvl, lang)}</span>}
-                        <span className="gxp-chip ghost">🏆 #{Number(loyaltyQ.data?.rank ?? p.rank)}</span>
+                        <span className="gxp-chip ghost">🏆 #{Number(mine?.rank ?? p.rank)}</span>
                         <span className="gxp-chip ghost">
                           {isAr ? "عضو منذ" : "Member since"} {new Date(p.created_at).toLocaleDateString(isAr ? "ar-EG" : "en-US", { year: "numeric", month: "long" })}
                         </span>
@@ -163,9 +163,9 @@ export function GxProfile({ username }: { username?: string }) {
                     <div className="gxp-bar-top">
                       <b>{xp.toLocaleString("en-US")} XP</b>
                       <span>
-                        {loyaltyQ.data?.next_level
-                          ? (isAr ? `باقي ${prog.remaining.toLocaleString("en-US")} XP إلى ${levelName(loyaltyQ.data.next_level, lang)}`
-                                  : `${prog.remaining.toLocaleString("en-US")} XP to ${levelName(loyaltyQ.data.next_level, lang)}`)
+                        {nextLevel
+                          ? (isAr ? `باقي ${prog.remaining.toLocaleString("en-US")} XP إلى ${levelName(nextLevel, lang)}`
+                                  : `${prog.remaining.toLocaleString("en-US")} XP to ${levelName(nextLevel, lang)}`)
                           : (isAr ? "استمر بالتسوّق لرفع مستواك" : "Keep shopping to level up")}
                       </span>
                     </div>
@@ -173,14 +173,14 @@ export function GxProfile({ username }: { username?: string }) {
                   </div>
 
                   <div className="gxp-stats">
-                    <Stat label="GX Coins" value={(isOwner ? loyaltyQ.data?.coins ?? 0 : 0).toLocaleString("en-US")}
-                      hint={isOwner ? `≈ ${formatCoins(loyaltyQ.data?.coins ?? 0)}` : undefined}
+                    <Stat label="GX Coins" value={(mine?.coins ?? 0).toLocaleString("en-US")}
+                      hint={isOwner ? `≈ ${formatCoins(mine?.coins ?? 0)}` : undefined}
                       hidden={!isOwner} icon="🪙" />
                     <Stat label={isAr ? "رصيد المتجر" : "Store credit"}
-                      value={format(Number(loyaltyQ.data?.store_credit ?? 0))} hint={currency}
+                      value={format(Number(mine?.store_credit ?? 0))} hint={currency}
                       hidden={!isOwner} icon="💳" />
                     <Stat label="XP" value={xp.toLocaleString("en-US")} icon="⚡" />
-                    <Stat label={isAr ? "الطلبات" : "Orders"} value={String(loyaltyQ.data?.orders_count ?? p.orders_count ?? 0)} icon="📦" />
+                    <Stat label={isAr ? "الطلبات" : "Orders"} value={String(mine?.orders_count ?? p.orders_count ?? 0)} icon="📦" />
                   </div>
 
                   {isOwner && lvl && (
