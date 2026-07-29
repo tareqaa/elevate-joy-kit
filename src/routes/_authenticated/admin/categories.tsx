@@ -76,7 +76,19 @@ const css = `
 .gx-tabs{display:flex;gap:2px;background:rgba(0,0,0,.3);padding:4px;border-radius:10px;border:1px solid rgba(0,229,255,.15)}
 .gx-tab{flex:1;padding:8px 12px;border-radius:7px;background:transparent;border:none;color:#7d92a8;font-weight:600;font-size:13px;cursor:pointer}
 .gx-tab.active{background:rgba(0,229,255,.12);color:#00e5ff}
+.gx-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:760px){.gx-stats{grid-template-columns:repeat(2,1fr)}}
+.gx-stat{background:linear-gradient(180deg,rgba(16,24,32,.85),rgba(10,15,22,.9));border:1px solid rgba(0,229,255,.15);border-radius:14px;padding:12px 14px}
+.gx-stat b{display:block;font-size:22px;color:#00e5ff;line-height:1.2}
+.gx-stat span{font-size:11px;color:#7d92a8;font-weight:700}
+.gx-count{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(255,255,255,.06);color:#9fb4c7;border:1px solid rgba(255,255,255,.08)}
+.gx-skel{height:62px;border-radius:14px;background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.09),rgba(255,255,255,.04));background-size:200% 100%;animation:gxsk 1.2s linear infinite}
+@keyframes gxsk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.gx-ord{display:flex;flex-direction:column;gap:2px}
+.gx-ord button{background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.18);color:#00e5ff;border-radius:6px;width:22px;height:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.gx-ord button:disabled{opacity:.25;cursor:not-allowed}
 `;
+
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
