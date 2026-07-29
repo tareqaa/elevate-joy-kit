@@ -62,6 +62,7 @@ export type SiteSettings = {
   home_subcategories_meta: Record<string, HomeCategoryOverride>;
   home_bestseller_order: string[];
   home_layout: HomeLayout;
+  catalog_prices: CatalogPrices;
 };
 
 const DEFAULT_HERO: HomeHero = {
