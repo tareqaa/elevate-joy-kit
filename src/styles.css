@@ -159,3 +159,26 @@ div[style*="Edit with Lovable"],
   z-index: -9999 !important;
 }
 
+
+/* ============= Section Animations (Homepage Builder) ============= */
+.gx-anim { will-change: transform, opacity; }
+.gx-anim-none { opacity: 1; }
+.gx-anim-fade,
+.gx-anim-slide-up,
+.gx-anim-slide-down,
+.gx-anim-slide-left,
+.gx-anim-slide-right,
+.gx-anim-zoom-in {
+  opacity: 0;
+  transition: opacity var(--gx-anim-dur, 600ms) ease-out var(--gx-anim-delay, 0ms),
+              transform var(--gx-anim-dur, 600ms) cubic-bezier(.22,.61,.36,1) var(--gx-anim-delay, 0ms);
+}
+.gx-anim-slide-up    { transform: translateY(28px); }
+.gx-anim-slide-down  { transform: translateY(-28px); }
+.gx-anim-slide-left  { transform: translateX(28px); }
+.gx-anim-slide-right { transform: translateX(-28px); }
+.gx-anim-zoom-in     { transform: scale(.96); }
+.gx-anim.is-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .gx-anim { opacity: 1 !important; transform: none !important; transition: none !important; }
+}
