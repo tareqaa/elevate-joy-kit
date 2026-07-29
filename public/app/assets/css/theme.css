@@ -755,6 +755,49 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 
+/* Clickable profile header in the account dropdown */
+.acc-hero{
+  display:flex; align-items:center; gap:10px; text-decoration:none;
+  padding:10px 11px; margin:6px; border-radius:14px;
+  background:linear-gradient(135deg, color-mix(in oklab, var(--cyan) 14%, transparent), rgba(124,92,255,.10));
+  border:1px solid color-mix(in oklab, var(--cyan) 26%, transparent);
+  transition:all .18s var(--ease);
+}
+.acc-hero:hover{
+  border-color:color-mix(in oklab, var(--cyan) 55%, transparent);
+  box-shadow:0 6px 22px -12px rgba(0,229,255,.7);
+  transform:translateY(-1px);
+}
+.acc-hero__av{
+  width:38px; height:38px; border-radius:50%; flex:0 0 auto; overflow:hidden;
+  border:1.5px solid color-mix(in oklab, var(--cyan) 50%, var(--border)); background:var(--card);
+  display:block;
+}
+.acc-hero__av img{ width:100%; height:100%; object-fit:cover; display:block; }
+.acc-hero__txt{ min-width:0; flex:1; display:block; }
+.acc-hero__name{
+  display:block; font-size:13px; font-weight:900; color:var(--white);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.acc-hero__handle{
+  display:block; font-size:11.5px; font-weight:700; margin-top:2px;
+  background:linear-gradient(90deg, var(--cyan), #7c5cff);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.acc-hero__lvl{
+  flex:0 0 auto; font-size:10.5px; font-weight:900; color:#05060a;
+  padding:3px 8px; border-radius:999px; line-height:1;
+  background:linear-gradient(135deg, var(--cyan), #7c5cff);
+  box-shadow:0 0 14px -4px rgba(0,229,255,.8);
+}
+.acc-group{ padding:2px 0; }
+.acc-group__label{
+  font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+  color:#7c8394; padding:6px 13px 3px;
+}
+
+
 
 /* ============================================================
    In-page Auth Modal
