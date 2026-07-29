@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,12 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Star, Search, Layers, Globe, ArrowUp, ArrowDown } from "lucide-react";
-import { CatalogPrices } from "@/components/gx/admin/CatalogPrices";
-
-export const Route = createFileRoute("/_authenticated/admin/products")({
-  head: () => ({ meta: [{ title: "المنتجات — لوحة التحكم" }] }),
-  component: ProductsAdmin,
-});
 
 type Category = { id: string; name_ar: string; name_en: string };
 type Product = {
@@ -91,14 +84,13 @@ function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
 }
 
-function ProductsAdmin() {
+export function CategoryProducts({ categoryId, categoryName }: { categoryId: string; categoryName: string }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
   const [managingVariants, setManagingVariants] = useState<Product | null>(null);
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [tab, setTab] = useState<"catalog" | "prices">("prices");
+  const categoryFilter = categoryId;
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "hidden" | "featured">("all");
   const [sortBy, setSortBy] = useState<"order" | "name" | "price" | "sales">("order");
   const [selected, setSelected] = useState<string[]>([]);
@@ -219,61 +211,35 @@ function ProductsAdmin() {
 
 
   const stats = useMemo(() => {
-    const all = prodsQ.data ?? [];
+    const all = (prodsQ.data ?? []).filter((p) => p.category_id === categoryId);
     return {
       total: all.length,
       active: all.filter((p) => p.is_active).length,
       featured: all.filter((p) => p.is_featured).length,
       sales: all.reduce((n, p) => n + (p.purchases_count || 0), 0),
     };
-  }, [prodsQ.data]);
+  }, [prodsQ.data, categoryId]);
 
   return (
     <div className="gx-prod space-y-4" dir="rtl">
       <style dangerouslySetInnerHTML={{ __html: css }} />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-cyan-100 flex items-center gap-2">
-            <ShoppingBag size={22} className="text-cyan-400" /> المنتجات
-          </h1>
-          <p className="text-sm text-cyan-100/60 mt-1">إدارة المنتجات وأسعار المتجر من مكان واحد</p>
+        <div className="text-sm font-bold text-cyan-100 flex items-center gap-2">
+          <ShoppingBag size={16} className="text-cyan-400" /> منتجات: {categoryName}
+          <span className="text-xs text-cyan-100/50 font-normal">({stats.total})</span>
         </div>
-        <button className="gx-btn primary" onClick={() => { setTab("catalog"); setCreating(true); }}>
-          <Plus size={14} /> منتج جديد
+        <button className="gx-btn primary" onClick={() => setCreating(true)}>
+          <Plus size={14} /> منتج جديد في هذا القسم
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="gx-stat"><ShoppingBag size={18} className="text-cyan-400" /><div><b>{stats.total}</b><span className="block">إجمالي المنتجات</span></div></div>
-        <div className="gx-stat"><Eye size={18} className="text-emerald-400" /><div><b>{stats.active}</b><span className="block">ظاهر للزبائن</span></div></div>
-        <div className="gx-stat"><Star size={18} className="text-amber-400" /><div><b>{stats.featured}</b><span className="block">منتج مميّز</span></div></div>
-        <div className="gx-stat"><Layers size={18} className="text-fuchsia-400" /><div><b>{stats.sales}</b><span className="block">عمليات شراء</span></div></div>
-      </div>
-
-      <div className="flex gap-2 flex-wrap">
-        <button className={`gx-tab ${tab === "catalog" ? "on" : ""}`} onClick={() => setTab("catalog")}>
-          <ShoppingBag size={14} /> منتجات قاعدة البيانات
-        </button>
-        <button className={`gx-tab ${tab === "prices" ? "on" : ""}`} onClick={() => setTab("prices")}>
-          <Layers size={14} /> أسعار المتجر الحيّة
-        </button>
-      </div>
-
-      {tab === "prices" ? <CatalogPrices /> : (
       <div className="gx-panel p-4 space-y-4">
       <div className="flex gap-2 flex-wrap items-center">
         <div className="relative flex-1 min-w-[240px] max-w-md">
           <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400/70 pointer-events-none" />
           <Input placeholder="بحث بالاسم أو المعرّف أو رقم المنتج (SKU)" value={search} onChange={(e) => setSearch(e.target.value)} className="gx-adm-input ps-9" />
         </div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="gx-adm-input w-56"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">كل الأقسام</SelectItem>
-            {(catsQ.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>)}
-          </SelectContent>
-        </Select>
         <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
           <SelectTrigger className="gx-adm-input w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -386,13 +352,12 @@ function ProductsAdmin() {
       )}
 
       </div>
-      )}
-
 
       {(editing || creating) && (
         <ProductDialog
           product={editing}
           categories={catsQ.data ?? []}
+          defaultCategoryId={categoryId}
           onClose={() => { setEditing(null); setCreating(false); }}
           onSaved={() => { setEditing(null); setCreating(false); qc.invalidateQueries({ queryKey: ["admin-products"] }); }}
         />
@@ -408,12 +373,12 @@ function ProductsAdmin() {
   );
 }
 
-function ProductDialog({ product, categories, onClose, onSaved }: { product: Product | null; categories: Category[]; onClose: () => void; onSaved: () => void }) {
+function ProductDialog({ product, categories, defaultCategoryId, onClose, onSaved }: { product: Product | null; categories: Category[]; defaultCategoryId?: string; onClose: () => void; onSaved: () => void }) {
   const [nameAr, setNameAr] = useState(product?.name_ar ?? "");
   const [nameEn, setNameEn] = useState(product?.name_en ?? "");
   const [slug, setSlug] = useState(product?.slug ?? "");
   const [sku, setSku] = useState(product?.sku ?? "");
-  const [categoryId, setCategoryId] = useState<string>(product?.category_id ?? "");
+  const [categoryId, setCategoryId] = useState<string>(product?.category_id ?? defaultCategoryId ?? "");
   const [descAr, setDescAr] = useState(product?.description_ar ?? "");
   const [descEn, setDescEn] = useState(product?.description_en ?? "");
   const [imageUrl, setImageUrl] = useState(product?.image_url ?? "");
