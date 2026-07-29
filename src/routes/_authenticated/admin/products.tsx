@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/admin/products")({
 
 type Category = { id: string; name_ar: string; name_en: string };
 type Product = {
-  id: string; category_id: string | null; slug: string;
+  id: string; category_id: string | null; slug: string; sku: string | null;
   name_ar: string; name_en: string;
   description_ar: string | null; description_en: string | null;
   image_url: string | null; base_price_jod: number | null;
@@ -120,7 +120,7 @@ function ProductsAdmin() {
     return (prodsQ.data ?? []).filter((p) => {
       if (categoryFilter !== "all" && p.category_id !== categoryFilter) return false;
       if (!s) return true;
-      return p.name_ar.toLowerCase().includes(s) || p.name_en.toLowerCase().includes(s) || p.slug.toLowerCase().includes(s);
+      return p.name_ar.toLowerCase().includes(s) || p.name_en.toLowerCase().includes(s) || p.slug.toLowerCase().includes(s) || (p.sku || "").toLowerCase().includes(s);
     });
   }, [prodsQ.data, categoryFilter, search]);
 
@@ -191,7 +191,7 @@ function ProductsAdmin() {
       <div className="flex gap-2 flex-wrap items-center">
         <div className="relative flex-1 min-w-[240px] max-w-md">
           <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400/70 pointer-events-none" />
-          <Input placeholder="بحث بالاسم أو المعرّف" value={search} onChange={(e) => setSearch(e.target.value)} className="gx-adm-input ps-9" />
+          <Input placeholder="بحث بالاسم أو المعرّف أو رقم المنتج (SKU)" value={search} onChange={(e) => setSearch(e.target.value)} className="gx-adm-input ps-9" />
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="gx-adm-input w-60"><SelectValue /></SelectTrigger>
@@ -231,6 +231,13 @@ function ProductsAdmin() {
                     onClick={() => { navigator.clipboard.writeText(p.slug); toast.success(`تم نسخ: ${p.slug}`); }}
                     style={{ cursor: "pointer", fontFamily: "ui-monospace,monospace", background: "rgba(0,229,255,.1)", color: "#00e5ff", padding: "3px 8px", borderRadius: 8, border: "1px solid rgba(0,229,255,.25)", fontWeight: 700 }}
                   >#{p.slug}</span>
+                  {p.sku && (
+                    <span
+                      title="رقم المنتج (SKU) — اضغط للنسخ"
+                      onClick={() => { navigator.clipboard.writeText(p.sku!); toast.success(`تم نسخ: ${p.sku}`); }}
+                      style={{ cursor: "pointer", fontFamily: "ui-monospace,monospace", background: "rgba(162,89,255,.12)", color: "#c7a4ff", padding: "3px 8px", borderRadius: 8, border: "1px solid rgba(162,89,255,.3)", fontWeight: 800 }}
+                    >{p.sku}</span>
+                  )}
                   <span className="gx-pill">{p.category_id ? categoriesMap[p.category_id]?.name_ar ?? "بدون قسم" : "بدون قسم"}</span>
                   {p.base_price_jod !== null && <span className="gx-pill gx-price">{Number(p.base_price_jod).toFixed(2)} د.أ</span>}
                   <span className="gx-pill">مشتريات: {p.purchases_count}</span>
@@ -280,6 +287,7 @@ function ProductDialog({ product, categories, onClose, onSaved }: { product: Pro
   const [nameAr, setNameAr] = useState(product?.name_ar ?? "");
   const [nameEn, setNameEn] = useState(product?.name_en ?? "");
   const [slug, setSlug] = useState(product?.slug ?? "");
+  const [sku, setSku] = useState(product?.sku ?? "");
   const [categoryId, setCategoryId] = useState<string>(product?.category_id ?? "");
   const [descAr, setDescAr] = useState(product?.description_ar ?? "");
   const [descEn, setDescEn] = useState(product?.description_en ?? "");
@@ -298,7 +306,7 @@ function ProductDialog({ product, categories, onClose, onSaved }: { product: Pro
     setSaving(true);
     try {
       const payload = {
-        slug: finalSlug, name_ar: nameAr.trim(), name_en: nameEn.trim(),
+        slug: finalSlug, sku: sku.trim().toUpperCase() || null, name_ar: nameAr.trim(), name_en: nameEn.trim(),
         description_ar: descAr.trim() || null, description_en: descEn.trim() || null,
         image_url: imageUrl.trim() || null, category_id: categoryId || null,
         base_price_jod: basePrice.trim() === "" ? null : Number(basePrice),
@@ -350,6 +358,11 @@ function ProductDialog({ product, categories, onClose, onSaved }: { product: Pro
                 <Label>المعرّف (slug)</Label>
                 <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={slugify(nameEn)} className="gx-adm-input" dir="ltr" />
                 <p className="text-[11px] text-cyan-100/45 mt-1">يُستخدم بالرابط وبالكوبونات</p>
+              </div>
+              <div>
+                <Label>رقم المنتج (SKU)</Label>
+                <Input value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())} placeholder="مثال: S-3 أو FN-1000" className="gx-adm-input" dir="ltr" />
+                <p className="text-[11px] text-cyan-100/45 mt-1">يتولّد تلقائياً — تقدر تعدّله، وبتقدر تبحث فيه وتربطه بالكوبونات</p>
               </div>
               <div>
                 <Label>القسم</Label>

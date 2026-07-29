@@ -10,9 +10,11 @@ import { ProductIcon, CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
 import { BuyActions } from "@/components/gx/BuyActions";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-locale";
+import { supabase } from "@/integrations/supabase/client";
+import { initialOf, avatarColorFor } from "@/lib/gx/reviews";
 import type {
   HeroData, AnnouncementData, CarouselData, CategoriesData,
-  BestsellersData, ProductsData, TrustData, ReviewsData, FaqData, NewsletterData,
+  BestsellersData, ProductsData, TrustData, ReviewsData, ReviewItem, FaqData, NewsletterData,
 } from "./types";
 import { activeCarouselSlides } from "./types";
 import { RichHtml } from "./rich-text";
@@ -352,8 +354,43 @@ const DEFAULT_REVIEWS = [
 
 export function ReviewsRenderer({ data }: { data: ReviewsData }) {
   const { t, lang, dir } = useLang();
-  const items = data.items && data.items.length > 0 ? data.items : DEFAULT_REVIEWS;
+  const [dbItems, setDbItems] = useState<ReviewItem[] | null>(null);
+  const auto = (data.source ?? "auto") === "auto";
+
+  useEffect(() => {
+    if (!auto) { setDbItems(null); return; }
+    let alive = true;
+    (async () => {
+      const { data: rows } = await supabase
+        .from("reviews")
+        .select("id, display_name, comment, rating, product_name, created_at, is_featured")
+        .eq("status", "approved")
+        .gte("rating", 4)
+        .order("is_featured", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(30);
+      if (!alive || !rows) return;
+      setDbItems(rows.map((r) => ({
+        id: r.id,
+        name: r.display_name || "عميل GX",
+        initial: initialOf(r.display_name),
+        color: avatarColorFor(r.id),
+        quote_ar: r.comment || undefined,
+        quote_en: r.comment || undefined,
+        rating: r.rating,
+        date: r.created_at,
+        product: r.product_name || undefined,
+      })));
+    })();
+    return () => { alive = false; };
+  }, [auto]);
+
+  const items: ReviewItem[] =
+    (auto && dbItems && dbItems.length > 0)
+      ? dbItems
+      : (data.items && data.items.length > 0 ? data.items : DEFAULT_REVIEWS);
   const gridRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const grid = gridRef.current; if (!grid) return;
     let paused = false; let resumeAt = 0;
@@ -390,16 +427,23 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
         <div className="testi-grid" ref={gridRef}>
           {cards.map((it, i) => {
             const q = lang === "en" ? it.quote_en : it.quote_ar;
+            const stars = Math.max(1, Math.min(5, it.rating ?? 5));
             return (
               <div key={`${it.id}-${i}`} className="testi-card">
                 <div className="testi-top">
                   <div className="testi-avatar" style={{ background: it.color }}>{it.initial}</div>
                   <div>
                     <div className="testi-name">{it.name}</div>
-                    <div className="testi-stars">★★★★★</div>
+                    <div className="testi-stars">{"★".repeat(stars)}<span style={{ opacity: .25 }}>{"★".repeat(5 - stars)}</span></div>
                   </div>
                 </div>
                 {q && <div className="testi-quote">{q}</div>}
+                {(it.product || it.date) && (
+                  <div style={{ marginTop: 8, fontSize: 11, color: "var(--muted,#7d92a8)", display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {it.product && <span>{it.product}</span>}
+                    {it.date && <span dir="ltr">{new Date(it.date).toLocaleDateString(lang === "en" ? "en-GB" : "ar")}</span>}
+                  </div>
+                )}
               </div>
             );
           })}
