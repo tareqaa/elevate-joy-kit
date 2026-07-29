@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLang } from "@/lib/gx/i18n";
+import { supabase } from "@/integrations/supabase/client";
+
 
 export function OrderConfirmedModal({
   orderNumber,
@@ -12,6 +14,13 @@ export function OrderConfirmedModal({
 }) {
   const { t, dir } = useLang();
   const [copied, setCopied] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
+  }, []);
+
+
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -114,6 +123,19 @@ export function OrderConfirmedModal({
             {t("cart.continue_wa")}
           </button>
         )}
+        {signedIn && (
+          <a
+            href="/account"
+            style={{
+              display: "block", marginTop: 10, padding: "10px 14px", borderRadius: 12,
+              border: "1px solid rgba(0,229,255,0.35)", background: "rgba(0,229,255,0.06)",
+              color: "#00e5ff", fontSize: 13, fontWeight: 700, textDecoration: "none",
+            }}
+          >
+            📦 {t("cart.track_order")}
+          </a>
+        )}
+
         <button
           type="button" onClick={onClose}
           style={{

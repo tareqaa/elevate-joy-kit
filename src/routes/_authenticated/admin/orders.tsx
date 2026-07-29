@@ -533,108 +533,146 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
     setStatus("cancelled"); onSave(buildPatch("cancelled"));
   }
 
+  const contactHref = order.customer_whatsapp
+    ? (order.contact_type === "telegram"
+      ? `https://t.me/${order.customer_whatsapp.replace(/^@+/, "")}`
+      : `https://wa.me/${order.customer_whatsapp.replace(/[^\d]/g, "")}`)
+    : null;
+  const contactLabel = order.contact_type === "telegram" ? "تيليجرام" : "واتساب";
+
+  const dialogCss = `
+    .gx-od-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+    .gx-od-tile{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.15);border-radius:12px;padding:10px 12px}
+    .gx-od-tile .k{font-size:10px;color:#7d92a8;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:3px}
+    .gx-od-tile .v{font-size:14px;color:#e6f7ff;font-weight:700}
+    .gx-od-sec{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px}
+    .gx-od-sec-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.06)}
+    .gx-od-sec-t{font-size:13px;font-weight:800;color:#00e5ff;display:flex;align-items:center;gap:6px}
+    .gx-od-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,.25);font-size:13px}
+    .gx-od-item + .gx-od-item{margin-top:6px}
+    .gx-od-code{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;position:relative}
+    .gx-od-code + .gx-od-code{margin-top:10px}
+    .gx-od-actions{position:sticky;bottom:0;background:linear-gradient(180deg,transparent,#0b0e17 40%);padding-top:12px;margin-top:8px}
+  `;
+
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
-        <DialogHeader>
-          <DialogTitle>الطلب <span className="font-mono text-cyan-400">{order.order_number}</span></DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0" dir="rtl">
+        <style dangerouslySetInnerHTML={{ __html: dialogCss }} />
 
-        <div className="space-y-4">
-          <div className="rounded-xl border border-cyan-400/35 bg-cyan-500/10 p-3 space-y-3">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div>
-                <div className="text-xs text-muted-foreground">إكمال سريع لهذا الرقم</div>
-                <div className="font-mono text-lg text-cyan-400" dir="ltr">{order.order_number}</div>
+        {/* Header */}
+        <div className="p-5 border-b border-white/10 bg-gradient-to-l from-cyan-500/10 to-transparent">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <span className={`gx-adm-badge ${STATUS_COLOR[status]}`}>
+                  {STATUS_AR[status] ?? status}
+                </span>
+                <span className="text-sm text-cyan-100/60">طلب</span>
+                <span className="font-mono text-xl text-cyan-300" dir="ltr">{order.order_number}</span>
               </div>
-              <div className="flex gap-2 flex-wrap">
-                <Button type="button" size="sm" variant="outline" onClick={addCode}>+ كود</Button>
-                <Button type="button" size="sm" variant="outline" onClick={addAccount}>+ حساب (إيميل)</Button>
-                <Button type="button" size="sm" onClick={markDelivered} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                  تسليم الطلب
-                </Button>
+              <div className="text-xs text-cyan-100/60">{new Date(order.created_at).toLocaleString("ar-EG")}</div>
+            </DialogTitle>
+          </DialogHeader>
+        </div>
+
+        <div className="p-5 space-y-5">
+          {/* Summary tiles */}
+          <div className="gx-od-summary">
+            <div className="gx-od-tile">
+              <div className="k">العميل</div>
+              <div className="v">{order.customer_name || (order.user_id ? "مستخدم مسجّل" : "زائر")}</div>
+              {order.user_username && <div className="text-xs text-cyan-400/70 mt-0.5">@{order.user_username}</div>}
+            </div>
+            <div className="gx-od-tile">
+              <div className="k">{contactLabel}</div>
+              <div className="v">
+                {contactHref ? (
+                  <a href={contactHref} target="_blank" rel="noreferrer" dir="ltr" className="text-cyan-300 hover:underline font-mono text-sm">
+                    {order.customer_whatsapp}
+                  </a>
+                ) : <span className="text-cyan-100/40">—</span>}
               </div>
+            </div>
+            <div className="gx-od-tile">
+              <div className="k">الإيميل</div>
+              <div className="v text-sm">
+                {order.user_email ? (
+                  <a href={`mailto:${order.user_email}`} dir="ltr" className="text-cyan-300 hover:underline">{order.user_email}</a>
+                ) : <span className="text-cyan-100/40">—</span>}
+              </div>
+            </div>
+            <div className="gx-od-tile">
+              <div className="k">الإجمالي</div>
+              <div className="v text-emerald-300">{Number(order.total_jod).toFixed(2)} <span className="text-xs text-cyan-400/70">د.أ</span></div>
             </div>
           </div>
 
-          <div className="text-sm space-y-1">
-            <div><b>العميل:</b> {order.customer_name || "زائر"} {order.user_username && <span className="text-muted-foreground">(@{order.user_username})</span>}</div>
-            {order.user_email && <div><b>الإيميل:</b> <a href={`mailto:${order.user_email}`} dir="ltr" className="text-cyan-400 hover:underline">{order.user_email}</a></div>}
-            {order.customer_whatsapp && (
-              <div>
-                <b>{order.contact_type === "telegram" ? "تيليجرام" : "واتساب"}:</b>{" "}
-                <a
-                  href={order.contact_type === "telegram"
-                    ? `https://t.me/${order.customer_whatsapp.replace(/^@+/, "")}`
-                    : `https://wa.me/${order.customer_whatsapp.replace(/[^\d]/g, "")}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  dir="ltr"
-                  className="text-cyan-400 hover:underline font-mono"
-                >
-                  {order.customer_whatsapp}
-                </a>
-              </div>
-            )}
-
-            <div><b>التاريخ:</b> {new Date(order.created_at).toLocaleString("ar-EG")}</div>
-            <div><b>الإجمالي:</b> {Number(order.total_jod).toFixed(2)} د.أ</div>
-          </div>
-
-          <div>
-            <Label>المنتجات</Label>
-            <div className="border rounded p-3 space-y-1 text-sm mt-1">
+          {/* Products */}
+          <div className="gx-od-sec">
+            <div className="gx-od-sec-h">
+              <div className="gx-od-sec-t"><PackageIcon size={14} /> المنتجات ({items.length})</div>
+            </div>
+            <div>
               {(items as Array<{ name?: string; qty?: number; price?: number; usernames?: string[] }>).map((it, i) => (
-                <div key={i}>
-                  <div className="flex justify-between">
-                    <span>{it.name} × {it.qty}</span>
-                    <span>{((it.price ?? 0) * (it.qty ?? 1)).toFixed(2)} د.أ</span>
+                <div key={i} className="gx-od-item">
+                  <div>
+                    <div className="font-semibold text-cyan-100">{it.name}</div>
+                    {it.usernames && it.usernames.length > 0 && (
+                      <div className="text-[11px] text-cyan-400/70 mt-0.5">يوزرات: {it.usernames.join(", ")}</div>
+                    )}
                   </div>
-                  {it.usernames && it.usernames.length > 0 && (
-                    <div className="text-xs text-muted-foreground mr-3">يوزرات: {it.usernames.join(", ")}</div>
-                  )}
+                  <div className="text-left">
+                    <div className="text-cyan-400/70 text-xs">× {it.qty}</div>
+                    <div className="font-mono font-bold text-emerald-300">{((it.price ?? 0) * (it.qty ?? 1)).toFixed(2)}</div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div>
-            <Label>الحالة</Label>
+          {/* Status */}
+          <div className="gx-od-sec">
+            <div className="gx-od-sec-h"><div className="gx-od-sec-t"><Clock size={14} /> حالة الطلب</div></div>
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="gx-adm-input"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STATUSES.map((s) => <SelectItem key={s} value={s}>{STATUS_AR[s]}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <Label>بيانات التسليم للعميل</Label>
+          {/* Delivery data */}
+          <div className="gx-od-sec">
+            <div className="gx-od-sec-h">
+              <div className="gx-od-sec-t"><CheckCircle2 size={14} /> بيانات التسليم</div>
               <div className="flex gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={addCode}>+ كود</Button>
-                <Button type="button" size="sm" variant="outline" onClick={addAccount}>+ حساب (إيميل)</Button>
+                <Button type="button" size="sm" variant="outline" onClick={addCode} className="h-8 text-xs">+ كود</Button>
+                <Button type="button" size="sm" variant="outline" onClick={addAccount} className="h-8 text-xs">+ حساب</Button>
               </div>
             </div>
-            <div className="space-y-3 mt-2">
+            {codes.length === 0 && <div className="text-xs text-cyan-100/50 text-center py-3">لا يوجد بيانات تسليم — أضف كود أو حساب</div>}
+            <div>
               {codes.map((c, i) => {
                 const isAccount = c.kind === "account";
                 return (
-                  <div key={i} className="border rounded-lg p-3 space-y-2 bg-muted/20">
-                    <div className="flex gap-2 items-center">
+                  <div key={i} className="gx-od-code">
+                    <div className="flex gap-2 items-center mb-2">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isAccount ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"}`}>
                         {isAccount ? "حساب" : "كود"}
                       </span>
-                      <Input placeholder="الوصف (مثلاً: حساب Netflix / كود PS 25$)" value={c.label} onChange={(e) => updateCode(i, { label: e.target.value })} className="flex-1" />
-                      <Button type="button" size="sm" variant="ghost" onClick={() => removeCode(i)}>×</Button>
+                      <Input placeholder="الوصف (مثلاً: كود PS 25$ / حساب Netflix)" value={c.label} onChange={(e) => updateCode(i, { label: e.target.value })} className="gx-adm-input flex-1 h-9 text-sm" />
+                      <button type="button" onClick={() => removeCode(i)} className="text-rose-400 hover:text-rose-300 p-1.5 rounded hover:bg-rose-500/10" title="حذف">
+                        <XCircle size={16} />
+                      </button>
                     </div>
                     {isAccount ? (
                       <div className="grid sm:grid-cols-2 gap-2">
-                        <Input placeholder="الإيميل" dir="ltr" value={c.email || ""} onChange={(e) => updateCode(i, { email: e.target.value })} />
-                        <Input placeholder="كلمة السر" dir="ltr" value={c.password || ""} onChange={(e) => updateCode(i, { password: e.target.value })} />
+                        <Input placeholder="الإيميل" dir="ltr" value={c.email || ""} onChange={(e) => updateCode(i, { email: e.target.value })} className="gx-adm-input h-9 text-sm" />
+                        <Input placeholder="كلمة السر" dir="ltr" value={c.password || ""} onChange={(e) => updateCode(i, { password: e.target.value })} className="gx-adm-input h-9 text-sm" />
                       </div>
                     ) : (
-                      <Input placeholder="القيمة (الكود)" dir="ltr" value={c.value} onChange={(e) => updateCode(i, { value: e.target.value })} />
+                      <Input placeholder="الكود" dir="ltr" value={c.value} onChange={(e) => updateCode(i, { value: e.target.value })} className="gx-adm-input h-9 text-sm font-mono" />
                     )}
                   </div>
                 );
@@ -642,27 +680,29 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             </div>
           </div>
 
-          <div>
-            <Label>ملاحظة للعميل</Label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+          {/* Notes */}
+          <div className="gx-od-sec">
+            <div className="gx-od-sec-h"><div className="gx-od-sec-t">📝 ملاحظة للعميل</div></div>
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="ملاحظة اختيارية تظهر للعميل عند التسليم..." className="gx-adm-input" />
           </div>
 
-          <div className="flex justify-between items-center gap-2 pt-2 flex-wrap border-t border-white/10 mt-2">
+          {/* Actions */}
+          <div className="gx-od-actions flex justify-between items-center gap-2 flex-wrap border-t border-white/10 pt-4">
             <div className="flex gap-2 flex-wrap">
               {status !== "cancelled" && (
-                <Button variant="outline" onClick={cancelOrder} className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300">
-                  ✖ إلغاء الطلب
+                <Button variant="outline" onClick={cancelOrder} className="border-rose-500/40 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300">
+                  <XCircle size={15} className="ml-1" /> إلغاء
                 </Button>
               )}
               {status !== "delivered" && status !== "cancelled" && (
-                <Button onClick={markDelivered} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                  ✅ تسليم + إشعار العميل
+                <Button onClick={markDelivered} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20">
+                  <CheckCircle2 size={15} className="ml-1" /> تسليم + إشعار
                 </Button>
               )}
             </div>
             <div className="flex gap-2 flex-wrap">
               <Button variant="ghost" onClick={onClose}>إغلاق</Button>
-              <Button onClick={save}>حفظ التعديلات</Button>
+              <Button onClick={save} className="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold">حفظ التعديلات</Button>
             </div>
           </div>
         </div>
@@ -670,3 +710,4 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
     </Dialog>
   );
 }
+
