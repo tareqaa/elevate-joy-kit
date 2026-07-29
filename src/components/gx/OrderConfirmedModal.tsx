@@ -123,6 +123,19 @@ export function OrderConfirmedModal({
             {t("cart.continue_wa")}
           </button>
         )}
+        {signedIn && (
+          <a
+            href="/account"
+            style={{
+              display: "block", marginTop: 10, padding: "10px 14px", borderRadius: 12,
+              border: "1px solid rgba(0,229,255,0.35)", background: "rgba(0,229,255,0.06)",
+              color: "#00e5ff", fontSize: 13, fontWeight: 700, textDecoration: "none",
+            }}
+          >
+            📦 {t("cart.track_order")}
+          </a>
+        )}
+
         <button
           type="button" onClick={onClose}
           style={{
