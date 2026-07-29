@@ -150,10 +150,15 @@ export type ReviewItem = {
   color: string;
   quote_ar?: string;
   quote_en?: string;
+  rating?: number;
+  date?: string;
+  product?: string;
 };
 export type ReviewsData = {
   title?: string;
   eyebrow?: string;
+  /** auto = show approved customer reviews from the database (default) */
+  source?: "auto" | "manual";
   items?: ReviewItem[];
 };
 
