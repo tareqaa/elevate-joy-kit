@@ -136,13 +136,16 @@ function CustomersTab() {
   const [xp, setXp] = useState("0");
   const [coins, setCoins] = useState("0");
   const [reason, setReason] = useState("");
+  const [creditTarget, setCreditTarget] = useState<{ id: string; name: string; balance: number } | null>(null);
+  const [credit, setCredit] = useState("0");
+  const [creditReason, setCreditReason] = useState("");
 
   const rowsQ = useQuery({
     queryKey: ["admin-loyalty-users"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, username, email, avatar_url, xp, gx_coins, level_code, orders_count, total_spent")
+        .select("id, full_name, username, email, avatar_url, xp, gx_coins, level_code, orders_count, total_spent, store_credit_jod")
         .order("xp", { ascending: false })
         .limit(300);
       if (error) throw error;
@@ -169,12 +172,33 @@ function CustomersTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const adjustCredit = useMutation({
+    mutationFn: async () => {
+      if (!creditTarget) return;
+      const { error } = await supabase.rpc("admin_adjust_store_credit", {
+        _user_id: creditTarget.id,
+        _amount: Number(credit) || 0,
+        _reason: creditReason.trim() || "تعديل رصيد من الإدارة",
+        _order_id: undefined as unknown as string,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم تعديل رصيد المتجر");
+      setCreditTarget(null); setCredit("0"); setCreditReason("");
+      qc.invalidateQueries({ queryKey: ["admin-loyalty-users"] });
+      qc.invalidateQueries({ queryKey: ["admin-store-credit-tx"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const filtered = useMemo(() => {
     const rows = rowsQ.data ?? [];
     if (!q.trim()) return rows;
     const s = q.toLowerCase();
     return rows.filter((r) => `${r.full_name ?? ""} ${r.username ?? ""} ${r.email ?? ""}`.toLowerCase().includes(s));
   }, [rowsQ.data, q]);
+
 
   return (
     <Card>
@@ -192,6 +216,7 @@ function CustomersTab() {
               <th className="p-2 font-medium">المستوى</th>
               <th className="p-2 font-medium">XP</th>
               <th className="p-2 font-medium">GX Coins</th>
+              <th className="p-2 font-medium">رصيد المتجر</th>
               <th className="p-2 font-medium">الطلبات</th>
               <th className="p-2 font-medium"></th>
             </tr>
@@ -206,17 +231,22 @@ function CustomersTab() {
                 <td className="p-2"><Badge variant="outline" className="text-[10px] font-mono">{r.level_code}</Badge></td>
                 <td className="p-2 font-bold">{Number(r.xp).toLocaleString("en-US")}</td>
                 <td className="p-2 text-amber-300 font-bold">{Number(r.gx_coins).toLocaleString("en-US")}</td>
+                <td className="p-2 text-sky-300 font-bold">{Number(r.store_credit_jod ?? 0).toFixed(2)} د.أ</td>
                 <td className="p-2">{r.orders_count}</td>
-                <td className="p-2 text-left">
+                <td className="p-2 text-left whitespace-nowrap space-x-1 space-x-reverse">
                   <Button size="sm" variant="outline"
                     onClick={() => setTarget({ id: r.id, name: r.full_name || r.username || r.email || "" })}>
-                    تعديل XP / Coins
+                    XP / Coins
+                  </Button>
+                  <Button size="sm" variant="outline" className="border-sky-500/40 text-sky-300"
+                    onClick={() => setCreditTarget({ id: r.id, name: r.full_name || r.username || r.email || "", balance: Number(r.store_credit_jod ?? 0) })}>
+                    رصيد / استرجاع
                   </Button>
                 </td>
               </tr>
             ))}
             {!rowsQ.isLoading && filtered.length === 0 && (
-              <tr><td colSpan={6} className="text-center p-8 text-muted-foreground">لا نتائج</td></tr>
+              <tr><td colSpan={7} className="text-center p-8 text-muted-foreground">لا نتائج</td></tr>
             )}
           </tbody>
         </table>
