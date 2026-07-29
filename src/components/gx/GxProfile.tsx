@@ -93,13 +93,17 @@ export function GxProfile({ username }: { username?: string }) {
 
   const levels = levelsQ.data ?? [];
   const p = profileQ.data;
+  // Loyalty details are personal: never fall back to the signed-in user's cached
+  // loyalty when viewing somebody else's profile.
+  const mine = isOwner ? loyaltyQ.data : undefined;
   const lvl = useMemo(
-    () => levels.find((l) => l.code === (loyaltyQ.data?.level?.code || p?.level_code)) ?? null,
-    [levels, loyaltyQ.data, p],
+    () => levels.find((l) => l.code === (mine?.level?.code || p?.level_code)) ?? null,
+    [levels, mine, p],
   );
   const currentSort = lvl?.sort_order ?? 0;
-  const xp = Number(loyaltyQ.data?.xp ?? p?.xp ?? 0);
-  const prog = levelProgress(xp, loyaltyQ.data?.level ?? lvl, loyaltyQ.data?.next_level ?? null);
+  const xp = Number(mine?.xp ?? p?.xp ?? 0);
+  const nextLevel = mine?.next_level ?? levels.find((l) => (l.sort_order ?? 0) === currentSort + 1) ?? null;
+  const prog = levelProgress(xp, mine?.level ?? lvl, nextLevel);
 
   async function pickAvatar(imageUrl: string, avatarId: string, border: string | null) {
     if (!myId) return;
