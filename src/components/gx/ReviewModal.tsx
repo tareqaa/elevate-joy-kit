@@ -92,7 +92,7 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
       order_number: currentOrder?.order_number ?? null,
       product_slug: chosen?.slug || null,
       product_name: chosen?.name || null,
-      display_name: anon ? "عميل GX" : (displayName.trim() || "عميل GX"),
+      display_name: displayName.trim() || "عميل GX",
       rating,
       comment: comment.trim(),
     });
