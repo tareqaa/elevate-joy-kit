@@ -164,17 +164,11 @@ function AccountPage() {
 
 
         <TabsContent value="profile" className="mt-4">
-          <ProfileTab
-            userId={user.id}
-            userEmail={user.email || ""}
-            currentUsername={username}
-            currentName={profileQ.data?.full_name || ""}
-            currentAvatar={profileQ.data?.avatar_url || ""}
-            currentLevel={profileQ.data?.level || 1}
-            currentXp={profileQ.data?.xp || 0}
-            onSaved={() => qc.invalidateQueries({ queryKey: ["my-profile", user.id] })}
-          />
+          <div className="gx-account-profile -mx-4 sm:-mx-6">
+            <GxProfile />
+          </div>
         </TabsContent>
+
 
         <TabsContent value="orders" className="mt-4">
           <OrdersTab loading={ordersQ.isLoading} orders={ordersQ.data ?? []} />
