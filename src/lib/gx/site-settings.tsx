@@ -4,7 +4,6 @@ import { DEFAULT_HOME_LAYOUT, type HomeLayout } from "./sections/types";
 import {
   applyCatalogPrices,
   cacheCatalogPrices,
-  CATALOG_PRICES_KEY,
   type CatalogPrices,
 } from "./catalog-prices";
 
