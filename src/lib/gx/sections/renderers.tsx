@@ -467,7 +467,18 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
                     <div className="testi-stars">{"★".repeat(stars)}<span style={{ opacity: .25 }}>{"★".repeat(5 - stars)}</span></div>
                   </div>
                 </div>
-                {q && <div className="testi-quote testi-clamp">{q}</div>}
+                {q && (
+                  <div className="testi-quote testi-clamp">
+                    {q}
+                    {trans && (
+                      <span style={{ display: "block", marginTop: 6, fontSize: 11, opacity: .6 }}>
+                        {lang === "en"
+                          ? `Translated from ${trans.from === "ar" ? "Arabic" : trans.from.toUpperCase()} · Google`
+                          : `مُترجم من ${trans.from === "en" ? "الإنجليزية" : trans.from.toUpperCase()} · Google`}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
             );
