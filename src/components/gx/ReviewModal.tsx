@@ -31,7 +31,6 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
   const [orders, setOrders] = useState<OrderLite[]>([]);
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState("");
-  const [productSlug, setProductSlug] = useState("");
   const [rating, setRating] = useState(5);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
@@ -44,7 +43,7 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
     setLoading(true);
     (async () => {
       const [ordersRes, reviewsRes, profRes] = await Promise.all([
-        supabase.from("orders").select("id, order_number, created_at, items")
+        supabase.from("orders").select("id, order_number, created_at")
           .eq("user_id", userId).eq("status", "delivered").order("created_at", { ascending: false }).limit(50),
         supabase.from("reviews").select("order_id").eq("user_id", userId),
         supabase.from("profiles").select("full_name, username").eq("id", userId).maybeSingle(),
