@@ -145,9 +145,10 @@ function CartSummary() {
       toast.error(site.maintenance_message || "الموقع تحت الصيانة حالياً");
       return;
     }
-    if (!cart.contact.name.trim() || cart.contact.phone.trim().length < 4) {
+    const isWa = cart.contact.type === "whatsapp";
+    if (!cart.contact.name.trim() || cart.contact.phone.trim().length < 3) {
       const { toast } = await import("sonner");
-      toast.error("عبّي الاسم ورقم التواصل قبل إتمام الطلب");
+      toast.error(isWa ? "عبّي الاسم ورقم الواتساب قبل إتمام الطلب" : "عبّي الاسم ويوزر التيليجرام قبل إتمام الطلب");
       return;
     }
     setBusy(true);
@@ -167,7 +168,8 @@ function CartSummary() {
     }
   }
 
-  const disabled = busy || cart.items.length === 0 || !cart.contact.name.trim() || cart.contact.phone.trim().length < 4;
+  const isWa = cart.contact.type === "whatsapp";
+  const disabled = busy || cart.items.length === 0 || !cart.contact.name.trim() || cart.contact.phone.trim().length < 3;
 
   return (
     <div className="summary-card">
