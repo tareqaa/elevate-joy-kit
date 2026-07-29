@@ -12,7 +12,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-locale";
 import type {
   HeroData, AnnouncementData, CarouselData, CategoriesData,
-  BestsellersData, TrustData, ReviewsData, FaqData, NewsletterData,
+  BestsellersData, ProductsData, TrustData, ReviewsData, FaqData, NewsletterData,
 } from "./types";
 import { activeCarouselSlides } from "./types";
 
@@ -208,6 +208,61 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
                 <Link to={p.link as never} style={{ display: "contents" }}>
                   <div className="prod-thumb" style={{ background: p.bg }}>
                     <span className="discount-badge">-{discount}%</span>
+                    {iconEl}
+                  </div>
+                </Link>
+                <div className="prod-body">
+                  <div className="prod-stars">★★★★★</div>
+                  <div className="prod-name">{localizeResolvedName(p.name, lang)}</div>
+                  <div className="prod-prices">
+                    <span className="prod-old">{format(p.oldPrice)}</span>
+                    <span className="prod-new">{format(p.price)}</span>
+                  </div>
+                  <BuyActions cartId={p.cartId} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- PRODUCTS (custom pick) ---------------- */
+export function ProductsRenderer({ data }: { data: ProductsData }) {
+  const { format } = useCurrency();
+  const { lang } = useLang();
+  const base = getFeaturedItems();
+  const ids = data.ids || [];
+  const items: FeaturedItem[] = ids.length
+    ? ids.map((id) => base.find((b) => b.cartId === id)).filter((x): x is FeaturedItem => !!x)
+    : [];
+  if (items.length === 0) return null;
+  return (
+    <section className="section">
+      <div className="wrap">
+        <div className="section-head">
+          <div>
+            {data.eyebrow ? <span className="k">{data.eyebrow}</span> : null}
+            <h2>{data.title || "منتجات مختارة"}</h2>
+          </div>
+        </div>
+        <div className="featured-grid">
+          {items.map((p) => {
+            const discount = Math.round((1 - p.price / p.oldPrice) * 100);
+            const product = PRODUCTS_CATALOG[p.product];
+            let iconEl: React.ReactNode = <ProductIcon product={product} />;
+            if (p.product === "fortnite" && p.cartId.startsWith("fn-crew")) iconEl = <CrewIcon />;
+            else if (p.product === "fortnite" && p.cartId.startsWith("fn-vb")) {
+              const tier = parseInt(p.cartId.replace("fn-vb-", ""), 10);
+              iconEl = <VbucksIcon tier={tier} />;
+            }
+            return (
+              <div key={p.cartId} className="prod-card">
+                <Link to={p.link as never} style={{ display: "contents" }}>
+                  <div className="prod-thumb" style={{ background: p.bg }}>
+                    {discount > 0 && <span className="discount-badge">-{discount}%</span>}
                     {iconEl}
                   </div>
                 </Link>

@@ -5,16 +5,16 @@
 import type { ComponentType } from "react";
 import {
   Sparkles, Megaphone, GalleryHorizontal, LayoutGrid,
-  Star, ShieldCheck, MessageSquare, HelpCircle, Mail,
+  Star, ShoppingBag, ShieldCheck, MessageSquare, HelpCircle, Mail,
 } from "lucide-react";
 import type { SectionType } from "./types";
 import {
   HeroRenderer, AnnouncementRenderer, CarouselRenderer, CategoriesRenderer,
-  BestsellersRenderer, TrustRenderer, ReviewsRenderer, FaqRenderer, NewsletterRenderer,
+  BestsellersRenderer, ProductsRenderer, TrustRenderer, ReviewsRenderer, FaqRenderer, NewsletterRenderer,
 } from "./renderers";
 import {
   HeroEditor, AnnouncementEditor, CarouselEditor, CategoriesEditor,
-  BestsellersEditor, TrustEditor, ReviewsEditor, FaqEditor, NewsletterEditor,
+  BestsellersEditor, ProductsEditor, TrustEditor, ReviewsEditor, FaqEditor, NewsletterEditor,
 } from "./editors";
 
 export type SectionDef = {
@@ -61,6 +61,11 @@ export const SECTION_REGISTRY: Record<SectionType, SectionDef> = {
     type: "bestsellers", label: "الأكثر مبيعاً", description: "المنتجات المميّزة", Icon: Star,
     defaultData: {},
     Renderer: asRenderer(BestsellersRenderer), Editor: asEditor(BestsellersEditor),
+  },
+  products: {
+    type: "products", label: "منتجات مختارة", description: "اختر منتجات محددة وترتيبها", Icon: ShoppingBag,
+    defaultData: { title: "منتجات مختارة", ids: [] },
+    Renderer: asRenderer(ProductsRenderer), Editor: asEditor(ProductsEditor),
   },
   trust: {
     type: "trust", label: "شارات الثقة", description: "التفعيل الفوري والعدّاد والدعم", Icon: ShieldCheck,

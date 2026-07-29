@@ -15,7 +15,7 @@ import { CATEGORY_LINKS, getFeaturedItems } from "@/data/products";
 import { MediaPicker } from "./media-library";
 import type {
   HeroData, AnnouncementData, CarouselData, CarouselSlide, CategoriesData,
-  BestsellersData, TrustData, ReviewsData, ReviewItem, FaqData, FaqItem, NewsletterData, CategoryOverride,
+  BestsellersData, ProductsData, TrustData, ReviewsData, ReviewItem, FaqData, FaqItem, NewsletterData, CategoryOverride,
 } from "./types";
 
 
@@ -349,6 +349,55 @@ export function NewsletterEditor({ data, onChange }: { data: NewsletterData; onC
       <TextField label="الوصف" value={data.subtitle ?? null} onChange={(v) => onChange({ ...data, subtitle: v ?? undefined })} />
       <TextField label="نص الزر" value={data.cta ?? null} onChange={(v) => onChange({ ...data, cta: v ?? undefined })} />
       <TextField label="النص التوضيحي داخل الحقل" value={data.placeholder ?? null} onChange={(v) => onChange({ ...data, placeholder: v ?? undefined })} />
+    </div>
+  );
+}
+
+/* ---------------- PRODUCTS (custom pick) ---------------- */
+export function ProductsEditor({ data, onChange }: { data: ProductsData; onChange: (d: ProductsData) => void }) {
+  const all = getFeaturedItems();
+  const ids = data.ids || [];
+  const chosen = ids.map((id) => all.find((i) => i.cartId === id)).filter((x): x is typeof all[number] => !!x);
+  const rest = all.filter((i) => !ids.includes(i.cartId));
+  function move(id: string, dir: -1 | 1) {
+    const next = [...ids]; const idx = next.indexOf(id); const j = idx + dir;
+    if (j < 0 || j >= next.length) return;
+    [next[idx], next[j]] = [next[j], next[idx]];
+    onChange({ ...data, ids: next });
+  }
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        <TextField label="العنوان" value={data.title ?? null} onChange={(v) => onChange({ ...data, title: v ?? undefined })} />
+        <TextField label="النص العلوي" value={data.eyebrow ?? null} onChange={(v) => onChange({ ...data, eyebrow: v ?? undefined })} />
+      </div>
+
+      <Label className="text-xs text-slate-400">المنتجات المختارة ({chosen.length})</Label>
+      <div className="space-y-1">
+        {chosen.length === 0 && <div className="text-[11px] text-slate-500">لم تختر أي منتج بعد — أضف من القائمة بالأسفل.</div>}
+        {chosen.map((it, i) => (
+          <div key={it.cartId} className="flex items-center gap-2 rounded-md border border-slate-800 bg-slate-950/40 p-1.5">
+            <div className="w-8 h-8 rounded-md grid place-items-center text-sm shrink-0" style={{ background: it.bg }}>{it.icon}</div>
+            <div className="flex-1 min-w-0 text-slate-100 text-xs font-semibold truncate">{it.name}</div>
+            <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => move(it.cartId, -1)} disabled={i === 0}><ArrowUp size={10} /></Button>
+            <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => move(it.cartId, 1)} disabled={i === chosen.length - 1}><ArrowDown size={10} /></Button>
+            <Button size="sm" variant="destructive" className="h-6 w-6 p-0"
+              onClick={() => onChange({ ...data, ids: ids.filter((x) => x !== it.cartId) })}><Trash2 size={10} /></Button>
+          </div>
+        ))}
+      </div>
+
+      <Label className="text-xs text-slate-400">إضافة منتج</Label>
+      <div className="max-h-[240px] overflow-y-auto space-y-1 pr-1">
+        {rest.map((it) => (
+          <button key={it.cartId} onClick={() => onChange({ ...data, ids: [...ids, it.cartId] })}
+            className="w-full flex items-center gap-2 rounded-md border border-slate-800 bg-slate-950/40 p-1.5 text-start hover:border-cyan-600">
+            <div className="w-7 h-7 rounded-md grid place-items-center text-xs shrink-0" style={{ background: it.bg }}>{it.icon}</div>
+            <div className="flex-1 min-w-0 text-slate-200 text-xs truncate">{it.name}</div>
+            <Plus size={12} className="text-cyan-400" />
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
