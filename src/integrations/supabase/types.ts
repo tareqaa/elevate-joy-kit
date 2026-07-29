@@ -883,6 +883,7 @@ export type Database = {
           level: number
           level_code: string
           orders_count: number
+          store_credit_jod: number
           total_spent: number
           updated_at: string
           username: string | null
@@ -901,6 +902,7 @@ export type Database = {
           level?: number
           level_code?: string
           orders_count?: number
+          store_credit_jod?: number
           total_spent?: number
           updated_at?: string
           username?: string | null
@@ -919,6 +921,7 @@ export type Database = {
           level?: number
           level_code?: string
           orders_count?: number
+          store_credit_jod?: number
           total_spent?: number
           updated_at?: string
           username?: string | null
@@ -1007,6 +1010,42 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           value?: Json
+        }
+        Relationships: []
+      }
+      store_credit_transactions: {
+        Row: {
+          actor_id: string | null
+          amount_jod: number
+          balance_after: number | null
+          created_at: string
+          id: string
+          kind: string
+          order_id: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          amount_jod: number
+          balance_after?: number | null
+          created_at?: string
+          id?: string
+          kind?: string
+          order_id?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          amount_jod?: number
+          balance_after?: number | null
+          created_at?: string
+          id?: string
+          kind?: string
+          order_id?: string | null
+          reason?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1179,6 +1218,15 @@ export type Database = {
         Args: { _coins: number; _reason: string; _user_id: string; _xp: number }
         Returns: Json
       }
+      admin_adjust_store_credit: {
+        Args: {
+          _amount: number
+          _order_id?: string
+          _reason?: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       auto_cancel_stale_orders: { Args: never; Returns: number }
       award_badges: { Args: { _user_id: string }; Returns: undefined }
       generate_order_number: { Args: never; Returns: string }
@@ -1203,6 +1251,8 @@ export type Database = {
           full_name: string
           id: string
           level: number
+          level_code: string
+          orders_count: number
           rank: number
           username: string
           xp: number
