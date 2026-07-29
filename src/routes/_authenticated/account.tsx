@@ -10,14 +10,17 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { User as UserIcon, Package, ShieldCheck, Copy, Check, Search } from "lucide-react";
+import { User as UserIcon, Package, ShieldCheck, Copy, Check, Search, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
+import { LoyaltyTab } from "@/components/gx/LoyaltyTab";
+
+type AccountTab = "profile" | "loyalty" | "orders" | "security";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({ meta: [{ title: "حسابي — GX Store" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
-    tab: (typeof s.tab === "string" ? s.tab : "profile") as "profile" | "orders" | "security",
+    tab: (typeof s.tab === "string" ? s.tab : "profile") as AccountTab,
   }),
   component: AccountPage,
 });
@@ -162,13 +165,19 @@ function AccountPage() {
       <Tabs
         dir={dir}
         value={tab}
-        onValueChange={(v) => navigate({ search: { tab: v as "profile" | "orders" | "security" } })}
+        onValueChange={(v) => navigate({ search: { tab: v as AccountTab } })}
       >
-        <TabsList className="grid grid-cols-3 w-full max-w-lg h-11">
+        <TabsList className="grid grid-cols-4 w-full max-w-2xl h-11">
           <TabsTrigger value="profile" className="gap-2"><UserIcon className="w-4 h-4" />{t("acc.tab_profile")}</TabsTrigger>
+          <TabsTrigger value="loyalty" className="gap-2"><Sparkles className="w-4 h-4" />{lang === "ar" ? "الولاء" : "Loyalty"}</TabsTrigger>
           <TabsTrigger value="orders" className="gap-2"><Package className="w-4 h-4" />{t("acc.tab_orders")}</TabsTrigger>
           <TabsTrigger value="security" className="gap-2"><ShieldCheck className="w-4 h-4" />{t("acc.tab_security")}</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="loyalty" className="mt-4">
+          <LoyaltyTab userId={user.id} />
+        </TabsContent>
+
 
         <TabsContent value="profile" className="mt-4">
           <ProfileTab

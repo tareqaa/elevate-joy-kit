@@ -21,8 +21,13 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
     customerWhatsapp: z.string().trim().min(4).max(40),
     contactType: z.enum(["whatsapp", "telegram"]),
     coupon: z.object({
-      id: z.string().uuid(),
+      id: z.string().uuid().nullable(),
+      userCouponId: z.string().uuid().nullable().optional(),
       code: z.string().min(1).max(64),
+      discount_jod: z.number().min(0).max(100000),
+    }).nullable().optional(),
+    coins: z.object({
+      coins: z.number().int().min(0).max(10000000),
       discount_jod: z.number().min(0).max(100000),
     }).nullable().optional(),
   }).parse(data))
@@ -55,5 +60,6 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       deliveryData: data.notes?.trim() ? { customer_notes: data.notes.trim() } : {},
       userId,
       coupon: data.coupon ?? null,
+      coins: data.coins ?? null,
     });
   });

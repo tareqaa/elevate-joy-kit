@@ -20,10 +20,17 @@ export type ResolvedItem = ResolvedPlan & {
 };
 
 export type AppliedCoupon = {
-  id: string;
+  id: string | null;
+  /** set when the code is a personal level coupon from the loyalty system */
+  user_coupon_id?: string | null;
   code: string;
   discount_type: "percent" | "fixed";
   discount_value: number;
+  discount_jod: number;
+};
+
+export type AppliedCoins = {
+  coins: number;
   discount_jod: number;
 };
 
@@ -51,6 +58,10 @@ type Ctx = {
   coupon: AppliedCoupon | null;
   applyCoupon: (code: string) => Promise<{ ok: boolean; message: string }>;
   removeCoupon: () => void;
+  coins: AppliedCoins | null;
+  applyCoins: (coins: number) => Promise<{ ok: boolean; message: string }>;
+  removeCoins: () => void;
+
   add: (cartId: string, qty?: number) => void;
   addSnap: (cartId: string, usernames: string[]) => void;
   buyNow: (cartId: string, qty?: number) => void;
@@ -120,6 +131,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [notes, setNotesState] = useState("");
   const [contact, setContactState] = useState<ContactInfo>(DEFAULT_CONTACT);
   const [coupon, setCouponState] = useState<AppliedCoupon | null>(null);
+  const [coins, setCoinsState] = useState<AppliedCoins | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const { currency, format } = useCurrency();
   const submitStoreOrderFn = useServerFn(submitStoreOrder);
@@ -189,7 +201,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const items = useMemo(() => resolve(rawItems), [rawItems, priceVersion]);
   const count = items.reduce((s, i) => s + i.qty, 0);
   const subtotalJOD = items.reduce((s, i) => s + i.price * i.qty, 0);
-  const totalJOD = Math.max(0, subtotalJOD - (coupon?.discount_jod ?? 0));
+  const afterCoupon = Math.max(0, subtotalJOD - (coupon?.discount_jod ?? 0));
+  const totalJOD = Math.max(0, afterCoupon - (coins?.discount_jod ?? 0));
 
   const setNotes = useCallback((n: string) => {
     localStorage.setItem(NOTES_KEY, n);
@@ -228,9 +241,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
           category_slugs: [],
         },
       });
-      if (!res.valid || !res.coupon_id) return { ok: false, message: res.message || "الكوبون غير صالح" };
+      if (!res.valid || !res.coupon_id) {
+        // Fall back to personal level coupons issued by the GX Loyalty system.
+        const { data: lv } = await supabase.rpc("validate_my_level_coupon", {
+          _code: trimmed,
+          _subtotal_jod: subtotalJOD,
+        });
+        const lvRes = lv as unknown as {
+          valid?: boolean; user_coupon_id?: string; code?: string;
+          percent?: number; discount_jod?: number; message?: string;
+        } | null;
+        if (lvRes?.valid && lvRes.user_coupon_id) {
+          persistCoupon({
+            id: null,
+            user_coupon_id: lvRes.user_coupon_id,
+            code: lvRes.code || trimmed.toUpperCase(),
+            discount_type: "percent",
+            discount_value: Number(lvRes.percent || 0),
+            discount_jod: Number(lvRes.discount_jod || 0),
+          });
+          return { ok: true, message: lvRes.message || "تم تطبيق كوبون المستوى" };
+        }
+        return { ok: false, message: res.message || lvRes?.message || "الكوبون غير صالح" };
+      }
       persistCoupon({
         id: res.coupon_id,
+        user_coupon_id: null,
         code: res.code || trimmed.toUpperCase(),
         discount_type: (res.discount_type || "percent"),
         discount_value: Number(res.discount_value || 0),
@@ -242,6 +278,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return { ok: false, message: "تعذّر التحقق من الكوبون" };
     }
   }, [items, subtotalJOD, persistCoupon, validateCouponRpc]);
+
+  const removeCoins = useCallback(() => setCoinsState(null), []);
+
+  const applyCoins = useCallback(async (wanted: number) => {
+    const amount = Math.max(0, Math.floor(wanted || 0));
+    if (amount <= 0) { setCoinsState(null); return { ok: false, message: "أدخل عدد العملات" }; }
+    if (items.length === 0) return { ok: false, message: "السلة فاضية" };
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session?.user) return { ok: false, message: "سجّل الدخول لاستخدام GX Coins" };
+      const base = Math.max(0, subtotalJOD - (coupon?.discount_jod ?? 0));
+      const { data, error } = await supabase.rpc("redeem_gx_coins", { _coins: amount, _subtotal_jod: base });
+      if (error) return { ok: false, message: error.message };
+      const res = data as unknown as { valid?: boolean; coins?: number; discount_jod?: number; message?: string } | null;
+      if (!res?.valid) return { ok: false, message: res?.message || "تعذّر استخدام العملات" };
+      setCoinsState({ coins: Number(res.coins || amount), discount_jod: Number(res.discount_jod || 0) });
+      return { ok: true, message: res.message || "تم تطبيق خصم GX Coins" };
+    } catch (e) {
+      console.warn("[GX] applyCoins failed", e);
+      return { ok: false, message: "تعذّر استخدام العملات" };
+    }
+  }, [items, subtotalJOD, coupon]);
+
+  // Coins discount can never exceed the payable amount.
+  useEffect(() => {
+    if (!coins) return;
+    const base = Math.max(0, subtotalJOD - (coupon?.discount_jod ?? 0));
+    if (coins.discount_jod > base) setCoinsState(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtotalJOD, coupon?.discount_jod]);
+
 
   // Re-validate discount when subtotal changes
   useEffect(() => {
@@ -449,7 +516,15 @@ ${lines}
           customerName: contact.name.trim(),
           customerWhatsapp: contactValue,
           contactType: contact.type,
-          coupon: coupon ? { id: coupon.id, code: coupon.code, discount_jod: coupon.discount_jod } : null,
+          coupon: coupon
+            ? {
+                id: coupon.id,
+                userCouponId: coupon.user_coupon_id ?? null,
+                code: coupon.code,
+                discount_jod: coupon.discount_jod,
+              }
+            : null,
+          coins: coins ? { coins: coins.coins, discount_jod: coins.discount_jod } : null,
         },
       });
       // Persist contact to the signed-in user's profile so it auto-fills next time.
@@ -463,23 +538,25 @@ ${lines}
           }).eq("id", uid);
         }
       } catch { /* noop */ }
+      setCoinsState(null);
       return result;
     } catch (e) {
       console.warn("[GX] submitOrder failed", e);
       return null;
     }
 
-  }, [items, totalJOD, currency, notes, contact, coupon, submitStoreOrderFn]);
+  }, [items, totalJOD, currency, notes, contact, coupon, coins, submitStoreOrderFn]);
 
   const value = useMemo<Ctx>(
     () => ({
       items, count, subtotalJOD, totalJOD, notes, setNotes,
       contact, setContact, coupon, applyCoupon, removeCoupon,
+      coins, applyCoins, removeCoins,
       add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear,
       isDrawerOpen, openDrawer, closeDrawer,
       submitOrder, buildWhatsAppUrl,
     }),
-    [items, count, subtotalJOD, totalJOD, notes, setNotes, contact, setContact, coupon, applyCoupon, removeCoupon, add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear, isDrawerOpen, openDrawer, closeDrawer, submitOrder, buildWhatsAppUrl]
+    [items, count, subtotalJOD, totalJOD, notes, setNotes, contact, setContact, coupon, applyCoupon, removeCoupon, coins, applyCoins, removeCoins, add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear, isDrawerOpen, openDrawer, closeDrawer, submitOrder, buildWhatsAppUrl]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

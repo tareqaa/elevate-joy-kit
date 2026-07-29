@@ -392,9 +392,16 @@ export function Navbar() {
                     <Link to="/account" search={{ tab: "profile" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">👤</span><span>{t("nav.account")}</span>
                     </Link>
+                    <Link to="/account" search={{ tab: "loyalty" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
+                      <span className="ai">✨</span><span>{lang === "en" ? "GX Rewards" : "مكافآت GX"}</span>
+                    </Link>
+                    <Link to="/leaderboard" className="acc-link" onClick={() => setAccountOpen(false)}>
+                      <span className="ai">🏆</span><span>{lang === "en" ? "Leaderboard" : "المتصدرون"}</span>
+                    </Link>
                     <Link to="/account" search={{ tab: "security" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">⚙️</span><span>{t("nav.settings")}</span>
                     </Link>
+
                   </div>
 
                   {canReview && (

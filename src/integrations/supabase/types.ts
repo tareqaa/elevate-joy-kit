@@ -47,6 +47,167 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          reason: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
+      avatar_collections: {
+        Row: {
+          border_css: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name_ar: string
+          name_en: string
+          required_level_code: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          border_css?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          name_en: string
+          required_level_code?: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          border_css?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          name_en?: string
+          required_level_code?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      avatars: {
+        Row: {
+          collection_id: string
+          created_at: string
+          id: string
+          image_url: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          id?: string
+          image_url: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avatars_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      badges: {
+        Row: {
+          color: string
+          created_at: string
+          criteria: Json
+          description_ar: string | null
+          description_en: string | null
+          icon: string
+          id: string
+          is_active: boolean
+          name_ar: string
+          name_en: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          criteria?: Json
+          description_ar?: string | null
+          description_en?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          name_en: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          criteria?: Json
+          description_ar?: string | null
+          description_en?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          name_en?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           accent_color: string | null
@@ -217,6 +378,45 @@ export type Database = {
         }
         Relationships: []
       }
+      gx_coin_transactions: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          created_at: string
+          id: string
+          kind: string
+          metadata: Json
+          order_id: string | null
+          reason: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after?: number | null
+          created_at?: string
+          id?: string
+          kind?: string
+          metadata?: Json
+          order_id?: string | null
+          reason?: string | null
+          source?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          created_at?: string
+          id?: string
+          kind?: string
+          metadata?: Json
+          order_id?: string | null
+          reason?: string | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       home_settings_history: {
         Row: {
           actor_email: string | null
@@ -244,6 +444,137 @@ export type Database = {
           key?: string
           note?: string | null
           value?: Json
+        }
+        Relationships: []
+      }
+      leaderboard_snapshots: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          period: string
+          period_end: string | null
+          period_start: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          period?: string
+          period_end?: string | null
+          period_start?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          period?: string
+          period_end?: string | null
+          period_start?: string | null
+        }
+        Relationships: []
+      }
+      level_rewards: {
+        Row: {
+          created_at: string
+          id: string
+          label_ar: string
+          label_en: string
+          level_id: string
+          reward_type: string
+          sort_order: number
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label_ar: string
+          label_en: string
+          level_id: string
+          reward_type: string
+          sort_order?: number
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label_ar?: string
+          label_en?: string
+          level_id?: string
+          reward_type?: string
+          sort_order?: number
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "level_rewards_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      levels: {
+        Row: {
+          code: string
+          coins_bonus_pct: number
+          color: string
+          coupon_max_discount_jod: number | null
+          coupon_percent: number
+          coupon_valid_days: number
+          created_at: string
+          gradient: string
+          icon: string
+          id: string
+          is_active: boolean
+          min_xp: number
+          name_ar: string
+          name_en: string
+          reward_coins: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          coins_bonus_pct?: number
+          color?: string
+          coupon_max_discount_jod?: number | null
+          coupon_percent?: number
+          coupon_valid_days?: number
+          created_at?: string
+          gradient?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          min_xp?: number
+          name_ar: string
+          name_en: string
+          reward_coins?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          coins_bonus_pct?: number
+          color?: string
+          coupon_max_discount_jod?: number | null
+          coupon_percent?: number
+          coupon_valid_days?: number
+          created_at?: string
+          gradient?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          min_xp?: number
+          name_ar?: string
+          name_en?: string
+          reward_coins?: number
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -291,6 +622,9 @@ export type Database = {
       orders: {
         Row: {
           admin_notes: string | null
+          coins_awarded: number
+          coins_discount_jod: number
+          coins_used: number
           contact_type: string | null
           coupon_code: string | null
           coupon_id: string | null
@@ -303,14 +637,19 @@ export type Database = {
           id: string
           items: Json
           order_number: string
+          paid_jod: number | null
           status: Database["public"]["Enums"]["order_status"]
           total_jod: number
           updated_at: string
+          user_coupon_id: string | null
           user_id: string | null
           xp_awarded: number
         }
         Insert: {
           admin_notes?: string | null
+          coins_awarded?: number
+          coins_discount_jod?: number
+          coins_used?: number
           contact_type?: string | null
           coupon_code?: string | null
           coupon_id?: string | null
@@ -323,14 +662,19 @@ export type Database = {
           id?: string
           items?: Json
           order_number?: string
+          paid_jod?: number | null
           status?: Database["public"]["Enums"]["order_status"]
           total_jod?: number
           updated_at?: string
+          user_coupon_id?: string | null
           user_id?: string | null
           xp_awarded?: number
         }
         Update: {
           admin_notes?: string | null
+          coins_awarded?: number
+          coins_discount_jod?: number
+          coins_used?: number
           contact_type?: string | null
           coupon_code?: string | null
           coupon_id?: string | null
@@ -343,9 +687,11 @@ export type Database = {
           id?: string
           items?: Json
           order_number?: string
+          paid_jod?: number | null
           status?: Database["public"]["Enums"]["order_status"]
           total_jod?: number
           updated_at?: string
+          user_coupon_id?: string | null
           user_id?: string | null
           xp_awarded?: number
         }
@@ -526,12 +872,17 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_border: string | null
+          avatar_id: string | null
           avatar_url: string | null
           created_at: string
           email: string | null
           full_name: string | null
+          gx_coins: number
           id: string
           level: number
+          level_code: string
+          orders_count: number
           total_spent: number
           updated_at: string
           username: string | null
@@ -539,12 +890,17 @@ export type Database = {
           xp: number
         }
         Insert: {
+          avatar_border?: string | null
+          avatar_id?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
+          gx_coins?: number
           id: string
           level?: number
+          level_code?: string
+          orders_count?: number
           total_spent?: number
           updated_at?: string
           username?: string | null
@@ -552,12 +908,17 @@ export type Database = {
           xp?: number
         }
         Update: {
+          avatar_border?: string | null
+          avatar_id?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
+          gx_coins?: number
           id?: string
           level?: number
+          level_code?: string
+          orders_count?: number
           total_spent?: number
           updated_at?: string
           username?: string | null
@@ -649,6 +1010,109 @@ export type Database = {
         }
         Relationships: []
       }
+      user_avatars: {
+        Row: {
+          avatar_id: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_id: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_id?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_avatars_avatar_id_fkey"
+            columns: ["avatar_id"]
+            isOneToOne: false
+            referencedRelation: "avatars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_coupons: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          issued_at: string
+          level_code: string
+          max_discount_jod: number | null
+          order_id: string | null
+          percent: number
+          updated_at: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          issued_at?: string
+          level_code: string
+          max_discount_jod?: number | null
+          order_id?: string | null
+          percent: number
+          updated_at?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          issued_at?: string
+          level_code?: string
+          max_discount_jod?: number | null
+          order_id?: string | null
+          percent?: number
+          updated_at?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -670,13 +1134,67 @@ export type Database = {
         }
         Relationships: []
       }
+      xp_transactions: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          created_at: string
+          id: string
+          metadata: Json
+          order_id: string | null
+          reason: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          reason?: string | null
+          source?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          reason?: string | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_adjust_loyalty: {
+        Args: { _coins: number; _reason: string; _user_id: string; _xp: number }
+        Returns: Json
+      }
       auto_cancel_stale_orders: { Args: never; Returns: number }
+      award_badges: { Args: { _user_id: string }; Returns: undefined }
       generate_order_number: { Args: never; Returns: string }
+      get_loyalty_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          level_code: string
+          rank: number
+          user_id: string
+          username: string
+          xp: number
+        }[]
+      }
+      get_my_loyalty: { Args: never; Returns: Json }
       get_public_profile: {
         Args: { _username: string }
         Returns: {
@@ -697,6 +1215,41 @@ export type Database = {
         }
         Returns: boolean
       }
+      issue_level_coupon: {
+        Args: {
+          _level: Database["public"]["Tables"]["levels"]["Row"]
+          _user_id: string
+        }
+        Returns: string
+      }
+      level_for_xp: {
+        Args: { _xp: number }
+        Returns: {
+          code: string
+          coins_bonus_pct: number
+          color: string
+          coupon_max_discount_jod: number | null
+          coupon_percent: number
+          coupon_valid_days: number
+          created_at: string
+          gradient: string
+          icon: string
+          id: string
+          is_active: boolean
+          min_xp: number
+          name_ar: string
+          name_en: string
+          reward_coins: number
+          sort_order: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "levels"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       log_admin_action: {
         Args: {
           _action: string
@@ -705,6 +1258,10 @@ export type Database = {
           _metadata?: Json
         }
         Returns: string
+      }
+      redeem_gx_coins: {
+        Args: { _coins: number; _subtotal_jod: number }
+        Returns: Json
       }
       search_public_profiles: {
         Args: { _limit?: number; _q: string }
@@ -716,6 +1273,11 @@ export type Database = {
           username: string
         }[]
       }
+      spend_gx_coins: {
+        Args: { _coins: number; _order_id: string }
+        Returns: Json
+      }
+      sync_user_level: { Args: { _user_id: string }; Returns: undefined }
       validate_coupon: {
         Args: {
           _category_slugs: string[]
@@ -724,6 +1286,10 @@ export type Database = {
           _subtotal_jod: number
           _user_id: string
         }
+        Returns: Json
+      }
+      validate_my_level_coupon: {
+        Args: { _code: string; _subtotal_jod: number }
         Returns: Json
       }
     }

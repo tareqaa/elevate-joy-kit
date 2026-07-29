@@ -10,9 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SnapchatRouteImport } from './routes/snapchat'
+import { Route as RewardsRouteImport } from './routes/rewards'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as FortniteRouteImport } from './routes/fortnite'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as CartRouteImport } from './routes/cart'
@@ -33,6 +35,7 @@ import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminReviewsRouteImport } from './routes/_authenticated/admin/reviews'
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
+import { Route as AuthenticatedAdminLoyaltyRouteImport } from './routes/_authenticated/admin/loyalty'
 import { Route as AuthenticatedAdminHomeRouteImport } from './routes/_authenticated/admin/home'
 import { Route as AuthenticatedAdminCouponsRouteImport } from './routes/_authenticated/admin/coupons'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
@@ -42,6 +45,11 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 const SnapchatRoute = SnapchatRouteImport.update({
   id: '/snapchat',
   path: '/snapchat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RewardsRoute = RewardsRouteImport.update({
+  id: '/rewards',
+  path: '/rewards',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -57,6 +65,11 @@ const PolicyRoute = PolicyRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeaderboardRoute = LeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FortniteRoute = FortniteRouteImport.update({
@@ -164,6 +177,12 @@ const AuthenticatedAdminOrdersRoute =
     path: '/orders',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminLoyaltyRoute =
+  AuthenticatedAdminLoyaltyRouteImport.update({
+    id: '/loyalty',
+    path: '/loyalty',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminHomeRoute = AuthenticatedAdminHomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -200,9 +219,11 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
   '/fortnite': typeof FortniteRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/rewards': typeof RewardsRoute
   '/snapchat': typeof SnapchatRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -217,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/home': typeof AuthenticatedAdminHomeRoute
+  '/admin/loyalty': typeof AuthenticatedAdminLoyaltyRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/reviews': typeof AuthenticatedAdminReviewsRoute
@@ -230,9 +252,11 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
   '/fortnite': typeof FortniteRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/rewards': typeof RewardsRoute
   '/snapchat': typeof SnapchatRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -246,6 +270,7 @@ export interface FileRoutesByTo {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/home': typeof AuthenticatedAdminHomeRoute
+  '/admin/loyalty': typeof AuthenticatedAdminLoyaltyRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/reviews': typeof AuthenticatedAdminReviewsRoute
@@ -261,9 +286,11 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
   '/fortnite': typeof FortniteRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/rewards': typeof RewardsRoute
   '/snapchat': typeof SnapchatRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -278,6 +305,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/_authenticated/admin/home': typeof AuthenticatedAdminHomeRoute
+  '/_authenticated/admin/loyalty': typeof AuthenticatedAdminLoyaltyRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
   '/_authenticated/admin/reviews': typeof AuthenticatedAdminReviewsRoute
@@ -293,9 +321,11 @@ export interface FileRouteTypes {
     | '/cart'
     | '/faq'
     | '/fortnite'
+    | '/leaderboard'
     | '/mcp'
     | '/policy'
     | '/reset-password'
+    | '/rewards'
     | '/snapchat'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -310,6 +340,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/home'
+    | '/admin/loyalty'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/reviews'
@@ -323,9 +354,11 @@ export interface FileRouteTypes {
     | '/cart'
     | '/faq'
     | '/fortnite'
+    | '/leaderboard'
     | '/mcp'
     | '/policy'
     | '/reset-password'
+    | '/rewards'
     | '/snapchat'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -339,6 +372,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/home'
+    | '/admin/loyalty'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/reviews'
@@ -353,9 +387,11 @@ export interface FileRouteTypes {
     | '/cart'
     | '/faq'
     | '/fortnite'
+    | '/leaderboard'
     | '/mcp'
     | '/policy'
     | '/reset-password'
+    | '/rewards'
     | '/snapchat'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -370,6 +406,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/coupons'
     | '/_authenticated/admin/home'
+    | '/_authenticated/admin/loyalty'
     | '/_authenticated/admin/orders'
     | '/_authenticated/admin/products'
     | '/_authenticated/admin/reviews'
@@ -385,9 +422,11 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   FaqRoute: typeof FaqRoute
   FortniteRoute: typeof FortniteRoute
+  LeaderboardRoute: typeof LeaderboardRoute
   McpRoute: typeof McpRoute
   PolicyRoute: typeof PolicyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  RewardsRoute: typeof RewardsRoute
   SnapchatRoute: typeof SnapchatRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -405,6 +444,13 @@ declare module '@tanstack/react-router' {
       path: '/snapchat'
       fullPath: '/snapchat'
       preLoaderRoute: typeof SnapchatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rewards': {
+      id: '/rewards'
+      path: '/rewards'
+      fullPath: '/rewards'
+      preLoaderRoute: typeof RewardsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -426,6 +472,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leaderboard': {
+      id: '/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof LeaderboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fortnite': {
@@ -568,6 +621,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminOrdersRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/loyalty': {
+      id: '/_authenticated/admin/loyalty'
+      path: '/loyalty'
+      fullPath: '/admin/loyalty'
+      preLoaderRoute: typeof AuthenticatedAdminLoyaltyRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/home': {
       id: '/_authenticated/admin/home'
       path: '/home'
@@ -611,6 +671,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminCouponsRoute: typeof AuthenticatedAdminCouponsRoute
   AuthenticatedAdminHomeRoute: typeof AuthenticatedAdminHomeRoute
+  AuthenticatedAdminLoyaltyRoute: typeof AuthenticatedAdminLoyaltyRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
   AuthenticatedAdminReviewsRoute: typeof AuthenticatedAdminReviewsRoute
@@ -624,6 +685,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminCouponsRoute: AuthenticatedAdminCouponsRoute,
   AuthenticatedAdminHomeRoute: AuthenticatedAdminHomeRoute,
+  AuthenticatedAdminLoyaltyRoute: AuthenticatedAdminLoyaltyRoute,
   AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
   AuthenticatedAdminProductsRoute: AuthenticatedAdminProductsRoute,
   AuthenticatedAdminReviewsRoute: AuthenticatedAdminReviewsRoute,
@@ -655,9 +717,11 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   FaqRoute: FaqRoute,
   FortniteRoute: FortniteRoute,
+  LeaderboardRoute: LeaderboardRoute,
   McpRoute: McpRoute,
   PolicyRoute: PolicyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  RewardsRoute: RewardsRoute,
   SnapchatRoute: SnapchatRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
