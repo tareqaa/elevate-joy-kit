@@ -49,7 +49,6 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [anon, setAnon] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -93,7 +92,7 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
       order_number: currentOrder?.order_number ?? null,
       product_slug: chosen?.slug || null,
       product_name: chosen?.name || null,
-      display_name: anon ? "عميل GX" : (displayName.trim() || "عميل GX"),
+      display_name: displayName.trim() || "عميل GX",
       rating,
       comment: comment.trim(),
     });
@@ -132,6 +131,12 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
           ) : (
             <>
               <div>
+                <label className="gx-rv-lb">الاسم الظاهر</label>
+                <input className="gx-rv-in" value={displayName} maxLength={60}
+                  onChange={(e) => setDisplayName(e.target.value)} placeholder="اسمك كما سيظهر" />
+              </div>
+
+              <div>
                 <label className="gx-rv-lb">الطلب</label>
                 <select className="gx-rv-in" value={orderId} onChange={(e) => setOrderId(e.target.value)}>
                   {orders.map((o) => (
@@ -166,24 +171,13 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
 
               <div>
                 <label className="gx-rv-lb">مراجعتك</label>
-                <textarea className="gx-rv-in" rows={4} maxLength={800} value={comment}
-                  onChange={(e) => setComment(e.target.value)} placeholder="احكِ لنا عن تجربتك مع الطلب والخدمة..." />
-              </div>
-
-              <div>
-                <label className="gx-rv-lb">الاسم الظاهر (اختياري)</label>
-                <input className="gx-rv-in" value={displayName} maxLength={60}
-                  disabled={anon} onChange={(e) => setDisplayName(e.target.value)} placeholder="اسمك كما سيظهر" />
-                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, color: "#a3b6c9", fontSize: 12.5 }}>
-                  <input type="checkbox" checked={anon} onChange={(e) => setAnon(e.target.checked)} style={{ accentColor: "#00e5ff" }} />
-                  نشر المراجعة بدون اسمي
-                </label>
-              </div>
-
-              <div className="gx-rv-hint">
-                كل المراجعات تمر على الإدارة قبل النشر. المراجعات بتقييم 4 نجوم فأكثر والخالية من الألفاظ المسيئة هي المؤهلة للظهور بالصفحة الرئيسية.
+                <textarea className="gx-rv-in" rows={4} maxLength={180} value={comment}
+                  onChange={(e) => setComment(e.target.value.slice(0, 180))}
+                  placeholder="احكِ لنا عن تجربتك باختصار..." />
+                <div className="gx-rv-hint" style={{ textAlign: "left" }} dir="ltr">{comment.length}/180</div>
               </div>
             </>
+
           )}
         </div>
 
