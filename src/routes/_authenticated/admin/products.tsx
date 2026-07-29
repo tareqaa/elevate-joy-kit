@@ -71,7 +71,16 @@ const css = `
 .gx-fieldset>legend,.gx-fs-title{font-size:11.5px;font-weight:800;color:#8fe9ff;letter-spacing:.3px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .gx-variant{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.15);border-radius:10px;padding:10px;margin-bottom:8px}
 .gx-country{background:rgba(0,0,0,.3);border:1px dashed rgba(0,229,255,.2);border-radius:8px;padding:8px;font-size:12px}
-`;
+.gx-prod-card.sel{border-color:rgba(0,229,255,.55);box-shadow:0 0 0 2px rgba(0,229,255,.18)}
+.gx-check{width:17px;height:17px;accent-color:#00e5ff;cursor:pointer;margin-top:2px}
+.gx-bulk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border-radius:14px;background:linear-gradient(90deg,rgba(0,229,255,.12),rgba(162,89,255,.08));border:1px solid rgba(0,229,255,.3)}
+.gx-chip{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:800;border:1px solid rgba(255,255,255,.08);color:#7d92a8;background:transparent;cursor:pointer}
+.gx-chip.on{background:rgba(0,229,255,.13);border-color:rgba(0,229,255,.4);color:#8fe9ff}
+.gx-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.gx-row:hover{background:rgba(0,229,255,.04)}
+.gx-skel{height:92px;border-radius:16px;background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.09),rgba(255,255,255,.04));background-size:200% 100%;animation:gxsk 1.2s infinite}
+@keyframes gxsk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
 
 
 const CURRENCIES = ["JOD", "USD", "EUR", "SAR", "AED", "TRY", "EGP", "KWD", "QAR", "OMR", "BHD"];
