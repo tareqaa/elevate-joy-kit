@@ -31,6 +31,7 @@ const NAV: NavItem[] = [
   { to: "/admin/reviews", label: "المراجعات", Icon: Star },
   { to: "/admin/loyalty", label: "نظام الولاء", Icon: Sparkles },
   { to: "/admin/avatars", label: "الأفاتار", Icon: Smile },
+  { to: "/admin/badges", label: "الشارات", Icon: Award },
   { to: "/admin/activity", label: "سجل النشاطات", Icon: Activity },
   { to: "/admin/settings", label: "الإعدادات", Icon: Settings },
 ];
