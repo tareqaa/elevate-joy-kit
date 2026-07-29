@@ -188,6 +188,7 @@ export function InlineTextEditor() {
       .upsert({ key: "site_copy", value: merged as never }, { onConflict: "key" });
     if (error) { toast.error("فشل الحفظ — تأكد أنك أدمن"); return; }
     setCopy(merged);
+    try { localStorage.setItem(COPY_CACHE, JSON.stringify(merged)); } catch { /* noop */ }
     setPending({});
     toast.success("تم حفظ النصوص");
   }
@@ -199,6 +200,7 @@ export function InlineTextEditor() {
       .upsert({ key: "site_copy", value: merged as never }, { onConflict: "key" });
     if (error) { toast.error("فشل الاستعادة"); return; }
     setCopy(merged);
+    try { localStorage.setItem(COPY_CACHE, JSON.stringify(merged)); } catch { /* noop */ }
     setPending({});
     toast.success("تمت استعادة نصوص هذه الصفحة");
     window.location.reload();
