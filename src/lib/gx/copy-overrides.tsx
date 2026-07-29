@@ -157,15 +157,31 @@ export function InlineTextEditor() {
       el.classList.add("gx-text-editing");
       el.focus();
 
+      // Record the edit while typing, not only on blur: clicking the save
+      // button while it is still disabled never blurs the field, so a
+      // blur-only commit could leave the button permanently disabled.
+      const record = () => {
+        const text = (el.textContent ?? "").trim();
+        const key = keyFor(pathname, el);
+        setPending((p) => {
+          if (!text || text === orig.trim()) {
+            if (!(key in p)) return p;
+            const n = { ...p };
+            delete n[key];
+            return n;
+          }
+          if (p[key]?.text === text) return p;
+          return { ...p, [key]: { text, orig: orig.trim() } };
+        });
+      };
+
       const commit = () => {
         el.contentEditable = "false";
         el.classList.remove("gx-text-editing");
-        const text = (el.textContent ?? "").trim();
-        if (text && text !== orig.trim()) {
-          setPending((p) => ({ ...p, [keyFor(pathname, el)]: { text, orig: orig.trim() } }));
-        }
+        record();
         el.removeEventListener("blur", commit);
         el.removeEventListener("keydown", onKey);
+        el.removeEventListener("input", record);
       };
       const onKey = (ev: KeyboardEvent) => {
         if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); el.blur(); }
@@ -173,6 +189,7 @@ export function InlineTextEditor() {
       };
       el.addEventListener("blur", commit);
       el.addEventListener("keydown", onKey);
+      el.addEventListener("input", record);
     }
 
     document.addEventListener("click", onClick, true);
