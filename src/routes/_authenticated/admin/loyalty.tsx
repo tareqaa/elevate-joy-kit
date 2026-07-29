@@ -181,7 +181,6 @@ function CustomersTab() {
         _user_id: creditTarget.id,
         _amount: Number(credit) || 0,
         _reason: creditReason.trim() || "تعديل رصيد من الإدارة",
-        _order_id: undefined as unknown as string,
       });
       if (error) throw error;
     },
