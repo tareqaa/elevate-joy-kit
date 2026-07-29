@@ -1,6 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_HOME_LAYOUT, type HomeLayout } from "./sections/types";
+import {
+  applyCatalogPrices,
+  cacheCatalogPrices,
+  CATALOG_PRICES_KEY,
+  type CatalogPrices,
+} from "./catalog-prices";
 
 export type HomeHero = {
   enabled: boolean;
