@@ -239,11 +239,9 @@ function ProductsAdmin() {
           </h1>
           <p className="text-sm text-cyan-100/60 mt-1">إدارة المنتجات وأسعار المتجر من مكان واحد</p>
         </div>
-        {tab === "catalog" && (
-          <button className="gx-btn primary" onClick={() => setCreating(true)}>
-            <Plus size={14} /> منتج جديد
-          </button>
-        )}
+        <button className="gx-btn primary" onClick={() => { setTab("catalog"); setCreating(true); }}>
+          <Plus size={14} /> منتج جديد
+        </button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
