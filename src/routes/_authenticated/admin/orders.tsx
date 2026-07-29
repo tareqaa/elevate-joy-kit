@@ -40,6 +40,7 @@ type OrderRow = {
   user_id: string | null;
   customer_name: string | null;
   customer_whatsapp: string | null;
+  contact_type: string | null;
   items: unknown;
   total_jod: number;
   status: string;
@@ -47,6 +48,7 @@ type OrderRow = {
   delivery_data: unknown;
   created_at: string;
 };
+
 type OrderWithEmail = OrderRow & { user_email: string | null; user_username: string | null };
 
 type DateRange = "all" | "today" | "7d" | "30d";
