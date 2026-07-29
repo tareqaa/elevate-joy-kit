@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLang } from "@/lib/gx/i18n";
+import { supabase } from "@/integrations/supabase/client";
+
 
 export function OrderConfirmedModal({
   orderNumber,
