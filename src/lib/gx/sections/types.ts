@@ -88,15 +88,31 @@ export type AnnouncementData = {
 export type CarouselSlide = {
   id: string;
   image_url: string;
+  image_url_tablet?: string | null;
+  image_url_mobile?: string | null;
   title?: string;
   subtitle?: string;
   link?: string;
+  starts_at?: string | null; // ISO — publish window start
+  ends_at?: string | null;   // ISO — publish window end
+  enabled?: boolean;
 };
 export type CarouselData = {
   autoplay?: boolean;
   interval_ms?: number;
   items?: CarouselSlide[];
 };
+
+// Runtime helper — filter carousel slides by enabled flag and schedule window.
+export function activeCarouselSlides(items: CarouselSlide[] | undefined): CarouselSlide[] {
+  const now = Date.now();
+  return (items || []).filter((s) => {
+    if (s.enabled === false) return false;
+    if (s.starts_at && Date.parse(s.starts_at) > now) return false;
+    if (s.ends_at && Date.parse(s.ends_at) < now) return false;
+    return true;
+  });
+}
 
 export type CategoryOverride = { name?: string; desc?: string; accent?: string; hidden?: boolean; sort?: number };
 export type CategoriesData = {
