@@ -14,6 +14,7 @@ import type {
   HeroData, AnnouncementData, CarouselData, CategoriesData,
   BestsellersData, TrustData, ReviewsData, FaqData, NewsletterData,
 } from "./types";
+import { activeCarouselSlides } from "./types";
 
 /* ---------------- HERO ---------------- */
 export function HeroRenderer({ data }: { data: HeroData }) {
