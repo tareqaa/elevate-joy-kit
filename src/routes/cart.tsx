@@ -145,9 +145,10 @@ function CartSummary() {
       toast.error(site.maintenance_message || "الموقع تحت الصيانة حالياً");
       return;
     }
-    if (!cart.contact.name.trim() || cart.contact.phone.trim().length < 4) {
+    const isWa = cart.contact.type === "whatsapp";
+    if (!cart.contact.name.trim() || cart.contact.phone.trim().length < 3) {
       const { toast } = await import("sonner");
-      toast.error("عبّي الاسم ورقم التواصل قبل إتمام الطلب");
+      toast.error(isWa ? "عبّي الاسم ورقم الواتساب قبل إتمام الطلب" : "عبّي الاسم ويوزر التيليجرام قبل إتمام الطلب");
       return;
     }
     setBusy(true);
@@ -167,7 +168,8 @@ function CartSummary() {
     }
   }
 
-  const disabled = busy || cart.items.length === 0 || !cart.contact.name.trim() || cart.contact.phone.trim().length < 4;
+  const isWa = cart.contact.type === "whatsapp";
+  const disabled = busy || cart.items.length === 0 || !cart.contact.name.trim() || cart.contact.phone.trim().length < 3;
 
   return (
     <div className="summary-card">
@@ -184,35 +186,46 @@ function CartSummary() {
           value={cart.contact.name}
           onChange={(e) => cart.setContact({ name: e.target.value })}
         />
-        <div className="gx-cb-row">
-          <select
-            className="gx-cb-select"
-            value={cart.contact.countryCode}
-            onChange={(e) => cart.setContact({ countryCode: e.target.value })}
-          >
-            {COUNTRY_CODES.map((c) => (
-              <option key={c.code} value={c.code}>{c.flag} {c.code} {c.name}</option>
-            ))}
-          </select>
-          <input
-            className="gx-cb-input gx-cb-phone"
-            type="tel"
-            inputMode="numeric"
-            placeholder="رقم التواصل"
-            value={cart.contact.phone}
-            onChange={(e) => cart.setContact({ phone: e.target.value.replace(/[^\d]/g, "") })}
-          />
-        </div>
         <div className="gx-cb-types">
           <label className={"gx-cb-type " + (cart.contact.type === "whatsapp" ? "on" : "")}>
-            <input type="radio" name="ct" checked={cart.contact.type === "whatsapp"} onChange={() => cart.setContact({ type: "whatsapp" })} />
+            <input type="radio" name="ct" checked={cart.contact.type === "whatsapp"} onChange={() => { cart.setContact({ type: "whatsapp", phone: "" }); }} />
             <span>📱 واتساب</span>
           </label>
           <label className={"gx-cb-type " + (cart.contact.type === "telegram" ? "on" : "")}>
-            <input type="radio" name="ct" checked={cart.contact.type === "telegram"} onChange={() => cart.setContact({ type: "telegram" })} />
+            <input type="radio" name="ct" checked={cart.contact.type === "telegram"} onChange={() => { cart.setContact({ type: "telegram", phone: "", countryCode: "" }); }} />
             <span>✈️ تيليجرام</span>
           </label>
         </div>
+        {isWa ? (
+          <div className="gx-cb-row" style={{ marginTop: 8 }}>
+            <select
+              className="gx-cb-select"
+              value={cart.contact.countryCode || "+962"}
+              onChange={(e) => cart.setContact({ countryCode: e.target.value })}
+            >
+              {COUNTRY_CODES.map((c) => (
+                <option key={c.code} value={c.code}>{c.flag} {c.code} {c.name}</option>
+              ))}
+            </select>
+            <input
+              className="gx-cb-input gx-cb-phone"
+              type="tel"
+              inputMode="numeric"
+              placeholder="رقم الواتساب"
+              value={cart.contact.phone}
+              onChange={(e) => cart.setContact({ phone: e.target.value.replace(/[^\d]/g, "") })}
+            />
+          </div>
+        ) : (
+          <input
+            className="gx-cb-input"
+            type="text"
+            placeholder="يوزر التيليجرام (بدون @)"
+            value={cart.contact.phone}
+            onChange={(e) => cart.setContact({ phone: e.target.value.replace(/^@+/, "").trim() })}
+            style={{ marginTop: 8, direction: "ltr", textAlign: "left" }}
+          />
+        )}
       </div>
 
       {/* Coupon block */}
@@ -263,7 +276,9 @@ function CartSummary() {
       <div className="notes-field">
         <label>{t("cart.notes_label")}</label>
         <textarea placeholder={t("cart.notes_placeholder")} value={cart.notes} onChange={(e) => cart.setNotes(e.target.value)} />
-        <div className="hint">{t("cart.notes_hint")}</div>
+        {cart.items.some(it => it.cartId.startsWith("snap-")) && (
+          <div className="hint">{t("cart.notes_hint")}</div>
+        )}
       </div>
       <button className="btn btn-green btn-block" disabled={disabled} onClick={checkout}>
         {busy ? t("cart.checkout_saving") : t("cart.checkout_wa")}

@@ -183,6 +183,11 @@ function ProductsAdmin() {
                 </div>
                 <div className="gx-prod-en">{p.name_en}</div>
                 <div className="gx-prod-meta">
+                  <span
+                    title="اضغط لنسخ المعرّف — استخدمه في الكوبونات"
+                    onClick={() => { navigator.clipboard.writeText(p.slug); toast.success(`تم نسخ: ${p.slug}`); }}
+                    style={{ cursor: "pointer", fontFamily: "ui-monospace,monospace", background: "rgba(0,229,255,.1)", color: "#00e5ff", padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(0,229,255,.25)", fontWeight: 700 }}
+                  >#{p.slug}</span>
                   <span>القسم: {p.category_id ? categoriesMap[p.category_id]?.name_ar ?? "—" : "—"}</span>
                   {p.base_price_jod !== null && <span className="gx-price">{Number(p.base_price_jod).toFixed(2)} د.أ</span>}
                   <span>مشتريات: {p.purchases_count}</span>
