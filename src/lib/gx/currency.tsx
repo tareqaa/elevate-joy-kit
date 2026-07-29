@@ -105,20 +105,32 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, code);
   }, []);
 
+  const rate = useMemo(() => {
+    const live = rates[currency];
+    if (Number.isFinite(live) && live > 0) return live;
+    return (CURRENCIES[currency] || CURRENCIES.JOD).rate;
+  }, [rates, currency]);
+
   const format = useCallback(
     (jod: number) => {
       const c = CURRENCIES[currency] || CURRENCIES.JOD;
-      const val = jod * c.rate;
+      const val = jod * rate;
       const formatted = val.toLocaleString("en-US", {
         minimumFractionDigits: c.decimals,
         maximumFractionDigits: c.decimals,
       });
       return `${formatted} ${currency}`;
     },
-    [currency]
+    [currency, rate]
   );
 
-  const value = useMemo(() => ({ currency, setCurrency, format }), [currency, setCurrency, format]);
+  /** GX Coins are stored as coins; 1000 coins = 1 JOD, shown in the active currency. */
+  const formatCoins = useCallback((coins: number) => format((Number(coins) || 0) / 1000), [format]);
+
+  const value = useMemo(
+    () => ({ currency, setCurrency, format, formatCoins, rate }),
+    [currency, setCurrency, format, formatCoins, rate]
+  );
   return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>;
 }
 
