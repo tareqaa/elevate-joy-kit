@@ -94,12 +94,22 @@ function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
 }
 
+function norm(s: string) {
+  return (s || "")
+    .toLowerCase()
+    .replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه")
+    .replace(/[\u064B-\u0652\u0640]/g, "")
+    .trim();
+}
+
 function CategoriesAdmin() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Category | null>(null);
   const [creating, setCreating] = useState<{ parentId: string | null } | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<"tree" | "flat">("tree");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "hidden" | "main">("all");
 
   const q = useQuery({
     queryKey: ["admin-categories"],
@@ -113,6 +123,20 @@ function CategoriesAdmin() {
       return (data ?? []) as Category[];
     },
   });
+
+  const countsQ = useQuery({
+    queryKey: ["admin-categories-product-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("products").select("category_id");
+      if (error) throw error;
+      const m: Record<string, number> = {};
+      for (const r of (data ?? []) as { category_id: string | null }[]) {
+        if (r.category_id) m[r.category_id] = (m[r.category_id] ?? 0) + 1;
+      }
+      return m;
+    },
+  });
+  const counts = countsQ.data ?? {};
 
   const deleteMut = useMutation({
     mutationFn: async (id: string) => {
@@ -132,17 +156,91 @@ function CategoriesAdmin() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const reorderMut = useMutation({
+    mutationFn: async ({ a, b }: { a: Category; b: Category }) => {
+      const aOrder = a.sort_order;
+      const bOrder = b.sort_order === aOrder ? aOrder + 1 : b.sort_order;
+      const r1 = await supabase.from("categories").update({ sort_order: bOrder }).eq("id", a.id);
+      if (r1.error) throw r1.error;
+      const r2 = await supabase.from("categories").update({ sort_order: aOrder }).eq("id", b.id);
+      if (r2.error) throw r2.error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-categories"] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const duplicateMut = useMutation({
+    mutationFn: async (c: Category) => {
+      const { error } = await supabase.from("categories").insert({
+        slug: `${c.slug}-copy-${Math.random().toString(36).slice(2, 6)}`,
+        name_ar: `${c.name_ar} (نسخة)`,
+        name_en: `${c.name_en} (copy)`,
+        icon_url: c.icon_url,
+        sort_order: c.sort_order + 1,
+        is_active: false,
+        parent_id: c.parent_id,
+        is_main: false,
+        accent_color: c.accent_color,
+        theme_gradient: c.theme_gradient,
+        description_ar: c.description_ar,
+        description_en: c.description_en,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تم إنشاء نسخة (مخفية)"); qc.invalidateQueries({ queryKey: ["admin-categories"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const all = q.data ?? [];
+
+  const stats = useMemo(() => ({
+    total: all.length,
+    main: all.filter((c) => c.is_main).length,
+    active: all.filter((c) => c.is_active).length,
+    hidden: all.filter((c) => !c.is_active).length,
+  }), [all]);
+
+  const matches = useMemo(() => {
+    const s = norm(search);
+    return (c: Category) => {
+      if (filter === "active" && !c.is_active) return false;
+      if (filter === "hidden" && c.is_active) return false;
+      if (filter === "main" && !c.is_main) return false;
+      if (!s) return true;
+      return norm(c.name_ar).includes(s) || norm(c.name_en).includes(s) || norm(c.slug).includes(s);
+    };
+  }, [search, filter]);
+
+  const filteredFlat = useMemo(() => all.filter(matches), [all, matches]);
+
+  // Keep ancestors of matched nodes visible in tree view
+  const visibleIds = useMemo(() => {
+    if (!search.trim() && filter === "all") return null;
+    const byId = new Map(all.map((c) => [c.id, c]));
+    const keep = new Set<string>();
+    for (const c of filteredFlat) {
+      let cur: Category | undefined = c;
+      const guard = new Set<string>();
+      while (cur && !guard.has(cur.id)) {
+        guard.add(cur.id);
+        keep.add(cur.id);
+        cur = cur.parent_id ? byId.get(cur.parent_id) : undefined;
+      }
+    }
+    return keep;
+  }, [all, filteredFlat, search, filter]);
+
   const byParent = useMemo(() => {
     const map = new Map<string | "root", Category[]>();
     for (const c of all) {
+      if (visibleIds && !visibleIds.has(c.id)) continue;
       const k = c.parent_id ?? "root";
       const arr = map.get(k) ?? [];
       arr.push(c);
       map.set(k, arr);
     }
     return map;
-  }, [all]);
+  }, [all, visibleIds]);
 
   const roots = byParent.get("root") ?? [];
 
@@ -154,8 +252,23 @@ function CategoriesAdmin() {
     });
   }
 
+  function move(node: Category, dir: -1 | 1) {
+    const siblings = (all.filter((c) => (c.parent_id ?? null) === (node.parent_id ?? null)));
+    const idx = siblings.findIndex((c) => c.id === node.id);
+    const target = siblings[idx + dir];
+    if (!target) return;
+    reorderMut.mutate({ a: node, b: target });
+  }
+
+  function siblingBounds(node: Category) {
+    const siblings = all.filter((c) => (c.parent_id ?? null) === (node.parent_id ?? null));
+    const idx = siblings.findIndex((c) => c.id === node.id);
+    return { first: idx <= 0, last: idx === siblings.length - 1 };
+  }
+
   function expandAll() { setExpanded(new Set(all.map((c) => c.id))); }
   function collapseAll() { setExpanded(new Set()); }
+
 
   return (
     <div className="gx-cats space-y-4" dir="rtl">
