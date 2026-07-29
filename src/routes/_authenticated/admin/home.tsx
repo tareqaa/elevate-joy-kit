@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   Save, Home as HomeIcon, GripVertical, Trash2, Plus, Eye,
-  History, RotateCcw, Settings2, ExternalLink, ChevronLeft,
+  History, RotateCcw, Copy, Settings2, ExternalLink, ChevronLeft,
   Palette, Monitor, Tablet, Smartphone, SlidersHorizontal, Undo2, Redo2,
 } from "lucide-react";
 import {
@@ -161,6 +161,21 @@ function HomeBuilder() {
   function removeSection(id: string) {
     pushDraft((d: HomeLayout) => ({ ...d, sections: d.sections.filter((s) => s.id !== id) }));
     if (selectedId === id) setSelectedId(null);
+    setDirty(true);
+  }
+  function duplicateSection(id: string) {
+    pushDraft((d: HomeLayout) => {
+      const i = d.sections.findIndex((s) => s.id === id);
+      if (i < 0) return d;
+      const copy: Section = {
+        ...d.sections[i],
+        id: `sec_${crypto.randomUUID().slice(0, 8)}`,
+        data: JSON.parse(JSON.stringify(d.sections[i].data ?? {})),
+      };
+      const next = [...d.sections];
+      next.splice(i + 1, 0, copy);
+      return { ...d, sections: next };
+    });
     setDirty(true);
   }
   function addSection(type: SectionType) {
@@ -315,6 +330,7 @@ function HomeBuilder() {
                           selected={selectedId === s.id}
                           onSelect={() => { setSelectedId(s.id); setRightTab("content"); }}
                           onToggle={(v) => updateSection(s.id, { enabled: v })}
+                          onDuplicate={() => duplicateSection(s.id)}
                           onRemove={() => { if (confirm("حذف هذا القسم؟")) removeSection(s.id); }} />
                       ))}
                     </SortableContext>
@@ -382,11 +398,12 @@ function HomeBuilder() {
 
 /* ---------------------------------- ROW ---------------------------------- */
 
-function SortableSectionRow({ section, selected, onSelect, onToggle, onRemove }: {
+function SortableSectionRow({ section, selected, onSelect, onToggle, onDuplicate, onRemove }: {
   section: Section;
   selected: boolean;
   onSelect: () => void;
   onToggle: (v: boolean) => void;
+  onDuplicate: () => void;
   onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
@@ -410,6 +427,7 @@ function SortableSectionRow({ section, selected, onSelect, onToggle, onRemove }:
       </div>
       <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 shrink-0">
         <Switch checked={section.enabled} onCheckedChange={onToggle} className="scale-75" />
+        <button onClick={onDuplicate} title="تكرار القسم" className="text-slate-500 hover:text-cyan-400 p-1"><Copy size={12} /></button>
         <button onClick={onRemove} className="text-slate-500 hover:text-red-400 p-1"><Trash2 size={12} /></button>
       </div>
     </div>

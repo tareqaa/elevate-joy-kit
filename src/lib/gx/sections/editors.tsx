@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Upload, Trash2, Plus, ArrowUp, ArrowDown, Image as ImageIcon } from "lucide-react";
 import { CATEGORY_LINKS, getFeaturedItems } from "@/data/products";
 import { MediaPicker } from "./media-library";
+import { RichTextField } from "./rich-text";
 import type {
   HeroData, AnnouncementData, CarouselData, CarouselSlide, CategoriesData,
   BestsellersData, ProductsData, TrustData, ReviewsData, ReviewItem, FaqData, FaqItem, NewsletterData, CategoryOverride,
@@ -331,8 +332,7 @@ export function FaqEditor({ data, onChange }: { data: FaqData; onChange: (d: Faq
                 className="bg-slate-900/60 border-slate-800 text-slate-100 h-8 text-xs" />
               <Button size="sm" variant="destructive" className="h-8 w-8 p-0" onClick={() => remove(f.id)}><Trash2 size={11} /></Button>
             </div>
-            <Textarea rows={2} placeholder="الجواب" value={f.a} onChange={(e) => update(f.id, { a: e.target.value })}
-              className="bg-slate-900/60 border-slate-800 text-slate-100 text-xs" />
+            <RichTextField label="الجواب" value={f.a} onChange={(v) => update(f.id, { a: v })} rows={2} />
           </div>
         ))}
       </div>
@@ -346,7 +346,7 @@ export function NewsletterEditor({ data, onChange }: { data: NewsletterData; onC
   return (
     <div className="space-y-2">
       <TextField label="العنوان" value={data.title ?? null} onChange={(v) => onChange({ ...data, title: v ?? undefined })} />
-      <TextField label="الوصف" value={data.subtitle ?? null} onChange={(v) => onChange({ ...data, subtitle: v ?? undefined })} />
+      <RichTextField label="الوصف" value={data.subtitle ?? ""} onChange={(v) => onChange({ ...data, subtitle: v })} />
       <TextField label="نص الزر" value={data.cta ?? null} onChange={(v) => onChange({ ...data, cta: v ?? undefined })} />
       <TextField label="النص التوضيحي داخل الحقل" value={data.placeholder ?? null} onChange={(v) => onChange({ ...data, placeholder: v ?? undefined })} />
     </div>
