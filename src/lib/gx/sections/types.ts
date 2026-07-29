@@ -15,16 +15,48 @@ export type SectionType =
   | "faq"
   | "newsletter";
 
+// Per-section visual controls applied by the wrapper (no code editing).
+export type SectionStyle = {
+  padding_top?: number;      // px
+  padding_bottom?: number;   // px
+  bg?: string | null;        // CSS color / gradient; null = inherit theme bg
+  container?: "full" | "wide" | "normal" | "narrow";
+  align?: "start" | "center" | "end";
+};
+
 export type Section = {
   id: string;
   type: SectionType;
   enabled: boolean;
   data: Record<string, unknown>;
+  style?: SectionStyle;
+};
+
+// Site-wide theme applied via CSS variables on the homepage wrapper.
+export type ThemeConfig = {
+  primary?: string;          // accent color (buttons, highlights)
+  bg?: string;               // page background
+  surface?: string;          // card/section surface
+  text?: string;             // main text color
+  muted?: string;            // muted text
+  radius?: number;           // px — border-radius scale
+  font?: "sans" | "display" | "mono";
 };
 
 export type HomeLayout = {
   version: 1;
   sections: Section[];
+  theme?: ThemeConfig;
+};
+
+export const DEFAULT_THEME: ThemeConfig = {
+  primary: "#22d3ee",
+  bg: "#0b0f1a",
+  surface: "#101827",
+  text: "#e6edf7",
+  muted: "#8a94a7",
+  radius: 14,
+  font: "sans",
 };
 
 // ---------- Per-section data shapes (all fields optional so old rows keep working) ----------
@@ -111,6 +143,7 @@ export type NewsletterData = {
 // Default layout — used when `home_layout` is not present in site_settings.
 export const DEFAULT_HOME_LAYOUT: HomeLayout = {
   version: 1,
+  theme: DEFAULT_THEME,
   sections: [
     { id: "sec_hero",         type: "hero",         enabled: true,  data: {} },
     { id: "sec_announcement", type: "announcement", enabled: false, data: { text: "", link: "", bg: "#0f172a", color: "#ffffff" } },
@@ -123,3 +156,42 @@ export const DEFAULT_HOME_LAYOUT: HomeLayout = {
     { id: "sec_newsletter",   type: "newsletter",   enabled: false, data: {} },
   ],
 };
+
+// Helper: build CSS style object for a section wrapper from its SectionStyle.
+export function sectionWrapperStyle(style?: SectionStyle): React.CSSProperties {
+  if (!style) return {};
+  const css: React.CSSProperties = {};
+  if (style.padding_top != null)    css.paddingTop = `${style.padding_top}px`;
+  if (style.padding_bottom != null) css.paddingBottom = `${style.padding_bottom}px`;
+  if (style.bg)                     css.background = style.bg;
+  if (style.align)                  css.textAlign = style.align === "start" ? "start" : style.align === "end" ? "end" : "center";
+  return css;
+}
+
+export function containerMaxWidth(c?: SectionStyle["container"]): string {
+  switch (c) {
+    case "full":   return "100%";
+    case "wide":   return "1400px";
+    case "narrow": return "760px";
+    case "normal":
+    default:       return "1160px";
+  }
+}
+
+// Helper: turn a ThemeConfig into CSS variables applied on the homepage root.
+export function themeToCssVars(theme?: ThemeConfig): React.CSSProperties {
+  const t = { ...DEFAULT_THEME, ...(theme || {}) };
+  const fontStack =
+    t.font === "display" ? '"Cairo", "Tajawal", system-ui, sans-serif'
+    : t.font === "mono"  ? '"JetBrains Mono", ui-monospace, monospace'
+    :                      '"Tajawal", "Cairo", system-ui, sans-serif';
+  return {
+    ["--gx-primary" as never]: t.primary,
+    ["--gx-bg" as never]:      t.bg,
+    ["--gx-surface" as never]: t.surface,
+    ["--gx-text" as never]:    t.text,
+    ["--gx-muted" as never]:   t.muted,
+    ["--gx-radius" as never]:  `${t.radius}px`,
+    ["--gx-font" as never]:    fontStack,
+  } as React.CSSProperties;
+}

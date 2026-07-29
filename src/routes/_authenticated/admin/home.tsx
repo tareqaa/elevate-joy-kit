@@ -12,10 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   Save, Home as HomeIcon, GripVertical, Trash2, Plus, Eye,
   History, RotateCcw, Settings2, ExternalLink, ChevronLeft,
+  Palette, Monitor, Tablet, Smartphone, SlidersHorizontal,
 } from "lucide-react";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
@@ -26,13 +29,20 @@ import { CSS } from "@dnd-kit/utilities";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 import { SECTION_REGISTRY, SECTION_TYPES } from "@/lib/gx/sections/registry";
-import { DEFAULT_HOME_LAYOUT, type HomeLayout, type Section, type SectionType } from "@/lib/gx/sections/types";
+import {
+  DEFAULT_HOME_LAYOUT, DEFAULT_THEME,
+  containerMaxWidth, sectionWrapperStyle, themeToCssVars,
+  type HomeLayout, type Section, type SectionType, type SectionStyle, type ThemeConfig,
+} from "@/lib/gx/sections/types";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/_authenticated/admin/home")({
   head: () => ({ meta: [{ title: "محرر الصفحة الرئيسية — لوحة التحكم" }], links: STORE_HEAD_LINKS }),
   component: HomeBuilder,
 });
+
+type Device = "desktop" | "tablet" | "mobile";
+const DEVICE_WIDTH: Record<Device, number | null> = { desktop: null, tablet: 820, mobile: 390 };
 
 function HomeBuilder() {
   const qc = useQueryClient();
@@ -50,9 +60,11 @@ function HomeBuilder() {
   const [draft, setDraft] = useState<HomeLayout>(DEFAULT_HOME_LAYOUT);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [tab, setTab] = useState<"builder" | "history">("builder");
+  const [tab, setTab] = useState<"builder" | "theme" | "history">("builder");
+  const [device, setDevice] = useState<Device>("desktop");
+  const [rightTab, setRightTab] = useState<"content" | "style">("content");
 
-  useEffect(() => { if (q.data) { setDraft(q.data); setDirty(false); } }, [q.data]);
+  useEffect(() => { if (q.data) { setDraft({ ...q.data, theme: { ...DEFAULT_THEME, ...(q.data.theme || {}) } }); setDirty(false); } }, [q.data]);
 
   const selected = useMemo(() => draft.sections.find((s) => s.id === selectedId) ?? null, [draft.sections, selectedId]);
 
@@ -62,6 +74,10 @@ function HomeBuilder() {
   }
   function updateSectionData(id: string, data: Record<string, unknown>) {
     setDraft((d) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, data } : s) }));
+    setDirty(true);
+  }
+  function updateSectionStyle(id: string, style: SectionStyle) {
+    setDraft((d) => ({ ...d, sections: d.sections.map((s) => s.id === id ? { ...s, style } : s) }));
     setDirty(true);
   }
   function removeSection(id: string) {
@@ -74,6 +90,10 @@ function HomeBuilder() {
     const s: Section = { id: `sec_${crypto.randomUUID().slice(0, 8)}`, type, enabled: true, data: { ...def.defaultData } };
     setDraft((d) => ({ ...d, sections: [...d.sections, s] }));
     setSelectedId(s.id);
+    setDirty(true);
+  }
+  function updateTheme(patch: Partial<ThemeConfig>) {
+    setDraft((d) => ({ ...d, theme: { ...DEFAULT_THEME, ...(d.theme || {}), ...patch } }));
     setDirty(true);
   }
 
@@ -126,6 +146,17 @@ function HomeBuilder() {
           <div className="text-slate-100 font-black text-lg leading-tight">محرر الصفحة الرئيسية</div>
           <div className="text-xs text-slate-500">اسحب لإعادة الترتيب • اضغط قسم للتعديل • كل تعديل يظهر مباشرة</div>
         </div>
+        <div className="hidden md:flex items-center gap-1 rounded-md border border-slate-800 bg-slate-900/60 p-0.5">
+          {(["desktop", "tablet", "mobile"] as const).map((d) => {
+            const Ic = d === "desktop" ? Monitor : d === "tablet" ? Tablet : Smartphone;
+            return (
+              <button key={d} onClick={() => setDevice(d)}
+                className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 transition ${device === d ? "bg-cyan-500 text-slate-950 font-bold" : "text-slate-400 hover:text-slate-200"}`}>
+                <Ic size={12} /> {d === "desktop" ? "سطح المكتب" : d === "tablet" ? "تابلت" : "جوال"}
+              </button>
+            );
+          })}
+        </div>
         <a href="/" target="_blank" rel="noreferrer" className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-slate-800 text-slate-300 hover:bg-slate-900 text-xs">
           <ExternalLink size={12} /> فتح الموقع
         </a>
@@ -138,6 +169,7 @@ function HomeBuilder() {
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="px-4 pt-3">
         <TabsList className="bg-slate-900/60 border border-slate-800">
           <TabsTrigger value="builder"><Settings2 size={13} className="ms-2" /> البنّاء</TabsTrigger>
+          <TabsTrigger value="theme"><Palette size={13} className="ms-2" /> الثيم</TabsTrigger>
           <TabsTrigger value="history"><History size={13} className="ms-2" /> السجل</TabsTrigger>
         </TabsList>
 
@@ -157,7 +189,7 @@ function HomeBuilder() {
                       {draft.sections.map((s) => (
                         <SortableSectionRow key={s.id} section={s}
                           selected={selectedId === s.id}
-                          onSelect={() => setSelectedId(s.id)}
+                          onSelect={() => { setSelectedId(s.id); setRightTab("content"); }}
                           onToggle={(v) => updateSection(s.id, { enabled: v })}
                           onRemove={() => { if (confirm("حذف هذا القسم؟")) removeSection(s.id); }} />
                       ))}
@@ -171,12 +203,25 @@ function HomeBuilder() {
               {selected && (
                 <Card className="bg-slate-900/60 border-slate-800">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-slate-100">
-                      تعديل: {SECTION_REGISTRY[selected.type]?.label ?? selected.type}
+                    <CardTitle className="text-sm text-slate-100 flex items-center justify-between">
+                      <span>تعديل: {SECTION_REGISTRY[selected.type]?.label ?? selected.type}</span>
                     </CardTitle>
+                    <div className="flex gap-1 mt-2 rounded-md bg-slate-950/60 border border-slate-800 p-0.5">
+                      <button onClick={() => setRightTab("content")}
+                        className={`flex-1 px-2 py-1 rounded text-xs flex items-center justify-center gap-1 ${rightTab === "content" ? "bg-cyan-500 text-slate-950 font-bold" : "text-slate-400"}`}>
+                        <Settings2 size={11} /> المحتوى
+                      </button>
+                      <button onClick={() => setRightTab("style")}
+                        className={`flex-1 px-2 py-1 rounded text-xs flex items-center justify-center gap-1 ${rightTab === "style" ? "bg-cyan-500 text-slate-950 font-bold" : "text-slate-400"}`}>
+                        <SlidersHorizontal size={11} /> التنسيق
+                      </button>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <EditorPanel section={selected} onChange={(data) => updateSectionData(selected.id, data)} />
+                    {rightTab === "content"
+                      ? <EditorPanel section={selected} onChange={(data) => updateSectionData(selected.id, data)} />
+                      : <StylePanel style={selected.style} onChange={(st) => updateSectionStyle(selected.id, st)} />
+                    }
                   </CardContent>
                 </Card>
               )}
@@ -185,15 +230,20 @@ function HomeBuilder() {
             {/* Right: live preview */}
             <Card className="bg-slate-900/40 border-slate-800 overflow-hidden">
               <CardHeader className="pb-2 border-b border-slate-800 bg-slate-950/60">
-                <CardTitle className="text-xs text-slate-400 flex items-center gap-2">
-                  <Eye size={12} /> معاينة مباشرة
+                <CardTitle className="text-xs text-slate-400 flex items-center justify-between">
+                  <span className="flex items-center gap-2"><Eye size={12} /> معاينة مباشرة</span>
+                  <span className="text-[10px] uppercase">{device}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <LivePreview layout={draft} onSectionClick={setSelectedId} selectedId={selectedId} />
+                <LivePreview layout={draft} device={device} onSectionClick={(id) => { setSelectedId(id); setRightTab("content"); }} selectedId={selectedId} />
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="theme" className="mt-3">
+          <ThemeEditor theme={draft.theme || DEFAULT_THEME} onChange={updateTheme} />
         </TabsContent>
 
         <TabsContent value="history" className="mt-3">
@@ -246,7 +296,6 @@ function SortableSectionRow({ section, selected, onSelect, onToggle, onRemove }:
 
 function AddSectionCard({ onAdd, existing }: { onAdd: (t: SectionType) => void; existing: SectionType[] }) {
   const [open, setOpen] = useState(false);
-  // "Singleton" sections (hero/carousel/categories/etc) should ideally exist once — allow duplicates but hint disabled state visually.
   return (
     <Card className="bg-slate-900/60 border-slate-800">
       <CardContent className="p-3">
@@ -287,35 +336,211 @@ function EditorPanel({ section, onChange }: { section: Section; onChange: (d: Re
   return <Editor data={section.data} onChange={onChange} />;
 }
 
+/* ---------------------------- SECTION STYLE PANEL ------------------------ */
+
+function StylePanel({ style, onChange }: { style?: SectionStyle; onChange: (s: SectionStyle) => void }) {
+  const s: SectionStyle = style || {};
+  function patch(p: Partial<SectionStyle>) { onChange({ ...s, ...p }); }
+  return (
+    <div className="space-y-3 text-sm">
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label className="text-xs text-slate-400">مسافة علوية (px)</Label>
+          <Input type="number" value={s.padding_top ?? ""} placeholder="افتراضي"
+            onChange={(e) => patch({ padding_top: e.target.value === "" ? undefined : Number(e.target.value) })}
+            className="bg-slate-950 border-slate-800 text-slate-100 h-8" />
+        </div>
+        <div>
+          <Label className="text-xs text-slate-400">مسافة سفلية (px)</Label>
+          <Input type="number" value={s.padding_bottom ?? ""} placeholder="افتراضي"
+            onChange={(e) => patch({ padding_bottom: e.target.value === "" ? undefined : Number(e.target.value) })}
+            className="bg-slate-950 border-slate-800 text-slate-100 h-8" />
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-xs text-slate-400">خلفية القسم</Label>
+        <div className="flex gap-2 items-center">
+          <input type="color" value={s.bg && /^#[0-9a-f]{6}$/i.test(s.bg) ? s.bg : "#0b0f1a"}
+            onChange={(e) => patch({ bg: e.target.value })}
+            className="w-10 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer" />
+          <Input value={s.bg ?? ""} placeholder="#0b0f1a أو gradient(...)"
+            onChange={(e) => patch({ bg: e.target.value || null })}
+            className="bg-slate-950 border-slate-800 text-slate-100 h-8 flex-1 text-xs" />
+          <Button size="sm" variant="ghost" className="h-8 text-xs text-slate-400" onClick={() => patch({ bg: null })}>
+            <RotateCcw size={11} />
+          </Button>
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-xs text-slate-400 block mb-1">عرض الحاوية</Label>
+        <div className="grid grid-cols-4 gap-1">
+          {(["narrow", "normal", "wide", "full"] as const).map((c) => (
+            <button key={c} onClick={() => patch({ container: c })}
+              className={`px-2 py-1.5 rounded text-[11px] border ${s.container === c || (!s.container && c === "normal") ? "bg-cyan-500 border-cyan-500 text-slate-950 font-bold" : "bg-slate-950/60 border-slate-800 text-slate-400"}`}>
+              {c === "narrow" ? "ضيقة" : c === "normal" ? "عادية" : c === "wide" ? "واسعة" : "كامل"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-xs text-slate-400 block mb-1">محاذاة النص</Label>
+        <div className="grid grid-cols-3 gap-1">
+          {(["start", "center", "end"] as const).map((a) => (
+            <button key={a} onClick={() => patch({ align: a })}
+              className={`px-2 py-1.5 rounded text-[11px] border ${s.align === a || (!s.align && a === "center") ? "bg-cyan-500 border-cyan-500 text-slate-950 font-bold" : "bg-slate-950/60 border-slate-800 text-slate-400"}`}>
+              {a === "start" ? "بداية" : a === "center" ? "وسط" : "نهاية"}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------- THEME ---------------------------------- */
+
+const THEME_PRESETS: { name: string; theme: ThemeConfig }[] = [
+  { name: "Cyan (الافتراضي)", theme: DEFAULT_THEME },
+  { name: "Purple Night",     theme: { ...DEFAULT_THEME, primary: "#a855f7", bg: "#0a0714", surface: "#1a1030" } },
+  { name: "Emerald",          theme: { ...DEFAULT_THEME, primary: "#10b981", bg: "#071410", surface: "#0f2a20" } },
+  { name: "Rose Gold",        theme: { ...DEFAULT_THEME, primary: "#f43f5e", bg: "#140a0e", surface: "#2a1520" } },
+  { name: "Amber Sun",        theme: { ...DEFAULT_THEME, primary: "#f59e0b", bg: "#14100a", surface: "#2a2015" } },
+  { name: "Light",            theme: { ...DEFAULT_THEME, primary: "#0ea5e9", bg: "#f8fafc", surface: "#ffffff", text: "#0f172a", muted: "#64748b" } },
+];
+
+function ThemeEditor({ theme, onChange }: { theme: ThemeConfig; onChange: (p: Partial<ThemeConfig>) => void }) {
+  const t = { ...DEFAULT_THEME, ...theme };
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-3">
+      <Card className="bg-slate-900/60 border-slate-800">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-slate-100 flex items-center gap-2"><Palette size={14} /> ثيم المتجر</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label className="text-xs text-slate-400 block mb-2">قوالب جاهزة</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {THEME_PRESETS.map((p) => (
+                <button key={p.name} onClick={() => onChange(p.theme)}
+                  className="rounded-lg border border-slate-800 bg-slate-950/40 hover:border-cyan-500/50 p-2 text-start">
+                  <div className="flex gap-1 mb-1.5">
+                    {[p.theme.primary, p.theme.bg, p.theme.surface, p.theme.text].map((c, i) => (
+                      <span key={i} className="w-6 h-6 rounded" style={{ background: c || "#000" }} />
+                    ))}
+                  </div>
+                  <div className="text-xs text-slate-100 font-bold">{p.name}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <ColorRow label="اللون الرئيسي" value={t.primary!} onChange={(v) => onChange({ primary: v })} />
+            <ColorRow label="خلفية الصفحة" value={t.bg!} onChange={(v) => onChange({ bg: v })} />
+            <ColorRow label="خلفية البطاقات" value={t.surface!} onChange={(v) => onChange({ surface: v })} />
+            <ColorRow label="لون النص" value={t.text!} onChange={(v) => onChange({ text: v })} />
+            <ColorRow label="نص ثانوي" value={t.muted!} onChange={(v) => onChange({ muted: v })} />
+            <div>
+              <Label className="text-xs text-slate-400">تدوير الحواف (px)</Label>
+              <Input type="number" value={t.radius ?? 14} onChange={(e) => onChange({ radius: Number(e.target.value) })}
+                className="bg-slate-950 border-slate-800 text-slate-100 h-8" />
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs text-slate-400 block mb-1">الخط</Label>
+            <div className="grid grid-cols-3 gap-1">
+              {(["sans", "display", "mono"] as const).map((f) => (
+                <button key={f} onClick={() => onChange({ font: f })}
+                  className={`px-2 py-2 rounded text-xs border ${t.font === f ? "bg-cyan-500 border-cyan-500 text-slate-950 font-bold" : "bg-slate-950/60 border-slate-800 text-slate-300"}`}>
+                  {f === "sans" ? "قياسي" : f === "display" ? "عريض" : "أحادي"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-slate-900/40 border-slate-800">
+        <CardHeader className="pb-2 border-b border-slate-800"><CardTitle className="text-xs text-slate-400">معاينة</CardTitle></CardHeader>
+        <CardContent className="p-4">
+          <div className="rounded-xl p-5" style={themeToCssVars(t) as React.CSSProperties}>
+            <div style={{ background: "var(--gx-bg)", color: "var(--gx-text)", fontFamily: "var(--gx-font)", borderRadius: "var(--gx-radius)", padding: 20 }}>
+              <div style={{ color: "var(--gx-primary)", fontSize: 12, fontWeight: 900, marginBottom: 6 }}>EYEBROW</div>
+              <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 6 }}>عنوان تجريبي رئيسي</div>
+              <div style={{ color: "var(--gx-muted)", fontSize: 13, marginBottom: 14 }}>هذا نص فرعي يوضّح كيف يبدو الثيم على المتجر.</div>
+              <div style={{ background: "var(--gx-surface)", borderRadius: "var(--gx-radius)", padding: 12, marginBottom: 12 }}>
+                <div style={{ fontWeight: 800, marginBottom: 4 }}>بطاقة منتج</div>
+                <div style={{ color: "var(--gx-muted)", fontSize: 12 }}>1.99 د.أ</div>
+              </div>
+              <button style={{ background: "var(--gx-primary)", color: "#0b0f1a", fontWeight: 900, padding: "10px 18px", borderRadius: "var(--gx-radius)", border: 0 }}>
+                زر رئيسي
+              </button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ColorRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const safe = /^#[0-9a-f]{6}$/i.test(value) ? value : "#000000";
+  return (
+    <div>
+      <Label className="text-xs text-slate-400">{label}</Label>
+      <div className="flex gap-2 items-center">
+        <input type="color" value={safe} onChange={(e) => onChange(e.target.value)}
+          className="w-10 h-8 rounded border border-slate-800 bg-slate-950 cursor-pointer" />
+        <Input value={value} onChange={(e) => onChange(e.target.value)}
+          className="bg-slate-950 border-slate-800 text-slate-100 h-8 flex-1 text-xs" />
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------- PREVIEW --------------------------------- */
 
-function LivePreview({ layout, onSectionClick, selectedId }: {
+function LivePreview({ layout, device, onSectionClick, selectedId }: {
   layout: HomeLayout;
+  device: Device;
   onSectionClick: (id: string) => void;
   selectedId: string | null;
 }) {
   const enabled = layout.sections.filter((s) => s.enabled);
+  const themeVars = themeToCssVars(layout.theme);
+  const w = DEVICE_WIDTH[device];
   return (
-    <div className="bg-[var(--bg,#0b0f1a)] text-white max-h-[calc(100vh-260px)] overflow-y-auto">
-      {enabled.length === 0 && (
-        <div className="text-center text-slate-500 py-16 text-sm">لا توجد أقسام مفعّلة — فعّل قسماً من القائمة على اليمين.</div>
-      )}
-      {enabled.map((s) => {
-        const def = SECTION_REGISTRY[s.type]; if (!def) return null;
-        const { Renderer } = def;
-        const isSel = selectedId === s.id;
-        return (
-          <div key={s.id} onClick={() => onSectionClick(s.id)}
-            className={`relative cursor-pointer transition-all ${isSel ? "ring-2 ring-cyan-500 ring-inset" : "hover:ring-2 hover:ring-cyan-500/40 hover:ring-inset"}`}>
-            <div className="pointer-events-none">
-              <Renderer data={s.data} />
-            </div>
-            <div className={`absolute top-2 start-2 px-2 py-0.5 rounded text-[10px] font-bold ${isSel ? "bg-cyan-500 text-slate-950" : "bg-slate-950/80 text-cyan-400 opacity-0 group-hover:opacity-100"}`}>
-              {def.label}
-            </div>
-          </div>
-        );
-      })}
+    <div className="bg-slate-950/70 max-h-[calc(100vh-260px)] overflow-y-auto p-3">
+      <div style={{ maxWidth: w ?? "100%", margin: "0 auto", boxShadow: w ? "0 0 0 1px rgba(148,163,184,.15)" : undefined, borderRadius: w ? 12 : 0, overflow: "hidden" }}>
+        <div className="gx-home-root" style={{ ...themeVars, background: "var(--gx-bg)", color: "var(--gx-text)", fontFamily: "var(--gx-font)" }}>
+          {enabled.length === 0 && (
+            <div className="text-center text-slate-500 py-16 text-sm">لا توجد أقسام مفعّلة — فعّل قسماً من القائمة.</div>
+          )}
+          {enabled.map((s) => {
+            const def = SECTION_REGISTRY[s.type]; if (!def) return null;
+            const { Renderer } = def;
+            const isSel = selectedId === s.id;
+            const wrapStyle = sectionWrapperStyle(s.style);
+            const maxW = containerMaxWidth(s.style?.container);
+            return (
+              <div key={s.id} onClick={() => onSectionClick(s.id)}
+                className={`relative cursor-pointer transition-all ${isSel ? "ring-2 ring-cyan-500 ring-inset" : "hover:ring-2 hover:ring-cyan-500/40 hover:ring-inset"}`}
+                style={wrapStyle}>
+                <div className="pointer-events-none" style={{ maxWidth: maxW, margin: "0 auto", width: "100%" }}>
+                  <Renderer data={s.data} />
+                </div>
+                <div className={`absolute top-2 start-2 px-2 py-0.5 rounded text-[10px] font-bold ${isSel ? "bg-cyan-500 text-slate-950" : "bg-slate-950/80 text-cyan-400"}`}>
+                  {def.label}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -364,12 +589,9 @@ function HistoryTab({ onRestore }: { onRestore: (v: HomeLayout) => void }) {
                   {row.actor_email && <> — {row.actor_email}</>}
                 </div>
               </div>
-              <Button size="sm" variant="outline" className="border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10"
-                onClick={() => {
-                  if (!v || !Array.isArray(v.sections)) { toast.error("نسخة غير صالحة"); return; }
-                  if (confirm("تحميل هذه النسخة إلى المحرّر؟ (لن تُنشر إلا عند الضغط على نشر)")) onRestore(v);
-                }}>
-                <RotateCcw size={12} className="ms-1" /> تحميل
+              <Button size="sm" variant="outline" onClick={() => onRestore(v)}
+                className="border-slate-700 text-slate-200 hover:bg-slate-800">
+                <RotateCcw size={12} className="ms-2" /> تحميل
               </Button>
             </div>
           );
