@@ -171,7 +171,11 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                         </span>
                       </div>
                     </div>
-                    {isOwner && <Link to="/account" search={{ tab: "profile" } as never} className="btn btn-ghost gxp-edit">{isAr ? "تعديل الملف" : "Edit profile"}</Link>}
+                    {isOwner && (
+                      <button type="button" className="btn btn-ghost gxp-edit" onClick={() => setEditOpen((v) => !v)}>
+                        {editOpen ? (isAr ? "إغلاق التعديل" : "Close editor") : (isAr ? "تعديل الملف" : "Edit profile")}
+                      </button>
+                    )}
                   </div>
 
                   <div className="gxp-bar">
