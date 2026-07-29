@@ -7,7 +7,8 @@ import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { OrderConfirmedModal } from "@/components/gx/OrderConfirmedModal";
-import { useState } from "react";
+import { coinsToJod, jodToCoins } from "@/lib/gx/loyalty";
+import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -325,5 +326,87 @@ const summaryCss = `
 .gx-coupon-note{font-size:11px;color:#7fe5c8;margin-top:2px}
 .gx-coupon-remove{background:transparent;border:1px solid rgba(255,84,112,.4);color:#ff98a8;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
 .gx-coupon-remove:hover{background:rgba(255,84,112,.1)}
+.gx-coins-max{margin-top:6px;background:transparent;border:1px dashed rgba(255,196,0,.4);color:#ffc400;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;width:100%}
 @media (max-width:600px){ .gx-cb-select{max-width:150px} }
 `;
+
+function CoinsBlock() {
+  const cart = useCart();
+  const { format } = useCurrency();
+  const [balance, setBalance] = useState<number | null>(null);
+  const [amount, setAmount] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) return;
+      const { data } = await supabase.from("profiles").select("gx_coins").eq("id", uid).maybeSingle();
+      if (alive) setBalance(Number(data?.gx_coins ?? 0));
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  if (balance === null) return null;
+
+  const maxByCart = jodToCoins(Math.max(0, cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0)));
+  const usable = Math.min(balance, maxByCart);
+
+  async function apply(v: number) {
+    if (busy) return;
+    setBusy(true);
+    const r = await cart.applyCoins(v);
+    setMsg({ ok: r.ok, msg: r.message });
+    setBusy(false);
+  }
+
+  return (
+    <div className="gx-coupon-block">
+      <div className="gx-cb-title">
+        🪙 GX Coins
+        <span style={{ marginInlineStart: "auto", fontSize: 12, color: "#ffc400" }}>
+          {balance.toLocaleString("en-US")} ≈ {format(coinsToJod(balance))}
+        </span>
+      </div>
+      {cart.coins ? (
+        <div className="gx-coupon-applied">
+          <div>
+            <div className="gx-coupon-code">{cart.coins.coins.toLocaleString("en-US")} Coins</div>
+            <div className="gx-coupon-note">خصم: -{format(cart.coins.discount_jod)}</div>
+          </div>
+          <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCoins(); setMsg(null); }}>إزالة</button>
+        </div>
+      ) : usable < 1 ? (
+        <div className="gx-coupon-note" style={{ fontSize: 12 }}>
+          اجمع عملات GX مع كل طلب مكتمل — كل 1000 عملة = 1 دينار خصم.
+        </div>
+      ) : (
+        <>
+          <div className="gx-cb-row">
+            <input
+              className="gx-cb-input"
+              type="number"
+              min={1}
+              max={usable}
+              placeholder={`استخدم حتى ${usable.toLocaleString("en-US")} عملة`}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+            <button type="button" className="btn btn-primary gx-coupon-apply" disabled={busy || !amount}
+              onClick={() => apply(Number(amount))}>
+              {busy ? "..." : "استخدام"}
+            </button>
+          </div>
+          <button type="button" className="gx-coins-max" onClick={() => { setAmount(String(usable)); apply(usable); }}>
+            استخدم الحد الأقصى ({usable.toLocaleString("en-US")})
+          </button>
+          {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
+        </>
+      )}
+    </div>
+  );
+}
