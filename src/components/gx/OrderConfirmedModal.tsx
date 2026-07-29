@@ -14,6 +14,13 @@ export function OrderConfirmedModal({
 }) {
   const { t, dir } = useLang();
   const [copied, setCopied] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
+  }, []);
+
+
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
