@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Upload, Trash2, Plus, ArrowUp, ArrowDown, Image as ImageIcon } from "lucide-react";
 import { CATEGORY_LINKS, getFeaturedItems } from "@/data/products";
 import { MediaPicker } from "./media-library";
+import { RichTextField } from "./rich-text";
 import type {
   HeroData, AnnouncementData, CarouselData, CarouselSlide, CategoriesData,
   BestsellersData, ProductsData, TrustData, ReviewsData, ReviewItem, FaqData, FaqItem, NewsletterData, CategoryOverride,
@@ -47,11 +48,8 @@ export function HeroEditor({ data, onChange }: { data: HeroData; onChange: (d: H
         <TextField label="السطر الثاني (مميز)" value={data.title_b} onChange={(v) => onChange({ ...data, title_b: v })} />
         <TextField label="السطر الثالث" value={data.title_c} onChange={(v) => onChange({ ...data, title_c: v })} />
       </div>
-      <div>
-        <Label className="text-slate-100 text-xs">الوصف</Label>
-        <Textarea rows={2} value={data.subtitle ?? ""} onChange={(e) => onChange({ ...data, subtitle: e.target.value || null })}
-          className="mt-1 bg-slate-950/60 border-slate-800 text-slate-100" placeholder="اترك فارغاً للنص الافتراضي" />
-      </div>
+      <RichTextField label="الوصف" value={data.subtitle ?? ""} onChange={(v) => onChange({ ...data, subtitle: v || null })} rows={2} />
+
       <div className="grid grid-cols-2 gap-2">
         <TextField label="زر أساسي — نص" value={data.cta_primary_text} onChange={(v) => onChange({ ...data, cta_primary_text: v })} />
         <TextField label="زر أساسي — رابط" value={data.cta_primary_link} onChange={(v) => onChange({ ...data, cta_primary_link: v })} placeholder="#products" />
@@ -331,8 +329,7 @@ export function FaqEditor({ data, onChange }: { data: FaqData; onChange: (d: Faq
                 className="bg-slate-900/60 border-slate-800 text-slate-100 h-8 text-xs" />
               <Button size="sm" variant="destructive" className="h-8 w-8 p-0" onClick={() => remove(f.id)}><Trash2 size={11} /></Button>
             </div>
-            <Textarea rows={2} placeholder="الجواب" value={f.a} onChange={(e) => update(f.id, { a: e.target.value })}
-              className="bg-slate-900/60 border-slate-800 text-slate-100 text-xs" />
+            <RichTextField label="الجواب" value={f.a} onChange={(v) => update(f.id, { a: v })} rows={2} />
           </div>
         ))}
       </div>
@@ -346,7 +343,7 @@ export function NewsletterEditor({ data, onChange }: { data: NewsletterData; onC
   return (
     <div className="space-y-2">
       <TextField label="العنوان" value={data.title ?? null} onChange={(v) => onChange({ ...data, title: v ?? undefined })} />
-      <TextField label="الوصف" value={data.subtitle ?? null} onChange={(v) => onChange({ ...data, subtitle: v ?? undefined })} />
+      <RichTextField label="الوصف" value={data.subtitle ?? ""} onChange={(v) => onChange({ ...data, subtitle: v })} />
       <TextField label="نص الزر" value={data.cta ?? null} onChange={(v) => onChange({ ...data, cta: v ?? undefined })} />
       <TextField label="النص التوضيحي داخل الحقل" value={data.placeholder ?? null} onChange={(v) => onChange({ ...data, placeholder: v ?? undefined })} />
     </div>

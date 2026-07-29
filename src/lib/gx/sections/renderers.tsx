@@ -15,6 +15,7 @@ import type {
   BestsellersData, ProductsData, TrustData, ReviewsData, FaqData, NewsletterData,
 } from "./types";
 import { activeCarouselSlides } from "./types";
+import { RichHtml } from "./rich-text";
 
 /* ---------------- HERO ---------------- */
 export function HeroRenderer({ data }: { data: HeroData }) {
@@ -35,7 +36,7 @@ export function HeroRenderer({ data }: { data: HeroData }) {
           <div className="hero-text">
             <div className="hero-badge"><span className="dot" /> {badge}</div>
             <h1>{titleA} <span>{titleB}</span><br />{titleC}</h1>
-            <p>{subtitle}</p>
+            <RichHtml as="p" html={subtitle} />
             <div className="hero-ctas">
               <a href={ctaALink} className="btn btn-primary">{ctaAText}</a>
               <a href={ctaBLink} className="btn btn-ghost">{ctaBText}</a>
@@ -428,7 +429,7 @@ export function FaqRenderer({ data }: { data: FaqData }) {
                   <span style={{ opacity: .6, transform: isOpen ? "rotate(45deg)" : "none", transition: "transform .2s", fontSize: 20 }}>+</span>
                 </button>
                 {isOpen && (
-                  <div style={{ padding: "0 18px 16px", opacity: .8, lineHeight: 1.7 }}>{it.a}</div>
+                  <RichHtml html={it.a} style={{ padding: "0 18px 16px", opacity: .8, lineHeight: 1.7 }} />
                 )}
               </div>
             );
