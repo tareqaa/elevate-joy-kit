@@ -212,6 +212,18 @@ function HomeBuilder() {
     onError: (e: Error) => toast.error(e.message || "فشل الحفظ"),
   });
 
+  // Save as server-side draft (separate key) — previewable at /?preview=draft
+  const saveDraft = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("site_settings")
+        .upsert({ key: "home_layout_draft", value: draft as never }, { onConflict: "key" });
+      if (error) throw error;
+    },
+    onSuccess: () => toast.success("تم حفظ المسودة — افتح المعاينة لرؤيتها"),
+    onError: (e: Error) => toast.error(e.message || "فشل حفظ المسودة"),
+  });
+
 
   return (
     <div dir="rtl" className="min-h-screen bg-slate-950 text-slate-100 -m-4 sm:-m-6 lg:-m-8">
@@ -248,6 +260,13 @@ function HomeBuilder() {
             );
           })}
         </div>
+        <Button variant="outline" onClick={() => saveDraft.mutate()} disabled={saveDraft.isPending}
+          className="border-slate-700 text-slate-200 hover:bg-slate-900">
+          {saveDraft.isPending ? "..." : "حفظ كمسودة"}
+        </Button>
+        <a href="/?preview=draft" target="_blank" rel="noreferrer" className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-amber-600/50 text-amber-300 hover:bg-amber-500/10 text-xs">
+          <Eye size={12} /> معاينة المسودة
+        </a>
         <a href="/" target="_blank" rel="noreferrer" className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-slate-800 text-slate-300 hover:bg-slate-900 text-xs">
           <ExternalLink size={12} /> فتح الموقع
         </a>

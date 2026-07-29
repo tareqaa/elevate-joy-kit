@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { SECTION_REGISTRY } from "@/lib/gx/sections/registry";
-import { containerMaxWidth, sectionWrapperStyle, themeToCssVars } from "@/lib/gx/sections/types";
+import { containerMaxWidth, sectionWrapperStyle, themeToCssVars, type HomeLayout } from "@/lib/gx/sections/types";
 import { AnimatedSection } from "@/components/gx/AnimatedSection";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,8 +24,28 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const { home_layout } = useSiteSettings();
-  const sections = home_layout.sections.filter((s) => s.enabled);
-  const themeVars = themeToCssVars(home_layout.theme);
+  const [draftLayout, setDraftLayout] = useState<HomeLayout | null>(null);
+  const isDraftPreview =
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("preview") === "draft";
+
+  useEffect(() => {
+    if (!isDraftPreview) return;
+    let alive = true;
+    (async () => {
+      const { data } = await supabase
+        .from("site_settings").select("value").eq("key", "home_layout_draft").maybeSingle();
+      const v = data?.value as unknown;
+      if (alive && v && typeof v === "object" && Array.isArray((v as HomeLayout).sections)) {
+        setDraftLayout(v as HomeLayout);
+      }
+    })();
+    return () => { alive = false; };
+  }, [isDraftPreview]);
+
+  const layout = draftLayout ?? home_layout;
+  const sections = layout.sections.filter((s) => s.enabled);
+  const themeVars = themeToCssVars(layout.theme);
+
   return (
     <StoreShell>
       <div className="gx-home-root" style={themeVars}>

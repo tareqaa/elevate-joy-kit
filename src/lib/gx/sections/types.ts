@@ -10,6 +10,7 @@ export type SectionType =
   | "carousel"
   | "categories"
   | "bestsellers"
+  | "products"
   | "trust"
   | "reviews"
   | "faq"
@@ -125,6 +126,12 @@ export type BestsellersData = {
   title?: string;
   eyebrow?: string;
   order?: string[]; // cartId list — items listed first appear first
+};
+
+export type ProductsData = {
+  title?: string;
+  eyebrow?: string;
+  ids?: string[]; // cartId list — only these products are shown, in this order
 };
 
 export type TrustData = {
