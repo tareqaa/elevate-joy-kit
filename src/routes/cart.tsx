@@ -186,35 +186,46 @@ function CartSummary() {
           value={cart.contact.name}
           onChange={(e) => cart.setContact({ name: e.target.value })}
         />
-        <div className="gx-cb-row">
-          <select
-            className="gx-cb-select"
-            value={cart.contact.countryCode}
-            onChange={(e) => cart.setContact({ countryCode: e.target.value })}
-          >
-            {COUNTRY_CODES.map((c) => (
-              <option key={c.code} value={c.code}>{c.flag} {c.code} {c.name}</option>
-            ))}
-          </select>
-          <input
-            className="gx-cb-input gx-cb-phone"
-            type="tel"
-            inputMode="numeric"
-            placeholder="رقم التواصل"
-            value={cart.contact.phone}
-            onChange={(e) => cart.setContact({ phone: e.target.value.replace(/[^\d]/g, "") })}
-          />
-        </div>
         <div className="gx-cb-types">
           <label className={"gx-cb-type " + (cart.contact.type === "whatsapp" ? "on" : "")}>
-            <input type="radio" name="ct" checked={cart.contact.type === "whatsapp"} onChange={() => cart.setContact({ type: "whatsapp" })} />
+            <input type="radio" name="ct" checked={cart.contact.type === "whatsapp"} onChange={() => { cart.setContact({ type: "whatsapp", phone: "" }); }} />
             <span>📱 واتساب</span>
           </label>
           <label className={"gx-cb-type " + (cart.contact.type === "telegram" ? "on" : "")}>
-            <input type="radio" name="ct" checked={cart.contact.type === "telegram"} onChange={() => cart.setContact({ type: "telegram" })} />
+            <input type="radio" name="ct" checked={cart.contact.type === "telegram"} onChange={() => { cart.setContact({ type: "telegram", phone: "", countryCode: "" }); }} />
             <span>✈️ تيليجرام</span>
           </label>
         </div>
+        {isWa ? (
+          <div className="gx-cb-row" style={{ marginTop: 8 }}>
+            <select
+              className="gx-cb-select"
+              value={cart.contact.countryCode || "+962"}
+              onChange={(e) => cart.setContact({ countryCode: e.target.value })}
+            >
+              {COUNTRY_CODES.map((c) => (
+                <option key={c.code} value={c.code}>{c.flag} {c.code} {c.name}</option>
+              ))}
+            </select>
+            <input
+              className="gx-cb-input gx-cb-phone"
+              type="tel"
+              inputMode="numeric"
+              placeholder="رقم الواتساب"
+              value={cart.contact.phone}
+              onChange={(e) => cart.setContact({ phone: e.target.value.replace(/[^\d]/g, "") })}
+            />
+          </div>
+        ) : (
+          <input
+            className="gx-cb-input"
+            type="text"
+            placeholder="يوزر التيليجرام (بدون @)"
+            value={cart.contact.phone}
+            onChange={(e) => cart.setContact({ phone: e.target.value.replace(/^@+/, "").trim() })}
+            style={{ marginTop: 8, direction: "ltr", textAlign: "left" }}
+          />
+        )}
       </div>
 
       {/* Coupon block */}
