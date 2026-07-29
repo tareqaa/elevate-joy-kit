@@ -139,9 +139,7 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
                 <label className="gx-rv-lb">الطلب</label>
                 <select className="gx-rv-in" value={orderId} onChange={(e) => setOrderId(e.target.value)}>
                   {orders.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.order_number} — {new Date(o.created_at).toLocaleDateString("ar")}
-                    </option>
+                    <option key={o.id} value={o.id}>{o.order_number}</option>
                   ))}
                 </select>
               </div>
