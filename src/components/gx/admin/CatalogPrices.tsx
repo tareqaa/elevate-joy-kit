@@ -50,10 +50,10 @@ export function CatalogPrices() {
   };
 
   const setField = (code: string, field: "price" | "oldPrice", v: string) =>
-    setDraft((d) => ({
-      ...d,
-      [code]: { price: value(code, "price"), oldPrice: value(code, "oldPrice"), ...d[code], [field]: v },
-    }));
+    setDraft((d) => {
+      const base = d[code] ?? { price: value(code, "price"), oldPrice: value(code, "oldPrice") };
+      return { ...d, [code]: { ...base, [field]: v } };
+    });
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
