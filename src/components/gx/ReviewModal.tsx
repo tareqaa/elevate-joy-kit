@@ -49,7 +49,6 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [anon, setAnon] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
