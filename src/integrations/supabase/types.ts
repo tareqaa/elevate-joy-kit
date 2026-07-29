@@ -432,8 +432,10 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           is_featured: boolean
+          is_pinned_bestseller: boolean
           name_ar: string
           name_en: string
+          pinned_sort: number
           purchases_count: number
           slug: string
           sort_order: number
@@ -450,8 +452,10 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_featured?: boolean
+          is_pinned_bestseller?: boolean
           name_ar: string
           name_en: string
+          pinned_sort?: number
           purchases_count?: number
           slug: string
           sort_order?: number
@@ -468,8 +472,10 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_featured?: boolean
+          is_pinned_bestseller?: boolean
           name_ar?: string
           name_en?: string
+          pinned_sort?: number
           purchases_count?: number
           slug?: string
           sort_order?: number
