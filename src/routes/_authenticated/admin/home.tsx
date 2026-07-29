@@ -43,6 +43,8 @@ export const Route = createFileRoute("/_authenticated/admin/home")({
 
 type Device = "desktop" | "tablet" | "mobile";
 const DEVICE_WIDTH: Record<Device, number | null> = { desktop: null, tablet: 820, mobile: 390 };
+const DRAFT_KEY = "gx_home_layout_draft_v1";
+const MAX_HISTORY = 50;
 
 function HomeBuilder() {
   const qc = useQueryClient();
@@ -57,14 +59,90 @@ function HomeBuilder() {
     },
   });
 
-  const [draft, setDraft] = useState<HomeLayout>(DEFAULT_HOME_LAYOUT);
+  const [draft, setDraftState] = useState<HomeLayout>(DEFAULT_HOME_LAYOUT);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [tab, setTab] = useState<"builder" | "theme" | "history">("builder");
   const [device, setDevice] = useState<Device>("desktop");
   const [rightTab, setRightTab] = useState<"content" | "style">("content");
 
-  useEffect(() => { if (q.data) { setDraft({ ...q.data, theme: { ...DEFAULT_THEME, ...(q.data.theme || {}) } }); setDirty(false); } }, [q.data]);
+  // Undo/redo stacks — snapshots of full HomeLayout.
+  const [past, setPast] = useState<HomeLayout[]>([]);
+  const [future, setFuture] = useState<HomeLayout[]>([]);
+  const [restorable, setRestorable] = useState<HomeLayout | null>(null);
+
+  // History-aware setter: any user edit pushes prev draft to `past`.
+  function pushDraft(next: HomeLayout | ((d: HomeLayout) => HomeLayout)) {
+    setDraftState((prev) => {
+      const val = typeof next === "function" ? (next as (d: HomeLayout) => HomeLayout)(prev) : next;
+      setPast((p) => [...p.slice(-MAX_HISTORY + 1), prev]);
+      setFuture([]);
+      return val;
+    });
+    setDirty(true);
+  }
+  function undo() {
+    setPast((p) => {
+      if (p.length === 0) return p;
+      const prev = p[p.length - 1];
+      setFuture((f) => [draft, ...f].slice(0, MAX_HISTORY));
+      setDraftState(prev);
+      setDirty(true);
+      return p.slice(0, -1);
+    });
+  }
+  function redo() {
+    setFuture((f) => {
+      if (f.length === 0) return f;
+      const next = f[0];
+      setPast((p) => [...p, draft].slice(-MAX_HISTORY));
+      setDraftState(next);
+      setDirty(true);
+      return f.slice(1);
+    });
+  }
+
+  useEffect(() => {
+    if (!q.data) return;
+    const server: HomeLayout = { ...q.data, theme: { ...DEFAULT_THEME, ...(q.data.theme || {}) } };
+    // Restore an unsaved draft if it differs from server data.
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw) as HomeLayout;
+        if (JSON.stringify(saved) !== JSON.stringify(server) && Array.isArray(saved.sections)) {
+          setRestorable(saved);
+        }
+      }
+    } catch { /* noop */ }
+    setDraftState(server);
+    setPast([]); setFuture([]);
+    setDirty(false);
+  }, [q.data]);
+
+  // Autosave draft to localStorage (debounced).
+  useEffect(() => {
+    if (!dirty) return;
+    const t = setTimeout(() => {
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { /* noop */ }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [draft, dirty]);
+
+  // Keyboard shortcuts.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      else if ((e.key === "y") || (e.key === "z" && e.shiftKey)) { e.preventDefault(); redo(); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [draft, past, future]);
+
 
   const selected = useMemo(() => draft.sections.find((s) => s.id === selectedId) ?? null, [draft.sections, selectedId]);
 
