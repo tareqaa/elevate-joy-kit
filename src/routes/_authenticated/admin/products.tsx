@@ -88,7 +88,7 @@ function ProductsAdmin() {
   const [managingVariants, setManagingVariants] = useState<Product | null>(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [tab, setTab] = useState<"catalog" | "prices">("catalog");
+  const [tab, setTab] = useState<"catalog" | "prices">("prices");
 
 
   const catsQ = useQuery({

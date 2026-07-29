@@ -20,7 +20,7 @@ const css = `
 .gx-cp-prod+.gx-cp-prod{margin-top:10px}
 .gx-cp-prod-head{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;background:rgba(0,229,255,.04);cursor:pointer;text-align:start}
 .gx-cp-prod-head:hover{background:rgba(0,229,255,.08)}
-.gx-cp-ava{width:42px;height:42px;border-radius:12px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:20px;background:rgba(0,229,255,.09);border:1px solid rgba(0,229,255,.18);overflow:hidden}
+.gx-cp-ava{width:42px;height:42px;border-radius:12px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:20px;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;background:rgba(0,229,255,.09);border:1px solid rgba(0,229,255,.18);overflow:hidden}
 .gx-cp-ava img{width:100%;height:100%;object-fit:contain;padding:5px}
 .gx-cp-chip{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;border:1px solid rgba(0,229,255,.25);color:#8fe9ff;background:rgba(0,229,255,.08)}
 .gx-cp-chip.warn{border-color:rgba(255,196,0,.3);color:#ffd166;background:rgba(255,196,0,.1)}
