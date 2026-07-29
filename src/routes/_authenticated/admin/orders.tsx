@@ -716,3 +716,106 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
   );
 }
 
+
+/** Refund an order to the customer's store credit (refund balance). */
+function RefundBlock({ order }: { order: OrderWithEmail }) {
+  const qc = useQueryClient();
+  const [amount, setAmount] = useState(Number(order.total_jod || 0).toFixed(2));
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const historyQ = useQuery({
+    queryKey: ["order-refunds", order.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("store_credit_transactions")
+        .select("id, amount_jod, reason, created_at")
+        .eq("order_id", order.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const refunded = (historyQ.data ?? []).filter((t) => Number(t.amount_jod) > 0)
+    .reduce((s, t) => s + Number(t.amount_jod), 0);
+
+  async function refund() {
+    const value = Number(amount);
+    if (!order.user_id) { toast.error("هذا الطلب لزائر غير مسجّل — ما في حساب لإضافة الرصيد عليه"); return; }
+    if (!Number.isFinite(value) || value <= 0) { toast.error("أدخل مبلغ صحيح"); return; }
+    if (!reason.trim()) { toast.error("اكتب سبب الاسترجاع"); return; }
+    if (!confirm(`تأكيد استرجاع ${value.toFixed(2)} د.أ إلى رصيد العميل؟`)) return;
+    setBusy(true);
+    const { data, error } = await supabase.rpc("admin_adjust_store_credit", {
+      _user_id: order.user_id,
+      _amount: value,
+      _reason: `استرجاع الطلب ${order.order_number} — ${reason.trim()}`,
+      _order_id: order.id,
+    });
+    setBusy(false);
+    const res = data as { ok?: boolean; message?: string } | null;
+    if (error || !res?.ok) { toast.error(error?.message || res?.message || "فشل الاسترجاع"); return; }
+    toast.success("تم إضافة مبلغ الاسترجاع إلى رصيد العميل");
+    setReason("");
+    qc.invalidateQueries({ queryKey: ["order-refunds", order.id] });
+    qc.invalidateQueries({ queryKey: ["admin-loyalty-customers"] });
+    qc.invalidateQueries({ queryKey: ["admin-credit-log"] });
+  }
+
+  return (
+    <div className="gx-od-sec">
+      <div className="gx-od-sec-h">
+        <div className="gx-od-sec-t">💸 استرجاع (Refund)</div>
+        {refunded > 0 && (
+          <span className="gx-adm-badge bg-emerald-500/15 text-emerald-300 border-emerald-500/40">
+            مُسترجع: {refunded.toFixed(2)} د.أ
+          </span>
+        )}
+      </div>
+
+      {!order.user_id ? (
+        <div className="text-xs text-cyan-100/50">طلب زائر — الاسترجاع للرصيد متاح فقط للعملاء المسجّلين.</div>
+      ) : (
+        <>
+          <div className="grid sm:grid-cols-[140px_1fr_auto] gap-2 items-end">
+            <div>
+              <Label className="text-[11px] text-cyan-100/60">المبلغ (د.أ)</Label>
+              <Input dir="ltr" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} className="gx-adm-input h-9 text-sm font-mono" />
+            </div>
+            <div>
+              <Label className="text-[11px] text-cyan-100/60">السبب</Label>
+              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثلاً: الكود ما اشتغل" className="gx-adm-input h-9 text-sm" />
+            </div>
+            <Button onClick={refund} disabled={busy} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold h-9">
+              {busy ? "..." : "استرجاع للرصيد"}
+            </Button>
+          </div>
+          <div className="flex gap-2 mt-2 flex-wrap">
+            {[0.25, 0.5, 1].map((r) => (
+              <button key={r} type="button" className="gx-adm-chip"
+                onClick={() => setAmount((Number(order.total_jod || 0) * r).toFixed(2))}>
+                {r === 1 ? "كامل المبلغ" : `${r * 100}%`}
+              </button>
+            ))}
+          </div>
+          {(historyQ.data ?? []).length > 0 && (
+            <div className="mt-3 space-y-1">
+              {(historyQ.data ?? []).map((t) => (
+                <div key={t.id} className="gx-od-item">
+                  <span className="text-cyan-100/80 text-xs">{t.reason || "—"}</span>
+                  <span className={`font-mono font-bold ${Number(t.amount_jod) > 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                    {Number(t.amount_jod) > 0 ? "+" : ""}{Number(t.amount_jod).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-[11px] text-cyan-100/45 mt-2">
+            الرصيد المسترجع بيظهر للعميل مباشرة وبقدر يستخدمه بالسلة على أي طلب جاي.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
