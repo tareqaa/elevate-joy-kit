@@ -278,30 +278,23 @@ function ProfileTab({ userId, userEmail, currentUsername, currentName, currentAv
       <div className="grid md:grid-cols-2 gap-4">
       <Card>
         <CardHeader><CardTitle className="text-base">{t("acc.pick_character")}</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-            {AVATAR_SEEDS.map((s) => {
-              const url = avatarUrl(s);
-              const active = avatar === url;
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => { setAvatar(url); setAvatarTouched(true); }}
-                  className={`relative rounded-xl overflow-hidden aspect-square border-2 transition ${active ? "border-primary ring-2 ring-primary/50 scale-105" : "border-transparent hover:border-primary/50"}`}
-                >
-                  <img src={url} alt={s} className="w-full h-full object-cover bg-muted" loading="lazy" />
-                  {active && (
-                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                      <Check className="w-6 h-6 text-primary" />
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-3">
+            <img src={avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(currentUsername || "gx")}`} alt="" className="w-16 h-16 rounded-xl border object-cover bg-muted" />
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {t("dir") === "ltr"
+                ? "Avatars, levels, GX Coins and badges now live on your GX profile page."
+                : "الأفاتار والمستويات و GX Coins والشارات صارت كلها في صفحة ملفك في GX."}
+            </p>
           </div>
+          {currentUsername ? (
+            <Link to="/u/$username" params={{ username: currentUsername }}>
+              <Button variant="outline" className="w-full gap-2"><Sparkles className="w-4 h-4" />@{currentUsername}</Button>
+            </Link>
+          ) : null}
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader><CardTitle className="text-base">{t("acc.account_info")}</CardTitle></CardHeader>
