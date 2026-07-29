@@ -89,6 +89,7 @@ const DEFAULTS: SiteSettings = {
   home_subcategories_meta: {},
   home_bestseller_order: [],
   home_layout: DEFAULT_HOME_LAYOUT,
+  catalog_prices: {},
 };
 
 const CACHE_KEY = "gx_site_settings_v2";
