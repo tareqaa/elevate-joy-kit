@@ -12,6 +12,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-locale";
 import { supabase } from "@/integrations/supabase/client";
 import { initialOf, avatarColorFor } from "@/lib/gx/reviews";
+import { translateTexts } from "@/lib/gx/translate.functions";
 import type {
   HeroData, AnnouncementData, CarouselData, CategoriesData,
   BestsellersData, ProductsData, TrustData, ReviewsData, ReviewItem, FaqData, NewsletterData,
