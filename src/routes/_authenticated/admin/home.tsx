@@ -205,10 +205,13 @@ function HomeBuilder() {
       toast.success("تم نشر التغييرات");
       qc.invalidateQueries({ queryKey: ["home-layout"] });
       qc.invalidateQueries({ queryKey: ["home-layout-history"] });
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ }
+      setRestorable(null);
       setDirty(false);
     },
     onError: (e: Error) => toast.error(e.message || "فشل الحفظ"),
   });
+
 
   return (
     <div dir="rtl" className="min-h-screen bg-slate-950 text-slate-100 -m-4 sm:-m-6 lg:-m-8">
