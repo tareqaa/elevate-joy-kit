@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/gx/i18n";
 import { useCurrency } from "@/lib/gx/currency";
-import { fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM } from "@/lib/gx/loyalty";
+import { fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM, XP_PER_JOD } from "@/lib/gx/loyalty";
 
 type PublicProfile = {
   id: string; username: string; full_name: string | null; avatar_url: string | null;
@@ -14,7 +14,7 @@ type PublicProfile = {
 };
 
 /** Unified GX profile: identity + loyalty + coupons + badges + avatars + search + leaderboard. */
-export function GxProfile({ username }: { username?: string }) {
+export function GxProfile({ username: usernameProp }: { username?: string }) {
   const { lang, dir } = useLang();
   const { format, formatCoins, currency } = useCurrency();
   const isAr = lang === "ar";
@@ -24,6 +24,20 @@ export function GxProfile({ username }: { username?: string }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMyId(data.session?.user.id ?? null));
   }, []);
+
+  // When no GameTag is in the URL (i.e. /rewards or /leaderboard) and the visitor
+  // is signed in, open their own unified profile + loyalty page.
+  const myTagQ = useQuery({
+    enabled: !usernameProp && !!myId,
+    queryKey: ["my-gametag", myId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("username").eq("id", myId!).maybeSingle();
+      if (error) throw error;
+      return data?.username ?? null;
+    },
+  });
+
+  const username = usernameProp || myTagQ.data || undefined;
 
   const profileQ = useQuery({
     enabled: !!username,
@@ -38,6 +52,7 @@ export function GxProfile({ username }: { username?: string }) {
   });
 
   const isOwner = !!myId && !!profileQ.data && profileQ.data.id === myId;
+
 
   const levelsQ = useQuery({ queryKey: ["levels"], queryFn: fetchLevels });
   const loyaltyQ = useQuery({ queryKey: ["my-loyalty", myId], queryFn: fetchMyLoyalty, enabled: isOwner });
@@ -192,32 +207,8 @@ export function GxProfile({ username }: { username?: string }) {
                   )}
                 </div>
 
-                {/* Levels ladder */}
-                <div className="gxp-card">
-                  <h3 className="gxp-h">{isAr ? "سلّم المستويات" : "Levels"}</h3>
-                  <div className="gxp-levels">
-                    {levels.map((l) => {
-                      const reached = (l.sort_order ?? 0) <= currentSort;
-                      return (
-                        <div key={l.id} className={`gxp-level${reached ? " on" : ""}`}>
-                          <div className="gxp-level-top">
-                            <span className="ico">{l.icon}</span>
-                            <div>
-                              <b style={{ color: l.color }}>{levelName(l, lang)}</b>
-                              <em>{l.min_xp.toLocaleString("en-US")} XP</em>
-                            </div>
-                            <span className="gxp-level-state">{reached ? "✓" : "🔒"}</span>
-                          </div>
-                          <div className="gxp-tags">
-                            {l.reward_coins > 0 && <span className="t amber">+{l.reward_coins} Coins</span>}
-                            {l.coupon_percent > 0 && <span className="t cyan">{isAr ? "كوبون" : "Coupon"} {l.coupon_percent}%</span>}
-                            <span className="t violet">×{(1 + Number(l.coins_bonus_pct) / 100).toFixed(2)} Coins</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+
+
 
                 {isOwner && (
                   <>
@@ -292,7 +283,50 @@ export function GxProfile({ username }: { username?: string }) {
                 )}
               </>
             )}
+
+            {/* How GX Rewards works — always visible (merged from the old /rewards page) */}
+            <div className="gxp-card">
+              <h3 className="gxp-h">🎁 {isAr ? "كيف يعمل نظام GX Rewards" : "How GX Rewards works"}</h3>
+              <div className="gxp-rules">
+                <Rule icon="⚡" title={isAr ? "اكسب XP" : "Earn XP"}
+                  text={isAr ? `كل 1 دينار تنفقه = ${XP_PER_JOD} نقطة خبرة.` : `Every 1 JOD spent = ${XP_PER_JOD} XP.`} />
+                <Rule icon="🪙" title="GX Coins"
+                  text={isAr ? "كل 1 دينار مدفوع = 10 عملات × مضاعف مستواك." : "Every 1 JOD paid = 10 coins × your level multiplier."} />
+                <Rule icon="💸" title={isAr ? "استبدال العملات" : "Redeem coins"}
+                  text={isAr ? `${COINS_PER_JOD_REDEEM} عملة = 1 دينار خصم (حتى 50% من الطلب).` : `${COINS_PER_JOD_REDEEM} coins = 1 JOD off (up to 50% per order).`} />
+                <Rule icon="🏅" title={isAr ? "مكافآت المستوى" : "Level rewards"}
+                  text={isAr ? "كل مستوى يمنحك عملات وكوبون خصم وأفاتارات حصرية." : "Each level unlocks coins, a coupon and exclusive avatars."} />
+              </div>
+            </div>
+
+            {/* Levels ladder */}
+            <div className="gxp-card">
+              <h3 className="gxp-h">{isAr ? "سلّم المستويات" : "Levels"}</h3>
+              <div className="gxp-levels">
+                {levels.map((l) => {
+                  const reached = !!p && (l.sort_order ?? 0) <= currentSort;
+                  return (
+                    <div key={l.id} className={`gxp-level${reached ? " on" : ""}`}>
+                      <div className="gxp-level-top">
+                        <span className="ico">{l.icon}</span>
+                        <div>
+                          <b style={{ color: l.color }}>{levelName(l, lang)}</b>
+                          <em>{l.min_xp.toLocaleString("en-US")} XP</em>
+                        </div>
+                        <span className="gxp-level-state">{reached ? "✓" : "🔒"}</span>
+                      </div>
+                      <div className="gxp-tags">
+                        {l.reward_coins > 0 && <span className="t amber">+{l.reward_coins} Coins</span>}
+                        {l.coupon_percent > 0 && <span className="t cyan">{isAr ? "كوبون" : "Coupon"} {l.coupon_percent}%</span>}
+                        <span className="t violet">×{(1 + Number(l.coins_bonus_pct) / 100).toFixed(2)} Coins</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
+
 
           {/* Sidebar: search + leaderboard */}
           <aside className="gxp-side">
@@ -333,6 +367,15 @@ function Stat({ icon, label, value, hint, hidden }: { icon: string; label: strin
       <span className="l">{icon} {label}</span>
       <b>{hidden ? "—" : value}</b>
       {!hidden && hint && <em>{hint}</em>}
+    </div>
+  );
+}
+
+function Rule({ icon, title, text }: { icon: string; title: string; text: string }) {
+  return (
+    <div className="gxp-rule">
+      <span className="ico">{icon}</span>
+      <div><b>{title}</b><em>{text}</em></div>
     </div>
   );
 }
@@ -405,6 +448,11 @@ const css = `
 .gxp-stat b{display:block;font-size:18px;color:#e6f7ff;margin-top:2px}
 .gxp-stat em{font-style:normal;font-size:11px;color:#8b90a0}
 .gxp-note{margin:0;padding:0 16px 16px;font-size:11.5px;color:#8b90a0;line-height:1.7}
+.gxp-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.gxp-rule{display:flex;gap:10px;align-items:flex-start;border:1px solid rgba(0,229,255,.18);background:linear-gradient(180deg,rgba(0,229,255,.06),rgba(0,229,255,.01));border-radius:14px;padding:12px}
+.gxp-rule .ico{font-size:20px;line-height:1}
+.gxp-rule b{display:block;font-size:13px;color:#e6f7ff}
+.gxp-rule em{font-style:normal;display:block;font-size:11.5px;color:#a3b6c9;line-height:1.6;margin-top:3px}
 .gxp-levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
 .gxp-level{border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:11px;opacity:.6}
 .gxp-level.on{opacity:1;border-color:rgba(0,229,255,.35);background:rgba(0,229,255,.05)}
