@@ -51,6 +51,7 @@ export function StoreShell({ children }: { children: ReactNode }) {
       {children}
       <Footer />
       <CartDrawer />
+      <AdminFab />
     </>
   );
 }
