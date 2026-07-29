@@ -31,7 +31,10 @@ export type SectionDef = {
 
 // Cast helper — narrows the runtime `Record<string,unknown>` to whatever the
 // concrete component expects. Safe because the registry couples the two.
-const anyComp = <P,>(C: ComponentType<P>) => C as unknown as ComponentType<{ data: Record<string, unknown>; onChange?: (d: Record<string, unknown>) => void }>;
+type AnyRenderer = ComponentType<{ data: Record<string, unknown> }>;
+type AnyEditor = ComponentType<{ data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }>;
+const asRenderer = <P,>(C: ComponentType<P>) => C as unknown as AnyRenderer;
+const asEditor = <P,>(C: ComponentType<P>) => C as unknown as AnyEditor;
 
 export const SECTION_REGISTRY: Record<SectionType, SectionDef> = {
   hero: {
