@@ -560,7 +560,23 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           <div className="text-sm space-y-1">
             <div><b>العميل:</b> {order.customer_name || "زائر"} {order.user_username && <span className="text-muted-foreground">(@{order.user_username})</span>}</div>
             {order.user_email && <div><b>الإيميل:</b> <a href={`mailto:${order.user_email}`} dir="ltr" className="text-cyan-400 hover:underline">{order.user_email}</a></div>}
-            {order.customer_whatsapp && <div><b>واتساب:</b> <span dir="ltr">{order.customer_whatsapp}</span></div>}
+            {order.customer_whatsapp && (
+              <div>
+                <b>{order.contact_type === "telegram" ? "تيليجرام" : "واتساب"}:</b>{" "}
+                <a
+                  href={order.contact_type === "telegram"
+                    ? `https://t.me/${order.customer_whatsapp.replace(/^@+/, "")}`
+                    : `https://wa.me/${order.customer_whatsapp.replace(/[^\d]/g, "")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  dir="ltr"
+                  className="text-cyan-400 hover:underline font-mono"
+                >
+                  {order.customer_whatsapp}
+                </a>
+              </div>
+            )}
+
             <div><b>التاريخ:</b> {new Date(order.created_at).toLocaleString("ar-EG")}</div>
             <div><b>الإجمالي:</b> {Number(order.total_jod).toFixed(2)} د.أ</div>
           </div>
