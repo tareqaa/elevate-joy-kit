@@ -19,9 +19,9 @@ export const Route = createFileRoute("/_authenticated/admin/orders")({
   component: OrdersAdmin,
 });
 
-const STATUSES = ["pending", "paid", "processing", "delivered", "cancelled"] as const;
+const STATUSES = ["pending", "paid", "processing", "delivered", "cancelled", "refunded"] as const;
 const STATUS_AR: Record<string, string> = {
-  pending: "قيد الانتظار", paid: "مدفوع", processing: "قيد التجهيز", delivered: "مُسلَّم", cancelled: "ملغى",
+  pending: "قيد الانتظار", paid: "مدفوع", processing: "قيد التجهيز", delivered: "مُسلَّم", cancelled: "ملغى", refunded: "مُسترجع",
 };
 const STATUS_COLOR: Record<string, string> = {
   pending: "bg-amber-500/15 text-amber-300 border-amber-500/40",
@@ -29,9 +29,10 @@ const STATUS_COLOR: Record<string, string> = {
   processing: "bg-cyan-500/15 text-cyan-300 border-cyan-500/40",
   delivered: "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
   cancelled: "bg-rose-500/15 text-rose-300 border-rose-500/40",
+  refunded: "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/40",
 };
 const STATUS_ICON: Record<string, typeof Clock> = {
-  pending: Clock, paid: CreditCard, processing: PackageIcon, delivered: CheckCircle2, cancelled: XCircle,
+  pending: Clock, paid: CreditCard, processing: PackageIcon, delivered: CheckCircle2, cancelled: XCircle, refunded: Undo2,
 };
 
 type OrderRow = {
