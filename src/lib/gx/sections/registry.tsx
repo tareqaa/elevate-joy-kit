@@ -1,0 +1,84 @@
+// Section registry — the single source of truth mapping each SectionType
+// to its label, icon, default data, renderer, and editor. Add a new
+// section by adding one entry here.
+
+import type { ComponentType } from "react";
+import {
+  Sparkles, Megaphone, GalleryHorizontal, LayoutGrid,
+  Star, ShieldCheck, MessageSquare, HelpCircle, Mail,
+} from "lucide-react";
+import type { SectionType } from "./types";
+import {
+  HeroRenderer, AnnouncementRenderer, CarouselRenderer, CategoriesRenderer,
+  BestsellersRenderer, TrustRenderer, ReviewsRenderer, FaqRenderer, NewsletterRenderer,
+} from "./renderers";
+import {
+  HeroEditor, AnnouncementEditor, CarouselEditor, CategoriesEditor,
+  BestsellersEditor, TrustEditor, ReviewsEditor, FaqEditor, NewsletterEditor,
+} from "./editors";
+
+export type SectionDef = {
+  type: SectionType;
+  label: string;
+  description: string;
+  Icon: ComponentType<{ size?: number; className?: string }>;
+  defaultData: Record<string, unknown>;
+  // Renderer/Editor typed loosely here — the admin/home layer passes the
+  // correct data shape based on the section's `type`.
+  Renderer: ComponentType<{ data: Record<string, unknown> }>;
+  Editor: ComponentType<{ data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }>;
+};
+
+// Cast helper — narrows the runtime `Record<string,unknown>` to whatever the
+// concrete component expects. Safe because the registry couples the two.
+const anyComp = <P,>(C: ComponentType<P>) => C as unknown as ComponentType<{ data: Record<string, unknown>; onChange?: (d: Record<string, unknown>) => void }>;
+
+export const SECTION_REGISTRY: Record<SectionType, SectionDef> = {
+  hero: {
+    type: "hero", label: "الهيرو", description: "البانر الرئيسي أعلى الصفحة", Icon: Sparkles,
+    defaultData: {},
+    Renderer: anyComp(HeroRenderer), Editor: anyComp(HeroEditor),
+  },
+  announcement: {
+    type: "announcement", label: "شريط إعلان", description: "شريط رفيع لعرض إشعار أو عرض", Icon: Megaphone,
+    defaultData: { text: "عرض جديد!", link: "", bg: "#0f172a", color: "#ffffff" },
+    Renderer: anyComp(AnnouncementRenderer), Editor: anyComp(AnnouncementEditor),
+  },
+  carousel: {
+    type: "carousel", label: "سلايدر الصور", description: "شرائح تلقائية لعروض وبانرات", Icon: GalleryHorizontal,
+    defaultData: { autoplay: true, interval_ms: 5000, items: [] },
+    Renderer: anyComp(CarouselRenderer), Editor: anyComp(CarouselEditor),
+  },
+  categories: {
+    type: "categories", label: "الأقسام", description: "شبكة الأقسام الرئيسية", Icon: LayoutGrid,
+    defaultData: {},
+    Renderer: anyComp(CategoriesRenderer), Editor: anyComp(CategoriesEditor),
+  },
+  bestsellers: {
+    type: "bestsellers", label: "الأكثر مبيعاً", description: "المنتجات المميّزة", Icon: Star,
+    defaultData: {},
+    Renderer: anyComp(BestsellersRenderer), Editor: anyComp(BestsellersEditor),
+  },
+  trust: {
+    type: "trust", label: "شارات الثقة", description: "التفعيل الفوري والعدّاد والدعم", Icon: ShieldCheck,
+    defaultData: {},
+    Renderer: anyComp(TrustRenderer), Editor: anyComp(TrustEditor),
+  },
+  reviews: {
+    type: "reviews", label: "المراجعات", description: "شريط تقييمات العملاء", Icon: MessageSquare,
+    defaultData: {},
+    Renderer: anyComp(ReviewsRenderer), Editor: anyComp(ReviewsEditor),
+  },
+  faq: {
+    type: "faq", label: "الأسئلة الشائعة", description: "قائمة أسئلة/أجوبة قابلة للطي", Icon: HelpCircle,
+    defaultData: { title: "الأسئلة الشائعة", items: [] },
+    Renderer: anyComp(FaqRenderer), Editor: anyComp(FaqEditor),
+  },
+  newsletter: {
+    type: "newsletter", label: "النشرة البريدية", description: "نموذج اشتراك بالبريد", Icon: Mail,
+    defaultData: { title: "اشترك بالنشرة", subtitle: "أول من يعرف عن العروض", cta: "اشترك", placeholder: "بريدك الإلكتروني" },
+    Renderer: anyComp(NewsletterRenderer), Editor: anyComp(NewsletterEditor),
+  },
+};
+
+export const SECTION_TYPES: SectionType[] = Object.keys(SECTION_REGISTRY) as SectionType[];
