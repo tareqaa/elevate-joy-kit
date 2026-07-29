@@ -40,13 +40,15 @@ function LoyaltyAdmin() {
       </div>
 
       <Tabs defaultValue="levels" dir="rtl">
-        <TabsList className="grid grid-cols-3 w-full max-w-lg h-11">
+        <TabsList className="grid grid-cols-4 w-full max-w-2xl h-11">
           <TabsTrigger value="levels" className="gap-2"><Trophy className="w-4 h-4" />المستويات</TabsTrigger>
           <TabsTrigger value="customers" className="gap-2"><Coins className="w-4 h-4" />العملاء</TabsTrigger>
+          <TabsTrigger value="credit" className="gap-2"><Wallet className="w-4 h-4" />الرصيد والاسترجاع</TabsTrigger>
           <TabsTrigger value="coupons" className="gap-2"><Ticket className="w-4 h-4" />كوبونات المستوى</TabsTrigger>
         </TabsList>
         <TabsContent value="levels" className="mt-4"><LevelsTab /></TabsContent>
         <TabsContent value="customers" className="mt-4"><CustomersTab /></TabsContent>
+        <TabsContent value="credit" className="mt-4"><CreditTab /></TabsContent>
         <TabsContent value="coupons" className="mt-4"><CouponsTab /></TabsContent>
       </Tabs>
     </div>
