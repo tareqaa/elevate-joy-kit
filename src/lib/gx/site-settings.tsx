@@ -1,6 +1,43 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+export type HomeHero = {
+  enabled: boolean;
+  badge: string | null;
+  title_a: string | null;
+  title_b: string | null;
+  title_c: string | null;
+  subtitle: string | null;
+  cta_primary_text: string | null;
+  cta_primary_link: string | null;
+  cta_secondary_text: string | null;
+  cta_secondary_link: string | null;
+  image_url: string | null;
+};
+
+export type HomeBannerItem = {
+  id: string;
+  image_url: string;
+  title?: string | null;
+  subtitle?: string | null;
+  link?: string | null;
+};
+
+export type HomeBanners = {
+  enabled: boolean;
+  autoplay: boolean;
+  interval_ms: number;
+  items: HomeBannerItem[];
+};
+
+export type HomeCategoryOverride = {
+  name?: string | null;
+  desc?: string | null;
+  accent?: string | null;
+  hidden?: boolean;
+  sort?: number;
+};
+
 export type SiteSettings = {
   store_name: string;
   default_currency: string;
@@ -12,7 +49,19 @@ export type SiteSettings = {
   social_tiktok: string;
   maintenance_mode: boolean;
   maintenance_message: string;
+  home_hero: HomeHero;
+  home_banners: HomeBanners;
+  home_categories_meta: Record<string, HomeCategoryOverride>;
+  home_subcategories_meta: Record<string, HomeCategoryOverride>;
+  home_bestseller_order: string[];
 };
+
+const DEFAULT_HERO: HomeHero = {
+  enabled: true, badge: null, title_a: null, title_b: null, title_c: null,
+  subtitle: null, cta_primary_text: null, cta_primary_link: null,
+  cta_secondary_text: null, cta_secondary_link: null, image_url: null,
+};
+const DEFAULT_BANNERS: HomeBanners = { enabled: false, autoplay: true, interval_ms: 5000, items: [] };
 
 const DEFAULTS: SiteSettings = {
   store_name: "GX STORE",
@@ -25,9 +74,14 @@ const DEFAULTS: SiteSettings = {
   social_tiktok: "",
   maintenance_mode: false,
   maintenance_message: "الموقع تحت الصيانة حالياً — راجعنا خلال قليل.",
+  home_hero: DEFAULT_HERO,
+  home_banners: DEFAULT_BANNERS,
+  home_categories_meta: {},
+  home_subcategories_meta: {},
+  home_bestseller_order: [],
 };
 
-const CACHE_KEY = "gx_site_settings_v1";
+const CACHE_KEY = "gx_site_settings_v2";
 const Ctx = createContext<SiteSettings>(DEFAULTS);
 
 function readCache(): SiteSettings {
@@ -55,6 +109,12 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
         const v = row.value as unknown;
         if (k in merged) (merged as Record<string, unknown>)[k] = v as never;
       }
+      // Ensure nested defaults for objects
+      merged.home_hero = { ...DEFAULT_HERO, ...(merged.home_hero || {}) };
+      merged.home_banners = { ...DEFAULT_BANNERS, ...(merged.home_banners || {}) };
+      merged.home_categories_meta = merged.home_categories_meta || {};
+      merged.home_subcategories_meta = merged.home_subcategories_meta || {};
+      merged.home_bestseller_order = Array.isArray(merged.home_bestseller_order) ? merged.home_bestseller_order : [];
       setSettings(merged);
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(merged)); } catch { /* noop */ }
     }
