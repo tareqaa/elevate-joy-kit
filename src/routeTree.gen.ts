@@ -39,6 +39,7 @@ import { Route as AuthenticatedAdminLoyaltyRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminHomeRouteImport } from './routes/_authenticated/admin/home'
 import { Route as AuthenticatedAdminCouponsRouteImport } from './routes/_authenticated/admin/coupons'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
+import { Route as AuthenticatedAdminAvatarsRouteImport } from './routes/_authenticated/admin/avatars'
 import { Route as AuthenticatedAdminActivityRouteImport } from './routes/_authenticated/admin/activity'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 
@@ -200,6 +201,12 @@ const AuthenticatedAdminCategoriesRoute =
     path: '/categories',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAvatarsRoute =
+  AuthenticatedAdminAvatarsRouteImport.update({
+    id: '/avatars',
+    path: '/avatars',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminActivityRoute =
   AuthenticatedAdminActivityRouteImport.update({
     id: '/activity',
@@ -235,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/u/$username': typeof UUsernameRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/activity': typeof AuthenticatedAdminActivityRoute
+  '/admin/avatars': typeof AuthenticatedAdminAvatarsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/home': typeof AuthenticatedAdminHomeRoute
@@ -267,6 +275,7 @@ export interface FileRoutesByTo {
   '/u/$username': typeof UUsernameRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/activity': typeof AuthenticatedAdminActivityRoute
+  '/admin/avatars': typeof AuthenticatedAdminAvatarsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/admin/home': typeof AuthenticatedAdminHomeRoute
@@ -302,6 +311,7 @@ export interface FileRoutesById {
   '/u/$username': typeof UUsernameRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/activity': typeof AuthenticatedAdminActivityRoute
+  '/_authenticated/admin/avatars': typeof AuthenticatedAdminAvatarsRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/coupons': typeof AuthenticatedAdminCouponsRoute
   '/_authenticated/admin/home': typeof AuthenticatedAdminHomeRoute
@@ -337,6 +347,7 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/activity'
+    | '/admin/avatars'
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/home'
@@ -369,6 +380,7 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/activity'
+    | '/admin/avatars'
     | '/admin/categories'
     | '/admin/coupons'
     | '/admin/home'
@@ -403,6 +415,7 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/activity'
+    | '/_authenticated/admin/avatars'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/coupons'
     | '/_authenticated/admin/home'
@@ -649,6 +662,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/avatars': {
+      id: '/_authenticated/admin/avatars'
+      path: '/avatars'
+      fullPath: '/admin/avatars'
+      preLoaderRoute: typeof AuthenticatedAdminAvatarsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/activity': {
       id: '/_authenticated/admin/activity'
       path: '/activity'
@@ -668,6 +688,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminActivityRoute: typeof AuthenticatedAdminActivityRoute
+  AuthenticatedAdminAvatarsRoute: typeof AuthenticatedAdminAvatarsRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminCouponsRoute: typeof AuthenticatedAdminCouponsRoute
   AuthenticatedAdminHomeRoute: typeof AuthenticatedAdminHomeRoute
@@ -682,6 +703,7 @@ interface AuthenticatedAdminRouteChildren {
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminActivityRoute: AuthenticatedAdminActivityRoute,
+  AuthenticatedAdminAvatarsRoute: AuthenticatedAdminAvatarsRoute,
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminCouponsRoute: AuthenticatedAdminCouponsRoute,
   AuthenticatedAdminHomeRoute: AuthenticatedAdminHomeRoute,
