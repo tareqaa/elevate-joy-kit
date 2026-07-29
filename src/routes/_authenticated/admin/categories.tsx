@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FolderTree, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronUp, ChevronLeft, Home, Palette, Search, Package, Copy } from "lucide-react";
+import { FolderTree, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronUp, ChevronLeft, Home, Palette, Search, Package, Copy, ShoppingBag } from "lucide-react";
+import { CategoryProducts } from "@/components/gx/admin/ProductsManager";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
   head: () => ({ meta: [{ title: "الأقسام — لوحة التحكم" }] }),
@@ -106,6 +107,7 @@ function CategoriesAdmin() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Category | null>(null);
   const [creating, setCreating] = useState<{ parentId: string | null } | null>(null);
+  const [managingProducts, setManagingProducts] = useState<Category | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<"tree" | "flat">("tree");
   const [search, setSearch] = useState("");
@@ -348,6 +350,7 @@ function CategoriesAdmin() {
               onToggle={toggle}
               onEdit={setEditing}
               onAddChild={(parentId) => setCreating({ parentId })}
+              onManageProducts={setManagingProducts}
               onDelete={(id, name) => { if (confirm(`حذف "${name}" وكل الأقسام الفرعية داخله؟`)) deleteMut.mutate(id); }}
               onToggleActive={(id, next) => toggleMut.mutate({ id, is_active: next })}
               onDuplicate={(n) => duplicateMut.mutate(n)}
@@ -366,6 +369,7 @@ function CategoriesAdmin() {
               count={counts[c.id] ?? 0}
               parent={all.find((x) => x.id === c.parent_id) ?? null}
               onEdit={setEditing}
+              onManageProducts={setManagingProducts}
               onDelete={(id, name) => { if (confirm(`حذف "${name}"؟`)) deleteMut.mutate(id); }}
               onToggleActive={(id, next) => toggleMut.mutate({ id, is_active: next })}
               onDuplicate={(n) => duplicateMut.mutate(n)}
@@ -373,6 +377,19 @@ function CategoriesAdmin() {
           ))}
         </div>
 
+      )}
+
+      {managingProducts && (
+        <Dialog open onOpenChange={() => setManagingProducts(null)}>
+          <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ShoppingBag size={17} className="text-cyan-400" /> منتجات قسم: {managingProducts.name_ar}
+              </DialogTitle>
+            </DialogHeader>
+            <CategoryProducts categoryId={managingProducts.id} categoryName={managingProducts.name_ar} />
+          </DialogContent>
+        </Dialog>
       )}
 
       {(editing || creating) && (
@@ -389,7 +406,7 @@ function CategoriesAdmin() {
 }
 
 function TreeNode({
-  node, byParent, expanded, counts, onToggle, onEdit, onAddChild, onDelete, onToggleActive, onDuplicate, onMove, bounds, depth,
+  node, byParent, expanded, counts, onToggle, onEdit, onAddChild, onManageProducts, onDelete, onToggleActive, onDuplicate, onMove, bounds, depth,
 }: {
   node: Category;
   byParent: Map<string | "root", Category[]>;
@@ -398,6 +415,7 @@ function TreeNode({
   onToggle: (id: string) => void;
   onEdit: (c: Category) => void;
   onAddChild: (parentId: string) => void;
+  onManageProducts: (c: Category) => void;
   onDelete: (id: string, name: string) => void;
   onToggleActive: (id: string, next: boolean) => void;
   onDuplicate: (c: Category) => void;
@@ -452,6 +470,9 @@ function TreeNode({
                 <Plus size={11} /> فرعي
               </button>
             )}
+            <button className="gx-btn primary" onClick={() => onManageProducts(node)} title="إدارة منتجات القسم">
+              <ShoppingBag size={11} /> المنتجات
+            </button>
             <button className="gx-btn outline" onClick={() => onEdit(node)} title="تعديل"><Pencil size={11} /></button>
             <button className="gx-btn ghost" onClick={() => onDuplicate(node)} title="نسخ"><Copy size={11} /></button>
             <button className="gx-btn outline" onClick={() => onToggleActive(node.id, !node.is_active)} title={node.is_active ? "إخفاء" : "إظهار"}>
@@ -467,7 +488,7 @@ function TreeNode({
           {children.map((c) => (
             <TreeNode
               key={c.id} node={c} byParent={byParent} expanded={expanded} counts={counts}
-              onToggle={onToggle} onEdit={onEdit} onAddChild={onAddChild}
+              onToggle={onToggle} onEdit={onEdit} onAddChild={onAddChild} onManageProducts={onManageProducts}
               onDelete={onDelete} onToggleActive={onToggleActive}
               onDuplicate={onDuplicate} onMove={onMove} bounds={bounds} depth={depth + 1}
             />
@@ -480,12 +501,13 @@ function TreeNode({
 
 
 function FlatRow({
-  node, parent, count, onEdit, onDelete, onToggleActive, onDuplicate,
+  node, parent, count, onEdit, onManageProducts, onDelete, onToggleActive, onDuplicate,
 }: {
   node: Category;
   parent: Category | null;
   count: number;
   onEdit: (c: Category) => void;
+  onManageProducts: (c: Category) => void;
   onDelete: (id: string, name: string) => void;
   onToggleActive: (id: string, next: boolean) => void;
   onDuplicate: (c: Category) => void;
@@ -507,6 +529,9 @@ function FlatRow({
           <div className="gx-row-meta">/{node.slug} · ترتيب: {node.sort_order}</div>
         </div>
         <div className="flex items-center gap-1">
+          <button className="gx-btn primary" onClick={() => onManageProducts(node)} title="إدارة منتجات القسم">
+            <ShoppingBag size={11} /> المنتجات
+          </button>
           <button className="gx-btn outline" onClick={() => onEdit(node)} title="تعديل"><Pencil size={11} /></button>
           <button className="gx-btn ghost" onClick={() => onDuplicate(node)} title="نسخ"><Copy size={11} /></button>
           <button className="gx-btn outline" onClick={() => onToggleActive(node.id, !node.is_active)}>
