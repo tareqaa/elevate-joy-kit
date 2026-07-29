@@ -278,7 +278,7 @@ function HomeBuilder() {
           <TabsTrigger value="history"><History size={13} className="ms-2" /> السجل</TabsTrigger>
         </TabsList>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="px-4 pt-3">
+        <TabsContent value="builder" className="mt-3">
           <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-3">
             {/* Left: sections list */}
             <div className="space-y-3">
