@@ -93,13 +93,17 @@ export function GxProfile({ username }: { username?: string }) {
 
   const levels = levelsQ.data ?? [];
   const p = profileQ.data;
+  // Loyalty details are personal: never fall back to the signed-in user's cached
+  // loyalty when viewing somebody else's profile.
+  const mine = isOwner ? loyaltyQ.data : undefined;
   const lvl = useMemo(
-    () => levels.find((l) => l.code === (loyaltyQ.data?.level?.code || p?.level_code)) ?? null,
-    [levels, loyaltyQ.data, p],
+    () => levels.find((l) => l.code === (mine?.level?.code || p?.level_code)) ?? null,
+    [levels, mine, p],
   );
   const currentSort = lvl?.sort_order ?? 0;
-  const xp = Number(loyaltyQ.data?.xp ?? p?.xp ?? 0);
-  const prog = levelProgress(xp, loyaltyQ.data?.level ?? lvl, loyaltyQ.data?.next_level ?? null);
+  const xp = Number(mine?.xp ?? p?.xp ?? 0);
+  const nextLevel = mine?.next_level ?? levels.find((l) => (l.sort_order ?? 0) === currentSort + 1) ?? null;
+  const prog = levelProgress(xp, mine?.level ?? lvl, nextLevel);
 
   async function pickAvatar(imageUrl: string, avatarId: string, border: string | null) {
     if (!myId) return;
@@ -146,7 +150,7 @@ export function GxProfile({ username }: { username?: string }) {
                       <span className="gxp-tag" dir="ltr">@{p.username}</span>
                       <div className="gxp-chips">
                         {lvl && <span className="gxp-chip" style={{ background: lvl.gradient }}>{lvl.icon} {levelName(lvl, lang)}</span>}
-                        <span className="gxp-chip ghost">🏆 #{Number(loyaltyQ.data?.rank ?? p.rank)}</span>
+                        <span className="gxp-chip ghost">🏆 #{Number(mine?.rank ?? p.rank)}</span>
                         <span className="gxp-chip ghost">
                           {isAr ? "عضو منذ" : "Member since"} {new Date(p.created_at).toLocaleDateString(isAr ? "ar-EG" : "en-US", { year: "numeric", month: "long" })}
                         </span>
@@ -159,9 +163,9 @@ export function GxProfile({ username }: { username?: string }) {
                     <div className="gxp-bar-top">
                       <b>{xp.toLocaleString("en-US")} XP</b>
                       <span>
-                        {loyaltyQ.data?.next_level
-                          ? (isAr ? `باقي ${prog.remaining.toLocaleString("en-US")} XP إلى ${levelName(loyaltyQ.data.next_level, lang)}`
-                                  : `${prog.remaining.toLocaleString("en-US")} XP to ${levelName(loyaltyQ.data.next_level, lang)}`)
+                        {nextLevel
+                          ? (isAr ? `باقي ${prog.remaining.toLocaleString("en-US")} XP إلى ${levelName(nextLevel, lang)}`
+                                  : `${prog.remaining.toLocaleString("en-US")} XP to ${levelName(nextLevel, lang)}`)
                           : (isAr ? "استمر بالتسوّق لرفع مستواك" : "Keep shopping to level up")}
                       </span>
                     </div>
@@ -169,14 +173,14 @@ export function GxProfile({ username }: { username?: string }) {
                   </div>
 
                   <div className="gxp-stats">
-                    <Stat label="GX Coins" value={(isOwner ? loyaltyQ.data?.coins ?? 0 : 0).toLocaleString("en-US")}
-                      hint={isOwner ? `≈ ${formatCoins(loyaltyQ.data?.coins ?? 0)}` : undefined}
+                    <Stat label="GX Coins" value={(mine?.coins ?? 0).toLocaleString("en-US")}
+                      hint={isOwner ? `≈ ${formatCoins(mine?.coins ?? 0)}` : undefined}
                       hidden={!isOwner} icon="🪙" />
                     <Stat label={isAr ? "رصيد المتجر" : "Store credit"}
-                      value={format(Number(loyaltyQ.data?.store_credit ?? 0))} hint={currency}
+                      value={format(Number(mine?.store_credit ?? 0))} hint={currency}
                       hidden={!isOwner} icon="💳" />
                     <Stat label="XP" value={xp.toLocaleString("en-US")} icon="⚡" />
-                    <Stat label={isAr ? "الطلبات" : "Orders"} value={String(loyaltyQ.data?.orders_count ?? p.orders_count ?? 0)} icon="📦" />
+                    <Stat label={isAr ? "الطلبات" : "Orders"} value={String(mine?.orders_count ?? p.orders_count ?? 0)} icon="📦" />
                   </div>
 
                   {isOwner && lvl && (

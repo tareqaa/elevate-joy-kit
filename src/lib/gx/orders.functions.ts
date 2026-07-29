@@ -30,6 +30,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       coins: z.number().int().min(0).max(10000000),
       discount_jod: z.number().min(0).max(100000),
     }).nullable().optional(),
+    creditJod: z.number().min(0).max(100000).nullable().optional(),
   }).parse(data))
   .handler(async ({ data }) => {
     let userId: string | null = null;
@@ -61,5 +62,6 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       userId,
       coupon: data.coupon ?? null,
       coins: data.coins ?? null,
+      creditJod: data.creditJod ?? 0,
     });
   });

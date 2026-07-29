@@ -7,7 +7,7 @@ import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { OrderConfirmedModal } from "@/components/gx/OrderConfirmedModal";
-import { coinsToJod, jodToCoins } from "@/lib/gx/loyalty";
+import { coinsToJod, jodToCoins, COINS_PER_JOD_REDEEM, MAX_COINS_DISCOUNT_RATIO } from "@/lib/gx/loyalty";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/cart")({
@@ -262,6 +262,7 @@ function CartSummary() {
         )}
       </div>
 
+      <CreditBlock />
       <CoinsBlock />
 
       <div className="summary-line"><span>{t("cart.item_count")}</span><span>{cart.count}</span></div>
@@ -276,6 +277,12 @@ function CartSummary() {
         <div className="summary-line" style={{ color: "#ffc400" }}>
           <span>GX Coins ({cart.coins.coins.toLocaleString("en-US")})</span>
           <span>-{format(cart.coins.discount_jod)}</span>
+        </div>
+      )}
+      {cart.creditJOD > 0 && (
+        <div className="summary-line" style={{ color: "#8ab4ff" }}>
+          <span>رصيد المتجر</span>
+          <span>-{format(cart.creditJOD)}</span>
         </div>
       )}
       <div className="summary-total">
@@ -327,6 +334,13 @@ const summaryCss = `
 .gx-coupon-remove{background:transparent;border:1px solid rgba(255,84,112,.4);color:#ff98a8;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
 .gx-coupon-remove:hover{background:rgba(255,84,112,.1)}
 .gx-coins-max{margin-top:6px;background:transparent;border:1px dashed rgba(255,196,0,.4);color:#ffc400;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;width:100%}
+.gx-bal-pill{margin-inline-start:auto;font-size:12px;font-weight:800;padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+.gx-help{font-size:11.5px;color:#93a4b8;line-height:1.7;margin:2px 0 10px}
+.gx-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.gx-chip{padding:6px 12px;border-radius:99px;font-size:12px;font-weight:800;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:#cfe0ee}
+.gx-chip:hover{border-color:rgba(0,229,255,.5);color:#00e5ff}
+.gx-meter{height:6px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin:8px 0 4px}
+.gx-meter > i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ffc400,#ff8a00)}
 @media (max-width:600px){ .gx-cb-select{max-width:150px} }
 `;
 
@@ -353,8 +367,10 @@ function CoinsBlock() {
 
   if (balance === null) return null;
 
-  const maxByCart = jodToCoins(Math.max(0, cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0)));
-  const usable = Math.min(balance, maxByCart);
+  const payable = Math.max(0, cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0));
+  // GX Coins can cover at most 50% of the order value.
+  const capJod = Math.round(payable * MAX_COINS_DISCOUNT_RATIO * 100) / 100;
+  const usable = Math.min(balance, jodToCoins(capJod));
 
   async function apply(v: number) {
     if (busy) return;
@@ -364,13 +380,19 @@ function CoinsBlock() {
     setBusy(false);
   }
 
+  const pct = balance > 0 ? Math.min(100, Math.round((usable / balance) * 100)) : 0;
+
   return (
     <div className="gx-coupon-block">
       <div className="gx-cb-title">
         🪙 GX Coins
-        <span style={{ marginInlineStart: "auto", fontSize: 12, color: "#ffc400" }}>
+        <span className="gx-bal-pill" style={{ color: "#ffc400" }}>
           {balance.toLocaleString("en-US")} ≈ {format(coinsToJod(balance))}
         </span>
+      </div>
+      <div className="gx-help">
+        كل <b>{COINS_PER_JOD_REDEEM.toLocaleString("en-US")}</b> عملة = <b>1 دينار</b> خصم.
+        الحد الأقصى لخصم العملات هو <b>50%</b> من قيمة الطلب — أي حتى <b>{format(capJod)}</b> على هذا الطلب.
       </div>
       {cart.coins ? (
         <div className="gx-coupon-applied">
@@ -382,10 +404,27 @@ function CoinsBlock() {
         </div>
       ) : usable < 1 ? (
         <div className="gx-coupon-note" style={{ fontSize: 12 }}>
-          اجمع عملات GX مع كل طلب مكتمل — كل 1000 عملة = 1 دينار خصم.
+          {balance < 1
+            ? "اجمع عملات GX مع كل طلب مكتمل — كل 1000 عملة = 1 دينار خصم."
+            : "رصيد عملاتك غير كافٍ لخصم على هذا الطلب حالياً."}
         </div>
       ) : (
         <>
+          <div className="gx-meter"><i style={{ width: `${pct}%` }} /></div>
+          <div className="gx-help" style={{ margin: "0 0 8px" }}>
+            المتاح للاستخدام الآن: <b style={{ color: "#ffc400" }}>{usable.toLocaleString("en-US")}</b> عملة ({format(coinsToJod(usable))})
+          </div>
+          <div className="gx-chips">
+            {[0.25, 0.5, 1].map((f) => {
+              const v = Math.max(1, Math.floor(usable * f));
+              return (
+                <button key={f} type="button" className="gx-chip"
+                  onClick={() => { setAmount(String(v)); apply(v); }}>
+                  {f === 1 ? "الحد الأقصى" : `${Math.round(f * 100)}%`} · {v.toLocaleString("en-US")}
+                </button>
+              );
+            })}
+          </div>
           <div className="gx-cb-row">
             <input
               className="gx-cb-input"
@@ -401,8 +440,85 @@ function CoinsBlock() {
               {busy ? "..." : "استخدام"}
             </button>
           </div>
-          <button type="button" className="gx-coins-max" onClick={() => { setAmount(String(usable)); apply(usable); }}>
-            استخدم الحد الأقصى ({usable.toLocaleString("en-US")})
+          {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
+        </>
+      )}
+    </div>
+  );
+}
+
+function CreditBlock() {
+  const cart = useCart();
+  const { format } = useCurrency();
+  const [balance, setBalance] = useState<number | null>(null);
+  const [amount, setAmount] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) return;
+      const { data } = await supabase.from("profiles").select("store_credit_jod").eq("id", uid).maybeSingle();
+      if (alive) setBalance(Number(data?.store_credit_jod ?? 0));
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  if (balance === null || balance <= 0) return null;
+
+  const payable = Math.max(0, cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0) - (cart.coins?.discount_jod ?? 0));
+  const usable = Math.round(Math.min(balance, payable) * 100) / 100;
+
+  async function apply(v: number) {
+    if (busy) return;
+    setBusy(true);
+    const r = await cart.applyCredit(v);
+    setMsg({ ok: r.ok, msg: r.message });
+    setBusy(false);
+  }
+
+  return (
+    <div className="gx-coupon-block">
+      <div className="gx-cb-title">
+        💳 رصيد المتجر (الاسترجاع)
+        <span className="gx-bal-pill" style={{ color: "#8ab4ff" }}>{format(balance)}</span>
+      </div>
+      <div className="gx-help">
+        رصيدك من عمليات الاسترجاع والتعويضات — يُستخدم مباشرة كخصم من قيمة الطلب بدون أي حد أقصى.
+      </div>
+      {cart.creditJOD > 0 ? (
+        <div className="gx-coupon-applied" style={{ background: "rgba(138,180,255,.1)", borderColor: "rgba(138,180,255,.4)" }}>
+          <div>
+            <div className="gx-coupon-code" style={{ color: "#8ab4ff" }}>{format(cart.creditJOD)}</div>
+            <div className="gx-coupon-note" style={{ color: "#a9c4f0" }}>تم خصمه من إجمالي الطلب</div>
+          </div>
+          <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCredit(); setMsg(null); }}>إزالة</button>
+        </div>
+      ) : (
+        <>
+          <div className="gx-cb-row">
+            <input
+              className="gx-cb-input"
+              type="number"
+              min={0.01}
+              step={0.01}
+              max={usable}
+              placeholder={`استخدم حتى ${usable.toFixed(2)} د.أ`}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+            <button type="button" className="btn btn-primary gx-coupon-apply" disabled={busy || !amount}
+              onClick={() => apply(Number(amount))}>
+              {busy ? "..." : "استخدام"}
+            </button>
+          </div>
+          <button type="button" className="gx-coins-max" style={{ borderColor: "rgba(138,180,255,.4)", color: "#8ab4ff" }}
+            onClick={() => { setAmount(usable.toFixed(2)); apply(usable); }}>
+            استخدم كامل المتاح ({format(usable)})
           </button>
           {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
         </>
@@ -410,3 +526,4 @@ function CoinsBlock() {
     </div>
   );
 }
+

@@ -20,6 +20,8 @@ type CreateOrderInput = {
     coins: number;
     discount_jod: number;
   } | null;
+  /** Store credit (refund balance) applied to this order, in JOD. */
+  creditJod?: number | null;
 };
 
 function isNewSupabaseApiKey(value: string): boolean {
@@ -73,7 +75,7 @@ export async function createStoreOrder(input: CreateOrderInput) {
       contact_type: input.contactType ?? null,
       coupon_id: input.coupon?.id ?? null,
       coupon_code: input.coupon?.code ?? null,
-      discount_jod: (input.coupon?.discount_jod ?? 0) + (input.coins?.discount_jod ?? 0),
+      discount_jod: (input.coupon?.discount_jod ?? 0) + (input.coins?.discount_jod ?? 0) + (input.creditJod ?? 0),
       user_coupon_id: input.coupon?.userCouponId ?? null,
       coins_used: input.coins?.coins ?? 0,
       coins_discount_jod: input.coins?.discount_jod ?? 0,
@@ -143,6 +145,32 @@ export async function createStoreOrder(input: CreateOrderInput) {
     }
   }
 
+  // Store credit (refund balance): deduct and log the transaction.
+  const wantedCredit = Math.max(0, Number(input.creditJod ?? 0));
+  if (wantedCredit > 0 && input.userId) {
+    try {
+      const { data: prof } = await supabase
+        .from("profiles").select("store_credit_jod").eq("id", input.userId).maybeSingle();
+      const balance = Number(prof?.store_credit_jod ?? 0);
+      const spend = Math.round(Math.min(balance, wantedCredit) * 100) / 100;
+      if (spend > 0) {
+        const after = Math.round((balance - spend) * 100) / 100;
+        await supabase.from("profiles").update({ store_credit_jod: after }).eq("id", input.userId);
+        await supabase.from("store_credit_transactions").insert({
+          user_id: input.userId,
+          order_id: data.id,
+          amount_jod: -spend,
+          balance_after: after,
+          kind: "spend",
+          reason: `استخدام رصيد المتجر على الطلب ${data.order_number}`,
+        });
+      }
+    } catch (e) {
+      console.warn("[GX] store credit spend failed", e);
+    }
+  }
+
   return { id: data.id, order_number: data.order_number };
 }
+
 

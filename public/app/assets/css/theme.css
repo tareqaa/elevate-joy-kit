@@ -803,6 +803,8 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
 .acc-bal__v.coins{ color:#ffc44d; }
 .acc-bal__v.credit{ color:#34d399; }
 .acc-bal small{ font-size:9.5px; color:#7c8394; }
+.acc-bal--link{ display:block; text-decoration:none; transition:border-color .16s, background .16s; }
+.acc-bal--link:hover{ border-color:rgba(255,196,77,.45); background:rgba(255,196,77,.06); }
 .acc-group{ padding:2px 0; }
 
 .acc-group__label{

@@ -61,6 +61,10 @@ type Ctx = {
   coins: AppliedCoins | null;
   applyCoins: (coins: number) => Promise<{ ok: boolean; message: string }>;
   removeCoins: () => void;
+  /** Store credit (refund balance) applied to this order, in JOD. */
+  creditJOD: number;
+  applyCredit: (jod: number) => Promise<{ ok: boolean; message: string }>;
+  removeCredit: () => void;
 
   add: (cartId: string, qty?: number) => void;
   addSnap: (cartId: string, usernames: string[]) => void;
@@ -132,6 +136,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [contact, setContactState] = useState<ContactInfo>(DEFAULT_CONTACT);
   const [coupon, setCouponState] = useState<AppliedCoupon | null>(null);
   const [coins, setCoinsState] = useState<AppliedCoins | null>(null);
+  const [creditJOD, setCreditState] = useState(0);
+
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const { currency, format } = useCurrency();
   const submitStoreOrderFn = useServerFn(submitStoreOrder);
@@ -202,7 +208,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const count = items.reduce((s, i) => s + i.qty, 0);
   const subtotalJOD = items.reduce((s, i) => s + i.price * i.qty, 0);
   const afterCoupon = Math.max(0, subtotalJOD - (coupon?.discount_jod ?? 0));
-  const totalJOD = Math.max(0, afterCoupon - (coins?.discount_jod ?? 0));
+  const afterCoins = Math.max(0, afterCoupon - (coins?.discount_jod ?? 0));
+  const appliedCredit = Math.min(creditJOD, afterCoins);
+  const totalJOD = Math.round(Math.max(0, afterCoins - appliedCredit) * 100) / 100;
 
   const setNotes = useCallback((n: string) => {
     localStorage.setItem(NOTES_KEY, n);
@@ -308,6 +316,41 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (coins.discount_jod > base) setCoinsState(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subtotalJOD, coupon?.discount_jod]);
+
+  const removeCredit = useCallback(() => setCreditState(0), []);
+
+  const applyCredit = useCallback(async (wanted: number) => {
+    const amount = Math.round(Math.max(0, Number(wanted) || 0) * 100) / 100;
+    if (amount <= 0) { setCreditState(0); return { ok: false, message: "أدخل مبلغ الرصيد" }; }
+    if (items.length === 0) return { ok: false, message: "السلة فاضية" };
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) return { ok: false, message: "سجّل الدخول لاستخدام رصيد المتجر" };
+      const { data: prof } = await supabase
+        .from("profiles").select("store_credit_jod").eq("id", uid).maybeSingle();
+      const balance = Number(prof?.store_credit_jod ?? 0);
+      if (balance <= 0) return { ok: false, message: "لا يوجد رصيد متجر متاح" };
+      const payable = Math.max(0, subtotalJOD - (coupon?.discount_jod ?? 0) - (coins?.discount_jod ?? 0));
+      const used = Math.round(Math.min(amount, balance, payable) * 100) / 100;
+      if (used <= 0) return { ok: false, message: "لا يوجد مبلغ متبقٍ للدفع" };
+      setCreditState(used);
+      return { ok: true, message: `تم استخدام ${used.toFixed(2)} د.أ من رصيد المتجر` };
+    } catch (e) {
+      console.warn("[GX] applyCredit failed", e);
+      return { ok: false, message: "تعذّر استخدام رصيد المتجر" };
+    }
+  }, [items, subtotalJOD, coupon, coins]);
+
+  // Store credit can never exceed the payable amount.
+  useEffect(() => {
+    if (creditJOD <= 0) return;
+    const payable = Math.max(0, subtotalJOD - (coupon?.discount_jod ?? 0) - (coins?.discount_jod ?? 0));
+    if (creditJOD > payable) setCreditState(payable);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtotalJOD, coupon?.discount_jod, coins?.discount_jod]);
+
+
 
 
   // Re-validate discount when subtotal changes
@@ -525,6 +568,7 @@ ${lines}
               }
             : null,
           coins: coins ? { coins: coins.coins, discount_jod: coins.discount_jod } : null,
+          creditJod: appliedCredit > 0 ? appliedCredit : 0,
         },
       });
       // Persist contact to the signed-in user's profile so it auto-fills next time.
@@ -539,24 +583,26 @@ ${lines}
         }
       } catch { /* noop */ }
       setCoinsState(null);
+      setCreditState(0);
       return result;
     } catch (e) {
       console.warn("[GX] submitOrder failed", e);
       return null;
     }
 
-  }, [items, totalJOD, currency, notes, contact, coupon, coins, submitStoreOrderFn]);
+  }, [items, totalJOD, currency, notes, contact, coupon, coins, appliedCredit, submitStoreOrderFn]);
 
   const value = useMemo<Ctx>(
     () => ({
       items, count, subtotalJOD, totalJOD, notes, setNotes,
       contact, setContact, coupon, applyCoupon, removeCoupon,
       coins, applyCoins, removeCoins,
+      creditJOD: appliedCredit, applyCredit, removeCredit,
       add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear,
       isDrawerOpen, openDrawer, closeDrawer,
       submitOrder, buildWhatsAppUrl,
     }),
-    [items, count, subtotalJOD, totalJOD, notes, setNotes, contact, setContact, coupon, applyCoupon, removeCoupon, coins, applyCoins, removeCoins, add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear, isDrawerOpen, openDrawer, closeDrawer, submitOrder, buildWhatsAppUrl]
+    [items, count, subtotalJOD, totalJOD, notes, setNotes, contact, setContact, coupon, applyCoupon, removeCoupon, coins, applyCoins, removeCoins, appliedCredit, applyCredit, removeCredit, add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear, isDrawerOpen, openDrawer, closeDrawer, submitOrder, buildWhatsAppUrl]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

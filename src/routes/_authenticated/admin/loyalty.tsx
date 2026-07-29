@@ -12,7 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Sparkles, Coins, Search, Trophy, Save, Ticket } from "lucide-react";
+import { Sparkles, Coins, Search, Trophy, Save, Ticket, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/loyalty")({
   head: () => ({ meta: [{ title: "نظام الولاء — لوحة التحكم" }] }),
@@ -40,13 +40,15 @@ function LoyaltyAdmin() {
       </div>
 
       <Tabs defaultValue="levels" dir="rtl">
-        <TabsList className="grid grid-cols-3 w-full max-w-lg h-11">
+        <TabsList className="grid grid-cols-4 w-full max-w-2xl h-11">
           <TabsTrigger value="levels" className="gap-2"><Trophy className="w-4 h-4" />المستويات</TabsTrigger>
           <TabsTrigger value="customers" className="gap-2"><Coins className="w-4 h-4" />العملاء</TabsTrigger>
+          <TabsTrigger value="credit" className="gap-2"><Wallet className="w-4 h-4" />الرصيد والاسترجاع</TabsTrigger>
           <TabsTrigger value="coupons" className="gap-2"><Ticket className="w-4 h-4" />كوبونات المستوى</TabsTrigger>
         </TabsList>
         <TabsContent value="levels" className="mt-4"><LevelsTab /></TabsContent>
         <TabsContent value="customers" className="mt-4"><CustomersTab /></TabsContent>
+        <TabsContent value="credit" className="mt-4"><CreditTab /></TabsContent>
         <TabsContent value="coupons" className="mt-4"><CouponsTab /></TabsContent>
       </Tabs>
     </div>
@@ -136,13 +138,16 @@ function CustomersTab() {
   const [xp, setXp] = useState("0");
   const [coins, setCoins] = useState("0");
   const [reason, setReason] = useState("");
+  const [creditTarget, setCreditTarget] = useState<{ id: string; name: string; balance: number } | null>(null);
+  const [credit, setCredit] = useState("0");
+  const [creditReason, setCreditReason] = useState("");
 
   const rowsQ = useQuery({
     queryKey: ["admin-loyalty-users"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, username, email, avatar_url, xp, gx_coins, level_code, orders_count, total_spent")
+        .select("id, full_name, username, email, avatar_url, xp, gx_coins, level_code, orders_count, total_spent, store_credit_jod")
         .order("xp", { ascending: false })
         .limit(300);
       if (error) throw error;
@@ -169,12 +174,32 @@ function CustomersTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const adjustCredit = useMutation({
+    mutationFn: async () => {
+      if (!creditTarget) return;
+      const { error } = await supabase.rpc("admin_adjust_store_credit", {
+        _user_id: creditTarget.id,
+        _amount: Number(credit) || 0,
+        _reason: creditReason.trim() || "تعديل رصيد من الإدارة",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم تعديل رصيد المتجر");
+      setCreditTarget(null); setCredit("0"); setCreditReason("");
+      qc.invalidateQueries({ queryKey: ["admin-loyalty-users"] });
+      qc.invalidateQueries({ queryKey: ["admin-store-credit-tx"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const filtered = useMemo(() => {
     const rows = rowsQ.data ?? [];
     if (!q.trim()) return rows;
     const s = q.toLowerCase();
     return rows.filter((r) => `${r.full_name ?? ""} ${r.username ?? ""} ${r.email ?? ""}`.toLowerCase().includes(s));
   }, [rowsQ.data, q]);
+
 
   return (
     <Card>
@@ -192,6 +217,7 @@ function CustomersTab() {
               <th className="p-2 font-medium">المستوى</th>
               <th className="p-2 font-medium">XP</th>
               <th className="p-2 font-medium">GX Coins</th>
+              <th className="p-2 font-medium">رصيد المتجر</th>
               <th className="p-2 font-medium">الطلبات</th>
               <th className="p-2 font-medium"></th>
             </tr>
@@ -206,17 +232,22 @@ function CustomersTab() {
                 <td className="p-2"><Badge variant="outline" className="text-[10px] font-mono">{r.level_code}</Badge></td>
                 <td className="p-2 font-bold">{Number(r.xp).toLocaleString("en-US")}</td>
                 <td className="p-2 text-amber-300 font-bold">{Number(r.gx_coins).toLocaleString("en-US")}</td>
+                <td className="p-2 text-sky-300 font-bold">{Number(r.store_credit_jod ?? 0).toFixed(2)} د.أ</td>
                 <td className="p-2">{r.orders_count}</td>
-                <td className="p-2 text-left">
+                <td className="p-2 text-left whitespace-nowrap space-x-1 space-x-reverse">
                   <Button size="sm" variant="outline"
                     onClick={() => setTarget({ id: r.id, name: r.full_name || r.username || r.email || "" })}>
-                    تعديل XP / Coins
+                    XP / Coins
+                  </Button>
+                  <Button size="sm" variant="outline" className="border-sky-500/40 text-sky-300"
+                    onClick={() => setCreditTarget({ id: r.id, name: r.full_name || r.username || r.email || "", balance: Number(r.store_credit_jod ?? 0) })}>
+                    رصيد / استرجاع
                   </Button>
                 </td>
               </tr>
             ))}
             {!rowsQ.isLoading && filtered.length === 0 && (
-              <tr><td colSpan={6} className="text-center p-8 text-muted-foreground">لا نتائج</td></tr>
+              <tr><td colSpan={7} className="text-center p-8 text-muted-foreground">لا نتائج</td></tr>
             )}
           </tbody>
         </table>
@@ -241,9 +272,90 @@ function CustomersTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!creditTarget} onOpenChange={(o) => !o && setCreditTarget(null)}>
+        <DialogContent dir="rtl" className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>رصيد المتجر / الاسترجاع</DialogTitle>
+            <DialogDescription>
+              {creditTarget?.name} — الرصيد الحالي: {(creditTarget?.balance ?? 0).toFixed(2)} د.أ
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Field label="المبلغ بالدينار (موجب = إضافة، سالب = خصم)">
+              <Input type="number" step="0.01" value={credit} onChange={(e) => setCredit(e.target.value)} />
+            </Field>
+            <div className="flex gap-2">
+              {[1, 5, 10].map((v) => (
+                <Button key={v} type="button" size="sm" variant="outline" onClick={() => setCredit(String(v))}>+{v}</Button>
+              ))}
+            </div>
+            <Field label="السبب">
+              <Input value={creditReason} onChange={(e) => setCreditReason(e.target.value)} placeholder="مثال: استرجاع طلب ملغى" />
+            </Field>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreditTarget(null)}>إلغاء</Button>
+            <Button className="bg-sky-500 hover:bg-sky-400 text-black" disabled={adjustCredit.isPending} onClick={() => adjustCredit.mutate()}>
+              تطبيق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
+
+function CreditTab() {
+  const listQ = useQuery({
+    queryKey: ["admin-store-credit-tx"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("store_credit_transactions")
+        .select("id, user_id, amount_jod, balance_after, kind, reason, created_at")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader className="pb-2"><CardTitle className="text-base">حركات رصيد المتجر (الاسترجاعات)</CardTitle></CardHeader>
+      <CardContent className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="text-muted-foreground border-b">
+            <tr className="text-right">
+              <th className="p-2 font-medium">المبلغ</th>
+              <th className="p-2 font-medium">النوع</th>
+              <th className="p-2 font-medium">الرصيد بعدها</th>
+              <th className="p-2 font-medium">السبب</th>
+              <th className="p-2 font-medium">التاريخ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(listQ.data ?? []).map((t) => (
+              <tr key={t.id} className="border-b border-white/5">
+                <td className={"p-2 font-bold " + (Number(t.amount_jod) >= 0 ? "text-emerald-300" : "text-rose-300")}>
+                  {Number(t.amount_jod) >= 0 ? "+" : ""}{Number(t.amount_jod).toFixed(2)} د.أ
+                </td>
+                <td className="p-2"><Badge variant="outline" className="text-[10px] font-mono">{t.kind}</Badge></td>
+                <td className="p-2">{t.balance_after === null ? "—" : Number(t.balance_after).toFixed(2)}</td>
+                <td className="p-2 text-muted-foreground">{t.reason || "—"}</td>
+                <td className="p-2 text-[11px] text-muted-foreground">{new Date(t.created_at).toLocaleString("ar-JO")}</td>
+              </tr>
+            ))}
+            {!listQ.isLoading && (listQ.data ?? []).length === 0 && (
+              <tr><td colSpan={5} className="text-center p-8 text-muted-foreground">لا حركات بعد</td></tr>
+            )}
+          </tbody>
+        </table>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 function CouponsTab() {
   const listQ = useQuery({
