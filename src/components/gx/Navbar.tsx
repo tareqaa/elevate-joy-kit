@@ -152,7 +152,7 @@ export function Navbar() {
     }
     (async () => {
       try {
-        const { data: prof } = await supabase.from("profiles").select("username, full_name, avatar_url, level, email").eq("id", session.userId).maybeSingle();
+        const { data: prof } = await supabase.from("profiles").select("username, full_name, avatar_url, level, email, gx_coins, store_credit_jod").eq("id", session.userId).maybeSingle();
         const next = prof ? { ...prof, id: session.userId } : { id: session.userId, email: session.email };
         setProfile(next);
         try {
