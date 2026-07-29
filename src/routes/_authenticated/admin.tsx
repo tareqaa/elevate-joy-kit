@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AdminCommandPalette } from "@/components/gx/admin/AdminCommandPalette";
 import {
   LayoutDashboard, Package, Users, Search, Bell, ChevronLeft, ChevronRight,
-  Store, User, LogOut, Command, FolderTree, ShoppingBag, Activity, Settings, Ticket, Home, Star, Sparkles,
+  Store, User, LogOut, Command, FolderTree, ShoppingBag, Activity, Settings, Ticket, Home, Star, Sparkles, Smile,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -30,6 +30,7 @@ const NAV: NavItem[] = [
   { to: "/admin/coupons", label: "الكوبونات", Icon: Ticket },
   { to: "/admin/reviews", label: "المراجعات", Icon: Star },
   { to: "/admin/loyalty", label: "نظام الولاء", Icon: Sparkles },
+  { to: "/admin/avatars", label: "الأفاتار", Icon: Smile },
   { to: "/admin/activity", label: "سجل النشاطات", Icon: Activity },
   { to: "/admin/settings", label: "الإعدادات", Icon: Settings },
 ];
