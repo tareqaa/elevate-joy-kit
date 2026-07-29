@@ -135,6 +135,12 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
         const l = merged.home_layout as HomeLayout;
         if (!l.theme) merged.home_layout = { ...l, theme: DEFAULT_HOME_LAYOUT.theme };
       }
+      merged.catalog_prices =
+        merged.catalog_prices && typeof merged.catalog_prices === "object" ? merged.catalog_prices : {};
+      // Live prices: mutate the catalog before rendering so product pages,
+      // search and the cart all read the same edited price.
+      applyCatalogPrices(merged.catalog_prices);
+      cacheCatalogPrices(merged.catalog_prices);
       setSettings(merged);
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(merged)); } catch { /* noop */ }
     }
