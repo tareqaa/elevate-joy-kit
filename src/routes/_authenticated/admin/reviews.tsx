@@ -89,7 +89,7 @@ function AdminReviewsPage() {
           <MessageSquare className="w-6 h-6 text-cyan-400" /> إدارة المراجعات
         </h1>
         <p className="text-sm text-slate-400 mt-1">
-          كل مراجعة تصل هنا أولاً. المنشور على الصفحة الرئيسية = معتمد + 4 نجوم فأكثر.
+          كل مراجعة تصل هنا أولاً. المنشور على الصفحة الرئيسية = معتمد + مميّز + 4 نجوم فأكثر.
         </p>
       </div>
 
