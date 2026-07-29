@@ -719,19 +719,25 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
 }
 
 
-/** Refund an order to the customer's store credit (refund balance). */
-function RefundBlock({ order }: { order: OrderWithEmail }) {
+/**
+ * Refund an order. Runs the transactional `admin_refund_order` RPC which
+ * reverses every effect of the order (credit, XP, coins, level, badges,
+ * avatars, coupons, leaderboard) in a single atomic operation.
+ */
+function RefundBlock({ order, onDone }: { order: OrderWithEmail; onDone?: () => void }) {
   const qc = useQueryClient();
-  const [amount, setAmount] = useState(Number(order.total_jod || 0).toFixed(2));
+  const maxAmount = Number(order.total_jod || 0);
+  const [amount, setAmount] = useState(maxAmount.toFixed(2));
   const [reason, setReason] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const historyQ = useQuery({
-    queryKey: ["order-refunds", order.id],
+  const logQ = useQuery({
+    queryKey: ["order-refund-log", order.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("store_credit_transactions")
-        .select("id, amount_jod, reason, created_at")
+        .from("refund_log")
+        .select("id, amount_jod, xp_removed, coins_removed, level_before, level_after, badges_removed, avatars_locked, coupons_revoked, reason, admin_email, created_at")
         .eq("order_id", order.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -739,84 +745,138 @@ function RefundBlock({ order }: { order: OrderWithEmail }) {
     },
   });
 
-  const refunded = (historyQ.data ?? []).filter((t) => Number(t.amount_jod) > 0)
-    .reduce((s, t) => s + Number(t.amount_jod), 0);
+  const refunded = (logQ.data ?? []).reduce((s, t) => s + Number(t.amount_jod || 0), 0);
+  const alreadyRefunded = order.status === "refunded";
+  const value = Number(amount);
+  const amountValid = Number.isFinite(value) && value >= 0 && value <= maxAmount + 0.001;
+  const reasonValid = reason.trim().length >= 3;
 
-  async function refund() {
-    const value = Number(amount);
-    if (!order.user_id) { toast.error("هذا الطلب لزائر غير مسجّل — ما في حساب لإضافة الرصيد عليه"); return; }
-    if (!Number.isFinite(value) || value <= 0) { toast.error("أدخل مبلغ صحيح"); return; }
-    if (!reason.trim()) { toast.error("اكتب سبب الاسترجاع"); return; }
-    if (!confirm(`تأكيد استرجاع ${value.toFixed(2)} د.أ إلى رصيد العميل؟`)) return;
+  async function runRefund() {
     setBusy(true);
-    const { data, error } = await supabase.rpc("admin_adjust_store_credit", {
-      _user_id: order.user_id,
-      _amount: value,
-      _reason: `استرجاع الطلب ${order.order_number} — ${reason.trim()}`,
+    const { data, error } = await supabase.rpc("admin_refund_order", {
       _order_id: order.id,
+      _amount: value,
+      _reason: reason.trim(),
     });
     setBusy(false);
-    const res = data as { ok?: boolean; message?: string } | null;
-    if (error || !res?.ok) { toast.error(error?.message || res?.message || "فشل الاسترجاع"); return; }
-    toast.success("تم إضافة مبلغ الاسترجاع إلى رصيد العميل");
+    const res = data as { ok?: boolean; message?: string; xp_removed?: number; coins_removed?: number } | null;
+    if (error || !res?.ok) {
+      toast.error(error?.message || res?.message || "فشل الاسترجاع — لم يتم تغيير أي بيانات");
+      return;
+    }
+    toast.success(
+      `تم الاسترجاع: ${value.toFixed(2)} د.أ` +
+      (res.xp_removed ? ` • سحب ${res.xp_removed} XP` : "") +
+      (res.coins_removed ? ` • سحب ${res.coins_removed} GX` : ""),
+    );
+    setConfirmOpen(false);
     setReason("");
-    qc.invalidateQueries({ queryKey: ["order-refunds", order.id] });
+    qc.invalidateQueries({ queryKey: ["order-refund-log", order.id] });
+    qc.invalidateQueries({ queryKey: ["admin-orders"] });
+    qc.invalidateQueries({ queryKey: ["admin-stats"] });
     qc.invalidateQueries({ queryKey: ["admin-loyalty-customers"] });
     qc.invalidateQueries({ queryKey: ["admin-credit-log"] });
+    onDone?.();
   }
 
   return (
     <div className="gx-od-sec">
       <div className="gx-od-sec-h">
-        <div className="gx-od-sec-t">💸 استرجاع (Refund)</div>
+        <div className="gx-od-sec-t"><Undo2 size={14} /> استرجاع الطلب (Refund)</div>
         {refunded > 0 && (
-          <span className="gx-adm-badge bg-emerald-500/15 text-emerald-300 border-emerald-500/40">
+          <span className="gx-adm-badge bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/40">
             مُسترجع: {refunded.toFixed(2)} د.أ
           </span>
         )}
       </div>
 
-      {!order.user_id ? (
-        <div className="text-xs text-cyan-100/50">طلب زائر — الاسترجاع للرصيد متاح فقط للعملاء المسجّلين.</div>
+      {alreadyRefunded ? (
+        <div className="text-xs text-fuchsia-200/80">تم استرجاع هذا الطلب — لا يمكن استرجاعه مرة ثانية.</div>
+      ) : !order.user_id ? (
+        <div className="text-xs text-cyan-100/50">طلب زائر غير مسجّل — الاسترجاع للرصيد متاح فقط للعملاء المسجّلين.</div>
       ) : (
         <>
-          <div className="grid sm:grid-cols-[140px_1fr_auto] gap-2 items-end">
+          <p className="text-[11px] text-cyan-100/55 mb-3 leading-relaxed">
+            الاسترجاع بيرجّع قيمة الطلب لرصيد العميل، وبنفس الوقت بيسحب تلقائياً كل ما منحه هذا الطلب:
+            نقاط الخبرة، عملات GX، تقدّم المستوى، الكوبونات غير المستخدمة، الشارات والأفاتارات غير المستحقة، ويحدّث ترتيب المتصدرين.
+          </p>
+
+          <div className="grid sm:grid-cols-[150px_1fr_auto] gap-2 items-end">
             <div>
               <Label className="text-[11px] text-cyan-100/60">المبلغ (د.أ)</Label>
-              <Input dir="ltr" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} className="gx-adm-input h-9 text-sm font-mono" />
+              <Input dir="ltr" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)}
+                className="gx-adm-input h-9 text-sm font-mono" />
+              {!amountValid && <div className="text-[10px] text-rose-400 mt-1">المبلغ لازم يكون بين 0 و {maxAmount.toFixed(2)}</div>}
             </div>
             <div>
-              <Label className="text-[11px] text-cyan-100/60">السبب</Label>
-              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثلاً: الكود ما اشتغل" className="gx-adm-input h-9 text-sm" />
+              <Label className="text-[11px] text-cyan-100/60">سبب الاسترجاع (إلزامي)</Label>
+              <Input value={reason} onChange={(e) => setReason(e.target.value)}
+                placeholder="مثلاً: الكود ما اشتغل مع العميل" className="gx-adm-input h-9 text-sm" />
             </div>
-            <Button onClick={refund} disabled={busy} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold h-9">
-              {busy ? "..." : "استرجاع للرصيد"}
+            <Button onClick={() => setConfirmOpen(true)} disabled={!amountValid || !reasonValid}
+              className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold h-9 disabled:opacity-45">
+              <Undo2 size={14} className="ml-1" /> استرجاع
             </Button>
           </div>
+
           <div className="flex gap-2 mt-2 flex-wrap">
             {[0.25, 0.5, 1].map((r) => (
               <button key={r} type="button" className="gx-adm-chip"
-                onClick={() => setAmount((Number(order.total_jod || 0) * r).toFixed(2))}>
+                onClick={() => setAmount((maxAmount * r).toFixed(2))}>
                 {r === 1 ? "كامل المبلغ" : `${r * 100}%`}
               </button>
             ))}
           </div>
-          {(historyQ.data ?? []).length > 0 && (
-            <div className="mt-3 space-y-1">
-              {(historyQ.data ?? []).map((t) => (
-                <div key={t.id} className="gx-od-item">
-                  <span className="text-cyan-100/80 text-xs">{t.reason || "—"}</span>
-                  <span className={`font-mono font-bold ${Number(t.amount_jod) > 0 ? "text-emerald-300" : "text-rose-300"}`}>
-                    {Number(t.amount_jod) > 0 ? "+" : ""}{Number(t.amount_jod).toFixed(2)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-          <p className="text-[11px] text-cyan-100/45 mt-2">
-            الرصيد المسترجع بيظهر للعميل مباشرة وبقدر يستخدمه بالسلة على أي طلب جاي.
-          </p>
+
+          <Dialog open={confirmOpen} onOpenChange={(v) => { if (!busy) setConfirmOpen(v); }}>
+            <DialogContent className="max-w-md" dir="rtl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-fuchsia-300">
+                  <AlertTriangle size={18} /> تأكيد استرجاع الطلب
+                </DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-cyan-100/70 leading-relaxed">
+                رح يتم استرجاع <b className="text-fuchsia-300 font-mono">{value.toFixed(2)} د.أ</b> لرصيد العميل على الطلب
+                <span className="font-mono text-cyan-300" dir="ltr"> {order.order_number}</span>، وسحب كل مكافآت هذا الطلب
+                (XP، GX Coins، المستوى، الشارات، الأفاتارات، الكوبونات غير المستخدمة).
+              </p>
+              <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-xs text-cyan-100/70 space-y-1">
+                <div>السبب: <span className="text-cyan-100">{reason.trim()}</span></div>
+                <div className="text-[11px] text-amber-300/80">هذه العملية غير قابلة للتراجع، وبتتنفذ كوحدة واحدة — إذا فشل أي جزء ما بيتغير أي شي.</div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="ghost" onClick={() => setConfirmOpen(false)} disabled={busy}>إلغاء</Button>
+                <Button onClick={runRefund} disabled={busy} className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold">
+                  {busy ? <><Loader2 size={14} className="ml-1 animate-spin" /> جاري التنفيذ…</> : "تأكيد الاسترجاع"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </>
+      )}
+
+      {(logQ.data ?? []).length > 0 && (
+        <div className="mt-3 space-y-2">
+          <div className="text-[11px] uppercase tracking-wide text-cyan-300/60 font-bold">سجل الاسترجاعات</div>
+          {(logQ.data ?? []).map((t) => (
+            <div key={t.id} className="rounded-lg bg-black/30 border border-white/8 p-2.5 text-xs space-y-1">
+              <div className="flex justify-between gap-2">
+                <span className="text-cyan-100/80">{t.reason}</span>
+                <span className="font-mono font-bold text-fuchsia-300">{Number(t.amount_jod).toFixed(2)} د.أ</span>
+              </div>
+              <div className="text-[10.5px] text-cyan-100/45 flex flex-wrap gap-x-3 gap-y-0.5">
+                <span>{new Date(t.created_at).toLocaleString("ar-EG")}</span>
+                {t.admin_email && <span dir="ltr">{t.admin_email}</span>}
+                {t.xp_removed > 0 && <span>−{t.xp_removed} XP</span>}
+                {t.coins_removed > 0 && <span>−{t.coins_removed} GX</span>}
+                {t.level_before !== t.level_after && <span>المستوى: {t.level_before} ← {t.level_after}</span>}
+                {t.badges_removed > 0 && <span>شارات مسحوبة: {t.badges_removed}</span>}
+                {t.avatars_locked > 0 && <span>أفاتار مقفول: {t.avatars_locked}</span>}
+                {t.coupons_revoked > 0 && <span>كوبونات ملغاة: {t.coupons_revoked}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
