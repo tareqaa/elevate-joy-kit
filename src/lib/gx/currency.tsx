@@ -31,6 +31,10 @@ type Ctx = {
   currency: string;
   setCurrency: (c: string) => void;
   format: (jod: number) => string;
+  /** 1000 GX Coins = 1 JOD, formatted in the active currency. */
+  formatCoins: (coins: number) => string;
+  /** Live market rate for 1 JOD in the active currency. */
+  rate: number;
 };
 
 const CurrencyContext = createContext<Ctx | null>(null);
