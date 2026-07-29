@@ -360,28 +360,54 @@ export function Navbar() {
                   <span className="account-lvl-dot">{level}</span>
                 </button>
                 <div className={"account-panel" + (accountOpen ? " open" : "")} onMouseEnter={cancelClose} onMouseLeave={scheduleClose}>
-                  <div className="acc-mini">
-                    <div className="acc-mini__name">{displayName}</div>
-                    <div className="acc-mini__handle" dir="ltr">{username ? "@" + username : profile?.email}</div>
+                  {username ? (
+                    <Link to="/u/$username" params={{ username }} className="acc-hero" onClick={() => setAccountOpen(false)}>
+                      <span className="acc-hero__av">
+                        {avatarUrl ? <img src={avatarUrl} alt="" /> : <span className="account-avatar-fallback">{initials}</span>}
+                      </span>
+                      <span className="acc-hero__txt">
+                        <span className="acc-hero__name">{displayName}</span>
+                        <span className="acc-hero__handle" dir="ltr">@{username}</span>
+                      </span>
+                      <span className="acc-hero__lvl">Lv {level}</span>
+                    </Link>
+                  ) : (
+                    <Link to="/account" search={{ tab: "profile" } as never} className="acc-hero" onClick={() => setAccountOpen(false)}>
+                      <span className="acc-hero__av">
+                        {avatarUrl ? <img src={avatarUrl} alt="" /> : <span className="account-avatar-fallback">{initials}</span>}
+                      </span>
+                      <span className="acc-hero__txt">
+                        <span className="acc-hero__name">{displayName}</span>
+                        <span className="acc-hero__handle" dir="ltr">{profile?.email}</span>
+                      </span>
+                      <span className="acc-hero__lvl">Lv {level}</span>
+                    </Link>
+                  )}
+
+                  <div className="acc-group">
+                    <div className="acc-group__label">{lang === "en" ? "Account" : "الحساب"}</div>
+                    <Link to="/account" search={{ tab: "orders" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
+                      <span className="ai">📦</span><span>{t("nav.orders")}</span>
+                    </Link>
+                    <Link to="/account" search={{ tab: "profile" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
+                      <span className="ai">👤</span><span>{t("nav.account")}</span>
+                    </Link>
+                    <Link to="/account" search={{ tab: "security" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
+                      <span className="ai">⚙️</span><span>{t("nav.settings")}</span>
+                    </Link>
                   </div>
-                  <div className="acc-divider" />
-                  <Link to="/account" search={{ tab: "orders" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
-                    <span className="ai">📦</span><span>{t("nav.orders")}</span>
-                  </Link>
-                  <Link to="/account" search={{ tab: "profile" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
-                    <span className="ai">👤</span><span>{t("nav.account")}</span>
-                  </Link>
-                  <Link to="/account" search={{ tab: "security" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
-                    <span className="ai">⚙️</span><span>{t("nav.settings")}</span>
-                  </Link>
+
                   {canReview && (
-                    <button
-                      type="button"
-                      className="acc-link"
-                      onClick={() => { setAccountOpen(false); setReviewOpen(true); }}
-                    >
-                      <span className="ai">⭐</span><span>{lang === "en" ? "Leave a Review" : "اكتب مراجعة"}</span>
-                    </button>
+                    <>
+                      <div className="acc-divider" />
+                      <button
+                        type="button"
+                        className="acc-link"
+                        onClick={() => { setAccountOpen(false); setReviewOpen(true); }}
+                      >
+                        <span className="ai">⭐</span><span>{lang === "en" ? "Leave a Review" : "اكتب مراجعة"}</span>
+                      </button>
+                    </>
                   )}
                   {isAdmin && (
                     <>
@@ -396,6 +422,7 @@ export function Navbar() {
                     <span className="ai">↩︎</span><span>{t("nav.logout")}</span>
                   </button>
                 </div>
+
               </div>
             ) : (
               <button type="button" className="icon-btn account-link" onClick={() => setAuthOpen(true)} aria-label={t("nav.login")}>
