@@ -5,16 +5,10 @@ import { useLang } from "@/lib/gx/i18n";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { Link } from "@tanstack/react-router";
 
-
-
-
 export function CartDrawer() {
   const cart = useCart();
   const { format } = useCurrency();
   const { t, lang } = useLang();
-  const site = useSiteSettings();
-  const [busy, setBusy] = useState(false);
-  const [confirmed, setConfirmed] = useState<{ orderNumber: string; waUrl: string | null } | null>(null);
 
   useEffect(() => {
     if (!cart.isDrawerOpen) return;
@@ -27,32 +21,6 @@ export function CartDrawer() {
       document.body.style.overflow = prevOverflow;
     };
   }, [cart.isDrawerOpen, cart.closeDrawer]);
-
-  async function checkout() {
-    if (busy) return;
-    if (site.maintenance_mode) {
-      const { toast } = await import("sonner");
-      toast.error(site.maintenance_message || "الموقع تحت الصيانة حالياً");
-      return;
-    }
-    setBusy(true);
-    try {
-      const submitted = await cart.submitOrder();
-      if (!submitted?.order_number) {
-        const { toast } = await import("sonner");
-        toast.error(t("cart.checkout_saving"));
-        return;
-      }
-      const orderNumber = submitted.order_number;
-      const url = cart.buildWhatsAppUrl(orderNumber);
-      cart.clear();
-      cart.closeDrawer();
-      setConfirmed({ orderNumber, waUrl: url });
-    } finally {
-      setBusy(false);
-    }
-  }
-
 
   return (
     <>
@@ -90,20 +58,13 @@ export function CartDrawer() {
             <span className="lbl">{t("cart.total")}</span>
             <span className="val">{format(cart.totalJOD)}</span>
           </div>
-          <button className="checkout-btn" disabled={busy || cart.items.length === 0} onClick={checkout}>
+          <Link to="/cart" className="checkout-btn" onClick={cart.closeDrawer} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.07L2 22l5.06-1.33A9.94 9.94 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
-            {busy ? t("cart.checkout_saving") : t("cart.checkout_wa")}
-          </button>
+            {t("cart.checkout_wa")}
+          </Link>
           <Link to="/cart" className="view-cart-link" onClick={cart.closeDrawer}>{t("cart.open_full")}</Link>
         </div>
       </div>
-      {confirmed && (
-        <OrderConfirmedModal
-          orderNumber={confirmed.orderNumber}
-          waUrl={confirmed.waUrl}
-          onClose={() => setConfirmed(null)}
-        />
-      )}
     </>
   );
 }
