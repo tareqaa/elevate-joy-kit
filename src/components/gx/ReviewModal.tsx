@@ -61,9 +61,7 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
   }, [open, userId]);
 
   const currentOrder = useMemo(() => orders.find((o) => o.id === orderId) || null, [orders, orderId]);
-  const items = useMemo(() => parseItems(currentOrder?.items), [currentOrder]);
 
-  useEffect(() => { setProductSlug(items[0]?.slug || ""); }, [items]);
 
   if (!open) return null;
 
