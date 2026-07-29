@@ -480,13 +480,15 @@ function TreeNode({
 
 
 function FlatRow({
-  node, parent, onEdit, onDelete, onToggleActive,
+  node, parent, count, onEdit, onDelete, onToggleActive, onDuplicate,
 }: {
   node: Category;
   parent: Category | null;
+  count: number;
   onEdit: (c: Category) => void;
   onDelete: (id: string, name: string) => void;
   onToggleActive: (id: string, next: boolean) => void;
+  onDuplicate: (c: Category) => void;
 }) {
   return (
     <div className={`gx-row ${node.is_active ? "" : "off"}`}>
@@ -500,16 +502,19 @@ function FlatRow({
             {parent && <span className="text-xs text-cyan-100/50">{parent.name_ar} ›</span>}
             <span className="gx-row-title">{node.name_ar}</span>
             {node.is_main && <span className="gx-chip main"><Home size={9} /> رئيسي</span>}
+            <span className="gx-count"><Package size={9} /> {count} منتج</span>
           </div>
-          <div className="gx-row-meta">/{node.slug}</div>
+          <div className="gx-row-meta">/{node.slug} · ترتيب: {node.sort_order}</div>
         </div>
         <div className="flex items-center gap-1">
-          <button className="gx-btn outline" onClick={() => onEdit(node)}><Pencil size={11} /></button>
+          <button className="gx-btn outline" onClick={() => onEdit(node)} title="تعديل"><Pencil size={11} /></button>
+          <button className="gx-btn ghost" onClick={() => onDuplicate(node)} title="نسخ"><Copy size={11} /></button>
           <button className="gx-btn outline" onClick={() => onToggleActive(node.id, !node.is_active)}>
             {node.is_active ? <Eye size={11} /> : <EyeOff size={11} />}
           </button>
-          <button className="gx-btn danger" onClick={() => onDelete(node.id, node.name_ar)}><Trash2 size={11} /></button>
+          <button className="gx-btn danger" onClick={() => onDelete(node.id, node.name_ar)} title="حذف"><Trash2 size={11} /></button>
         </div>
+
       </div>
     </div>
   );
