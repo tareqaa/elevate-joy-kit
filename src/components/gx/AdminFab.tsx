@@ -51,11 +51,16 @@ export function AdminFab() {
       <div className={`gx-fab-wrap ${open ? "open" : ""}`}>
         {open && (
           <div className="gx-fab-menu">
+            <button className="gx-fab-item"
+              onClick={() => { window.dispatchEvent(new Event("gx:toggle-text-edit")); setOpen(false); }}>
+              <Pencil size={15} /><span>تحرير نصوص هذه الصفحة</span>
+            </button>
             <Link to="/admin" className="gx-fab-item"><LayoutDashboard size={15} /><span>لوحة التحكم</span></Link>
             <Link to="/admin/home" className="gx-fab-item on"><HomeIcon size={15} /><span>الصفحة الرئيسية</span></Link>
             <Link to="/admin/orders" className="gx-fab-item"><Package size={15} /><span>الطلبات</span></Link>
             <Link to="/admin/settings" className="gx-fab-item"><SettingsIcon size={15} /><span>الإعدادات</span></Link>
           </div>
+
         )}
         <button className="gx-fab-btn" onClick={() => setOpen((v) => !v)} aria-label="أدوات الأدمن">
           {open ? <X size={20} /> : <span className="gx-fab-mark">GX</span>}
