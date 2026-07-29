@@ -73,7 +73,11 @@ export async function createStoreOrder(input: CreateOrderInput) {
       contact_type: input.contactType ?? null,
       coupon_id: input.coupon?.id ?? null,
       coupon_code: input.coupon?.code ?? null,
-      discount_jod: input.coupon?.discount_jod ?? 0,
+      discount_jod: (input.coupon?.discount_jod ?? 0) + (input.coins?.discount_jod ?? 0),
+      user_coupon_id: input.coupon?.userCouponId ?? null,
+      coins_used: input.coins?.coins ?? 0,
+      coins_discount_jod: input.coins?.discount_jod ?? 0,
+      paid_jod: input.totalJOD,
     })
     .select("id, order_number")
     .single();
@@ -82,22 +86,63 @@ export async function createStoreOrder(input: CreateOrderInput) {
   if (!data?.order_number) throw new Error("Order was not created");
 
   // Record coupon redemption + increment usage counter (best-effort, non-blocking on failure)
-  if (input.coupon) {
+  const couponId = input.coupon?.id ?? null;
+  if (input.coupon && couponId) {
     try {
       await supabase.from("coupon_redemptions").insert({
-        coupon_id: input.coupon.id,
+        coupon_id: couponId,
         user_id: input.userId ?? null,
         order_id: data.id,
         discount_jod: input.coupon.discount_jod,
       });
       // increment usage_count via RPC-free path: read then update
-      const { data: cRow } = await supabase.from("coupons").select("usage_count").eq("id", input.coupon.id).maybeSingle();
+      const { data: cRow } = await supabase.from("coupons").select("usage_count").eq("id", couponId).maybeSingle();
       const nextCount = (cRow?.usage_count ?? 0) + 1;
-      await supabase.from("coupons").update({ usage_count: nextCount }).eq("id", input.coupon.id);
+      await supabase.from("coupons").update({ usage_count: nextCount }).eq("id", couponId);
     } catch (e) {
       console.warn("[GX] coupon redemption record failed", e);
     }
   }
 
+  // Personal level coupon: mark as used so it cannot be reused.
+  if (input.coupon?.userCouponId && input.userId) {
+    try {
+      await supabase
+        .from("user_coupons")
+        .update({ used_at: new Date().toISOString(), order_id: data.id })
+        .eq("id", input.coupon.userCouponId)
+        .eq("user_id", input.userId)
+        .is("used_at", null);
+    } catch (e) {
+      console.warn("[GX] level coupon consume failed", e);
+    }
+  }
+
+  // GX Coins: deduct the redeemed balance and log the transaction.
+  if (input.coins && input.coins.coins > 0 && input.userId) {
+    try {
+      const { data: prof } = await supabase
+        .from("profiles").select("gx_coins").eq("id", input.userId).maybeSingle();
+      const balance = Number(prof?.gx_coins ?? 0);
+      const spend = Math.min(balance, input.coins.coins);
+      if (spend > 0) {
+        const after = balance - spend;
+        await supabase.from("profiles").update({ gx_coins: after }).eq("id", input.userId);
+        await supabase.from("gx_coin_transactions").insert({
+          user_id: input.userId,
+          order_id: data.id,
+          amount: -spend,
+          balance_after: after,
+          kind: "spend",
+          source: "order_checkout",
+          reason: `خصم على الطلب ${data.order_number}`,
+        });
+      }
+    } catch (e) {
+      console.warn("[GX] coins spend failed", e);
+    }
+  }
+
   return { id: data.id, order_number: data.order_number };
 }
+
