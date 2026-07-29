@@ -229,11 +229,20 @@ export function InlineTextEditor() {
     <>
       <style>{editCss}</style>
       {editing && isAdmin && (
-        <div className="gx-text-edit-bar" dir="rtl" data-gx-noedit>
+        <div
+          className="gx-text-edit-bar"
+          dir="rtl"
+          data-gx-noedit
+          // Keep the caret in the field being edited; the bar's own clicks
+          // must not steal focus before the handler runs.
+          onMouseDown={(e) => e.preventDefault()}
+        >
           <span className="gx-teb-dot" />
           <span className="gx-teb-label">وضع تحرير النصوص — اضغط أي نص لتعديله</span>
           {count > 0 && <span className="gx-teb-count">{count} تعديل</span>}
-          <button className="gx-teb-btn primary" onClick={save} disabled={count === 0}>حفظ</button>
+          <button className="gx-teb-btn primary" onClick={save} disabled={count === 0 || saving}>
+            {saving ? "جاري الحفظ..." : "حفظ"}
+          </button>
           <button className="gx-teb-btn" onClick={() => { setPending({}); window.location.reload(); }}>تراجع</button>
           <button className="gx-teb-btn danger" onClick={resetPage}>استعادة الأصل</button>
           <button className="gx-teb-btn" onClick={() => setEditing(false)}>خروج</button>
