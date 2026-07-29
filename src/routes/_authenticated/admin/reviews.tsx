@@ -134,9 +134,8 @@ function AdminReviewsPage() {
                     <div className="flex gap-1.5 flex-wrap mt-1.5">
                       <span className="rv-pill">{new Date(r.created_at).toLocaleDateString("ar")}</span>
                       {r.order_number && <span className="rv-pill" dir="ltr">{r.order_number}</span>}
-                      {r.product_name && <span className="rv-pill">{r.product_name}</span>}
-                      {r.product_slug && <span className="rv-pill font-mono" dir="ltr">{r.product_slug}</span>}
                     </div>
+
                   </div>
                   <span className={`rv-pill ${r.status === "approved" ? "!text-emerald-300 !border-emerald-500/30" : r.status === "pending" ? "!text-amber-300 !border-amber-500/30" : "!text-rose-300 !border-rose-500/30"}`}>
                     {statusLabel(r.status)}{r.is_featured ? " • مميّز" : ""}
