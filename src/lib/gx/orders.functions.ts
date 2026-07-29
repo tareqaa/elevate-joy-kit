@@ -17,8 +17,14 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
     totalJOD: z.number().min(0).max(100000),
     currency: z.string().trim().min(1).max(12),
     notes: z.string().max(2000).optional(),
-    customerName: z.string().trim().max(120).optional().nullable(),
-    customerWhatsapp: z.string().trim().max(40).optional().nullable(),
+    customerName: z.string().trim().min(1).max(120),
+    customerWhatsapp: z.string().trim().min(4).max(40),
+    contactType: z.enum(["whatsapp", "telegram"]),
+    coupon: z.object({
+      id: z.string().uuid(),
+      code: z.string().min(1).max(64),
+      discount_jod: z.number().min(0).max(100000),
+    }).nullable().optional(),
   }).parse(data))
   .handler(async ({ data }) => {
     let userId: string | null = null;
@@ -43,9 +49,11 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       items: data.items,
       totalJOD: data.totalJOD,
       currency: data.currency,
-      customerName: data.customerName ?? null,
-      customerWhatsapp: data.customerWhatsapp ?? null,
+      customerName: data.customerName,
+      customerWhatsapp: data.customerWhatsapp,
+      contactType: data.contactType,
       deliveryData: data.notes?.trim() ? { customer_notes: data.notes.trim() } : {},
       userId,
+      coupon: data.coupon ?? null,
     });
   });
