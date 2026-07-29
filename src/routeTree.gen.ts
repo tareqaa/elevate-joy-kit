@@ -10,9 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SnapchatRouteImport } from './routes/snapchat'
+import { Route as RewardsRouteImport } from './routes/rewards'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as FortniteRouteImport } from './routes/fortnite'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as CartRouteImport } from './routes/cart'
@@ -44,6 +46,11 @@ const SnapchatRoute = SnapchatRouteImport.update({
   path: '/snapchat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RewardsRoute = RewardsRouteImport.update({
+  id: '/rewards',
+  path: '/rewards',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -57,6 +64,11 @@ const PolicyRoute = PolicyRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeaderboardRoute = LeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FortniteRoute = FortniteRouteImport.update({
@@ -200,9 +212,11 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
   '/fortnite': typeof FortniteRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/rewards': typeof RewardsRoute
   '/snapchat': typeof SnapchatRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -230,9 +244,11 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
   '/fortnite': typeof FortniteRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/rewards': typeof RewardsRoute
   '/snapchat': typeof SnapchatRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -261,9 +277,11 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
   '/fortnite': typeof FortniteRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/rewards': typeof RewardsRoute
   '/snapchat': typeof SnapchatRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -293,9 +311,11 @@ export interface FileRouteTypes {
     | '/cart'
     | '/faq'
     | '/fortnite'
+    | '/leaderboard'
     | '/mcp'
     | '/policy'
     | '/reset-password'
+    | '/rewards'
     | '/snapchat'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -323,9 +343,11 @@ export interface FileRouteTypes {
     | '/cart'
     | '/faq'
     | '/fortnite'
+    | '/leaderboard'
     | '/mcp'
     | '/policy'
     | '/reset-password'
+    | '/rewards'
     | '/snapchat'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -353,9 +375,11 @@ export interface FileRouteTypes {
     | '/cart'
     | '/faq'
     | '/fortnite'
+    | '/leaderboard'
     | '/mcp'
     | '/policy'
     | '/reset-password'
+    | '/rewards'
     | '/snapchat'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -385,9 +409,11 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   FaqRoute: typeof FaqRoute
   FortniteRoute: typeof FortniteRoute
+  LeaderboardRoute: typeof LeaderboardRoute
   McpRoute: typeof McpRoute
   PolicyRoute: typeof PolicyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  RewardsRoute: typeof RewardsRoute
   SnapchatRoute: typeof SnapchatRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -405,6 +431,13 @@ declare module '@tanstack/react-router' {
       path: '/snapchat'
       fullPath: '/snapchat'
       preLoaderRoute: typeof SnapchatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rewards': {
+      id: '/rewards'
+      path: '/rewards'
+      fullPath: '/rewards'
+      preLoaderRoute: typeof RewardsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -426,6 +459,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leaderboard': {
+      id: '/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof LeaderboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fortnite': {
@@ -655,9 +695,11 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   FaqRoute: FaqRoute,
   FortniteRoute: FortniteRoute,
+  LeaderboardRoute: LeaderboardRoute,
   McpRoute: McpRoute,
   PolicyRoute: PolicyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  RewardsRoute: RewardsRoute,
   SnapchatRoute: SnapchatRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
@@ -671,13 +713,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
