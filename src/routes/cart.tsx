@@ -276,7 +276,9 @@ function CartSummary() {
       <div className="notes-field">
         <label>{t("cart.notes_label")}</label>
         <textarea placeholder={t("cart.notes_placeholder")} value={cart.notes} onChange={(e) => cart.setNotes(e.target.value)} />
-        <div className="hint">{t("cart.notes_hint")}</div>
+        {cart.items.some(it => it.cartId.startsWith("snap-")) && (
+          <div className="hint">{t("cart.notes_hint")}</div>
+        )}
       </div>
       <button className="btn btn-green btn-block" disabled={disabled} onClick={checkout}>
         {busy ? t("cart.checkout_saving") : t("cart.checkout_wa")}
