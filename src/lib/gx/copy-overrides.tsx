@@ -31,12 +31,18 @@ function cssPath(el: Element): string {
   return parts.join(">");
 }
 
+// Inline wrappers are fine to edit "through" — the element still represents
+// one visual piece of copy (e.g. a title with a highlighted <span>).
+const INLINE_TAGS = new Set(["SPAN", "B", "STRONG", "I", "EM", "U", "SMALL", "BR", "A", "MARK"]);
+
 function isEditableText(el: Element): el is HTMLElement {
   if (SKIP_TAGS.has(el.tagName)) return false;
   if (el.closest("[data-gx-noedit]")) return false;
-  if (el.childElementCount > 0) return false;
   const t = (el.textContent ?? "").trim();
-  return t.length > 0 && t.length < 400;
+  if (!t || t.length >= 400) return false;
+  if (el.childElementCount === 0) return true;
+  // Allow containers made only of inline bits (spans/strong/links/br).
+  return Array.from(el.children).every((c) => INLINE_TAGS.has(c.tagName) && c.childElementCount === 0);
 }
 
 export function keyFor(pathname: string, el: Element) {
@@ -94,7 +100,7 @@ export function InlineTextEditor() {
         try { el = document.body.querySelector(`:scope>${sel}`) ?? document.querySelector(sel); } catch { el = null; }
         if (!el && entry.orig) {
           el = Array.from(document.body.querySelectorAll<HTMLElement>("*"))
-            .find((n) => n.childElementCount === 0 && (n.textContent ?? "").trim() === entry.orig) ?? null;
+            .find((n) => isEditableText(n) && (n.textContent ?? "").trim() === entry.orig) ?? null;
         }
         if (el && (el.textContent ?? "") !== entry.text) el.textContent = entry.text;
       }
