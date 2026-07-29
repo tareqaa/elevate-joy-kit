@@ -380,10 +380,13 @@ ${lines}
 
   const submitOrder = useCallback(async () => {
     if (items.length === 0) return null;
-    const fullPhone = (contact.countryCode + contact.phone).replace(/\s+/g, "");
-    if (!contact.name.trim() || contact.phone.trim().length < 4) {
+    const isWa = contact.type === "whatsapp";
+    const contactValue = isWa
+      ? (contact.countryCode + contact.phone).replace(/\s+/g, "")
+      : "@" + contact.phone.trim().replace(/^@+/, "");
+    if (!contact.name.trim() || contact.phone.trim().length < 3) {
       const { toast } = await import("sonner");
-      toast.error("عبّي الاسم ورقم التواصل قبل إتمام الطلب");
+      toast.error(isWa ? "عبّي الاسم ورقم الواتساب قبل إتمام الطلب" : "عبّي الاسم ويوزر التيليجرام قبل إتمام الطلب");
       return null;
     }
     try {
