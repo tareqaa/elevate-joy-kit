@@ -122,6 +122,10 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
       const rawLayout = merged.home_layout as unknown;
       if (!rawLayout || typeof rawLayout !== "object" || !Array.isArray((rawLayout as HomeLayout).sections)) {
         merged.home_layout = DEFAULT_HOME_LAYOUT;
+      } else {
+        // Ensure theme exists so renderers always get CSS variables.
+        const l = merged.home_layout as HomeLayout;
+        if (!l.theme) merged.home_layout = { ...l, theme: DEFAULT_HOME_LAYOUT.theme };
       }
       setSettings(merged);
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(merged)); } catch { /* noop */ }
