@@ -45,7 +45,7 @@ export const validateCouponFn = createServerFn({ method: "POST" })
     const { data: res, error } = await supabase.rpc("validate_coupon", {
       _code: data.code,
       _subtotal_jod: data.subtotal_jod,
-      _user_id: (userId ?? "00000000-0000-0000-0000-000000000000") as string,
+      _user_id: userId as unknown as string,
       _product_slugs: data.product_slugs,
       _category_slugs: data.category_slugs,
     });
