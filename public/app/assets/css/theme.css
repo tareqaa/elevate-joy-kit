@@ -954,3 +954,7 @@ html[dir="ltr"] .carrow .arrow-ic { transform: scaleX(-1); }
 @media(max-width:640px){
   html[dir="ltr"] .nav-right { margin-right: 0; margin-left: auto; }
 }
+
+/* Testimonial card refinements */
+.testi-verified{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;color:#34d399;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);border-radius:999px;padding:2px 8px;margin:3px 0 5px}
+.testi-clamp{display:-webkit-box;-webkit-line-clamp:3;line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis}

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS reviews_unique_order ON public.reviews (order_id) WHERE order_id IS NOT NULL;

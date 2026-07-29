@@ -76,7 +76,7 @@ function AdminReviewsPage() {
   const stats = useMemo(() => ({
     total: rows.length,
     pending: rows.filter((r) => r.status === "pending").length,
-    published: rows.filter((r) => r.status === "approved" && r.rating >= 4).length,
+    published: rows.filter((r) => r.status === "approved" && r.is_featured && r.rating >= 4).length,
     avg: rows.length ? (rows.reduce((s, r) => s + r.rating, 0) / rows.length).toFixed(1) : "—",
   }), [rows]);
 
@@ -89,7 +89,7 @@ function AdminReviewsPage() {
           <MessageSquare className="w-6 h-6 text-cyan-400" /> إدارة المراجعات
         </h1>
         <p className="text-sm text-slate-400 mt-1">
-          كل مراجعة تصل هنا أولاً. المنشور على الصفحة الرئيسية = معتمد + 4 نجوم فأكثر.
+          كل مراجعة تصل هنا أولاً. المنشور على الصفحة الرئيسية = معتمد + مميّز + 4 نجوم فأكثر.
         </p>
       </div>
 
@@ -134,9 +134,8 @@ function AdminReviewsPage() {
                     <div className="flex gap-1.5 flex-wrap mt-1.5">
                       <span className="rv-pill">{new Date(r.created_at).toLocaleDateString("ar")}</span>
                       {r.order_number && <span className="rv-pill" dir="ltr">{r.order_number}</span>}
-                      {r.product_name && <span className="rv-pill">{r.product_name}</span>}
-                      {r.product_slug && <span className="rv-pill font-mono" dir="ltr">{r.product_slug}</span>}
                     </div>
+
                   </div>
                   <span className={`rv-pill ${r.status === "approved" ? "!text-emerald-300 !border-emerald-500/30" : r.status === "pending" ? "!text-amber-300 !border-amber-500/30" : "!text-rose-300 !border-rose-500/30"}`}>
                     {statusLabel(r.status)}{r.is_featured ? " • مميّز" : ""}

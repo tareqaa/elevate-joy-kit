@@ -2,26 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Star, X, Loader2 } from "lucide-react";
-import { isAutoEligible } from "@/lib/gx/reviews";
 
 type OrderLite = {
   id: string;
   order_number: string;
   created_at: string;
-  items: unknown;
 };
 
-type ItemLite = { slug: string; name: string };
-
-function parseItems(items: unknown): ItemLite[] {
-  if (!Array.isArray(items)) return [];
-  return items.map((raw) => {
-    const it = (raw || {}) as Record<string, unknown>;
-    const slug = String(it.product_slug ?? it.productSlug ?? it.slug ?? it.product ?? "");
-    const name = String(it.name ?? it.title ?? it.product_name ?? slug ?? "منتج");
-    return { slug, name };
-  }).filter((i) => i.name);
-}
 
 const css = `
 .gx-rv-ov{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -44,7 +31,6 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
   const [orders, setOrders] = useState<OrderLite[]>([]);
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState("");
-  const [productSlug, setProductSlug] = useState("");
   const [rating, setRating] = useState(5);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
@@ -57,7 +43,7 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
     setLoading(true);
     (async () => {
       const [ordersRes, reviewsRes, profRes] = await Promise.all([
-        supabase.from("orders").select("id, order_number, created_at, items")
+        supabase.from("orders").select("id, order_number, created_at")
           .eq("user_id", userId).eq("status", "delivered").order("created_at", { ascending: false }).limit(50),
         supabase.from("reviews").select("order_id").eq("user_id", userId),
         supabase.from("profiles").select("full_name, username").eq("id", userId).maybeSingle(),
@@ -74,9 +60,7 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
   }, [open, userId]);
 
   const currentOrder = useMemo(() => orders.find((o) => o.id === orderId) || null, [orders, orderId]);
-  const items = useMemo(() => parseItems(currentOrder?.items), [currentOrder]);
 
-  useEffect(() => { setProductSlug(items[0]?.slug || ""); }, [items]);
 
   if (!open) return null;
 
@@ -84,27 +68,24 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
     if (!userId) return;
     if (!orderId) { toast.error("اختر الطلب الذي تريد تقييمه"); return; }
     setSaving(true);
-    const chosen = items.find((i) => i.slug === productSlug) || items[0];
     const { error } = await supabase.from("reviews").insert({
       user_id: userId,
       order_id: orderId,
       order_number: currentOrder?.order_number ?? null,
-      product_slug: chosen?.slug || null,
-      product_name: chosen?.name || null,
       display_name: displayName.trim() || "عميل GX",
       rating,
       comment: comment.trim(),
     });
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success(
-      isAutoEligible(rating, comment)
-        ? "شكراً! مراجعتك وصلت وستظهر بعد اعتماد الإدارة."
-        : "شكراً على ملاحظتك! وصلت للإدارة وسنتواصل معك."
-    );
+    if (error) {
+      toast.error(error.message.includes("duplicate") ? "قيّمت هذا الطلب مسبقاً" : error.message);
+      return;
+    }
+    toast.success("شكراً على تقييمك! ❤️ وصلت مراجعتك وسيتم مراجعتها قبل النشر.");
     setComment(""); setRating(5);
     onClose();
   }
+
 
   return (
     <div className="gx-rv-ov" dir="rtl" onClick={onClose}>
@@ -136,22 +117,17 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
               </div>
 
               <div>
-                <label className="gx-rv-lb">الطلب</label>
-                <select className="gx-rv-in" value={orderId} onChange={(e) => setOrderId(e.target.value)}>
-                  {orders.map((o) => (
-                    <option key={o.id} value={o.id}>{o.order_number}</option>
-                  ))}
-                </select>
-              </div>
-
-              {items.length > 0 && (
-                <div>
-                  <label className="gx-rv-lb">المنتج</label>
-                  <select className="gx-rv-in" value={productSlug} onChange={(e) => setProductSlug(e.target.value)}>
-                    {items.map((i, idx) => <option key={`${i.slug}-${idx}`} value={i.slug}>{i.name}</option>)}
+                <label className="gx-rv-lb">رقم الطلب</label>
+                {orders.length > 1 ? (
+                  <select className="gx-rv-in" value={orderId} onChange={(e) => setOrderId(e.target.value)}>
+                    {orders.map((o) => (
+                      <option key={o.id} value={o.id}>{o.order_number}</option>
+                    ))}
                   </select>
-                </div>
-              )}
+                ) : (
+                  <input className="gx-rv-in" value={currentOrder?.order_number || ""} readOnly dir="ltr" />
+                )}
+              </div>
 
               <div>
                 <label className="gx-rv-lb">التقييم</label>
@@ -170,9 +146,12 @@ export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose:
                 <label className="gx-rv-lb">مراجعتك (اختياري)</label>
                 <textarea className="gx-rv-in" rows={4} maxLength={180} value={comment}
                   onChange={(e) => setComment(e.target.value.slice(0, 180))}
-                  placeholder="اختياري — تقدر ترسل التقييم بالنجوم فقط" />
+                  placeholder="شاركنا تجربتك مع GX Store (اختياري)" />
                 <div className="gx-rv-hint" style={{ textAlign: "left" }} dir="ltr">{comment.length}/180</div>
               </div>
+
+              <div className="gx-rv-hint">سيتم مراجعة تقييمك قبل ظهوره على الموقع.</div>
+
             </>
 
           )}
