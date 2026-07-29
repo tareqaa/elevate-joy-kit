@@ -14,7 +14,7 @@ type PublicProfile = {
 };
 
 /** Unified GX profile: identity + loyalty + coupons + badges + avatars + search + leaderboard. */
-export function GxProfile({ username }: { username?: string }) {
+export function GxProfile({ username: usernameProp }: { username?: string }) {
   const { lang, dir } = useLang();
   const { format, formatCoins, currency } = useCurrency();
   const isAr = lang === "ar";
@@ -24,6 +24,20 @@ export function GxProfile({ username }: { username?: string }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMyId(data.session?.user.id ?? null));
   }, []);
+
+  // When no GameTag is in the URL (i.e. /rewards or /leaderboard) and the visitor
+  // is signed in, open their own unified profile + loyalty page.
+  const myTagQ = useQuery({
+    enabled: !usernameProp && !!myId,
+    queryKey: ["my-gametag", myId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("username").eq("id", myId!).maybeSingle();
+      if (error) throw error;
+      return data?.username ?? null;
+    },
+  });
+
+  const username = usernameProp || myTagQ.data || undefined;
 
   const profileQ = useQuery({
     enabled: !!username,
@@ -38,6 +52,7 @@ export function GxProfile({ username }: { username?: string }) {
   });
 
   const isOwner = !!myId && !!profileQ.data && profileQ.data.id === myId;
+
 
   const levelsQ = useQuery({ queryKey: ["levels"], queryFn: fetchLevels });
   const loyaltyQ = useQuery({ queryKey: ["my-loyalty", myId], queryFn: fetchMyLoyalty, enabled: isOwner });
