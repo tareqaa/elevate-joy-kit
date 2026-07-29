@@ -50,6 +50,8 @@ export async function fetchMyLoyalty(): Promise<MyLoyalty | null> {
     ...row,
     xp: Number(row.xp || 0),
     coins: Number(row.coins || 0),
+    store_credit: Number(row.store_credit || 0),
+
     total_spent: Number(row.total_spent || 0),
     orders_count: Number(row.orders_count || 0),
     rank: Number(row.rank || 0),
