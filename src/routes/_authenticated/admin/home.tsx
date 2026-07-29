@@ -69,13 +69,34 @@ function HomeAdmin() {
   const save = useMutation({
     mutationFn: async () => {
       if (dirty.size === 0) return;
-      const rows = Array.from(dirty).map((k) => ({ key: k as string, value: state[k] as never }));
+      // Snapshot the CURRENT server value of each dirty key before overwriting,
+      // so admins can restore an older version from the history tab.
+      const dirtyKeys = Array.from(dirty).map((k) => k as string);
+      const { data: current } = await supabase
+        .from("site_settings")
+        .select("key,value")
+        .in("key", dirtyKeys);
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id ?? null;
+      const email = sess.session?.user?.email ?? null;
+      if (current && current.length > 0) {
+        const snapshots = current.map((r) => ({
+          key: r.key,
+          value: r.value as never,
+          actor_id: uid,
+          actor_email: email,
+          note: "snapshot before save",
+        }));
+        await supabase.from("home_settings_history").insert(snapshots);
+      }
+      const rows = dirtyKeys.map((k) => ({ key: k, value: state[k as keyof SettingsMap] as never }));
       const { error } = await supabase.from("site_settings").upsert(rows, { onConflict: "key" });
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("تم الحفظ");
       qc.invalidateQueries({ queryKey: ["home-admin-settings"] });
+      qc.invalidateQueries({ queryKey: ["home-settings-history"] });
       setDirty(new Set());
     },
     onError: (e: Error) => toast.error(e.message || "فشل الحفظ"),
