@@ -1,72 +1,66 @@
-# خطة العمل — ربط الإعدادات + إعادة هيكلة الأقسام
+# خطة التنفيذ
 
-## 1) ربط `/admin/settings` بالواجهة العامة
+## 1. نظام الكوبونات (Coupons)
 
-**قاعدة البيانات**: تعبئة القيم الافتراضية في `site_settings` (store_name, default_currency=JOD, support_whatsapp, support_email, social_*, maintenance_mode=false, maintenance_message, order_completion_hours=24).
+### قاعدة البيانات
+جدول `coupons`:
+- `code` (unique, uppercase)
+- `discount_type`: `percent` أو `fixed`
+- `discount_value` (نسبة 1-100 أو مبلغ JOD)
+- `max_discount_jod` (سقف اختياري للنسبة)
+- `min_order_jod` (حد أدنى للطلب)
+- `expires_at` (تاريخ انتهاء اختياري)
+- `usage_limit` (عدد استخدامات إجمالي، اختياري)
+- `usage_count` (تلقائي)
+- `per_user_limit` (كم مرة يستخدمه نفس المستخدم، مثلاً 1 = مرة واحدة فقط)
+- `applies_to`: `all` أو `products` أو `categories`
+- `product_ids` (uuid[])
+- `category_ids` (uuid[])
+- `is_active`
 
-**Provider جديد** `src/lib/gx/site-settings.tsx`:
-- Hook `useSiteSettings()` يقرأ الجدول مرة واحدة عبر React Query ويكاش في `localStorage` لمنع flash.
-- يفعّل realtime عبر `postgres_changes` على `site_settings`.
+جدول `coupon_redemptions`: (coupon_id, user_id, order_id, discount_jod) لتتبع الاستخدام ومنع التكرار.
 
-**التطبيق على الواجهة**:
-- **Maintenance mode**: banner علوي في `StoreShell` + بلوك على الصفحة الرئيسية يمنع الطلبات (يعطّل زر "اشتري الآن" + السلة) ويعرض `maintenance_message`. الأدمن يتجاوز.
-- **WhatsApp دعم**: `Footer` + `Navbar` + رابط الاتصال بالصفحة الرئيسية + زر واتساب عائم يقرأ `support_whatsapp`.
-- **Email دعم**: `Footer` + صفحة FAQ.
-- **Social links**: `Footer` يقرأ من الإعدادات بدل الثابتة.
-- **Default currency**: `CurrencyProvider` يستعمل `default_currency` كـ fallback أول زيارة.
-- **Auto-cancel hours**: cron job DB يقرأ الرقم من الإعدادات (تعديل `auto_cancel_stale_orders`).
-- **Store name**: يستعمل في `<title>` عبر head defaults + الشعار النصي.
+دالة `validate_and_apply_coupon(code, cart_items, user_id, total)` → ترجع الخصم أو خطأ.
 
-## 2) إعادة هيكلة الأقسام (هرمية + ثيم)
+### بانل الأدمن
+صفحة `/admin/coupons`: جدول + نموذج إنشاء/تعديل بكل الخيارات أعلاه، وقائمة اختيار منتجات/أقسام.
 
-**Migration**:
-- إضافة أعمدة لـ `categories`:
-  - `parent_id uuid` (self-FK, nullable)
-  - `is_main boolean default false` (يظهر بالصفحة الرئيسية كقسم رئيسي)
-  - `theme_color text` (hex لون التدرّج/الأيقونة)
-  - `theme_gradient text` (اختياري: linear gradient CSS)
-  - `description_ar text`, `description_en text`
-- Seed للأقسام الحالية من `products-data.js`: games, design, gift-cards, snapchat, ai, apps + الفرعية (fortnite, sony, xbox, steam, adobe, canva, autodesk, microsoft365, linkedin, windows, itunes, google-play, playstation, xbox-gc, gemini).
-- ربط `products.category_id` بجميع المنتجات الحالية (تلقائي عبر slug).
+### السلة
+حقل "أدخل كود الكوبون" مع زر "تطبيق". عند النجاح يظهر سطر الخصم قبل الإجمالي، ويُخزن في بيانات الطلب.
 
-**واجهة الأدمن `/admin/categories`** (إعادة بناء كاملة):
-- **شجرة هرمية** (Tree view) قابلة للطي — 3 مستويات.
-- زر "قسم فرعي" على كل عنصر لإضافة تحته.
-- **Dialog محسّن** يحتوي: parent picker (dropdown هرمي), toggle "قسم رئيسي (يظهر بالواجهة)", color picker (نص + swatch), gradient preview, وصف عربي/إنجليزي, أيقونة, ترتيب, حالة.
-- سحب وإفلات (drag-reorder) للترتيب داخل نفس المستوى.
-- Live preview لبطاقة القسم كما ستظهر بالواجهة.
-- بحث + إحصائيات (عدد المنتجات لكل قسم).
+## 2. حقول التواصل الإلزامية عند الشراء
 
-**واجهة الأدمن `/admin/products`**:
-- إضافة **Category picker هرمي** (breadcrumb selector) بدل ما هو موجود.
-- فلترة بالشجرة الجانبية.
+في السلة قبل "إتمام الطلب":
+- **الاسم** (موجود)
+- **رمز الدولة + رقم الواتساب/تيليجرام** — قائمة رموز دول (+962، +966، +971…) + input للرقم
+- **نوع التواصل**: WhatsApp / Telegram (radio)
 
-**الواجهة العامة**:
-- الصفحة الرئيسية تقرأ `is_main=true` من DB وتبني بطاقات الأقسام ديناميكياً بلون/تدرّج كل قسم.
-- صفحة `/category/$slug` تقرأ الأقسام الفرعية + المنتجات من DB (مع fallback على `products-data.js` للانتقال التدريجي).
+الحقول إلزامية. تُخزن في `orders.customer_whatsapp` (كامل مع رمز الدولة) و `orders.delivery_data.contact_type`.
 
-## 3) تحسين واجهات الأدمن الداخلية (كما بالصورة)
+## 3. تحسين عرض الطلبات في الأدمن
 
-- توحيد header الصفحات: أيقونة gradient + عنوان + وصف + CTA يمين.
-- إضافة **stat strip** أعلى كل صفحة (عدد الأقسام / الرئيسية / المخفية).
-- Cards بحواف neon محسّنة + hover glow.
-- Empty states احترافية.
-- Skeleton loaders بدل نص "جاري التحميل".
-- Breadcrumb علوي داخل AdminShell.
+في `/admin/orders`:
+- **حجم الكرت**: طلبات > 3 منتجات أو > 50 JOD تظهر بكرت أكبر مميز (badge "طلب كبير").
+- **معلومات الرأس**: رقم الطلب + العملة + عدد المنتجات + المبلغ + بادج نوع التواصل (📱 واتساب / ✈️ تيليجرام).
+- **موقع العميل**: عرض الدولة (من عملة الطلب أو IP إن توفر).
+- **قائمة منتجات مرتبة**: جدول واضح بأيقونة، اسم، كمية، سعر، مجموع الصف.
+- زر نسخ رقم التواصل مباشرة.
 
 ## تفاصيل تقنية
 
-- Migration واحدة لـ (columns + seed categories + link products + settings defaults + update cron).
-- كل تغييرات DB تتبع نمط RLS/GRANT الموجود.
-- Realtime subscription واحدة على `site_settings` + `categories` للتحديث الفوري.
-- الحفاظ على `products-data.js` كـ fallback؛ لا نكسر الصفحات الثابتة القديمة.
+- Migration واحدة تنشئ الجدولين + RLS + GRANTs + دوال التحقق.
+- ملفات جديدة:
+  - `src/routes/_authenticated/admin/coupons.tsx`
+  - `src/lib/gx/coupons.functions.ts` (تحقق وتطبيق)
+  - `src/components/gx/CouponField.tsx` (في السلة)
+  - `src/components/gx/CheckoutContactFields.tsx`
+- تعديلات:
+  - `src/routes/cart.tsx` — إضافة الحقول والكوبون
+  - `src/lib/gx/cart.tsx` — تمرير الكوبون والاتصال للـ server fn
+  - `src/lib/gx/orders.functions.ts` + `orders.server.ts` — validation + خصم + تسجيل استخدام
+  - `src/routes/_authenticated/admin/orders.tsx` — تخطيط جديد
+  - `src/routes/_authenticated/admin.tsx` — إضافة رابط Coupons في السايدبار
 
-## ترتيب التنفيذ
+الأسماء والنصوص موحدة بالعربي في كل المتجر والبانل.
 
-1. Migration (schema + seed + defaults).
-2. `useSiteSettings` provider + تطبيقه على Footer/Shell/Cart/Currency.
-3. Maintenance banner + gating.
-4. إعادة بناء `/admin/categories` (tree + hierarchical dialog + theming).
-5. تحديث `/admin/products` (hierarchical picker).
-6. ربط الصفحة الرئيسية بأقسام DB.
-7. تحسينات UI العامة على صفحات الأدمن.
+هل أبدأ التنفيذ؟
