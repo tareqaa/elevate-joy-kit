@@ -387,6 +387,21 @@ export function Navbar() {
                     </Link>
                   )}
 
+                  <div className="acc-balances">
+                    <div className="acc-bal">
+                      <span className="acc-bal__l">🪙 GX Coins</span>
+                      <b className="acc-bal__v coins">{Number(profile?.gx_coins ?? 0).toLocaleString("en-US")}</b>
+                      <small>≈ {(Number(profile?.gx_coins ?? 0) / 1000).toFixed(2)} {lang === "en" ? "JOD" : "د.أ"}</small>
+                    </div>
+                    <div className="acc-bal">
+                      <span className="acc-bal__l">💳 {lang === "en" ? "Store credit" : "رصيد المتجر"}</span>
+                      <b className="acc-bal__v credit">{Number(profile?.store_credit_jod ?? 0).toFixed(2)}</b>
+                      <small>{lang === "en" ? "JOD" : "د.أ"}</small>
+                    </div>
+                  </div>
+
+
+
                   <div className="acc-group">
                     <div className="acc-group__label">{lang === "en" ? "Account" : "الحساب"}</div>
                     <Link to="/account" search={{ tab: "orders" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
