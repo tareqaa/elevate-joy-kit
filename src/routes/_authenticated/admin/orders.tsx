@@ -350,6 +350,7 @@ function OrdersAdmin() {
                 <th>التاريخ</th>
                 <th>العميل</th>
                 <th>الإيميل</th>
+                <th>التواصل</th>
                 <th>الإجمالي</th>
                 <th>الحالة</th>
                 <th></th>
@@ -358,6 +359,13 @@ function OrdersAdmin() {
             <tbody>
               {filtered.map((o) => {
                 const Ico = STATUS_ICON[o.status] || Clock;
+                const isTg = o.contact_type === "telegram";
+                const contactLabel = isTg ? "تيليجرام" : "واتساب";
+                const contactHref = o.customer_whatsapp
+                  ? (isTg
+                      ? `https://t.me/${o.customer_whatsapp.replace(/^@+/, "")}`
+                      : `https://wa.me/${o.customer_whatsapp.replace(/[^\d]/g, "")}`)
+                  : null;
                 return (
                   <tr key={o.id} className={`gx-adm-row ${flashIds.has(o.id) ? "new" : ""}`}>
                     <td>
@@ -378,6 +386,24 @@ function OrdersAdmin() {
                         <span className="text-cyan-100/40">—</span>
                       )}
                     </td>
+                    <td className="text-xs whitespace-nowrap">
+                      {o.customer_whatsapp ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] uppercase text-cyan-400/60">{contactLabel}</span>
+                          <a
+                            href={contactHref ?? "#"}
+                            target="_blank"
+                            rel="noreferrer"
+                            dir="ltr"
+                            className="text-cyan-300 hover:text-cyan-100 hover:underline font-mono"
+                          >
+                            {o.customer_whatsapp}
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-cyan-100/40">—</span>
+                      )}
+                    </td>
                     <td className="font-bold">{Number(o.total_jod).toFixed(2)}<span className="text-xs text-cyan-400/70 me-1"> د.أ</span></td>
                     <td>
                       <span className={`gx-adm-badge ${STATUS_COLOR[o.status]}`}>
@@ -392,8 +418,9 @@ function OrdersAdmin() {
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="gx-adm-empty">لا يوجد طلبات ضمن الفلاتر الحالية</td></tr>
+                <tr><td colSpan={8} className="gx-adm-empty">لا يوجد طلبات ضمن الفلاتر الحالية</td></tr>
               )}
+
             </tbody>
           </table>
         </div>
