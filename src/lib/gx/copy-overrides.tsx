@@ -80,6 +80,7 @@ export function InlineTextEditor() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [editing, setEditing] = useState(false);
   const [pending, setPending] = useState<CopyMap>({});
+  const [saving, setSaving] = useState(false);
   const applying = useRef(false);
 
   // Refresh overrides from the database.
