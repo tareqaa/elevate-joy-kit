@@ -40,6 +40,8 @@ type WheelStatus = {
   can_spin?: boolean;
   next_spin_at?: string | null;
   seconds_remaining?: number;
+  bonus_spins?: number;
+
   message?: string;
 };
 
@@ -446,7 +448,13 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
             </p>
           </div>
         )}
+        {Number(statusQ.data?.bonus_spins ?? 0) > 0 && (
+          <p className="text-center text-xs font-bold text-amber-400">
+            لديك {Number(statusQ.data?.bonus_spins)} لفة إضافية 🎁
+          </p>
+        )}
       </div>
+
 
       {result && !spinning && (
         <div

@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Disc3, Plus, Trash2, Pencil, RefreshCcw, History, AlertTriangle } from "lucide-react";
+import { Disc3, Plus, Trash2, Pencil, RefreshCcw, History, AlertTriangle, Gift } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/wheel")({
   head: () => ({ meta: [{ title: "عجلة الحظ — لوحة التحكم" }] }),
@@ -98,6 +98,48 @@ function WheelAdmin() {
       return rows.map((r) => ({ ...r, who: names.get(r.user_id) ?? r.user_id.slice(0, 8) }));
     },
   });
+
+  const [grantTarget, setGrantTarget] = useState("");
+  const [grantCount, setGrantCount] = useState("1");
+
+  const bonusQ = useQuery({
+    queryKey: ["admin-wheel-bonus"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("wheel_bonus_spins")
+        .select("user_id, spins, updated_at")
+        .gt("spins", 0)
+        .order("updated_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      const rows = (data ?? []) as { user_id: string; spins: number; updated_at: string }[];
+      const ids = Array.from(new Set(rows.map((r) => r.user_id)));
+      const names = new Map<string, string>();
+      if (ids.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, username, email").in("id", ids);
+        (profs ?? []).forEach((p: { id: string; username: string | null; email: string | null }) =>
+          names.set(p.id, p.username || p.email || p.id.slice(0, 8)));
+      }
+      return rows.map((r) => ({ ...r, who: names.get(r.user_id) ?? r.user_id.slice(0, 8) }));
+    },
+  });
+
+  const grantM = useMutation({
+    mutationFn: async ({ target, count }: { target: string; count: number }) => {
+      const t = target.trim();
+      if (!t) throw new Error("أدخل إيميل أو اسم المستخدم");
+      if (!count || Number.isNaN(count)) throw new Error("أدخل عدد لفات صحيح");
+      const { data, error } = await (supabase as any).rpc("admin_grant_wheel_spins", { _target: t, _count: count });
+      if (error) throw error;
+      return data as { email?: string; spins?: number };
+    },
+    onSuccess: (d) => {
+      toast.success(`تم التحديث — الرصيد الحالي: ${d?.spins ?? 0} لفة`);
+      void qc.invalidateQueries({ queryKey: ["admin-wheel-bonus"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const prizes = prizesQ.data ?? [];
   const activePrizes = useMemo(() => prizes.filter((p) => p.is_active), [prizes]);
@@ -194,8 +236,67 @@ function WheelAdmin() {
       <Tabs defaultValue="prizes" dir="rtl">
         <TabsList>
           <TabsTrigger value="prizes">الجوائز</TabsTrigger>
+          <TabsTrigger value="bonus"><Gift className="w-4 h-4 ms-1" /> لفات إضافية</TabsTrigger>
           <TabsTrigger value="log"><History className="w-4 h-4 ms-1" /> سجل اللفات</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="bonus" className="mt-4 space-y-3">
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                امنح أي مستخدم لفات إضافية (تُستهلك بعد انتهاء لفة اليوم المجانية). اكتب الإيميل أو اسم المستخدم.
+              </p>
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1.5 flex-1 min-w-56">
+                  <Label className="text-xs">المستخدم (إيميل / اسم مستخدم)</Label>
+                  <Input value={grantTarget} onChange={(e) => setGrantTarget(e.target.value)} className="h-9" dir="ltr" placeholder="user@example.com" />
+                </div>
+                <div className="space-y-1.5 w-32">
+                  <Label className="text-xs">عدد اللفات</Label>
+                  <Input type="number" value={grantCount} onChange={(e) => setGrantCount(e.target.value)} className="h-9" dir="ltr" />
+                </div>
+                <Button size="sm" disabled={grantM.isPending} onClick={() => grantM.mutate({ target: grantTarget, count: Number(grantCount) })}>
+                  <Plus className="w-4 h-4 ms-1" /> {grantM.isPending ? "جارٍ..." : "منح"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={grantM.isPending}
+                  onClick={() => grantM.mutate({ target: grantTarget, count: -Math.abs(Number(grantCount) || 1) })}
+                >
+                  <Trash2 className="w-4 h-4 ms-1" /> خصم
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-muted-foreground border-b">
+                  <tr>
+                    <th className="text-start p-3">المستخدم</th>
+                    <th className="text-start p-3">اللفات المتبقية</th>
+                    <th className="text-start p-3">آخر تحديث</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(bonusQ.data ?? []).map((b) => (
+                    <tr key={b.user_id} className="border-b last:border-0">
+                      <td className="p-3">{b.who}</td>
+                      <td className="p-3"><Badge variant="outline" className="border-primary/40 text-primary">{b.spins}</Badge></td>
+                      <td className="p-3 text-muted-foreground">{new Date(b.updated_at).toLocaleString("ar-EG")}</td>
+                    </tr>
+                  ))}
+                  {(bonusQ.data ?? []).length === 0 && (
+                    <tr><td colSpan={3} className="p-8 text-center text-muted-foreground">لا توجد لفات إضافية ممنوحة</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
 
         <TabsContent value="prizes" className="mt-4 space-y-3">
           <div className="flex flex-wrap items-center gap-3">
