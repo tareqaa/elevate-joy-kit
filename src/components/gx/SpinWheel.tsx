@@ -514,15 +514,25 @@ export function SpinWheel() {
 }
 
 export function SpinWheelModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.classList.toggle("gxw-wheel-open", open);
+    return () => document.body.classList.remove("gxw-wheel-open");
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent dir="rtl" className="max-w-[440px] w-[calc(100vw-1.5rem)] max-h-[90vh] overflow-y-auto border-primary/30">
+      <DialogContent
+        dir="rtl"
+        className="max-w-[440px] w-[calc(100vw-1.5rem)] max-h-[90vh] overflow-y-auto border-0 shadow-none bg-transparent p-4"
+      >
         <DialogHeader className="text-center sm:text-center">
           <DialogTitle className="text-xl font-black">🎡 عجلة الحظ اليومية</DialogTitle>
           <DialogDescription>لفّة مجانية كل يوم واحصل على مكافآت GX</DialogDescription>
         </DialogHeader>
         <WheelCore compact />
       </DialogContent>
+
     </Dialog>
   );
 }
