@@ -199,8 +199,9 @@ export async function createStoreOrder(input: CreateOrderInput) {
         coins_used: 0,
         coins_discount_jod: 0,
         discount_jod: couponDiscount + creditJod,
-        total_jod: Number(input.totalJOD) + coinsDiscount,
-        paid_jod: Number(input.totalJOD) + coinsDiscount,
+        total_jod: Math.round((verifiedTotal + coinsDiscount) * 100) / 100,
+        paid_jod: Math.round((verifiedTotal + coinsDiscount) * 100) / 100,
+
       }).eq("id", data.id);
       throw new Error("رصيد GX Coins غير كافٍ — تم إلغاء الخصم");
     }
