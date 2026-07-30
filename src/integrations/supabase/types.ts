@@ -624,6 +624,8 @@ export type Database = {
           admin_notes: string | null
           coins_awarded: number
           coins_discount_jod: number
+          coins_refunded: number
+          coins_reversed: number
           coins_used: number
           contact_type: string | null
           coupon_code: string | null
@@ -638,17 +640,23 @@ export type Database = {
           items: Json
           order_number: string
           paid_jod: number | null
+          refunded_at: string | null
+          refunded_jod: number
           status: Database["public"]["Enums"]["order_status"]
+          subtotal_jod: number
           total_jod: number
           updated_at: string
           user_coupon_id: string | null
           user_id: string | null
           xp_awarded: number
+          xp_reversed: number
         }
         Insert: {
           admin_notes?: string | null
           coins_awarded?: number
           coins_discount_jod?: number
+          coins_refunded?: number
+          coins_reversed?: number
           coins_used?: number
           contact_type?: string | null
           coupon_code?: string | null
@@ -663,17 +671,23 @@ export type Database = {
           items?: Json
           order_number?: string
           paid_jod?: number | null
+          refunded_at?: string | null
+          refunded_jod?: number
           status?: Database["public"]["Enums"]["order_status"]
+          subtotal_jod?: number
           total_jod?: number
           updated_at?: string
           user_coupon_id?: string | null
           user_id?: string | null
           xp_awarded?: number
+          xp_reversed?: number
         }
         Update: {
           admin_notes?: string | null
           coins_awarded?: number
           coins_discount_jod?: number
+          coins_refunded?: number
+          coins_reversed?: number
           coins_used?: number
           contact_type?: string | null
           coupon_code?: string | null
@@ -688,12 +702,16 @@ export type Database = {
           items?: Json
           order_number?: string
           paid_jod?: number | null
+          refunded_at?: string | null
+          refunded_jod?: number
           status?: Database["public"]["Enums"]["order_status"]
+          subtotal_jod?: number
           total_jod?: number
           updated_at?: string
           user_coupon_id?: string | null
           user_id?: string | null
           xp_awarded?: number
+          xp_reversed?: number
         }
         Relationships: [
           {
@@ -1288,6 +1306,15 @@ export type Database = {
         Args: { _amount: number; _order_id: string; _reason: string }
         Returns: Json
       }
+      admin_set_order_amounts: {
+        Args: {
+          _coins_used: number
+          _order_id: string
+          _reason: string
+          _subtotal_jod: number
+        }
+        Returns: Json
+      }
       auto_cancel_stale_orders: { Args: never; Returns: number }
       award_badges: { Args: { _user_id: string }; Returns: undefined }
       generate_order_number: { Args: never; Returns: string }
@@ -1373,6 +1400,10 @@ export type Database = {
       redeem_gx_coins: {
         Args: { _coins: number; _subtotal_jod: number }
         Returns: Json
+      }
+      refund_order_coins: {
+        Args: { _order_id: string; _ratio: number }
+        Returns: number
       }
       revoke_ineligible_rewards: { Args: { _user_id: string }; Returns: Json }
       search_public_profiles: {

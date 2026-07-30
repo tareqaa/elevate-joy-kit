@@ -63,12 +63,36 @@ function getAdminClient() {
   });
 }
 
+/** 1000 GX Coins = 1 JOD */
+const COINS_PER_JOD = 1000;
+
 export async function createStoreOrder(input: CreateOrderInput) {
   const supabase = getAdminClient();
 
   const deliveryData: Record<string, unknown> = { ...(input.deliveryData ?? {}) };
   if (input.contactType) deliveryData.contact_type = input.contactType;
   if (input.coupon) deliveryData.coupon = { code: input.coupon.code, discount_jod: input.coupon.discount_jod };
+
+  const couponDiscount = Math.max(0, Number(input.coupon?.discount_jod ?? 0));
+  const creditJod = Math.max(0, Number(input.creditJod ?? 0));
+  // Coin discount is ALWAYS derived from the coin count server-side so a
+  // tampered client can never claim a bigger discount than the coins it spends.
+  const coinsUsed = Math.max(0, Math.floor(Number(input.coins?.coins ?? 0)));
+  const coinsDiscount = Math.round((coinsUsed / COINS_PER_JOD) * 1000) / 1000;
+  const subtotal = Math.round((Number(input.totalJOD) + couponDiscount + coinsDiscount + creditJod) * 100) / 100;
+
+  // Guard BEFORE the order exists: coins must be owned and can never cover
+  // more than 50% of the order value.
+  if (coinsUsed > 0) {
+    if (!input.userId) throw new Error("يجب تسجيل الدخول لاستخدام GX Coins");
+    const maxCoins = Math.floor(subtotal * 0.5 * COINS_PER_JOD);
+    if (coinsUsed > maxCoins) throw new Error("الحد الأقصى لخصم GX Coins هو 50% من قيمة الطلب");
+    const { data: prof } = await supabase
+      .from("profiles").select("gx_coins").eq("id", input.userId).maybeSingle();
+    if (Number(prof?.gx_coins ?? 0) < coinsUsed) throw new Error("رصيد GX Coins غير كافٍ");
+  }
+
+
 
   const { data, error } = await supabase
     .from("orders")
@@ -78,17 +102,18 @@ export async function createStoreOrder(input: CreateOrderInput) {
       customer_whatsapp: input.customerWhatsapp ?? null,
       items: input.items,
       total_jod: input.totalJOD,
+      subtotal_jod: subtotal,
       currency_snapshot: input.currency,
       delivery_data: deliveryData as Json,
       // Orders fully covered by store credit (refund balance) are already settled.
-      status: (Number(input.creditJod ?? 0) > 0 && Number(input.totalJOD) <= 0.009) ? "paid" : "pending",
+      status: (creditJod > 0 && Number(input.totalJOD) <= 0.009) ? "paid" : "pending",
       contact_type: input.contactType ?? null,
       coupon_id: input.coupon?.id ?? null,
       coupon_code: input.coupon?.code ?? null,
-      discount_jod: (input.coupon?.discount_jod ?? 0) + (input.coins?.discount_jod ?? 0) + (input.creditJod ?? 0),
+      discount_jod: couponDiscount + coinsDiscount + creditJod,
       user_coupon_id: input.coupon?.userCouponId ?? null,
-      coins_used: input.coins?.coins ?? 0,
-      coins_discount_jod: input.coins?.discount_jod ?? 0,
+      coins_used: coinsUsed,
+      coins_discount_jod: coinsDiscount,
       paid_jod: input.totalJOD,
     })
     .select("id, order_number")
@@ -130,30 +155,37 @@ export async function createStoreOrder(input: CreateOrderInput) {
     }
   }
 
-  // GX Coins: deduct the redeemed balance and log the transaction.
-  if (input.coins && input.coins.coins > 0 && input.userId) {
-    try {
-      const { data: prof } = await supabase
-        .from("profiles").select("gx_coins").eq("id", input.userId).maybeSingle();
-      const balance = Number(prof?.gx_coins ?? 0);
-      const spend = Math.min(balance, input.coins.coins);
-      if (spend > 0) {
-        const after = balance - spend;
-        await supabase.from("profiles").update({ gx_coins: after }).eq("id", input.userId);
-        await supabase.from("gx_coin_transactions").insert({
-          user_id: input.userId,
-          order_id: data.id,
-          amount: -spend,
-          balance_after: after,
-          kind: "spend",
-          source: "order_checkout",
-          reason: `خصم على الطلب ${data.order_number}`,
-        });
-      }
-    } catch (e) {
-      console.warn("[GX] coins spend failed", e);
+  // GX Coins: deduct exactly what the order recorded, never more, never partially.
+  if (coinsUsed > 0 && input.userId) {
+    const { data: prof } = await supabase
+      .from("profiles").select("gx_coins").eq("id", input.userId).maybeSingle();
+    const balance = Number(prof?.gx_coins ?? 0);
+    if (balance < coinsUsed) {
+      // Balance changed since the pre-check: strip the discount from the order
+      // instead of granting free money.
+      await supabase.from("orders").update({
+        coins_used: 0,
+        coins_discount_jod: 0,
+        discount_jod: couponDiscount + creditJod,
+        total_jod: Number(input.totalJOD) + coinsDiscount,
+        paid_jod: Number(input.totalJOD) + coinsDiscount,
+      }).eq("id", data.id);
+      throw new Error("رصيد GX Coins غير كافٍ — تم إلغاء الخصم");
     }
+    const after = balance - coinsUsed;
+    await supabase.from("profiles").update({ gx_coins: after }).eq("id", input.userId);
+    await supabase.from("gx_coin_transactions").insert({
+      user_id: input.userId,
+      order_id: data.id,
+      amount: -coinsUsed,
+      balance_after: after,
+      kind: "spend",
+      source: "order_checkout",
+      reason: `خصم على الطلب ${data.order_number}`,
+      metadata: { balance_before: balance, coins_discount_jod: coinsDiscount },
+    });
   }
+
 
   // Store credit (refund balance): deduct and log the transaction.
   const wantedCredit = Math.max(0, Number(input.creditJod ?? 0));

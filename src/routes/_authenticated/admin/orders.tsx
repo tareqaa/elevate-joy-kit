@@ -49,6 +49,14 @@ type OrderRow = {
   status: string;
   admin_notes: string | null;
   delivery_data: unknown;
+  subtotal_jod?: number | null;
+  paid_jod?: number | null;
+  discount_jod?: number | null;
+  coins_used?: number | null;
+  coins_discount_jod?: number | null;
+  coins_refunded?: number | null;
+  refunded_jod?: number | null;
+
   created_at: string;
 };
 
@@ -695,6 +703,9 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           </div>
 
           {/* Refund */}
+          <AmountsBlock order={order} />
+
+          {/* Refund */}
           <RefundBlock order={order} onDone={onClose} />
 
 
@@ -737,7 +748,9 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
  */
 function RefundBlock({ order, onDone }: { order: OrderWithEmail; onDone?: () => void }) {
   const qc = useQueryClient();
-  const maxAmount = Number(order.total_jod || 0);
+  const paidTotal = Number(order.paid_jod ?? order.total_jod ?? 0);
+  const alreadyRefundedJod = Number(order.refunded_jod ?? 0);
+  const maxAmount = Math.max(Math.round((paidTotal - alreadyRefundedJod) * 100) / 100, 0);
   const [amount, setAmount] = useState(maxAmount.toFixed(2));
   const [reason, setReason] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -757,7 +770,7 @@ function RefundBlock({ order, onDone }: { order: OrderWithEmail; onDone?: () => 
   });
 
   const refunded = (logQ.data ?? []).reduce((s, t) => s + Number(t.amount_jod || 0), 0);
-  const alreadyRefunded = order.status === "refunded";
+  const alreadyRefunded = order.status === "refunded" || maxAmount <= 0.004;
   const value = Number(amount);
   const amountValid = Number.isFinite(value) && value >= 0 && value <= maxAmount + 0.001;
   const reasonValid = reason.trim().length >= 3;
@@ -770,15 +783,16 @@ function RefundBlock({ order, onDone }: { order: OrderWithEmail; onDone?: () => 
       _reason: reason.trim(),
     });
     setBusy(false);
-    const res = data as { ok?: boolean; message?: string; xp_removed?: number; coins_removed?: number } | null;
+    const res = data as { ok?: boolean; message?: string; xp_removed?: number; coins_removed?: number; coins_returned?: number; full?: boolean } | null;
     if (error || !res?.ok) {
       toast.error(error?.message || res?.message || "فشل الاسترجاع — لم يتم تغيير أي بيانات");
       return;
     }
     toast.success(
-      `تم الاسترجاع: ${value.toFixed(2)} د.أ` +
+      `تم الاسترجاع${res.full ? " الكامل" : " الجزئي"}: ${value.toFixed(2)} د.أ` +
+      (res.coins_returned ? ` • إرجاع ${res.coins_returned} GX للعميل` : "") +
       (res.xp_removed ? ` • سحب ${res.xp_removed} XP` : "") +
-      (res.coins_removed ? ` • سحب ${res.coins_removed} GX` : ""),
+      (res.coins_removed ? ` • سحب ${res.coins_removed} GX مكافآت` : ""),
     );
     setConfirmOpen(false);
     setReason("");
@@ -888,6 +902,100 @@ function RefundBlock({ order, onDone }: { order: OrderWithEmail; onDone?: () => 
             </div>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Edit an order's value / GX Coins usage atomically via `admin_set_order_amounts`.
+ * Lowering the coins returns the difference to the customer, raising them charges
+ * the difference (blocked when the balance is too low). Refunded orders are locked.
+ */
+function AmountsBlock({ order }: { order: OrderWithEmail }) {
+  const qc = useQueryClient();
+  const [subtotal, setSubtotal] = useState(
+    Number(order.subtotal_jod ?? (Number(order.total_jod) + Number(order.discount_jod ?? 0))).toFixed(2),
+  );
+  const [coins, setCoins] = useState(String(Number(order.coins_used ?? 0)));
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const locked = order.status === "refunded" || Number(order.refunded_jod ?? 0) > 0;
+  const sub = Number(subtotal);
+  const c = Math.floor(Number(coins));
+  const maxCoins = Math.floor(Math.max(sub, 0) * 0.5 * 1000);
+  const coinsDisc = Math.round((c / 1000) * 1000) / 1000;
+  const couponDisc = Math.max(Number(order.discount_jod ?? 0) - Number(order.coins_discount_jod ?? 0), 0);
+  const newTotal = Math.max(sub - couponDisc - coinsDisc, 0);
+  const delta = c - Number(order.coins_used ?? 0);
+  const valid = Number.isFinite(sub) && sub >= 0 && Number.isFinite(c) && c >= 0 && c <= maxCoins && reason.trim().length >= 3;
+
+  async function save() {
+    setBusy(true);
+    const { data, error } = await supabase.rpc("admin_set_order_amounts", {
+      _order_id: order.id, _subtotal_jod: sub, _coins_used: c, _reason: reason.trim(),
+    });
+    setBusy(false);
+    const res = data as { ok?: boolean; message?: string; coins_delta?: number } | null;
+    if (error || !res?.ok) { toast.error(error?.message || res?.message || "فشل تعديل القيمة"); return; }
+    toast.success(
+      `تم تحديث الطلب — الإجمالي ${newTotal.toFixed(2)} د.أ` +
+      (res.coins_delta ? (res.coins_delta > 0 ? ` • خصم ${res.coins_delta} GX` : ` • إرجاع ${-res.coins_delta} GX`) : ""),
+    );
+    setReason("");
+    qc.invalidateQueries({ queryKey: ["admin-orders"] });
+    qc.invalidateQueries({ queryKey: ["admin-loyalty-customers"] });
+  }
+
+  return (
+    <div className="gx-od-sec">
+      <div className="gx-od-sec-h">
+        <div className="gx-od-sec-t">🪙 القيمة و GX Coins</div>
+        <span className="gx-adm-badge bg-amber-500/15 text-amber-300 border-amber-500/40">
+          مستخدم: {Number(order.coins_used ?? 0)} GX
+          {Number(order.coins_refunded ?? 0) > 0 ? ` • مُعاد: ${Number(order.coins_refunded)}` : ""}
+        </span>
+      </div>
+
+      {locked ? (
+        <div className="text-xs text-fuchsia-200/80">تم استرجاع هذا الطلب — لا يمكن تعديل قيمته أو عملاته.</div>
+      ) : (
+        <>
+          <div className="grid sm:grid-cols-3 gap-2 items-end">
+            <div>
+              <Label className="text-[11px] text-cyan-100/60">القيمة قبل الخصم (د.أ)</Label>
+              <Input dir="ltr" inputMode="decimal" value={subtotal} onChange={(e) => setSubtotal(e.target.value)}
+                className="gx-adm-input h-9 text-sm font-mono" />
+            </div>
+            <div>
+              <Label className="text-[11px] text-cyan-100/60">GX Coins المستخدمة (حد أقصى {maxCoins})</Label>
+              <Input dir="ltr" inputMode="numeric" value={coins} onChange={(e) => setCoins(e.target.value)}
+                className="gx-adm-input h-9 text-sm font-mono" />
+            </div>
+            <div>
+              <Label className="text-[11px] text-cyan-100/60">السبب (إلزامي)</Label>
+              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثلاً: تعديل الكمية"
+                className="gx-adm-input h-9 text-sm" />
+            </div>
+          </div>
+          <div className="text-[11px] text-cyan-100/60 mt-2 flex flex-wrap gap-x-4 gap-y-1">
+            <span>خصم العملات: <b className="text-amber-300 font-mono">{coinsDisc.toFixed(2)}</b> د.أ</span>
+            <span>خصم الكوبون: <b className="font-mono">{couponDisc.toFixed(2)}</b> د.أ</span>
+            <span>الإجمالي الجديد: <b className="text-emerald-300 font-mono">{newTotal.toFixed(2)}</b> د.أ</span>
+            {delta !== 0 && (
+              <span className={delta > 0 ? "text-rose-300" : "text-emerald-300"}>
+                {delta > 0 ? `سيتم خصم ${delta} GX من العميل` : `سيتم إرجاع ${-delta} GX للعميل`}
+              </span>
+            )}
+          </div>
+          {c > maxCoins && <div className="text-[10px] text-rose-400 mt-1">العملات تتجاوز 50% من قيمة الطلب</div>}
+          <div className="mt-3">
+            <Button onClick={save} disabled={!valid || busy} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold h-9 disabled:opacity-45">
+              {busy ? <><Loader2 size={14} className="ml-1 animate-spin" /> جاري الحفظ…</> : "حفظ القيمة والعملات"}
+            </Button>
+          </div>
+        </>
       )}
     </div>
   );
