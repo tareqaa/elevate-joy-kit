@@ -387,22 +387,10 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
             })}
 
 
-            {/* gloss + bulbs */}
+            {/* gloss */}
             <circle cx="150" cy="150" r="138" fill="url(#gxw-gloss)" pointerEvents="none" />
-            {bulbs.map((a, i) => {
-              const [bx, by] = polar(150, 150, 147, a);
-              return (
-                <circle
-                  key={a}
-                  cx={bx}
-                  cy={by}
-                  r="3.1"
-                  fill={i % 2 ? "#fde68a" : "#fff7ed"}
-                  className={i % 2 ? "gxw-bulb-a" : "gxw-bulb-b"}
-                  style={{ filter: "drop-shadow(0 0 4px rgba(253,224,71,.9))" }}
-                />
-              );
-            })}
+            <circle cx="150" cy="150" r="138.5" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1.5" />
+
           </svg>
 
           {/* pointer */}
