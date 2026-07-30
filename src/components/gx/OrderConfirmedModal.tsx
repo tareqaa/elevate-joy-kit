@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -124,8 +125,11 @@ export function OrderConfirmedModal({
           </button>
         )}
         {signedIn && (
-          <a
-            href="/account"
+          <Link
+            to="/account"
+            search={{ tab: "orders" as const }}
+            onClick={onClose}
+            preload="intent"
             style={{
               display: "block", marginTop: 10, padding: "10px 14px", borderRadius: 12,
               border: "1px solid rgba(0,229,255,0.35)", background: "rgba(0,229,255,0.06)",
@@ -133,7 +137,7 @@ export function OrderConfirmedModal({
             }}
           >
             📦 {t("cart.track_order")}
-          </a>
+          </Link>
         )}
 
         <button
