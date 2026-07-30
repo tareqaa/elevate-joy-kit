@@ -143,8 +143,8 @@ const WHEEL_CSS = `
 @keyframes gxw-confetti { 0% { transform: translate3d(0,0,0) rotate(0); opacity:1 } 100% { transform: translate3d(var(--dx), 220px, 0) rotate(540deg); opacity:0 } }
 .gxw-halo { animation: gxw-halo 3.2s ease-in-out infinite; }
 .gxw-ticking { animation: gxw-tick .12s linear infinite; transform-origin: 50% 12%; }
-.gxw-bulb-a { animation: gxw-bulbs 1.1s ease-in-out infinite; }
-.gxw-bulb-b { animation: gxw-bulbs 1.1s ease-in-out infinite; animation-delay: .55s; }
+body.gxw-wheel-open div[data-state="open"][class*="inset-0"] { backdrop-filter: blur(14px) saturate(120%); background: rgba(3,7,18,.62); }
+
 .gxw-pop { animation: gxw-pop .45s cubic-bezier(.2,.9,.25,1) both; }
 .gxw-confetti span { position:absolute; top:0; left:50%; width:8px; height:12px; border-radius:2px; animation: gxw-confetti 1.6s ease-in forwards; }
 `;
