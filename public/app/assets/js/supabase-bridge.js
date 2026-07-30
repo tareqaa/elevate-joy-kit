@@ -6,8 +6,8 @@
    ============================================================ */
 
 (function () {
-  const SUPABASE_URL = 'https://kjqelvvmxmqalqwnluxn.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_gNtQDuOHf5oYZbL739xJGg_0FYV0cgX';
+  const SUPABASE_URL = 'https://pvwsktauvvxvmdpdzqrb.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2d3NrdGF1dnZ4dm1kcGR6cXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNjM1NjUsImV4cCI6MjEwMDkzOTU2NX0.iqwL3MJAcKJsmPceBm0ZyFEQa4m3wjcsisv31I9sgO4';
 
   function isNewSupabaseApiKey(value) {
     return value.startsWith('sb_publishable_') || value.startsWith('sb_secret_');
