@@ -517,6 +517,7 @@ export function Navbar() {
       <CurrencyModal open={currencyOpen} onClose={() => setCurrencyOpen(false)} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       <ReviewModal open={reviewOpen} onClose={() => setReviewOpen(false)} userId={session?.userId ?? null} />
+      <SpinWheelModal open={wheelOpen} onOpenChange={setWheelOpen} />
     </>
   );
 }
