@@ -182,3 +182,16 @@ div[style*="Edit with Lovable"],
 @media (prefers-reduced-motion: reduce) {
   .gx-anim { opacity: 1 !important; transform: none !important; transition: none !important; }
 }
+
+/* ============= Hide native number input spinners (global) ============= */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  display: none;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
