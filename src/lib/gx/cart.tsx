@@ -593,8 +593,17 @@ ${lines}
       return result;
     } catch (e) {
       console.warn("[GX] submitOrder failed", e);
+      // Surface the server's Arabic rejection message (validation / rate limit).
+      try {
+        const msg = (e as { message?: string })?.message?.trim();
+        if (msg) {
+          const { toast } = await import("sonner");
+          toast.error(msg);
+        }
+      } catch { /* noop */ }
       return null;
     }
+
 
   }, [items, totalJOD, currency, notes, contact, coupon, coins, appliedCredit, submitStoreOrderFn]);
 

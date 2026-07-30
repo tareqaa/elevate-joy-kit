@@ -1423,6 +1423,7 @@ export type Database = {
         }
         Returns: string
       }
+      normalize_contact: { Args: { _v: string }; Returns: string }
       redeem_gx_coins: {
         Args: { _coins: number; _subtotal_jod: number }
         Returns: Json
