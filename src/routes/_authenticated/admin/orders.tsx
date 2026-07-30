@@ -707,6 +707,11 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                   <XCircle size={15} className="ml-1" /> إلغاء
                 </Button>
               )}
+              {status === "pending" && (
+                <Button onClick={() => { setStatus("paid"); onSave(buildPatch("paid")); }} className="bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-500/20">
+                  <CheckCircle2 size={15} className="ml-1" /> تأكيد الدفع
+                </Button>
+              )}
               {status !== "delivered" && status !== "cancelled" && (
                 <Button onClick={markDelivered} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20">
                   <CheckCircle2 size={15} className="ml-1" /> تسليم + إشعار

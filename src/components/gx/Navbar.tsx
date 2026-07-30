@@ -369,8 +369,7 @@ export function Navbar() {
                         {avatarUrl ? <img src={avatarUrl} alt="" /> : <span className="account-avatar-fallback">{initials}</span>}
                       </span>
                       <span className="acc-hero__txt">
-                        <span className="acc-hero__name">{displayName}</span>
-                        <span className="acc-hero__handle" dir="ltr">@{username}</span>
+                        <span className="acc-hero__name" dir="ltr">@{username}</span>
                       </span>
                       <span className="acc-hero__lvl">Lv {level}</span>
                     </Link>

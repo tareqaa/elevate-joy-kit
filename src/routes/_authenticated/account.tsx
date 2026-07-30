@@ -163,8 +163,7 @@ function AccountPage() {
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold truncate">{displayName}</h1>
-              <p className="text-sm text-primary font-semibold truncate" dir="ltr">@{username}</p>
+              <h1 className="text-2xl font-bold truncate" dir="ltr">@{username}</h1>
               <p className="text-xs text-muted-foreground truncate" dir="ltr">{user.email}</p>
             </div>
             <Badge variant="outline" className="text-xs self-start sm:self-end whitespace-nowrap">
@@ -220,7 +219,13 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
     { key: "delivered", label: t("acc.status_delivered"), match: (s) => s === "delivered" },
     { key: "cancelled", label: t("acc.status_cancelled"), match: (s) => s === "cancelled" },
   ];
-  const [view, setView] = useState<string>("pending");
+  const [picked, setPicked] = useState<string | null>(null);
+  // Follow the newest order's status until the user picks a tab manually,
+  // so an order confirmed as "paid" by the admin shows up right away.
+  const latestStatus = orders[0]?.status;
+  const autoView = STATUS_TABS.some((tb) => tb.key === latestStatus) ? (latestStatus as string) : "pending";
+  const view = picked ?? autoView;
+  const setView = (v: string) => setPicked(v);
   if (loading) return <p className="text-sm text-muted-foreground">{t("acc.loading_orders")}</p>;
   const counts = STATUS_TABS.reduce<Record<string, number>>((acc, tab) => {
     acc[tab.key] = orders.filter((o) => tab.match(o.status)).length;
