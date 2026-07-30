@@ -62,6 +62,16 @@ function prizeColor(p: { color?: string | null; rarity?: string | null }) {
   return p.color || RARITY_FALLBACK[p.rarity || "common"] || "#64748b";
 }
 
+function shade(hex: string, amount: number) {
+  const m = /^#?([a-f\d]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) =>
+    Math.max(0, Math.min(255, Math.round(amount >= 0 ? c + (255 - c) * amount : c * (1 + amount)))),
+  );
+  return `#${ch.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+}
+
 function polar(cx: number, cy: number, r: number, deg: number) {
   const rad = ((deg - 90) * Math.PI) / 180;
   return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)] as const;
@@ -107,6 +117,41 @@ function rewardSummary(r: SpinResult) {
   }
 }
 
+/** Fit a prize label into the segment: 2 lines max, ellipsis at the end. */
+function labelLines(name: string, perLine: number) {
+  const words = name.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    if (!cur) cur = w;
+    else if ((cur + " " + w).length <= perLine) cur += " " + w;
+    else {
+      lines.push(cur);
+      cur = w;
+    }
+    if (lines.length === 2) break;
+  }
+  if (lines.length < 2 && cur) lines.push(cur);
+  const out = lines.slice(0, 2);
+  if (out.length === 2 && out[1].length > perLine) out[1] = `${out[1].slice(0, perLine - 1)}…`;
+  if (out.length === 1 && out[0].length > perLine) out[0] = `${out[0].slice(0, perLine - 1)}…`;
+  return out;
+}
+
+const WHEEL_CSS = `
+@keyframes gxw-bulbs { 0%,100% { opacity:1 } 50% { opacity:.25 } }
+@keyframes gxw-tick { 0%,100% { transform: rotate(0deg) } 45% { transform: rotate(-17deg) } }
+@keyframes gxw-halo { 0%,100% { opacity:.35; transform: scale(1) } 50% { opacity:.7; transform: scale(1.04) } }
+@keyframes gxw-pop { 0% { transform: scale(.85); opacity:0 } 60% { transform: scale(1.03) } 100% { transform: scale(1); opacity:1 } }
+@keyframes gxw-confetti { 0% { transform: translate3d(0,0,0) rotate(0); opacity:1 } 100% { transform: translate3d(var(--dx), 220px, 0) rotate(540deg); opacity:0 } }
+.gxw-halo { animation: gxw-halo 3.2s ease-in-out infinite; }
+.gxw-ticking { animation: gxw-tick .12s linear infinite; transform-origin: 50% 12%; }
+.gxw-bulb-a { animation: gxw-bulbs 1.1s ease-in-out infinite; }
+.gxw-bulb-b { animation: gxw-bulbs 1.1s ease-in-out infinite; animation-delay: .55s; }
+.gxw-pop { animation: gxw-pop .45s cubic-bezier(.2,.9,.25,1) both; }
+.gxw-confetti span { position:absolute; top:0; left:50%; width:8px; height:12px; border-radius:2px; animation: gxw-confetti 1.6s ease-in forwards; }
+`;
+
 export function WheelCore({ compact = false }: { compact?: boolean }) {
   const qc = useQueryClient();
   const [angle, setAngle] = useState(0);
@@ -114,6 +159,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
   const [result, setResult] = useState<SpinResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [remaining, setRemaining] = useState(0);
+  const [celebrate, setCelebrate] = useState(false);
   const timerRef = useRef<number | null>(null);
 
   const prizesQ = useQuery({
@@ -165,10 +211,23 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
   const seg = prizes.length > 0 ? 360 / prizes.length : 360;
   const canSpin = !!statusQ.data?.can_spin && prizes.length > 0 && !spinning;
 
+  const bulbs = useMemo(() => Array.from({ length: 24 }, (_, i) => (i * 360) / 24), []);
+  const confetti = useMemo(
+    () =>
+      Array.from({ length: 22 }, (_, i) => ({
+        dx: `${Math.round(Math.random() * 260 - 130)}px`,
+        delay: `${Math.random() * 0.35}s`,
+        color: ["#22d3ee", "#f59e0b", "#a855f7", "#34d399", "#f43f5e"][i % 5],
+        left: `${Math.round(Math.random() * 90 + 5)}%`,
+      })),
+    [result?.prize_id],
+  );
+
   async function spin() {
     if (!canSpin) return;
     setSpinning(true);
     setResult(null);
+    setCelebrate(false);
     // 1) Ask the server FIRST — the visual outcome is decided by this response.
     const { data, error } = await supabase.rpc("spin_wheel");
     if (error) {
@@ -189,15 +248,17 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
     const targetCentre = idx * seg + seg / 2;
     const current = ((angle % 360) + 360) % 360;
     const delta = (360 - targetCentre - current + 360) % 360;
-    setAngle(angle + 360 * 6 + delta);
+    setAngle(angle + 360 * 7 + delta);
 
     timerRef.current = window.setTimeout(() => {
       setSpinning(false);
       setResult(res);
+      if (res.reward_type !== "no_reward") setCelebrate(true);
+      window.setTimeout(() => setCelebrate(false), 1900);
       void qc.invalidateQueries({ queryKey: ["wheel-status"] });
       void qc.invalidateQueries({ queryKey: ["my-loyalty"] });
       void qc.invalidateQueries({ queryKey: ["my-profile"] });
-    }, 5200);
+    }, 5600);
   }
 
   async function copyCode() {
@@ -212,74 +273,169 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
   const noReward = result?.reward_type === "no_reward";
   const legendary = isRare(result?.rarity);
   const expiry = fmtDate(result?.coupon_expires_at || result?.boost_expires_at);
-  const size = compact ? "w-[260px] h-[260px] sm:w-[320px] sm:h-[320px]" : "w-[290px] h-[290px] sm:w-[340px] sm:h-[340px]";
+  const size = compact
+    ? "w-[280px] h-[280px] sm:w-[330px] sm:h-[330px]"
+    : "w-[300px] h-[300px] sm:w-[360px] sm:h-[360px]";
+  const perLine = prizes.length > 8 ? 9 : 12;
 
   return (
     <div dir="rtl" className="space-y-5">
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative">
+      <style dangerouslySetInnerHTML={{ __html: WHEEL_CSS }} />
+
+      <div className="flex flex-col items-center gap-5">
+        <div className={`relative ${size} max-w-full`}>
+          {/* ambient halo */}
           <div
-            className="absolute left-1/2 -translate-x-1/2 -top-1 z-10"
-            style={{
-              width: 0, height: 0,
-              borderInlineStart: "12px solid transparent",
-              borderInlineEnd: "12px solid transparent",
-              borderTop: "22px solid hsl(var(--primary))",
-              filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.8))",
-            }}
+            className="gxw-halo pointer-events-none absolute -inset-6 rounded-full blur-2xl"
+            style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.35), transparent 65%)" }}
           />
+
+          {/* confetti burst */}
+          {celebrate && (
+            <div className="gxw-confetti pointer-events-none absolute inset-x-0 top-4 h-full overflow-visible z-30">
+              {confetti.map((c, i) => (
+                <span key={i} style={{ left: c.left, background: c.color, ["--dx" as string]: c.dx, animationDelay: c.delay }} />
+              ))}
+            </div>
+          )}
+
+          {/* rotating wheel */}
           <svg
             viewBox="0 0 300 300"
-            className={`${size} rounded-full max-w-full`}
+            className="absolute inset-0 w-full h-full"
             style={{
               transform: `rotate(${angle}deg)`,
-              transition: spinning ? "transform 5s cubic-bezier(0.15, 0.9, 0.2, 1)" : undefined,
-              boxShadow: "0 0 50px hsl(var(--primary) / 0.25)",
+              transition: spinning ? "transform 5.4s cubic-bezier(0.13, 0.78, 0.12, 1)" : undefined,
+              filter: "drop-shadow(0 18px 40px rgba(0,0,0,.55))",
             }}
           >
             <defs>
-              <filter id="gx-wheel-glow" x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur stdDeviation="3" result="b" />
-                <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-              </filter>
+              {prizes.map((p) => {
+                const c = prizeColor(p);
+                return (
+                  <linearGradient key={p.id} id={`gxw-g-${p.id}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={shade(c, 0.22)} />
+                    <stop offset="100%" stopColor={shade(c, -0.4)} />
+                  </linearGradient>
+                );
+              })}
+              <radialGradient id="gxw-gloss" cx="50%" cy="28%" r="72%">
+                <stop offset="0%" stopColor="#fff" stopOpacity="0.22" />
+                <stop offset="55%" stopColor="#fff" stopOpacity="0.04" />
+                <stop offset="100%" stopColor="#000" stopOpacity="0.28" />
+              </radialGradient>
+              <linearGradient id="gxw-rim" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#fde68a" />
+                <stop offset="35%" stopColor="#b45309" />
+                <stop offset="65%" stopColor="#fbbf24" />
+                <stop offset="100%" stopColor="#78350f" />
+              </linearGradient>
             </defs>
-            <circle cx="150" cy="150" r="148" fill="hsl(var(--card))" stroke="hsl(var(--primary) / 0.5)" strokeWidth="3" />
+
+            {/* outer rim */}
+            <circle cx="150" cy="150" r="147" fill="none" stroke="url(#gxw-rim)" strokeWidth="10" />
+            <circle cx="150" cy="150" r="140" fill="hsl(var(--card))" />
+
+            {/* segments */}
             {prizes.map((p, i) => {
               const start = i * seg;
-              const end = start + seg;
-              const rare = isRare(p.rarity);
-              const [tx, ty] = polar(150, 150, 96, start + seg / 2);
-              const [ix, iy] = polar(150, 150, 126, start + seg / 2);
-              const label = p.name.length > 15 ? `${p.name.slice(0, 14)}…` : p.name;
+              const mid = start + seg / 2;
+              const lines = labelLines(p.name, perLine);
               return (
-                <g key={p.id} filter={p.rarity === "legendary" ? "url(#gx-wheel-glow)" : undefined}>
+                <g key={p.id}>
                   <path
-                    d={segmentPath(150, 150, 145, start, end)}
-                    fill={prizeColor(p)}
-                    fillOpacity={rare ? 0.95 : 0.78}
-                    stroke={p.rarity === "legendary" ? "#fbbf24" : rare ? "rgba(251,191,36,0.6)" : "rgba(255,255,255,0.18)"}
-                    strokeWidth={rare ? 2.5 : 1}
+                    d={segmentPath(150, 150, 138, start, start + seg)}
+                    fill={`url(#gxw-g-${p.id})`}
+                    stroke="rgba(255,255,255,0.10)"
+                    strokeWidth="1"
                   />
-                  <text
-                    x={ix} y={iy} fontSize="16" textAnchor="middle" dominantBaseline="middle"
-                    transform={`rotate(${start + seg / 2}, ${ix}, ${iy})`}
-                  >
-                    {p.icon || "🎁"}
-                  </text>
-                  <text
-                    x={tx} y={ty}
-                    fill="#fff" fontSize="11.5" fontWeight="700"
-                    textAnchor="middle" dominantBaseline="middle"
-                    transform={`rotate(${start + seg / 2}, ${tx}, ${ty})`}
-                  >
-                    {label}
-                  </text>
+                  <g transform={`rotate(${mid - 90} 150 150)`}>
+                    <text x="266" y="150" fontSize="19" textAnchor="middle" dominantBaseline="central">
+                      {p.icon || "🎁"}
+                    </text>
+                    {lines.map((ln, li) => (
+                      <text
+                        key={li}
+                        x="240"
+                        y={150 + (lines.length === 1 ? 0 : li === 0 ? -7.5 : 7.5)}
+                        fill="#fff"
+                        fontSize={prizes.length > 8 ? 10 : 11.5}
+                        fontWeight="800"
+                        textAnchor="end"
+                        dominantBaseline="central"
+                        style={{ paintOrder: "stroke", letterSpacing: "0.2px" }}
+                        stroke="rgba(0,0,0,0.42)"
+                        strokeWidth="2.6"
+                      >
+                        {ln}
+                      </text>
+                    ))}
+                  </g>
+                  {/* separator */}
+                  <line
+                    x1="150"
+                    y1="150"
+                    x2={polar(150, 150, 138, start)[0]}
+                    y2={polar(150, 150, 138, start)[1]}
+                    stroke="rgba(251,191,36,0.45)"
+                    strokeWidth="1.2"
+                  />
                 </g>
               );
             })}
-            <circle cx="150" cy="150" r="26" fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth="3" />
-            <text x="150" y="151" fontSize="18" textAnchor="middle" dominantBaseline="middle">🎡</text>
+
+            {/* gloss + bulbs */}
+            <circle cx="150" cy="150" r="138" fill="url(#gxw-gloss)" pointerEvents="none" />
+            {bulbs.map((a, i) => {
+              const [bx, by] = polar(150, 150, 147, a);
+              return (
+                <circle
+                  key={a}
+                  cx={bx}
+                  cy={by}
+                  r="3.1"
+                  fill={i % 2 ? "#fde68a" : "#fff7ed"}
+                  className={i % 2 ? "gxw-bulb-a" : "gxw-bulb-b"}
+                  style={{ filter: "drop-shadow(0 0 4px rgba(253,224,71,.9))" }}
+                />
+              );
+            })}
           </svg>
+
+          {/* pointer */}
+          <div
+            className={`absolute left-1/2 -translate-x-1/2 -top-2 z-20 ${spinning ? "gxw-ticking" : ""}`}
+            style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,.6))" }}
+          >
+            <svg width="38" height="52" viewBox="0 0 38 52">
+              <path d="M19 50 L4 16 A16 16 0 1 1 34 16 Z" fill="url(#gxw-rim2)" stroke="#fff7ed" strokeWidth="1.6" />
+              <circle cx="19" cy="15" r="5" fill="#1f1300" />
+              <defs>
+                <linearGradient id="gxw-rim2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#fde68a" />
+                  <stop offset="100%" stopColor="#d97706" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+
+          {/* center hub / spin button */}
+          <button
+            type="button"
+            onClick={spin}
+            disabled={!canSpin}
+            aria-label="لف الآن"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 grid place-items-center rounded-full border-[3px] border-amber-300/80 text-[13px] font-black tracking-wide transition-transform duration-200 hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
+            style={{
+              width: compact ? 76 : 84,
+              height: compact ? 76 : 84,
+              background: "radial-gradient(circle at 50% 30%, #1f2937, #050810 70%)",
+              boxShadow: "0 0 26px hsl(var(--primary) / .55), inset 0 0 18px rgba(251,191,36,.25)",
+              color: "#fde68a",
+            }}
+          >
+            {spinning ? <span className="text-[11px]">…يلف</span> : canSpin ? "SPIN" : "🔒"}
+          </button>
         </div>
 
         {statusQ.isLoading ? (
@@ -303,7 +459,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
 
       {result && !spinning && (
         <div
-          className="rounded-2xl border p-4 text-center space-y-3 animate-scale-in"
+          className="gxw-pop rounded-2xl border p-4 text-center space-y-3"
           style={{
             borderColor: noReward ? "hsl(var(--border))" : `${prizeColor(result)}88`,
             background: noReward ? "hsl(var(--muted) / 0.35)" : `${prizeColor(result)}18`,
