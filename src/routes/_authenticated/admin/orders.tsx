@@ -745,7 +745,9 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
  */
 function RefundBlock({ order, onDone }: { order: OrderWithEmail; onDone?: () => void }) {
   const qc = useQueryClient();
-  const maxAmount = Number(order.total_jod || 0);
+  const paidTotal = Number(order.paid_jod ?? order.total_jod ?? 0);
+  const alreadyRefundedJod = Number(order.refunded_jod ?? 0);
+  const maxAmount = Math.max(Math.round((paidTotal - alreadyRefundedJod) * 100) / 100, 0);
   const [amount, setAmount] = useState(maxAmount.toFixed(2));
   const [reason, setReason] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
