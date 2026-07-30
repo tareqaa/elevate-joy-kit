@@ -191,7 +191,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "acc.avatar_preview": "معاينة الأفاتار الجديد",
     "acc.display_name": "الاسم المعروض",
     "acc.display_name_ph": "اسمك في اللعبة",
-    "acc.gametag": "Username",
+    "acc.gametag": "اسم المستخدم",
     "acc.checking": "جاري التحقق...",
     "acc.uname_current": "هذا يوزرك الحالي",
     "acc.uname_taken": "هذا اليوزر محجوز",
