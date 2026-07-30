@@ -16,6 +16,7 @@ export function BuyActions({ cartId }: { cartId: string }) {
         onClick={() => {
           cart.add(cartId);
           setAdded(true);
+          window.dispatchEvent(new CustomEvent(CART_ADDED_EVENT));
           setTimeout(() => setAdded(false), 1200);
         }}
       >
