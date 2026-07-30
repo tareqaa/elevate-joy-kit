@@ -281,15 +281,15 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
       <style dangerouslySetInnerHTML={{ __html: WHEEL_CSS }} />
 
       <div className="flex flex-col items-center gap-5">
-        <div className={`relative ${size} max-w-full`}>
-          {/* ambient halo */}
+        <div className={`gxw-wheel-stage relative ${size} max-w-full`}>
+          {/* static ambient glow — no blur filter, no animation (painted once) */}
           <div
-            className="gxw-halo pointer-events-none absolute -inset-6 rounded-full blur-2xl"
-            style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.35), transparent 65%)" }}
+            className="pointer-events-none absolute inset-0 rounded-full"
+            style={{ boxShadow: "0 18px 44px rgba(0,0,0,.55), 0 0 60px hsl(var(--primary) / 0.22)" }}
           />
 
-          {/* confetti burst */}
-          {celebrate && (
+          {/* confetti burst (only after the wheel has stopped) */}
+          {celebrate && !spinning && (
             <div className="gxw-confetti pointer-events-none absolute inset-x-0 top-4 h-full overflow-visible z-30">
               {confetti.map((c, i) => (
                 <span key={i} style={{ left: c.left, background: c.color, ["--dx" as string]: c.dx, animationDelay: c.delay }} />
@@ -297,14 +297,13 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
             </div>
           )}
 
-          {/* rotating wheel */}
+          {/* rotating wheel — transform only */}
           <svg
             viewBox="0 0 300 300"
-            className="absolute inset-0 w-full h-full"
+            className="gxw-wheel-svg absolute inset-0 w-full h-full"
             style={{
               transform: `rotate(${angle}deg)`,
-              transition: spinning ? "transform 5.4s cubic-bezier(0.13, 0.78, 0.12, 1)" : undefined,
-              filter: "drop-shadow(0 18px 40px rgba(0,0,0,.55))",
+              transition: spinning ? "transform 5.2s cubic-bezier(0.16, 0.87, 0.18, 1)" : undefined,
             }}
           >
             <defs>
