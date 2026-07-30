@@ -273,7 +273,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
   const size = compact
     ? "w-[280px] h-[280px] sm:w-[330px] sm:h-[330px]"
     : "w-[300px] h-[300px] sm:w-[360px] sm:h-[360px]";
-  const perLine = prizes.length > 8 ? 9 : 12;
+  
 
   return (
     <div dir="rtl" className="space-y-5">
