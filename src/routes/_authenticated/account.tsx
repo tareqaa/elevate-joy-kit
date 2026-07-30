@@ -397,32 +397,149 @@ function SecurityTab({ email }: { email: string }) {
   }
 
   return (
-    <div className="grid md:grid-cols-2 gap-4">
-      <Card>
-        <CardHeader><CardTitle className="text-base">{t("acc.change_password")}</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-2">
-            <Label htmlFor="pw">{t("acc.new_password")}</Label>
-            <Input id="pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="pw2">{t("acc.confirm_password")}</Label>
-            <Input id="pw2" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
-          </div>
-          <Button onClick={change} disabled={saving} className="w-full">
-            {saving ? t("acc.saving") : t("acc.update_password")}
-          </Button>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader><CardTitle className="text-base">{t("acc.forgot_password")}</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            {t("acc.reset_send_desc")} <span dir="ltr" className="text-foreground">{email}</span>
-          </p>
-          <Button variant="outline" onClick={sendReset} className="w-full">{t("acc.send_reset")}</Button>
-        </CardContent>
-      </Card>
+    <div className="space-y-4">
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader><CardTitle className="text-base">{t("acc.change_password")}</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="pw">{t("acc.new_password")}</Label>
+              <Input id="pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pw2">{t("acc.confirm_password")}</Label>
+              <Input id="pw2" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
+            </div>
+            <Button onClick={change} disabled={saving} className="w-full">
+              {saving ? t("acc.saving") : t("acc.update_password")}
+            </Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base">{t("acc.forgot_password")}</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {t("acc.reset_send_desc")} <span dir="ltr" className="text-foreground">{email}</span>
+            </p>
+            <Button variant="outline" onClick={sendReset} className="w-full">{t("acc.send_reset")}</Button>
+          </CardContent>
+        </Card>
+      </div>
+      <TwoFactorCard />
     </div>
+  );
+}
+
+type MfaFactor = { id: string; status: string; friendly_name?: string | null };
+
+function TwoFactorCard() {
+  const { t } = useLang();
+  const [factors, setFactors] = useState<MfaFactor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [enroll, setEnroll] = useState<{ id: string; qr: string; secret: string } | null>(null);
+  const [code, setCode] = useState("");
+
+  async function refresh() {
+    const { data, error } = await supabase.auth.mfa.listFactors();
+    if (!error) setFactors((data?.totp ?? []) as MfaFactor[]);
+    setLoading(false);
+  }
+
+  useEffect(() => { void refresh(); }, []);
+
+  const active = factors.find((f) => f.status === "verified");
+
+  async function startEnroll() {
+    setBusy(true);
+    // Clear any half-finished factor so re-enrolling never hits a name clash.
+    for (const f of factors.filter((x) => x.status !== "verified")) {
+      await supabase.auth.mfa.unenroll({ factorId: f.id });
+    }
+    const { data, error } = await supabase.auth.mfa.enroll({
+      factorType: "totp",
+      friendlyName: `GX ${Date.now()}`,
+    });
+    setBusy(false);
+    if (error || !data) { toast.error(error?.message || "MFA error"); return; }
+    setEnroll({ id: data.id, qr: data.totp.qr_code, secret: data.totp.secret });
+    setCode("");
+  }
+
+  async function verify() {
+    if (!enroll) return;
+    if (!/^\d{6}$/.test(code.trim())) { toast.error(t("acc.2fa_bad_code")); return; }
+    setBusy(true);
+    const { data: ch, error: chErr } = await supabase.auth.mfa.challenge({ factorId: enroll.id });
+    if (chErr || !ch) { setBusy(false); toast.error(chErr?.message || "MFA error"); return; }
+    const { error } = await supabase.auth.mfa.verify({
+      factorId: enroll.id, challengeId: ch.id, code: code.trim(),
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    setEnroll(null); setCode("");
+    toast.success(t("acc.2fa_on"));
+    void refresh();
+  }
+
+  async function cancelEnroll() {
+    if (enroll) await supabase.auth.mfa.unenroll({ factorId: enroll.id });
+    setEnroll(null); setCode("");
+    void refresh();
+  }
+
+  async function disable() {
+    if (!active) return;
+    setBusy(true);
+    const { error } = await supabase.auth.mfa.unenroll({ factorId: active.id });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(t("acc.2fa_off"));
+    void refresh();
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-primary" />
+          {t("acc.2fa_title")}
+          {!loading && (
+            <Badge variant="outline" className={active ? "border-emerald-500/40 text-emerald-400" : ""}>
+              {active ? t("acc.2fa_enabled") : t("acc.2fa_disabled")}
+            </Badge>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">{t("acc.2fa_desc")}</p>
+
+        {enroll ? (
+          <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+            <p className="text-sm">{t("acc.2fa_scan")}</p>
+            <img src={enroll.qr} alt="2FA QR" className="w-44 h-44 rounded-md bg-white p-2" />
+            <div className="text-xs text-muted-foreground">
+              {t("acc.2fa_secret")}
+              <div className="mt-1 font-mono text-foreground select-all break-all" dir="ltr">{enroll.secret}</div>
+            </div>
+            <div className="space-y-2 max-w-xs">
+              <Label htmlFor="mfa-code">{t("acc.2fa_code")}</Label>
+              <Input
+                id="mfa-code" dir="ltr" inputMode="numeric" maxLength={6}
+                value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={verify} disabled={busy}>{t("acc.2fa_verify")}</Button>
+              <Button variant="outline" onClick={cancelEnroll} disabled={busy}>{t("acc.2fa_cancel")}</Button>
+            </div>
+          </div>
+        ) : active ? (
+          <Button variant="outline" onClick={disable} disabled={busy}>{t("acc.2fa_disable")}</Button>
+        ) : (
+          <Button onClick={startEnroll} disabled={busy || loading}>{t("acc.2fa_enable")}</Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }
