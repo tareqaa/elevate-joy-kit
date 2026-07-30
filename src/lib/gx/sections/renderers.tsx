@@ -367,7 +367,6 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
         .select("id, display_name, comment, rating, created_at, is_featured")
         .eq("status", "approved")
         .eq("is_featured", true)
-        .gte("rating", 4)
         .order("created_at", { ascending: false })
         .limit(30);
       if (!alive || !rows) return;
