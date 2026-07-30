@@ -8,7 +8,11 @@ import { useSiteSettings } from "@/lib/gx/site-settings";
 export function Footer() {
   const { t, lang } = useLang();
   const s = useSiteSettings();
-  const waDigits = (s.support_whatsapp || "").replace(/\D/g, "");
+  // Site settings resolve on the client; render them only after hydration
+  // so the SSR markup and first client render match exactly.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const waDigits = hydrated ? (s.support_whatsapp || "").replace(/\D/g, "") : "";
   const waPretty = (() => {
     if (!waDigits) return "";
     // Jordan numbers: +962 7 XXXX XXXX
