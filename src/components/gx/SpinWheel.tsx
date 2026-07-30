@@ -331,9 +331,9 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
               </linearGradient>
             </defs>
 
-            {/* outer rim */}
-            <circle cx="150" cy="150" r="147" fill="none" stroke="url(#gxw-rim)" strokeWidth="10" />
+            {/* clean edge — no heavy frame */}
             <circle cx="150" cy="150" r="140" fill="hsl(var(--card))" />
+
 
             {/* segments */}
             {prizes.map((p, i) => {
