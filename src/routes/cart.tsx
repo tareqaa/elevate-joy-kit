@@ -21,28 +21,44 @@ export const Route = createFileRoute("/cart")({
   component: CartPage,
 });
 
-const COUNTRY_CODES: { code: string; flag: string; name: string }[] = [
-  { code: "+962", flag: "🇯🇴", name: "الأردن" },
-  { code: "+966", flag: "🇸🇦", name: "السعودية" },
-  { code: "+971", flag: "🇦🇪", name: "الإمارات" },
-  { code: "+965", flag: "🇰🇼", name: "الكويت" },
-  { code: "+974", flag: "🇶🇦", name: "قطر" },
-  { code: "+973", flag: "🇧🇭", name: "البحرين" },
-  { code: "+968", flag: "🇴🇲", name: "عُمان" },
-  { code: "+20", flag: "🇪🇬", name: "مصر" },
-  { code: "+970", flag: "🇵🇸", name: "فلسطين" },
-  { code: "+961", flag: "🇱🇧", name: "لبنان" },
-  { code: "+963", flag: "🇸🇾", name: "سوريا" },
-  { code: "+964", flag: "🇮🇶", name: "العراق" },
-  { code: "+967", flag: "🇾🇪", name: "اليمن" },
-  { code: "+218", flag: "🇱🇾", name: "ليبيا" },
-  { code: "+216", flag: "🇹🇳", name: "تونس" },
-  { code: "+213", flag: "🇩🇿", name: "الجزائر" },
-  { code: "+212", flag: "🇲🇦", name: "المغرب" },
-  { code: "+90",  flag: "🇹🇷", name: "تركيا" },
-  { code: "+1",   flag: "🇺🇸", name: "أمريكا/كندا" },
-  { code: "+44",  flag: "🇬🇧", name: "بريطانيا" },
+const COUNTRY_CODES: { code: string; flag: string; name: string; en: string }[] = [
+  { code: "+962", flag: "🇯🇴", name: "الأردن", en: "Jordan" },
+  { code: "+966", flag: "🇸🇦", name: "السعودية", en: "Saudi Arabia" },
+  { code: "+971", flag: "🇦🇪", name: "الإمارات", en: "UAE" },
+  { code: "+965", flag: "🇰🇼", name: "الكويت", en: "Kuwait" },
+  { code: "+974", flag: "🇶🇦", name: "قطر", en: "Qatar" },
+  { code: "+973", flag: "🇧🇭", name: "البحرين", en: "Bahrain" },
+  { code: "+968", flag: "🇴🇲", name: "عُمان", en: "Oman" },
+  { code: "+20", flag: "🇪🇬", name: "مصر", en: "Egypt" },
+  { code: "+970", flag: "🇵🇸", name: "فلسطين", en: "Palestine" },
+  { code: "+961", flag: "🇱🇧", name: "لبنان", en: "Lebanon" },
+  { code: "+963", flag: "🇸🇾", name: "سوريا", en: "Syria" },
+  { code: "+964", flag: "🇮🇶", name: "العراق", en: "Iraq" },
+  { code: "+967", flag: "🇾🇪", name: "اليمن", en: "Yemen" },
+  { code: "+218", flag: "🇱🇾", name: "ليبيا", en: "Libya" },
+  { code: "+216", flag: "🇹🇳", name: "تونس", en: "Tunisia" },
+  { code: "+213", flag: "🇩🇿", name: "الجزائر", en: "Algeria" },
+  { code: "+212", flag: "🇲🇦", name: "المغرب", en: "Morocco" },
+  { code: "+90",  flag: "🇹🇷", name: "تركيا", en: "Turkey" },
+  { code: "+1",   flag: "🇺🇸", name: "أمريكا/كندا", en: "USA/Canada" },
+  { code: "+44",  flag: "🇬🇧", name: "بريطانيا", en: "UK" },
 ];
+
+function WhatsAppIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="currentColor" aria-hidden focusable="false">
+      <path d="M27.2 4.8A15.86 15.86 0 0 0 16 .1C7.2.1.1 7.2.1 16c0 2.82.74 5.57 2.15 8L0 32l8.19-2.14A15.9 15.9 0 0 0 16 31.9h.01c8.79 0 15.94-7.15 15.94-15.94 0-4.26-1.66-8.26-4.75-11.16zM16 29.22h-.01a13.2 13.2 0 0 1-6.73-1.85l-.48-.29-4.86 1.27 1.3-4.74-.31-.49a13.2 13.2 0 0 1-2.03-7.12C2.88 8.68 8.77 2.8 16 2.8c3.55 0 6.88 1.38 9.39 3.9A13.16 13.16 0 0 1 29.29 16c0 7.27-5.9 13.22-13.29 13.22zm7.24-9.9c-.4-.2-2.35-1.16-2.72-1.29-.36-.13-.63-.2-.9.2-.26.4-1.02 1.29-1.25 1.55-.23.27-.46.3-.86.1-.4-.2-1.68-.62-3.19-1.97-1.18-1.05-1.98-2.35-2.21-2.75-.23-.4-.02-.61.18-.81.18-.18.4-.46.6-.7.2-.23.26-.4.4-.66.13-.27.07-.5-.03-.7-.1-.2-.9-2.17-1.24-2.97-.32-.77-.66-.67-.9-.68-.23-.01-.5-.01-.76-.01-.27 0-.7.1-1.07.5-.36.4-1.4 1.36-1.4 3.33 0 1.96 1.43 3.86 1.63 4.13.2.27 2.83 4.32 6.85 6.05.96.41 1.7.66 2.28.85.96.3 1.83.26 2.52.16.77-.12 2.36-.96 2.7-1.9.33-.93.33-1.73.23-1.9-.1-.16-.36-.26-.76-.46z" />
+    </svg>
+  );
+}
+
+function TelegramIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden focusable="false">
+      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.568 8.16l-1.86 8.77c-.14.62-.51.77-1.03.48l-2.85-2.1-1.37 1.32c-.15.15-.28.28-.58.28l.2-2.94 5.36-4.84c.23-.2-.05-.32-.36-.12l-6.62 4.17-2.85-.89c-.62-.19-.63-.62.13-.92l11.14-4.3c.52-.19.97.12.8.91z" />
+    </svg>
+  );
+}
 
 function CartPage() {
   const { t } = useLang();
