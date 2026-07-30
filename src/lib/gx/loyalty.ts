@@ -26,7 +26,7 @@ export const MAX_COINS_DISCOUNT_RATIO = 0.5;
 
 
 export function coinsToJod(coins: number): number {
-  return Math.round((Math.max(0, coins) / COINS_PER_JOD_REDEEM) * 100) / 100;
+  return Math.round((Math.max(0, coins) / COINS_PER_JOD_REDEEM) * 1000) / 1000;
 }
 
 export function jodToCoins(jod: number): number {
