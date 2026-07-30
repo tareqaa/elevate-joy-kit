@@ -588,6 +588,8 @@ ${lines}
       } catch { /* noop */ }
       setCoinsState(null);
       setCreditState(0);
+      // Coins / store-credit balances changed server-side — tell the UI to refetch.
+      try { window.dispatchEvent(new Event("gx:balances-updated")); } catch { /* noop */ }
       return result;
     } catch (e) {
       console.warn("[GX] submitOrder failed", e);
