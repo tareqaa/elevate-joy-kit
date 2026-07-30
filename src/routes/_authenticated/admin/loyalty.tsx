@@ -269,12 +269,19 @@ function CustomersTab({ profiles, loading }: { profiles: ProfileRow[]; loading: 
     mutationFn: async () => {
       if (!creditTarget) return;
       if (!creditReason.trim()) throw new Error("السبب مطلوب");
-      const { error } = await supabase.rpc("admin_adjust_store_credit", {
+      const amount = Number(credit) || 0;
+      if (!amount) throw new Error("أدخل مبلغاً صحيحاً");
+      if (amount < 0 && Math.abs(amount) > (creditTarget.balance ?? 0)) {
+        throw new Error("المبلغ المسحوب أكبر من رصيد المستخدم");
+      }
+      const { data, error } = await supabase.rpc("admin_adjust_store_credit", {
         _user_id: creditTarget.id,
-        _amount: Number(credit) || 0,
+        _amount: amount,
         _reason: creditReason.trim(),
       });
       if (error) throw error;
+      const res = data as { ok?: boolean; message?: string } | null;
+      if (res && res.ok === false) throw new Error(res.message || "تعذّر التعديل");
     },
     onSuccess: () => {
       toast.success("تم تعديل رصيد المتجر");
