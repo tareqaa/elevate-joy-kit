@@ -1313,6 +1313,27 @@ export type Database = {
         }
         Relationships: []
       }
+      wheel_bonus_spins: {
+        Row: {
+          created_at: string
+          spins: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          spins?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          spins?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wheel_prizes: {
         Row: {
           color: string
@@ -1371,6 +1392,7 @@ export type Database = {
         Row: {
           coupon_id: string | null
           id: string
+          is_bonus: boolean
           prize_id: string | null
           prize_snapshot: Json
           spun_at: string
@@ -1379,6 +1401,7 @@ export type Database = {
         Insert: {
           coupon_id?: string | null
           id?: string
+          is_bonus?: boolean
           prize_id?: string | null
           prize_snapshot?: Json
           spun_at?: string
@@ -1387,6 +1410,7 @@ export type Database = {
         Update: {
           coupon_id?: string | null
           id?: string
+          is_bonus?: boolean
           prize_id?: string | null
           prize_snapshot?: Json
           spun_at?: string
@@ -1461,6 +1485,10 @@ export type Database = {
           _reason?: string
           _user_id: string
         }
+        Returns: Json
+      }
+      admin_grant_wheel_spins: {
+        Args: { _count: number; _target: string }
         Returns: Json
       }
       admin_refund_order: {
