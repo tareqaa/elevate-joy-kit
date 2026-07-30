@@ -138,15 +138,14 @@ function segColor(p: { color?: string | null; rarity?: string | null }, i: numbe
 
 
 const WHEEL_CSS = `
-@keyframes gxw-bulbs { 0%,100% { opacity:1 } 50% { opacity:.25 } }
 @keyframes gxw-tick { 0%,100% { transform: rotate(0deg) } 45% { transform: rotate(-17deg) } }
-@keyframes gxw-halo { 0%,100% { opacity:.35; transform: scale(1) } 50% { opacity:.7; transform: scale(1.04) } }
 @keyframes gxw-pop { 0% { transform: scale(.85); opacity:0 } 60% { transform: scale(1.03) } 100% { transform: scale(1); opacity:1 } }
 @keyframes gxw-confetti { 0% { transform: translate3d(0,0,0) rotate(0); opacity:1 } 100% { transform: translate3d(var(--dx), 220px, 0) rotate(540deg); opacity:0 } }
-.gxw-halo { animation: gxw-halo 3.2s ease-in-out infinite; }
 .gxw-ticking { animation: gxw-tick .12s linear infinite; transform-origin: 50% 12%; }
-body.gxw-wheel-open div[data-state="open"][class*="inset-0"] { backdrop-filter: blur(14px) saturate(120%); background: rgba(3,7,18,.62); }
-
+/* Static overlay only: no animated child lives on this layer, so the blur is painted once. */
+body.gxw-wheel-open div[data-state="open"][class*="inset-0"] { background: rgba(3,7,18,.78); }
+.gxw-wheel-stage { overflow: visible; contain: layout paint; }
+.gxw-wheel-svg { will-change: transform; transform-origin: 50% 50%; backface-visibility: hidden; }
 .gxw-pop { animation: gxw-pop .45s cubic-bezier(.2,.9,.25,1) both; }
 .gxw-confetti span { position:absolute; top:0; left:50%; width:8px; height:12px; border-radius:2px; animation: gxw-confetti 1.6s ease-in forwards; }
 `;
@@ -257,7 +256,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
       void qc.invalidateQueries({ queryKey: ["wheel-status"] });
       void qc.invalidateQueries({ queryKey: ["my-loyalty"] });
       void qc.invalidateQueries({ queryKey: ["my-profile"] });
-    }, 5600);
+    }, 5250);
   }
 
   async function copyCode() {
@@ -282,15 +281,15 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
       <style dangerouslySetInnerHTML={{ __html: WHEEL_CSS }} />
 
       <div className="flex flex-col items-center gap-5">
-        <div className={`relative ${size} max-w-full`}>
-          {/* ambient halo */}
+        <div className={`gxw-wheel-stage relative ${size} max-w-full`}>
+          {/* static ambient glow — no blur filter, no animation (painted once) */}
           <div
-            className="gxw-halo pointer-events-none absolute -inset-6 rounded-full blur-2xl"
-            style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.35), transparent 65%)" }}
+            className="pointer-events-none absolute inset-0 rounded-full"
+            style={{ boxShadow: "0 18px 44px rgba(0,0,0,.55), 0 0 60px hsl(var(--primary) / 0.22)" }}
           />
 
-          {/* confetti burst */}
-          {celebrate && (
+          {/* confetti burst (only after the wheel has stopped) */}
+          {celebrate && !spinning && (
             <div className="gxw-confetti pointer-events-none absolute inset-x-0 top-4 h-full overflow-visible z-30">
               {confetti.map((c, i) => (
                 <span key={i} style={{ left: c.left, background: c.color, ["--dx" as string]: c.dx, animationDelay: c.delay }} />
@@ -298,14 +297,13 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
             </div>
           )}
 
-          {/* rotating wheel */}
+          {/* rotating wheel — transform only */}
           <svg
             viewBox="0 0 300 300"
-            className="absolute inset-0 w-full h-full"
+            className="gxw-wheel-svg absolute inset-0 w-full h-full"
             style={{
               transform: `rotate(${angle}deg)`,
-              transition: spinning ? "transform 5.4s cubic-bezier(0.13, 0.78, 0.12, 1)" : undefined,
-              filter: "drop-shadow(0 18px 40px rgba(0,0,0,.55))",
+              transition: spinning ? "transform 5.2s cubic-bezier(0.16, 0.87, 0.18, 1)" : undefined,
             }}
           >
             <defs>
@@ -398,7 +396,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
           {/* pointer */}
           <div
             className={`absolute left-1/2 -translate-x-1/2 -top-2 z-20 ${spinning ? "gxw-ticking" : ""}`}
-            style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,.6))" }}
+            style={spinning ? undefined : { filter: "drop-shadow(0 4px 10px rgba(0,0,0,.6))" }}
           >
             <svg width="38" height="52" viewBox="0 0 38 52">
               <path d="M19 50 L4 16 A16 16 0 1 1 34 16 Z" fill="url(#gxw-rim2)" stroke="#fff7ed" strokeWidth="1.6" />
@@ -532,7 +530,7 @@ export function SpinWheelModal({ open, onOpenChange }: { open: boolean; onOpenCh
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         dir="rtl"
-        className="max-w-[440px] w-[calc(100vw-1.5rem)] max-h-[90vh] overflow-y-auto border-0 shadow-none bg-transparent p-4"
+        className="max-w-[440px] w-[calc(100vw-1.5rem)] overflow-hidden border-0 shadow-none bg-transparent p-4"
       >
         <DialogHeader className="text-center sm:text-center">
           <DialogTitle className="text-xl font-black">🎡 عجلة الحظ اليومية</DialogTitle>
