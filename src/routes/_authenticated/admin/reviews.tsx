@@ -185,6 +185,11 @@ function AdminReviewsPage() {
           })}
         </div>
       )}
-    </div>
+
+      {!loading && (
+        <Pager page={pager.page} pageCount={pager.pageCount} total={pager.total} size={pager.size}
+          onPage={pager.setPage} onSize={pager.setSize} sizes={[8, 16, 32]} />
+      )}
+
   );
 }
