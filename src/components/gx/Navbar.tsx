@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthModal } from "./AuthModal";
 import { CurrencyModal } from "./CurrencyModal";
 import { ReviewModal } from "./ReviewModal";
+import { SpinWheelModal } from "./SpinWheel";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizedProduct, localizedGiftCard } from "@/lib/gx/product-locale";
 
@@ -116,6 +117,7 @@ export function Navbar() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [canReview, setCanReview] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [wheelOpen, setWheelOpen] = useState(false);
   // Admin state lives in memory only — never in localStorage, which any user
   // could forge to reveal the admin entry. It is always (re)verified against
   // has_role() in the database below.
@@ -422,6 +424,13 @@ export function Navbar() {
                     <Link to="/account" search={{ tab: "orders" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">📦</span><span>{t("nav.orders")}</span>
                     </Link>
+                    <button
+                      type="button"
+                      className="acc-link"
+                      onClick={() => { setAccountOpen(false); setWheelOpen(true); }}
+                    >
+                      <span className="ai">🎡</span><span>{lang === "en" ? "Daily Wheel" : "عجلة الحظ"}</span>
+                    </button>
                     <Link to="/account" search={{ tab: "security" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">⚙️</span><span>{t("nav.settings")}</span>
                     </Link>
@@ -508,6 +517,7 @@ export function Navbar() {
       <CurrencyModal open={currencyOpen} onClose={() => setCurrencyOpen(false)} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       <ReviewModal open={reviewOpen} onClose={() => setReviewOpen(false)} userId={session?.userId ?? null} />
+      <SpinWheelModal open={wheelOpen} onOpenChange={setWheelOpen} />
     </>
   );
 }
