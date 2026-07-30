@@ -33,7 +33,6 @@ function formatWhen(iso: string, isAr: boolean) {
 function CouponCard({ c, dead, isAr }: { c: UserCouponRow; dead: boolean; isAr: boolean }) {
   const [shown, setShown] = useState(false);
   const expMs = new Date(c.expires_at).getTime();
-  const expired = !c.used_at && expMs < Date.now();
   const soon = !dead && expMs - Date.now() < 24 * 60 * 60 * 1000;
   const fromWheel = (c.level_code || "").toLowerCase().includes("wheel");
 
@@ -96,7 +95,6 @@ function CouponCard({ c, dead, isAr }: { c: UserCouponRow; dead: boolean; isAr: 
             {soon ? (isAr ? " — ينتهي خلال أقل من 24 ساعة!" : " — less than 24h left!") : ""}
           </span>
         )}
-        {expired && !c.used_at ? null : null}
       </div>
     </div>
   );
@@ -636,10 +634,28 @@ const css = `
 .gxp-avbtn.sel{border-color:#00e5ff;box-shadow:0 0 0 3px rgba(0,229,255,.25)}
 .gxp-avbtn.off{opacity:.35;cursor:not-allowed}
 .gxp-coupons{display:grid;gap:8px}
-.gxp-coupon{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.05);border-radius:14px;padding:10px 12px}
-.gxp-coupon.dead{opacity:.5;border-color:rgba(255,255,255,.1);background:transparent}
-.gxp-coupon b{font-family:ui-monospace,monospace;letter-spacing:.08em;color:#6ee7b7}
-.gxp-coupon em{display:block;font-style:normal;font-size:11px;color:#8b90a0}
+.gxp-coupon{position:relative;display:grid;gap:9px;border:1px solid rgba(16,185,129,.32);background:linear-gradient(135deg,rgba(16,185,129,.10),rgba(16,185,129,.02));border-radius:16px;padding:12px 14px;overflow:hidden}
+.gxp-coupon::before{content:"";position:absolute;top:0;bottom:0;inset-inline-start:0;width:4px;background:linear-gradient(180deg,#34d399,#0ea5a4)}
+.gxp-coupon.soon{border-color:rgba(245,158,11,.45);background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(245,158,11,.02))}
+.gxp-coupon.soon::before{background:linear-gradient(180deg,#fbbf24,#f59e0b)}
+.gxp-coupon.dead{border-color:rgba(255,255,255,.10);background:rgba(255,255,255,.02);opacity:.72}
+.gxp-coupon.dead::before{background:rgba(255,255,255,.14)}
+.gxp-coupon-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.gxp-coupon-off{font-size:16px;font-weight:900;color:#eafff6;display:flex;align-items:baseline;gap:8px}
+.gxp-coupon.dead .gxp-coupon-off{color:#c3c7d1}
+.gxp-coupon-off .cap{font-size:11px;font-weight:700;color:#8b90a0}
+.gxp-coupon-tag{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:99px;background:rgba(0,229,255,.12);color:#7fe6ff;border:1px solid rgba(0,229,255,.25);white-space:nowrap}
+.gxp-coupon-tag.wheel{background:rgba(168,85,247,.14);color:#d8b4fe;border-color:rgba(168,85,247,.3)}
+.gxp-coupon-code{display:flex;align-items:center;gap:8px;border:1px dashed rgba(255,255,255,.16);border-radius:12px;padding:8px 10px;background:rgba(0,0,0,.22)}
+.gxp-coupon-code b{flex:1;min-width:0;font-family:ui-monospace,monospace;letter-spacing:.16em;font-size:14px;color:#6ee7b7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gxp-coupon.dead .gxp-coupon-code b{color:#9aa0ad;text-decoration:line-through}
+.gxp-eye{width:32px;height:32px;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#cfe9ff;cursor:pointer;transition:.15s}
+.gxp-eye:hover{border-color:#00e5ff;color:#00e5ff}
+.gxp-copy{flex:none;padding:6px 14px;font-size:12px}
+.gxp-coupon-foot{font-size:11.5px}
+.gxp-coupon-exp{color:#8b90a0}
+.gxp-coupon-exp.warn{color:#fbbf24;font-weight:800}
+.gxp-coupon-dead-tag{color:#f87171;font-weight:800}
 .gxp-badges{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px}
 .gxp-badge{border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:11px;text-align:center;opacity:.45}
 .gxp-badge.on{opacity:1;background:rgba(255,255,255,.04)}
