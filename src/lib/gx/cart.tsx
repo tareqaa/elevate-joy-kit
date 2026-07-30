@@ -545,6 +545,7 @@ ${lines}
     try {
       const payloadItems = items.map((it) => ({
         cartId: it.cartId,
+        product_slug: it.product || null,
         name: it.name,
         qty: it.qty,
         price: it.price,
