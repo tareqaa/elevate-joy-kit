@@ -17,7 +17,7 @@ import { GxProfile } from "@/components/gx/GxProfile";
 import { SpinWheel } from "@/components/gx/SpinWheel";
 import { Pager, usePager } from "@/components/gx/Pager";
 
-type AccountTab = "profile" | "orders" | "security";
+type AccountTab = "profile" | "orders" | "wheel" | "security";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({ meta: [{ title: "حسابي — GX Store" }] }),
