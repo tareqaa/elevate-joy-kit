@@ -91,6 +91,7 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
   const [managingVariants, setManagingVariants] = useState<Product | null>(null);
   const [search, setSearch] = useState("");
   const categoryFilter = categoryId;
+  const isAllProducts = categoryId === "all";
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "hidden" | "featured">("all");
   const [sortBy, setSortBy] = useState<"order" | "name" | "price" | "sales">("order");
   const [selected, setSelected] = useState<string[]>([]);
@@ -134,7 +135,7 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     const list = (prodsQ.data ?? []).filter((p) => {
-      if (categoryFilter !== "all" && p.category_id !== categoryFilter) return false;
+      if (!isAllProducts && p.category_id !== categoryFilter) return false;
       if (statusFilter === "active" && !p.is_active) return false;
       if (statusFilter === "hidden" && p.is_active) return false;
       if (statusFilter === "featured" && !p.is_featured) return false;
@@ -146,7 +147,7 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
     else if (sortBy === "price") sorted.sort((a, b) => (Number(b.base_price_jod) || 0) - (Number(a.base_price_jod) || 0));
     else if (sortBy === "sales") sorted.sort((a, b) => (b.purchases_count || 0) - (a.purchases_count || 0));
     return sorted;
-  }, [prodsQ.data, categoryFilter, search, statusFilter, sortBy]);
+  }, [prodsQ.data, categoryFilter, isAllProducts, search, statusFilter, sortBy]);
 
 
   const deleteMut = useMutation({
@@ -211,14 +212,14 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
 
 
   const stats = useMemo(() => {
-    const all = (prodsQ.data ?? []).filter((p) => p.category_id === categoryId);
+    const all = isAllProducts ? (prodsQ.data ?? []) : (prodsQ.data ?? []).filter((p) => p.category_id === categoryId);
     return {
       total: all.length,
       active: all.filter((p) => p.is_active).length,
       featured: all.filter((p) => p.is_featured).length,
       sales: all.reduce((n, p) => n + (p.purchases_count || 0), 0),
     };
-  }, [prodsQ.data, categoryId]);
+  }, [prodsQ.data, categoryId, isAllProducts]);
 
   return (
     <div className="gx-prod space-y-4" dir="rtl">
@@ -230,7 +231,7 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
           <span className="text-xs text-cyan-100/50 font-normal">({stats.total})</span>
         </div>
         <button className="gx-btn primary" onClick={() => setCreating(true)}>
-          <Plus size={14} /> منتج جديد في هذا القسم
+          <Plus size={14} /> {isAllProducts ? "إضافة منتج جديد" : "منتج جديد في هذا القسم"}
         </button>
       </div>
 
@@ -357,7 +358,7 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
         <ProductDialog
           product={editing}
           categories={catsQ.data ?? []}
-          defaultCategoryId={categoryId}
+          defaultCategoryId={isAllProducts ? undefined : categoryId}
           onClose={() => { setEditing(null); setCreating(false); }}
           onSaved={() => { setEditing(null); setCreating(false); qc.invalidateQueries({ queryKey: ["admin-products"] }); }}
         />

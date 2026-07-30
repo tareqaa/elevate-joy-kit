@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { Layers, FolderTree } from "lucide-react";
 import { CatalogPrices } from "@/components/gx/admin/CatalogPrices";
+import { CategoryProducts } from "@/components/gx/admin/ProductsManager";
 
 export const Route = createFileRoute("/_authenticated/admin/products")({
   head: () => ({ meta: [{ title: "المنتجات — لوحة التحكم" }] }),
@@ -17,7 +18,7 @@ function ProductsAdmin() {
             <Layers size={22} className="text-cyan-400" /> أسعار المتجر الحيّة
           </h1>
           <p className="text-sm text-cyan-100/60 mt-1">
-            تعديل أسعار كل الباقات والبطاقات مباشرة — الإضافة والحذف صارت داخل كل قسم.
+            أضف منتجات جديدة وعدّل المنتجات الحالية، مع إدارة أسعار المتجر الحيّة من نفس الصفحة.
           </p>
         </div>
         <Link
@@ -28,6 +29,7 @@ function ProductsAdmin() {
         </Link>
       </div>
 
+      <CategoryProducts categoryId="all" categoryName="كل المنتجات" />
       <CatalogPrices />
     </div>
   );
