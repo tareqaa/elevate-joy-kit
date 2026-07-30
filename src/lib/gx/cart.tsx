@@ -469,6 +469,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(NOTES_KEY, "");
     setNotesState("");
     persistCoupon(null);
+    // Discounts belong to the cart contents — never carry them to the next order.
+    setCoinsState(null);
+    setCreditState(0);
     persist([]);
   }, [persist, persistCoupon]);
 
