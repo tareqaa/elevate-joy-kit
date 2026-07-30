@@ -59,10 +59,8 @@ export function CartDrawer() {
             <span className="val">{format(cart.totalJOD)}</span>
           </div>
           <Link to="/cart" className="checkout-btn" onClick={cart.closeDrawer} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.07L2 22l5.06-1.33A9.94 9.94 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
             {t("cart.checkout_wa")}
           </Link>
-          <Link to="/cart" className="view-cart-link" onClick={cart.closeDrawer}>{t("cart.open_full")}</Link>
         </div>
       </div>
     </>
