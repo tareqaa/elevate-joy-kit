@@ -703,6 +703,9 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           </div>
 
           {/* Refund */}
+          <AmountsBlock order={order} />
+
+          {/* Refund */}
           <RefundBlock order={order} onDone={onClose} />
 
 
