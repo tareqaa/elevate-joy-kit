@@ -908,6 +908,7 @@ export type Database = {
           level_code: string
           orders_count: number
           store_credit_jod: number
+          total_refunded_jod: number
           total_spent: number
           updated_at: string
           username: string | null
@@ -927,6 +928,7 @@ export type Database = {
           level_code?: string
           orders_count?: number
           store_credit_jod?: number
+          total_refunded_jod?: number
           total_spent?: number
           updated_at?: string
           username?: string | null
@@ -946,6 +948,7 @@ export type Database = {
           level_code?: string
           orders_count?: number
           store_credit_jod?: number
+          total_refunded_jod?: number
           total_spent?: number
           updated_at?: string
           username?: string | null
@@ -1408,11 +1411,11 @@ export type Database = {
         Returns: Json
       }
       refund_order_coins: {
-        Args: { _order_id: string; _ratio: number }
+        Args: { _kind?: string; _order_id: string; _ratio: number }
         Returns: number
       }
       refund_order_credit: {
-        Args: { _order_id: string; _ratio: number }
+        Args: { _kind?: string; _order_id: string; _ratio: number }
         Returns: number
       }
       revoke_ineligible_rewards: { Args: { _user_id: string }; Returns: Json }
