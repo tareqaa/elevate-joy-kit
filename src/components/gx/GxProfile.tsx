@@ -162,8 +162,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                   <div className="gxp-hero-body">
                     <img className="gxp-av" src={avatar} alt={p.username} />
                     <div className="gxp-id">
-                      <h1>{p.username}</h1>
-                      <span className="gxp-tag" dir="ltr">@{p.username}</span>
+                      <h1 dir="ltr">@{p.username}</h1>
                       <div className="gxp-chips">
                         {lvl && <span className="gxp-chip" style={{ background: lvl.gradient }}>{lvl.icon} {levelName(lvl, lang)}</span>}
                         <span className="gxp-chip ghost">🏆 #{Number(mine?.rank ?? p.rank)}</span>

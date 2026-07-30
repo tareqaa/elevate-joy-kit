@@ -163,8 +163,7 @@ function AccountPage() {
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold truncate">{displayName}</h1>
-              <p className="text-sm text-primary font-semibold truncate" dir="ltr">@{username}</p>
+              <h1 className="text-2xl font-bold truncate" dir="ltr">@{username}</h1>
               <p className="text-xs text-muted-foreground truncate" dir="ltr">{user.email}</p>
             </div>
             <Badge variant="outline" className="text-xs self-start sm:self-end whitespace-nowrap">
