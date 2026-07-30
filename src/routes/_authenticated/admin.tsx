@@ -8,12 +8,22 @@ import {
   Store, User, LogOut, Command, FolderTree, ShoppingBag, Activity, Settings, Ticket, Home, Star, Sparkles, Smile, Award, Trophy,
 } from "lucide-react";
 
+// Cache the admin-role check per user for the lifetime of the tab so moving
+// between admin pages doesn't re-hit the network on every navigation.
+let adminRoleCache: { userId: string; isAdmin: boolean } | null = null;
+
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async ({ context }) => {
     const user = (context as { user?: { id: string } }).user;
     if (!user) throw redirect({ to: "/auth" });
+    if (adminRoleCache?.userId === user.id) {
+      if (!adminRoleCache.isAdmin) throw redirect({ to: "/account" });
+      return;
+    }
     const { data, error } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    if (error || !data) throw redirect({ to: "/account" });
+    const isAdmin = !error && !!data;
+    adminRoleCache = { userId: user.id, isAdmin };
+    if (!isAdmin) throw redirect({ to: "/account" });
   },
   component: AdminLayout,
 });
