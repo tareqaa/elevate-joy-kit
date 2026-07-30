@@ -252,7 +252,7 @@ export async function createStoreOrder(input: CreateOrderInput) {
     // The order total was already reduced by `wantedCredit`. If less was actually
     // taken from the balance, charge the shortfall back so nothing is given away.
     const shortfall = Math.round((wantedCredit - spend) * 100) / 100;
-    const newTotal = Math.round((Number(input.totalJOD) + Math.max(shortfall, 0)) * 100) / 100;
+    const newTotal = Math.round((verifiedTotal + Math.max(shortfall, 0)) * 100) / 100;
     await supabase.from("orders").update({
       credit_used_jod: spend,
       discount_jod: Math.round((couponDiscount + coinsDiscount + spend) * 100) / 100,
