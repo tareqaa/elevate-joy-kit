@@ -110,160 +110,34 @@ export async function createStoreOrder(input: CreateOrderInput) {
     throw new Error("تغيّر السعر، أعد تحميل الصفحة");
   }
 
-  // Guard BEFORE the order exists: coins must be owned and can never cover
-  // more than 50% of the order value.
-  if (coinsUsed > 0) {
-    if (!input.userId) throw new Error("يجب تسجيل الدخول لاستخدام GX Coins");
-    const maxCoins = Math.floor(subtotal * 0.5 * COINS_PER_JOD);
-    if (coinsUsed > maxCoins) throw new Error("الحد الأقصى لخصم GX Coins هو 50% من قيمة الطلب");
-    const { data: prof } = await supabase
-      .from("profiles").select("gx_coins").eq("id", input.userId).maybeSingle();
-    if (Number(prof?.gx_coins ?? 0) < coinsUsed) throw new Error("رصيد GX Coins غير كافٍ");
-  }
-
-
-
-  const { data, error } = await supabase
-    .from("orders")
-    .insert({
-      user_id: input.userId ?? null,
-      customer_name: input.customerName ?? null,
-      customer_whatsapp: input.customerWhatsapp ?? null,
-      items: verifiedItems,
-      total_jod: verifiedTotal,
-      subtotal_jod: subtotal,
-      currency_snapshot: input.currency,
-      delivery_data: deliveryData as Json,
-      // Orders fully covered by store credit (refund balance) are already settled.
-      status: (creditJod > 0 && verifiedTotal <= 0.009) ? "paid" : "pending",
-      contact_type: input.contactType ?? null,
-      coupon_id: input.coupon?.id ?? null,
-      coupon_code: input.coupon?.code ?? null,
-      discount_jod: discountTotal,
-      user_coupon_id: input.coupon?.userCouponId ?? null,
-      coins_used: coinsUsed,
-      coins_discount_jod: coinsDiscount,
-      // Recorded as 0 here; set to the amount actually taken from the balance below.
-      credit_used_jod: 0,
-      paid_jod: verifiedTotal,
-    })
-    .select("id, order_number")
-    .single();
-
+  // ---- Single atomic purchase transaction ---------------------------------
+  // Everything that follows (balance checks, order insert, coin + credit
+  // deduction, coupon redemption, ledger writes) happens inside ONE plpgsql
+  // function that locks the buyer's profile row first. Any failure raises and
+  // rolls the whole thing back: no half-written orders, no double spending.
+  const { data, error } = await (supabase as any).rpc("create_store_order", {
+    _user_id: input.userId ?? null,
+    _customer_name: input.customerName ?? null,
+    _customer_whatsapp: input.customerWhatsapp ?? null,
+    _items: verifiedItems,
+    _subtotal: subtotal,
+    _currency: input.currency,
+    _delivery_data: deliveryData,
+    _contact_type: input.contactType ?? null,
+    _coupon_id: input.coupon?.id ?? null,
+    _user_coupon_id: input.coupon?.userCouponId ?? null,
+    _coupon_code: input.coupon?.code ?? null,
+    _coupon_discount: couponDiscount,
+    _coins_used: coinsUsed,
+    _credit_jod: creditJod,
+  });
 
   if (error) throw new Error(error.message);
-  if (!data?.order_number) throw new Error("Order was not created");
+  const result = data as { id?: string; order_number?: string } | null;
+  if (!result?.order_number) throw new Error("Order was not created");
 
-  // Record coupon redemption + increment usage counter (best-effort, non-blocking on failure)
-  const couponId = input.coupon?.id ?? null;
-  if (input.coupon && couponId) {
-    try {
-      await supabase.from("coupon_redemptions").insert({
-        coupon_id: couponId,
-        user_id: input.userId ?? null,
-        order_id: data.id,
-        discount_jod: input.coupon.discount_jod,
-      });
-      // increment usage_count via RPC-free path: read then update
-      const { data: cRow } = await supabase.from("coupons").select("usage_count").eq("id", couponId).maybeSingle();
-      const nextCount = (cRow?.usage_count ?? 0) + 1;
-      await supabase.from("coupons").update({ usage_count: nextCount }).eq("id", couponId);
-    } catch (e) {
-      console.warn("[GX] coupon redemption record failed", e);
-    }
-  }
-
-  // Personal level coupon: mark as used so it cannot be reused.
-  if (input.coupon?.userCouponId && input.userId) {
-    try {
-      await supabase
-        .from("user_coupons")
-        .update({ used_at: new Date().toISOString(), order_id: data.id })
-        .eq("id", input.coupon.userCouponId)
-        .eq("user_id", input.userId)
-        .is("used_at", null);
-    } catch (e) {
-      console.warn("[GX] level coupon consume failed", e);
-    }
-  }
-
-  // GX Coins: deduct exactly what the order recorded, never more, never partially.
-  if (coinsUsed > 0 && input.userId) {
-    const { data: prof } = await supabase
-      .from("profiles").select("gx_coins").eq("id", input.userId).maybeSingle();
-    const balance = Number(prof?.gx_coins ?? 0);
-    if (balance < coinsUsed) {
-      // Balance changed since the pre-check: strip the discount from the order
-      // instead of granting free money.
-      await supabase.from("orders").update({
-        coins_used: 0,
-        coins_discount_jod: 0,
-        discount_jod: couponDiscount + creditJod,
-        total_jod: Math.round((verifiedTotal + coinsDiscount) * 100) / 100,
-        paid_jod: Math.round((verifiedTotal + coinsDiscount) * 100) / 100,
-
-      }).eq("id", data.id);
-      throw new Error("رصيد GX Coins غير كافٍ — تم إلغاء الخصم");
-    }
-    const after = balance - coinsUsed;
-    await supabase.from("profiles").update({ gx_coins: after }).eq("id", input.userId);
-    await supabase.from("gx_coin_transactions").insert({
-      user_id: input.userId,
-      order_id: data.id,
-      amount: -coinsUsed,
-      balance_after: after,
-      kind: "spend",
-      source: "order_checkout",
-      reason: `خصم على الطلب ${data.order_number}`,
-      metadata: { balance_before: balance, coins_discount_jod: coinsDiscount },
-    });
-  }
-
-
-  // Store credit (refund balance): deduct, record it ON the order (so cancels and
-  // refunds can give it back exactly once), and log the ledger entry.
-  const wantedCredit = creditJod;
-  if (wantedCredit > 0) {
-    let spend = 0;
-    if (input.userId) {
-      try {
-        const { data: prof } = await supabase
-          .from("profiles").select("store_credit_jod").eq("id", input.userId).maybeSingle();
-        const balance = Number(prof?.store_credit_jod ?? 0);
-        spend = Math.round(Math.min(balance, wantedCredit) * 100) / 100;
-        if (spend > 0) {
-          const after = Math.round((balance - spend) * 100) / 100;
-          await supabase.from("profiles").update({ store_credit_jod: after }).eq("id", input.userId);
-          await supabase.from("store_credit_transactions").insert({
-            user_id: input.userId,
-            order_id: data.id,
-            amount_jod: -spend,
-            balance_after: after,
-            kind: "spend",
-            reason: `استخدام رصيد المتجر على الطلب ${data.order_number}`,
-          });
-        }
-      } catch (e) {
-        console.warn("[GX] store credit spend failed", e);
-        spend = 0;
-      }
-    }
-
-    // The order total was already reduced by `wantedCredit`. If less was actually
-    // taken from the balance, charge the shortfall back so nothing is given away.
-    const shortfall = Math.round((wantedCredit - spend) * 100) / 100;
-    const newTotal = Math.round((verifiedTotal + Math.max(shortfall, 0)) * 100) / 100;
-    await supabase.from("orders").update({
-      credit_used_jod: spend,
-      discount_jod: Math.round((couponDiscount + coinsDiscount + spend) * 100) / 100,
-      total_jod: newTotal,
-      paid_jod: newTotal,
-      status: (spend > 0 && newTotal <= 0.009) ? "paid" : "pending",
-    }).eq("id", data.id);
-  }
-
-
-  return { id: data.id, order_number: data.order_number };
+  return { id: result.id as string, order_number: result.order_number };
 }
+
 
 
