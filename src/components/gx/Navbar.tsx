@@ -424,6 +424,13 @@ export function Navbar() {
                     <Link to="/account" search={{ tab: "orders" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">📦</span><span>{t("nav.orders")}</span>
                     </Link>
+                    <button
+                      type="button"
+                      className="acc-link"
+                      onClick={() => { setAccountOpen(false); setWheelOpen(true); }}
+                    >
+                      <span className="ai">🎡</span><span>{lang === "en" ? "Daily Wheel" : "عجلة الحظ"}</span>
+                    </button>
                     <Link to="/account" search={{ tab: "security" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">⚙️</span><span>{t("nav.settings")}</span>
                     </Link>
