@@ -767,7 +767,7 @@ function RefundBlock({ order, onDone }: { order: OrderWithEmail; onDone?: () => 
   });
 
   const refunded = (logQ.data ?? []).reduce((s, t) => s + Number(t.amount_jod || 0), 0);
-  const alreadyRefunded = order.status === "refunded";
+  const alreadyRefunded = order.status === "refunded" || maxAmount <= 0.004;
   const value = Number(amount);
   const amountValid = Number.isFinite(value) && value >= 0 && value <= maxAmount + 0.001;
   const reasonValid = reason.trim().length >= 3;
