@@ -143,8 +143,8 @@ const WHEEL_CSS = `
 @keyframes gxw-confetti { 0% { transform: translate3d(0,0,0) rotate(0); opacity:1 } 100% { transform: translate3d(var(--dx), 220px, 0) rotate(540deg); opacity:0 } }
 .gxw-halo { animation: gxw-halo 3.2s ease-in-out infinite; }
 .gxw-ticking { animation: gxw-tick .12s linear infinite; transform-origin: 50% 12%; }
-.gxw-bulb-a { animation: gxw-bulbs 1.1s ease-in-out infinite; }
-.gxw-bulb-b { animation: gxw-bulbs 1.1s ease-in-out infinite; animation-delay: .55s; }
+body.gxw-wheel-open div[data-state="open"][class*="inset-0"] { backdrop-filter: blur(14px) saturate(120%); background: rgba(3,7,18,.62); }
+
 .gxw-pop { animation: gxw-pop .45s cubic-bezier(.2,.9,.25,1) both; }
 .gxw-confetti span { position:absolute; top:0; left:50%; width:8px; height:12px; border-radius:2px; animation: gxw-confetti 1.6s ease-in forwards; }
 `;
@@ -208,7 +208,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
   const seg = prizes.length > 0 ? 360 / prizes.length : 360;
   const canSpin = !!statusQ.data?.can_spin && prizes.length > 0 && !spinning;
 
-  const bulbs = useMemo(() => Array.from({ length: 24 }, (_, i) => (i * 360) / 24), []);
+  
   const confetti = useMemo(
     () =>
       Array.from({ length: 22 }, (_, i) => ({
@@ -331,9 +331,9 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
               </linearGradient>
             </defs>
 
-            {/* outer rim */}
-            <circle cx="150" cy="150" r="147" fill="none" stroke="url(#gxw-rim)" strokeWidth="10" />
+            {/* clean edge — no heavy frame */}
             <circle cx="150" cy="150" r="140" fill="hsl(var(--card))" />
+
 
             {/* segments */}
             {prizes.map((p, i) => {
@@ -350,29 +350,29 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
                   />
                   <g transform={`rotate(${mid - 90} 150 150)`}>
                     <text
-                      x="268"
+                      x="226"
                       y="150"
                       fill="#ffffff"
-                      fontSize={prizes.length > 8 ? 11 : 12.5}
-                      fontWeight="800"
-                      textAnchor="end"
+                      fontSize={prizes.length > 8 ? 11.5 : 13}
+                      fontWeight="900"
+                      textAnchor="middle"
                       dominantBaseline="central"
-                      textLength={label.length > 13 ? 108 : undefined}
+                      textLength={label.length > 11 ? 96 : undefined}
                       lengthAdjust="spacingAndGlyphs"
                       style={{
                         paintOrder: "stroke",
                         fontFamily: "inherit",
-                        letterSpacing: "0px",
                         direction: "rtl",
                         unicodeBidi: "plaintext",
                       }}
-                      stroke="rgba(0,0,0,0.55)"
-                      strokeWidth="2.8"
+                      stroke="rgba(0,0,0,0.5)"
+                      strokeWidth="3"
                       strokeLinejoin="round"
                     >
                       {label}
                     </text>
                   </g>
+
                   {/* separator */}
                   <line
                     x1="150"
@@ -387,22 +387,10 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
             })}
 
 
-            {/* gloss + bulbs */}
+            {/* gloss */}
             <circle cx="150" cy="150" r="138" fill="url(#gxw-gloss)" pointerEvents="none" />
-            {bulbs.map((a, i) => {
-              const [bx, by] = polar(150, 150, 147, a);
-              return (
-                <circle
-                  key={a}
-                  cx={bx}
-                  cy={by}
-                  r="3.1"
-                  fill={i % 2 ? "#fde68a" : "#fff7ed"}
-                  className={i % 2 ? "gxw-bulb-a" : "gxw-bulb-b"}
-                  style={{ filter: "drop-shadow(0 0 4px rgba(253,224,71,.9))" }}
-                />
-              );
-            })}
+            <circle cx="150" cy="150" r="138.5" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1.5" />
+
           </svg>
 
           {/* pointer */}
@@ -526,15 +514,25 @@ export function SpinWheel() {
 }
 
 export function SpinWheelModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.classList.toggle("gxw-wheel-open", open);
+    return () => document.body.classList.remove("gxw-wheel-open");
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent dir="rtl" className="max-w-[440px] w-[calc(100vw-1.5rem)] max-h-[90vh] overflow-y-auto border-primary/30">
+      <DialogContent
+        dir="rtl"
+        className="max-w-[440px] w-[calc(100vw-1.5rem)] max-h-[90vh] overflow-y-auto border-0 shadow-none bg-transparent p-4"
+      >
         <DialogHeader className="text-center sm:text-center">
           <DialogTitle className="text-xl font-black">🎡 عجلة الحظ اليومية</DialogTitle>
           <DialogDescription>لفّة مجانية كل يوم واحصل على مكافآت GX</DialogDescription>
         </DialogHeader>
         <WheelCore compact />
       </DialogContent>
+
     </Dialog>
   );
 }
