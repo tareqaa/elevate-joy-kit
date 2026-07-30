@@ -320,9 +320,8 @@ function CartSummary() {
         )}
       </div>
       <button className="btn btn-green btn-block gx-checkout-btn" disabled={disabled} onClick={checkout}>
-        {busy ? t("cart.checkout_saving") : <><WhatsAppIcon size={17} /> {t("cart.checkout_wa")} · {format(cart.totalJOD)}</>}
+        {busy ? t("cart.checkout_saving") : t("cart.checkout_wa")}
       </button>
-      <div className="gx-secure-note">🔒 {t("cart.secure_note")}</div>
       {confirmed && (
         <OrderConfirmedModal
           orderNumber={confirmed.orderNumber}
@@ -522,7 +521,6 @@ function CreditBlock() {
         💳 {t("cart.credit_title")}
         <span className="gx-bal-pill" style={{ color: "#8ab4ff" }}>{format(balance)}</span>
       </div>
-      <div className="gx-help">{t("cart.credit_help")}</div>
       {cart.creditJOD > 0 ? (
         <div className="gx-coupon-applied" style={{ background: "rgba(138,180,255,.1)", borderColor: "rgba(138,180,255,.4)" }}>
           <div>
