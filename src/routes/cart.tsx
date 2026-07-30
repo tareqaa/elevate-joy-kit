@@ -21,28 +21,44 @@ export const Route = createFileRoute("/cart")({
   component: CartPage,
 });
 
-const COUNTRY_CODES: { code: string; flag: string; name: string }[] = [
-  { code: "+962", flag: "🇯🇴", name: "الأردن" },
-  { code: "+966", flag: "🇸🇦", name: "السعودية" },
-  { code: "+971", flag: "🇦🇪", name: "الإمارات" },
-  { code: "+965", flag: "🇰🇼", name: "الكويت" },
-  { code: "+974", flag: "🇶🇦", name: "قطر" },
-  { code: "+973", flag: "🇧🇭", name: "البحرين" },
-  { code: "+968", flag: "🇴🇲", name: "عُمان" },
-  { code: "+20", flag: "🇪🇬", name: "مصر" },
-  { code: "+970", flag: "🇵🇸", name: "فلسطين" },
-  { code: "+961", flag: "🇱🇧", name: "لبنان" },
-  { code: "+963", flag: "🇸🇾", name: "سوريا" },
-  { code: "+964", flag: "🇮🇶", name: "العراق" },
-  { code: "+967", flag: "🇾🇪", name: "اليمن" },
-  { code: "+218", flag: "🇱🇾", name: "ليبيا" },
-  { code: "+216", flag: "🇹🇳", name: "تونس" },
-  { code: "+213", flag: "🇩🇿", name: "الجزائر" },
-  { code: "+212", flag: "🇲🇦", name: "المغرب" },
-  { code: "+90",  flag: "🇹🇷", name: "تركيا" },
-  { code: "+1",   flag: "🇺🇸", name: "أمريكا/كندا" },
-  { code: "+44",  flag: "🇬🇧", name: "بريطانيا" },
+const COUNTRY_CODES: { code: string; flag: string; name: string; en: string }[] = [
+  { code: "+962", flag: "🇯🇴", name: "الأردن", en: "Jordan" },
+  { code: "+966", flag: "🇸🇦", name: "السعودية", en: "Saudi Arabia" },
+  { code: "+971", flag: "🇦🇪", name: "الإمارات", en: "UAE" },
+  { code: "+965", flag: "🇰🇼", name: "الكويت", en: "Kuwait" },
+  { code: "+974", flag: "🇶🇦", name: "قطر", en: "Qatar" },
+  { code: "+973", flag: "🇧🇭", name: "البحرين", en: "Bahrain" },
+  { code: "+968", flag: "🇴🇲", name: "عُمان", en: "Oman" },
+  { code: "+20", flag: "🇪🇬", name: "مصر", en: "Egypt" },
+  { code: "+970", flag: "🇵🇸", name: "فلسطين", en: "Palestine" },
+  { code: "+961", flag: "🇱🇧", name: "لبنان", en: "Lebanon" },
+  { code: "+963", flag: "🇸🇾", name: "سوريا", en: "Syria" },
+  { code: "+964", flag: "🇮🇶", name: "العراق", en: "Iraq" },
+  { code: "+967", flag: "🇾🇪", name: "اليمن", en: "Yemen" },
+  { code: "+218", flag: "🇱🇾", name: "ليبيا", en: "Libya" },
+  { code: "+216", flag: "🇹🇳", name: "تونس", en: "Tunisia" },
+  { code: "+213", flag: "🇩🇿", name: "الجزائر", en: "Algeria" },
+  { code: "+212", flag: "🇲🇦", name: "المغرب", en: "Morocco" },
+  { code: "+90",  flag: "🇹🇷", name: "تركيا", en: "Turkey" },
+  { code: "+1",   flag: "🇺🇸", name: "أمريكا/كندا", en: "USA/Canada" },
+  { code: "+44",  flag: "🇬🇧", name: "بريطانيا", en: "UK" },
 ];
+
+function WhatsAppIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="currentColor" aria-hidden focusable="false">
+      <path d="M27.2 4.8A15.86 15.86 0 0 0 16 .1C7.2.1.1 7.2.1 16c0 2.82.74 5.57 2.15 8L0 32l8.19-2.14A15.9 15.9 0 0 0 16 31.9h.01c8.79 0 15.94-7.15 15.94-15.94 0-4.26-1.66-8.26-4.75-11.16zM16 29.22h-.01a13.2 13.2 0 0 1-6.73-1.85l-.48-.29-4.86 1.27 1.3-4.74-.31-.49a13.2 13.2 0 0 1-2.03-7.12C2.88 8.68 8.77 2.8 16 2.8c3.55 0 6.88 1.38 9.39 3.9A13.16 13.16 0 0 1 29.29 16c0 7.27-5.9 13.22-13.29 13.22zm7.24-9.9c-.4-.2-2.35-1.16-2.72-1.29-.36-.13-.63-.2-.9.2-.26.4-1.02 1.29-1.25 1.55-.23.27-.46.3-.86.1-.4-.2-1.68-.62-3.19-1.97-1.18-1.05-1.98-2.35-2.21-2.75-.23-.4-.02-.61.18-.81.18-.18.4-.46.6-.7.2-.23.26-.4.4-.66.13-.27.07-.5-.03-.7-.1-.2-.9-2.17-1.24-2.97-.32-.77-.66-.67-.9-.68-.23-.01-.5-.01-.76-.01-.27 0-.7.1-1.07.5-.36.4-1.4 1.36-1.4 3.33 0 1.96 1.43 3.86 1.63 4.13.2.27 2.83 4.32 6.85 6.05.96.41 1.7.66 2.28.85.96.3 1.83.26 2.52.16.77-.12 2.36-.96 2.7-1.9.33-.93.33-1.73.23-1.9-.1-.16-.36-.26-.76-.46z" />
+    </svg>
+  );
+}
+
+function TelegramIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden focusable="false">
+      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.568 8.16l-1.86 8.77c-.14.62-.51.77-1.03.48l-2.85-2.1-1.37 1.32c-.15.15-.28.28-.58.28l.2-2.94 5.36-4.84c.23-.2-.05-.32-.36-.12l-6.62 4.17-2.85-.89c-.62-.19-.63-.62.13-.92l11.14-4.3c.52-.19.97.12.8.91z" />
+    </svg>
+  );
+}
 
 function CartPage() {
   const { t } = useLang();
@@ -105,13 +121,13 @@ function CartList() {
                 </div>
               )}
             </div>
-            <div className="cr-qty">
-              <button onClick={() => cart.changeQty(it.cartId, -1)}>−</button>
+            <div className="cr-qty" aria-label={t("cart.qty")}>
+              <button aria-label="−" onClick={() => cart.changeQty(it.cartId, -1)}>−</button>
               <span>{it.qty}</span>
-              <button disabled={isSnap} onClick={() => cart.changeQty(it.cartId, 1)}>+</button>
+              <button aria-label="+" disabled={isSnap} onClick={() => cart.changeQty(it.cartId, 1)}>+</button>
             </div>
             <div className="cr-price">{format(it.price * it.qty)}</div>
-            <button className="cr-remove" onClick={() => cart.remove(it.cartId)}>✕</button>
+            <button className="cr-remove" title={t("cart.remove_item")} aria-label={t("cart.remove_item")} onClick={() => cart.remove(it.cartId)}>✕</button>
           </div>
         );
       })}
@@ -122,7 +138,7 @@ function CartList() {
 function CartSummary() {
   const cart = useCart();
   const { format } = useCurrency();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [busy, setBusy] = useState(false);
   const [confirmed, setConfirmed] = useState<{ orderNumber: string; waUrl: string | null } | null>(null);
   const [couponInput, setCouponInput] = useState("");
@@ -149,7 +165,7 @@ function CartSummary() {
     const isWa = cart.contact.type === "whatsapp";
     if (!cart.contact.name.trim() || cart.contact.phone.trim().length < 3) {
       const { toast } = await import("sonner");
-      toast.error(isWa ? "عبّي الاسم ورقم الواتساب قبل إتمام الطلب" : "عبّي الاسم ويوزر التيليجرام قبل إتمام الطلب");
+      toast.error(isWa ? t("cart.fill_wa") : t("cart.fill_tg"));
       return;
     }
     setBusy(true);
@@ -179,40 +195,46 @@ function CartSummary() {
 
       {/* Contact block */}
       <div className="gx-contact-block">
-        <div className="gx-cb-title">📞 معلومات التواصل <span className="gx-req">إلزامي</span></div>
+        <div className="gx-cb-title">
+          <span className="gx-step">1</span> {t("cart.contact_title")} <span className="gx-req">{t("cart.required")}</span>
+        </div>
+        <div className="gx-help" style={{ marginTop: -4 }}>{t("cart.contact_help")}</div>
         <input
           className="gx-cb-input"
           type="text"
-          placeholder="الاسم الكامل"
+          autoComplete="name"
+          placeholder={t("cart.name_ph")}
           value={cart.contact.name}
           onChange={(e) => cart.setContact({ name: e.target.value })}
         />
         <div className="gx-cb-types">
-          <label className={"gx-cb-type " + (cart.contact.type === "whatsapp" ? "on" : "")}>
+          <label className={"gx-cb-type wa " + (cart.contact.type === "whatsapp" ? "on" : "")}>
             <input type="radio" name="ct" checked={cart.contact.type === "whatsapp"} onChange={() => { cart.setContact({ type: "whatsapp", phone: "" }); }} />
-            <span>📱 واتساب</span>
+            <WhatsAppIcon /><span>{t("cart.whatsapp")}</span>
           </label>
-          <label className={"gx-cb-type " + (cart.contact.type === "telegram" ? "on" : "")}>
+          <label className={"gx-cb-type tg " + (cart.contact.type === "telegram" ? "on" : "")}>
             <input type="radio" name="ct" checked={cart.contact.type === "telegram"} onChange={() => { cart.setContact({ type: "telegram", phone: "", countryCode: "" }); }} />
-            <span>✈️ تيليجرام</span>
+            <TelegramIcon /><span>{t("cart.telegram")}</span>
           </label>
         </div>
         {isWa ? (
           <div className="gx-cb-row" style={{ marginTop: 8 }}>
             <select
               className="gx-cb-select"
+              aria-label={t("cart.wa_ph")}
               value={cart.contact.countryCode || "+962"}
               onChange={(e) => cart.setContact({ countryCode: e.target.value })}
             >
               {COUNTRY_CODES.map((c) => (
-                <option key={c.code} value={c.code}>{c.flag} {c.code} {c.name}</option>
+                <option key={c.code} value={c.code}>{c.flag} {c.code} {lang === "en" ? c.en : c.name}</option>
               ))}
             </select>
             <input
               className="gx-cb-input gx-cb-phone"
               type="tel"
               inputMode="numeric"
-              placeholder="رقم الواتساب"
+              autoComplete="tel"
+              placeholder={t("cart.wa_ph")}
               value={cart.contact.phone}
               onChange={(e) => cart.setContact({ phone: e.target.value.replace(/[^\d]/g, "") })}
             />
@@ -221,7 +243,7 @@ function CartSummary() {
           <input
             className="gx-cb-input"
             type="text"
-            placeholder="يوزر التيليجرام (بدون @)"
+            placeholder={t("cart.tg_ph")}
             value={cart.contact.phone}
             onChange={(e) => cart.setContact({ phone: e.target.value.replace(/^@+/, "").trim() })}
             style={{ marginTop: 8, direction: "ltr", textAlign: "left" }}
@@ -231,14 +253,14 @@ function CartSummary() {
 
       {/* Coupon block */}
       <div className="gx-coupon-block">
-        <div className="gx-cb-title">🏷️ كوبون خصم</div>
+        <div className="gx-cb-title"><span className="gx-step">2</span> {t("cart.coupon_title")}</div>
         {cart.coupon ? (
           <div className="gx-coupon-applied">
             <div>
               <div className="gx-coupon-code">{cart.coupon.code}</div>
-              <div className="gx-coupon-note">خصم: -{format(cart.coupon.discount_jod)}</div>
+              <div className="gx-coupon-note">{t("cart.discount")}: -{format(cart.coupon.discount_jod)}</div>
             </div>
-            <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCoupon(); setCouponMsg(null); }}>إزالة</button>
+            <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCoupon(); setCouponMsg(null); }}>{t("cart.remove")}</button>
           </div>
         ) : (
           <>
@@ -246,13 +268,13 @@ function CartSummary() {
               <input
                 className="gx-cb-input"
                 type="text"
-                placeholder="أدخل كود الكوبون"
+                placeholder={t("cart.coupon_ph")}
                 value={couponInput}
                 onChange={(e) => setCouponInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); apply(); } }}
               />
               <button type="button" className="btn btn-primary gx-coupon-apply" onClick={apply} disabled={couponBusy || !couponInput.trim()}>
-                {couponBusy ? "..." : "تطبيق"}
+                {couponBusy ? "..." : t("cart.apply")}
               </button>
             </div>
             {couponMsg && (
@@ -266,10 +288,10 @@ function CartSummary() {
       <CoinsBlock />
 
       <div className="summary-line"><span>{t("cart.item_count")}</span><span>{cart.count}</span></div>
-      <div className="summary-line"><span>المجموع الفرعي</span><span>{format(cart.subtotalJOD)}</span></div>
+      <div className="summary-line"><span>{t("cart.subtotal")}</span><span>{format(cart.subtotalJOD)}</span></div>
       {cart.coupon && (
         <div className="summary-line" style={{ color: "#00e5b0" }}>
-          <span>خصم ({cart.coupon.code})</span>
+          <span>{t("cart.discount")} ({cart.coupon.code})</span>
           <span>-{format(cart.coupon.discount_jod)}</span>
         </div>
       )}
@@ -281,7 +303,7 @@ function CartSummary() {
       )}
       {cart.creditJOD > 0 && (
         <div className="summary-line" style={{ color: "#8ab4ff" }}>
-          <span>رصيد المتجر</span>
+          <span>{t("cart.store_credit")}</span>
           <span>-{format(cart.creditJOD)}</span>
         </div>
       )}
@@ -297,9 +319,10 @@ function CartSummary() {
           <div className="hint">{t("cart.notes_hint")}</div>
         )}
       </div>
-      <button className="btn btn-green btn-block" disabled={disabled} onClick={checkout}>
-        {busy ? t("cart.checkout_saving") : t("cart.checkout_wa")}
+      <button className="btn btn-green btn-block gx-checkout-btn" disabled={disabled} onClick={checkout}>
+        {busy ? t("cart.checkout_saving") : <><WhatsAppIcon size={17} /> {t("cart.checkout_wa")} · {format(cart.totalJOD)}</>}
       </button>
+      <div className="gx-secure-note">🔒 {t("cart.secure_note")}</div>
       {confirmed && (
         <OrderConfirmedModal
           orderNumber={confirmed.orderNumber}
@@ -341,12 +364,20 @@ const summaryCss = `
 .gx-chip:hover{border-color:rgba(0,229,255,.5);color:#00e5ff}
 .gx-meter{height:6px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin:8px 0 4px}
 .gx-meter > i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ffc400,#ff8a00)}
+.gx-cb-type svg{flex:0 0 auto}
+.gx-cb-type.wa.on{background:linear-gradient(135deg,rgba(37,211,102,.22),rgba(37,211,102,.06));color:#25d366;border-color:rgba(37,211,102,.5)}
+.gx-cb-type.tg.on{background:linear-gradient(135deg,rgba(41,171,226,.22),rgba(41,171,226,.06));color:#29abe2;border-color:rgba(41,171,226,.5)}
+.gx-cb-type:hover{border-color:rgba(255,255,255,.28);color:#e6f7ff}
+.gx-step{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(0,229,255,.15);border:1px solid rgba(0,229,255,.4);color:#00e5ff;font-size:11px;font-weight:900}
+.gx-checkout-btn{display:flex;align-items:center;justify-content:center;gap:8px}
+.gx-secure-note{margin-top:10px;text-align:center;font-size:11.5px;color:#93a4b8;line-height:1.6}
 @media (max-width:600px){ .gx-cb-select{max-width:150px} }
 `;
 
 function CoinsBlock() {
   const cart = useCart();
   const { format } = useCurrency();
+  const { t } = useLang();
   const [balance, setBalance] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -394,28 +425,25 @@ function CoinsBlock() {
         </span>
       </div>
       <div className="gx-help">
-        كل <b>{COINS_PER_JOD_REDEEM.toLocaleString("en-US")}</b> عملة = <b>1 دينار</b> خصم.
-        الحد الأقصى لخصم العملات هو <b>50%</b> من قيمة الطلب — أي حتى <b>{format(capJod)}</b> على هذا الطلب.
+        {t("cart.coins_help_a")} <b>{COINS_PER_JOD_REDEEM.toLocaleString("en-US")}</b> {t("cart.coins_help_b")} <b>{format(capJod)}</b>.
       </div>
       {cart.coins ? (
         <div className="gx-coupon-applied">
           <div>
             <div className="gx-coupon-code">{cart.coins.coins.toLocaleString("en-US")} Coins</div>
-            <div className="gx-coupon-note">خصم: -{format(cart.coins.discount_jod)}</div>
+            <div className="gx-coupon-note">{t("cart.discount")}: -{format(cart.coins.discount_jod)}</div>
           </div>
-          <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCoins(); setMsg(null); }}>إزالة</button>
+          <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCoins(); setMsg(null); }}>{t("cart.remove")}</button>
         </div>
       ) : usable < 1 ? (
         <div className="gx-coupon-note" style={{ fontSize: 12 }}>
-          {balance < 1
-            ? "اجمع عملات GX مع كل طلب مكتمل — كل 1000 عملة = 1 دينار خصم."
-            : "رصيد عملاتك غير كافٍ لخصم على هذا الطلب حالياً."}
+          {balance < 1 ? t("cart.coins_earn") : t("cart.coins_low")}
         </div>
       ) : (
         <>
           <div className="gx-meter"><i style={{ width: `${pct}%` }} /></div>
           <div className="gx-help" style={{ margin: "0 0 8px" }}>
-            المتاح للاستخدام الآن: <b style={{ color: "#ffc400" }}>{usable.toLocaleString("en-US")}</b> عملة ({format(coinsToJod(usable))})
+            {t("cart.coins_available")}: <b style={{ color: "#ffc400" }}>{usable.toLocaleString("en-US")}</b> {t("cart.coins_unit")} ({format(coinsToJod(usable))})
           </div>
           <div className="gx-chips">
             {[0.25, 0.5, 1].map((f) => {
@@ -423,7 +451,7 @@ function CoinsBlock() {
               return (
                 <button key={f} type="button" className="gx-chip"
                   onClick={() => { setAmount(String(v)); apply(v); }}>
-                  {f === 1 ? "الحد الأقصى" : `${Math.round(f * 100)}%`} · {v.toLocaleString("en-US")}
+                  {f === 1 ? t("cart.max") : `${Math.round(f * 100)}%`} · {v.toLocaleString("en-US")}
                 </button>
               );
             })}
@@ -434,13 +462,13 @@ function CoinsBlock() {
               type="number"
               min={1}
               max={usable}
-              placeholder={`استخدم حتى ${usable.toLocaleString("en-US")} عملة`}
+              placeholder={`${t("cart.use_up_to")} ${usable.toLocaleString("en-US")} ${t("cart.coins_unit")}`}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
             <button type="button" className="btn btn-primary gx-coupon-apply" disabled={busy || !amount}
               onClick={() => apply(Number(amount))}>
-              {busy ? "..." : "استخدام"}
+              {busy ? "..." : t("cart.use")}
             </button>
           </div>
           {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
@@ -453,6 +481,7 @@ function CoinsBlock() {
 function CreditBlock() {
   const cart = useCart();
   const { format } = useCurrency();
+  const { t } = useLang();
   const [balance, setBalance] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -490,19 +519,17 @@ function CreditBlock() {
   return (
     <div className="gx-coupon-block">
       <div className="gx-cb-title">
-        💳 رصيد المتجر (الاسترجاع)
+        💳 {t("cart.credit_title")}
         <span className="gx-bal-pill" style={{ color: "#8ab4ff" }}>{format(balance)}</span>
       </div>
-      <div className="gx-help">
-        رصيدك من عمليات الاسترجاع والتعويضات — يُستخدم مباشرة كخصم من قيمة الطلب بدون أي حد أقصى.
-      </div>
+      <div className="gx-help">{t("cart.credit_help")}</div>
       {cart.creditJOD > 0 ? (
         <div className="gx-coupon-applied" style={{ background: "rgba(138,180,255,.1)", borderColor: "rgba(138,180,255,.4)" }}>
           <div>
             <div className="gx-coupon-code" style={{ color: "#8ab4ff" }}>{format(cart.creditJOD)}</div>
-            <div className="gx-coupon-note" style={{ color: "#a9c4f0" }}>تم خصمه من إجمالي الطلب</div>
+            <div className="gx-coupon-note" style={{ color: "#a9c4f0" }}>{t("cart.credit_applied")}</div>
           </div>
-          <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCredit(); setMsg(null); }}>إزالة</button>
+          <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCredit(); setMsg(null); }}>{t("cart.remove")}</button>
         </div>
       ) : (
         <>
@@ -513,18 +540,18 @@ function CreditBlock() {
               min={0.01}
               step={0.01}
               max={usable}
-              placeholder={`استخدم حتى ${usable.toFixed(2)} د.أ`}
+              placeholder={`${t("cart.use_up_to")} ${format(usable)}`}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
             <button type="button" className="btn btn-primary gx-coupon-apply" disabled={busy || !amount}
               onClick={() => apply(Number(amount))}>
-              {busy ? "..." : "استخدام"}
+              {busy ? "..." : t("cart.use")}
             </button>
           </div>
           <button type="button" className="gx-coins-max" style={{ borderColor: "rgba(138,180,255,.4)", color: "#8ab4ff" }}
             onClick={() => { setAmount(usable.toFixed(2)); apply(usable); }}>
-            استخدم كامل المتاح ({format(usable)})
+            {t("cart.credit_use_all")} ({format(usable)})
           </button>
           {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
         </>
