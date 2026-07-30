@@ -1262,43 +1262,52 @@ export type Database = {
       }
       wheel_prizes: {
         Row: {
-          amount: number
-          coupon_valid_days: number
+          color: string
+          coupon_max_discount_jod: number | null
+          coupon_valid_hours: number
           created_at: string
+          icon: string
           id: string
           is_active: boolean
           max_discount_jod: number | null
           name: string
-          prize_type: string
-          product_slug: string | null
+          rarity: Database["public"]["Enums"]["wheel_rarity"]
+          reward_type: Database["public"]["Enums"]["wheel_reward_type"]
+          reward_value: number | null
           sort_order: number
           updated_at: string
           weight: number
         }
         Insert: {
-          amount?: number
-          coupon_valid_days?: number
+          color?: string
+          coupon_max_discount_jod?: number | null
+          coupon_valid_hours?: number
           created_at?: string
+          icon?: string
           id?: string
           is_active?: boolean
           max_discount_jod?: number | null
           name: string
-          prize_type: string
-          product_slug?: string | null
+          rarity?: Database["public"]["Enums"]["wheel_rarity"]
+          reward_type?: Database["public"]["Enums"]["wheel_reward_type"]
+          reward_value?: number | null
           sort_order?: number
           updated_at?: string
           weight?: number
         }
         Update: {
-          amount?: number
-          coupon_valid_days?: number
+          color?: string
+          coupon_max_discount_jod?: number | null
+          coupon_valid_hours?: number
           created_at?: string
+          icon?: string
           id?: string
           is_active?: boolean
           max_discount_jod?: number | null
           name?: string
-          prize_type?: string
-          product_slug?: string | null
+          rarity?: Database["public"]["Enums"]["wheel_rarity"]
+          reward_type?: Database["public"]["Enums"]["wheel_reward_type"]
+          reward_value?: number | null
           sort_order?: number
           updated_at?: string
           weight?: number
@@ -1307,33 +1316,27 @@ export type Database = {
       }
       wheel_spins: {
         Row: {
-          coupon_code: string | null
           coupon_id: string | null
           id: string
           prize_id: string | null
           prize_snapshot: Json
           spun_at: string
-          spun_on: string
           user_id: string
         }
         Insert: {
-          coupon_code?: string | null
           coupon_id?: string | null
           id?: string
           prize_id?: string | null
           prize_snapshot?: Json
           spun_at?: string
-          spun_on?: string
           user_id: string
         }
         Update: {
-          coupon_code?: string | null
           coupon_id?: string | null
           id?: string
           prize_id?: string | null
           prize_snapshot?: Json
           spun_at?: string
-          spun_on?: string
           user_id?: string
         }
         Relationships: [
@@ -1341,7 +1344,7 @@ export type Database = {
             foreignKeyName: "wheel_spins_coupon_id_fkey"
             columns: ["coupon_id"]
             isOneToOne: false
-            referencedRelation: "coupons"
+            referencedRelation: "user_coupons"
             referencedColumns: ["id"]
           },
           {
@@ -1577,6 +1580,14 @@ export type Database = {
         | "cancelled"
         | "refunded"
       review_status: "pending" | "approved" | "rejected" | "hidden"
+      wheel_rarity: "common" | "rare" | "epic" | "legendary"
+      wheel_reward_type:
+        | "xp"
+        | "gx_coins"
+        | "discount_percent"
+        | "boost_double_coins"
+        | "boost_double_xp"
+        | "no_reward"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1716,6 +1727,15 @@ export const Constants = {
         "refunded",
       ],
       review_status: ["pending", "approved", "rejected", "hidden"],
+      wheel_rarity: ["common", "rare", "epic", "legendary"],
+      wheel_reward_type: [
+        "xp",
+        "gx_coins",
+        "discount_percent",
+        "boost_double_coins",
+        "boost_double_xp",
+        "no_reward",
+      ],
     },
   },
 } as const
