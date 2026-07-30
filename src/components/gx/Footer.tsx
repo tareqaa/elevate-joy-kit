@@ -8,7 +8,16 @@ export function Footer() {
   const { t, lang } = useLang();
   const s = useSiteSettings();
   const waDigits = (s.support_whatsapp || "").replace(/\D/g, "");
-  const waPretty = waDigits ? "+" + waDigits.replace(/^(\d{1,3})(\d{2,3})(\d{3})(\d+)/, "$1 $2 $3 $4") : "";
+  const waPretty = (() => {
+    if (!waDigits) return "";
+    // Jordan numbers: +962 7 XXXX XXXX
+    if (waDigits.startsWith("962")) {
+      const rest = waDigits.slice(3).replace(/^0+/, "");
+      if (rest.length === 9) return `+962 ${rest[0]} ${rest.slice(1, 5)} ${rest.slice(5)}`;
+      return `+962 ${rest.replace(/(\d{3})(?=\d)/g, "$1 ")}`.trim();
+    }
+    return "+" + waDigits.replace(/(\d{3})(?=\d)/g, "$1 ").trim();
+  })();
   return (
     <footer>
       <div className="wrap">
