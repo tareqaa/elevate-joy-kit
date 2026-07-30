@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Disc3, Plus, Trash2, Pencil, RefreshCcw, History } from "lucide-react";
+import { Disc3, Plus, Trash2, Pencil, RefreshCcw, History, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/wheel")({
   head: () => ({ meta: [{ title: "عجلة الحظ — لوحة التحكم" }] }),
@@ -64,6 +64,8 @@ function WheelAdmin() {
   const qc = useQueryClient();
   const [edit, setEdit] = useState<Partial<PrizeRow> | null>(null);
   const [confirmDel, setConfirmDel] = useState<PrizeRow | null>(null);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const prizesQ = useQuery({
     queryKey: ["admin-wheel-prizes"],
@@ -98,10 +100,24 @@ function WheelAdmin() {
   });
 
   const prizes = prizesQ.data ?? [];
+  const activePrizes = useMemo(() => prizes.filter((p) => p.is_active), [prizes]);
+  const activeCount = activePrizes.length;
   const activeWeight = useMemo(
-    () => prizes.filter((p) => p.is_active).reduce((a, p) => a + (p.weight || 0), 0),
-    [prizes],
+    () => activePrizes.reduce((a, p) => a + (p.weight || 0), 0),
+    [activePrizes],
   );
+
+  const filteredSpins = useMemo(() => {
+    const rows = spinsQ.data ?? [];
+    const from = fromDate ? new Date(`${fromDate}T00:00:00`).getTime() : null;
+    const to = toDate ? new Date(`${toDate}T23:59:59`).getTime() : null;
+    return rows.filter((r) => {
+      const t = new Date(r.spun_at).getTime();
+      if (from !== null && t < from) return false;
+      if (to !== null && t > to) return false;
+      return true;
+    });
+  }, [spinsQ.data, fromDate, toDate]);
 
   const saveM = useMutation({
     mutationFn: async (row: Partial<PrizeRow>) => {
@@ -182,15 +198,35 @@ function WheelAdmin() {
         </TabsList>
 
         <TabsContent value="prizes" className="mt-4 space-y-3">
-          <p className="text-sm text-muted-foreground">مجموع أوزان الجوائز الفعّالة: <span className="font-bold text-foreground">{activeWeight}</span></p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-muted-foreground">
+              مجموع أوزان الجوائز الفعّالة: <span className="font-bold text-foreground">{activeWeight}</span>
+            </p>
+            <Badge variant="outline">الجوائز الفعّالة: {activeCount} / 8</Badge>
+          </div>
+          {activeCount < 8 && (
+            <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 text-amber-500 shrink-0" />
+              <span>
+                عدد الجوائز الفعّالة ({activeCount}) أقل من الثماني خانات المصممة للعجلة — فعّل أو أضف
+                {" "}{8 - activeCount}{" "}جائزة إضافية حتى تظهر العجلة متوازنة.
+              </span>
+            </div>
+          )}
           {prizes.map((p) => {
             const chance = p.is_active && activeWeight > 0 ? (p.weight / activeWeight) * 100 : 0;
             return (
               <Card key={p.id}>
                 <CardContent className="p-4 flex flex-wrap items-center gap-3">
+                  <span
+                    aria-hidden
+                    className="w-5 h-5 rounded-full border shrink-0"
+                    style={{ background: p.color }}
+                    title={p.color}
+                  />
                   <div className="flex-1 min-w-48">
                     <div className="font-bold flex items-center gap-2">
-                      <span aria-hidden style={{ color: p.color }}>{p.icon}</span>{p.name}
+                      <span aria-hidden>{p.icon}</span>{p.name}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {typeLabel(p.reward_type)}{p.reward_value !== null ? ` — القيمة ${p.reward_value}` : ""}
@@ -216,7 +252,21 @@ function WheelAdmin() {
           )}
         </TabsContent>
 
-        <TabsContent value="log" className="mt-4">
+        <TabsContent value="log" className="mt-4 space-y-3">
+          <Card>
+            <CardContent className="p-4 flex flex-wrap items-end gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">من تاريخ</Label>
+                <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="h-9" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">إلى تاريخ</Label>
+                <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="h-9" />
+              </div>
+              <Button variant="outline" size="sm" onClick={() => { setFromDate(""); setToDate(""); }}>مسح الفلتر</Button>
+              <span className="text-xs text-muted-foreground ms-auto">النتائج: {filteredSpins.length}</span>
+            </CardContent>
+          </Card>
           <Card>
             <CardContent className="p-0 overflow-x-auto">
               <table className="w-full text-sm">
@@ -224,21 +274,39 @@ function WheelAdmin() {
                   <tr>
                     <th className="text-start p-3">المستخدم</th>
                     <th className="text-start p-3">الجائزة</th>
-                    <th className="text-start p-3">الكوبون</th>
+                    <th className="text-start p-3">النتيجة</th>
                     <th className="text-start p-3">الوقت</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {(spinsQ.data ?? []).map((s) => (
-                    <tr key={s.id} className="border-b last:border-0">
-                      <td className="p-3">{s.who}</td>
-                      <td className="p-3">{String((s.prize_snapshot as { name?: string } | null)?.name ?? "—")}</td>
-                      <td className="p-3 font-mono" dir="ltr">{String((s.prize_snapshot as { coupon_code?: string } | null)?.coupon_code ?? "—")}</td>
-                      <td className="p-3 text-muted-foreground">{new Date(s.spun_at).toLocaleString("ar-EG")}</td>
-                    </tr>
-                  ))}
-                  {(spinsQ.data ?? []).length === 0 && (
-                    <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">لا توجد لفات بعد</td></tr>
+                  {filteredSpins.map((s) => {
+                    const snap = (s.prize_snapshot ?? {}) as {
+                      name?: string; icon?: string; coupon_code?: string; boost_type?: string; boost_expires_at?: string;
+                    };
+                    return (
+                      <tr key={s.id} className="border-b last:border-0">
+                        <td className="p-3">{s.who}</td>
+                        <td className="p-3">{snap.icon ? `${snap.icon} ` : ""}{snap.name ?? "—"}</td>
+                        <td className="p-3">
+                          {snap.coupon_code ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Badge variant="outline" className="border-primary/40 text-primary">كوبون</Badge>
+                              <span className="font-mono" dir="ltr">{snap.coupon_code}</span>
+                            </span>
+                          ) : snap.boost_type ? (
+                            <Badge variant="outline" className="border-amber-500/50 text-amber-500">
+                              بوست — {snap.boost_type === "double_gx_coins" ? "×2 Coins" : "×2 XP"}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-muted-foreground">{new Date(s.spun_at).toLocaleString("ar-EG")}</td>
+                      </tr>
+                    );
+                  })}
+                  {filteredSpins.length === 0 && (
+                    <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">لا توجد لفات ضمن هذا النطاق</td></tr>
                   )}
                 </tbody>
               </table>
