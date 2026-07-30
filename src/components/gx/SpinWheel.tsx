@@ -256,7 +256,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
       void qc.invalidateQueries({ queryKey: ["wheel-status"] });
       void qc.invalidateQueries({ queryKey: ["my-loyalty"] });
       void qc.invalidateQueries({ queryKey: ["my-profile"] });
-    }, 5600);
+    }, 5250);
   }
 
   async function copyCode() {
