@@ -1,0 +1,13 @@
+DROP TRIGGER IF EXISTS orders_set_updated_at ON public.orders;
+DROP TRIGGER IF EXISTS profiles_set_updated_at ON public.profiles;
+DROP TRIGGER IF EXISTS reviews_set_updated_at ON public.reviews;
+DROP TRIGGER IF EXISTS levels_updated ON public.levels;
+DROP TRIGGER IF EXISTS level_rewards_updated ON public.level_rewards;
+DROP TRIGGER IF EXISTS user_coupons_updated ON public.user_coupons;
+DROP TRIGGER IF EXISTS avatar_collections_updated ON public.avatar_collections;
+DROP TRIGGER IF EXISTS avatars_updated ON public.avatars;
+DROP TRIGGER IF EXISTS badges_updated ON public.badges;
+DROP TRIGGER IF EXISTS trg_categories_updated ON public.categories;
+DROP TRIGGER IF EXISTS trg_products_updated ON public.products;
+DROP TRIGGER IF EXISTS trg_variants_updated ON public.product_variants;
+DROP TRIGGER IF EXISTS trg_country_prices_updated ON public.product_country_prices;
