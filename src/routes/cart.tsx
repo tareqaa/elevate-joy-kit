@@ -354,15 +354,18 @@ function CoinsBlock() {
 
   useEffect(() => {
     let alive = true;
-    (async () => {
+    const load = async () => {
       const { supabase } = await import("@/integrations/supabase/client");
       const { data: sess } = await supabase.auth.getSession();
       const uid = sess.session?.user?.id;
       if (!uid) return;
       const { data } = await supabase.from("profiles").select("gx_coins").eq("id", uid).maybeSingle();
       if (alive) setBalance(Number(data?.gx_coins ?? 0));
-    })();
-    return () => { alive = false; };
+    };
+    void load();
+    const on = () => void load();
+    window.addEventListener("gx:balances-updated", on);
+    return () => { alive = false; window.removeEventListener("gx:balances-updated", on); };
   }, []);
 
   if (balance === null) return null;
