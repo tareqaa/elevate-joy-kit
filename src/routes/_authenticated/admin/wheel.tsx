@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Disc3, Plus, Trash2, Pencil, RefreshCcw, History, AlertTriangle } from "lucide-react";
+import { Disc3, Plus, Trash2, Pencil, RefreshCcw, History, AlertTriangle, Gift } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/wheel")({
   head: () => ({ meta: [{ title: "عجلة الحظ — لوحة التحكم" }] }),
