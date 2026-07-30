@@ -206,7 +206,9 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
   }, {});
   const activeTab = STATUS_TABS.find((tab) => tab.key === view) ?? STATUS_TABS[0];
   const list = orders.filter((o) => activeTab.match(o.status));
+  const pager = usePager(list, 5, view);
   const msStart = dir === "rtl" ? "ms-1.5" : "ms-1.5";
+
 
   return (
     <div className="space-y-4" dir={dir}>
