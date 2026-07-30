@@ -530,7 +530,7 @@ export function SpinWheelModal({ open, onOpenChange }: { open: boolean; onOpenCh
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         dir="rtl"
-        className="max-w-[440px] w-[calc(100vw-1.5rem)] max-h-[90vh] overflow-y-auto border-0 shadow-none bg-transparent p-4"
+        className="max-w-[440px] w-[calc(100vw-1.5rem)] overflow-hidden border-0 shadow-none bg-transparent p-4"
       >
         <DialogHeader className="text-center sm:text-center">
           <DialogTitle className="text-xl font-black">🎡 عجلة الحظ اليومية</DialogTitle>
