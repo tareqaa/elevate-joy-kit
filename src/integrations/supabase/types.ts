@@ -627,6 +627,7 @@ export type Database = {
           admin_notes: string | null
           coins_awarded: number
           coins_discount_jod: number
+          coins_multiplier: number
           coins_refunded: number
           coins_reversed: number
           coins_used: number
@@ -654,12 +655,14 @@ export type Database = {
           user_coupon_id: string | null
           user_id: string | null
           xp_awarded: number
+          xp_multiplier: number
           xp_reversed: number
         }
         Insert: {
           admin_notes?: string | null
           coins_awarded?: number
           coins_discount_jod?: number
+          coins_multiplier?: number
           coins_refunded?: number
           coins_reversed?: number
           coins_used?: number
@@ -687,12 +690,14 @@ export type Database = {
           user_coupon_id?: string | null
           user_id?: string | null
           xp_awarded?: number
+          xp_multiplier?: number
           xp_reversed?: number
         }
         Update: {
           admin_notes?: string | null
           coins_awarded?: number
           coins_discount_jod?: number
+          coins_multiplier?: number
           coins_refunded?: number
           coins_reversed?: number
           coins_used?: number
@@ -720,6 +725,7 @@ export type Database = {
           user_coupon_id?: string | null
           user_id?: string | null
           xp_awarded?: number
+          xp_multiplier?: number
           xp_reversed?: number
         }
         Relationships: [
@@ -728,6 +734,53 @@ export type Database = {
             columns: ["coupon_id"]
             isOneToOne: false
             referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pending_boosts: {
+        Row: {
+          boost_type: Database["public"]["Enums"]["boost_type"]
+          consumed_at: string | null
+          consumed_order_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          multiplier: number
+          source: string
+          source_id: string | null
+          user_id: string
+        }
+        Insert: {
+          boost_type: Database["public"]["Enums"]["boost_type"]
+          consumed_at?: string | null
+          consumed_order_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          multiplier?: number
+          source?: string
+          source_id?: string | null
+          user_id: string
+        }
+        Update: {
+          boost_type?: Database["public"]["Enums"]["boost_type"]
+          consumed_at?: string | null
+          consumed_order_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          multiplier?: number
+          source?: string
+          source_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_boosts_consumed_order_id_fkey"
+            columns: ["consumed_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -1570,6 +1623,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      boost_type: "double_gx_coins" | "double_xp"
       coupon_discount_type: "percent" | "fixed"
       coupon_scope: "all" | "products" | "categories"
       order_status:
@@ -1716,6 +1770,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      boost_type: ["double_gx_coins", "double_xp"],
       coupon_discount_type: ["percent", "fixed"],
       coupon_scope: ["all", "products", "categories"],
       order_status: [
