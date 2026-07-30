@@ -9,9 +9,11 @@ import { Copy, Check, Gift, Sparkles, Timer } from "lucide-react";
 type Prize = {
   id: string;
   name: string;
-  prize_type: string;
-  amount: number;
-  product_slug: string | null;
+  icon: string;
+  reward_type: string;
+  reward_value: number | null;
+  rarity: string;
+  color: string;
   weight: number;
   is_active: boolean;
   sort_order: number;
@@ -21,8 +23,11 @@ type SpinResult = {
   ok?: boolean;
   prize_id?: string;
   name?: string;
-  prize_type?: string;
-  amount?: number;
+  icon?: string;
+  reward_type?: string;
+  reward_value?: number | null;
+  rarity?: string;
+  color?: string;
   coupon_code?: string | null;
   coupon_expires_at?: string | null;
   next_spin_at?: string | null;
@@ -42,7 +47,7 @@ const SEGMENT_COLORS = [
 ];
 
 function isRare(p: Prize, totalWeight: number) {
-  return totalWeight > 0 && p.weight / totalWeight <= 0.1;
+  return p.rarity === "epic" || p.rarity === "legendary" || (totalWeight > 0 && p.weight / totalWeight <= 0.1);
 }
 
 function polar(cx: number, cy: number, r: number, deg: number) {
@@ -201,7 +206,7 @@ export function SpinWheel() {
                   <g key={p.id}>
                     <path
                       d={segmentPath(150, 150, 145, start, end)}
-                      fill={SEGMENT_COLORS[i % SEGMENT_COLORS.length]}
+                      fill={p.color || SEGMENT_COLORS[i % SEGMENT_COLORS.length]}
                       fillOpacity={rare ? 0.95 : 0.75}
                       stroke={rare ? "#fbbf24" : "rgba(255,255,255,0.18)"}
                       strokeWidth={rare ? 2.5 : 1}

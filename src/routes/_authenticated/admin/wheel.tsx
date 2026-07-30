@@ -18,29 +18,46 @@ export const Route = createFileRoute("/_authenticated/admin/wheel")({
   component: WheelAdmin,
 });
 
+type RewardType = "xp" | "gx_coins" | "discount_percent" | "boost_double_coins" | "boost_double_xp" | "no_reward";
+type Rarity = "common" | "rare" | "epic" | "legendary";
+
 type PrizeRow = {
   id: string;
   name: string;
-  prize_type: string;
-  amount: number;
-  product_slug: string | null;
+  icon: string;
+  reward_type: RewardType;
+  reward_value: number | null;
+  rarity: Rarity;
+  color: string;
   weight: number;
-  max_discount_jod: number | null;
-  coupon_valid_days: number;
+  coupon_max_discount_jod: number | null;
+  coupon_valid_hours: number;
   is_active: boolean;
   sort_order: number;
 };
 
-const TYPES: { value: string; label: string; unit: string }[] = [
-  { value: "gx_coins", label: "GX Coins", unit: "عملة" },
-  { value: "xp", label: "نقاط XP", unit: "XP" },
-  { value: "discount_percent", label: "كوبون خصم نسبة %", unit: "%" },
-  { value: "discount_fixed", label: "كوبون خصم ثابت", unit: "د.أ" },
-  { value: "discount_product", label: "كوبون خصم على منتج", unit: "د.أ" },
+const TYPES: { value: RewardType; label: string }[] = [
+  { value: "xp", label: "نقاط XP" },
+  { value: "gx_coins", label: "GX Coins" },
+  { value: "discount_percent", label: "كوبون خصم نسبة %" },
+  { value: "boost_double_coins", label: "مضاعفة GX Coins" },
+  { value: "boost_double_xp", label: "مضاعفة XP" },
+  { value: "no_reward", label: "بدون جائزة (حظ أوفر)" },
+];
+
+const RARITIES: { value: Rarity; label: string }[] = [
+  { value: "common", label: "عادية" },
+  { value: "rare", label: "نادرة" },
+  { value: "epic", label: "ملحمية" },
+  { value: "legendary", label: "أسطورية" },
 ];
 
 function typeLabel(v: string) {
   return TYPES.find((t) => t.value === v)?.label ?? v;
+}
+
+function needsValue(t?: RewardType) {
+  return t === "xp" || t === "gx_coins" || t === "discount_percent";
 }
 
 function WheelAdmin() {
@@ -57,27 +74,17 @@ function WheelAdmin() {
     },
   });
 
-  const productsQ = useQuery({
-    queryKey: ["admin-wheel-products"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("products").select("slug, name_ar").eq("is_active", true).order("name_ar");
-      if (error) throw error;
-      return (data ?? []) as { slug: string; name_ar: string }[];
-    },
-  });
-
   const spinsQ = useQuery({
     queryKey: ["admin-wheel-spins"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("wheel_spins")
-        .select("id, user_id, prize_snapshot, coupon_code, spun_at")
+        .select("id, user_id, prize_snapshot, spun_at")
         .order("spun_at", { ascending: false })
         .limit(100);
       if (error) throw error;
       const rows = (data ?? []) as {
-        id: string; user_id: string; prize_snapshot: Record<string, unknown> | null;
-        coupon_code: string | null; spun_at: string;
+        id: string; user_id: string; prize_snapshot: Record<string, unknown> | null; spun_at: string;
       }[];
       const ids = Array.from(new Set(rows.map((r) => r.user_id)));
       const names = new Map<string, string>();
@@ -98,20 +105,24 @@ function WheelAdmin() {
 
   const saveM = useMutation({
     mutationFn: async (row: Partial<PrizeRow>) => {
+      const rt = (row.reward_type ?? "gx_coins") as RewardType;
       const payload = {
         name: (row.name ?? "").trim(),
-        prize_type: row.prize_type ?? "gx_coins",
-        amount: Number(row.amount) || 0,
-        product_slug: row.prize_type === "discount_product" ? (row.product_slug || null) : null,
+        icon: (row.icon ?? "🎁").trim() || "🎁",
+        reward_type: rt,
+        reward_value: needsValue(rt) ? Number(row.reward_value) || 0 : null,
+        rarity: (row.rarity ?? "common") as Rarity,
+        color: (row.color ?? "#0ea5b7").trim() || "#0ea5b7",
         weight: Math.max(1, Number(row.weight) || 1),
-        max_discount_jod: row.max_discount_jod === null || row.max_discount_jod === undefined || row.max_discount_jod === ("" as unknown as number)
-          ? null : Number(row.max_discount_jod),
-        coupon_valid_days: Math.max(1, Number(row.coupon_valid_days) || 30),
+        coupon_max_discount_jod:
+          row.coupon_max_discount_jod === null || row.coupon_max_discount_jod === undefined ||
+          row.coupon_max_discount_jod === ("" as unknown as number) ? null : Number(row.coupon_max_discount_jod),
+        coupon_valid_hours: Math.max(1, Number(row.coupon_valid_hours) || 24),
         is_active: row.is_active ?? true,
         sort_order: Number(row.sort_order) || (prizes.length + 1),
       };
       if (!payload.name) throw new Error("اسم الجائزة مطلوب");
-      if (payload.prize_type === "discount_product" && !payload.product_slug) throw new Error("اختر المنتج المرتبط");
+      if (needsValue(rt) && !(payload.reward_value && payload.reward_value > 0)) throw new Error("أدخل قيمة الجائزة");
       if (row.id) {
         const { error } = await supabase.from("wheel_prizes").update(payload).eq("id", row.id);
         if (error) throw error;
@@ -158,7 +169,7 @@ function WheelAdmin() {
           <Button variant="outline" size="sm" onClick={() => { void prizesQ.refetch(); void spinsQ.refetch(); }}>
             <RefreshCcw className="w-4 h-4 ms-1" /> تحديث
           </Button>
-          <Button size="sm" onClick={() => setEdit({ prize_type: "gx_coins", weight: 10, amount: 50, coupon_valid_days: 30, is_active: true })}>
+          <Button size="sm" onClick={() => setEdit({ reward_type: "gx_coins", weight: 10, reward_value: 10, rarity: "common", color: "#0ea5b7", icon: "🎁", coupon_valid_hours: 24, is_active: true })}>
             <Plus className="w-4 h-4 ms-1" /> جائزة جديدة
           </Button>
         </div>
@@ -178,10 +189,12 @@ function WheelAdmin() {
               <Card key={p.id}>
                 <CardContent className="p-4 flex flex-wrap items-center gap-3">
                   <div className="flex-1 min-w-48">
-                    <div className="font-bold">{p.name}</div>
+                    <div className="font-bold flex items-center gap-2">
+                      <span aria-hidden style={{ color: p.color }}>{p.icon}</span>{p.name}
+                    </div>
                     <div className="text-xs text-muted-foreground">
-                      {typeLabel(p.prize_type)} — القيمة {p.amount}
-                      {p.product_slug ? ` — منتج: ${p.product_slug}` : ""}
+                      {typeLabel(p.reward_type)}{p.reward_value !== null ? ` — القيمة ${p.reward_value}` : ""}
+                      {` — ${RARITIES.find((r) => r.value === p.rarity)?.label ?? p.rarity}`}
                     </div>
                   </div>
                   <Badge variant="outline">الوزن {p.weight}</Badge>
@@ -220,7 +233,7 @@ function WheelAdmin() {
                     <tr key={s.id} className="border-b last:border-0">
                       <td className="p-3">{s.who}</td>
                       <td className="p-3">{String((s.prize_snapshot as { name?: string } | null)?.name ?? "—")}</td>
-                      <td className="p-3 font-mono" dir="ltr">{s.coupon_code ?? "—"}</td>
+                      <td className="p-3 font-mono" dir="ltr">{String((s.prize_snapshot as { coupon_code?: string } | null)?.coupon_code ?? "—")}</td>
                       <td className="p-3 text-muted-foreground">{new Date(s.spun_at).toLocaleString("ar-EG")}</td>
                     </tr>
                   ))}
@@ -248,30 +261,41 @@ function WheelAdmin() {
                   <Label>النوع</Label>
                   <select
                     className="w-full h-10 rounded-md border bg-background px-3 text-sm"
-                    value={edit.prize_type ?? "gx_coins"}
-                    onChange={(e) => setEdit({ ...edit, prize_type: e.target.value })}
+                    value={edit.reward_type ?? "gx_coins"}
+                    onChange={(e) => setEdit({ ...edit, reward_type: e.target.value as RewardType })}
                   >
                     {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
                   <Label>القيمة</Label>
-                  <Input type="number" value={edit.amount ?? 0} onChange={(e) => setEdit({ ...edit, amount: Number(e.target.value) })} />
+                  <Input
+                    type="number" disabled={!needsValue(edit.reward_type)}
+                    value={edit.reward_value ?? 0}
+                    onChange={(e) => setEdit({ ...edit, reward_value: Number(e.target.value) })}
+                  />
                 </div>
               </div>
-              {edit.prize_type === "discount_product" && (
+              <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5">
-                  <Label>المنتج المرتبط</Label>
+                  <Label>الندرة</Label>
                   <select
                     className="w-full h-10 rounded-md border bg-background px-3 text-sm"
-                    value={edit.product_slug ?? ""}
-                    onChange={(e) => setEdit({ ...edit, product_slug: e.target.value })}
+                    value={edit.rarity ?? "common"}
+                    onChange={(e) => setEdit({ ...edit, rarity: e.target.value as Rarity })}
                   >
-                    <option value="">— اختر منتجاً —</option>
-                    {(productsQ.data ?? []).map((p) => <option key={p.slug} value={p.slug}>{p.name_ar}</option>)}
+                    {RARITIES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                   </select>
                 </div>
-              )}
+                <div className="space-y-1.5">
+                  <Label>اللون</Label>
+                  <Input type="color" value={edit.color ?? "#0ea5b7"} onChange={(e) => setEdit({ ...edit, color: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>الأيقونة</Label>
+                  <Input value={edit.icon ?? "🎁"} onChange={(e) => setEdit({ ...edit, icon: e.target.value })} />
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>وزن الاحتمال</Label>
@@ -286,15 +310,15 @@ function WheelAdmin() {
                   </p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>صلاحية الكوبون (أيام)</Label>
-                  <Input type="number" min={1} value={edit.coupon_valid_days ?? 30} onChange={(e) => setEdit({ ...edit, coupon_valid_days: Number(e.target.value) })} />
+                  <Label>صلاحية الكوبون (ساعات)</Label>
+                  <Input type="number" min={1} value={edit.coupon_valid_hours ?? 24} onChange={(e) => setEdit({ ...edit, coupon_valid_hours: Number(e.target.value) })} />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label>الحد الأقصى للخصم (د.أ) — اختياري</Label>
                 <Input
-                  type="number" value={edit.max_discount_jod ?? ""}
-                  onChange={(e) => setEdit({ ...edit, max_discount_jod: e.target.value === "" ? null : Number(e.target.value) })}
+                  type="number" value={edit.coupon_max_discount_jod ?? ""}
+                  onChange={(e) => setEdit({ ...edit, coupon_max_discount_jod: e.target.value === "" ? null : Number(e.target.value) })}
                 />
               </div>
               <div className="flex items-center gap-2">
