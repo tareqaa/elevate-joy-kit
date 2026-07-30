@@ -12,6 +12,15 @@ import {
 // between admin pages doesn't re-hit the network on every navigation.
 let adminRoleCache: { userId: string; isAdmin: boolean } | null = null;
 
+// Never keep a role decision alive past sign-out.
+if (typeof window !== "undefined") {
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT" || !session?.user) adminRoleCache = null;
+    else if (adminRoleCache && adminRoleCache.userId !== session.user.id) adminRoleCache = null;
+  });
+}
+
+
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async ({ context }) => {
     const user = (context as { user?: { id: string } }).user;

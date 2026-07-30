@@ -50,7 +50,9 @@ type IncomingItem = {
   [k: string]: unknown;
 };
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
+/** JOD carries three decimals — every money rounding in the app uses *1000. */
+const roundJod = (n: number) => Math.round(n * 1000) / 1000;
+
 
 /** Reads the live price overrides from the database. */
 export async function loadCatalogPriceOverrides(
@@ -114,13 +116,13 @@ export function priceCartItems(
       unitPrice = p;
     }
 
-    unitPrice = round2(unitPrice);
-    const lineTotal = round2(unitPrice * qty);
-    subtotal = round2(subtotal + lineTotal);
+    unitPrice = roundJod(unitPrice);
+    const lineTotal = roundJod(unitPrice * qty);
+    subtotal = roundJod(subtotal + lineTotal);
     lines.push({ cartId, qty, unitPrice, lineTotal, custom: isCustom });
   }
 
-  return { lines, subtotal: round2(subtotal) };
+  return { lines, subtotal: roundJod(subtotal) };
 }
 
 /** True when the given user has the admin role. */

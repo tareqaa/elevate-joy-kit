@@ -210,7 +210,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const afterCoupon = Math.max(0, subtotalJOD - (coupon?.discount_jod ?? 0));
   const afterCoins = Math.max(0, afterCoupon - (coins?.discount_jod ?? 0));
   const appliedCredit = Math.min(creditJOD, afterCoins);
-  const totalJOD = Math.round(Math.max(0, afterCoins - appliedCredit) * 100) / 100;
+  const totalJOD = Math.round(Math.max(0, afterCoins - appliedCredit) * 1000) / 1000;
 
   const setNotes = useCallback((n: string) => {
     localStorage.setItem(NOTES_KEY, n);
@@ -320,7 +320,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const removeCredit = useCallback(() => setCreditState(0), []);
 
   const applyCredit = useCallback(async (wanted: number) => {
-    const amount = Math.round(Math.max(0, Number(wanted) || 0) * 100) / 100;
+    const amount = Math.round(Math.max(0, Number(wanted) || 0) * 1000) / 1000;
     if (amount <= 0) { setCreditState(0); return { ok: false, message: "أدخل مبلغ الرصيد" }; }
     if (items.length === 0) return { ok: false, message: "السلة فاضية" };
     try {
@@ -332,7 +332,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const balance = Number(prof?.store_credit_jod ?? 0);
       if (balance <= 0) return { ok: false, message: "لا يوجد رصيد متجر متاح" };
       const payable = Math.max(0, subtotalJOD - (coupon?.discount_jod ?? 0) - (coins?.discount_jod ?? 0));
-      const used = Math.round(Math.min(amount, balance, payable) * 100) / 100;
+      const used = Math.round(Math.min(amount, balance, payable) * 1000) / 1000;
       if (used <= 0) return { ok: false, message: "لا يوجد مبلغ متبقٍ للدفع" };
       setCreditState(used);
       return { ok: true, message: `تم استخدام ${used.toFixed(2)} د.أ من رصيد المتجر` };
@@ -359,7 +359,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (subtotalJOD <= 0) { persistCoupon(null); return; }
     // recompute discount amount based on type
     let d = coupon.discount_type === "percent"
-      ? Math.round((subtotalJOD * coupon.discount_value) / 100 * 100) / 100
+      ? Math.round((subtotalJOD * coupon.discount_value) / 100 * 1000) / 1000
       : coupon.discount_value;
     if (d > subtotalJOD) d = subtotalJOD;
     if (Math.abs(d - coupon.discount_jod) > 0.001) {

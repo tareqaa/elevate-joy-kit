@@ -116,10 +116,16 @@ export function Navbar() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [canReview, setCanReview] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("gx_is_admin") === "1";
-  });
+  // Admin state lives in memory only — never in localStorage, which any user
+  // could forge to reveal the admin entry. It is always (re)verified against
+  // has_role() in the database below.
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
+  // Purge the legacy forgeable flag from existing browsers.
+  useEffect(() => {
+    try { localStorage.removeItem("gx_is_admin"); } catch { /* noop */ }
+  }, []);
+
 
   useEffect(() => {
     let active = true;
@@ -147,7 +153,7 @@ export function Navbar() {
   useEffect(() => {
     if (!session) {
       setProfile(null); setIsAdmin(false); setCanReview(false);
-      try { localStorage.removeItem("gx_profile_cache"); localStorage.removeItem("gx_is_admin"); } catch { /* noop */ }
+      try { localStorage.removeItem("gx_profile_cache"); } catch { /* noop */ }
       return;
     }
     (async () => {
@@ -163,8 +169,8 @@ export function Navbar() {
       try {
         const { data: adminData } = await supabase.rpc("has_role", { _user_id: session.userId, _role: "admin" });
         setIsAdmin(!!adminData);
-        try { localStorage.setItem("gx_is_admin", adminData ? "1" : "0"); } catch { /* noop */ }
-      } catch { /* keep cached */ }
+      } catch { setIsAdmin(false); }
+
       try {
         const { count } = await supabase.from("orders")
           .select("id", { count: "exact", head: true })
