@@ -317,6 +317,7 @@ export type Database = {
       }
       coupons: {
         Row: {
+          assigned_user_id: string | null
           category_slugs: string[]
           code: string
           created_at: string
@@ -337,6 +338,7 @@ export type Database = {
           usage_limit: number | null
         }
         Insert: {
+          assigned_user_id?: string | null
           category_slugs?: string[]
           code: string
           created_at?: string
@@ -357,6 +359,7 @@ export type Database = {
           usage_limit?: number | null
         }
         Update: {
+          assigned_user_id?: string | null
           category_slugs?: string[]
           code?: string
           created_at?: string
@@ -1257,6 +1260,99 @@ export type Database = {
         }
         Relationships: []
       }
+      wheel_prizes: {
+        Row: {
+          amount: number
+          coupon_valid_days: number
+          created_at: string
+          id: string
+          is_active: boolean
+          max_discount_jod: number | null
+          name: string
+          prize_type: string
+          product_slug: string | null
+          sort_order: number
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          amount?: number
+          coupon_valid_days?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_discount_jod?: number | null
+          name: string
+          prize_type: string
+          product_slug?: string | null
+          sort_order?: number
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          amount?: number
+          coupon_valid_days?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_discount_jod?: number | null
+          name?: string
+          prize_type?: string
+          product_slug?: string | null
+          sort_order?: number
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      wheel_spins: {
+        Row: {
+          coupon_code: string | null
+          coupon_id: string | null
+          id: string
+          prize_id: string | null
+          prize_snapshot: Json
+          spun_at: string
+          spun_on: string
+          user_id: string
+        }
+        Insert: {
+          coupon_code?: string | null
+          coupon_id?: string | null
+          id?: string
+          prize_id?: string | null
+          prize_snapshot?: Json
+          spun_at?: string
+          spun_on?: string
+          user_id: string
+        }
+        Update: {
+          coupon_code?: string | null
+          coupon_id?: string | null
+          id?: string
+          prize_id?: string | null
+          prize_snapshot?: Json
+          spun_at?: string
+          spun_on?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wheel_spins_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wheel_spins_prize_id_fkey"
+            columns: ["prize_id"]
+            isOneToOne: false
+            referencedRelation: "wheel_prizes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       xp_transactions: {
         Row: {
           amount: number
@@ -1372,6 +1468,7 @@ export type Database = {
           xp: number
         }[]
       }
+      get_wheel_status: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1451,6 +1548,7 @@ export type Database = {
         Args: { _coins: number; _order_id: string }
         Returns: Json
       }
+      spin_wheel: { Args: never; Returns: Json }
       sync_user_level: { Args: { _user_id: string }; Returns: undefined }
       validate_coupon: {
         Args: {
