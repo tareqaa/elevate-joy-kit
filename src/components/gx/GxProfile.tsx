@@ -16,6 +16,90 @@ type PublicProfile = {
 /** Badges section is temporarily hidden; flip to true to show it again. */
 const SHOW_BADGES = false;
 
+type UserCouponRow = {
+  id: string; code: string; percent: number; max_discount_jod: number | null;
+  expires_at: string; used_at: string | null; level_code: string | null;
+};
+
+function formatWhen(iso: string, isAr: boolean) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return new Intl.DateTimeFormat(isAr ? "ar-JO" : "en-GB", {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  }).format(d);
+}
+
+/** One coupon card: code hidden behind dots until the eye button reveals it. */
+function CouponCard({ c, dead, isAr }: { c: UserCouponRow; dead: boolean; isAr: boolean }) {
+  const [shown, setShown] = useState(false);
+  const expMs = new Date(c.expires_at).getTime();
+  const soon = !dead && expMs - Date.now() < 24 * 60 * 60 * 1000;
+  const fromWheel = (c.level_code || "").toLowerCase().includes("wheel");
+
+  const copy = () => {
+    if (!shown) { toast.error(isAr ? "اكشف الكود أولاً" : "Reveal the code first"); return; }
+    navigator.clipboard?.writeText(c.code);
+    toast.success(isAr ? "تم النسخ" : "Copied");
+  };
+
+  return (
+    <div className={`gxp-coupon${dead ? " dead" : ""}${soon ? " soon" : ""}`}>
+      <div className="gxp-coupon-top">
+        <div className="gxp-coupon-off">
+          {isAr ? `خصم ${c.percent}%` : `${c.percent}% OFF`}
+          {c.max_discount_jod ? (
+            <span className="cap">{isAr ? `حتى ${c.max_discount_jod} د.أ` : `up to ${c.max_discount_jod} JOD`}</span>
+          ) : null}
+        </div>
+        <span className={`gxp-coupon-tag${fromWheel ? " wheel" : ""}`}>
+          {fromWheel
+            ? (isAr ? "🎡 عجلة الحظ" : "🎡 Lucky wheel")
+            : (isAr ? "🏆 مكافأة مستوى" : "🏆 Level reward")}
+        </span>
+      </div>
+
+      <div className="gxp-coupon-code">
+        <b dir="ltr">{shown ? c.code : "•".repeat(Math.max(8, Math.min(14, c.code.length)))}</b>
+        <button
+          type="button" className="gxp-eye" onClick={() => setShown((v) => !v)}
+          aria-label={shown ? (isAr ? "إخفاء الكود" : "Hide code") : (isAr ? "إظهار الكود" : "Show code")}
+          title={shown ? (isAr ? "إخفاء" : "Hide") : (isAr ? "إظهار" : "Show")}
+        >
+          {shown ? (
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a17.6 17.6 0 0 1-2.16 3.19M6.6 6.6A17.9 17.9 0 0 0 2 12s3 8 10 8a9 9 0 0 0 5.4-1.6" />
+              <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24M2 2l20 20" />
+            </svg>
+          ) : (
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 12s3-8 10-8 10 8 10 8-3 8-10 8S2 12 2 12z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          )}
+        </button>
+        <button type="button" className="btn btn-ghost gxp-copy" disabled={dead} onClick={copy}>
+          {isAr ? "نسخ" : "Copy"}
+        </button>
+      </div>
+
+      <div className="gxp-coupon-foot">
+        {dead ? (
+          <span className="gxp-coupon-dead-tag">
+            {c.used_at
+              ? (isAr ? "❌ مستخدم — غير صالح" : "❌ Used — no longer valid")
+              : (isAr ? "❌ منتهي الصلاحية — غير صالح" : "❌ Expired — no longer valid")}
+          </span>
+        ) : (
+          <span className={`gxp-coupon-exp${soon ? " warn" : ""}`}>
+            {isAr ? "ينتهي في " : "Expires "}{formatWhen(c.expires_at, isAr)}
+            {soon ? (isAr ? " — ينتهي خلال أقل من 24 ساعة!" : " — less than 24h left!") : ""}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** Unified GX profile: identity + loyalty + coupons + badges + avatars + search + leaderboard. */
 export function GxProfile({ username: usernameProp }: { username?: string }) {
   const { lang, dir } = useLang();
@@ -271,18 +355,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                       <div className="gxp-coupons">
                         {(couponsQ.data ?? []).map((c) => {
                           const dead = !!c.used_at || new Date(c.expires_at).getTime() < Date.now();
-                          return (
-                            <div key={c.id} className={`gxp-coupon${dead ? " dead" : ""}`}>
-                              <div>
-                                <b dir="ltr">{c.code}</b>
-                                <em>{isAr ? `خصم ${c.percent}%` : `${c.percent}% off`}{c.max_discount_jod ? (isAr ? ` — حتى ${c.max_discount_jod} د.أ` : ` — up to ${c.max_discount_jod} JOD`) : ""}</em>
-                              </div>
-                              <button type="button" className="btn btn-ghost" disabled={dead}
-                                onClick={() => { navigator.clipboard?.writeText(c.code); toast.success(isAr ? "تم النسخ" : "Copied"); }}>
-                                {isAr ? "نسخ" : "Copy"}
-                              </button>
-                            </div>
-                          );
+                          return <CouponCard key={c.id} c={c} dead={dead} isAr={isAr} />;
                         })}
                       </div>
                     </div>
@@ -561,10 +634,28 @@ const css = `
 .gxp-avbtn.sel{border-color:#00e5ff;box-shadow:0 0 0 3px rgba(0,229,255,.25)}
 .gxp-avbtn.off{opacity:.35;cursor:not-allowed}
 .gxp-coupons{display:grid;gap:8px}
-.gxp-coupon{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.05);border-radius:14px;padding:10px 12px}
-.gxp-coupon.dead{opacity:.5;border-color:rgba(255,255,255,.1);background:transparent}
-.gxp-coupon b{font-family:ui-monospace,monospace;letter-spacing:.08em;color:#6ee7b7}
-.gxp-coupon em{display:block;font-style:normal;font-size:11px;color:#8b90a0}
+.gxp-coupon{position:relative;display:grid;gap:9px;border:1px solid rgba(16,185,129,.32);background:linear-gradient(135deg,rgba(16,185,129,.10),rgba(16,185,129,.02));border-radius:16px;padding:12px 14px;overflow:hidden}
+.gxp-coupon::before{content:"";position:absolute;top:0;bottom:0;inset-inline-start:0;width:4px;background:linear-gradient(180deg,#34d399,#0ea5a4)}
+.gxp-coupon.soon{border-color:rgba(245,158,11,.45);background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(245,158,11,.02))}
+.gxp-coupon.soon::before{background:linear-gradient(180deg,#fbbf24,#f59e0b)}
+.gxp-coupon.dead{border-color:rgba(255,255,255,.10);background:rgba(255,255,255,.02);opacity:.72}
+.gxp-coupon.dead::before{background:rgba(255,255,255,.14)}
+.gxp-coupon-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.gxp-coupon-off{font-size:16px;font-weight:900;color:#eafff6;display:flex;align-items:baseline;gap:8px}
+.gxp-coupon.dead .gxp-coupon-off{color:#c3c7d1}
+.gxp-coupon-off .cap{font-size:11px;font-weight:700;color:#8b90a0}
+.gxp-coupon-tag{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:99px;background:rgba(0,229,255,.12);color:#7fe6ff;border:1px solid rgba(0,229,255,.25);white-space:nowrap}
+.gxp-coupon-tag.wheel{background:rgba(168,85,247,.14);color:#d8b4fe;border-color:rgba(168,85,247,.3)}
+.gxp-coupon-code{display:flex;align-items:center;gap:8px;border:1px dashed rgba(255,255,255,.16);border-radius:12px;padding:8px 10px;background:rgba(0,0,0,.22)}
+.gxp-coupon-code b{flex:1;min-width:0;font-family:ui-monospace,monospace;letter-spacing:.16em;font-size:14px;color:#6ee7b7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gxp-coupon.dead .gxp-coupon-code b{color:#9aa0ad;text-decoration:line-through}
+.gxp-eye{width:32px;height:32px;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#cfe9ff;cursor:pointer;transition:.15s}
+.gxp-eye:hover{border-color:#00e5ff;color:#00e5ff}
+.gxp-copy{flex:none;padding:6px 14px;font-size:12px}
+.gxp-coupon-foot{font-size:11.5px}
+.gxp-coupon-exp{color:#8b90a0}
+.gxp-coupon-exp.warn{color:#fbbf24;font-weight:800}
+.gxp-coupon-dead-tag{color:#f87171;font-weight:800}
 .gxp-badges{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px}
 .gxp-badge{border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:11px;text-align:center;opacity:.45}
 .gxp-badge.on{opacity:1;background:rgba(255,255,255,.04)}
