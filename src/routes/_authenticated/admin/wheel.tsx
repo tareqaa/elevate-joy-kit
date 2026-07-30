@@ -64,6 +64,8 @@ function WheelAdmin() {
   const qc = useQueryClient();
   const [edit, setEdit] = useState<Partial<PrizeRow> | null>(null);
   const [confirmDel, setConfirmDel] = useState<PrizeRow | null>(null);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const prizesQ = useQuery({
     queryKey: ["admin-wheel-prizes"],
