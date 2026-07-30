@@ -49,6 +49,14 @@ type OrderRow = {
   status: string;
   admin_notes: string | null;
   delivery_data: unknown;
+  subtotal_jod?: number | null;
+  paid_jod?: number | null;
+  discount_jod?: number | null;
+  coins_used?: number | null;
+  coins_discount_jod?: number | null;
+  coins_refunded?: number | null;
+  refunded_jod?: number | null;
+
   created_at: string;
 };
 
