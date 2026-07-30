@@ -521,7 +521,6 @@ function CreditBlock() {
         💳 {t("cart.credit_title")}
         <span className="gx-bal-pill" style={{ color: "#8ab4ff" }}>{format(balance)}</span>
       </div>
-      <div className="gx-help">{t("cart.credit_help")}</div>
       {cart.creditJOD > 0 ? (
         <div className="gx-coupon-applied" style={{ background: "rgba(138,180,255,.1)", borderColor: "rgba(138,180,255,.4)" }}>
           <div>
