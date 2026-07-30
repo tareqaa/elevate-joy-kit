@@ -98,10 +98,24 @@ function WheelAdmin() {
   });
 
   const prizes = prizesQ.data ?? [];
+  const activePrizes = useMemo(() => prizes.filter((p) => p.is_active), [prizes]);
+  const activeCount = activePrizes.length;
   const activeWeight = useMemo(
-    () => prizes.filter((p) => p.is_active).reduce((a, p) => a + (p.weight || 0), 0),
-    [prizes],
+    () => activePrizes.reduce((a, p) => a + (p.weight || 0), 0),
+    [activePrizes],
   );
+
+  const filteredSpins = useMemo(() => {
+    const rows = spinsQ.data ?? [];
+    const from = fromDate ? new Date(`${fromDate}T00:00:00`).getTime() : null;
+    const to = toDate ? new Date(`${toDate}T23:59:59`).getTime() : null;
+    return rows.filter((r) => {
+      const t = new Date(r.spun_at).getTime();
+      if (from !== null && t < from) return false;
+      if (to !== null && t > to) return false;
+      return true;
+    });
+  }, [spinsQ.data, fromDate, toDate]);
 
   const saveM = useMutation({
     mutationFn: async (row: Partial<PrizeRow>) => {
