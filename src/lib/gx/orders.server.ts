@@ -155,30 +155,37 @@ export async function createStoreOrder(input: CreateOrderInput) {
     }
   }
 
-  // GX Coins: deduct the redeemed balance and log the transaction.
-  if (input.coins && input.coins.coins > 0 && input.userId) {
-    try {
-      const { data: prof } = await supabase
-        .from("profiles").select("gx_coins").eq("id", input.userId).maybeSingle();
-      const balance = Number(prof?.gx_coins ?? 0);
-      const spend = Math.min(balance, input.coins.coins);
-      if (spend > 0) {
-        const after = balance - spend;
-        await supabase.from("profiles").update({ gx_coins: after }).eq("id", input.userId);
-        await supabase.from("gx_coin_transactions").insert({
-          user_id: input.userId,
-          order_id: data.id,
-          amount: -spend,
-          balance_after: after,
-          kind: "spend",
-          source: "order_checkout",
-          reason: `خصم على الطلب ${data.order_number}`,
-        });
-      }
-    } catch (e) {
-      console.warn("[GX] coins spend failed", e);
+  // GX Coins: deduct exactly what the order recorded, never more, never partially.
+  if (coinsUsed > 0 && input.userId) {
+    const { data: prof } = await supabase
+      .from("profiles").select("gx_coins").eq("id", input.userId).maybeSingle();
+    const balance = Number(prof?.gx_coins ?? 0);
+    if (balance < coinsUsed) {
+      // Balance changed since the pre-check: strip the discount from the order
+      // instead of granting free money.
+      await supabase.from("orders").update({
+        coins_used: 0,
+        coins_discount_jod: 0,
+        discount_jod: couponDiscount + creditJod,
+        total_jod: Number(input.totalJOD) + coinsDiscount,
+        paid_jod: Number(input.totalJOD) + coinsDiscount,
+      }).eq("id", data.id);
+      throw new Error("رصيد GX Coins غير كافٍ — تم إلغاء الخصم");
     }
+    const after = balance - coinsUsed;
+    await supabase.from("profiles").update({ gx_coins: after }).eq("id", input.userId);
+    await supabase.from("gx_coin_transactions").insert({
+      user_id: input.userId,
+      order_id: data.id,
+      amount: -coinsUsed,
+      balance_after: after,
+      kind: "spend",
+      source: "order_checkout",
+      reason: `خصم على الطلب ${data.order_number}`,
+      metadata: { balance_before: balance, coins_discount_jod: coinsDiscount },
+    });
   }
+
 
   // Store credit (refund balance): deduct and log the transaction.
   const wantedCredit = Math.max(0, Number(input.creditJod ?? 0));
