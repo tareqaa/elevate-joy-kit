@@ -396,10 +396,15 @@ function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: ()
         if (error) throw error;
       }
       if (credit) {
-        const { error } = await supabase.rpc("admin_adjust_store_credit", {
+        if (credit < 0 && Math.abs(credit) > Number(user!.store_credit_jod ?? 0)) {
+          throw new Error("المبلغ المسحوب أكبر من رصيد المستخدم");
+        }
+        const { data, error } = await supabase.rpc("admin_adjust_store_credit", {
           _user_id: user!.id, _amount: credit, _reason: reason.trim(),
         });
         if (error) throw error;
+        const res = data as { ok?: boolean; message?: string } | null;
+        if (res && res.ok === false) throw new Error(res.message || "تعذّر تعديل الرصيد");
       }
     },
     onSuccess: () => {
@@ -482,7 +487,22 @@ function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: ()
                       <Button key={n} size="sm" variant="outline" className="text-[11px] h-7"
                         onClick={() => setCreditDelta(String(n))}>+{n} د.أ</Button>
                     ))}
+                    {[1, 5].map((n) => (
+                      <Button key={`mc${n}`} size="sm" variant="outline"
+                        className="text-[11px] h-7 text-rose-300 border-rose-500/40"
+                        disabled={Number(user.store_credit_jod ?? 0) <= 0}
+                        onClick={() => setCreditDelta(String(-Math.min(n, Number(user.store_credit_jod ?? 0))))}>
+                        −{n} د.أ
+                      </Button>
+                    ))}
+                    <Button size="sm" variant="outline"
+                      className="text-[11px] h-7 text-rose-300 border-rose-500/40"
+                      disabled={Number(user.store_credit_jod ?? 0) <= 0}
+                      onClick={() => setCreditDelta(String(-Number(user.store_credit_jod ?? 0)))}>
+                      سحب كامل الرصيد
+                    </Button>
                   </div>
+
                   <Input placeholder="سبب التعديل (إلزامي)" value={reason} onChange={(e) => setReason(e.target.value)} />
                   <Button className="bg-cyan-500 hover:bg-cyan-400 text-black w-full"
                     onClick={() => adjust.mutate()} disabled={adjust.isPending}>

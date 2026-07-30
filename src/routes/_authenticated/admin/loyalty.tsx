@@ -269,12 +269,19 @@ function CustomersTab({ profiles, loading }: { profiles: ProfileRow[]; loading: 
     mutationFn: async () => {
       if (!creditTarget) return;
       if (!creditReason.trim()) throw new Error("السبب مطلوب");
-      const { error } = await supabase.rpc("admin_adjust_store_credit", {
+      const amount = Number(credit) || 0;
+      if (!amount) throw new Error("أدخل مبلغاً صحيحاً");
+      if (amount < 0 && Math.abs(amount) > (creditTarget.balance ?? 0)) {
+        throw new Error("المبلغ المسحوب أكبر من رصيد المستخدم");
+      }
+      const { data, error } = await supabase.rpc("admin_adjust_store_credit", {
         _user_id: creditTarget.id,
-        _amount: Number(credit) || 0,
+        _amount: amount,
         _reason: creditReason.trim(),
       });
       if (error) throw error;
+      const res = data as { ok?: boolean; message?: string } | null;
+      if (res && res.ok === false) throw new Error(res.message || "تعذّر التعديل");
     },
     onSuccess: () => {
       toast.success("تم تعديل رصيد المتجر");
@@ -423,9 +430,19 @@ function CustomersTab({ profiles, loading }: { profiles: ProfileRow[]; loading: 
               {[1, 5, 10, 20].map((v) => (
                 <Button key={v} type="button" size="sm" variant="outline" onClick={() => setCredit(String(v))}>+{v}</Button>
               ))}
-              <Button type="button" size="sm" variant="outline" className="text-rose-300 border-rose-500/40"
-                onClick={() => setCredit(String(-(creditTarget?.balance ?? 0)))}>تصفير الرصيد</Button>
             </div>
+            <div className="flex gap-2 flex-wrap">
+              {[1, 5, 10, 20].map((v) => (
+                <Button key={`m${v}`} type="button" size="sm" variant="outline"
+                  className="text-rose-300 border-rose-500/40"
+                  disabled={(creditTarget?.balance ?? 0) <= 0}
+                  onClick={() => setCredit(String(-Math.min(v, creditTarget?.balance ?? 0)))}>−{v}</Button>
+              ))}
+              <Button type="button" size="sm" variant="outline" className="text-rose-300 border-rose-500/40"
+                disabled={(creditTarget?.balance ?? 0) <= 0}
+                onClick={() => setCredit(String(-(creditTarget?.balance ?? 0)))}>سحب كامل الرصيد</Button>
+            </div>
+
             <Field label="السبب (إلزامي)">
               <Input value={creditReason} onChange={(e) => setCreditReason(e.target.value)} placeholder="مثال: استرجاع طلب ملغى" />
             </Field>
