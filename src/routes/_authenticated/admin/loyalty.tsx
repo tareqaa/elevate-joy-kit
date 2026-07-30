@@ -423,9 +423,19 @@ function CustomersTab({ profiles, loading }: { profiles: ProfileRow[]; loading: 
               {[1, 5, 10, 20].map((v) => (
                 <Button key={v} type="button" size="sm" variant="outline" onClick={() => setCredit(String(v))}>+{v}</Button>
               ))}
-              <Button type="button" size="sm" variant="outline" className="text-rose-300 border-rose-500/40"
-                onClick={() => setCredit(String(-(creditTarget?.balance ?? 0)))}>تصفير الرصيد</Button>
             </div>
+            <div className="flex gap-2 flex-wrap">
+              {[1, 5, 10, 20].map((v) => (
+                <Button key={`m${v}`} type="button" size="sm" variant="outline"
+                  className="text-rose-300 border-rose-500/40"
+                  disabled={(creditTarget?.balance ?? 0) <= 0}
+                  onClick={() => setCredit(String(-Math.min(v, creditTarget?.balance ?? 0)))}>−{v}</Button>
+              ))}
+              <Button type="button" size="sm" variant="outline" className="text-rose-300 border-rose-500/40"
+                disabled={(creditTarget?.balance ?? 0) <= 0}
+                onClick={() => setCredit(String(-(creditTarget?.balance ?? 0)))}>سحب كامل الرصيد</Button>
+            </div>
+
             <Field label="السبب (إلزامي)">
               <Input value={creditReason} onChange={(e) => setCreditReason(e.target.value)} placeholder="مثال: استرجاع طلب ملغى" />
             </Field>
