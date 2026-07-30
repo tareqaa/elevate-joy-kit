@@ -121,13 +121,13 @@ function CartList() {
                 </div>
               )}
             </div>
-            <div className="cr-qty">
-              <button onClick={() => cart.changeQty(it.cartId, -1)}>−</button>
+            <div className="cr-qty" aria-label={t("cart.qty")}>
+              <button aria-label="−" onClick={() => cart.changeQty(it.cartId, -1)}>−</button>
               <span>{it.qty}</span>
-              <button disabled={isSnap} onClick={() => cart.changeQty(it.cartId, 1)}>+</button>
+              <button aria-label="+" disabled={isSnap} onClick={() => cart.changeQty(it.cartId, 1)}>+</button>
             </div>
             <div className="cr-price">{format(it.price * it.qty)}</div>
-            <button className="cr-remove" onClick={() => cart.remove(it.cartId)}>✕</button>
+            <button className="cr-remove" title={t("cart.remove_item")} aria-label={t("cart.remove_item")} onClick={() => cart.remove(it.cartId)}>✕</button>
           </div>
         );
       })}
