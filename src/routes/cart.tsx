@@ -481,6 +481,7 @@ function CoinsBlock() {
 function CreditBlock() {
   const cart = useCart();
   const { format } = useCurrency();
+  const { t } = useLang();
   const [balance, setBalance] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
