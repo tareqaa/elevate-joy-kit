@@ -307,15 +307,17 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
             }}
           >
             <defs>
-              {prizes.map((p) => {
-                const c = prizeColor(p);
+              {prizes.map((p, i) => {
+                const c = segColor(p, i);
                 return (
-                  <linearGradient key={p.id} id={`gxw-g-${p.id}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={shade(c, 0.22)} />
-                    <stop offset="100%" stopColor={shade(c, -0.4)} />
+                  <linearGradient key={p.id} id={`gxw-g-${p.id}`} x1="0.1" y1="0" x2="0.9" y2="1">
+                    <stop offset="0%" stopColor={shade(c, 0.28)} />
+                    <stop offset="55%" stopColor={c} />
+                    <stop offset="100%" stopColor={shade(c, -0.42)} />
                   </linearGradient>
                 );
               })}
+
               <radialGradient id="gxw-gloss" cx="50%" cy="28%" r="72%">
                 <stop offset="0%" stopColor="#fff" stopOpacity="0.22" />
                 <stop offset="55%" stopColor="#fff" stopOpacity="0.04" />
