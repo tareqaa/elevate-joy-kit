@@ -296,7 +296,7 @@ export function Navbar() {
   };
 
 
-  const displayName = profile?.full_name || profile?.username || (profile?.email?.split("@")[0]) || t("nav.account");
+  const displayName = profile?.username || (profile?.email?.split("@")[0]) || t("nav.account");
   const username = profile?.username;
   const initials = (displayName || profile?.email || "GX").trim().slice(0, 2).toUpperCase();
   const avatarUrl = profile?.avatar_url || "";

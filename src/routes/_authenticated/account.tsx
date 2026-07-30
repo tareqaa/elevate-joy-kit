@@ -126,7 +126,7 @@ function AccountPage() {
 
 
   const username = profileQ.data?.username || user.user_metadata?.username || user.email?.split("@")[0] || "gx";
-  const displayName = profileQ.data?.full_name || username;
+  const displayName = username;
   const heroAvatar = profileQ.data?.avatar_url || "";
   const heroInitials = (displayName || user.email || "GX").trim().slice(0, 2).toUpperCase();
   const locale = lang === "ar" ? "ar-EG" : "en-US";
