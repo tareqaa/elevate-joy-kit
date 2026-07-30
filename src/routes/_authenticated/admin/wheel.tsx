@@ -99,6 +99,48 @@ function WheelAdmin() {
     },
   });
 
+  const [grantTarget, setGrantTarget] = useState("");
+  const [grantCount, setGrantCount] = useState("1");
+
+  const bonusQ = useQuery({
+    queryKey: ["admin-wheel-bonus"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("wheel_bonus_spins")
+        .select("user_id, spins, updated_at")
+        .gt("spins", 0)
+        .order("updated_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      const rows = (data ?? []) as { user_id: string; spins: number; updated_at: string }[];
+      const ids = Array.from(new Set(rows.map((r) => r.user_id)));
+      const names = new Map<string, string>();
+      if (ids.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, username, email").in("id", ids);
+        (profs ?? []).forEach((p: { id: string; username: string | null; email: string | null }) =>
+          names.set(p.id, p.username || p.email || p.id.slice(0, 8)));
+      }
+      return rows.map((r) => ({ ...r, who: names.get(r.user_id) ?? r.user_id.slice(0, 8) }));
+    },
+  });
+
+  const grantM = useMutation({
+    mutationFn: async ({ target, count }: { target: string; count: number }) => {
+      const t = target.trim();
+      if (!t) throw new Error("أدخل إيميل أو اسم المستخدم");
+      if (!count || Number.isNaN(count)) throw new Error("أدخل عدد لفات صحيح");
+      const { data, error } = await (supabase as any).rpc("admin_grant_wheel_spins", { _target: t, _count: count });
+      if (error) throw error;
+      return data as { email?: string; spins?: number };
+    },
+    onSuccess: (d) => {
+      toast.success(`تم التحديث — الرصيد الحالي: ${d?.spins ?? 0} لفة`);
+      void qc.invalidateQueries({ queryKey: ["admin-wheel-bonus"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
   const prizes = prizesQ.data ?? [];
   const activePrizes = useMemo(() => prizes.filter((p) => p.is_active), [prizes]);
   const activeCount = activePrizes.length;
