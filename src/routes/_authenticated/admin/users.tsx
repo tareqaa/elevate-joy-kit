@@ -482,7 +482,22 @@ function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: ()
                       <Button key={n} size="sm" variant="outline" className="text-[11px] h-7"
                         onClick={() => setCreditDelta(String(n))}>+{n} د.أ</Button>
                     ))}
+                    {[1, 5].map((n) => (
+                      <Button key={`mc${n}`} size="sm" variant="outline"
+                        className="text-[11px] h-7 text-rose-300 border-rose-500/40"
+                        disabled={Number(user.store_credit_jod ?? 0) <= 0}
+                        onClick={() => setCreditDelta(String(-Math.min(n, Number(user.store_credit_jod ?? 0))))}>
+                        −{n} د.أ
+                      </Button>
+                    ))}
+                    <Button size="sm" variant="outline"
+                      className="text-[11px] h-7 text-rose-300 border-rose-500/40"
+                      disabled={Number(user.store_credit_jod ?? 0) <= 0}
+                      onClick={() => setCreditDelta(String(-Number(user.store_credit_jod ?? 0)))}>
+                      سحب كامل الرصيد
+                    </Button>
                   </div>
+
                   <Input placeholder="سبب التعديل (إلزامي)" value={reason} onChange={(e) => setReason(e.target.value)} />
                   <Button className="bg-cyan-500 hover:bg-cyan-400 text-black w-full"
                     onClick={() => adjust.mutate()} disabled={adjust.isPending}>
