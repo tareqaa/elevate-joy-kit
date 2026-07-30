@@ -216,7 +216,6 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                   <IdentityEditor
                     isAr={isAr}
                     userId={myId!}
-                    currentName={p.full_name || ""}
                     currentUsername={p.username}
                     onSaved={(newTag) => {
                       setEditOpen(false);
@@ -400,10 +399,9 @@ function Rule({ icon, title, text }: { icon: string; title: string; text: string
   );
 }
 
-function IdentityEditor({ isAr, userId, currentName, currentUsername, onSaved }: {
-  isAr: boolean; userId: string; currentName: string; currentUsername: string; onSaved: (tag: string) => void;
+function IdentityEditor({ isAr, userId, currentUsername, onSaved }: {
+  isAr: boolean; userId: string; currentUsername: string; onSaved: (tag: string) => void;
 }) {
-  const [name, setName] = useState(currentName);
   const [tag, setTag] = useState(currentUsername);
   const [saving, setSaving] = useState(false);
   const [check, setCheck] = useState<{ s: "idle" | "checking" | "ok" | "taken" | "invalid"; m?: string }>({ s: "idle" });
@@ -427,14 +425,12 @@ function IdentityEditor({ isAr, userId, currentName, currentUsername, onSaved }:
   }, [tag, currentUsername, userId, isAr]);
 
   async function save() {
-    const n = name.trim();
     const v = tag.trim();
-    if (n.length < 2) { toast.error(isAr ? "الاسم قصير جداً" : "Name is too short"); return; }
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(v)) { toast.error(isAr ? "اسم مستخدم غير صالح" : "Invalid username"); return; }
     if (check.s === "taken") { toast.error(isAr ? "اسم المستخدم محجوز" : "Username is taken"); return; }
     setSaving(true);
-    const { error } = await supabase.from("profiles").update({ full_name: n, username: v }).eq("id", userId);
-    if (!error) await supabase.auth.updateUser({ data: { full_name: n, username: v } });
+    const { error } = await supabase.from("profiles").update({ username: v }).eq("id", userId);
+    if (!error) await supabase.auth.updateUser({ data: { username: v } });
     setSaving(false);
     if (error) {
       toast.error((error as { code?: string }).code === "23505"
@@ -450,11 +446,6 @@ function IdentityEditor({ isAr, userId, currentName, currentUsername, onSaved }:
     <div className="gxp-card gxp-edit-card">
       <h3 className="gxp-h">✏️ {isAr ? "تعديل الملف الشخصي" : "Edit profile"}</h3>
       <div className="gxp-fields">
-        <label>
-          <span>{isAr ? "الاسم الظاهر" : "Display name"}</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60}
-            placeholder={isAr ? "اسمك" : "Your name"} />
-        </label>
         <label>
           <span>{isAr ? "اسم المستخدم" : "Username"}</span>
           <input dir="ltr" value={tag} onChange={(e) => setTag(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
