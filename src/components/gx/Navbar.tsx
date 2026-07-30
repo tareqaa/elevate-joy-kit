@@ -153,7 +153,7 @@ export function Navbar() {
   useEffect(() => {
     if (!session) {
       setProfile(null); setIsAdmin(false); setCanReview(false);
-      try { localStorage.removeItem("gx_profile_cache"); localStorage.removeItem("gx_is_admin"); } catch { /* noop */ }
+      try { localStorage.removeItem("gx_profile_cache"); } catch { /* noop */ }
       return;
     }
     (async () => {
@@ -169,7 +169,7 @@ export function Navbar() {
       try {
         const { data: adminData } = await supabase.rpc("has_role", { _user_id: session.userId, _role: "admin" });
         setIsAdmin(!!adminData);
-        try { localStorage.setItem("gx_is_admin", adminData ? "1" : "0"); } catch { /* noop */ }
+        } catch { setIsAdmin(false); }
       } catch { /* keep cached */ }
       try {
         const { count } = await supabase.from("orders")
