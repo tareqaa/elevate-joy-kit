@@ -16,6 +16,92 @@ type PublicProfile = {
 /** Badges section is temporarily hidden; flip to true to show it again. */
 const SHOW_BADGES = false;
 
+type UserCouponRow = {
+  id: string; code: string; percent: number; max_discount_jod: number | null;
+  expires_at: string; used_at: string | null; level_code: string | null;
+};
+
+function formatWhen(iso: string, isAr: boolean) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return new Intl.DateTimeFormat(isAr ? "ar-JO" : "en-GB", {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  }).format(d);
+}
+
+/** One coupon card: code hidden behind dots until the eye button reveals it. */
+function CouponCard({ c, dead, isAr }: { c: UserCouponRow; dead: boolean; isAr: boolean }) {
+  const [shown, setShown] = useState(false);
+  const expMs = new Date(c.expires_at).getTime();
+  const expired = !c.used_at && expMs < Date.now();
+  const soon = !dead && expMs - Date.now() < 24 * 60 * 60 * 1000;
+  const fromWheel = (c.level_code || "").toLowerCase().includes("wheel");
+
+  const copy = () => {
+    if (!shown) { toast.error(isAr ? "اكشف الكود أولاً" : "Reveal the code first"); return; }
+    navigator.clipboard?.writeText(c.code);
+    toast.success(isAr ? "تم النسخ" : "Copied");
+  };
+
+  return (
+    <div className={`gxp-coupon${dead ? " dead" : ""}${soon ? " soon" : ""}`}>
+      <div className="gxp-coupon-top">
+        <div className="gxp-coupon-off">
+          {isAr ? `خصم ${c.percent}%` : `${c.percent}% OFF`}
+          {c.max_discount_jod ? (
+            <span className="cap">{isAr ? `حتى ${c.max_discount_jod} د.أ` : `up to ${c.max_discount_jod} JOD`}</span>
+          ) : null}
+        </div>
+        <span className={`gxp-coupon-tag${fromWheel ? " wheel" : ""}`}>
+          {fromWheel
+            ? (isAr ? "🎡 عجلة الحظ" : "🎡 Lucky wheel")
+            : (isAr ? "🏆 مكافأة مستوى" : "🏆 Level reward")}
+        </span>
+      </div>
+
+      <div className="gxp-coupon-code">
+        <b dir="ltr">{shown ? c.code : "•".repeat(Math.max(8, Math.min(14, c.code.length)))}</b>
+        <button
+          type="button" className="gxp-eye" onClick={() => setShown((v) => !v)}
+          aria-label={shown ? (isAr ? "إخفاء الكود" : "Hide code") : (isAr ? "إظهار الكود" : "Show code")}
+          title={shown ? (isAr ? "إخفاء" : "Hide") : (isAr ? "إظهار" : "Show")}
+        >
+          {shown ? (
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a17.6 17.6 0 0 1-2.16 3.19M6.6 6.6A17.9 17.9 0 0 0 2 12s3 8 10 8a9 9 0 0 0 5.4-1.6" />
+              <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24M2 2l20 20" />
+            </svg>
+          ) : (
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 12s3-8 10-8 10 8 10 8-3 8-10 8S2 12 2 12z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          )}
+        </button>
+        <button type="button" className="btn btn-ghost gxp-copy" disabled={dead} onClick={copy}>
+          {isAr ? "نسخ" : "Copy"}
+        </button>
+      </div>
+
+      <div className="gxp-coupon-foot">
+        {dead ? (
+          <span className="gxp-coupon-dead-tag">
+            {c.used_at
+              ? (isAr ? "❌ مستخدم — غير صالح" : "❌ Used — no longer valid")
+              : (isAr ? "❌ منتهي الصلاحية — غير صالح" : "❌ Expired — no longer valid")}
+          </span>
+        ) : (
+          <span className={`gxp-coupon-exp${soon ? " warn" : ""}`}>
+            {isAr ? "ينتهي في " : "Expires "}{formatWhen(c.expires_at, isAr)}
+            {soon ? (isAr ? " — ينتهي خلال أقل من 24 ساعة!" : " — less than 24h left!") : ""}
+          </span>
+        )}
+        {expired && !c.used_at ? null : null}
+      </div>
+    </div>
+  );
+}
+
 /** Unified GX profile: identity + loyalty + coupons + badges + avatars + search + leaderboard. */
 export function GxProfile({ username: usernameProp }: { username?: string }) {
   const { lang, dir } = useLang();
