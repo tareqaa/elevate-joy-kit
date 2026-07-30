@@ -117,6 +117,7 @@ export function Navbar() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [canReview, setCanReview] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [wheelOpen, setWheelOpen] = useState(false);
   // Admin state lives in memory only — never in localStorage, which any user
   // could forge to reveal the admin entry. It is always (re)verified against
   // has_role() in the database below.
