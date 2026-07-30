@@ -350,29 +350,29 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
                   />
                   <g transform={`rotate(${mid - 90} 150 150)`}>
                     <text
-                      x="268"
+                      x="226"
                       y="150"
                       fill="#ffffff"
-                      fontSize={prizes.length > 8 ? 11 : 12.5}
-                      fontWeight="800"
-                      textAnchor="end"
+                      fontSize={prizes.length > 8 ? 11.5 : 13}
+                      fontWeight="900"
+                      textAnchor="middle"
                       dominantBaseline="central"
-                      textLength={label.length > 13 ? 108 : undefined}
+                      textLength={label.length > 11 ? 96 : undefined}
                       lengthAdjust="spacingAndGlyphs"
                       style={{
                         paintOrder: "stroke",
                         fontFamily: "inherit",
-                        letterSpacing: "0px",
                         direction: "rtl",
                         unicodeBidi: "plaintext",
                       }}
-                      stroke="rgba(0,0,0,0.55)"
-                      strokeWidth="2.8"
+                      stroke="rgba(0,0,0,0.5)"
+                      strokeWidth="3"
                       strokeLinejoin="round"
                     >
                       {label}
                     </text>
                   </g>
+
                   {/* separator */}
                   <line
                     x1="150"
