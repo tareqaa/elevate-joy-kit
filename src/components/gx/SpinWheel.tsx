@@ -117,26 +117,23 @@ function rewardSummary(r: SpinResult) {
   }
 }
 
-/** Fit a prize label into the segment: 2 lines max, ellipsis at the end. */
-function labelLines(name: string, perLine: number) {
-  const words = name.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let cur = "";
-  for (const w of words) {
-    if (!cur) cur = w;
-    else if ((cur + " " + w).length <= perLine) cur += " " + w;
-    else {
-      lines.push(cur);
-      cur = w;
-    }
-    if (lines.length === 2) break;
-  }
-  if (lines.length < 2 && cur) lines.push(cur);
-  const out = lines.slice(0, 2);
-  if (out.length === 2 && out[1].length > perLine) out[1] = `${out[1].slice(0, perLine - 1)}…`;
-  if (out.length === 1 && out[0].length > perLine) out[0] = `${out[0].slice(0, perLine - 1)}…`;
-  return out;
+/** One clean line per segment — no emoji, never spills out of the wheel. */
+function segLabel(name: string) {
+  const clean = (name || "").replace(/\s+/g, " ").trim();
+  return clean.length > 18 ? `${clean.slice(0, 17)}…` : clean;
 }
+
+/** Curated wheel palette — richer than raw DB colors, still rarity-aware. */
+const WHEEL_PALETTE = ["#0ea5e9", "#7c3aed", "#f59e0b", "#10b981", "#ec4899", "#3b82f6", "#f97316", "#8b5cf6"];
+const RARITY_PALETTE: Record<string, string> = {
+  legendary: "#f59e0b",
+  epic: "#a855f7",
+};
+
+function segColor(p: { color?: string | null; rarity?: string | null }, i: number) {
+  return RARITY_PALETTE[p.rarity || ""] || WHEEL_PALETTE[i % WHEEL_PALETTE.length];
+}
+
 
 const WHEEL_CSS = `
 @keyframes gxw-bulbs { 0%,100% { opacity:1 } 50% { opacity:.25 } }
