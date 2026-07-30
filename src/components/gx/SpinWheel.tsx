@@ -340,7 +340,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
             {prizes.map((p, i) => {
               const start = i * seg;
               const mid = start + seg / 2;
-              const lines = labelLines(p.name, perLine);
+              const label = segLabel(p.name);
               return (
                 <g key={p.id}>
                   <path
@@ -350,26 +350,29 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
                     strokeWidth="1"
                   />
                   <g transform={`rotate(${mid - 90} 150 150)`}>
-                    <text x="266" y="150" fontSize="19" textAnchor="middle" dominantBaseline="central">
-                      {p.icon || "🎁"}
+                    <text
+                      x="268"
+                      y="150"
+                      fill="#ffffff"
+                      fontSize={prizes.length > 8 ? 11 : 12.5}
+                      fontWeight="800"
+                      textAnchor="end"
+                      dominantBaseline="central"
+                      textLength={label.length > 13 ? 108 : undefined}
+                      lengthAdjust="spacingAndGlyphs"
+                      style={{
+                        paintOrder: "stroke",
+                        fontFamily: "inherit",
+                        letterSpacing: "0px",
+                        direction: "rtl",
+                        unicodeBidi: "plaintext",
+                      }}
+                      stroke="rgba(0,0,0,0.55)"
+                      strokeWidth="2.8"
+                      strokeLinejoin="round"
+                    >
+                      {label}
                     </text>
-                    {lines.map((ln, li) => (
-                      <text
-                        key={li}
-                        x="240"
-                        y={150 + (lines.length === 1 ? 0 : li === 0 ? -7.5 : 7.5)}
-                        fill="#fff"
-                        fontSize={prizes.length > 8 ? 10 : 11.5}
-                        fontWeight="800"
-                        textAnchor="end"
-                        dominantBaseline="central"
-                        style={{ paintOrder: "stroke", letterSpacing: "0.2px" }}
-                        stroke="rgba(0,0,0,0.42)"
-                        strokeWidth="2.6"
-                      >
-                        {ln}
-                      </text>
-                    ))}
                   </g>
                   {/* separator */}
                   <line
@@ -377,12 +380,13 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
                     y1="150"
                     x2={polar(150, 150, 138, start)[0]}
                     y2={polar(150, 150, 138, start)[1]}
-                    stroke="rgba(251,191,36,0.45)"
-                    strokeWidth="1.2"
+                    stroke="rgba(255,255,255,0.28)"
+                    strokeWidth="1.1"
                   />
                 </g>
               );
             })}
+
 
             {/* gloss + bulbs */}
             <circle cx="150" cy="150" r="138" fill="url(#gxw-gloss)" pointerEvents="none" />
