@@ -396,7 +396,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
           {/* pointer */}
           <div
             className={`absolute left-1/2 -translate-x-1/2 -top-2 z-20 ${spinning ? "gxw-ticking" : ""}`}
-            style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,.6))" }}
+            style={spinning ? undefined : { filter: "drop-shadow(0 4px 10px rgba(0,0,0,.6))" }}
           >
             <svg width="38" height="52" viewBox="0 0 38 52">
               <path d="M19 50 L4 16 A16 16 0 1 1 34 16 Z" fill="url(#gxw-rim2)" stroke="#fff7ed" strokeWidth="1.6" />
