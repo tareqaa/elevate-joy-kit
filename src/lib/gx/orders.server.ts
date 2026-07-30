@@ -114,6 +114,8 @@ export async function createStoreOrder(input: CreateOrderInput) {
       user_coupon_id: input.coupon?.userCouponId ?? null,
       coins_used: coinsUsed,
       coins_discount_jod: coinsDiscount,
+      // Recorded as 0 here; set to the amount actually taken from the balance below.
+      credit_used_jod: 0,
       paid_jod: input.totalJOD,
     })
     .select("id, order_number")
