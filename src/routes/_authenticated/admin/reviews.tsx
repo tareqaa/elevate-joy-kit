@@ -79,7 +79,7 @@ function AdminReviewsPage() {
   const stats = useMemo(() => ({
     total: rows.length,
     pending: rows.filter((r) => r.status === "pending").length,
-    published: rows.filter((r) => r.status === "approved" && r.is_featured && r.rating >= 4).length,
+    published: rows.filter((r) => r.status === "approved" && r.is_featured).length,
     avg: rows.length ? (rows.reduce((s, r) => s + r.rating, 0) / rows.length).toFixed(1) : "—",
   }), [rows]);
 
@@ -92,7 +92,7 @@ function AdminReviewsPage() {
           <MessageSquare className="w-6 h-6 text-cyan-400" /> إدارة المراجعات
         </h1>
         <p className="text-sm text-slate-400 mt-1">
-          كل مراجعة تصل هنا أولاً. المنشور على الصفحة الرئيسية = معتمد + مميّز + 4 نجوم فأكثر.
+          كل المراجعات تظهر هنا. تقدر تعدّل أي مراجعة وتنقل أي وحدة منها للصفحة الرئيسية بضغطة واحدة.
         </p>
       </div>
 
@@ -124,6 +124,7 @@ function AdminReviewsPage() {
             const dirty = draft.comment !== r.comment || draft.rating !== r.rating || draft.name !== (r.display_name || "");
             const flagged = containsProfanity(r.comment);
             const eligible = isAutoEligible(r.rating, r.comment);
+            const onHome = r.status === "approved" && r.is_featured;
             return (
               <div key={r.id} className="rv-card space-y-3">
                 <div className="flex items-start justify-between gap-3">
@@ -141,7 +142,7 @@ function AdminReviewsPage() {
 
                   </div>
                   <span className={`rv-pill ${r.status === "approved" ? "!text-emerald-300 !border-emerald-500/30" : r.status === "pending" ? "!text-amber-300 !border-amber-500/30" : "!text-rose-300 !border-rose-500/30"}`}>
-                    {statusLabel(r.status)}{r.is_featured ? " • مميّز" : ""}
+                    {statusLabel(r.status)}{onHome ? " • على الرئيسية" : r.is_featured ? " • مميّز" : ""}
                   </span>
                 </div>
 
@@ -162,7 +163,7 @@ function AdminReviewsPage() {
                 {!eligible && (
                   <div className="flex items-center gap-2 text-[11.5px] text-amber-300/90">
                     <AlertTriangle size={13} />
-                    {flagged ? "تحتوي ألفاظاً غير لائقة — لن تظهر على الرئيسية" : "أقل من 4 نجوم — لن تظهر على الرئيسية"}
+                    {flagged ? "تنبيه: تحتوي ألفاظاً غير لائقة" : "تنبيه: أقل من 4 نجوم"}
                   </div>
                 )}
 
@@ -175,8 +176,11 @@ function AdminReviewsPage() {
                   <button className="rv-btn rv-ok" onClick={() => patch(r.id, { status: "approved" })}><Check size={13} /> اعتماد</button>
                   <button className="rv-btn rv-no" onClick={() => patch(r.id, { status: "rejected" })}><X size={13} /> رفض</button>
                   <button className="rv-btn rv-mut" onClick={() => patch(r.id, { status: "hidden" })}><EyeOff size={13} /> إخفاء</button>
-                  <button className="rv-btn rv-mut" onClick={() => patch(r.id, { is_featured: !r.is_featured })}>
-                    <Sparkles size={13} /> {r.is_featured ? "إلغاء التمييز" : "تمييز"}
+                  <button
+                    className={`rv-btn ${onHome ? "rv-mut" : "rv-ok"}`}
+                    onClick={() => patch(r.id, onHome ? { is_featured: false } : { is_featured: true, status: "approved" })}
+                  >
+                    <Sparkles size={13} /> {onHome ? "إزالة من الرئيسية" : "نشر على الرئيسية"}
                   </button>
                   <button className="rv-btn rv-no" onClick={() => remove(r.id)}><Trash2 size={13} /> حذف</button>
                 </div>
