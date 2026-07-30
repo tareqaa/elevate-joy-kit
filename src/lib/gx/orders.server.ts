@@ -68,8 +68,51 @@ function getAdminClient() {
 /** 1000 GX Coins = 1 JOD */
 const COINS_PER_JOD = 1000;
 
+/** Max cart lines accepted in a single order (matches the DB guard). */
+const MAX_CART_LINES = 30;
+
+/**
+ * Abuse / input guard applied before anything touches the database.
+ * Mirrors the `guard_order_insert` trigger so the user gets a clear Arabic
+ * message instead of a raw database error.
+ */
+function validateOrderInput(input: CreateOrderInput) {
+  const name = String(input.customerName ?? "").trim();
+  if (name && (name.length < 2 || name.length > 60)) {
+    throw new Error("الاسم غير صالح: يجب أن يكون بين حرفين و60 حرفاً");
+  }
+
+  const contact = String(input.customerWhatsapp ?? "").trim();
+  if (!contact) {
+    if (!input.userId) throw new Error("رقم التواصل مطلوب لإتمام الطلب");
+  } else {
+    if (contact.length > 30) throw new Error("رقم التواصل غير صالح: طويل جداً");
+    if (!/^[0-9+\-\s()]+$/.test(contact)) {
+      throw new Error("رقم التواصل غير صالح: استخدم أرقاماً فقط");
+    }
+    const digits = contact.replace(/\D/g, "");
+    if (digits.length < 7 || digits.length > 15) {
+      throw new Error("رقم التواصل غير صالح: تأكد من كتابة الرقم بشكل صحيح");
+    }
+  }
+
+  const items = Array.isArray(input.items) ? (input.items as unknown as any[]) : [];
+  if (items.length === 0) throw new Error("السلة فارغة");
+  if (items.length > MAX_CART_LINES) {
+    throw new Error(`عدد المنتجات في السلة كبير جداً (الحد الأقصى ${MAX_CART_LINES} منتجاً)`);
+  }
+  for (const it of items) {
+    const qty = Number(it?.qty ?? it?.quantity ?? 1);
+    if (!Number.isInteger(qty) || qty < 1 || qty > 99) {
+      throw new Error("الكمية غير صالحة: الحد الأقصى 99 لكل منتج");
+    }
+  }
+}
+
 export async function createStoreOrder(input: CreateOrderInput) {
+  validateOrderInput(input);
   const supabase = getAdminClient();
+
 
   const deliveryData: Record<string, unknown> = { ...(input.deliveryData ?? {}) };
   if (input.contactType) deliveryData.contact_type = input.contactType;
