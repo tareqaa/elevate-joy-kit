@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthModal } from "./AuthModal";
 import { CurrencyModal } from "./CurrencyModal";
 import { ReviewModal } from "./ReviewModal";
+import { SpinWheelModal } from "./SpinWheel";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizedProduct, localizedGiftCard } from "@/lib/gx/product-locale";
 
