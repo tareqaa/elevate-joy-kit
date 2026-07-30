@@ -816,11 +816,21 @@ function RefundBlock({ order, onDone }: { order: OrderWithEmail; onDone?: () => 
         )}
       </div>
 
-      {alreadyRefunded ? (
+      {order.status === "pending" ? (
+        <div className="text-xs text-amber-200/80 leading-relaxed">
+          الطلب لسه قيد الانتظار (غير مدفوع) — ما في مبلغ مدفوع عشان يترجع.
+          إذا بدك تلغيه، غيّر الحالة إلى «ملغى» وبيتم إرجاع GX Coins ورصيد المتجر المستخدمين تلقائياً بدون إنشاء Refund مالي.
+        </div>
+      ) : order.status === "cancelled" ? (
+        <div className="text-xs text-amber-200/80 leading-relaxed">
+          طلب ملغى — تم إرجاع GX Coins ورصيد المتجر المستخدمين تلقائياً، والاسترجاع المالي غير متاح.
+        </div>
+      ) : alreadyRefunded ? (
         <div className="text-xs text-fuchsia-200/80">تم استرجاع هذا الطلب — لا يمكن استرجاعه مرة ثانية.</div>
       ) : !order.user_id ? (
         <div className="text-xs text-cyan-100/50">طلب زائر غير مسجّل — الاسترجاع للرصيد متاح فقط للعملاء المسجّلين.</div>
       ) : (
+
         <>
           <p className="text-[11px] text-cyan-100/55 mb-3 leading-relaxed">
             الاسترجاع بيرجّع قيمة الطلب لرصيد العميل، وبنفس الوقت بيسحب تلقائياً كل ما منحه هذا الطلب:
