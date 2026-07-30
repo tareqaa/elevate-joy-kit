@@ -14,6 +14,7 @@ import { User as UserIcon, Package, ShieldCheck, Copy, Check } from "lucide-reac
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 import { GxProfile } from "@/components/gx/GxProfile";
+import { Pager, usePager } from "@/components/gx/Pager";
 
 type AccountTab = "profile" | "orders" | "security";
 
@@ -190,7 +191,7 @@ type OrderRow = {
 };
 
 function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }) {
-  const { t, dir } = useLang();
+  const { t, dir, lang } = useLang();
   const STATUS_TABS: Array<{ key: string; label: string; match: (s: string) => boolean }> = [
     { key: "pending", label: t("acc.status_pending"), match: (s) => s === "pending" },
     { key: "paid", label: t("acc.status_paid"), match: (s) => s === "paid" },
@@ -242,7 +243,11 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
           {t("acc.no_orders_here")} <Link to="/" className="text-primary underline">{t("acc.shop_now")}</Link>
         </CardContent></Card>
       ) : (
-        list.map((o) => <OrderCard key={o.id} order={o} />)
+        <>
+          {pager.slice.map((o) => <OrderCard key={o.id} order={o} />)}
+          <Pager page={pager.page} pageCount={pager.pageCount} total={pager.total} size={pager.size}
+            onPage={pager.setPage} onSize={pager.setSize} sizes={[5, 10, 20]} lang={lang === "ar" ? "ar" : "en"} />
+        </>
       )}
     </div>
   );
