@@ -49,6 +49,7 @@ const NAV: NavItem[] = [
   { to: "/admin/coupons", label: "الكوبونات", Icon: Ticket },
   { to: "/admin/reviews", label: "المراجعات", Icon: Star },
   { to: "/admin/loyalty", label: "نظام الولاء", Icon: Sparkles },
+  { to: "/admin/wheel", label: "عجلة الحظ", Icon: Disc3 },
   { to: "/admin/avatars", label: "الأفاتار", Icon: Smile },
   { to: "/admin/badges", label: "الشارات", Icon: Award },
   { to: "/admin/leaderboard", label: "المتصدرون", Icon: Trophy },
