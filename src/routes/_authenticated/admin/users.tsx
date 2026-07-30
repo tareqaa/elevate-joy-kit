@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { Pager, usePager } from "@/components/gx/Pager";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -131,6 +132,8 @@ function UsersAdmin() {
     return out;
   }, [usersQ.data, q, filter, levelFilter, sort]);
 
+  const pager = usePager(filtered, 10, `${q}|${filter}|${levelFilter}|${sort}`);
+
   const stats = useMemo(() => {
     const rows = usersQ.data ?? [];
     return {
@@ -246,7 +249,7 @@ function UsersAdmin() {
                     <td colSpan={8} className="p-3"><div className="h-8 rounded bg-white/5 animate-pulse" /></td>
                   </tr>
                 ))}
-                {filtered.map((u) => {
+                {pager.slice.map((u) => {
                   const isAdmin = u.roles.includes("admin");
                   const initials = (u.full_name || u.email || "GX").trim().slice(0, 2).toUpperCase();
                   return (
@@ -303,6 +306,8 @@ function UsersAdmin() {
               </tbody>
             </table>
           </div>
+          <Pager page={pager.page} pageCount={pager.pageCount} total={pager.total} size={pager.size}
+            onPage={pager.setPage} onSize={pager.setSize} />
         </CardContent>
       </Card>
 

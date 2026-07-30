@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { Pager, usePager } from "@/components/gx/Pager";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Star, Search, Check, X, EyeOff, Sparkles, Trash2, Save, MessageSquare, AlertTriangle } from "lucide-react";
@@ -73,6 +74,8 @@ function AdminReviewsPage() {
     });
   }, [rows, filter, q]);
 
+  const pager = usePager(filtered, 8, `${filter}|${q}`);
+
   const stats = useMemo(() => ({
     total: rows.length,
     pending: rows.filter((r) => r.status === "pending").length,
@@ -116,7 +119,7 @@ function AdminReviewsPage() {
         <div className="rv-card p-12 text-center text-slate-400">لا يوجد مراجعات ضمن هذا الفلتر</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {filtered.map((r) => {
+          {pager.slice.map((r) => {
             const draft = drafts[r.id] ?? { comment: r.comment, rating: r.rating, name: r.display_name || "" };
             const dirty = draft.comment !== r.comment || draft.rating !== r.rating || draft.name !== (r.display_name || "");
             const flagged = containsProfanity(r.comment);
@@ -182,6 +185,12 @@ function AdminReviewsPage() {
           })}
         </div>
       )}
+
+      {!loading && (
+        <Pager page={pager.page} pageCount={pager.pageCount} total={pager.total} size={pager.size}
+          onPage={pager.setPage} onSize={pager.setSize} sizes={[8, 16, 32]} />
+      )}
     </div>
   );
+
 }

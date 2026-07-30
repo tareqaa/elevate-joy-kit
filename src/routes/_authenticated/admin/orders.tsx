@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Pager, usePager } from "@/components/gx/Pager";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -227,6 +228,8 @@ function OrdersAdmin() {
     return { count: list.length, total, pending, delivered };
   }, [filtered]);
 
+  const pager = usePager(filtered, 10, `${statusFilter}|${dateRange}|${minAmount}|${search}`);
+
   const counts = STATUSES.reduce<Record<string, number>>((acc, s) => {
     acc[s] = (ordersQ.data ?? []).filter((o) => o.status === s).length;
     return acc;
@@ -359,7 +362,7 @@ function OrdersAdmin() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((o) => {
+              {pager.slice.map((o) => {
                 const Ico = STATUS_ICON[o.status] || Clock;
                 const isTg = o.contact_type === "telegram";
                 const contactLabel = isTg ? "تيليجرام" : "واتساب";
@@ -426,6 +429,9 @@ function OrdersAdmin() {
             </tbody>
           </table>
         </div>
+
+        <Pager page={pager.page} pageCount={pager.pageCount} total={pager.total} size={pager.size}
+          onPage={pager.setPage} onSize={pager.setSize} />
 
         {selected && (
           <OrderDialog
