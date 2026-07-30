@@ -63,12 +63,12 @@ export function Footer() {
                 <span dir="ltr">{waPretty}</span>
               </a>
             )}
-            {s.support_email && (
+            {hydrated && s.support_email && (
               <a href={`mailto:${s.support_email}`} style={{ display: "block", marginTop: 8, color: "#a3b6c9", fontSize: 13 }}>
                 {s.support_email}
               </a>
             )}
-            {(s.social_instagram || s.social_facebook || s.social_tiktok) && (
+            {hydrated && (s.social_instagram || s.social_facebook || s.social_tiktok) && (
               <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
                 {s.social_instagram && <a href={s.social_instagram} target="_blank" rel="noopener" aria-label="Instagram" style={{ color: "#e6f7ff" }}>IG</a>}
                 {s.social_facebook && <a href={s.social_facebook} target="_blank" rel="noopener" aria-label="Facebook" style={{ color: "#e6f7ff" }}>FB</a>}
