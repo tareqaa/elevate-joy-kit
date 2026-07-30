@@ -50,7 +50,9 @@ type IncomingItem = {
   [k: string]: unknown;
 };
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
+/** JOD carries three decimals — every money rounding in the app uses *1000. */
+const round2 = (n: number) => Math.round(n * 1000) / 1000;
+
 
 /** Reads the live price overrides from the database. */
 export async function loadCatalogPriceOverrides(
