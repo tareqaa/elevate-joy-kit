@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
+import { loadCatalogPriceOverrides, priceCartItems, isAdminUser } from "./pricing.server";
+
 
 type CreateOrderInput = {
   items: Json;
@@ -73,13 +75,40 @@ export async function createStoreOrder(input: CreateOrderInput) {
   if (input.contactType) deliveryData.contact_type = input.contactType;
   if (input.coupon) deliveryData.coupon = { code: input.coupon.code, discount_jod: input.coupon.discount_jod };
 
-  const couponDiscount = Math.max(0, Number(input.coupon?.discount_jod ?? 0));
-  const creditJod = Math.max(0, Number(input.creditJod ?? 0));
+  // ---- Server-side price verification -------------------------------------
+  // Nothing money-related from the client is trusted. Every line is re-priced
+  // from the catalog + live overrides, and the total is rebuilt from scratch.
+  const rawItems = Array.isArray(input.items) ? (input.items as unknown as any[]) : [];
+  const [overrides, isAdmin] = await Promise.all([
+    loadCatalogPriceOverrides(supabase),
+    isAdminUser(supabase, input.userId),
+  ]);
+  const priced = priceCartItems(rawItems, overrides, { allowCustom: isAdmin });
+  const subtotal = priced.subtotal;
+
+  // Rewrite the stored line prices with the verified ones.
+  const verifiedItems = rawItems.map((it, i) => ({
+    ...it,
+    qty: priced.lines[i].qty,
+    price: priced.lines[i].unitPrice,
+  })) as unknown as Json;
+
+  let couponDiscount = Math.max(0, Number(input.coupon?.discount_jod ?? 0));
   // Coin discount is ALWAYS derived from the coin count server-side so a
   // tampered client can never claim a bigger discount than the coins it spends.
   const coinsUsed = Math.max(0, Math.floor(Number(input.coins?.coins ?? 0)));
   const coinsDiscount = Math.round((coinsUsed / COINS_PER_JOD) * 1000) / 1000;
-  const subtotal = Math.round((Number(input.totalJOD) + couponDiscount + coinsDiscount + creditJod) * 100) / 100;
+  let creditJod = Math.max(0, Number(input.creditJod ?? 0));
+
+  couponDiscount = Math.min(couponDiscount, subtotal);
+  creditJod = Math.min(creditJod, Math.max(subtotal - couponDiscount - coinsDiscount, 0));
+  const discountTotal = Math.round((couponDiscount + coinsDiscount + creditJod) * 1000) / 1000;
+  const verifiedTotal = Math.round(Math.max(subtotal - discountTotal, 0) * 100) / 100;
+
+  // The client-sent total is used for nothing but this integrity check.
+  if (Math.abs(Number(input.totalJOD ?? NaN) - verifiedTotal) > 0.001) {
+    throw new Error("تغيّر السعر، أعد تحميل الصفحة");
+  }
 
   // Guard BEFORE the order exists: coins must be owned and can never cover
   // more than 50% of the order value.
@@ -100,26 +129,27 @@ export async function createStoreOrder(input: CreateOrderInput) {
       user_id: input.userId ?? null,
       customer_name: input.customerName ?? null,
       customer_whatsapp: input.customerWhatsapp ?? null,
-      items: input.items,
-      total_jod: input.totalJOD,
+      items: verifiedItems,
+      total_jod: verifiedTotal,
       subtotal_jod: subtotal,
       currency_snapshot: input.currency,
       delivery_data: deliveryData as Json,
       // Orders fully covered by store credit (refund balance) are already settled.
-      status: (creditJod > 0 && Number(input.totalJOD) <= 0.009) ? "paid" : "pending",
+      status: (creditJod > 0 && verifiedTotal <= 0.009) ? "paid" : "pending",
       contact_type: input.contactType ?? null,
       coupon_id: input.coupon?.id ?? null,
       coupon_code: input.coupon?.code ?? null,
-      discount_jod: couponDiscount + coinsDiscount + creditJod,
+      discount_jod: discountTotal,
       user_coupon_id: input.coupon?.userCouponId ?? null,
       coins_used: coinsUsed,
       coins_discount_jod: coinsDiscount,
       // Recorded as 0 here; set to the amount actually taken from the balance below.
       credit_used_jod: 0,
-      paid_jod: input.totalJOD,
+      paid_jod: verifiedTotal,
     })
     .select("id, order_number")
     .single();
+
 
   if (error) throw new Error(error.message);
   if (!data?.order_number) throw new Error("Order was not created");
@@ -169,8 +199,9 @@ export async function createStoreOrder(input: CreateOrderInput) {
         coins_used: 0,
         coins_discount_jod: 0,
         discount_jod: couponDiscount + creditJod,
-        total_jod: Number(input.totalJOD) + coinsDiscount,
-        paid_jod: Number(input.totalJOD) + coinsDiscount,
+        total_jod: Math.round((verifiedTotal + coinsDiscount) * 100) / 100,
+        paid_jod: Math.round((verifiedTotal + coinsDiscount) * 100) / 100,
+
       }).eq("id", data.id);
       throw new Error("رصيد GX Coins غير كافٍ — تم إلغاء الخصم");
     }
@@ -221,7 +252,7 @@ export async function createStoreOrder(input: CreateOrderInput) {
     // The order total was already reduced by `wantedCredit`. If less was actually
     // taken from the balance, charge the shortfall back so nothing is given away.
     const shortfall = Math.round((wantedCredit - spend) * 100) / 100;
-    const newTotal = Math.round((Number(input.totalJOD) + Math.max(shortfall, 0)) * 100) / 100;
+    const newTotal = Math.round((verifiedTotal + Math.max(shortfall, 0)) * 100) / 100;
     await supabase.from("orders").update({
       credit_used_jod: spend,
       discount_jod: Math.round((couponDiscount + coinsDiscount + spend) * 100) / 100,
