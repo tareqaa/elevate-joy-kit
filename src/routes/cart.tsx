@@ -195,40 +195,46 @@ function CartSummary() {
 
       {/* Contact block */}
       <div className="gx-contact-block">
-        <div className="gx-cb-title">📞 معلومات التواصل <span className="gx-req">إلزامي</span></div>
+        <div className="gx-cb-title">
+          <span className="gx-step">1</span> {t("cart.contact_title")} <span className="gx-req">{t("cart.required")}</span>
+        </div>
+        <div className="gx-help" style={{ marginTop: -4 }}>{t("cart.contact_help")}</div>
         <input
           className="gx-cb-input"
           type="text"
-          placeholder="الاسم الكامل"
+          autoComplete="name"
+          placeholder={t("cart.name_ph")}
           value={cart.contact.name}
           onChange={(e) => cart.setContact({ name: e.target.value })}
         />
         <div className="gx-cb-types">
-          <label className={"gx-cb-type " + (cart.contact.type === "whatsapp" ? "on" : "")}>
+          <label className={"gx-cb-type wa " + (cart.contact.type === "whatsapp" ? "on" : "")}>
             <input type="radio" name="ct" checked={cart.contact.type === "whatsapp"} onChange={() => { cart.setContact({ type: "whatsapp", phone: "" }); }} />
-            <span>📱 واتساب</span>
+            <WhatsAppIcon /><span>{t("cart.whatsapp")}</span>
           </label>
-          <label className={"gx-cb-type " + (cart.contact.type === "telegram" ? "on" : "")}>
+          <label className={"gx-cb-type tg " + (cart.contact.type === "telegram" ? "on" : "")}>
             <input type="radio" name="ct" checked={cart.contact.type === "telegram"} onChange={() => { cart.setContact({ type: "telegram", phone: "", countryCode: "" }); }} />
-            <span>✈️ تيليجرام</span>
+            <TelegramIcon /><span>{t("cart.telegram")}</span>
           </label>
         </div>
         {isWa ? (
           <div className="gx-cb-row" style={{ marginTop: 8 }}>
             <select
               className="gx-cb-select"
+              aria-label={t("cart.wa_ph")}
               value={cart.contact.countryCode || "+962"}
               onChange={(e) => cart.setContact({ countryCode: e.target.value })}
             >
               {COUNTRY_CODES.map((c) => (
-                <option key={c.code} value={c.code}>{c.flag} {c.code} {c.name}</option>
+                <option key={c.code} value={c.code}>{c.flag} {c.code} {lang === "en" ? c.en : c.name}</option>
               ))}
             </select>
             <input
               className="gx-cb-input gx-cb-phone"
               type="tel"
               inputMode="numeric"
-              placeholder="رقم الواتساب"
+              autoComplete="tel"
+              placeholder={t("cart.wa_ph")}
               value={cart.contact.phone}
               onChange={(e) => cart.setContact({ phone: e.target.value.replace(/[^\d]/g, "") })}
             />
@@ -237,7 +243,7 @@ function CartSummary() {
           <input
             className="gx-cb-input"
             type="text"
-            placeholder="يوزر التيليجرام (بدون @)"
+            placeholder={t("cart.tg_ph")}
             value={cart.contact.phone}
             onChange={(e) => cart.setContact({ phone: e.target.value.replace(/^@+/, "").trim() })}
             style={{ marginTop: 8, direction: "ltr", textAlign: "left" }}
@@ -247,14 +253,14 @@ function CartSummary() {
 
       {/* Coupon block */}
       <div className="gx-coupon-block">
-        <div className="gx-cb-title">🏷️ كوبون خصم</div>
+        <div className="gx-cb-title"><span className="gx-step">2</span> {t("cart.coupon_title")}</div>
         {cart.coupon ? (
           <div className="gx-coupon-applied">
             <div>
               <div className="gx-coupon-code">{cart.coupon.code}</div>
-              <div className="gx-coupon-note">خصم: -{format(cart.coupon.discount_jod)}</div>
+              <div className="gx-coupon-note">{t("cart.discount")}: -{format(cart.coupon.discount_jod)}</div>
             </div>
-            <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCoupon(); setCouponMsg(null); }}>إزالة</button>
+            <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCoupon(); setCouponMsg(null); }}>{t("cart.remove")}</button>
           </div>
         ) : (
           <>
@@ -262,13 +268,13 @@ function CartSummary() {
               <input
                 className="gx-cb-input"
                 type="text"
-                placeholder="أدخل كود الكوبون"
+                placeholder={t("cart.coupon_ph")}
                 value={couponInput}
                 onChange={(e) => setCouponInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); apply(); } }}
               />
               <button type="button" className="btn btn-primary gx-coupon-apply" onClick={apply} disabled={couponBusy || !couponInput.trim()}>
-                {couponBusy ? "..." : "تطبيق"}
+                {couponBusy ? "..." : t("cart.apply")}
               </button>
             </div>
             {couponMsg && (
@@ -282,10 +288,10 @@ function CartSummary() {
       <CoinsBlock />
 
       <div className="summary-line"><span>{t("cart.item_count")}</span><span>{cart.count}</span></div>
-      <div className="summary-line"><span>المجموع الفرعي</span><span>{format(cart.subtotalJOD)}</span></div>
+      <div className="summary-line"><span>{t("cart.subtotal")}</span><span>{format(cart.subtotalJOD)}</span></div>
       {cart.coupon && (
         <div className="summary-line" style={{ color: "#00e5b0" }}>
-          <span>خصم ({cart.coupon.code})</span>
+          <span>{t("cart.discount")} ({cart.coupon.code})</span>
           <span>-{format(cart.coupon.discount_jod)}</span>
         </div>
       )}
@@ -297,7 +303,7 @@ function CartSummary() {
       )}
       {cart.creditJOD > 0 && (
         <div className="summary-line" style={{ color: "#8ab4ff" }}>
-          <span>رصيد المتجر</span>
+          <span>{t("cart.store_credit")}</span>
           <span>-{format(cart.creditJOD)}</span>
         </div>
       )}
@@ -313,9 +319,10 @@ function CartSummary() {
           <div className="hint">{t("cart.notes_hint")}</div>
         )}
       </div>
-      <button className="btn btn-green btn-block" disabled={disabled} onClick={checkout}>
-        {busy ? t("cart.checkout_saving") : t("cart.checkout_wa")}
+      <button className="btn btn-green btn-block gx-checkout-btn" disabled={disabled} onClick={checkout}>
+        {busy ? t("cart.checkout_saving") : <><WhatsAppIcon size={17} /> {t("cart.checkout_wa")} · {format(cart.totalJOD)}</>}
       </button>
+      <div className="gx-secure-note">🔒 {t("cart.secure_note")}</div>
       {confirmed && (
         <OrderConfirmedModal
           orderNumber={confirmed.orderNumber}
