@@ -13,6 +13,9 @@ type PublicProfile = {
   level_code: string | null; orders_count: number | null;
 };
 
+/** Badges section is temporarily hidden; flip to true to show it again. */
+const SHOW_BADGES = false;
+
 /** Unified GX profile: identity + loyalty + coupons + badges + avatars + search + leaderboard. */
 export function GxProfile({ username: usernameProp }: { username?: string }) {
   const { lang, dir } = useLang();
