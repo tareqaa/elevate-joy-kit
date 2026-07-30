@@ -783,15 +783,16 @@ function RefundBlock({ order, onDone }: { order: OrderWithEmail; onDone?: () => 
       _reason: reason.trim(),
     });
     setBusy(false);
-    const res = data as { ok?: boolean; message?: string; xp_removed?: number; coins_removed?: number } | null;
+    const res = data as { ok?: boolean; message?: string; xp_removed?: number; coins_removed?: number; coins_returned?: number; full?: boolean } | null;
     if (error || !res?.ok) {
       toast.error(error?.message || res?.message || "فشل الاسترجاع — لم يتم تغيير أي بيانات");
       return;
     }
     toast.success(
-      `تم الاسترجاع: ${value.toFixed(2)} د.أ` +
+      `تم الاسترجاع${res.full ? " الكامل" : " الجزئي"}: ${value.toFixed(2)} د.أ` +
+      (res.coins_returned ? ` • إرجاع ${res.coins_returned} GX للعميل` : "") +
       (res.xp_removed ? ` • سحب ${res.xp_removed} XP` : "") +
-      (res.coins_removed ? ` • سحب ${res.coins_removed} GX` : ""),
+      (res.coins_removed ? ` • سحب ${res.coins_removed} GX مكافآت` : ""),
     );
     setConfirmOpen(false);
     setReason("");
