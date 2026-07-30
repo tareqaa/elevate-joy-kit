@@ -62,6 +62,11 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "buy.add": "🛒 أضف للسلة",
     "buy.added": "✓ أضيفت",
     "buy.buy_now": "⚡ اشتري الآن",
+    "added.title": "تمت الإضافة إلى سلة التسوق",
+    "added.sub_a": "لديك",
+    "added.sub_b": "منتج في سلة التسوق الخاصة بك",
+    "added.view_cart": "عرض السلة",
+    "added.continue": "مواصلة التسوق",
     // Cart
     "cart.title": "سلة المشتريات",
     "cart.subtitle": "راجع طلبك قبل ما ترسله",
