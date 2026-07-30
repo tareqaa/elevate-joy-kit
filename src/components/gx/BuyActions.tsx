@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useCart } from "@/lib/gx/cart";
 import { useLang } from "@/lib/gx/i18n";
+import { CART_ADDED_EVENT } from "./AddedToCartModal";
 
 export function BuyActions({ cartId }: { cartId: string }) {
   const cart = useCart();
