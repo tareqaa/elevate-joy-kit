@@ -208,7 +208,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
   const seg = prizes.length > 0 ? 360 / prizes.length : 360;
   const canSpin = !!statusQ.data?.can_spin && prizes.length > 0 && !spinning;
 
-  const bulbs = useMemo(() => Array.from({ length: 24 }, (_, i) => (i * 360) / 24), []);
+  
   const confetti = useMemo(
     () =>
       Array.from({ length: 22 }, (_, i) => ({
