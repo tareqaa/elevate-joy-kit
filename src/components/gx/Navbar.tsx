@@ -169,8 +169,8 @@ export function Navbar() {
       try {
         const { data: adminData } = await supabase.rpc("has_role", { _user_id: session.userId, _role: "admin" });
         setIsAdmin(!!adminData);
-        } catch { setIsAdmin(false); }
-      } catch { /* keep cached */ }
+      } catch { setIsAdmin(false); }
+
       try {
         const { count } = await supabase.from("orders")
           .select("id", { count: "exact", head: true })
