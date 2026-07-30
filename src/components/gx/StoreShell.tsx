@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { CartDrawer } from "./CartDrawer";
+import { AddedToCartModal } from "./AddedToCartModal";
 import { AdminFab } from "./AdminFab";
 import { InlineTextEditor } from "@/lib/gx/copy-overrides";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
@@ -52,6 +53,7 @@ export function StoreShell({ children }: { children: ReactNode }) {
       {children}
       <Footer />
       <CartDrawer />
+      <AddedToCartModal />
       <AdminFab />
       <InlineTextEditor />
     </>
