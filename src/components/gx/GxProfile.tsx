@@ -271,18 +271,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                       <div className="gxp-coupons">
                         {(couponsQ.data ?? []).map((c) => {
                           const dead = !!c.used_at || new Date(c.expires_at).getTime() < Date.now();
-                          return (
-                            <div key={c.id} className={`gxp-coupon${dead ? " dead" : ""}`}>
-                              <div>
-                                <b dir="ltr">{c.code}</b>
-                                <em>{isAr ? `خصم ${c.percent}%` : `${c.percent}% off`}{c.max_discount_jod ? (isAr ? ` — حتى ${c.max_discount_jod} د.أ` : ` — up to ${c.max_discount_jod} JOD`) : ""}</em>
-                              </div>
-                              <button type="button" className="btn btn-ghost" disabled={dead}
-                                onClick={() => { navigator.clipboard?.writeText(c.code); toast.success(isAr ? "تم النسخ" : "Copied"); }}>
-                                {isAr ? "نسخ" : "Copy"}
-                              </button>
-                            </div>
-                          );
+                          return <CouponCard key={c.id} c={c} dead={dead} isAr={isAr} />;
                         })}
                       </div>
                     </div>
