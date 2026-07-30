@@ -142,7 +142,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
             {!username && (
               <div className="gxp-card gxp-empty">
                 <h2>{isAr ? "ملفات اللاعبين" : "Player profiles"}</h2>
-                <p>{isAr ? "ابحث عن أي GameTag لعرض ملفه ومستواه." : "Search any GameTag to open its profile."}</p>
+                <p>{isAr ? "ابحث عن أي اسم مستخدم لعرض ملفه ومستواه." : "Search any username to open its profile."}</p>
               </div>
             )}
 
@@ -150,7 +150,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
 
             {username && !profileQ.isLoading && !p && (
               <div className="gxp-card gxp-empty">
-                <h2>{isAr ? "لا يوجد لاعب بهذا الـ GameTag" : "No player with this GameTag"}</h2>
+                <h2>{isAr ? "لا يوجد لاعب بهذا الاسم" : "No player with this username"}</h2>
                 <p dir="ltr">@{username}</p>
               </div>
             )}
@@ -162,7 +162,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                   <div className="gxp-hero-body">
                     <img className="gxp-av" src={avatar} alt={p.username} />
                     <div className="gxp-id">
-                      <h1>{p.full_name || p.username}</h1>
+                      <h1>{p.username}</h1>
                       <span className="gxp-tag" dir="ltr">@{p.username}</span>
                       <div className="gxp-chips">
                         {lvl && <span className="gxp-chip" style={{ background: lvl.gradient }}>{lvl.icon} {levelName(lvl, lang)}</span>}
@@ -366,7 +366,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                       className={`gxp-brow${r.username?.toLowerCase() === (username || "").toLowerCase() ? " me" : ""}`}>
                       <span className="r">{medal}</span>
                       <img src={av} alt="" loading="lazy" />
-                      <span className="n">{r.full_name || r.username}</span>
+                      <span className="n">{r.username}</span>
                       <span className="x">{Number(r.xp).toLocaleString("en-US")}</span>
                     </Link>
                   );
@@ -420,7 +420,7 @@ function IdentityEditor({ isAr, userId, currentName, currentUsername, onSaved }:
       const { data, error } = await supabase.from("profiles").select("id").ilike("username", v).neq("id", userId).maybeSingle();
       if (error) { setCheck({ s: "idle" }); return; }
       setCheck(data
-        ? { s: "taken", m: isAr ? "هذا الـ GameTag محجوز" : "GameTag is taken" }
+        ? { s: "taken", m: isAr ? "اسم المستخدم محجوز" : "Username is taken" }
         : { s: "ok", m: isAr ? "متاح ✓" : "Available ✓" });
     }, 400);
     return () => clearTimeout(to);
@@ -430,15 +430,15 @@ function IdentityEditor({ isAr, userId, currentName, currentUsername, onSaved }:
     const n = name.trim();
     const v = tag.trim();
     if (n.length < 2) { toast.error(isAr ? "الاسم قصير جداً" : "Name is too short"); return; }
-    if (!/^[a-zA-Z0-9_]{3,20}$/.test(v)) { toast.error(isAr ? "GameTag غير صالح" : "Invalid GameTag"); return; }
-    if (check.s === "taken") { toast.error(isAr ? "هذا الـ GameTag محجوز" : "GameTag is taken"); return; }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(v)) { toast.error(isAr ? "اسم مستخدم غير صالح" : "Invalid username"); return; }
+    if (check.s === "taken") { toast.error(isAr ? "اسم المستخدم محجوز" : "Username is taken"); return; }
     setSaving(true);
     const { error } = await supabase.from("profiles").update({ full_name: n, username: v }).eq("id", userId);
     if (!error) await supabase.auth.updateUser({ data: { full_name: n, username: v } });
     setSaving(false);
     if (error) {
       toast.error((error as { code?: string }).code === "23505"
-        ? (isAr ? "هذا الـ GameTag محجوز" : "GameTag is taken")
+        ? (isAr ? "اسم المستخدم محجوز" : "Username is taken")
         : error.message);
       return;
     }
@@ -456,7 +456,7 @@ function IdentityEditor({ isAr, userId, currentName, currentUsername, onSaved }:
             placeholder={isAr ? "اسمك" : "Your name"} />
         </label>
         <label>
-          <span>GameTag</span>
+          <span>{isAr ? "اسم المستخدم" : "Username"}</span>
           <input dir="ltr" value={tag} onChange={(e) => setTag(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
             maxLength={20} placeholder="your_tag" />
           {check.m && <em className={check.s === "ok" ? "ok" : check.s === "checking" ? "" : "bad"}>{check.s === "checking" ? (isAr ? "جاري التحقق…" : "Checking…") : check.m}</em>}
@@ -499,7 +499,7 @@ function PlayerSearch({ isAr }: { isAr: boolean }) {
         {results.map((r) => (
           <Link key={r.id} to="/u/$username" params={{ username: r.username }} className="gxp-result" onClick={() => setQ("")}>
             <img src={r.avatar_url || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(r.username)}&skinColor=f2d3b1&radius=50`} alt="" />
-            <span><b>{r.full_name || r.username}</b><em dir="ltr">@{r.username}</em></span>
+            <span><b>{r.username}</b><em dir="ltr">@{r.username}</em></span>
           </Link>
         ))}
       </div>

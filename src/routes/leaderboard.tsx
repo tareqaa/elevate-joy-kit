@@ -8,9 +8,9 @@ export const Route = createFileRoute("/leaderboard")({
   head: () => ({
     meta: [
       { title: "ملفات اللاعبين والمتصدرين — GX Store" },
-      { name: "description", content: "ابحث عن أي GameTag وشاهد المستويات و XP وترتيب أفضل لاعبي GX Store." },
+      { name: "description", content: "ابحث عن أي اسم مستخدم وشاهد المستويات و XP وترتيب أفضل لاعبي GX Store." },
       { property: "og:title", content: "ملفات اللاعبين والمتصدرين — GX Store" },
-      { property: "og:description", content: "بحث GameTag، المستويات، GX Coins، ولوحة المتصدرين في متجر GX." },
+      { property: "og:description", content: "بحث أسماء المستخدمين، المستويات، GX Coins، ولوحة المتصدرين في متجر GX." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

@@ -136,7 +136,7 @@ function LeaderboardAdmin() {
   });
 
   function exportCsv() {
-    const head = ["#", "GameTag", "الاسم", "البريد", "المستوى", "XP", "GX Coins", "الطلبات", "الإنفاق"];
+    const head = ["#", "اسم المستخدم", "الاسم", "البريد", "المستوى", "XP", "GX Coins", "الطلبات", "الإنفاق"];
     const lines = filtered.map((r, i) =>
       [
         i + 1,
@@ -220,7 +220,7 @@ function LeaderboardAdmin() {
                     className="w-11 h-11 rounded-full object-cover border border-white/10"
                   />
                   <div className="min-w-0">
-                    <div className="font-semibold truncate">{r.full_name || r.username || "لاعب"}</div>
+                    <div className="font-semibold truncate">{r.username || "لاعب"}</div>
                     <div className="text-xs text-muted-foreground truncate">
                       @{r.username ?? "—"} · {lv?.name_ar ?? r.level_code}
                     </div>
@@ -238,7 +238,7 @@ function LeaderboardAdmin() {
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[220px]">
               <Search size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث بالاسم أو GameTag أو البريد" className="pr-9" />
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث باسم المستخدم أو البريد" className="pr-9" />
             </div>
             <div className="flex flex-wrap gap-1">
               {SORTS.map((s) => (
@@ -295,7 +295,7 @@ function LeaderboardAdmin() {
                         <div className="flex items-center gap-2 min-w-0">
                           <img src={r.avatar_url || "/app/assets/img/gx-logo.png"} alt="" className="w-8 h-8 rounded-full object-cover border border-white/10" />
                           <div className="min-w-0">
-                            <div className="font-medium truncate">{r.full_name || r.username || "لاعب"}</div>
+                            <div className="font-medium truncate">{r.username || "لاعب"}</div>
                             <div className="text-xs text-muted-foreground truncate">@{r.username ?? "—"}</div>
                           </div>
                         </div>
