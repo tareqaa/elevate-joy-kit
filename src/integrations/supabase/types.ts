@@ -14,16 +14,207 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          order_id: string | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          read_at?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          currency_snapshot: string | null
+          customer_name: string | null
+          customer_whatsapp: string | null
+          delivery_data: Json | null
+          id: string
+          items: Json
+          order_number: string
+          status: Database["public"]["Enums"]["order_status"]
+          total_jod: number
+          updated_at: string
+          user_id: string | null
+          xp_awarded: number
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          currency_snapshot?: string | null
+          customer_name?: string | null
+          customer_whatsapp?: string | null
+          delivery_data?: Json | null
+          id?: string
+          items?: Json
+          order_number?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          total_jod?: number
+          updated_at?: string
+          user_id?: string | null
+          xp_awarded?: number
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          currency_snapshot?: string | null
+          customer_name?: string | null
+          customer_whatsapp?: string | null
+          delivery_data?: Json | null
+          id?: string
+          items?: Json
+          order_number?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          total_jod?: number
+          updated_at?: string
+          user_id?: string | null
+          xp_awarded?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          level: number
+          total_spent: number
+          updated_at: string
+          username: string | null
+          whatsapp: string | null
+          xp: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          level?: number
+          total_spent?: number
+          updated_at?: string
+          username?: string | null
+          whatsapp?: string | null
+          xp?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          level?: number
+          total_spent?: number
+          updated_at?: string
+          username?: string | null
+          whatsapp?: string | null
+          xp?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      auto_cancel_stale_orders: { Args: never; Returns: number }
+      generate_order_number: { Args: never; Returns: string }
+      get_public_profile: {
+        Args: { _username: string }
+        Returns: {
+          avatar_url: string
+          created_at: string
+          full_name: string
+          id: string
+          level: number
+          rank: number
+          username: string
+          xp: number
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      search_public_profiles: {
+        Args: { _limit?: number; _q: string }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          id: string
+          level: number
+          username: string
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      order_status:
+        | "pending"
+        | "paid"
+        | "processing"
+        | "delivered"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +341,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      order_status: ["pending", "paid", "processing", "delivered", "cancelled"],
+    },
   },
 } as const
