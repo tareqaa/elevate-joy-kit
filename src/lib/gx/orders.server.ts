@@ -80,7 +80,8 @@ export async function createStoreOrder(input: CreateOrderInput) {
       total_jod: input.totalJOD,
       currency_snapshot: input.currency,
       delivery_data: deliveryData as Json,
-      status: "pending",
+      // Orders fully covered by store credit (refund balance) are already settled.
+      status: (Number(input.creditJod ?? 0) > 0 && Number(input.totalJOD) <= 0.009) ? "paid" : "pending",
       contact_type: input.contactType ?? null,
       coupon_id: input.coupon?.id ?? null,
       coupon_code: input.coupon?.code ?? null,
