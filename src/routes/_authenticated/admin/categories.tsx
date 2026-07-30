@@ -470,8 +470,8 @@ function TreeNode({
                 <Plus size={11} /> فرعي
               </button>
             )}
-            <button className="gx-btn primary" onClick={() => onManageProducts(node)} title="إدارة منتجات القسم">
-              <ShoppingBag size={11} /> المنتجات
+            <button className="gx-btn primary" onClick={() => onManageProducts(node)} title="إضافة وإدارة منتجات القسم">
+              <Plus size={11} /> إضافة/المنتجات
             </button>
             <button className="gx-btn outline" onClick={() => onEdit(node)} title="تعديل"><Pencil size={11} /></button>
             <button className="gx-btn ghost" onClick={() => onDuplicate(node)} title="نسخ"><Copy size={11} /></button>
@@ -529,8 +529,8 @@ function FlatRow({
           <div className="gx-row-meta">/{node.slug} · ترتيب: {node.sort_order}</div>
         </div>
         <div className="flex items-center gap-1">
-          <button className="gx-btn primary" onClick={() => onManageProducts(node)} title="إدارة منتجات القسم">
-            <ShoppingBag size={11} /> المنتجات
+          <button className="gx-btn primary" onClick={() => onManageProducts(node)} title="إضافة وإدارة منتجات القسم">
+            <Plus size={11} /> إضافة/المنتجات
           </button>
           <button className="gx-btn outline" onClick={() => onEdit(node)} title="تعديل"><Pencil size={11} /></button>
           <button className="gx-btn ghost" onClick={() => onDuplicate(node)} title="نسخ"><Copy size={11} /></button>
