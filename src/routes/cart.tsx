@@ -138,7 +138,7 @@ function CartList() {
 function CartSummary() {
   const cart = useCart();
   const { format } = useCurrency();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [busy, setBusy] = useState(false);
   const [confirmed, setConfirmed] = useState<{ orderNumber: string; waUrl: string | null } | null>(null);
   const [couponInput, setCouponInput] = useState("");
