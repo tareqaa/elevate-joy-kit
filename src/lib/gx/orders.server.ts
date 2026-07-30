@@ -189,30 +189,48 @@ export async function createStoreOrder(input: CreateOrderInput) {
   }
 
 
-  // Store credit (refund balance): deduct and log the transaction.
-  const wantedCredit = Math.max(0, Number(input.creditJod ?? 0));
-  if (wantedCredit > 0 && input.userId) {
-    try {
-      const { data: prof } = await supabase
-        .from("profiles").select("store_credit_jod").eq("id", input.userId).maybeSingle();
-      const balance = Number(prof?.store_credit_jod ?? 0);
-      const spend = Math.round(Math.min(balance, wantedCredit) * 100) / 100;
-      if (spend > 0) {
-        const after = Math.round((balance - spend) * 100) / 100;
-        await supabase.from("profiles").update({ store_credit_jod: after }).eq("id", input.userId);
-        await supabase.from("store_credit_transactions").insert({
-          user_id: input.userId,
-          order_id: data.id,
-          amount_jod: -spend,
-          balance_after: after,
-          kind: "spend",
-          reason: `استخدام رصيد المتجر على الطلب ${data.order_number}`,
-        });
+  // Store credit (refund balance): deduct, record it ON the order (so cancels and
+  // refunds can give it back exactly once), and log the ledger entry.
+  const wantedCredit = creditJod;
+  if (wantedCredit > 0) {
+    let spend = 0;
+    if (input.userId) {
+      try {
+        const { data: prof } = await supabase
+          .from("profiles").select("store_credit_jod").eq("id", input.userId).maybeSingle();
+        const balance = Number(prof?.store_credit_jod ?? 0);
+        spend = Math.round(Math.min(balance, wantedCredit) * 100) / 100;
+        if (spend > 0) {
+          const after = Math.round((balance - spend) * 100) / 100;
+          await supabase.from("profiles").update({ store_credit_jod: after }).eq("id", input.userId);
+          await supabase.from("store_credit_transactions").insert({
+            user_id: input.userId,
+            order_id: data.id,
+            amount_jod: -spend,
+            balance_after: after,
+            kind: "spend",
+            reason: `استخدام رصيد المتجر على الطلب ${data.order_number}`,
+          });
+        }
+      } catch (e) {
+        console.warn("[GX] store credit spend failed", e);
+        spend = 0;
       }
-    } catch (e) {
-      console.warn("[GX] store credit spend failed", e);
     }
+
+    // The order total was already reduced by `wantedCredit`. If less was actually
+    // taken from the balance, charge the shortfall back so nothing is given away.
+    const shortfall = Math.round((wantedCredit - spend) * 100) / 100;
+    const newTotal = Math.round((Number(input.totalJOD) + Math.max(shortfall, 0)) * 100) / 100;
+    await supabase.from("orders").update({
+      credit_used_jod: spend,
+      discount_jod: Math.round((couponDiscount + coinsDiscount + spend) * 100) / 100,
+      total_jod: newTotal,
+      paid_jod: newTotal,
+      status: (spend > 0 && newTotal <= 0.009) ? "paid" : "pending",
+    }).eq("id", data.id);
   }
+
 
   return { id: data.id, order_number: data.order_number };
 }
