@@ -424,28 +424,25 @@ function CoinsBlock() {
         </span>
       </div>
       <div className="gx-help">
-        كل <b>{COINS_PER_JOD_REDEEM.toLocaleString("en-US")}</b> عملة = <b>1 دينار</b> خصم.
-        الحد الأقصى لخصم العملات هو <b>50%</b> من قيمة الطلب — أي حتى <b>{format(capJod)}</b> على هذا الطلب.
+        {t("cart.coins_help_a")} <b>{COINS_PER_JOD_REDEEM.toLocaleString("en-US")}</b> {t("cart.coins_help_b")} <b>{format(capJod)}</b>.
       </div>
       {cart.coins ? (
         <div className="gx-coupon-applied">
           <div>
             <div className="gx-coupon-code">{cart.coins.coins.toLocaleString("en-US")} Coins</div>
-            <div className="gx-coupon-note">خصم: -{format(cart.coins.discount_jod)}</div>
+            <div className="gx-coupon-note">{t("cart.discount")}: -{format(cart.coins.discount_jod)}</div>
           </div>
-          <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCoins(); setMsg(null); }}>إزالة</button>
+          <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCoins(); setMsg(null); }}>{t("cart.remove")}</button>
         </div>
       ) : usable < 1 ? (
         <div className="gx-coupon-note" style={{ fontSize: 12 }}>
-          {balance < 1
-            ? "اجمع عملات GX مع كل طلب مكتمل — كل 1000 عملة = 1 دينار خصم."
-            : "رصيد عملاتك غير كافٍ لخصم على هذا الطلب حالياً."}
+          {balance < 1 ? t("cart.coins_earn") : t("cart.coins_low")}
         </div>
       ) : (
         <>
           <div className="gx-meter"><i style={{ width: `${pct}%` }} /></div>
           <div className="gx-help" style={{ margin: "0 0 8px" }}>
-            المتاح للاستخدام الآن: <b style={{ color: "#ffc400" }}>{usable.toLocaleString("en-US")}</b> عملة ({format(coinsToJod(usable))})
+            {t("cart.coins_available")}: <b style={{ color: "#ffc400" }}>{usable.toLocaleString("en-US")}</b> {t("cart.coins_unit")} ({format(coinsToJod(usable))})
           </div>
           <div className="gx-chips">
             {[0.25, 0.5, 1].map((f) => {
@@ -453,7 +450,7 @@ function CoinsBlock() {
               return (
                 <button key={f} type="button" className="gx-chip"
                   onClick={() => { setAmount(String(v)); apply(v); }}>
-                  {f === 1 ? "الحد الأقصى" : `${Math.round(f * 100)}%`} · {v.toLocaleString("en-US")}
+                  {f === 1 ? t("cart.max") : `${Math.round(f * 100)}%`} · {v.toLocaleString("en-US")}
                 </button>
               );
             })}
@@ -464,13 +461,13 @@ function CoinsBlock() {
               type="number"
               min={1}
               max={usable}
-              placeholder={`استخدم حتى ${usable.toLocaleString("en-US")} عملة`}
+              placeholder={`${t("cart.use_up_to")} ${usable.toLocaleString("en-US")} ${t("cart.coins_unit")}`}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
             <button type="button" className="btn btn-primary gx-coupon-apply" disabled={busy || !amount}
               onClick={() => apply(Number(amount))}>
-              {busy ? "..." : "استخدام"}
+              {busy ? "..." : t("cart.use")}
             </button>
           </div>
           {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
