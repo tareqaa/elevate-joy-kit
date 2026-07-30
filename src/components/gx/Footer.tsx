@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CATEGORY_LINKS, getCategoryLink } from "@/data/products";
 import { useLang } from "@/lib/gx/i18n";
@@ -7,7 +8,11 @@ import { useSiteSettings } from "@/lib/gx/site-settings";
 export function Footer() {
   const { t, lang } = useLang();
   const s = useSiteSettings();
-  const waDigits = (s.support_whatsapp || "").replace(/\D/g, "");
+  // Site settings resolve on the client; render them only after hydration
+  // so the SSR markup and first client render match exactly.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const waDigits = hydrated ? (s.support_whatsapp || "").replace(/\D/g, "") : "";
   const waPretty = (() => {
     if (!waDigits) return "";
     // Jordan numbers: +962 7 XXXX XXXX
@@ -58,12 +63,12 @@ export function Footer() {
                 <span dir="ltr">{waPretty}</span>
               </a>
             )}
-            {s.support_email && (
+            {hydrated && s.support_email && (
               <a href={`mailto:${s.support_email}`} style={{ display: "block", marginTop: 8, color: "#a3b6c9", fontSize: 13 }}>
                 {s.support_email}
               </a>
             )}
-            {(s.social_instagram || s.social_facebook || s.social_tiktok) && (
+            {hydrated && (s.social_instagram || s.social_facebook || s.social_tiktok) && (
               <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
                 {s.social_instagram && <a href={s.social_instagram} target="_blank" rel="noopener" aria-label="Instagram" style={{ color: "#e6f7ff" }}>IG</a>}
                 {s.social_facebook && <a href={s.social_facebook} target="_blank" rel="noopener" aria-label="Facebook" style={{ color: "#e6f7ff" }}>FB</a>}
