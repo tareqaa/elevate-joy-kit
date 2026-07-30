@@ -96,6 +96,8 @@ function AccountPage() {
 
   const ordersQ = useQuery({
     queryKey: ["my-orders", user.id],
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
@@ -103,6 +105,25 @@ function AccountPage() {
       return data ?? [];
     },
   });
+
+  // Live updates when an admin changes an order status
+  useEffect(() => {
+    const channel = supabase
+      .channel(`my-orders-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders", filter: `user_id=eq.${user.id}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["my-orders", user.id] });
+          qc.invalidateQueries({ queryKey: ["my-profile", user.id] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user.id, qc]);
+
 
   const username = profileQ.data?.username || user.user_metadata?.username || user.email?.split("@")[0] || "gx";
   const displayName = profileQ.data?.full_name || username;
