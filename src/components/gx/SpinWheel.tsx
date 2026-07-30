@@ -138,15 +138,14 @@ function segColor(p: { color?: string | null; rarity?: string | null }, i: numbe
 
 
 const WHEEL_CSS = `
-@keyframes gxw-bulbs { 0%,100% { opacity:1 } 50% { opacity:.25 } }
 @keyframes gxw-tick { 0%,100% { transform: rotate(0deg) } 45% { transform: rotate(-17deg) } }
-@keyframes gxw-halo { 0%,100% { opacity:.35; transform: scale(1) } 50% { opacity:.7; transform: scale(1.04) } }
 @keyframes gxw-pop { 0% { transform: scale(.85); opacity:0 } 60% { transform: scale(1.03) } 100% { transform: scale(1); opacity:1 } }
 @keyframes gxw-confetti { 0% { transform: translate3d(0,0,0) rotate(0); opacity:1 } 100% { transform: translate3d(var(--dx), 220px, 0) rotate(540deg); opacity:0 } }
-.gxw-halo { animation: gxw-halo 3.2s ease-in-out infinite; }
 .gxw-ticking { animation: gxw-tick .12s linear infinite; transform-origin: 50% 12%; }
-body.gxw-wheel-open div[data-state="open"][class*="inset-0"] { backdrop-filter: blur(14px) saturate(120%); background: rgba(3,7,18,.62); }
-
+/* Static overlay only: no animated child lives on this layer, so the blur is painted once. */
+body.gxw-wheel-open div[data-state="open"][class*="inset-0"] { background: rgba(3,7,18,.78); }
+.gxw-wheel-stage { overflow: visible; contain: layout paint; }
+.gxw-wheel-svg { will-change: transform; transform-origin: 50% 50%; backface-visibility: hidden; }
 .gxw-pop { animation: gxw-pop .45s cubic-bezier(.2,.9,.25,1) both; }
 .gxw-confetti span { position:absolute; top:0; left:50%; width:8px; height:12px; border-radius:2px; animation: gxw-confetti 1.6s ease-in forwards; }
 `;
