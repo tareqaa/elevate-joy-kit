@@ -165,7 +165,7 @@ function CartSummary() {
     const isWa = cart.contact.type === "whatsapp";
     if (!cart.contact.name.trim() || cart.contact.phone.trim().length < 3) {
       const { toast } = await import("sonner");
-      toast.error(isWa ? "عبّي الاسم ورقم الواتساب قبل إتمام الطلب" : "عبّي الاسم ويوزر التيليجرام قبل إتمام الطلب");
+      toast.error(isWa ? t("cart.fill_wa") : t("cart.fill_tg"));
       return;
     }
     setBusy(true);
