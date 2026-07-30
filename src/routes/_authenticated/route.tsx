@@ -4,11 +4,23 @@ import { useLang } from "@/lib/gx/i18n";
 import { Navbar } from "@/components/gx/Navbar";
 import { CartDrawer } from "@/components/gx/CartDrawer";
 
+// Reuse the last known session across navigations so moving between
+// account/admin pages doesn't re-await the auth client each time.
+let cachedUser: { id: string } | null = null;
+
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
+    if (cachedUser) {
+      // refresh in the background, don't block navigation
+      void supabase.auth.getSession().then(({ data }) => {
+        cachedUser = data.session?.user ?? null;
+      });
+      return { user: cachedUser as unknown as import("@supabase/supabase-js").User };
+    }
     const { data } = await supabase.auth.getSession();
     if (!data.session?.user) throw redirect({ to: "/auth" });
+    cachedUser = data.session.user;
     return { user: data.session.user };
   },
   component: AuthedLayout,
