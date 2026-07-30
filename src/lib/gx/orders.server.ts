@@ -73,7 +73,9 @@ export async function createStoreOrder(input: CreateOrderInput) {
 
   const deliveryData: Record<string, unknown> = { ...(input.deliveryData ?? {}) };
   if (input.contactType) deliveryData.contact_type = input.contactType;
-  if (input.coupon) deliveryData.coupon = { code: input.coupon.code, discount_jod: input.coupon.discount_jod };
+  // Only the code travels with the order note; the discount is whatever the
+  // database says it is.
+  if (input.coupon?.code) deliveryData.coupon = { code: input.coupon.code };
 
   // ---- Server-side price verification -------------------------------------
   // Nothing money-related from the client is trusted. Every line is re-priced
@@ -93,28 +95,20 @@ export async function createStoreOrder(input: CreateOrderInput) {
     price: priced.lines[i].unitPrice,
   })) as unknown as Json;
 
-  let couponDiscount = Math.max(0, Number(input.coupon?.discount_jod ?? 0));
   // Coin discount is ALWAYS derived from the coin count server-side so a
   // tampered client can never claim a bigger discount than the coins it spends.
   const coinsUsed = Math.max(0, Math.floor(Number(input.coins?.coins ?? 0)));
-  const coinsDiscount = Math.round((coinsUsed / COINS_PER_JOD) * 1000) / 1000;
-  let creditJod = Math.max(0, Number(input.creditJod ?? 0));
-
-  couponDiscount = Math.min(couponDiscount, subtotal);
-  creditJod = Math.min(creditJod, Math.max(subtotal - couponDiscount - coinsDiscount, 0));
-  const discountTotal = Math.round((couponDiscount + coinsDiscount + creditJod) * 1000) / 1000;
-  const verifiedTotal = Math.round(Math.max(subtotal - discountTotal, 0) * 100) / 100;
-
-  // The client-sent total is used for nothing but this integrity check.
-  if (Math.abs(Number(input.totalJOD ?? NaN) - verifiedTotal) > 0.001) {
-    throw new Error("تغيّر السعر، أعد تحميل الصفحة");
-  }
+  const creditJod = Math.max(0, Number(input.creditJod ?? 0));
+  // input.coupon.discount_jod / .id / .userCouponId are IGNORED on purpose:
+  // the coupon is re-read and re-priced from the database by its code alone.
+  const couponCode = input.coupon?.code?.trim() || null;
 
   // ---- Single atomic purchase transaction ---------------------------------
-  // Everything that follows (balance checks, order insert, coin + credit
-  // deduction, coupon redemption, ledger writes) happens inside ONE plpgsql
-  // function that locks the buyer's profile row first. Any failure raises and
-  // rolls the whole thing back: no half-written orders, no double spending.
+  // Everything that follows (coupon validation + redemption, balance checks,
+  // order insert, coin + credit deduction, ledger writes) happens inside ONE
+  // plpgsql function that locks the buyer's profile row first. Any failure
+  // raises and rolls the whole thing back: no half-written orders, no double
+  // spending, no coupon used twice.
   const { data, error } = await (supabase as any).rpc("create_store_order", {
     _user_id: input.userId ?? null,
     _customer_name: input.customerName ?? null,
@@ -124,17 +118,17 @@ export async function createStoreOrder(input: CreateOrderInput) {
     _currency: input.currency,
     _delivery_data: deliveryData,
     _contact_type: input.contactType ?? null,
-    _coupon_id: input.coupon?.id ?? null,
-    _user_coupon_id: input.coupon?.userCouponId ?? null,
-    _coupon_code: input.coupon?.code ?? null,
-    _coupon_discount: couponDiscount,
+    _coupon_code: couponCode,
     _coins_used: coinsUsed,
     _credit_jod: creditJod,
+    // Used for nothing but the integrity check inside the transaction.
+    _client_total: Number(input.totalJOD ?? 0),
   });
 
   if (error) throw new Error(error.message);
   const result = data as { id?: string; order_number?: string } | null;
   if (!result?.order_number) throw new Error("Order was not created");
+
 
   return { id: result.id as string, order_number: result.order_number };
 }
