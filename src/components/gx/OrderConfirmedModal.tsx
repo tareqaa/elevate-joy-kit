@@ -136,7 +136,7 @@ export function OrderConfirmedModal({
             }}
           >
             📦 {t("cart.track_order")}
-          </a>
+          </Link>
         )}
 
         <button
