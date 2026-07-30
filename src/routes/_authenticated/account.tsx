@@ -226,7 +226,6 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
   const autoView = STATUS_TABS.some((tb) => tb.key === latestStatus) ? (latestStatus as string) : "pending";
   const view = picked ?? autoView;
   const setView = (v: string) => setPicked(v);
-  if (loading) return <p className="text-sm text-muted-foreground">{t("acc.loading_orders")}</p>;
   const counts = STATUS_TABS.reduce<Record<string, number>>((acc, tab) => {
     acc[tab.key] = orders.filter((o) => tab.match(o.status)).length;
     return acc;
@@ -235,6 +234,7 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
   const list = orders.filter((o) => activeTab.match(o.status));
   const pager = usePager(list, 5, view);
   const msStart = dir === "rtl" ? "ms-1.5" : "ms-1.5";
+  if (loading) return <p className="text-sm text-muted-foreground">{t("acc.loading_orders")}</p>;
 
 
   return (
