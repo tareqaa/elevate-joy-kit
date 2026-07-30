@@ -1326,6 +1326,25 @@ export type Database = {
       }
       auto_cancel_stale_orders: { Args: never; Returns: number }
       award_badges: { Args: { _user_id: string }; Returns: undefined }
+      create_store_order: {
+        Args: {
+          _coins_used: number
+          _contact_type: string
+          _coupon_code: string
+          _coupon_discount: number
+          _coupon_id: string
+          _credit_jod: number
+          _currency: string
+          _customer_name: string
+          _customer_whatsapp: string
+          _delivery_data: Json
+          _items: Json
+          _subtotal: number
+          _user_coupon_id: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       generate_order_number: { Args: never; Returns: string }
       get_loyalty_leaderboard: {
         Args: { _limit?: number }
