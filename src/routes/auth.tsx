@@ -125,7 +125,7 @@ function AuthPage() {
             </form>
           ) : (
             <form onSubmit={handleSignUp} className="gx-auth-form">
-              <label>GameTag</label>
+              <label>{t("acc.gametag")}</label>
               <input type="text" required dir="ltr" value={suUsername} onChange={(e) => setSuUsername(e.target.value)} placeholder="your_tag" pattern="[a-zA-Z0-9_]{3,20}" />
               <label>{t("auth.email")}</label>
               <input type="email" required dir="ltr" value={suEmail} onChange={(e) => setSuEmail(e.target.value)} placeholder="you@email.com" />
