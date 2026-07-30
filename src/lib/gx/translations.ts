@@ -313,7 +313,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "cart.notes_label": "Additional notes (optional)",
     "cart.notes_placeholder": "Any special request or extra details...",
     "cart.notes_hint": "Usernames are saved automatically with each Snapchat account — this is for extra notes only.",
-    "cart.checkout_wa": "Checkout via WhatsApp",
+    "cart.checkout_wa": "Checkout",
     "cart.checkout_saving": "⏳ Saving...",
     "cart.open_full": "Or open the full cart page ›",
     "cat.coming_soon": "Coming soon",
