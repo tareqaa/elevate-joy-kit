@@ -117,26 +117,23 @@ function rewardSummary(r: SpinResult) {
   }
 }
 
-/** Fit a prize label into the segment: 2 lines max, ellipsis at the end. */
-function labelLines(name: string, perLine: number) {
-  const words = name.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let cur = "";
-  for (const w of words) {
-    if (!cur) cur = w;
-    else if ((cur + " " + w).length <= perLine) cur += " " + w;
-    else {
-      lines.push(cur);
-      cur = w;
-    }
-    if (lines.length === 2) break;
-  }
-  if (lines.length < 2 && cur) lines.push(cur);
-  const out = lines.slice(0, 2);
-  if (out.length === 2 && out[1].length > perLine) out[1] = `${out[1].slice(0, perLine - 1)}…`;
-  if (out.length === 1 && out[0].length > perLine) out[0] = `${out[0].slice(0, perLine - 1)}…`;
-  return out;
+/** One clean line per segment — no emoji, never spills out of the wheel. */
+function segLabel(name: string) {
+  const clean = (name || "").replace(/\s+/g, " ").trim();
+  return clean.length > 18 ? `${clean.slice(0, 17)}…` : clean;
 }
+
+/** Curated wheel palette — richer than raw DB colors, still rarity-aware. */
+const WHEEL_PALETTE = ["#0ea5e9", "#7c3aed", "#f59e0b", "#10b981", "#ec4899", "#3b82f6", "#f97316", "#8b5cf6"];
+const RARITY_PALETTE: Record<string, string> = {
+  legendary: "#f59e0b",
+  epic: "#a855f7",
+};
+
+function segColor(p: { color?: string | null; rarity?: string | null }, i: number) {
+  return RARITY_PALETTE[p.rarity || ""] || WHEEL_PALETTE[i % WHEEL_PALETTE.length];
+}
+
 
 const WHEEL_CSS = `
 @keyframes gxw-bulbs { 0%,100% { opacity:1 } 50% { opacity:.25 } }
@@ -276,7 +273,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
   const size = compact
     ? "w-[280px] h-[280px] sm:w-[330px] sm:h-[330px]"
     : "w-[300px] h-[300px] sm:w-[360px] sm:h-[360px]";
-  const perLine = prizes.length > 8 ? 9 : 12;
+  
 
   return (
     <div dir="rtl" className="space-y-5">
@@ -310,15 +307,17 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
             }}
           >
             <defs>
-              {prizes.map((p) => {
-                const c = prizeColor(p);
+              {prizes.map((p, i) => {
+                const c = segColor(p, i);
                 return (
-                  <linearGradient key={p.id} id={`gxw-g-${p.id}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={shade(c, 0.22)} />
-                    <stop offset="100%" stopColor={shade(c, -0.4)} />
+                  <linearGradient key={p.id} id={`gxw-g-${p.id}`} x1="0.1" y1="0" x2="0.9" y2="1">
+                    <stop offset="0%" stopColor={shade(c, 0.28)} />
+                    <stop offset="55%" stopColor={c} />
+                    <stop offset="100%" stopColor={shade(c, -0.42)} />
                   </linearGradient>
                 );
               })}
+
               <radialGradient id="gxw-gloss" cx="50%" cy="28%" r="72%">
                 <stop offset="0%" stopColor="#fff" stopOpacity="0.22" />
                 <stop offset="55%" stopColor="#fff" stopOpacity="0.04" />
@@ -340,7 +339,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
             {prizes.map((p, i) => {
               const start = i * seg;
               const mid = start + seg / 2;
-              const lines = labelLines(p.name, perLine);
+              const label = segLabel(p.name);
               return (
                 <g key={p.id}>
                   <path
@@ -350,26 +349,29 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
                     strokeWidth="1"
                   />
                   <g transform={`rotate(${mid - 90} 150 150)`}>
-                    <text x="266" y="150" fontSize="19" textAnchor="middle" dominantBaseline="central">
-                      {p.icon || "🎁"}
+                    <text
+                      x="268"
+                      y="150"
+                      fill="#ffffff"
+                      fontSize={prizes.length > 8 ? 11 : 12.5}
+                      fontWeight="800"
+                      textAnchor="end"
+                      dominantBaseline="central"
+                      textLength={label.length > 13 ? 108 : undefined}
+                      lengthAdjust="spacingAndGlyphs"
+                      style={{
+                        paintOrder: "stroke",
+                        fontFamily: "inherit",
+                        letterSpacing: "0px",
+                        direction: "rtl",
+                        unicodeBidi: "plaintext",
+                      }}
+                      stroke="rgba(0,0,0,0.55)"
+                      strokeWidth="2.8"
+                      strokeLinejoin="round"
+                    >
+                      {label}
                     </text>
-                    {lines.map((ln, li) => (
-                      <text
-                        key={li}
-                        x="240"
-                        y={150 + (lines.length === 1 ? 0 : li === 0 ? -7.5 : 7.5)}
-                        fill="#fff"
-                        fontSize={prizes.length > 8 ? 10 : 11.5}
-                        fontWeight="800"
-                        textAnchor="end"
-                        dominantBaseline="central"
-                        style={{ paintOrder: "stroke", letterSpacing: "0.2px" }}
-                        stroke="rgba(0,0,0,0.42)"
-                        strokeWidth="2.6"
-                      >
-                        {ln}
-                      </text>
-                    ))}
                   </g>
                   {/* separator */}
                   <line
@@ -377,12 +379,13 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
                     y1="150"
                     x2={polar(150, 150, 138, start)[0]}
                     y2={polar(150, 150, 138, start)[1]}
-                    stroke="rgba(251,191,36,0.45)"
-                    strokeWidth="1.2"
+                    stroke="rgba(255,255,255,0.28)"
+                    strokeWidth="1.1"
                   />
                 </g>
               );
             })}
+
 
             {/* gloss + bulbs */}
             <circle cx="150" cy="150" r="138" fill="url(#gxw-gloss)" pointerEvents="none" />
