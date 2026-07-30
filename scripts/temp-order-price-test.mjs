@@ -1,88 +1,65 @@
 /* ============================================================
-   TEMPORARY TEST — server-side price verification
-   Runs two checkouts against the running dev server:
-     1) honest total  -> must succeed
-     2) faked total   -> must be rejected, and create NO order row
+   TEMPORARY TEST — server-side price verification (GX checkout)
+   Calls the order-creation logic twice:
+     1) honest total matching catalog prices -> must succeed
+     2) faked (cheaper) total                -> must be rejected
+                                                and write NO orders row
    Run:    node scripts/temp-order-price-test.mjs
-   Delete: rm scripts/temp-order-price-test.mjs
+   Delete: rm scripts/temp-order-price-test.mjs src/routes/api/public/temp-price-test.ts
    ============================================================ */
 
 const BASE = process.env.TEST_BASE_URL || "http://localhost:8080";
-const FN_ID =
-  "eyJmaWxlIjoiL3NyYy9saWIvZ3gvb3JkZXJzLmZ1bmN0aW9ucy50cz90c3Mtc2VydmVyZm4tc3BsaXQiLCJleHBvcnQiOiJzdWJtaXRTdG9yZU9yZGVyX2NyZWF0ZVNlcnZlckZuX2hhbmRsZXIifQ";
+const URL_ = `${BASE}/api/public/temp-price-test`;
 
-// canva-12 costs 2 JOD in the catalog (unless overridden in site_settings)
-const CART_ID = "canva-12";
+const CART_ID = "canva-12"; // catalog price: 2 JOD
 const REAL_UNIT = 2;
 const QTY = 1;
+const REAL_TOTAL = REAL_UNIT * QTY;
+const FAKE_TOTAL = 0.5;
+const STAMP = Date.now();
 
-function payload(totalJOD, marker) {
-  return {
-    items: [
-      {
-        cartId: CART_ID,
-        product_slug: "canva",
-        name: "Canva Pro 12 شهر",
-        qty: QTY,
-        price: REAL_UNIT,
-        usernames: null,
-      },
-    ],
-    totalJOD,
-    currency: "JOD",
-    customerName: `PRICE-TEST ${marker}`,
-    customerWhatsapp: "0790000000",
-    contactType: "whatsapp",
-    notes: `temp price-verification test (${marker})`,
-  };
-}
+const marker = (kind) => `PRICE-TEST-${kind}-${STAMP}`;
 
-async function call(data) {
-  const res = await fetch(`${BASE}/_serverFn/${FN_ID}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data }),
-  });
-  let body;
-  try {
-    body = await res.json();
-  } catch {
-    body = await res.text();
-  }
-  return { status: res.status, body };
-}
+const payload = (totalJOD, kind) => ({
+  items: [{ cartId: CART_ID, product_slug: "canva", name: "Canva Pro", qty: QTY, price: REAL_UNIT }],
+  totalJOD,
+  currency: "JOD",
+  customerName: marker(kind),
+  customerWhatsapp: "0790000000",
+  contactType: "whatsapp",
+});
 
-const line = (s = "") => console.log(s);
+const post = (body) =>
+  fetch(URL_, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then((r) => r.json());
+const countRows = (m) => fetch(`${URL_}?marker=${encodeURIComponent(m)}`).then((r) => r.json());
+
+const log = (s = "") => console.log(s);
 
 (async () => {
-  line("=== GX price-verification test ===");
-  line(`endpoint: ${BASE}/_serverFn/...`);
-  line(`item: ${CART_ID} x${QTY} @ ${REAL_UNIT} JOD  → real total ${REAL_UNIT * QTY} JOD`);
-  line();
+  log("=== GX server-side price verification test ===");
+  log(`item ${CART_ID} x${QTY} @ ${REAL_UNIT} JOD  →  real total = ${REAL_TOTAL} JOD`);
+  log();
 
-  // 1) honest total
-  const honest = await call(payload(REAL_UNIT * QTY, "HONEST"));
-  const honestOrder =
-    honest.body?.result?.order_number ?? honest.body?.order_number ?? null;
-  const pass1 = honest.status === 200 && !!honestOrder;
-  line(`[1] honest total (${REAL_UNIT * QTY} JOD): ${pass1 ? "PASS ✅ created" : "FAIL ❌"}`);
-  line(`    status=${honest.status} order=${honestOrder ?? "-"}`);
-  if (!pass1) line(`    body=${JSON.stringify(honest.body).slice(0, 500)}`);
-  line();
+  // --- 1) honest total ---
+  const okRes = await post(payload(REAL_TOTAL, "HONEST"));
+  const okRows = await countRows(marker("HONEST"));
+  const pass1 = okRes.ok === true && !!okRes.order_number && okRows.count === 1;
+  log(`[1] honest total ${REAL_TOTAL} JOD  → ${pass1 ? "PASS ✅ order created" : "FAIL ❌"}`);
+  log(`    order_number=${okRes.order_number ?? "-"}  rows=${okRows.count}  error=${okRes.error ?? "-"}`);
+  log();
 
-  // 2) tampered (cheaper) total
-  const fakeTotal = 0.5;
-  const fake = await call(payload(fakeTotal, "TAMPERED"));
-  const fakeOrder = fake.body?.result?.order_number ?? fake.body?.order_number ?? null;
-  const rejected = !fakeOrder;
-  line(`[2] tampered total (${fakeTotal} JOD): ${rejected ? "PASS ✅ rejected" : "FAIL ❌ order created!"}`);
-  line(`    status=${fake.status} order=${fakeOrder ?? "-"}`);
-  line(`    server said: ${JSON.stringify(fake.body).slice(0, 300)}`);
-  line();
+  // --- 2) tampered total ---
+  const badRes = await post(payload(FAKE_TOTAL, "TAMPERED"));
+  const badRows = await countRows(marker("TAMPERED"));
+  const pass2 = badRes.ok === false && !badRes.order_number && badRows.count === 0;
+  log(`[2] faked total ${FAKE_TOTAL} JOD   → ${pass2 ? "PASS ✅ rejected, no row written" : "FAIL ❌"}`);
+  log(`    rejected_with="${badRes.error ?? "-"}"  rows=${badRows.count}`);
+  log();
 
-  line(`RESULT: ${pass1 && rejected ? "ALL PASS ✅ — the server never trusts the client total" : "FAILURE ❌"}`);
-  line();
-  line("Cleanup: rm scripts/temp-order-price-test.mjs");
-  line(`Note: test [1] creates a real pending order named "PRICE-TEST HONEST" — cancel/delete it from the admin panel.`);
-  process.exit(pass1 && rejected ? 0 : 1);
+  const allPass = pass1 && pass2;
+  log(`RESULT: ${allPass ? "ALL PASS ✅ — the server never trusts the client total" : "FAILURE ❌"}`);
+  log();
+  log(`NOTE: test [1] creates one real pending order (${marker("HONEST")}) — cancel it from the admin panel.`);
+  log("CLEANUP: rm scripts/temp-order-price-test.mjs src/routes/api/public/temp-price-test.ts");
+  process.exit(allPass ? 0 : 1);
 })();
