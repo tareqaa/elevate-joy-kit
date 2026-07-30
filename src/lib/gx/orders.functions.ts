@@ -9,6 +9,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
   .validator((data) => z.object({
     items: z.array(z.object({
       cartId: z.string().min(1).max(120),
+      product_slug: z.string().trim().min(1).max(120).nullable().optional(),
       name: z.string().min(1).max(240),
       qty: z.number().int().min(1).max(99),
       price: z.number().min(0).max(10000),
