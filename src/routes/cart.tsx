@@ -518,19 +518,17 @@ function CreditBlock() {
   return (
     <div className="gx-coupon-block">
       <div className="gx-cb-title">
-        💳 رصيد المتجر (الاسترجاع)
+        💳 {t("cart.credit_title")}
         <span className="gx-bal-pill" style={{ color: "#8ab4ff" }}>{format(balance)}</span>
       </div>
-      <div className="gx-help">
-        رصيدك من عمليات الاسترجاع والتعويضات — يُستخدم مباشرة كخصم من قيمة الطلب بدون أي حد أقصى.
-      </div>
+      <div className="gx-help">{t("cart.credit_help")}</div>
       {cart.creditJOD > 0 ? (
         <div className="gx-coupon-applied" style={{ background: "rgba(138,180,255,.1)", borderColor: "rgba(138,180,255,.4)" }}>
           <div>
             <div className="gx-coupon-code" style={{ color: "#8ab4ff" }}>{format(cart.creditJOD)}</div>
-            <div className="gx-coupon-note" style={{ color: "#a9c4f0" }}>تم خصمه من إجمالي الطلب</div>
+            <div className="gx-coupon-note" style={{ color: "#a9c4f0" }}>{t("cart.credit_applied")}</div>
           </div>
-          <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCredit(); setMsg(null); }}>إزالة</button>
+          <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCredit(); setMsg(null); }}>{t("cart.remove")}</button>
         </div>
       ) : (
         <>
@@ -541,18 +539,18 @@ function CreditBlock() {
               min={0.01}
               step={0.01}
               max={usable}
-              placeholder={`استخدم حتى ${usable.toFixed(2)} د.أ`}
+              placeholder={`${t("cart.use_up_to")} ${format(usable)}`}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
             <button type="button" className="btn btn-primary gx-coupon-apply" disabled={busy || !amount}
               onClick={() => apply(Number(amount))}>
-              {busy ? "..." : "استخدام"}
+              {busy ? "..." : t("cart.use")}
             </button>
           </div>
           <button type="button" className="gx-coins-max" style={{ borderColor: "rgba(138,180,255,.4)", color: "#8ab4ff" }}
             onClick={() => { setAmount(usable.toFixed(2)); apply(usable); }}>
-            استخدم كامل المتاح ({format(usable)})
+            {t("cart.credit_use_all")} ({format(usable)})
           </button>
           {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
         </>
