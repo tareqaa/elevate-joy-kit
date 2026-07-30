@@ -396,10 +396,15 @@ function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: ()
         if (error) throw error;
       }
       if (credit) {
-        const { error } = await supabase.rpc("admin_adjust_store_credit", {
+        if (credit < 0 && Math.abs(credit) > Number(user!.store_credit_jod ?? 0)) {
+          throw new Error("المبلغ المسحوب أكبر من رصيد المستخدم");
+        }
+        const { data, error } = await supabase.rpc("admin_adjust_store_credit", {
           _user_id: user!.id, _amount: credit, _reason: reason.trim(),
         });
         if (error) throw error;
+        const res = data as { ok?: boolean; message?: string } | null;
+        if (res && res.ok === false) throw new Error(res.message || "تعذّر تعديل الرصيد");
       }
     },
     onSuccess: () => {
