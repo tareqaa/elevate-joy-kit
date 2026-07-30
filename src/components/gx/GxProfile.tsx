@@ -13,6 +13,9 @@ type PublicProfile = {
   level_code: string | null; orders_count: number | null;
 };
 
+/** Badges section is temporarily hidden; flip to true to show it again. */
+const SHOW_BADGES = false;
+
 /** Unified GX profile: identity + loyalty + coupons + badges + avatars + search + leaderboard. */
 export function GxProfile({ username: usernameProp }: { username?: string }) {
   const { lang, dir } = useLang();
@@ -284,19 +287,21 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                       </div>
                     </div>
 
-                    {/* Badges */}
-                    <div className="gxp-card">
-                      <h3 className="gxp-h">{isAr ? "الشارات" : "Badges"}</h3>
-                      <div className="gxp-badges">
-                        {(badgesQ.data ?? []).map((b) => (
-                          <div key={b.id} className={`gxp-badge${b.earned_at ? " on" : ""}`}>
-                            <span className="ico">{b.icon}</span>
-                            <b style={{ color: b.earned_at ? b.color : undefined }}>{isAr ? b.name_ar : b.name_en}</b>
-                            <em>{(isAr ? b.description_ar : b.description_en) || ""}</em>
-                          </div>
-                        ))}
+                    {/* Badges — temporarily hidden (query kept intact) */}
+                    {SHOW_BADGES && (
+                      <div className="gxp-card">
+                        <h3 className="gxp-h">{isAr ? "الشارات" : "Badges"}</h3>
+                        <div className="gxp-badges">
+                          {(badgesQ.data ?? []).map((b) => (
+                            <div key={b.id} className={`gxp-badge${b.earned_at ? " on" : ""}`}>
+                              <span className="ico">{b.icon}</span>
+                              <b style={{ color: b.earned_at ? b.color : undefined }}>{isAr ? b.name_ar : b.name_en}</b>
+                              <em>{(isAr ? b.description_ar : b.description_en) || ""}</em>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </>
                 )}
               </>
