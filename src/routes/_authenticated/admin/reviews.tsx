@@ -26,6 +26,7 @@ const css = `
 
 const FILTERS: { v: "all" | ReviewStatus | "featured"; l: string }[] = [
   { v: "all", l: "الكل" },
+  { v: "featured", l: "على الرئيسية" },
   { v: "pending", l: "بانتظار المراجعة" },
   { v: "approved", l: "منشور" },
   { v: "rejected", l: "مرفوض" },
