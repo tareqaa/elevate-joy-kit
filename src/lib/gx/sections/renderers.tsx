@@ -415,22 +415,22 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
 
   useEffect(() => {
     const grid = gridRef.current; if (!grid) return;
-    let paused = false; let resumeAt = 0;
+    let paused = false; let resumeAt = Infinity;
     let loopWidth = grid.scrollWidth / 2; let pos = 0; grid.scrollLeft = 0;
     const onResize = () => { loopWidth = grid.scrollWidth / 2; };
     window.addEventListener("resize", onResize);
-    const pause = () => { paused = true; };
+    const pause = () => { paused = true; resumeAt = Infinity; pos = grid.scrollLeft; };
+    const resumeNow = () => { pos = grid.scrollLeft; paused = false; resumeAt = Infinity; };
     const resumeSoon = () => { pos = grid.scrollLeft; resumeAt = performance.now() + 1500; };
     grid.addEventListener("mouseenter", pause);
-    grid.addEventListener("mouseleave", () => { pos = grid.scrollLeft; paused = false; });
+    grid.addEventListener("mouseleave", resumeNow);
     grid.addEventListener("touchstart", pause, { passive: true });
     grid.addEventListener("touchend", resumeSoon, { passive: true });
     let raf = 0; const SPEED = 2.5;
     const step = () => {
       const now = performance.now();
-      const active = !paused || now >= resumeAt;
-      if (paused && now >= resumeAt) paused = false;
-      if (active && loopWidth > 0) {
+      if (paused && now >= resumeAt) { paused = false; resumeAt = Infinity; pos = grid.scrollLeft; }
+      if (!paused && loopWidth > 0) {
         if (dir === "rtl") { pos -= SPEED; if (pos <= -loopWidth) pos += loopWidth; }
         else { pos += SPEED; if (pos >= loopWidth) pos -= loopWidth; }
         grid.scrollLeft = pos;
@@ -438,6 +438,7 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
+
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); };
   }, [dir, items.length]);
 
