@@ -81,6 +81,19 @@ export async function createStoreOrder(input: CreateOrderInput) {
   const coinsDiscount = Math.round((coinsUsed / COINS_PER_JOD) * 1000) / 1000;
   const subtotal = Math.round((Number(input.totalJOD) + couponDiscount + coinsDiscount + creditJod) * 100) / 100;
 
+  // Guard BEFORE the order exists: coins must be owned and can never cover
+  // more than 50% of the order value.
+  if (coinsUsed > 0) {
+    if (!input.userId) throw new Error("يجب تسجيل الدخول لاستخدام GX Coins");
+    const maxCoins = Math.floor(subtotal * 0.5 * COINS_PER_JOD);
+    if (coinsUsed > maxCoins) throw new Error("الحد الأقصى لخصم GX Coins هو 50% من قيمة الطلب");
+    const { data: prof } = await supabase
+      .from("profiles").select("gx_coins").eq("id", input.userId).maybeSingle();
+    if (Number(prof?.gx_coins ?? 0) < coinsUsed) throw new Error("رصيد GX Coins غير كافٍ");
+  }
+
+
+
   const { data, error } = await supabase
     .from("orders")
     .insert({
