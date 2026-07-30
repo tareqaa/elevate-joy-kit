@@ -10,13 +10,14 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { User as UserIcon, Package, ShieldCheck, Copy, Check } from "lucide-react";
+import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 import { GxProfile } from "@/components/gx/GxProfile";
+import { SpinWheel } from "@/components/gx/SpinWheel";
 import { Pager, usePager } from "@/components/gx/Pager";
 
-type AccountTab = "profile" | "orders" | "security";
+type AccountTab = "profile" | "orders" | "wheel" | "security";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({ meta: [{ title: "حسابي — GX Store" }] }),
@@ -178,9 +179,10 @@ function AccountPage() {
         value={tab}
         onValueChange={(v) => navigate({ search: { tab: v as AccountTab } })}
       >
-        <TabsList className="grid grid-cols-3 w-full max-w-xl h-11">
+        <TabsList className="grid grid-cols-4 w-full max-w-xl h-11">
           <TabsTrigger value="profile" className="gap-2"><UserIcon className="w-4 h-4" />{t("acc.tab_profile")}</TabsTrigger>
           <TabsTrigger value="orders" className="gap-2"><Package className="w-4 h-4" />{t("acc.tab_orders")}</TabsTrigger>
+          <TabsTrigger value="wheel" className="gap-2"><Disc3 className="w-4 h-4" />{lang === "ar" ? "العجلة" : "Wheel"}</TabsTrigger>
           <TabsTrigger value="security" className="gap-2"><ShieldCheck className="w-4 h-4" />{t("acc.tab_security")}</TabsTrigger>
         </TabsList>
 
@@ -196,9 +198,14 @@ function AccountPage() {
           <OrdersTab loading={ordersQ.isLoading} orders={ordersQ.data ?? []} />
         </TabsContent>
 
+        <TabsContent value="wheel" className="mt-4">
+          <SpinWheel />
+        </TabsContent>
+
         <TabsContent value="security" className="mt-4">
           <SecurityTab email={user.email || ""} />
         </TabsContent>
+
       </Tabs>
 
     </div>
