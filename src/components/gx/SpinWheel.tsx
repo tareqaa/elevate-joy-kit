@@ -40,6 +40,8 @@ type WheelStatus = {
   can_spin?: boolean;
   next_spin_at?: string | null;
   seconds_remaining?: number;
+  bonus_spins?: number;
+
   message?: string;
 };
 
