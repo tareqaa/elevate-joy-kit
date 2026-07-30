@@ -116,10 +116,16 @@ export function Navbar() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [canReview, setCanReview] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("gx_is_admin") === "1";
-  });
+  // Admin state lives in memory only — never in localStorage, which any user
+  // could forge to reveal the admin entry. It is always (re)verified against
+  // has_role() in the database below.
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
+  // Purge the legacy forgeable flag from existing browsers.
+  useEffect(() => {
+    try { localStorage.removeItem("gx_is_admin"); } catch { /* noop */ }
+  }, []);
+
 
   useEffect(() => {
     let active = true;
