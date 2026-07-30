@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CATEGORY_LINKS, getCategoryLink } from "@/data/products";
 import { useLang } from "@/lib/gx/i18n";
