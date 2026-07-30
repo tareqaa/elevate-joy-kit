@@ -631,6 +631,8 @@ export type Database = {
           coupon_code: string | null
           coupon_id: string | null
           created_at: string
+          credit_refunded_jod: number
+          credit_used_jod: number
           currency_snapshot: string | null
           customer_name: string | null
           customer_whatsapp: string | null
@@ -662,6 +664,8 @@ export type Database = {
           coupon_code?: string | null
           coupon_id?: string | null
           created_at?: string
+          credit_refunded_jod?: number
+          credit_used_jod?: number
           currency_snapshot?: string | null
           customer_name?: string | null
           customer_whatsapp?: string | null
@@ -693,6 +697,8 @@ export type Database = {
           coupon_code?: string | null
           coupon_id?: string | null
           created_at?: string
+          credit_refunded_jod?: number
+          credit_used_jod?: number
           currency_snapshot?: string | null
           customer_name?: string | null
           customer_whatsapp?: string | null
@@ -1402,6 +1408,10 @@ export type Database = {
         Returns: Json
       }
       refund_order_coins: {
+        Args: { _order_id: string; _ratio: number }
+        Returns: number
+      }
+      refund_order_credit: {
         Args: { _order_id: string; _ratio: number }
         Returns: number
       }

@@ -469,6 +469,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(NOTES_KEY, "");
     setNotesState("");
     persistCoupon(null);
+    // Discounts belong to the cart contents — never carry them to the next order.
+    setCoinsState(null);
+    setCreditState(0);
     persist([]);
   }, [persist, persistCoupon]);
 
@@ -585,6 +588,8 @@ ${lines}
       } catch { /* noop */ }
       setCoinsState(null);
       setCreditState(0);
+      // Coins / store-credit balances changed server-side — tell the UI to refetch.
+      try { window.dispatchEvent(new Event("gx:balances-updated")); } catch { /* noop */ }
       return result;
     } catch (e) {
       console.warn("[GX] submitOrder failed", e);
