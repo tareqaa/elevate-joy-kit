@@ -31,13 +31,12 @@ const FILTERS: { v: "all" | ReviewStatus | "featured"; l: string }[] = [
   { v: "approved", l: "منشور" },
   { v: "rejected", l: "مرفوض" },
   { v: "hidden", l: "مخفي" },
-  { v: "featured", l: "مميّز" },
 ];
 
 function AdminReviewsPage() {
   const [rows, setRows] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | ReviewStatus | "featured">("pending");
+  const [filter, setFilter] = useState<"all" | ReviewStatus | "featured">("all");
   const [q, setQ] = useState("");
   const [drafts, setDrafts] = useState<Record<string, { comment: string; rating: number; name: string }>>({});
 
