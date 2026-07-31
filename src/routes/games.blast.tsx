@@ -502,7 +502,7 @@ function BlastPage() {
     if (ghostRef.current) {
       ghostRef.current.style.transform = `translate3d(${left}px, ${top}px, 0)`;
       ghostRef.current.style.visibility = "visible";
-      ghostRef.current.style.opacity = next?.ok ? "0.5" : "0.94";
+      ghostRef.current.style.opacity = next?.ok ? "0.34" : "0.94";
     }
 
 
@@ -633,13 +633,12 @@ function BlastPage() {
   const onPieceDown = (e: React.PointerEvent, trayIndex: number, piece: PieceDef) => {
     if (game.over) return;
     e.preventDefault();
-    const touch = e.pointerType !== "mouse";
     dragRef.current = {
       trayIndex,
       piece,
       x: e.clientX,
       y: e.clientY,
-      lift: touch ? cellRef.current : 0,
+      lift: 0,
     };
     targetRef.current = null;
     setDragInfo({ trayIndex, piece });

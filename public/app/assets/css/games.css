@@ -172,7 +172,11 @@
 }
 
 /* in-grid preview: the target cells themselves, tinted with the piece colour */
-.bb-cell.pv-ok{opacity:.55;}
+.bb-cell.pv-ok{
+  opacity:.88;
+  outline:2px solid rgba(255,255,255,.72);
+  outline-offset:-3px;
+}
 
 
 
@@ -209,7 +213,7 @@
   border:0;
   transition:opacity .2s var(--ease);
 }
-.bt-slot.dragging{opacity:.25;}
+.bt-slot.dragging{opacity:.58;}
 .bt-slot.dead{opacity:.28;}
 .bt-piece{display:grid; gap:2px; cursor:grab; touch-action:none;}
 .bt-piece:active{cursor:grabbing;}
