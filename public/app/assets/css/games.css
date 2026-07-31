@@ -147,10 +147,10 @@
 
 /* ---- board ---- */
 .blast-board{
-  position:relative; width:100%; height:100%;
-  display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr);
-  gap:4px; padding:8px; touch-action:none; user-select:none;
-  border-radius:20px; border:1.5px solid rgba(255,255,255,.10);
+  position:relative; width:100%; height:100%; box-sizing:border-box;
+  display:grid; grid-template-columns:repeat(8,var(--board-cell)); grid-template-rows:repeat(8,var(--board-cell));
+  gap:var(--board-gap); padding:var(--board-pad); touch-action:none; user-select:none;
+  border-radius:20px; border:var(--board-border) solid rgba(255,255,255,.10);
   background:linear-gradient(160deg,#242a3b,#1c2231);
 }
 .blast-board.danger{
@@ -161,7 +161,6 @@
   position:relative; border-radius:13px;
   background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.05));
   border:1px solid rgba(255,255,255,.07);
-  transition:background .12s linear, border-color .12s linear;
 }
 .bb-cell.filled{border-color:transparent;}
 .bb-cell.pv-ok{background:rgba(140,190,120,.30); border-color:rgba(140,190,120,.55);}
@@ -169,7 +168,7 @@
 
 
 .bb-cell.popped{animation:cellPop .2s var(--ease) 1;}
-@keyframes cellPop{0%{transform:scale(.72);}60%{transform:scale(1.08);}100%{transform:scale(1);}}
+@keyframes cellPop{0%{opacity:.55;}60%{opacity:.82;}100%{opacity:1;}}
 
 .bb-cell.clearing{animation:cellClear .3s var(--ease) both;}
 .bb-cell.clearing::after{
@@ -177,9 +176,9 @@
   background:#fff; opacity:0; animation:cellFlash .3s linear both; animation-delay:inherit;
 }
 @keyframes cellClear{
-  0%{transform:scale(1); opacity:1;}
-  35%{transform:scale(1.14); opacity:1;}
-  100%{transform:scale(.25); opacity:0;}
+  0%{opacity:1;}
+  35%{opacity:.72;}
+  100%{opacity:0;}
 }
 @keyframes cellFlash{0%{opacity:.85;}45%{opacity:.5;}100%{opacity:0;}}
 
@@ -259,10 +258,7 @@
   padding:6px 14px; border-radius:999px; font-size:12px; font-weight:900;
   color:#0b1020; background:linear-gradient(90deg,#ffc422,#ff8a1f);
 }
-.bo-ribbon i{font-style:normal; animation:sparkle 1.1s var(--ease) infinite;}
-.bo-ribbon i:nth-child(2){animation-delay:.18s;}
-.bo-ribbon i:nth-child(3){animation-delay:.36s;}
-@keyframes sparkle{0%,100%{transform:scale(.7); opacity:.5;}50%{transform:scale(1.15); opacity:1;}}
+.bo-ribbon i{font-style:normal;}
 .bo-ic{font-size:34px;}
 .bo-card h2{font-size:20px; font-weight:900; margin:6px 0 4px;}
 .bo-why{margin:2px 0 10px; font-size:13px; opacity:.75;}
@@ -296,12 +292,9 @@
   line-height:1;
 }
 .blast-timer.low i{background:linear-gradient(90deg,#c2814f,#c9566f);}
-.blast-timer.urgent i{background:linear-gradient(90deg,#d34a5f,#e06a6a); animation:timerPulse .6s var(--ease) infinite;}
+.blast-timer.urgent i{background:linear-gradient(90deg,#d34a5f,#e06a6a);}
 .blast-timer.urgent b{color:#ff8fa3; font-size:15px; font-weight:900;}
 .blast-timer.low b{color:#e0a2b0;}
-@keyframes timerPulse{0%,100%{opacity:.7}50%{opacity:1}}
-
-
 /* ---- speed-up notice ---- */
 .bb-speed{
   position:absolute; z-index:46; left:0; right:0; top:42%;
