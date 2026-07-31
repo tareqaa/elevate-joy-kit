@@ -16,7 +16,6 @@ import { CurrencyModal } from "./CurrencyModal";
 import { ReviewModal } from "./ReviewModal";
 import { SpinWheelModal } from "./SpinWheel";
 import { useLang } from "@/lib/gx/i18n";
-import { MINI_GAMES } from "@/lib/gx/mini-games";
 import { localizedCategoryLink, localizedProduct, localizedGiftCard } from "@/lib/gx/product-locale";
 
 type SearchEntry = { key: string; title: string; sub: string; icon: string; iconImg?: string; link: string; hay: string };
