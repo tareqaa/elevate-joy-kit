@@ -300,17 +300,26 @@ export function idx(row: number, col: number): number {
   return row * BOARD_SIZE + col;
 }
 
+/**
+ * Single source of truth for placement validity.
+ * Anchor = top-left cell of the piece bounding box (same anchor used by the
+ * preview, the drop and the tray "dead piece" check).
+ */
 export function canPlace(board: Board, piece: PieceDef, row: number, col: number): boolean {
   if (!Number.isInteger(row) || !Number.isInteger(col)) return false;
+  // full bounding-box rejection (width AND height)
+  if (row < 0 || col < 0) return false;
+  if (row + piece.h > BOARD_SIZE || col + piece.w > BOARD_SIZE) return false;
   for (const [dr, dc] of piece.cells) {
     const r = row + dr;
     const c = col + dc;
-    // hard out-of-bounds rejection: no cell may ever land outside the board
+    // per-cell rejection: one cell outside 0..7 invalidates the whole placement
     if (r < 0 || c < 0 || r >= BOARD_SIZE || c >= BOARD_SIZE) return false;
     if (board[idx(r, c)] !== 0) return false;
   }
   return true;
 }
+
 
 export function hasAnyPlacement(board: Board, piece: PieceDef): boolean {
   for (let r = 0; r <= BOARD_SIZE - piece.h; r++) {
