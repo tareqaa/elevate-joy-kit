@@ -704,7 +704,13 @@ function BlastPage() {
                     );
                   })}
 
-                  {banner && <span key={banner.id} className="bb-banner">{banner.text}</span>}
+                  {banner && (
+                    <span key={banner.id} className={"bb-banner b" + (banner.size || 1) + (banner.clean ? " clean" : "")}>
+                      {banner.text}
+                      {banner.streak ? <i>{banner.streak}</i> : null}
+                    </span>
+                  )}
+
                   {speedNote && <span key={speedNote.id} className="bb-speed">{speedNote.text}</span>}
                 </div>
 
