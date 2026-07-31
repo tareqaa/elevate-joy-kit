@@ -252,27 +252,35 @@ function TournamentPage() {
 
           <aside className="tp-side">
             <section className="tp-card">
-              <h2>{ar ? "الجوائز الأسبوعية" : "Weekly rewards"}</h2>
+              <h2>{ar ? "جوائز البطولة" : "Tournament prizes"}</h2>
               {t.prizes.length === 0 ? (
                 <p className="tlb-empty">{ar ? "سيتم الإعلان عن الجوائز قريبًا." : "Prizes announced soon."}</p>
               ) : (
-                <div className="rwgrid">
-                  {t.prizes.map((p, i) => {
-                    const place = p.place ?? i + 1;
-                    return (
-                      <div key={place} className={`rw g${Math.min(place, 3)}`}>
-                        <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
-                        <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
-                        <span>{ar ? p.label_ar : p.label_en}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                <>
+                  <div className="przlist">
+                    {sortedPrizes.slice(0, 6).map((p, i) => {
+                      const place = p.place ?? i + 1;
+                      return (
+                        <div key={place} className={`przrow g${Math.min(place, 4)}`}>
+                          <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
+                          <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
+                          <span>{ar ? p.label_ar : p.label_en}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {sortedPrizes.length > 6 && (
+                    <button type="button" className="prz-all" onClick={() => setPrizesOpen(true)}>
+                      {ar ? `عرض كل الجوائز (${sortedPrizes.length})` : `View all prizes (${sortedPrizes.length})`}
+                    </button>
+                  )}
+                </>
               )}
               <p className="tp-winners">
                 {ar ? `عدد الفائزين في هذه البطولة: ${t.prizes.length}` : `Winners in this tournament: ${t.prizes.length}`}
               </p>
             </section>
+
 
             <section className="tp-card">
               <h2>GX Journey</h2>
