@@ -32,18 +32,20 @@ export const MAX_STREAK_MULT = 8;
 /** awarded when the board becomes completely empty after a clear */
 export const CLEAR_BOARD_BONUS = 360;
 
-/** per-move time limit by accumulated score (ms). Evaluated top-down. */
+/** per-move time limit by accumulated score (ms). Evaluated top-down.
+ *  SINGLE SOURCE OF TRUTH — the server verifier reads this same table. */
 export const MOVE_TIME_TABLE: Array<{ minScore: number; ms: number }> = [
-  { minScore: 15000, ms: 8000 },
-  { minScore: 10000, ms: 9000 },
-  { minScore: 6000, ms: 10000 },
-  { minScore: 3000, ms: 12000 },
-  { minScore: 1000, ms: 13000 },
-  { minScore: 0, ms: 15000 },
+  { minScore: 20000, ms: 5000 },
+  { minScore: 14000, ms: 6000 },
+  { minScore: 9000, ms: 7000 },
+  { minScore: 5000, ms: 8000 },
+  { minScore: 2000, ms: 9000 },
+  { minScore: 0, ms: 10000 },
 ];
 
-/** absolute floor — touch dragging is slower than mouse, never go below */
-export const MIN_MOVE_TIME_MS = 8000;
+/** absolute floor — never go below this per-move time */
+export const MIN_MOVE_TIME_MS = 5000;
+
 
 /** base generation weights: small shapes common, board-killers rare */
 export const PIECE_WEIGHTS: Record<string, number> = {
