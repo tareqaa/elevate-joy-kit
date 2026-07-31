@@ -335,6 +335,32 @@ function TournamentsAdmin() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        className="h-9 rounded-md border bg-background px-2 text-sm"
+                        value={p.reward_type ?? "custom"}
+                        onChange={(e) => {
+                          const rt = e.target.value as RewardType;
+                          const auto = autoLabels(rt, Number(p.reward_value ?? 0));
+                          setPrize(i, { reward_type: rt, ...(auto ?? {}) });
+                        }}
+                      >
+                        {REWARD_TYPES.map((r) => <option key={r.v} value={r.v}>{r.label}</option>)}
+                      </select>
+                      <Input
+                        type="number"
+                        min={0}
+                        placeholder="القيمة (نسبة/عدد)"
+                        disabled={(p.reward_type ?? "custom") === "custom"}
+                        value={p.reward_value ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value === "" ? null : Number(e.target.value);
+                          const rt = p.reward_type ?? "custom";
+                          const auto = autoLabels(rt, Number(val ?? 0));
+                          setPrize(i, { reward_value: val, ...(auto ?? {}) });
+                        }}
+                      />
+                    </div>
                     <Input placeholder="الجائزة بالعربية (مثال: منتج رقمي مجاني)" value={p.label_ar} onChange={(e) => setPrize(i, { label_ar: e.target.value })} />
                     <Input placeholder="Prize in English" value={p.label_en} onChange={(e) => setPrize(i, { label_en: e.target.value })} />
                   </div>
