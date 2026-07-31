@@ -436,7 +436,7 @@ export function ProductsRenderer({ data }: { data: ProductsData }) {
               </div>
             );
           })}
-        </div>
+        </CarouselRow>
       </div>
     </section>
   );
