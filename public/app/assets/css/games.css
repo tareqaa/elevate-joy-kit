@@ -228,13 +228,24 @@
 }
 
 .bb-banner{
-  position:absolute; z-index:45; inset-inline:0; top:50%; left:0; right:0;
+  position:absolute; z-index:45; inset-inline:0; top:46%; left:0; right:0;
   text-align:center; pointer-events:none;
-  font-size:clamp(20px,5vw,34px); font-weight:900; letter-spacing:.02em;
-  background:linear-gradient(90deg,#22e8ff,#b45cff 50%,#ff3d8b);
+  font-size:clamp(22px,6vw,36px); font-weight:900; letter-spacing:.01em;
+  background:linear-gradient(180deg,#FFE49A,#F0C040 55%,#E8862E);
   -webkit-background-clip:text; background-clip:text; color:transparent;
-  animation:bannerUp .9s var(--ease) forwards;
+  animation:bannerUp 1s var(--ease) forwards;
 }
+.bb-banner.b2{font-size:clamp(26px,7vw,44px);}
+.bb-banner.b3{font-size:clamp(30px,8vw,52px);}
+.bb-banner.b4{font-size:clamp(34px,9vw,60px);}
+.bb-banner.clean{background:linear-gradient(180deg,#BFF3B6,#52B84E 60%,#F0C040); -webkit-background-clip:text; background-clip:text;}
+.bb-banner i{
+  display:block; margin-top:4px; font-style:normal;
+  font-size:.44em; font-weight:900;
+  background:linear-gradient(180deg,#FFB56B,#D9483F);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+
 @keyframes bannerUp{
   0%{opacity:0; transform:translateY(20px) scale(.8);}
   22%{opacity:1; transform:translateY(0) scale(1.05);}
