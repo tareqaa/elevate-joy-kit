@@ -36,17 +36,17 @@ const BEST_KEY = "gx_blast_best";
 const PERF_KEY = "gx_blast_perf";
 const MAX_POPUPS = 4;
 
-/* --- VISUAL-ONLY palette override (engine colour ids -> vivid hex) --- */
+/* --- VISUAL-ONLY palette override (engine colour ids -> calm, low-glare hex) --- */
 const VIVID: Record<number, string> = {
-  1: "#22e8ff",
-  2: "#ff3d8b",
-  3: "#c6ff3d",
-  4: "#b45cff",
-  5: "#ffc422",
-  6: "#3b8cff",
-  7: "#25f2b0",
-  8: "#ff7ac2",
-  9: "#ff8a1f",
+  1: "#4f9fc4", // calm blue (was cyan)
+  2: "#c9566f", // muted rose
+  3: "#5f9e63", // deep green (was lime)
+  4: "#8f6fc0", // soft violet
+  5: "#c9a24a", // warm amber
+  6: "#5578b8", // dusty blue
+  7: "#4fa593", // teal
+  8: "#c07a9d", // dusty pink
+  9: "#c2814f", // clay orange
 };
 
 /** pre-built once: no new style object per cell per frame (keeps memo intact) */
@@ -54,12 +54,13 @@ const FACES: Record<number, React.CSSProperties> = Object.fromEntries(
   Object.entries(VIVID).map(([k, c]) => [
     Number(k),
     {
-      // gradient + inner border only — no box-shadow glow on 64 cells
-      backgroundImage: `linear-gradient(180deg, color-mix(in oklab, ${c} 74%, #ffffff) 0%, ${c} 48%, color-mix(in oklab, ${c} 80%, #000000) 100%)`,
-      boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${c} 58%, #ffffff)`,
+      // flat colour with a very subtle inner gradient — no glow, no outer shadow
+      backgroundImage: `linear-gradient(180deg, color-mix(in oklab, ${c} 92%, #ffffff) 0%, ${c} 55%, color-mix(in oklab, ${c} 92%, #000000) 100%)`,
+      boxShadow: `inset 0 0 0 1.5px color-mix(in oklab, ${c} 88%, #ffffff)`,
     } as React.CSSProperties,
   ]),
 ) as Record<number, React.CSSProperties>;
+
 
 function face(colorId: number): React.CSSProperties | undefined {
   return FACES[colorId];

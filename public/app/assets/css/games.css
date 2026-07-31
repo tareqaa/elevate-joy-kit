@@ -145,22 +145,23 @@
   position:relative; width:100%; height:100%;
   display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr);
   gap:4px; padding:8px; touch-action:none; user-select:none;
-  border-radius:20px; border:1.5px solid rgba(255,255,255,.12);
-  background:linear-gradient(160deg,#05070f,#03050b);
+  border-radius:20px; border:1.5px solid rgba(255,255,255,.10);
+  background:linear-gradient(160deg,#1b2030,#151a27);
 }
 .blast-board.danger{
-  border-color:rgba(255,45,120,.45);
-  box-shadow:inset 0 0 40px rgba(255,45,120,.14);
+  border-color:rgba(255,45,120,.30);
+  box-shadow:inset 0 0 40px rgba(255,45,120,.08);
 }
 .bb-cell{
-  position:relative; border-radius:8px;
-  background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.06));
-  border:1px solid rgba(255,255,255,.10);
+  position:relative; border-radius:11px;
+  background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.05));
+  border:1px solid rgba(255,255,255,.07);
   transition:background .12s linear, border-color .12s linear;
 }
 .bb-cell.filled{border-color:transparent;}
-.bb-cell.pv-ok{background:rgba(198,255,61,.32); border-color:rgba(198,255,61,.65);}
-.bb-cell.pv-bad{background:rgba(255,45,120,.26); border-color:rgba(255,45,120,.55);}
+.bb-cell.pv-ok{background:rgba(140,190,120,.30); border-color:rgba(140,190,120,.55);}
+.bb-cell.pv-bad{background:rgba(200,90,110,.24); border-color:rgba(200,90,110,.48);}
+
 
 .bb-cell.popped{animation:cellPop .2s var(--ease) 1;}
 @keyframes cellPop{0%{transform:scale(.72);}60%{transform:scale(1.08);}100%{transform:scale(1);}}
@@ -182,7 +183,7 @@
   position:fixed; left:0; top:0; z-index:60; display:grid; gap:0;
   pointer-events:none; opacity:.94; will-change:transform;
 }
-.bg-cell{border-radius:8px;}
+.bg-cell{border-radius:11px;}
 
 /* ---- tray ---- */
 .blast-tray{
@@ -204,7 +205,7 @@
 .bt-piece:active{cursor:grabbing;}
 .bt-piece.enter{animation:pieceIn .26s var(--ease) both; animation-delay:calc(var(--i,0) * 70ms);}
 @keyframes pieceIn{0%{opacity:0; transform:translateY(10px) scale(.82);}100%{opacity:1; transform:none;}}
-.bt-cell{border-radius:6px;}
+.bt-cell{border-radius:9px;}
 
 /* ---- floating score / banners ---- */
 .bb-pop{
