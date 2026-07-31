@@ -101,33 +101,63 @@ export function HeroRenderer({ data }: { data: HeroData }) {
   return (
     <section className="hero">
       <div className="wrap">
-        <div className="hero-inner fade-in">
-          <div className="hero-text">
-            <div className="hero-badge"><span className="dot" /> {badge}</div>
-            <h1>{titleA} <span>{titleB}</span><br />{titleC}</h1>
-            <RichHtml as="p" html={subtitle} />
-            <div className="hero-ctas">
-              <a href={ctaALink} className="btn btn-primary">{ctaAText}</a>
-              <a href={ctaBLink} className="btn btn-ghost">{ctaBText}</a>
+        <div
+          className="hero-car"
+          onMouseEnter={() => { pausedRef.current = true; }}
+          onMouseLeave={() => { pausedRef.current = false; }}
+          onTouchStart={(e) => onStart(e.touches[0].clientX)}
+          onTouchEnd={(e) => onEnd(e.changedTouches[0].clientX)}
+        >
+          <div className="hero-car-track" ref={trackRef} style={{ transform: `translateX(calc(var(--gx-dir) * -${slide * 100}%))` }}>
+            <div className="hero-car-slide">
+              <div className="hero-inner fade-in">
+                <div className="hero-text">
+                  <div className="hero-badge"><span className="dot" /> {badge}</div>
+                  <h1>{titleA} <span>{titleB}</span><br />{titleC}</h1>
+                  <RichHtml as="p" html={subtitle} />
+                  <div className="hero-ctas">
+                    <a href={ctaALink} className="btn btn-primary">{ctaAText}</a>
+                    <a href={ctaBLink} className="btn btn-ghost">{ctaBText}</a>
+                  </div>
+                </div>
+                <div className="hero-visual">
+                  {data.image_url ? (
+                    <img src={data.image_url} alt="" style={{ maxWidth: "100%", borderRadius: 20, boxShadow: "0 20px 60px rgba(0,0,0,.35)" }} />
+                  ) : (
+                    <>
+                      <div className="orb" />
+                      <div className="orb-core">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth={1.4}><rect x="2" y="7" width="20" height="12" rx="4" /><circle cx="8" cy="13" r="1.6" fill="#00e5ff" stroke="none" /><circle cx="6" cy="11" r="0.4" fill="#00e5ff" stroke="none" /><path d="M15 11h4M17 9v4" stroke="#ff2d78" /></svg>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="hero-car-slide">
+              <HeroGamesSlide />
             </div>
           </div>
-          <div className="hero-visual">
-            {data.image_url ? (
-              <img src={data.image_url} alt="" style={{ maxWidth: "100%", borderRadius: 20, boxShadow: "0 20px 60px rgba(0,0,0,.35)" }} />
-            ) : (
-              <>
-                <div className="orb" />
-                <div className="orb-core">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth={1.4}><rect x="2" y="7" width="20" height="12" rx="4" /><circle cx="8" cy="13" r="1.6" fill="#00e5ff" stroke="none" /><circle cx="6" cy="11" r="0.4" fill="#00e5ff" stroke="none" /><path d="M15 11h4M17 9v4" stroke="#ff2d78" /></svg>
-                </div>
-              </>
-            )}
+
+          <div className="hero-car-dots" role="tablist">
+            {Array.from({ length: SLIDES }).map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={slide === i}
+                aria-label={`Slide ${i + 1}`}
+                className={"hcd" + (slide === i ? " on" : "")}
+                onClick={() => setSlide(i)}
+              />
+            ))}
           </div>
         </div>
       </div>
     </section>
   );
 }
+
 
 /* ---------------- ANNOUNCEMENT ---------------- */
 export function AnnouncementRenderer({ data }: { data: AnnouncementData }) {
