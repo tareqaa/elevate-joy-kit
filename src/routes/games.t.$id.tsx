@@ -130,7 +130,7 @@ function TournamentPage() {
   const top3 = (rows ?? []).slice(0, 3);
   const rest = (rows ?? []).slice(3);
   const meInTop = !!me?.played && !!me.rank && me.rank <= 20;
-  const prog = levelProgress(loyalty?.xp ?? 0, loyalty?.level ?? null, loyalty?.next_level ?? null);
+  
 
   return (
     <StoreShell>
