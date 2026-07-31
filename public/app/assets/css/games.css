@@ -121,10 +121,8 @@
   position:relative; width:100%; aspect-ratio:1/1;
   display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr);
   gap:4px; padding:10px; touch-action:none; user-select:none;
-  border-radius:22px; border:1.5px solid rgba(255,255,255,.10);
-  background:
-    radial-gradient(circle at 50% 0%,rgba(0,229,255,.10),transparent 60%),
-    linear-gradient(160deg,rgba(168,85,247,.08),rgba(8,11,24,.94));
+  border-radius:22px; border:1.5px solid rgba(255,255,255,.12);
+  background:linear-gradient(160deg,#070a14,#05070f);
 }
 .blast-board.danger{
   border-color:rgba(255,45,120,.42);
@@ -132,13 +130,14 @@
 }
 .bb-cell{
   position:relative; border-radius:8px;
-  background:rgba(255,255,255,.028);
-  border:1px solid rgba(255,255,255,.045);
+  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.055));
+  border:1px solid rgba(255,255,255,.11);
   transition:background .12s linear, border-color .12s linear;
 }
 .bb-cell.filled{border-color:transparent;}
 .bb-cell.pv-ok{background:rgba(198,255,61,.32); border-color:rgba(198,255,61,.65);}
 .bb-cell.pv-bad{background:rgba(255,45,120,.26); border-color:rgba(255,45,120,.55);}
+
 
 .bb-cell.popped{animation:cellPop .2s var(--ease) 1;}
 @keyframes cellPop{0%{transform:scale(.72);}60%{transform:scale(1.08);}100%{transform:scale(1);}}
@@ -272,5 +271,19 @@
 .blast-timer i{display:block;flex:1;height:8px;border-radius:999px;transform-origin:left center;background:linear-gradient(90deg,#25f2b0,#22e8ff);transition:none}
 .blast-timer b{min-width:48px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:#cfe9ff}
 .blast-timer.low i{background:linear-gradient(90deg,#ff8a1f,#ff3d8b)}
+.blast-timer.urgent{border-color:rgba(255,45,120,.55);background:rgba(255,45,120,.10)}
+.blast-timer.urgent i{background:linear-gradient(90deg,#ff2d55,#ff5a5a)}
+.blast-timer.urgent b{color:#ff6b8b;font-size:16px;font-weight:900;animation:timerPulse .6s var(--ease) infinite}
+@keyframes timerPulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.16);opacity:1}}
+
+/* ---- speed-up notice ---- */
+.bb-speed{
+  position:absolute; z-index:46; left:0; right:0; top:42%;
+  text-align:center; pointer-events:none;
+  font-size:clamp(14px,3.4vw,19px); font-weight:900; color:#ffc422;
+  animation:bannerUp 1.6s var(--ease) forwards;
+}
+@media(prefers-reduced-motion:reduce){.blast-timer.urgent b{animation:none}}
+
 .blast-timer.low b{color:#ff9db9}
 .bo-why{margin:2px 0 10px;font-size:13px;opacity:.75}

@@ -102,13 +102,17 @@ function BlastPage() {
   const [finalScore, setFinalScore] = useState(0);
   const [remainMs, setRemainMs] = useState(game.moveLimitMs);
   const [paused, setPaused] = useState(false);
+  const [speedNote, setSpeedNote] = useState<{ id: number; text: string } | null>(null);
+
 
   const boardRef = useRef<HTMLDivElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const popupId = useRef(1);
   const prevStreak = useRef(0);
   const prevTrayCount = useRef(3);
+  const prevLimit = useRef(0);
   const moveStart = useRef<number>(0);
+
 
   /* ----- best score (local only) ----- */
   useEffect(() => {
@@ -129,6 +133,22 @@ function BlastPage() {
     if (prevStreak.current >= 3 && game.streak === 0) setStreakBreak((n) => n + 1);
     prevStreak.current = game.streak;
   }, [game.streak]);
+
+  /* ----- speed-up notice when the move limit tier drops ----- */
+  useEffect(() => {
+    const lim = game.moveLimitMs;
+    if (prevLimit.current && lim < prevLimit.current) {
+      const secs = Math.round(lim / 1000);
+      const id = Date.now();
+      setSpeedNote({
+        id,
+        text: ar ? `تسارعت اللعبة — ${secs} ثوانٍ للحركة` : `Speeding up — ${secs}s per move`,
+      });
+      setTimeout(() => setSpeedNote((s) => (s && s.id === id ? null : s)), 1600);
+    }
+    prevLimit.current = lim;
+  }, [game.moveLimitMs, ar]);
+
 
   /* ----- new tray => staggered entrance ----- */
   useEffect(() => {
@@ -390,7 +410,12 @@ function BlastPage() {
             </div>
           </div>
 
-          <div className={"blast-timer" + (timePct < 0.34 ? " low" : "")} dir="ltr">
+          <div
+            className={
+              "blast-timer" + (timePct < 0.34 ? " low" : "") + (remainMs <= 3000 && !game.over ? " urgent" : "")
+            }
+            dir="ltr"
+          >
             <i style={{ transform: `scaleX(${timePct})` }} />
             <b>{(remainMs / 1000).toFixed(1)}s</b>
           </div>
@@ -431,6 +456,7 @@ function BlastPage() {
               })}
 
               {banner && <span key={banner.id} className="bb-banner">{banner.text}</span>}
+              {speedNote && <span key={speedNote.id} className="bb-speed">{speedNote.text}</span>}
             </div>
 
             {popups.map((p) => (
