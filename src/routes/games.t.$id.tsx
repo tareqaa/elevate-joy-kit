@@ -76,6 +76,43 @@ function TournamentPage() {
     return () => { alive = false; };
   }, []);
 
+  // ---- tournament registration (must join before playing) ----
+  const [registered, setRegistered] = useState<boolean | null>(null);
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [joining, setJoining] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session?.user?.id ?? null;
+      if (!alive) return;
+      setSignedIn(!!uid);
+      if (!uid) { setRegistered(false); return; }
+      const { data } = await supabase
+        .from("tournament_registrations")
+        .select("id")
+        .eq("tournament_id", id)
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (alive) setRegistered(!!data);
+    })();
+    return () => { alive = false; };
+  }, [id]);
+
+  const register = async () => {
+    const { data: s } = await supabase.auth.getSession();
+    const uid = s.session?.user?.id;
+    if (!uid) { navigate({ to: "/auth" }); return; }
+    setJoining(true);
+    const { error } = await supabase
+      .from("tournament_registrations")
+      .insert({ tournament_id: id, user_id: uid });
+    setJoining(false);
+    if (!error || error.code === "23505") setRegistered(true);
+  };
+
+
   const offset = useMemo(() => (t ? new Date(t.server_now).getTime() - Date.now() : 0), [t]);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
