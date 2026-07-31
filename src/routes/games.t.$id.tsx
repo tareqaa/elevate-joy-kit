@@ -220,13 +220,12 @@ function TournamentPage() {
                   <div className="podium">
                     {top3.map((r) => (
                       <div key={r.user_id} className={`pod p${r.rank}`} style={{ animationDelay: `${r.rank * 80}ms` }}>
-                        {r.rank === 1 && <span className="crown" aria-hidden>👑</span>}
                         {r.avatar_url ? (
                           <img src={r.avatar_url} alt="" className="pod-av" loading="lazy" />
                         ) : (
                           <span className="pod-av ph">{nameOf(r).slice(0, 1)}</span>
                         )}
-                        <span className="pod-medal" aria-hidden>{MEDALS[r.rank - 1]}</span>
+                        <span className="pod-rank">#{r.rank}</span>
                         <span className="pod-name">{nameOf(r)}</span>
                         <span className="pod-score" dir="ltr">{r.score.toLocaleString("en-US")}</span>
                       </div>
