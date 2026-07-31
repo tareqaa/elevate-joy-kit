@@ -420,16 +420,25 @@ function BlastPage() {
 
   /* ----- tournament: submit the finished run once ----- */
   const submitted = useRef<string>("");
+  const [arenaRank, setArenaRank] = useState<{ rank: number | null; delta: number | null } | null>(null);
   useEffect(() => {
     if (!tournamentId || !game.over || game.score <= 0) return;
     const key = `${tournamentId}:${game.seed}`;
     if (submitted.current === key) return;
     submitted.current = key;
-    void supabase.rpc("submit_tournament_score", {
-      _tournament_id: tournamentId,
-      _score: game.score,
-    });
+    void (async () => {
+      const before = await supabase.rpc("my_tournament_standing", { _tournament_id: tournamentId });
+      const prevRank = (before.data as { played?: boolean; rank?: number } | null)?.rank ?? null;
+      await supabase.rpc("submit_tournament_score", { _tournament_id: tournamentId, _score: game.score });
+      const after = await supabase.rpc("my_tournament_standing", { _tournament_id: tournamentId });
+      const newRank = (after.data as { played?: boolean; rank?: number } | null)?.rank ?? null;
+      setArenaRank({
+        rank: newRank,
+        delta: prevRank && newRank ? prevRank - newRank : null,
+      });
+    })();
   }, [tournamentId, game.over, game.score, game.seed]);
+
 
   const timerActive = !game.over && !paused;
   const onExpire = useCallback(() => setGame((g) => timeoutGame(g)), []);
@@ -792,6 +801,34 @@ function BlastPage() {
                           ? ar ? `تجاوزت أفضل نتيجة بـ ${Math.max(diff, 0).toLocaleString("en-US")} نقطة` : `Beat your best by ${Math.max(diff, 0).toLocaleString("en-US")}`
                           : ar ? `أفضل نتيجة: ${best.toLocaleString("en-US")} · ينقصك ${Math.max(best - game.score, 0).toLocaleString("en-US")}` : `Best: ${best.toLocaleString("en-US")} · ${Math.max(best - game.score, 0).toLocaleString("en-US")} to go`}
                       </p>
+
+                      {tournamentId && (
+                        <div className="bo-rw">
+                          <div className="bo-rw-row">
+                            <i aria-hidden>🏅</i>
+                            <span>{ar ? "ترتيبك في الساحة" : "Arena rank"}</span>
+                            <b>{arenaRank?.rank ? `#${arenaRank.rank}` : "…"}</b>
+                          </div>
+                          {arenaRank?.delta ? (
+                            <div className={"bo-rw-row " + (arenaRank.delta > 0 ? "up" : "down")}>
+                              <i aria-hidden>{arenaRank.delta > 0 ? "▲" : "▼"}</i>
+                              <span>{ar ? "تغيّر الترتيب" : "Rank change"}</span>
+                              <b>{Math.abs(arenaRank.delta)}</b>
+                            </div>
+                          ) : null}
+                          <div className="bo-rw-row xp">
+                            <i aria-hidden>⚡</i>
+                            <span>GX XP</span>
+                            <b>{ar ? "تُحتسب أسبوعيًا" : "Counted weekly"}</b>
+                          </div>
+                          <div className="bo-rw-row coins">
+                            <i aria-hidden>🪙</i>
+                            <span>GX Coins</span>
+                            <b>{ar ? "جوائز نهاية البطولة" : "Awarded at close"}</b>
+                          </div>
+                        </div>
+                      )}
+
                       <button type="button" className="btn btn-primary bo-btn" onClick={restart}>
                         {ar ? "العب مرة أخرى" : "Play again"}
                       </button>
