@@ -182,26 +182,18 @@ function TournamentPage() {
           </div>
         </header>
 
-        {/* ---- player dashboard ---- */}
-        <div className="adash">
+        {/* ---- player dashboard: competition only (XP/level live in the profile) ---- */}
+        <div className="adash adash-3">
           <div className="adash-c rank">
-            <span>{ar ? "ترتيبك" : "Arena rank"}</span>
+            <span>{ar ? "ترتيبك" : "Your rank"}</span>
             <b>{me?.played && me.rank ? `#${me.rank}` : "—"}</b>
           </div>
           <div className="adash-c">
             <span>{ar ? "أفضل نتيجة" : "Best score"}</span>
             <b>{(me?.score ?? 0).toLocaleString("en-US")}</b>
           </div>
-          <div className="adash-c xp">
-            <span>{ar ? "المستوى" : "GX Level"}</span>
-            <b>{loyalty?.level ? levelName(loyalty.level, lang) : "—"}</b>
-          </div>
-          <div className="adash-c xp">
-            <span>GX XP</span>
-            <b>{(loyalty?.xp ?? 0).toLocaleString("en-US")}</b>
-          </div>
           <div className="adash-c coins">
-            <span>GX Coins</span>
+            <span>{ar ? "رصيد GX Coins" : "GX Coins"}</span>
             <b>{(loyalty?.coins ?? 0).toLocaleString("en-US")}</b>
           </div>
         </div>
