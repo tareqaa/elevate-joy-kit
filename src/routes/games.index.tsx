@@ -4,7 +4,7 @@ import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { MINI_GAMES } from "@/lib/gx/mini-games";
 
-export const Route = createFileRoute("/games")({
+export const Route = createFileRoute("/games/")({
   head: () => ({
     meta: [
       { title: "Mini Games — ألعاب GX Store المصغّرة" },
