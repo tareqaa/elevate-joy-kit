@@ -71,8 +71,9 @@ function GamesPage() {
     tournaments: TournamentRow[];
   };
   const { serverNow, tournaments } = loaded;
-
+  const { lang, dir } = useLang();
   const ar = lang === "ar";
+
   const now = useServerClock(serverNow);
 
   // recompute status from the SERVER-anchored clock, never the raw browser clock
