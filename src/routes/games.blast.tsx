@@ -233,7 +233,7 @@ function BlastPage() {
     const cores = navigator.hardwareConcurrency ?? 8;
     const area = window.screen.width * window.screen.height;
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    setLowFx(Boolean(reduced) || cores <= 4 || area < 500000);
+    setLowFx(Boolean(reduced) || cores <= 4 || area < 190000);
   }, []);
   const togglePerf = useCallback(() => {
     setLowFx((v) => {
