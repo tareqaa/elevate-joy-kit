@@ -6,8 +6,10 @@ import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
+import { HowToPlaySlides } from "@/components/gx/games/HowToPlaySlides";
 import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
 import { listTournaments, type TournamentRow, type TournamentPrize } from "@/lib/gx/tournaments.functions";
+
 
 export const Route = createFileRoute("/games/")({
   head: () => ({
