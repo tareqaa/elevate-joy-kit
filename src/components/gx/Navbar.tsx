@@ -16,7 +16,6 @@ import { CurrencyModal } from "./CurrencyModal";
 import { ReviewModal } from "./ReviewModal";
 import { SpinWheelModal } from "./SpinWheel";
 import { useLang } from "@/lib/gx/i18n";
-import { MINI_GAMES } from "@/lib/gx/mini-games";
 import { localizedCategoryLink, localizedProduct, localizedGiftCard } from "@/lib/gx/product-locale";
 
 type SearchEntry = { key: string; title: string; sub: string; icon: string; iconImg?: string; link: string; hay: string };
@@ -488,22 +487,7 @@ export function Navbar() {
                   <MenuLink to="/cart" icon="🛒" label={t("nav.cart")} onClick={() => setMenuOpen(false)} />
                   <MenuLink to="/faq" icon="❓" label={t("nav.faq")} onClick={() => setMenuOpen(false)} />
                   <MenuLink to="/policy" icon="🛡️" label={t("nav.policy")} onClick={() => setMenuOpen(false)} />
-                  <MenuLink to="/games" icon="🎮" label={lang === "en" ? "Mini Games" : "الألعاب المصغّرة"} onClick={() => setMenuOpen(false)} />
-                  <div className="menu-games-car">
-                    {MINI_GAMES.map((g) => (
-                      <Link key={g.slug} to="/games" className="mg-item" onClick={() => setMenuOpen(false)}>
-                        <span className="mg-ic">{g.icon}</span>
-                        <span className="mg-name">{lang === "en" ? g.name_en : g.name_ar}</span>
-                        <span className="mg-status">
-                          {g.tournament
-                            ? (lang === "en" ? "Live tournament" : "تورنمنت نشط")
-                            : g.status === "soon"
-                              ? (lang === "en" ? "Coming soon" : "قريبًا")
-                              : (lang === "en" ? "Available" : "متاحة")}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
+                  <MenuLink to="/games" icon="🎮" label={lang === "en" ? "Play Arena" : "ساحة اللعب"} onClick={() => setMenuOpen(false)} />
                 </div>
                 <div className="menu-divider" />
                 <div className="menu-section">

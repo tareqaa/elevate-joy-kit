@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { GameIcon } from "@/components/gx/games/GameIcon";
-import { TournamentEntryModal } from "@/components/gx/games/TournamentEntryModal";
+import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
 import { listTournaments, type TournamentRow } from "@/lib/gx/tournaments.functions";
 
 export const Route = createFileRoute("/games/")({
@@ -53,17 +53,8 @@ function useServerClock(serverNow: string) {
   return now;
 }
 
-function fmtLeft(ms: number, ar: boolean) {
-  if (ms <= 0) return ar ? "انتهت" : "Ended";
-  const s = Math.floor(ms / 1000);
-  const d = Math.floor(s / 86400);
-  const h = Math.floor((s % 86400) / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  const p = (n: number) => String(n).padStart(2, "0");
-  if (d > 0) return `${d}${ar ? "ي" : "d"} ${p(h)}:${p(m)}:${p(sec)}`;
-  return `${p(h)}:${p(m)}:${p(sec)}`;
-}
+const fmtLeft = (ms: number, ar: boolean) => formatCountdown(ms, ar);
+
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
@@ -75,7 +66,6 @@ function GamesPage() {
   const { serverNow, tournaments } = loaded;
   const { lang, dir } = useLang();
   const ar = lang === "ar";
-  const [openId, setOpenId] = useState<string | null>(null);
 
   const now = useServerClock(serverNow);
 
@@ -161,11 +151,11 @@ function GamesPage() {
                               ? "تبدأ خلال"
                               : "Starts in"}
                       </span>
-                      <b dir="ltr" style={{ unicodeBidi: "isolate" }}>
+                      <b style={{ unicodeBidi: "isolate" }}>
                         {live
                           ? fmtLeft(t.end - now, ar)
                           : ended
-                            ? new Date(t.ends_at).toLocaleDateString("en-GB")
+                            ? formatDateTime(t.ends_at, ar)
                             : fmtLeft(t.start - now, ar)}
                       </b>
                     </div>
@@ -193,9 +183,9 @@ function GamesPage() {
                     )}
 
                     {live && t.game_path ? (
-                      <button type="button" className="btn btn-primary trn-btn" onClick={() => setOpenId(t.id)}>
+                      <Link to="/games/t/$id" params={{ id: t.id }} className="btn btn-primary trn-btn">
                         {ar ? "ادخل البطولة" : "Enter tournament"}
-                      </button>
+                      </Link>
                     ) : (
                       <button type="button" className="btn trn-btn trn-btn-off" disabled>
                         {ended
@@ -214,21 +204,6 @@ function GamesPage() {
           )}
         </section>
 
-        {openId && (() => {
-          const t = cards.find((c) => c.id === openId);
-          if (!t || !t.game_path) return null;
-          return (
-            <TournamentEntryModal
-              tournamentId={t.id}
-              title={ar ? t.title_ar : t.title_en}
-              gameSlug={t.game_slug}
-              gamePath={t.game_path}
-              endsAt={t.ends_at}
-              serverNow={serverNow}
-              onClose={() => setOpenId(null)}
-            />
-          );
-        })()}
       </main>
     </StoreShell>
   );
