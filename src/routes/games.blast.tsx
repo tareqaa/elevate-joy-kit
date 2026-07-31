@@ -234,7 +234,7 @@ function BlastPage() {
   const [clearing, setClearing] = useState<Map<number, ClearCell>>(new Map());
   const [placed, setPlaced] = useState<number[]>([]);
   const [popups, setPopups] = useState<Popup[]>([]);
-  const [banner, setBanner] = useState<{ id: number; text: string } | null>(null);
+  const [banner, setBanner] = useState<{ id: number; text: string; size?: number; clean?: boolean; streak?: string } | null>(null);
   const [shownScore, setShownScore] = useState(0);
   const [best, setBest] = useState(0);
   const [bestAtStart, setBestAtStart] = useState(0);
