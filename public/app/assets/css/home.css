@@ -4,11 +4,25 @@
    ============================================================ */
 
 .hero{
-  position:relative; padding:40px 0 56px; overflow:hidden;
-  background:
-    radial-gradient(650px 420px at 88% 10%, rgba(0,229,255,0.14), transparent 60%),
-    radial-gradient(550px 420px at 8% 100%, rgba(255,45,120,0.12), transparent 60%);
+  position:relative; padding:40px 0 56px; overflow:visible; isolation:isolate;
 }
+/* Ambient glow: lives in an oversized pseudo-element that bleeds past the
+   section on all sides and is masked to fade fully to alpha 0, so no straight
+   cut-off edge is ever visible. No blur filters (perf). */
+.hero::before{
+  content:""; position:absolute; z-index:-1; pointer-events:none;
+  left:50%; transform:translateX(-50%); width:100vw; max-width:none;
+  top:-340px; bottom:-300px;
+  background:
+    radial-gradient(1100px 720px at 78% 34%, rgba(0,229,255,0.16), rgba(0,229,255,0) 72%),
+    radial-gradient(1000px 720px at 18% 76%, rgba(255,45,120,0.14), rgba(255,45,120,0) 72%),
+    radial-gradient(900px 600px at 50% 8%, rgba(198,255,61,0.08), rgba(198,255,61,0) 74%);
+  -webkit-mask-image:radial-gradient(72% 88% at 50% 34%, #000 20%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0) 100%);
+  mask-image:radial-gradient(72% 88% at 50% 34%, #000 20%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0) 100%);
+
+}
+.hero > *{position:relative; z-index:1;}
+
 .hero-inner{
   background:linear-gradient(120deg, #12151f 0%, #171b28 100%);
   border:1.5px solid var(--border);
