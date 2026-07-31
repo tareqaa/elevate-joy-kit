@@ -287,12 +287,13 @@ function BlastPage() {
               </span>
             ))}
 
-            <div className="blast-tray" onPointerMove={onPointerMove} onPointerUp={finishDrag}>
+            <div className="blast-tray" dir="ltr" onPointerMove={onPointerMove} onPointerUp={finishDrag}>
               {game.tray.map((p, i) => (
                 <div key={i} className={"bt-slot" + (drag?.trayIndex === i ? " dragging" : "")}>
                   {p && (
                     <div
                       className="bt-piece"
+                      dir="ltr"
                       onPointerDown={(e) => onPieceDown(e, i, p)}
                       style={{ gridTemplateColumns: `repeat(${p.w}, var(--tc))`, gridTemplateRows: `repeat(${p.h}, var(--tc))` }}
                     >
@@ -317,11 +318,13 @@ function BlastPage() {
             {drag && (
               <div
                 className="bb-ghost"
+                dir="ltr"
                 style={{
-                  left: drag.x - drag.gx * drag.piece.w * cell,
-                  top: drag.y - drag.gy * drag.piece.h * cell - drag.lift,
-                  gridTemplateColumns: `repeat(${drag.piece.w}, ${cell}px)`,
-                  gridTemplateRows: `repeat(${drag.piece.h}, ${cell}px)`,
+                  left: ghost?.left ?? 0,
+                  top: ghost?.top ?? 0,
+                  gap: 0,
+                  gridTemplateColumns: `repeat(${drag.piece.w}, ${stepX}px)`,
+                  gridTemplateRows: `repeat(${drag.piece.h}, ${stepY}px)`,
                 }}
               >
                 {Array.from({ length: drag.piece.w * drag.piece.h }).map((_, k) => {
@@ -332,7 +335,11 @@ function BlastPage() {
                     <span
                       key={k}
                       className={"bg-cell" + (on ? " on" : "")}
-                      style={on ? { background: PIECE_COLORS[drag.piece.color] } : undefined}
+                      style={{
+                        width: cell,
+                        height: cell,
+                        background: on ? PIECE_COLORS[drag.piece.color] : undefined,
+                      }}
                     />
                   );
                 })}
