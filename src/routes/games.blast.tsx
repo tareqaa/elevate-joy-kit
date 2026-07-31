@@ -803,6 +803,14 @@ function BlastPage() {
                     </div>
                   </div>
                 )}
+
+                {showHowTo && (
+                  <div className="blast-over" role="dialog" aria-modal="true">
+                    <div className="bo-card htp-card" dir="rtl">
+                      <HowToPlaySlides onDone={() => setShowHowTo(false)} doneLabel="إغلاق" />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
