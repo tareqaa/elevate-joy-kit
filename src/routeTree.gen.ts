@@ -32,6 +32,7 @@ import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticate
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as GamesTIdRouteImport } from './routes/games.t.$id'
 import { Route as AuthenticatedAdminWheelRouteImport } from './routes/_authenticated/admin/wheel'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
@@ -164,6 +165,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const GamesTIdRoute = GamesTIdRouteImport.update({
+  id: '/games/t/$id',
+  path: '/games/t/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminWheelRoute = AuthenticatedAdminWheelRouteImport.update({
   id: '/wheel',
   path: '/wheel',
@@ -289,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/wheel': typeof AuthenticatedAdminWheelRoute
+  '/games/t/$id': typeof GamesTIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -327,6 +334,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/wheel': typeof AuthenticatedAdminWheelRoute
+  '/games/t/$id': typeof GamesTIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -368,6 +376,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/wheel': typeof AuthenticatedAdminWheelRoute
+  '/games/t/$id': typeof GamesTIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -409,6 +418,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/users'
     | '/admin/wheel'
+    | '/games/t/$id'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -447,6 +457,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/users'
     | '/admin/wheel'
+    | '/games/t/$id'
     | '/admin'
   id:
     | '__root__'
@@ -487,6 +498,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/users'
     | '/_authenticated/admin/wheel'
+    | '/games/t/$id'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -512,6 +524,7 @@ export interface RootRouteChildren {
   UUsernameRoute: typeof UUsernameRoute
   GamesIndexRoute: typeof GamesIndexRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  GamesTIdRoute: typeof GamesTIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -676,6 +689,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/games/t/$id': {
+      id: '/games/t/$id'
+      path: '/games/t/$id'
+      fullPath: '/games/t/$id'
+      preLoaderRoute: typeof GamesTIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/wheel': {
       id: '/_authenticated/admin/wheel'
@@ -860,6 +880,7 @@ const rootRouteChildren: RootRouteChildren = {
   UUsernameRoute: UUsernameRoute,
   GamesIndexRoute: GamesIndexRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  GamesTIdRoute: GamesTIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
