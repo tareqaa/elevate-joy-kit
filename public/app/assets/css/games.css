@@ -935,3 +935,8 @@
 /* ---------- registration gate ---------- */
 .reg-note{margin:8px 0 0;font-size:13px;color:#9fb0d8;}
 .reg-ok{color:#7dffb0;font-weight:700;}
+
+/* --- lean arena lobby --- */
+.arena-hero-sm{padding:30px 22px;}
+.arena-hero-sm .ar-title{font-size:clamp(28px,5.4vw,46px);}
+.tcar-dates{display:flex;flex-direction:column;gap:3px;font-size:12px;color:#93a5cf;margin:0;}
