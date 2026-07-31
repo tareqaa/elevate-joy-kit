@@ -446,14 +446,18 @@ function BlastPage() {
     const step = cs + BOARD_GAP_PX;
     const left = d.x - (d.piece.w * step - BOARD_GAP_PX) / 2;
     const top = d.y - (d.piece.h * step - BOARD_GAP_PX) / 2 - d.lift;
-    // free, smooth pointer following (grid alignment is shown by the board preview)
-    if (ghostRef.current) {
-      ghostRef.current.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-    }
     const hit = cellUnderPoint(left + cs / 2, top + cs / 2);
     const next: Target = hit
       ? { row: hit.row, col: hit.col, ok: canPlace(gameRef.current.board, d.piece, hit.row, hit.col) }
       : null;
+    // free, smooth pointer following outside the board; once the piece is a
+    // valid placement, the in-grid preview takes over so nothing can ever be
+    // painted past the board frame
+    if (ghostRef.current) {
+      ghostRef.current.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+      ghostRef.current.style.visibility = next?.ok ? "hidden" : "visible";
+    }
+
 
     const cur = targetRef.current;
     const same =
