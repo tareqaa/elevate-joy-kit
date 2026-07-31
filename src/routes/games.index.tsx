@@ -153,29 +153,27 @@ function GamesPage() {
 
                     <h3 className="tcar-nm">{ar ? t.title_ar : t.title_en}</h3>
 
-                    <div className="tcar-dates" style={{ unicodeBidi: "isolate" }}>
-                      <span>{ar ? "تبدأ" : "Starts"}: {formatDateTime(t.starts_at, ar)}</span>
-                      <span>{ar ? "تنتهي" : "Ends"}: {formatDateTime(t.ends_at, ar)}</span>
-                    </div>
-
                     <p className="tcar-time" style={{ unicodeBidi: "isolate" }}>
                       🕒 {t.status === "ended"
-                        ? ar ? "البطولة منتهية" : "Tournament finished"
+                        ? ar ? "انتهت" : "Finished"
                         : t.status === "live"
-                          ? `${ar ? "متبقٍ" : "Time left"} ${formatCountdown(t.end - now, ar)}`
+                          ? `${ar ? "يتبقى" : "Time left"} ${formatCountdown(t.end - now, ar)}`
                           : `${ar ? "تبدأ بعد" : "Starts in"} ${formatCountdown(t.start - now, ar)}`}
                     </p>
 
                     <div className="tcar-meta">
                       <span>👥 {t.participants.toLocaleString("en")} {ar ? "مشارك" : "players"}</span>
-                      <span>🎁 {pool > 0 ? `${pool.toLocaleString("en")} GX` : `${t.prizes.length} ${ar ? "جوائز" : "prizes"}`}</span>
+                      <span>🎁 {t.prizes.length} {ar ? "جائزة" : "prizes"}</span>
                     </div>
 
                     <Link to="/games/t/$id" params={{ id: t.id }} className="tcar-go">
                       {t.status === "ended"
-                        ? ar ? "شوف النتائج" : "View results"
-                        : ar ? "سجّل وادخل البطولة" : "Register & enter"}
+                        ? ar ? "النتائج" : "Results"
+                        : joined.has(t.id)
+                          ? ar ? "ادخل البطولة" : "Enter tournament"
+                          : ar ? "سجّل الآن" : "Register now"}
                     </Link>
+
                   </article>
                 );
               })}
