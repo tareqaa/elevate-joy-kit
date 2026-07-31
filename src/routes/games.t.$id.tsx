@@ -31,11 +31,8 @@ type Row = {
   level_color?: string | null; level_icon?: string | null;
 };
 type Standing = { played: boolean; rank?: number; total?: number; score?: number; username?: string | null; full_name?: string | null; avatar_url?: string | null };
-export type Prize = {
-  place: number; label_ar: string; label_en: string;
-  reward_type?: "coupon" | "coins" | "xp" | "custom" | null;
-  reward_value?: number | null;
-};
+import { prizeRewards, rewardIcon, rewardText, type Prize } from "@/lib/gx/tournament-prizes";
+export type { Prize };
 type T = {
   id: string; game_slug: string; title_ar: string; title_en: string; game_path: string | null;
   starts_at: string; ends_at: string; prizes: Prize[]; live_status: "live" | "upcoming" | "ended";
@@ -45,14 +42,23 @@ type T = {
 const MEDALS = ["🥇", "🥈", "🥉"];
 const nameOf = (r: { username: string | null; full_name: string | null }) => r.username || r.full_name || "لاعب GX";
 
-const REWARD_ICON: Record<string, string> = { coupon: "🎟️", coins: "🪙", xp: "⚡", custom: "🎁" };
-function rewardText(p: Prize, ar: boolean): string {
-  const v = Number(p.reward_value ?? 0);
-  if (p.reward_type === "coupon" && v > 0) return ar ? `كوبون خصم ${v}%` : `${v}% discount coupon`;
-  if (p.reward_type === "coins" && v > 0) return ar ? `${v.toLocaleString("en-US")} GX Coins` : `${v.toLocaleString("en-US")} GX Coins`;
-  if (p.reward_type === "xp" && v > 0) return ar ? `${v.toLocaleString("en-US")} XP` : `${v.toLocaleString("en-US")} XP`;
-  return ar ? p.label_ar : p.label_en;
+function PrizeRow({ p, place, ar }: { p: Prize; place: number; ar: boolean }) {
+  const rewards = prizeRewards(p);
+  return (
+    <div className={`przrow g${Math.min(place, 4)}`}>
+      <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
+      <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
+      <span>
+        {rewards.map((r, n) => (
+          <span key={n} className="prz-reward">
+            {rewardIcon(r.type)} {rewardText(r, ar)}
+          </span>
+        ))}
+      </span>
+    </div>
+  );
 }
+
 
 function TournamentPage() {
   const { id } = Route.useParams();
@@ -339,16 +345,10 @@ function TournamentPage() {
               ) : (
                 <>
                   <div className="przlist">
-                    {sortedPrizes.slice(0, 6).map((p, i) => {
-                      const place = p.place ?? i + 1;
-                      return (
-                        <div key={place} className={`przrow g${Math.min(place, 4)}`}>
-                          <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
-                          <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
-                          <span>{p.reward_type && p.reward_type !== "custom" ? `${REWARD_ICON[p.reward_type]} ${rewardText(p, ar)}` : rewardText(p, ar)}</span>
-                        </div>
-                      );
-                    })}
+                    {sortedPrizes.slice(0, 6).map((p, i) => (
+                      <PrizeRow key={p.place ?? i + 1} p={p} place={p.place ?? i + 1} ar={ar} />
+                    ))}
+
                   </div>
                   {sortedPrizes.length > 6 && (
                     <button type="button" className="prz-all" onClick={() => setPrizesOpen(true)}>
@@ -366,16 +366,10 @@ function TournamentPage() {
             <div className="tp-modal-card" onClick={(e) => e.stopPropagation()}>
               <h3 className="tp-modal-t">{ar ? "كل جوائز البطولة" : "All tournament prizes"}</h3>
               <div className="przlist scroll">
-                {sortedPrizes.map((p, i) => {
-                  const place = p.place ?? i + 1;
-                  return (
-                    <div key={place} className={`przrow g${Math.min(place, 4)}`}>
-                      <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
-                      <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
-                      <span>{p.reward_type && p.reward_type !== "custom" ? `${REWARD_ICON[p.reward_type]} ${rewardText(p, ar)}` : rewardText(p, ar)}</span>
-                    </div>
-                  );
-                })}
+                {sortedPrizes.map((p, i) => (
+                  <PrizeRow key={p.place ?? i + 1} p={p} place={p.place ?? i + 1} ar={ar} />
+                ))}
+
               </div>
               <button type="button" className="btn btn-primary" onClick={() => setPrizesOpen(false)}>
                 {ar ? "إغلاق" : "Close"}

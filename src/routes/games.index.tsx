@@ -9,6 +9,8 @@ import { gameLabel } from "@/lib/gx/games/time";
 import { CarouselRow } from "@/components/gx/CarouselRow";
 import { supabase } from "@/integrations/supabase/client";
 import { listTournaments, type TournamentRow, type TournamentPrize } from "@/lib/gx/tournaments.functions";
+import { prizeRewards, type Prize as PrizeModel } from "@/lib/gx/tournament-prizes";
+
 
 export const Route = createFileRoute("/games/")({
   head: () => ({
@@ -55,12 +57,17 @@ function useServerClock(serverNow: string) {
   return now;
 }
 
-/** visual only: sums the GX Coins mentioned in the prize labels for a "prize pool" figure */
+/** visual only: sums the GX Coins across all rewards for a "prize pool" figure */
 export function prizePool(prizes: TournamentPrize[]): number {
   return prizes.reduce((sum, p) => {
-    const text = p.label_en || p.label_ar || "";
-    const m = text.match(/(\d[\d,\.]*)\s*(?:gx\s*)?(?:coins?|كوين|كوينز)/gi);
+    const rewards = prizeRewards(p as unknown as PrizeModel);
+    const fromRewards = rewards
+      .filter((r) => r.type === "coins")
+      .reduce((s, r) => s + (Number(r.value ?? 0) || 0), 0);
+    if (fromRewards > 0) return sum + fromRewards;
 
+    const text = rewards.map((r) => r.label_en || r.label_ar || "").join(" ");
+    const m = text.match(/(\d[\d,\.]*)\s*(?:gx\s*)?(?:coins?|كوين|كوينز)/gi);
     if (!m) return sum;
     const n = m.reduce((s, chunk) => {
       const num = Number((chunk.match(/\d[\d,\.]*/)?.[0] ?? "0").replace(/[,\.]/g, ""));
@@ -69,6 +76,7 @@ export function prizePool(prizes: TournamentPrize[]): number {
     return sum + n;
   }, 0);
 }
+
 
 /** clean segmented countdown: days / hours / minutes / seconds */
 function Countdown({ ms, ar }: { ms: number; ar: boolean }) {

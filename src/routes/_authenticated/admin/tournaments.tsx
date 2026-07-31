@@ -16,27 +16,16 @@ export const Route = createFileRoute("/_authenticated/admin/tournaments")({
   component: TournamentsAdmin,
 });
 
-type RewardType = "coupon" | "coins" | "xp" | "custom";
-type Prize = {
-  place: number;
-  label_ar: string;
-  label_en: string;
-  reward_type?: RewardType;
-  reward_value?: number | null;
-};
-const REWARD_TYPES: { v: RewardType; label: string }[] = [
-  { v: "coupon", label: "كوبون خصم %" },
-  { v: "coins", label: "GX Coins" },
-  { v: "xp", label: "XP" },
-  { v: "custom", label: "جائزة مخصصة" },
-];
-function autoLabels(type: RewardType, value: number): { label_ar: string; label_en: string } | null {
-  if (!value) return null;
-  if (type === "coupon") return { label_ar: `كوبون خصم ${value}%`, label_en: `${value}% discount coupon` };
-  if (type === "coins") return { label_ar: `${value} GX Coins`, label_en: `${value} GX Coins` };
-  if (type === "xp") return { label_ar: `${value} XP`, label_en: `${value} XP` };
-  return null;
-}
+import {
+  REWARD_TYPES,
+  prizeRewards,
+  prizeSummary,
+  
+  type Prize,
+  type Reward,
+  type RewardType,
+} from "@/lib/gx/tournament-prizes";
+
 type Row = {
   id: string;
   game_slug: string;
@@ -184,6 +173,20 @@ function TournamentsAdmin() {
     },
   });
 
+  // products for product-specific coupons
+  const productsQ = useQuery({
+    queryKey: ["admin-tournament-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("slug,name_ar")
+        .eq("is_active", true)
+        .order("name_ar");
+      if (error) throw error;
+      return (data ?? []) as { slug: string; name_ar: string }[];
+    },
+  });
+
 
   const setPrize = (i: number, patch: Partial<Prize>) =>
     setEdit((e) => {
@@ -261,10 +264,11 @@ function TournamentsAdmin() {
                     <li key={i} className="flex items-center gap-2">
                       <Medal className="h-4 w-4 text-amber-400" />
                       <span className="font-semibold">المركز {p.place ?? i + 1}:</span>
-                      <span className="text-muted-foreground truncate">{p.label_ar}</span>
+                      <span className="text-muted-foreground truncate">{prizeSummary(p, true)}</span>
                     </li>
                   ))}
                 </ul>
+
                 <p className="text-xs text-muted-foreground">
                   عدد الفائزين: {t.prizes.length} · المسجّلون: {regQ.data?.[t.id] ?? 0}
                 </p>
@@ -323,49 +327,113 @@ function TournamentsAdmin() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">الجوائز (عدد الفائزين: {(edit.prizes ?? []).length})</span>
-                  <Button size="sm" variant="outline" onClick={() => setEdit({ ...edit, prizes: [...(edit.prizes ?? []), { place: (edit.prizes ?? []).length + 1, label_ar: "", label_en: "", reward_type: "custom", reward_value: null }] })}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      setEdit({
+                        ...edit,
+                        prizes: [
+                          ...(edit.prizes ?? []),
+                          { place: (edit.prizes ?? []).length + 1, label_ar: "", label_en: "", rewards: [{ type: "custom" }] },
+                        ],
+                      })
+                    }
+                  >
                     <Plus className="h-4 w-4 ms-1" /> مركز
                   </Button>
                 </div>
-                {(edit.prizes ?? []).map((p, i) => (
-                  <div key={i} className="rounded-lg border p-2 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold">المركز {i + 1}</span>
-                      <Button size="sm" variant="ghost" onClick={() => setEdit({ ...edit, prizes: (edit.prizes ?? []).filter((_, n) => n !== i) })}>
-                        <Trash2 className="h-4 w-4" />
+                {(edit.prizes ?? []).map((p, i) => {
+                  const rewards = prizeRewards(p);
+                  const setRewards = (rw: Reward[]) => setPrize(i, { rewards: rw });
+                  const setReward = (ri: number, patch: Partial<Reward>) =>
+                    setRewards(rewards.map((r, n) => (n === ri ? { ...r, ...patch } : r)));
+                  return (
+                    <div key={i} className="rounded-lg border p-2 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold">المركز {i + 1}</span>
+                        <Button size="sm" variant="ghost" onClick={() => setEdit({ ...edit, prizes: (edit.prizes ?? []).filter((_, n) => n !== i) })}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      {rewards.map((r, ri) => (
+                        <div key={ri} className="rounded-md border border-dashed p-2 space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <select
+                              className="h-9 rounded-md border bg-background px-2 text-sm"
+                              value={r.type}
+                              onChange={(e) => setReward(ri, { type: e.target.value as RewardType })}
+                            >
+                              {REWARD_TYPES.map((o) => (
+                                <option key={o.v} value={o.v}>{`${o.icon} ${o.label_ar}`}</option>
+                              ))}
+                            </select>
+                            <Input
+                              type="number"
+                              min={0}
+                              step="any"
+                              placeholder={
+                                r.type === "coupon_fixed" ? "القيمة بالدينار" : r.type === "custom" ? "—" : "القيمة (نسبة/عدد)"
+                              }
+                              disabled={r.type === "custom"}
+                              value={r.value ?? ""}
+                              onChange={(e) => setReward(ri, { value: e.target.value === "" ? null : Number(e.target.value) })}
+                            />
+                          </div>
+
+                          {r.type === "coupon_product" && (
+                            <select
+                              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                              value={r.product_slug ?? ""}
+                              onChange={(e) => {
+                                const slug = e.target.value;
+                                const prod = (productsQ.data ?? []).find((x) => x.slug === slug);
+                                setReward(ri, { product_slug: slug || null, product_name: prod?.name_ar ?? null });
+                              }}
+                            >
+                              <option value="">اختر المنتج…</option>
+                              {(productsQ.data ?? []).map((prod) => (
+                                <option key={prod.slug} value={prod.slug}>{prod.name_ar}</option>
+                              ))}
+                            </select>
+                          )}
+
+                          {(r.type === "coupon_percent" || r.type === "coupon_product") && (
+                            <Input
+                              type="number"
+                              min={0}
+                              step="any"
+                              placeholder="حد أقصى للخصم بالدينار (اختياري)"
+                              value={r.max_discount_jod ?? ""}
+                              onChange={(e) => setReward(ri, { max_discount_jod: e.target.value === "" ? null : Number(e.target.value) })}
+                            />
+                          )}
+
+                          {r.type === "custom" && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input placeholder="الجائزة بالعربية" value={r.label_ar ?? ""} onChange={(e) => setReward(ri, { label_ar: e.target.value })} />
+                              <Input placeholder="Prize in English" value={r.label_en ?? ""} onChange={(e) => setReward(ri, { label_en: e.target.value })} />
+                            </div>
+                          )}
+
+                          {rewards.length > 1 && (
+                            <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setRewards(rewards.filter((_, n) => n !== ri))}>
+                              <Trash2 className="h-4 w-4 ms-1" /> حذف الجائزة
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+
+                      <Button size="sm" variant="outline" onClick={() => setRewards([...rewards, { type: "custom" }])}>
+                        <Plus className="h-4 w-4 ms-1" /> جائزة إضافية لهذا المركز
                       </Button>
+                      <p className="text-[11px] text-muted-foreground">{prizeSummary({ ...p, rewards }, true)}</p>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <select
-                        className="h-9 rounded-md border bg-background px-2 text-sm"
-                        value={p.reward_type ?? "custom"}
-                        onChange={(e) => {
-                          const rt = e.target.value as RewardType;
-                          const auto = autoLabels(rt, Number(p.reward_value ?? 0));
-                          setPrize(i, { reward_type: rt, ...(auto ?? {}) });
-                        }}
-                      >
-                        {REWARD_TYPES.map((r) => <option key={r.v} value={r.v}>{r.label}</option>)}
-                      </select>
-                      <Input
-                        type="number"
-                        min={0}
-                        placeholder="القيمة (نسبة/عدد)"
-                        disabled={(p.reward_type ?? "custom") === "custom"}
-                        value={p.reward_value ?? ""}
-                        onChange={(e) => {
-                          const val = e.target.value === "" ? null : Number(e.target.value);
-                          const rt = p.reward_type ?? "custom";
-                          const auto = autoLabels(rt, Number(val ?? 0));
-                          setPrize(i, { reward_value: val, ...(auto ?? {}) });
-                        }}
-                      />
-                    </div>
-                    <Input placeholder="الجائزة بالعربية (مثال: منتج رقمي مجاني)" value={p.label_ar} onChange={(e) => setPrize(i, { label_ar: e.target.value })} />
-                    <Input placeholder="Prize in English" value={p.label_en} onChange={(e) => setPrize(i, { label_en: e.target.value })} />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+
             </div>
           )}
           <DialogFooter>
