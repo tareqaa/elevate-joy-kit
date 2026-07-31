@@ -152,23 +152,24 @@
   position:relative; width:100%; height:100%; box-sizing:border-box;
   display:grid; grid-template-columns:repeat(8,var(--board-cell)); grid-template-rows:repeat(8,var(--board-cell));
   gap:var(--board-gap); padding:0; touch-action:none; user-select:none;
-  border-radius:14px;
-  border:var(--board-pad) solid #1C2242;
-  background:#2A3157;
+  border-radius:16px;
+  border:var(--board-pad) solid #171E3F;
+  background:#39427A;
   /* nothing may ever be painted outside the board frame */
   overflow:hidden;
 }
 .blast-board.danger{border-color:#241d3a;}
 
-/* empty cell = plain panel colour, no border, no radius, no shadow */
+/* empty cell = deep navy well */
 .bb-cell{
   position:relative; box-sizing:border-box;
-  background:#1C2242; border:0; border-radius:0;
+  background:#171E3F; border:0; border-radius:2px;
 }
-/* occupied cell = chamfered cube (colours come from inline style) */
+/* occupied cell = chamfered glossy cube (colours come from inline style) */
 .bb-cell.filled{
-  border-width:var(--bevel,4px); border-radius:3px;
+  border-width:var(--bevel,4px); border-radius:5px;
 }
+
 /* in-grid preview: the target cells themselves, tinted with the piece colour */
 .bb-cell.pv-ok{opacity:.55;}
 
@@ -189,19 +190,19 @@
   pointer-events:none; opacity:.94; will-change:transform;
 }
 .bg-cell{box-sizing:border-box;}
-.bg-cell.on{border-width:var(--bevel,4px); border-radius:3px;}
+.bg-cell.on{border-width:var(--bevel,4px); border-radius:5px;}
 
 /* ---- tray ---- */
 .blast-tray{
   flex:0 0 auto;
   display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
   padding:10px; touch-action:none; user-select:none;
-  border-radius:16px; border:0; background:#3B4585;
+  border-radius:16px; border:0; background:transparent;
 }
 .bt-slot{
   min-height:calc(var(--tc,24px) * 3.4);
   display:flex; align-items:center; justify-content:center;
-  border-radius:12px; background:rgba(28,34,66,.35);
+  border-radius:12px; background:transparent;
   border:0;
   transition:opacity .2s var(--ease);
 }
@@ -212,7 +213,7 @@
 .bt-piece.enter{animation:pieceIn .26s var(--ease) both; animation-delay:calc(var(--i,0) * 70ms);}
 @keyframes pieceIn{0%{opacity:0; transform:translateY(10px) scale(.82);}100%{opacity:1; transform:none;}}
 .bt-cell{box-sizing:border-box;}
-.bt-cell.on{border-width:var(--bevel,3px); border-radius:3px;}
+.bt-cell.on{border-width:var(--bevel,3px); border-radius:5px;}
 
 
 /* ---- floating score / banners ---- */
