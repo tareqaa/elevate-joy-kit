@@ -30,7 +30,7 @@ function HeroGamesSlide() {
   const { lang } = useLang();
   const ar = lang === "ar";
   return (
-    <Link to="/games/blast" className="hero-inner hero-games" aria-label={ar ? "الألعاب المصغّرة" : "Mini Games"} draggable={false}>
+    <Link to="/games" className="hero-inner hero-games" aria-label={ar ? "البطولات" : "Tournaments"} draggable={false}>
       <div className="hg-noise" aria-hidden />
       {/* flying arcade bits (tetris blocks + pixel bird) */}
       <div className="hg-arcade" aria-hidden>
