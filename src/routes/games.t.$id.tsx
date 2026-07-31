@@ -300,33 +300,6 @@ function TournamentPage() {
             </section>
 
 
-            <section className="tp-card">
-              <h2>GX Journey</h2>
-              <div className="jr">
-                <div className="jr-top">
-                  <span className="jr-lvl">
-                    {loyalty?.level ? levelName(loyalty.level, lang) : ar ? "سجّل الدخول لعرض تقدمك" : "Sign in to see your progress"}
-                  </span>
-                  <span className="jr-hint" dir="ltr">{(loyalty?.xp ?? 0).toLocaleString("en-US")} XP</span>
-                </div>
-                <div className="jr-bar"><div className="jr-fill" style={{ width: `${loyalty ? prog.pct : 0}%` }} /></div>
-                <p className="jr-hint">
-                  {loyalty?.next_level
-                    ? ar
-                      ? `ينقصك ${prog.remaining.toLocaleString("en-US")} XP للوصول إلى ${levelName(loyalty.next_level, lang)}`
-                      : `${prog.remaining.toLocaleString("en-US")} XP to reach ${levelName(loyalty.next_level, lang)}`
-                    : ar
-                      ? "اجمع XP من البطولات والطلبات لترتقي في المستويات."
-                      : "Earn XP from tournaments and orders to level up."}
-                </p>
-                <div className="jr-perks">
-                  <div className="jr-perk"><b>GX XP</b><span>{ar ? "كل جولة تقرّبك للمستوى التالي" : "Every run pushes your level"}</span></div>
-                  <div className="jr-perk"><b>GX Coins</b><span>{ar ? "تُصرف كخصم على مشترياتك" : "Spend them as store discounts"}</span></div>
-                  <div className="jr-perk"><b>Arena Points</b><span>{ar ? "ترتيبك الأسبوعي في الساحة" : "Your weekly arena standing"}</span></div>
-                </div>
-              </div>
-            </section>
-
             <section className="tp-card tp-stats">
               <div><span>{ar ? "المشاركون" : "Players"}</span><b>{t.participants.toLocaleString("en")}</b></div>
               <div><span>{ar ? "أعلى سكور" : "Top score"}</span><b>{t.top_score.toLocaleString("en")}</b></div>
