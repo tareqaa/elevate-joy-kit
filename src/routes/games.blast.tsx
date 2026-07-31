@@ -702,6 +702,21 @@ function BlastPage() {
   return (
     <StoreShell bare>
       <main dir={dir} className="blast-page blast-fs">
+        <div className="bl-fx" aria-hidden>
+          {BG_BITS.map((b, i) => (
+            <i
+              key={i}
+              style={{
+                left: `${b.left}%`,
+                width: b.size,
+                height: b.size,
+                background: b.color,
+                animationDuration: `${b.dur}s`,
+                animationDelay: `-${b.delay}s`,
+              }}
+            />
+          ))}
+        </div>
         <header className="blast-bar">
           <Link to="/games" className="blast-back">{ar ? "‹ ساحة اللعب" : "‹ Play Arena"}</Link>
         </header>
