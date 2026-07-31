@@ -34,9 +34,9 @@ export const Route = createFileRoute("/games/blast")({
 
 const BEST_KEY = "gx_blast_best";
 const MAX_POPUPS = 4;
-const BOARD_GAP_PX = 4;
-const BOARD_PADDING_PX = 8;
-const BOARD_BORDER_PX = 2;
+const BOARD_GAP_PX = 1;
+const BOARD_PADDING_PX = 6;
+const BOARD_BORDER_PX = 0;
 const BOARD_RESIZE_DEBOUNCE_MS = 120;
 
 type BoardLayout = { boardPx: number; cellPx: number };
@@ -51,35 +51,53 @@ function calculateBoardLayout(availableWidth: number, availableHeight: number): 
   };
 }
 
-/* --- VISUAL-ONLY palette: Block Blast style, bright but not neon --- */
+/** bevel band thickness ~12% of the cube side, always an integer number of px */
+function bevelPx(cell: number): number {
+  return Math.max(2, Math.floor(cell * 0.12));
+}
+
+/* --- VISUAL-ONLY palette: classic block-puzzle, moderately saturated --- */
 const VIVID: Record<number, string> = {
-  1: "#43a7ea", // blue
-  2: "#ef5f6b", // red
-  3: "#5fc76c", // green
-  4: "#a274e2", // purple
-  5: "#f0c24e", // yellow
-  6: "#6b8ee8", // indigo
-  7: "#46c6b2", // teal
-  8: "#f082b4", // pink
-  9: "#f2924f", // orange
+  1: "#5BC8E8", // سماوي
+  2: "#3B6FE0", // أزرق
+  3: "#52B84E", // أخضر
+  4: "#F0C040", // أصفر ذهبي
+  5: "#8A5BD6", // بنفسجي
+  6: "#E8862E", // برتقالي
+  7: "#D9483F", // أحمر
+  8: "#F0C040", // أصفر ذهبي
+  9: "#E8862E", // برتقالي
 };
 
-/** pre-built once: no new style object per cell per frame (keeps memo intact) */
+function mixHex(hex: string, target: number, amount: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) =>
+    Math.round(v + (target - v) * amount),
+  );
+  return "#" + ch.map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+/** pre-built once: flat face + light/dark chamfer drawn with inner borders only */
 const FACES: Record<number, React.CSSProperties> = Object.fromEntries(
-  Object.entries(VIVID).map(([k, c]) => [
-    Number(k),
-    {
-      // flat colour with a very subtle inner gradient — no glow, no outer shadow
-      backgroundImage: `linear-gradient(180deg, color-mix(in oklab, ${c} 96%, #ffffff) 0%, ${c} 60%, color-mix(in oklab, ${c} 95%, #000000) 100%)`,
-      boxShadow: `inset 0 0 0 1.5px color-mix(in oklab, ${c} 90%, #ffffff)`,
-    } as React.CSSProperties,
-  ]),
+  Object.entries(VIVID).map(([k, c]) => {
+    const light = mixHex(c, 255, 0.28);
+    const dark = mixHex(c, 0, 0.24);
+    return [
+      Number(k),
+      {
+        backgroundColor: c,
+        borderStyle: "solid",
+        borderColor: `${light} ${dark} ${dark} ${light}`,
+      } as React.CSSProperties,
+    ];
+  }),
 ) as Record<number, React.CSSProperties>;
 
 
 function face(colorId: number): React.CSSProperties | undefined {
   return FACES[colorId];
 }
+
 
 type DragState = {
   trayIndex: number;
@@ -216,7 +234,7 @@ function BlastPage() {
   const [clearing, setClearing] = useState<Map<number, ClearCell>>(new Map());
   const [placed, setPlaced] = useState<number[]>([]);
   const [popups, setPopups] = useState<Popup[]>([]);
-  const [banner, setBanner] = useState<{ id: number; text: string } | null>(null);
+  const [banner, setBanner] = useState<{ id: number; text: string; size?: number; clean?: boolean; streak?: string } | null>(null);
   const [shownScore, setShownScore] = useState(0);
   const [best, setBest] = useState(0);
   const [bestAtStart, setBestAtStart] = useState(0);
@@ -507,15 +525,25 @@ function BlastPage() {
         setTimeout(() => { setClearing(new Map()); setPaused(false); }, 460);
       }
 
-      if (res.lines > 1) {
+      if (res.lines > 1 || res.boardClearBonus > 0) {
         const names = ar
-          ? ["", "", "مسح مزدوج", "مسح ثلاثي", "مسح رباعي", "مسح خماسي"]
-          : ["", "", "DOUBLE CLEAR", "TRIPLE CLEAR", "QUAD CLEAR", "PENTA CLEAR"];
-        const text = names[Math.min(res.lines, 5)] || (ar ? "مسح هائل" : "MEGA CLEAR");
+          ? ["", "", "مسح مزدوج", "مسح ثلاثي", "مسح رباعي"]
+          : ["", "", "DOUBLE CLEAR", "TRIPLE CLEAR", "QUAD CLEAR"];
+        const text =
+          res.lines > 1
+            ? names[Math.min(res.lines, 4)] || (ar ? "مسح خارق" : "SUPER CLEAR")
+            : ar ? "لوح نظيف!" : "CLEAN BOARD!";
         const id = popupId.current++;
-        setBanner({ id, text });
-        setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 900);
+        setBanner({
+          id,
+          text,
+          size: Math.min(4, Math.max(1, res.lines - 1)),
+          clean: res.boardClearBonus > 0,
+          streak: res.multiplier > 1 ? (ar ? `×${res.multiplier} متتالية` : `×${res.multiplier} STREAK`) : "",
+        });
+        setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 1000);
       }
+
 
       {
         const size = res.gained >= 600 ? 3 : res.gained >= 300 ? 2 : 1;
@@ -647,7 +675,9 @@ function BlastPage() {
                     ["--board-gap" as string]: `${BOARD_GAP_PX}px`,
                     ["--board-pad" as string]: `${BOARD_PADDING_PX}px`,
                     ["--board-border" as string]: `${BOARD_BORDER_PX}px`,
+                    ["--bevel" as string]: `${bevelPx(cellSize)}px`,
                   }}
+
                 >
 
                   {game.board.map((v, i) => {
@@ -674,7 +704,13 @@ function BlastPage() {
                     );
                   })}
 
-                  {banner && <span key={banner.id} className="bb-banner">{banner.text}</span>}
+                  {banner && (
+                    <span key={banner.id} className={"bb-banner b" + (banner.size || 1) + (banner.clean ? " clean" : "")}>
+                      {banner.text}
+                      {banner.streak ? <i>{banner.streak}</i> : null}
+                    </span>
+                  )}
+
                   {speedNote && <span key={speedNote.id} className="bb-speed">{speedNote.text}</span>}
                 </div>
 
@@ -722,7 +758,7 @@ function BlastPage() {
             <div
               className="blast-tray"
               dir="ltr"
-              style={{ ["--tc" as string]: `${trayCell}px`, ...(blockStyle || {}) }}
+              style={{ ["--tc" as string]: `${trayCell}px`, ["--bevel" as string]: `${bevelPx(trayCell)}px`, ...(blockStyle || {}) }}
             >
               {game.tray.map((p, i) => (
                 <div
@@ -775,6 +811,8 @@ function BlastPage() {
             style={{
               gap: 0,
               pointerEvents: "none",
+              ["--bevel" as string]: `${bevelPx(cellSize)}px`,
+
               gridTemplateColumns: `repeat(${dragInfo.piece.w}, ${cellSize}px)`,
               gridTemplateRows: `repeat(${dragInfo.piece.h}, ${cellSize}px)`,
             }}
