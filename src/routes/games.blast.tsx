@@ -21,9 +21,8 @@ import {
 
 export const Route = createFileRoute("/games/blast")({
   ssr: false,
-  validateSearch: (s: Record<string, unknown>) => ({
-    t: typeof s.t === "string" && s.t ? s.t : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { t?: string } =>
+    typeof s.t === "string" && s.t ? { t: s.t } : {},
   head: () => ({
     meta: [
       { title: "GX Blast — لعبة البلوكات داخل GX Store" },
