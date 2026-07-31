@@ -5,7 +5,6 @@ import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import {
   BOARD_SIZE,
-  canPlace,
   createGame,
   hasAnyPlacement,
   idx,
@@ -517,5 +516,3 @@ function BlastPage() {
     </StoreShell>
   );
 }
-
-void canPlace;
