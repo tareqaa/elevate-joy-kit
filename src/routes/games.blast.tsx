@@ -441,26 +441,60 @@ function BlastPage() {
   }, [game.over, game.score]);
 
 
-  /* ----- tournament: submit the finished run once ----- */
-  const submitted = useRef<string>("");
-  const [arenaRank, setArenaRank] = useState<{ rank: number | null; delta: number | null } | null>(null);
+  /* ----- tournament: resolve the live tournament even without ?t= ----- */
+  const [activeTid, setActiveTid] = useState<string | null>(tournamentId ?? null);
   useEffect(() => {
-    if (!tournamentId || !game.over || game.score <= 0) return;
-    const key = `${tournamentId}:${game.seed}`;
-    if (submitted.current === key) return;
-    submitted.current = key;
+    if (tournamentId) { setActiveTid(tournamentId); return; }
+    let alive = true;
     void (async () => {
-      const before = await supabase.rpc("my_tournament_standing", { _tournament_id: tournamentId });
-      const prevRank = (before.data as { played?: boolean; rank?: number } | null)?.rank ?? null;
-      await supabase.rpc("submit_tournament_score", { _tournament_id: tournamentId, _score: game.score });
-      const after = await supabase.rpc("my_tournament_standing", { _tournament_id: tournamentId });
-      const newRank = (after.data as { played?: boolean; rank?: number } | null)?.rank ?? null;
+      const { data } = await supabase.rpc("list_tournaments");
+      if (!alive) return;
+      const live = ((data ?? []) as { id: string; live_status: string }[]).find((t) => t.live_status === "live");
+      setActiveTid(live?.id ?? null);
+    })();
+    return () => { alive = false; };
+  }, [tournamentId]);
+
+  /* ----- tournament: submit the finished run once, then keep the rank live ----- */
+  const submitted = useRef<string>("");
+  const [arenaRank, setArenaRank] = useState<{ rank: number | null; total: number | null; delta: number | null } | null>(null);
+  useEffect(() => {
+    if (!activeTid || !game.over || game.score <= 0) return;
+    const key = `${activeTid}:${game.seed}`;
+    let alive = true;
+
+    const readStanding = async () => {
+      const { data } = await supabase.rpc("my_tournament_standing", { _tournament_id: activeTid });
+      return (data as { played?: boolean; rank?: number; total?: number } | null) ?? null;
+    };
+
+    void (async () => {
+      let prevRank: number | null = null;
+      if (submitted.current !== key) {
+        submitted.current = key;
+        prevRank = (await readStanding())?.rank ?? null;
+        await supabase.rpc("submit_tournament_score", { _tournament_id: activeTid, _score: game.score });
+      }
+      const after = await readStanding();
+      if (!alive) return;
       setArenaRank({
-        rank: newRank,
-        delta: prevRank && newRank ? prevRank - newRank : null,
+        rank: after?.rank ?? null,
+        total: after?.total ?? null,
+        delta: prevRank && after?.rank ? prevRank - after.rank : null,
       });
     })();
-  }, [tournamentId, game.over, game.score, game.seed]);
+
+    // keep the arena rank live while the game-over card is open
+    const iv = window.setInterval(() => {
+      void readStanding().then((s) => {
+        if (!alive || !s) return;
+        setArenaRank((p) => ({ rank: s.rank ?? null, total: s.total ?? null, delta: p?.delta ?? null }));
+      });
+    }, 10000);
+
+    return () => { alive = false; window.clearInterval(iv); };
+  }, [activeTid, game.over, game.score, game.seed]);
+
 
 
   const timerActive = !game.over && !paused;
