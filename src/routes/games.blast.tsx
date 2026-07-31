@@ -877,18 +877,17 @@ function BlastPage() {
                         <span>{ar ? "النقاط النهائية" : "Final score"}</span>
                         <b>{finalScore.toLocaleString("en-US")}</b>
                       </div>
-                      <p className="bo-cmp">
-                        {isRecord
-                          ? ar ? `تجاوزت أفضل نتيجة بـ ${Math.max(diff, 0).toLocaleString("en-US")} نقطة` : `Beat your best by ${Math.max(diff, 0).toLocaleString("en-US")}`
-                          : ar ? `أفضل نتيجة: ${best.toLocaleString("en-US")} · ينقصك ${Math.max(best - game.score, 0).toLocaleString("en-US")}` : `Best: ${best.toLocaleString("en-US")} · ${Math.max(best - game.score, 0).toLocaleString("en-US")} to go`}
-                      </p>
 
-                      {tournamentId && (
+                      {activeTid && (
                         <div className="bo-rw">
                           <div className="bo-rw-row">
                             <i aria-hidden>🏅</i>
                             <span>{ar ? "ترتيبك في الساحة" : "Arena rank"}</span>
-                            <b>{arenaRank?.rank ? `#${arenaRank.rank}` : "…"}</b>
+                            <b>
+                              {arenaRank?.rank
+                                ? `#${arenaRank.rank}${arenaRank.total ? ` / ${arenaRank.total}` : ""}`
+                                : "…"}
+                            </b>
                           </div>
                           {arenaRank?.delta ? (
                             <div className={"bo-rw-row " + (arenaRank.delta > 0 ? "up" : "down")}>
@@ -897,18 +896,9 @@ function BlastPage() {
                               <b>{Math.abs(arenaRank.delta)}</b>
                             </div>
                           ) : null}
-                          <div className="bo-rw-row xp">
-                            <i aria-hidden>⚡</i>
-                            <span>GX XP</span>
-                            <b>{ar ? "تُحتسب أسبوعيًا" : "Counted weekly"}</b>
-                          </div>
-                          <div className="bo-rw-row coins">
-                            <i aria-hidden>🪙</i>
-                            <span>GX Coins</span>
-                            <b>{ar ? "جوائز نهاية البطولة" : "Awarded at close"}</b>
-                          </div>
                         </div>
                       )}
+
 
                       <button type="button" className="btn btn-primary bo-btn" onClick={restart}>
                         {ar ? "العب مرة أخرى" : "Play again"}
