@@ -320,12 +320,19 @@ export const GEN = {
   /** how many candidate trays are sampled per draw */
   candidates: 14,
   /** how many valid candidates are enough to stop sampling early */
-  enough: 8,
-  /** how many of the best candidates are kept for the weighted pick */
-  shortlist: 4,
-  /** softness of the weighted pick (higher = closer to pure best) */
-  sharpness: 2.2,
+  enough: 10,
+  /** how many candidates are kept for the weighted pick (wide = less scripted) */
+  shortlist: 9,
+  /** softness of the weighted pick (lower = far from "always the best") */
+  sharpness: 0.55,
+  /** how much the sharpness drops per difficulty step (less help over time) */
+  sharpnessDecay: 0.06,
+  /** penalty for a piece that completes a line right now with no planning */
+  instantClearPenalty: 26,
+  /** bonus when at least two pieces are usable on the current board */
+  twoOptionBonus: 45,
 };
+
 
 /** empty cells whose 4 neighbours are all blocked (edges count as blocked) */
 function countHoles(board: Board): number {
@@ -443,33 +450,73 @@ function greedyPlay(board: Board, pieces: PieceDef[]): { board: Board; value: nu
   return { board: b, value };
 }
 
+/** true when the piece can clear a line right now, with no setup by the player */
+function clearsImmediately(board: Board, piece: PieceDef): boolean {
+  for (let r = 0; r <= BOARD_SIZE - piece.h; r++) {
+    for (let c = 0; c <= BOARD_SIZE - piece.w; c++) {
+      if (!canPlace(board, piece, r, c)) continue;
+      const b = board.slice();
+      for (const [dr, dc] of piece.cells) b[idx(r + dr, c + dc)] = piece.color;
+      const { rows, cols } = fullLines(b);
+      if (rows.length > 0 || cols.length > 0) return true;
+    }
+  }
+  return false;
+}
+
+/** how many of the pieces are placeable on the CURRENT board */
+function usableCount(board: Board, pieces: PieceDef[]): number {
+  let n = 0;
+  for (const p of pieces) if (hasAnyPlacement(board, p)) n++;
+  return n;
+}
+
 /** quality of a full 3-piece set against the current board */
 function evaluateTray(board: Board, pieces: PieceDef[], score: number): number {
-  const played = greedyPlay(board, pieces);
-  if (!played) return -1e6; // instantly traps the player — rejected
+  const usable = usableCount(board, pieces);
+  if (usable === 0) return -1e6; // unfair: nothing can be played at all
 
+  const played = greedyPlay(board, pieces);
   const dens = density(board);
   const steps = difficultySteps(score);
-  // late game / crowded board: freedom matters much more than raw pressure
-  const freedomWeight = 40 + dens * 60;
+  const help = Math.max(0, 1 - steps * 0.12); // generator assistance fades with score
+  const after = played ? played.board : board;
+  const freedomWeight = (30 + dens * 45) * help;
 
   let q = 0;
-  q += played.value * 1.0;
-  q += boardFreedom(played.board) * freedomWeight;
-  q -= countHoles(played.board) * 5;
-  q += nearComplete(played.board) * 2.5;
-  q += countFree3x3(played.board) * 1.2;
+  if (played) {
+    q += played.value * 0.5;
+    q += 8; // a fully playable tray is nice, not mandatory
+  }
+  q += boardFreedom(after) * freedomWeight;
+  q -= countHoles(after) * 4;
+  q += countFree3x3(after) * 0.8 * help;
+  // near-complete lines are only a mild plus, never a handed-over solution
+  q += nearComplete(after) * 0.8 * help;
 
-  // per-piece usability on the CURRENT board (multi-option = strategic)
+  // ---- diversity of the set: at least two usable pieces in the common case
+  if (usable >= 2) q += GEN.twoOptionBonus;
+  if (usable >= 3) q += 10;
+  if (usable === 1) q -= 55;
+
+  // ---- discourage the "perfect piece": instant line completions are rare rewards
+  let instant = 0;
+  for (const p of pieces) if (clearsImmediately(board, p)) instant++;
+  q -= instant * GEN.instantClearPenalty * (1 + steps * 0.15);
+
+  // per-piece freedom on the CURRENT board (many options = planning space)
   let options = 0;
   for (const p of pieces) options += Math.min(8, countPlacements(board, p, 8));
-  q += options * 0.8;
+  q += options * 0.4 * help;
 
-  // variety: three identical shapes feel scripted and are usually harsh
+  // variety of shapes
   const unique = new Set(pieces.map((p) => p.id)).size;
   q += (unique - 1) * 3;
 
-  // difficulty ramp: as the score grows, stop over-rewarding comfortable sets
+  // difficulty ramp: bigger pieces / less comfort as the score grows
+  let cells = 0;
+  for (const p of pieces) cells += p.cells.length;
+  q += steps * cells * 0.5;
   q -= steps * dens * 6;
 
   return q;
@@ -477,8 +524,9 @@ function evaluateTray(board: Board, pieces: PieceDef[], score: number): number {
 
 /**
  * Draws three pieces using board analysis + weighted candidate selection.
- * Guaranteed (when possible) to be fully placeable in some order on the
- * CURRENT board. Fully deterministic given the rng state.
+ * The only hard guarantee is that at least one piece is placeable somewhere
+ * (no unfair loss); everything else is a soft, deliberately imperfect bias.
+ * Fully deterministic given the rng state.
  */
 export function drawTray(board: Board, state: number, score: number): [Array<PieceDef | null>, number] {
   let s = state;
@@ -505,10 +553,10 @@ export function drawTray(board: Board, state: number, score: number): [Array<Pie
     if (seenKeys.has(key)) continue;
     seenKeys.add(key);
 
-    if (!canPlaceAll(board, tray)) {
-      if (!partial && tray.some((p) => hasAnyPlacement(board, p))) partial = tray;
-      continue;
-    }
+    // hard rejection only for trays that trap the player instantly
+    if (!tray.some((p) => hasAnyPlacement(board, p))) continue;
+    if (!partial) partial = tray;
+
     const q = evaluateTray(board, tray, score);
     if (q <= -1e5) continue;
     scored.push({ tray, q });
@@ -519,15 +567,17 @@ export function drawTray(board: Board, state: number, score: number): [Array<Pie
     return [((partial ?? fallback) as PieceDef[]).slice(), s];
   }
 
-  // shortlist the best combinations, then pick between them with weighted
-  // probability so the result stays varied instead of scripted
+  // keep a WIDE shortlist and pick with a soft weighting, so mid-quality sets
+  // appear often and the tray never feels like a handed-over solution
   scored.sort((a, b) => b.q - a.q);
   const shortlist = scored.slice(0, GEN.shortlist);
   const top = shortlist[0].q;
   const bottom = shortlist[shortlist.length - 1].q;
   const span = Math.max(1, top - bottom);
+  const steps = difficultySteps(score);
+  const sharpness = Math.max(0.25, GEN.sharpness - steps * GEN.sharpnessDecay);
 
-  const weights = shortlist.map((c) => Math.pow((c.q - bottom) / span + 0.15, GEN.sharpness));
+  const weights = shortlist.map((c) => Math.pow((c.q - bottom) / span + 0.55, sharpness));
   const totalW = weights.reduce((a, b) => a + b, 0);
 
   const [v, ns] = nextRandom(s);
@@ -544,6 +594,7 @@ export function drawTray(board: Board, state: number, score: number): [Array<Pie
 
   return [chosen.slice(), s];
 }
+
 
 
 
