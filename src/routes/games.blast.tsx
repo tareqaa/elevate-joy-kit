@@ -441,15 +441,30 @@ function BlastPage() {
     d.x = p.x;
     d.y = p.y;
     const cs = cellRef.current;
-    const left = d.x - (d.piece.w * cs) / 2;
-    const top = d.y - (d.piece.h * cs) / 2 - d.lift;
-    if (ghostRef.current) {
-      ghostRef.current.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-    }
+    const step = cs + BOARD_GAP_PX;
+    const left = d.x - (d.piece.w * step - BOARD_GAP_PX) / 2;
+    const top = d.y - (d.piece.h * step - BOARD_GAP_PX) / 2 - d.lift;
     const hit = cellUnderPoint(left + cs / 2, top + cs / 2);
     const next: Target = hit
       ? { row: hit.row, col: hit.col, ok: canPlace(gameRef.current.board, d.piece, hit.row, hit.col) }
       : null;
+    if (ghostRef.current) {
+      // snap onto the grid whenever the piece is over a cell, so the cubes
+      // always line up with the board instead of floating between rows
+      let gx = left;
+      let gy = top;
+      if (hit) {
+        const cell = document.querySelector<HTMLElement>(
+          `[data-row="${hit.row}"][data-col="${hit.col}"]`,
+        );
+        if (cell) {
+          const r = cell.getBoundingClientRect();
+          gx = Math.round(r.left);
+          gy = Math.round(r.top);
+        }
+      }
+      ghostRef.current.style.transform = `translate3d(${Math.round(gx)}px, ${Math.round(gy)}px, 0)`;
+    }
     const cur = targetRef.current;
     const same =
       (!cur && !next) ||
@@ -459,6 +474,7 @@ function BlastPage() {
       setTarget(next);
     }
   }, []);
+
 
   const queueFrame = useCallback((x: number, y: number) => {
     pendingRef.current = { x, y };
@@ -809,7 +825,7 @@ function BlastPage() {
             className="bb-ghost"
             dir="ltr"
             style={{
-              gap: 0,
+              gap: BOARD_GAP_PX,
               pointerEvents: "none",
               ["--bevel" as string]: `${bevelPx(cellSize)}px`,
 
@@ -817,6 +833,7 @@ function BlastPage() {
               gridTemplateRows: `repeat(${dragInfo.piece.h}, ${cellSize}px)`,
             }}
           >
+
             {Array.from({ length: dragInfo.piece.w * dragInfo.piece.h }).map((_, k) => {
               const r = Math.floor(k / dragInfo.piece.w);
               const c = k % dragInfo.piece.w;
