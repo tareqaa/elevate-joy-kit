@@ -65,3 +65,37 @@ export function formatDateTime(iso: string, ar: boolean): string {
     minute: "2-digit",
   });
 }
+
+/** Precise, always-complete countdown: "يومان و3 ساعات و12 دقيقة و40 ثانية". */
+export function formatCountdownFull(ms: number, ar: boolean): string {
+  if (ms <= 0) return ar ? "انتهت" : "Ended";
+  const total = Math.floor(ms / 1000);
+  const d = Math.floor(total / 86400);
+  const h = Math.floor((total % 86400) / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+
+  const parts: string[] = [];
+  if (ar) {
+    if (d > 0) parts.push(arPlural(d, "يوم واحد", "يومان", "أيام", "يومًا"));
+    if (h > 0 || d > 0) parts.push(arPlural(h, "ساعة واحدة", "ساعتان", "ساعات", "ساعة"));
+    if (m > 0 || h > 0 || d > 0) parts.push(arPlural(m, "دقيقة واحدة", "دقيقتان", "دقائق", "دقيقة"));
+    parts.push(arPlural(s, "ثانية واحدة", "ثانيتان", "ثوانٍ", "ثانية"));
+    return parts.join(" و ");
+  }
+
+  if (d > 0) parts.push(`${d}d`);
+  if (h > 0 || d > 0) parts.push(`${h}h`);
+  if (m > 0 || h > 0 || d > 0) parts.push(`${m}m`);
+  parts.push(`${s}s`);
+  return parts.join(" ");
+}
+
+/** Pretty game label from a slug (gx-blast -> GX Blast). */
+export function gameLabel(slug: string): string {
+  if (slug === "gx-blast") return "GX Blast";
+  return slug
+    .split("-")
+    .map((w) => (w.length <= 2 ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1)))
+    .join(" ");
+}

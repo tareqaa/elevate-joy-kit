@@ -6,8 +6,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
-import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
-import { fetchMyLoyalty, type MyLoyalty } from "@/lib/gx/loyalty";
+import { formatCountdownFull, formatDateTime } from "@/lib/gx/games/time";
 
 export const Route = createFileRoute("/games/t/$id")({
   ssr: false,
@@ -46,7 +45,7 @@ function TournamentPage() {
   const [t, setT] = useState<T | null | undefined>(undefined);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [me, setMe] = useState<Standing | null>(null);
-  const [loyalty, setLoyalty] = useState<MyLoyalty | null>(null);
+  
   const [prizesOpen, setPrizesOpen] = useState(false);
 
   useEffect(() => {
@@ -66,13 +65,8 @@ function TournamentPage() {
     return () => { alive = false; };
   }, [id]);
 
-  useEffect(() => {
-    let alive = true;
-    fetchMyLoyalty()
-      .then((l) => { if (alive) setLoyalty(l); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, []);
+
+
 
   // ---- tournament registration (must join before playing) ----
   const [registered, setRegistered] = useState<boolean | null>(null);
@@ -173,7 +167,7 @@ function TournamentPage() {
             <div className="ar-stats">
               <div className="ar-stat live">
                 <span>{status === "live" ? (ar ? "تنتهي بعد" : "Ends in") : status === "ended" ? (ar ? "انتهت في" : "Ended on") : (ar ? "تبدأ بعد" : "Starts in")}</span>
-                <b style={{ unicodeBidi: "isolate" }}>{status === "ended" ? formatDateTime(t.ends_at, ar) : formatCountdown(target, ar)}</b>
+                <b style={{ unicodeBidi: "isolate" }}>{status === "ended" ? formatDateTime(t.ends_at, ar) : formatCountdownFull(target, ar)}</b>
               </div>
               <div className="ar-stat">
                 <span>{ar ? "المشاركون" : "Players"}</span>
@@ -210,21 +204,8 @@ function TournamentPage() {
           </div>
         </header>
 
-        {/* ---- player dashboard: competition only (XP/level live in the profile) ---- */}
-        <div className="adash adash-3">
-          <div className="adash-c rank">
-            <span>{ar ? "ترتيبك" : "Your rank"}</span>
-            <b>{me?.played && me.rank ? `#${me.rank}` : "—"}</b>
-          </div>
-          <div className="adash-c">
-            <span>{ar ? "أفضل نتيجة" : "Best score"}</span>
-            <b>{(me?.score ?? 0).toLocaleString("en-US")}</b>
-          </div>
-          <div className="adash-c coins">
-            <span>{ar ? "رصيد GX Coins" : "GX Coins"}</span>
-            <b>{(loyalty?.coins ?? 0).toLocaleString("en-US")}</b>
-          </div>
-        </div>
+
+
 
         <div className="tp-grid">
           <section className="tp-card tp-board">

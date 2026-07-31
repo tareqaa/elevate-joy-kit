@@ -940,3 +940,18 @@
 .arena-hero-sm{padding:30px 22px;}
 .arena-hero-sm .ar-title{font-size:clamp(28px,5.4vw,46px);}
 .tcar-dates{display:flex;flex-direction:column;gap:3px;font-size:12px;color:#93a5cf;margin:0;}
+
+/* --- arena lobby hero perks --- */
+.ar-perks{display:flex;flex-wrap:wrap;gap:8px;}
+.ar-perk{
+  display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;
+  font-size:12.5px;font-weight:800;color:#e8f2ff;
+  border:1px solid rgba(0,229,255,.28);background:rgba(0,229,255,.07);
+}
+.ar-perk i{font-style:normal;}
+.tcar-game{
+  display:inline-flex;align-items:center;gap:6px;align-self:flex-start;
+  padding:4px 10px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:.08em;
+  text-transform:uppercase;color:#7de6ff;border:1px solid rgba(0,229,255,.3);background:rgba(0,229,255,.08);
+}
+.tcar-time b{color:#e9f3ff;font-variant-numeric:tabular-nums;}
