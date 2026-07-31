@@ -262,10 +262,12 @@ function BlastPage() {
           <div className="blast-wrap">
             <div
               ref={boardRef}
+              dir="ltr"
               className="blast-board"
               onPointerMove={onPointerMove}
               onPointerUp={finishDrag}
             >
+
               {game.board.map((v, i) => {
                 const pv = previewCells.get(i);
                 const cls =
