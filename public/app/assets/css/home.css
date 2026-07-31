@@ -199,3 +199,92 @@
   .testi-quote{font-size:12.5px;}
 }
 
+
+/* ============================================================
+   HERO CAROUSEL (Instagram-style) — slide 1 store, slide 2 games
+   ============================================================ */
+.hero-car{position:relative; overflow:hidden; border-radius:var(--radius-xl);}
+[dir="rtl"] .hero-car{--gx-dir:-1;}
+[dir="ltr"] .hero-car{--gx-dir:1;}
+.hero-car-track{
+  display:flex; width:100%;
+  transition:transform .65s cubic-bezier(.22,.8,.24,1);
+  will-change:transform;
+}
+.hero-car-slide{flex:0 0 100%; min-width:100%;}
+.hero-car-dots{
+  position:absolute; bottom:14px; inset-inline-start:50%; transform:translateX(-50%);
+  display:flex; gap:8px; z-index:3;
+}
+.hcd{
+  width:8px; height:8px; border-radius:999px; border:0; cursor:pointer; padding:0;
+  background:rgba(255,255,255,.28); transition:all .3s var(--ease);
+}
+.hcd.on{width:26px; background:linear-gradient(90deg,var(--cyan),var(--lime));}
+
+/* --- games slide --- */
+.hero-games{
+  text-decoration:none; color:inherit; display:flex; cursor:pointer;
+  background:linear-gradient(120deg,#0b1020 0%,#141026 55%,#1b0f1f 100%);
+  position:relative;
+}
+.hero-games::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(420px 320px at 12% 0%, rgba(0,229,255,.20), transparent 65%),
+    radial-gradient(420px 340px at 92% 100%, rgba(198,255,61,.14), transparent 65%),
+    radial-gradient(380px 300px at 70% 0%, rgba(255,45,120,.16), transparent 65%);
+}
+.hg-noise{
+  position:absolute; inset:0; pointer-events:none; opacity:.5;
+  background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(70% 70% at 50% 40%,#000,transparent);
+}
+.hg-text{position:relative; z-index:2;}
+.hg-badge{background:rgba(255,45,120,.12); color:var(--pink);}
+.hg-badge .dot{background:var(--pink);}
+.hg-title{font-size:38px; font-weight:900; line-height:1.3; margin-bottom:14px;}
+.hg-title span{
+  background:linear-gradient(90deg,var(--pink),var(--cyan));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.hg-sub{color:var(--gray); font-size:15px; max-width:430px; margin-bottom:26px;}
+.hg-cta{box-shadow:0 12px 34px -14px rgba(0,229,255,.75);}
+.hero-games:hover .hg-cta{transform:translateY(-2px);}
+.hg-meta{align-self:center; font-size:12.5px; font-weight:800; color:var(--gray);}
+
+.hg-visual{position:relative; z-index:2;}
+.hg-ring{
+  position:absolute; width:220px; height:220px; border-radius:50%;
+  background:conic-gradient(from 90deg,var(--pink),var(--cyan),var(--lime),var(--pink));
+  filter:blur(1px); opacity:.9; animation:spin 16s linear infinite;
+}
+.hg-pad{
+  position:relative; width:184px; height:184px; border-radius:50%;
+  background:radial-gradient(circle at 35% 28%,#181c2b,#080a11 75%);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:inset 0 0 44px rgba(255,45,120,.22);
+  transition:transform .35s var(--ease);
+}
+.hero-games:hover .hg-pad{transform:scale(1.04);}
+.hg-pad svg{width:104px;}
+.hg-chip{
+  position:absolute; font-size:11px; font-weight:900; letter-spacing:.5px;
+  padding:6px 12px; border-radius:999px; background:rgba(10,12,18,.85);
+  border:1px solid rgba(255,255,255,.12); color:var(--white);
+  animation:hgfloat 4.5s ease-in-out infinite;
+}
+.hg-chip-1{top:8px; inset-inline-end:0; color:var(--cyan); border-color:rgba(0,229,255,.4);}
+.hg-chip-2{bottom:12px; inset-inline-start:0; color:var(--lime); border-color:rgba(198,255,61,.4); animation-delay:1.4s;}
+@keyframes hgfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+@media(max-width:900px){
+  .hg-title{font-size:26px;}
+  .hg-sub{font-size:13.5px;}
+  .hg-ring{width:160px; height:160px;}
+  .hg-pad{width:134px; height:134px;}
+  .hg-pad svg{width:78px;}
+  .hero-car-dots{bottom:10px;}
+}
