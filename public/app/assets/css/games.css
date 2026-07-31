@@ -746,14 +746,20 @@
 @media(max-width:640px){.jr-perks{grid-template-columns:1fr;}}
 
 /* ---- game complete rewards (inside GX Blast) ---- */
-.bo-rewards{display:flex; flex-direction:column; gap:7px; margin:10px 0 4px;}
-.bo-rw{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
+.bo-rw{display:flex; flex-direction:column; gap:7px; margin:10px 0 4px;}
+.bo-rw-row{
+  display:flex; align-items:center; gap:10px;
   border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:9px 12px;
   background:rgba(255,255,255,.04); font-size:13px; font-weight:800;
   animation:arcIn .4s var(--ease) both;
 }
-.bo-rw:nth-child(2){animation-delay:.12s;}
-.bo-rw:nth-child(3){animation-delay:.24s;}
-.bo-rw b{font-variant-numeric:tabular-nums; color:var(--ar-gold);}
-.bo-rw.up b{color:var(--ar-green);}
+.bo-rw-row i{font-style:normal; font-size:16px;}
+.bo-rw-row span{flex:1; min-width:0; color:var(--gray); font-weight:700;}
+.bo-rw-row:nth-child(2){animation-delay:.1s;}
+.bo-rw-row:nth-child(3){animation-delay:.2s;}
+.bo-rw-row:nth-child(4){animation-delay:.3s;}
+.bo-rw-row b{font-variant-numeric:tabular-nums; color:#ffd76e;}
+.bo-rw-row.up b{color:#34e78c;}
+.bo-rw-row.down b{color:#ff8a8a;}
+.bo-rw-row.xp b,.bo-rw-row.coins b{font-size:12px;}
+
