@@ -121,25 +121,14 @@ function GamesPage() {
           <div className="arena-hero arena-hero-sm">
             <ArenaFx />
             <div className="ar-in">
-              <span className="ar-kicker">GX ARENA</span>
               <h1 className="ar-title">GX BLAST</h1>
               <p className="ar-sub">
-                {ar
-                  ? "اختر بطولة، سجّل فيها، والعب بحرية طول مدتها — أعلى سكور يفوز بجائزة مركزه."
-                  : "Pick a tournament, register, then play freely until it ends — the best score takes its prize."}
-              </p>
-              <p className="ar-sub">
-                {liveCount > 0
-                  ? ar
-                    ? `🔥 ${liveCount} بطولة متاحة الآن`
-                    : `🔥 ${liveCount} tournament(s) live now`
-                  : ar
-                    ? "لا توجد بطولة نشطة حاليًا"
-                    : "No live tournament right now"}
+                {ar ? "سجّل، العب، واربح جوائز." : "Register, play, win prizes."}
               </p>
             </div>
           </div>
         </section>
+
 
         <section className="wrap">
           <h2 className="ar-sec-title">{ar ? "البطولات المتاحة" : "Available tournaments"}</h2>
