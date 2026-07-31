@@ -458,13 +458,12 @@ function BlastPage() {
   const previewCells = useMemo(() => {
     const map = new Map<number, boolean>();
     const d = dragInfo;
-    // never show a partial / out-of-board preview: valid placements only
-    if (!d || !target || !target.ok) return map;
+    if (!d || !target) return map;
     for (const [dr, dc] of d.piece.cells) {
       const r = target.row + dr;
       const c = target.col + dc;
       if (r < 0 || c < 0 || r >= BOARD_SIZE || c >= BOARD_SIZE) continue;
-      map.set(idx(r, c), true);
+      map.set(idx(r, c), target.ok);
     }
     return map;
   }, [dragInfo, target]);
@@ -494,7 +493,18 @@ function BlastPage() {
     const step = cs + BOARD_GAP_PX;
     const left = d.x - (d.piece.w * step - BOARD_GAP_PX) / 2;
     const top = d.y - (d.piece.h * step - BOARD_GAP_PX) / 2 - d.lift;
-    const hit = cellUnderPoint(left + cs / 2, top + cs / 2);
+    const probeX = left + cs / 2;
+    const probeY = top + cs / 2;
+    let hit: { row: number; col: number } | null = null;
+    // Resolve against the board's integer grid first. This remains stable
+    // while the pointer crosses the narrow gaps between cells.
+    if (boardRef.current) {
+      const boardRect = boardRef.current.getBoundingClientRect();
+      const col = Math.floor((probeX - boardRect.left - BOARD_PADDING_PX) / step);
+      const row = Math.floor((probeY - boardRect.top - BOARD_PADDING_PX) / step);
+      if (row >= 0 && col >= 0 && row < BOARD_SIZE && col < BOARD_SIZE) hit = { row, col };
+    }
+    if (!hit) hit = cellUnderPoint(probeX, probeY);
     const next: Target = hit
       ? { row: hit.row, col: hit.col, ok: canPlace(gameRef.current.board, d.piece, hit.row, hit.col) }
       : null;
@@ -502,7 +512,7 @@ function BlastPage() {
     if (ghostRef.current) {
       ghostRef.current.style.transform = `translate3d(${left}px, ${top}px, 0)`;
       ghostRef.current.style.visibility = "visible";
-      ghostRef.current.style.opacity = next?.ok ? "0.5" : "0.94";
+      ghostRef.current.style.opacity = next?.ok ? "0.34" : "0.94";
     }
 
 
@@ -633,13 +643,12 @@ function BlastPage() {
   const onPieceDown = (e: React.PointerEvent, trayIndex: number, piece: PieceDef) => {
     if (game.over) return;
     e.preventDefault();
-    const touch = e.pointerType !== "mouse";
     dragRef.current = {
       trayIndex,
       piece,
       x: e.clientX,
       y: e.clientY,
-      lift: touch ? cellRef.current : 0,
+      lift: 0,
     };
     targetRef.current = null;
     setDragInfo({ trayIndex, piece });
@@ -762,14 +771,14 @@ function BlastPage() {
                     const col = i % BOARD_SIZE;
                     const pv = previewCells.get(i);
                     const cl = clearing.get(i);
-                    const isPv = pv === true && !v && !cl;
+                    const isPv = pv !== undefined && !v && !cl;
                     const colorId = cl ? cl.color : v || (isPv && dragInfo ? dragInfo.piece.color : 0);
                     const cls =
                       "bb-cell" +
                       (colorId ? " filled" : "") +
                       (cl ? " clearing" : "") +
                       (placed.includes(i) ? " popped" : "") +
-                      (isPv ? " pv-ok" : "");
+                      (isPv ? (pv ? " pv-ok" : " pv-no") : "");
                     return (
                       <BoardCell
                         key={i}
