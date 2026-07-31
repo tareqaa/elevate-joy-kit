@@ -108,8 +108,9 @@ function GamesPage() {
 
   const featured = cards.find((c) => c.status === "live") ?? cards.find((c) => c.status === "upcoming") ?? cards[0];
   const fPool = featured ? prizePool(featured.prizes) : 0;
-  const upcoming = cards.filter((c) => c.id !== featured?.id && c.status !== "ended");
-  const past = cards.filter((c) => c.id !== featured?.id && c.status === "ended");
+  // admin-controlled number of tournaments in the arena carousel
+  const carouselItems = cards.slice(0, Math.max(1, carouselCount));
+
 
   // leaderboard for the featured tournament — gives a daily reason to come back
   const [top, setTop] = useState<TopRow[] | null>(null);
