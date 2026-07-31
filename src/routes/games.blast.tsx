@@ -51,14 +51,25 @@ const MAX_POPUPS = 4;
 const BOARD_GAP_PX = 2;
 const BOARD_PADDING_PX = 6;
 const BOARD_BORDER_PX = 0;
-const BOARD_RESIZE_DEBOUNCE_MS = 120;
+const BOARD_RESIZE_DEBOUNCE_MS = 160;
 
 type BoardLayout = { boardPx: number; cellPx: number };
 
-function calculateBoardLayout(availableWidth: number, availableHeight: number): BoardLayout {
-  const availablePx = Math.floor(Math.min(availableWidth, availableHeight));
+function calculateBoardLayout(availableWidth: number, playHeight: number, hudHeight: number): BoardLayout {
+  const availablePx = Math.floor(availableWidth);
   const fixedPx = BOARD_GAP_PX * (BOARD_SIZE - 1) + BOARD_PADDING_PX * 2 + BOARD_BORDER_PX * 2;
-  const cellPx = Math.max(1, Math.floor((availablePx - fixedPx) / BOARD_SIZE));
+  let cellPx = Math.max(1, Math.floor((availablePx - fixedPx) / BOARD_SIZE));
+
+  // Derive the vertical fit from the stable play container, not .blast-area.
+  // The area's flex height depends on the board/tray, which made Chrome bounce
+  // between two valid integer sizes at fractional browser zoom levels.
+  while (cellPx > 1) {
+    const boardPx = cellPx * BOARD_SIZE + fixedPx;
+    const trayCellPx = Math.max(12, Math.round((boardPx / BOARD_SIZE) * 0.52));
+    const trayHeightPx = trayCellPx * 4 + 20;
+    if (hudHeight + boardPx + trayHeightPx + 12 <= Math.floor(playHeight)) break;
+    cellPx -= 1;
+  }
   return {
     cellPx,
     boardPx: cellPx * BOARD_SIZE + fixedPx,
@@ -270,6 +281,8 @@ function BlastPage() {
   const [speedNote, setSpeedNote] = useState<{ id: number; text: string } | null>(null);
 
   const boardRef = useRef<HTMLDivElement | null>(null);
+  const playRef = useRef<HTMLDivElement | null>(null);
+  const columnRef = useRef<HTMLDivElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const areaRef = useRef<HTMLDivElement | null>(null);
   const ghostRef = useRef<HTMLDivElement | null>(null);
@@ -312,9 +325,11 @@ function BlastPage() {
 
     const apply = () => {
       const r = el.getBoundingClientRect();
+      const play = playRef.current?.getBoundingClientRect();
+      const column = columnRef.current?.getBoundingClientRect();
       // ignore measurements taken before the HUD / tray have laid out
-      if (r.width < 40 || r.height < 40) return;
-      const next = calculateBoardLayout(r.width, r.height);
+      if (r.width < 40 || !play || play.height < 40 || !column) return;
+      const next = calculateBoardLayout(r.width, play.height, column.height);
       setBoardLayout((current) =>
         current.boardPx === next.boardPx && current.cellPx === next.cellPx ? current : next,
       );
@@ -334,11 +349,9 @@ function BlastPage() {
     const raf2 = requestAnimationFrame(apply);
 
     const ro = new ResizeObserver(schedule);
-    ro.observe(el);
-    if (el.parentElement) ro.observe(el.parentElement);
+    if (playRef.current) ro.observe(playRef.current);
     window.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("orientationchange", schedule);
-    window.visualViewport?.addEventListener("resize", schedule, { passive: true });
     return () => {
       window.clearTimeout(timer);
       cancelAnimationFrame(raf1);
@@ -346,7 +359,6 @@ function BlastPage() {
       ro.disconnect();
       window.removeEventListener("resize", schedule);
       window.removeEventListener("orientationchange", schedule);
-      window.visualViewport?.removeEventListener("resize", schedule);
     };
     // re-measure at the start of every new round
   }, [game.seed]);
@@ -744,8 +756,8 @@ function BlastPage() {
         </header>
 
         <section className={"blast-stage" + (measured ? "" : " measuring")}>
-          <div className="blast-play">
-            <div className="blast-column" style={blockStyle}>
+          <div className="blast-play" ref={playRef}>
+            <div className="blast-column" ref={columnRef} style={blockStyle}>
               {hud}
             </div>
 
