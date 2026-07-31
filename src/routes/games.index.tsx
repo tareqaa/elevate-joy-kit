@@ -213,6 +213,22 @@ function GamesPage() {
             </div>
           )}
         </section>
+
+        {openId && (() => {
+          const t = cards.find((c) => c.id === openId);
+          if (!t || !t.game_path) return null;
+          return (
+            <TournamentEntryModal
+              tournamentId={t.id}
+              title={ar ? t.title_ar : t.title_en}
+              gameSlug={t.game_slug}
+              gamePath={t.game_path}
+              endsAt={t.ends_at}
+              serverNow={serverNow}
+              onClose={() => setOpenId(null)}
+            />
+          );
+        })()}
       </main>
     </StoreShell>
   );
