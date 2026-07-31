@@ -825,7 +825,7 @@ function BlastPage() {
             className="bb-ghost"
             dir="ltr"
             style={{
-              gap: 0,
+              gap: BOARD_GAP_PX,
               pointerEvents: "none",
               ["--bevel" as string]: `${bevelPx(cellSize)}px`,
 
@@ -833,6 +833,7 @@ function BlastPage() {
               gridTemplateRows: `repeat(${dragInfo.piece.h}, ${cellSize}px)`,
             }}
           >
+
             {Array.from({ length: dragInfo.piece.w * dragInfo.piece.h }).map((_, k) => {
               const r = Math.floor(k / dragInfo.piece.w);
               const c = k % dragInfo.piece.w;
