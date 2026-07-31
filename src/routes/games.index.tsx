@@ -192,9 +192,9 @@ function GamesPage() {
                     )}
 
                     {live && t.game_path ? (
-                      <Link to={t.game_path} className="btn btn-primary trn-btn">
+                      <button type="button" className="btn btn-primary trn-btn" onClick={() => setOpenId(t.id)}>
                         {ar ? "ادخل البطولة" : "Enter tournament"}
-                      </Link>
+                      </button>
                     ) : (
                       <button type="button" className="btn trn-btn trn-btn-off" disabled>
                         {ended
