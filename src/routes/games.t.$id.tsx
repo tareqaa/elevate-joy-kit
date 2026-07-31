@@ -372,7 +372,7 @@ function TournamentPage() {
                     <div key={place} className={`przrow g${Math.min(place, 4)}`}>
                       <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
                       <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
-                      <span>{ar ? p.label_ar : p.label_en}</span>
+                      <span>{p.reward_type && p.reward_type !== "custom" ? `${REWARD_ICON[p.reward_type]} ${rewardText(p, ar)}` : rewardText(p, ar)}</span>
                     </div>
                   );
                 })}
