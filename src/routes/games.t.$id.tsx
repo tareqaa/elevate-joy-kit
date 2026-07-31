@@ -8,7 +8,7 @@ import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
 import { HowToPlaySlides } from "@/components/gx/games/HowToPlaySlides";
 import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
-import { fetchMyLoyalty, levelName, levelProgress, type MyLoyalty } from "@/lib/gx/loyalty";
+import { fetchMyLoyalty, type MyLoyalty } from "@/lib/gx/loyalty";
 
 export const Route = createFileRoute("/games/t/$id")({
   ssr: false,
@@ -130,7 +130,7 @@ function TournamentPage() {
   const top3 = (rows ?? []).slice(0, 3);
   const rest = (rows ?? []).slice(3);
   const meInTop = !!me?.played && !!me.rank && me.rank <= 20;
-  const prog = levelProgress(loyalty?.xp ?? 0, loyalty?.level ?? null, loyalty?.next_level ?? null);
+  
 
   return (
     <StoreShell>
@@ -182,26 +182,18 @@ function TournamentPage() {
           </div>
         </header>
 
-        {/* ---- player dashboard ---- */}
-        <div className="adash">
+        {/* ---- player dashboard: competition only (XP/level live in the profile) ---- */}
+        <div className="adash adash-3">
           <div className="adash-c rank">
-            <span>{ar ? "ترتيبك" : "Arena rank"}</span>
+            <span>{ar ? "ترتيبك" : "Your rank"}</span>
             <b>{me?.played && me.rank ? `#${me.rank}` : "—"}</b>
           </div>
           <div className="adash-c">
             <span>{ar ? "أفضل نتيجة" : "Best score"}</span>
             <b>{(me?.score ?? 0).toLocaleString("en-US")}</b>
           </div>
-          <div className="adash-c xp">
-            <span>{ar ? "المستوى" : "GX Level"}</span>
-            <b>{loyalty?.level ? levelName(loyalty.level, lang) : "—"}</b>
-          </div>
-          <div className="adash-c xp">
-            <span>GX XP</span>
-            <b>{(loyalty?.xp ?? 0).toLocaleString("en-US")}</b>
-          </div>
           <div className="adash-c coins">
-            <span>GX Coins</span>
+            <span>{ar ? "رصيد GX Coins" : "GX Coins"}</span>
             <b>{(loyalty?.coins ?? 0).toLocaleString("en-US")}</b>
           </div>
         </div>
@@ -299,33 +291,6 @@ function TournamentPage() {
               </p>
             </section>
 
-
-            <section className="tp-card">
-              <h2>GX Journey</h2>
-              <div className="jr">
-                <div className="jr-top">
-                  <span className="jr-lvl">
-                    {loyalty?.level ? levelName(loyalty.level, lang) : ar ? "سجّل الدخول لعرض تقدمك" : "Sign in to see your progress"}
-                  </span>
-                  <span className="jr-hint" dir="ltr">{(loyalty?.xp ?? 0).toLocaleString("en-US")} XP</span>
-                </div>
-                <div className="jr-bar"><div className="jr-fill" style={{ width: `${loyalty ? prog.pct : 0}%` }} /></div>
-                <p className="jr-hint">
-                  {loyalty?.next_level
-                    ? ar
-                      ? `ينقصك ${prog.remaining.toLocaleString("en-US")} XP للوصول إلى ${levelName(loyalty.next_level, lang)}`
-                      : `${prog.remaining.toLocaleString("en-US")} XP to reach ${levelName(loyalty.next_level, lang)}`
-                    : ar
-                      ? "اجمع XP من البطولات والطلبات لترتقي في المستويات."
-                      : "Earn XP from tournaments and orders to level up."}
-                </p>
-                <div className="jr-perks">
-                  <div className="jr-perk"><b>GX XP</b><span>{ar ? "كل جولة تقرّبك للمستوى التالي" : "Every run pushes your level"}</span></div>
-                  <div className="jr-perk"><b>GX Coins</b><span>{ar ? "تُصرف كخصم على مشترياتك" : "Spend them as store discounts"}</span></div>
-                  <div className="jr-perk"><b>Arena Points</b><span>{ar ? "ترتيبك الأسبوعي في الساحة" : "Your weekly arena standing"}</span></div>
-                </div>
-              </div>
-            </section>
 
             <section className="tp-card tp-stats">
               <div><span>{ar ? "المشاركون" : "Players"}</span><b>{t.participants.toLocaleString("en")}</b></div>

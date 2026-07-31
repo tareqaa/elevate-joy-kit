@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
+import { supabase } from "@/integrations/supabase/client";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
 import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
@@ -71,6 +72,9 @@ export function prizePool(prizes: TournamentPrize[]): number {
   }, 0);
 }
 
+type TopRow = { rank: number; user_id: string; username: string | null; full_name: string | null; avatar_url: string | null; score: number };
+const nameOf = (r: TopRow) => r.username || r.full_name || "GX Player";
+
 function GamesPage() {
   const loaded = Route.useLoaderData() as { serverNow: string; tournaments: TournamentRow[] };
   const { serverNow, tournaments } = loaded;
@@ -99,6 +103,23 @@ function GamesPage() {
 
   const featured = cards.find((c) => c.status === "live") ?? cards.find((c) => c.status === "upcoming") ?? cards[0];
   const fPool = featured ? prizePool(featured.prizes) : 0;
+  const upcoming = cards.filter((c) => c.id !== featured?.id && c.status !== "ended");
+  const past = cards.filter((c) => c.id !== featured?.id && c.status === "ended");
+
+  // small "top players" board for the featured tournament — gives a daily reason to come back
+  const [top, setTop] = useState<TopRow[] | null>(null);
+  useEffect(() => {
+    if (!featured?.id) return;
+    let alive = true;
+    supabase
+      .rpc("tournament_leaderboard", { _tournament_id: featured.id, _limit: 3 })
+      .then(({ data }) => {
+        if (alive) setTop(((data ?? []) as unknown as TopRow[]).map((r) => ({ ...r, rank: Number(r.rank) })));
+      });
+    return () => {
+      alive = false;
+    };
+  }, [featured?.id]);
 
   return (
     <StoreShell>
@@ -108,21 +129,26 @@ function GamesPage() {
             <ArenaFx />
             <div className="ar-in">
               <span className="ar-kicker">GX ARENA</span>
-              <h1 className="ar-title">GX ARENA</h1>
-              <p className="ar-sub">GX BLAST WEEKLY CHAMPIONSHIP</p>
-              <p className="ar-desc">
-                {ar
-                  ? "بطولة أسبوعية واحدة، ترتيب مباشر، وجوائز حقيقية: GX Coins وخصومات ونقاط XP. سجّل أعلى سكور قبل انتهاء الوقت واحجز مكانك في القمة."
-                  : "One weekly championship, a live leaderboard and real rewards: GX Coins, discounts and XP. Post the highest score before the clock runs out."}
-              </p>
-
               {featured ? (
                 <>
-                  <div className="ar-stats">
-                    <div className="ar-stat">
-                      <span>{ar ? "البطولة الحالية" : "Current event"}</span>
-                      <b>{ar ? featured.title_ar : featured.title_en}</b>
+                  <div className="ar-game">
+                    <div className="ar-game-ic" aria-hidden>
+                      <GameIcon slug={featured.game_slug} size={62} />
                     </div>
+                    <div className="ar-game-tx">
+                      <span className={`trn-badge b-${featured.status}`}>
+                        {featured.status === "live"
+                          ? ar ? "🔥 البطولة الحالية" : "🔥 Live now"
+                          : featured.status === "upcoming"
+                            ? ar ? "البطولة القادمة" : "Next up"
+                            : ar ? "انتهت" : "Ended"}
+                      </span>
+                      <h1 className="ar-title">{ar ? featured.title_ar : featured.title_en}</h1>
+                      <p className="ar-sub">{featured.game_slug.toUpperCase()} · GX ARENA</p>
+                    </div>
+                  </div>
+
+                  <div className="ar-stats">
                     <div className="ar-stat live">
                       <span>
                         {featured.status === "live"
@@ -156,7 +182,7 @@ function GamesPage() {
 
                   {featured.status === "live" ? (
                     <Link to="/games/t/$id" params={{ id: featured.id }} className="ar-cta">
-                      ⚡ {ar ? "ادخل البطولة" : "Enter tournament"}
+                      ⚡ {ar ? "العب الآن" : "Play now"}
                     </Link>
                   ) : (
                     <span className="ar-cta off">
@@ -167,109 +193,94 @@ function GamesPage() {
                   )}
                 </>
               ) : (
-                <span className="ar-cta off">{ar ? "لا توجد بطولات حاليًا" : "No tournaments yet"}</span>
+                <>
+                  <h1 className="ar-title">GX ARENA</h1>
+                  <span className="ar-cta off">{ar ? "لا توجد بطولات حاليًا" : "No tournaments yet"}</span>
+                </>
               )}
             </div>
           </div>
         </section>
 
+        {featured && (
+          <section className="container">
+            <h2 className="ar-sec-title">🏆 {ar ? "أفضل اللاعبين" : "Top players"}</h2>
+            <div className="tp3">
+              {top === null ? (
+                <p className="trn-empty">{ar ? "جارِ تحميل الترتيب…" : "Loading…"}</p>
+              ) : top.length === 0 ? (
+                <p className="trn-empty">{ar ? "ما في لاعبين بعد — كن أول اسم على القمة." : "No players yet — be the first."}</p>
+              ) : (
+                top.map((r) => (
+                  <div key={r.user_id} className={`tp3-row m${r.rank}`}>
+                    <i aria-hidden>{MEDALS[r.rank - 1] ?? "🎮"}</i>
+                    {r.avatar_url ? (
+                      <img src={r.avatar_url} alt="" className="tp3-av" loading="lazy" />
+                    ) : (
+                      <span className="tp3-av ph">{nameOf(r).slice(0, 1)}</span>
+                    )}
+                    <span className="tp3-nm">{nameOf(r)}</span>
+                    <b className="tp3-sc" dir="ltr">{r.score.toLocaleString("en")}</b>
+                  </div>
+                ))
+              )}
+              <Link to="/games/t/$id" params={{ id: featured.id }} className="tp3-all">
+                {ar ? "الترتيب الكامل" : "Full leaderboard"}
+              </Link>
+            </div>
+          </section>
+        )}
+
         <section className="container">
-          <h2 className="ar-sec-title">{ar ? "كل البطولات" : "All tournaments"}</h2>
-          {cards.length === 0 ? (
-            <p className="trn-empty">{ar ? "لا توجد بطولات حاليًا." : "No tournaments yet."}</p>
+          <h2 className="ar-sec-title">{ar ? "البطولات القادمة" : "Upcoming tournaments"}</h2>
+          {upcoming.length === 0 ? (
+            <p className="trn-empty">{ar ? "ما في بطولات قادمة حاليًا — ترقّب الأسبوع الجاي." : "Nothing scheduled yet — check back soon."}</p>
           ) : (
-            <div className="ar-list">
-              {cards.map((t, i) => {
-                const live = t.status === "live";
-                const ended = t.status === "ended";
+            <ul className="uplist">
+              {upcoming.map((t, i) => {
                 const pool = prizePool(t.prizes);
                 return (
-                  <article
-                    key={t.id}
-                    className={`arc is-${t.status}`}
-                    style={{ animationDelay: `${Math.min(i, 6) * 70}ms` }}
-                  >
-                    <div className="arc-ic" aria-hidden>
-                      <GameIcon slug={t.game_slug} size={46} />
-                    </div>
-
-                    <div className="arc-body">
-                      <div className="arc-head">
-                        <h2>{ar ? t.title_ar : t.title_en}</h2>
-                        <span className={`trn-badge b-${t.status}`}>
-                          {live
-                            ? ar ? "نشطة الآن" : "Live now"
-                            : ended
-                              ? ar ? "انتهت" : "Ended"
-                              : ar ? "قريبًا" : "Upcoming"}
-                        </span>
-                        <span className="trn-game">{t.game_slug}</span>
-                      </div>
-
-                      <div className="arc-metrics">
-                        <div className="arc-m time">
-                          <span>
-                            {live
-                              ? ar ? "ينتهي خلال" : "Ends in"
-                              : ended
-                                ? ar ? "انتهت في" : "Ended on"
-                                : ar ? "تبدأ خلال" : "Starts in"}
-                          </span>
-                          <b style={{ unicodeBidi: "isolate" }}>
-                            {ended
-                              ? formatDateTime(t.ends_at, ar)
-                              : formatCountdown((live ? t.end : t.start) - now, ar)}
-                          </b>
-                        </div>
-                        <div className="arc-m pool">
-                          <span>{ar ? "مجموع الجوائز" : "Prize pool"}</span>
-                          <b>
-                            {pool > 0
-                              ? `${pool.toLocaleString("en")} GX`
-                              : `${t.prizes.length} ${ar ? "جوائز" : "prizes"}`}
-                          </b>
-                        </div>
-                        <div className="arc-m">
-                          <span>{ar ? "اللاعبون" : "Players"}</span>
-                          <b>{t.participants.toLocaleString("en")}</b>
-                        </div>
-                        <div className="arc-m">
-                          <span>{ar ? "أفضل سكور" : "Top score"}</span>
-                          <b>{t.top_score.toLocaleString("en")}</b>
-                        </div>
-                      </div>
-
-                      {t.prizes.length > 0 && (
-                        <ul className="trn-prizes">
-                          {t.prizes.slice(0, 3).map((p, idx) => (
-                            <li key={p.place ?? idx}>
-                              <i aria-hidden>{MEDALS[idx] ?? "🎁"}</i>
-                              <span>{ar ? p.label_ar : p.label_en}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    <div className="arc-cta">
-                      {live && t.game_path ? (
-                        <Link to="/games/t/$id" params={{ id: t.id }} className="btn btn-primary trn-btn">
-                          {ar ? "ادخل البطولة" : "Enter tournament"}
-                        </Link>
-                      ) : (
-                        <button type="button" className="btn trn-btn trn-btn-off" disabled>
-                          {ended
-                            ? ar ? "انتهت البطولة" : "Tournament ended"
-                            : ar ? "لم تبدأ بعد" : "Not started yet"}
-                        </button>
-                      )}
-                    </div>
-                  </article>
+                  <li key={t.id} className={`uprow is-${t.status}`} style={{ animationDelay: `${Math.min(i, 6) * 60}ms` }}>
+                    <span className="up-ic" aria-hidden><GameIcon slug={t.game_slug} size={34} /></span>
+                    <span className="up-nm">{ar ? t.title_ar : t.title_en}</span>
+                    <span className="up-time" style={{ unicodeBidi: "isolate" }}>
+                      🕒 {t.status === "live"
+                        ? `${ar ? "ينتهي خلال" : "Ends in"} ${formatCountdown(t.end - now, ar)}`
+                        : `${ar ? "تبدأ خلال" : "Starts in"} ${formatCountdown(t.start - now, ar)}`}
+                    </span>
+                    <span className="up-prz">
+                      🏆 {pool > 0 ? `${pool.toLocaleString("en")} GX Coin` : `${t.prizes.length} ${ar ? "جوائز" : "prizes"}`}
+                    </span>
+                    <Link to="/games/t/$id" params={{ id: t.id }} className="up-go">
+                      {t.status === "live" ? (ar ? "🚀 العب الآن" : "🚀 Play now") : ar ? "التفاصيل" : "Details"}
+                    </Link>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
         </section>
+
+        {past.length > 0 && (
+          <section className="container">
+            <h2 className="ar-sec-title">{ar ? "سجل البطولات" : "Past tournaments"}</h2>
+            <ul className="uplist past">
+              {past.map((t) => (
+                <li key={t.id} className="uprow is-ended">
+                  <span className="up-ic" aria-hidden><GameIcon slug={t.game_slug} size={34} /></span>
+                  <span className="up-nm">{ar ? t.title_ar : t.title_en}</span>
+                  <span className="up-time" style={{ unicodeBidi: "isolate" }}>
+                    {ar ? "انتهت في" : "Ended on"} {formatDateTime(t.ends_at, ar)}
+                  </span>
+                  <span className="up-prz">👥 {t.participants.toLocaleString("en")}</span>
+                  <Link to="/games/t/$id" params={{ id: t.id }} className="up-go ghost">
+                    {ar ? "النتائج" : "Results"}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </main>
     </StoreShell>
   );
