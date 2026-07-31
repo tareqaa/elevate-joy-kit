@@ -15,6 +15,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
+import { Route as GamesRouteImport } from './routes/games'
 import { Route as FortniteRouteImport } from './routes/fortnite'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as CartRouteImport } from './routes/cart'
@@ -74,6 +75,11 @@ const McpRoute = McpRouteImport.update({
 const LeaderboardRoute = LeaderboardRouteImport.update({
   id: '/leaderboard',
   path: '/leaderboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesRoute = GamesRouteImport.update({
+  id: '/games',
+  path: '/games',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FortniteRoute = FortniteRouteImport.update({
@@ -246,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
   '/fortnite': typeof FortniteRoute
+  '/games': typeof GamesRoute
   '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
@@ -283,6 +290,7 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
   '/fortnite': typeof FortniteRoute
+  '/games': typeof GamesRoute
   '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
@@ -321,6 +329,7 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
   '/fortnite': typeof FortniteRoute
+  '/games': typeof GamesRoute
   '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
@@ -360,6 +369,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/faq'
     | '/fortnite'
+    | '/games'
     | '/leaderboard'
     | '/mcp'
     | '/policy'
@@ -397,6 +407,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/faq'
     | '/fortnite'
+    | '/games'
     | '/leaderboard'
     | '/mcp'
     | '/policy'
@@ -434,6 +445,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/faq'
     | '/fortnite'
+    | '/games'
     | '/leaderboard'
     | '/mcp'
     | '/policy'
@@ -473,6 +485,7 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   FaqRoute: typeof FaqRoute
   FortniteRoute: typeof FortniteRoute
+  GamesRoute: typeof GamesRoute
   LeaderboardRoute: typeof LeaderboardRoute
   McpRoute: typeof McpRoute
   PolicyRoute: typeof PolicyRoute
@@ -530,6 +543,13 @@ declare module '@tanstack/react-router' {
       path: '/leaderboard'
       fullPath: '/leaderboard'
       preLoaderRoute: typeof LeaderboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games': {
+      id: '/games'
+      path: '/games'
+      fullPath: '/games'
+      preLoaderRoute: typeof GamesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fortnite': {
@@ -804,6 +824,7 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   FaqRoute: FaqRoute,
   FortniteRoute: FortniteRoute,
+  GamesRoute: GamesRoute,
   LeaderboardRoute: LeaderboardRoute,
   McpRoute: McpRoute,
   PolicyRoute: PolicyRoute,
