@@ -266,3 +266,11 @@
 /* logical grid must never mirror in RTL */
 .blast-board, .blast-tray, .bt-piece, .bb-ghost{direction:ltr;}
 
+
+/* ---- move timer bar ---- */
+.blast-timer{position:relative;display:flex;align-items:center;gap:10px;max-width:520px;margin:8px auto 12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}
+.blast-timer i{display:block;flex:1;height:8px;border-radius:999px;transform-origin:left center;background:linear-gradient(90deg,#25f2b0,#22e8ff);transition:none}
+.blast-timer b{min-width:48px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:#cfe9ff}
+.blast-timer.low i{background:linear-gradient(90deg,#ff8a1f,#ff3d8b)}
+.blast-timer.low b{color:#ff9db9}
+.bo-why{margin:2px 0 10px;font-size:13px;opacity:.75}
