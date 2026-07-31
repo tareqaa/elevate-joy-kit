@@ -102,6 +102,8 @@ function BlastPage() {
   const [finalScore, setFinalScore] = useState(0);
   const [remainMs, setRemainMs] = useState(game.moveLimitMs);
   const [paused, setPaused] = useState(false);
+  const [speedNote, setSpeedNote] = useState<{ id: number; text: string } | null>(null);
+
 
   const boardRef = useRef<HTMLDivElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
