@@ -525,15 +525,25 @@ function BlastPage() {
         setTimeout(() => { setClearing(new Map()); setPaused(false); }, 460);
       }
 
-      if (res.lines > 1) {
+      if (res.lines > 1 || res.boardClearBonus > 0) {
         const names = ar
-          ? ["", "", "مسح مزدوج", "مسح ثلاثي", "مسح رباعي", "مسح خماسي"]
-          : ["", "", "DOUBLE CLEAR", "TRIPLE CLEAR", "QUAD CLEAR", "PENTA CLEAR"];
-        const text = names[Math.min(res.lines, 5)] || (ar ? "مسح هائل" : "MEGA CLEAR");
+          ? ["", "", "مسح مزدوج", "مسح ثلاثي", "مسح رباعي"]
+          : ["", "", "DOUBLE CLEAR", "TRIPLE CLEAR", "QUAD CLEAR"];
+        const text =
+          res.lines > 1
+            ? names[Math.min(res.lines, 4)] || (ar ? "مسح خارق" : "SUPER CLEAR")
+            : ar ? "لوح نظيف!" : "CLEAN BOARD!";
         const id = popupId.current++;
-        setBanner({ id, text });
-        setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 900);
+        setBanner({
+          id,
+          text,
+          size: Math.min(4, Math.max(1, res.lines - 1)),
+          clean: res.boardClearBonus > 0,
+          streak: res.multiplier > 1 ? (ar ? `×${res.multiplier} متتالية` : `×${res.multiplier} STREAK`) : "",
+        });
+        setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 1000);
       }
+
 
       {
         const size = res.gained >= 600 ? 3 : res.gained >= 300 ? 2 : 1;
