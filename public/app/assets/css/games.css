@@ -151,14 +151,14 @@
   display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr);
   gap:4px; padding:8px; touch-action:none; user-select:none;
   border-radius:20px; border:1.5px solid rgba(255,255,255,.10);
-  background:linear-gradient(160deg,#1b2030,#151a27);
+  background:linear-gradient(160deg,#242a3b,#1c2231);
 }
 .blast-board.danger{
   border-color:rgba(255,45,120,.30);
   box-shadow:inset 0 0 40px rgba(255,45,120,.08);
 }
 .bb-cell{
-  position:relative; border-radius:11px;
+  position:relative; border-radius:13px;
   background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.05));
   border:1px solid rgba(255,255,255,.07);
   transition:background .12s linear, border-color .12s linear;
@@ -188,7 +188,7 @@
   position:fixed; left:0; top:0; z-index:60; display:grid; gap:0;
   pointer-events:none; opacity:.94; will-change:transform;
 }
-.bg-cell{border-radius:11px;}
+.bg-cell{border-radius:13px;}
 
 /* ---- tray ---- */
 .blast-tray{
@@ -210,7 +210,7 @@
 .bt-piece:active{cursor:grabbing;}
 .bt-piece.enter{animation:pieceIn .26s var(--ease) both; animation-delay:calc(var(--i,0) * 70ms);}
 @keyframes pieceIn{0%{opacity:0; transform:translateY(10px) scale(.82);}100%{opacity:1; transform:none;}}
-.bt-cell{border-radius:9px;}
+.bt-cell{border-radius:11px;}
 
 /* ---- floating score / banners ---- */
 .bb-pop{
