@@ -21,7 +21,10 @@ export type TournamentRow = {
 export type TournamentsPayload = {
   serverNow: string;
   tournaments: TournamentRow[];
+  /** how many tournaments the arena carousel shows (admin-controlled) */
+  carouselCount: number;
 };
+
 
 export const listTournaments = createServerFn({ method: "GET" }).handler(
   async (): Promise<TournamentsPayload> => {
