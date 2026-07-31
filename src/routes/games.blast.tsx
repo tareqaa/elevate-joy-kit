@@ -410,7 +410,12 @@ function BlastPage() {
             </div>
           </div>
 
-          <div className={"blast-timer" + (timePct < 0.34 ? " low" : "")} dir="ltr">
+          <div
+            className={
+              "blast-timer" + (timePct < 0.34 ? " low" : "") + (remainMs <= 3000 && !game.over ? " urgent" : "")
+            }
+            dir="ltr"
+          >
             <i style={{ transform: `scaleX(${timePct})` }} />
             <b>{(remainMs / 1000).toFixed(1)}s</b>
           </div>
