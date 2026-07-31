@@ -5,7 +5,7 @@ import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
-import { formatCountdown } from "@/lib/gx/games/time";
+import { formatCountdownFull, gameLabel } from "@/lib/gx/games/time";
 import { CarouselRow } from "@/components/gx/CarouselRow";
 import { supabase } from "@/integrations/supabase/client";
 import { listTournaments, type TournamentRow, type TournamentPrize } from "@/lib/gx/tournaments.functions";
@@ -120,17 +120,26 @@ function GamesPage() {
           <div className="arena-hero arena-hero-sm">
             <ArenaFx />
             <div className="ar-in">
-              <h1 className="ar-title">GX BLAST</h1>
+              <span className="ar-kicker">GX ARENA</span>
+              <h1 className="ar-title">GX ARENA</h1>
               <p className="ar-sub">
-                {ar ? "سجّل، العب، واربح جوائز." : "Register, play, win prizes."}
+                {ar
+                  ? "العب بطولات المتجر واربح جوائز حقيقية."
+                  : "Play store tournaments and win real rewards."}
               </p>
+              <div className="ar-perks">
+                <span className="ar-perk"><i aria-hidden>🪙</i>{ar ? "GX Coins للرصيد" : "GX Coins balance"}</span>
+                <span className="ar-perk"><i aria-hidden>🎟️</i>{ar ? "كوبونات خصم" : "Discount coupons"}</span>
+                <span className="ar-perk"><i aria-hidden>🎮</i>{ar ? "منتجات رقمية مجانية" : "Free digital products"}</span>
+                <span className="ar-perk"><i aria-hidden>🏆</i>{ar ? "ترتيبك بين اللاعبين" : "Global ranking"}</span>
+              </div>
             </div>
           </div>
         </section>
 
 
         <section className="wrap">
-          <h2 className="ar-sec-title">{ar ? "البطولات المتاحة" : "Available tournaments"}</h2>
+          <h2 className="ar-sec-title">{ar ? "البطولات" : "Tournaments"}</h2>
           {items.length === 0 ? (
             <p className="trn-empty">{ar ? "ما في بطولات حاليًا — ترقّب الأسبوع الجاي." : "Nothing scheduled yet — check back soon."}</p>
           ) : (
@@ -149,14 +158,18 @@ function GamesPage() {
                       </span>
                     </div>
 
+                    <span className="tcar-game">🎮 {gameLabel(t.game_slug)}</span>
                     <h3 className="tcar-nm">{ar ? t.title_ar : t.title_en}</h3>
 
                     <p className="tcar-time" style={{ unicodeBidi: "isolate" }}>
                       🕒 {t.status === "ended"
                         ? ar ? "انتهت" : "Finished"
-                        : t.status === "live"
-                          ? `${ar ? "يتبقى" : "Time left"} ${formatCountdown(t.end - now, ar)}`
-                          : `${ar ? "تبدأ بعد" : "Starts in"} ${formatCountdown(t.start - now, ar)}`}
+                        : (
+                          <>
+                            {t.status === "live" ? (ar ? "متبقي " : "Time left ") : ar ? "تبدأ بعد " : "Starts in "}
+                            <b>{formatCountdownFull((t.status === "live" ? t.end : t.start) - now, ar)}</b>
+                          </>
+                        )}
                     </p>
 
                     <div className="tcar-meta">
