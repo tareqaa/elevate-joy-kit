@@ -7,6 +7,7 @@ import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
 import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
 import { CarouselRow } from "@/components/gx/CarouselRow";
+import { supabase } from "@/integrations/supabase/client";
 import { listTournaments, type TournamentRow, type TournamentPrize } from "@/lib/gx/tournaments.functions";
 
 export const Route = createFileRoute("/games/")({
@@ -79,6 +80,20 @@ function GamesPage() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
   const now = useServerClock(serverNow);
+
+  // which tournaments the current user already joined (button label only)
+  const [joined, setJoined] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session?.user?.id;
+      if (!uid) return;
+      const { data } = await supabase.from("tournament_registrations").select("tournament_id").eq("user_id", uid);
+      if (alive && data) setJoined(new Set(data.map((r) => r.tournament_id as string)));
+    })();
+    return () => { alive = false; };
+  }, []);
 
   // recompute status from the SERVER-anchored clock, never the raw browser clock
   const cards = useMemo(() => {
