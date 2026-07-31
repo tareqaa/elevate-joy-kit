@@ -1,0 +1,63 @@
+/* ============================================================
+   MINI GAMES — /games page + sidebar carousel
+   ============================================================ */
+
+.games-hero{padding:38px 0 18px;}
+.games-hero .gh-in{display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+.games-hero .gh-ic{
+  width:64px; height:64px; border-radius:20px; flex-shrink:0;
+  background:linear-gradient(150deg,rgba(0,229,255,.16),rgba(0,229,255,.04));
+  border:1.5px solid rgba(0,229,255,.28);
+  display:flex; align-items:center; justify-content:center; font-size:30px;
+}
+.games-hero h1{font-size:28px; font-weight:900; margin-bottom:6px;}
+.games-hero p{color:var(--gray); font-size:14px; max-width:560px;}
+
+.games-grid{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:20px; padding-bottom:60px;
+}
+.game-card{
+  position:relative; overflow:hidden;
+  background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius-lg);
+  display:flex; flex-direction:column; gap:14px; padding:22px;
+  transition:border-color .2s var(--ease), transform .2s var(--ease);
+}
+.game-card:hover{border-color:rgba(0,229,255,.30); transform:translateY(-3px);}
+.game-card.soon{opacity:.85;}
+.game-thumb{
+  height:130px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+  font-size:52px; background:radial-gradient(circle at 50% 30%,rgba(0,229,255,.18),rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.06);
+}
+.game-name{font-weight:900; font-size:17px;}
+.game-desc{color:var(--gray); font-size:13px; line-height:1.7;}
+.game-badges{display:flex; gap:8px; flex-wrap:wrap; margin-top:auto;}
+.g-badge{
+  font-size:11px; font-weight:800; padding:5px 11px; border-radius:999px;
+  background:rgba(255,255,255,.07); color:var(--gray);
+}
+.g-badge.live{background:rgba(0,229,255,.12); color:var(--cyan);}
+.g-badge.live::before{content:"●"; margin-inline-end:6px; font-size:9px;}
+
+/* --- sidebar / menu carousel --- */
+.menu-games-car{
+  display:flex; gap:10px; overflow-x:auto; padding:4px 2px 8px;
+  scrollbar-width:none; -webkit-overflow-scrolling:touch;
+}
+.menu-games-car::-webkit-scrollbar{display:none;}
+.mg-item{
+  flex:0 0 auto; width:118px; text-decoration:none; color:inherit;
+  background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:14px;
+  padding:12px 10px; display:flex; flex-direction:column; gap:6px; align-items:flex-start;
+  transition:border-color .2s var(--ease), background .2s var(--ease);
+}
+.mg-item:hover{border-color:rgba(0,229,255,.35); background:rgba(0,229,255,.06);}
+.mg-ic{font-size:22px;}
+.mg-name{font-size:12px; font-weight:800; line-height:1.3;}
+.mg-status{font-size:10px; font-weight:800; color:var(--cyan);}
+
+@media(max-width:560px){
+  .games-hero .gh-in{flex-direction:column; text-align:center;}
+  .games-grid{grid-template-columns:1fr;}
+}

@@ -13,4 +13,5 @@ export const STORE_HEAD_LINKS = [
   { rel: "stylesheet", href: "/app/assets/css/fortnite.css" },
   { rel: "stylesheet", href: "/app/assets/css/giftcard.css" },
   { rel: "stylesheet", href: "/app/assets/css/coming-soon.css" },
+  { rel: "stylesheet", href: "/app/assets/css/games.css" },
 ];
