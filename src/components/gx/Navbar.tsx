@@ -472,10 +472,26 @@ export function Navbar() {
                 <span>{lang === "ar" ? "AR" : "EN"}</span>
               </button>
             </div>
-            <button type="button" className="icon-btn" onClick={cart.openDrawer} title={t("nav.cart_title")}>
-              🛒
-              <span className="badge-count">{cart.count}</span>
-            </button>
+            <div className="cart-icon-wrap">
+              <button type="button" className="icon-btn" onClick={cart.openDrawer} title={t("nav.cart_title")}>
+                🛒
+                <span className="badge-count">{cart.count}</span>
+              </button>
+              {cart.count > 0 && (
+                <button
+                  type="button"
+                  className="cart-clear-btn"
+                  title={lang === "ar" ? "تفريغ السلة" : "Clear cart"}
+                  aria-label={lang === "ar" ? "تفريغ السلة" : "Clear cart"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(lang === "ar" ? "هل تريد تفريغ السلة؟" : "Clear all items from your cart?")) cart.clear();
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
             <div className="menu-wrap">
               <button type="button" className="menu-btn" onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}>
                 <div className="bars"><span /><span /><span /></div>
