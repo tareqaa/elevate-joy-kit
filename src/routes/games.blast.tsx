@@ -633,12 +633,13 @@ function BlastPage() {
   const onPieceDown = (e: React.PointerEvent, trayIndex: number, piece: PieceDef) => {
     if (game.over) return;
     e.preventDefault();
+    const touch = e.pointerType !== "mouse";
     dragRef.current = {
       trayIndex,
       piece,
       x: e.clientX,
       y: e.clientY,
-      lift: 0,
+      lift: touch ? cellRef.current : 0,
     };
     targetRef.current = null;
     setDragInfo({ trayIndex, piece });
