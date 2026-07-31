@@ -66,7 +66,6 @@ function GamesPage() {
   const { serverNow, tournaments } = loaded;
   const { lang, dir } = useLang();
   const ar = lang === "ar";
-  const [openId, setOpenId] = useState<string | null>(null);
 
   const now = useServerClock(serverNow);
 
@@ -152,11 +151,11 @@ function GamesPage() {
                               ? "تبدأ خلال"
                               : "Starts in"}
                       </span>
-                      <b dir="ltr" style={{ unicodeBidi: "isolate" }}>
+                      <b style={{ unicodeBidi: "isolate" }}>
                         {live
                           ? fmtLeft(t.end - now, ar)
                           : ended
-                            ? new Date(t.ends_at).toLocaleDateString("en-GB")
+                            ? formatDateTime(t.ends_at, ar)
                             : fmtLeft(t.start - now, ar)}
                       </b>
                     </div>
