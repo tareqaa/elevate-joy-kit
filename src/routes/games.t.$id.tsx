@@ -283,7 +283,7 @@ function TournamentPage() {
                   </span>
                   <span className="jr-hint" dir="ltr">{(loyalty?.xp ?? 0).toLocaleString("en-US")} XP</span>
                 </div>
-                <div className="jr-bar"><div className="jr-fill" style={{ width: `${prog.pct}%` }} /></div>
+                <div className="jr-bar"><div className="jr-fill" style={{ width: `${loyalty ? prog.pct : 0}%` }} /></div>
                 <p className="jr-hint">
                   {loyalty?.next_level
                     ? ar
