@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { GameIcon } from "@/components/gx/games/GameIcon";
-import { TournamentEntryModal } from "@/components/gx/games/TournamentEntryModal";
+import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
 import { listTournaments, type TournamentRow } from "@/lib/gx/tournaments.functions";
 
 export const Route = createFileRoute("/games/")({
