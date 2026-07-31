@@ -160,11 +160,13 @@ const BoardCell = memo(function BoardCell({
 const MoveTimer = memo(function MoveTimer({
   limitMs,
   moveKey,
+  runKey,
   active,
   onExpire,
 }: {
   limitMs: number;
   moveKey: number;
+  runKey: string;
   active: boolean;
   onExpire: () => void;
 }) {
@@ -178,7 +180,7 @@ const MoveTimer = memo(function MoveTimer({
   useEffect(() => {
     leftRef.current = limitMs;
     setRemain(limitMs);
-  }, [limitMs, moveKey]);
+  }, [limitMs, moveKey, runKey]);
 
   useEffect(() => {
     if (!active) return;
@@ -213,7 +215,7 @@ const MoveTimer = memo(function MoveTimer({
       cancelAnimationFrame(raf);
       leftRef.current = Math.max(0, start - (performance.now() - t0));
     };
-  }, [active, limitMs, moveKey]);
+  }, [active, limitMs, moveKey, runKey]);
 
   const secs = remain <= 3000 ? (remain / 1000).toFixed(1) : String(Math.ceil(remain / 1000));
   return (
@@ -658,6 +660,7 @@ function BlastPage() {
       <MoveTimer
         limitMs={game.moveLimitMs}
         moveKey={game.moves.length}
+        runKey={game.seed}
         active={timerActive}
         onExpire={onExpire}
       />
