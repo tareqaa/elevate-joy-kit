@@ -763,3 +763,40 @@
 .bo-rw-row.down b{color:#ff8a8a;}
 .bo-rw-row.xp b,.bo-rw-row.coins b{font-size:12px;}
 
+
+/* ===== tournament prizes per place ===== */
+.przlist{display:flex;flex-direction:column;gap:8px;}
+.przlist.scroll{max-height:52vh;overflow:auto;padding-inline-end:4px;}
+.przrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;
+  background:linear-gradient(120deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.09);}
+.przrow i{font-style:normal;font-size:18px;line-height:1;}
+.przrow b{font-size:13px;color:#eef2ff;min-width:72px;}
+.przrow span{margin-inline-start:auto;font-size:13px;font-weight:700;color:#ffd76e;text-align:end;}
+.przrow.g1{border-color:rgba(255,215,110,.5);background:linear-gradient(120deg,rgba(255,215,110,.16),rgba(255,255,255,.02));}
+.przrow.g2{border-color:rgba(203,213,255,.4);}
+.przrow.g3{border-color:rgba(226,150,90,.4);}
+.prz-all{margin-top:10px;width:100%;padding:10px;border-radius:12px;cursor:pointer;
+  border:1px solid rgba(0,229,255,.35);background:rgba(0,229,255,.08);color:#bff6ff;font-weight:700;font-size:13px;}
+.prz-all:hover{background:rgba(0,229,255,.15);}
+
+/* ===== arena modals ===== */
+.tp-modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px;background:rgba(4,7,20,.78);}
+.tp-modal-card{width:min(480px,100%);max-height:88vh;overflow:auto;padding:18px;border-radius:22px;
+  background:linear-gradient(160deg,#131a3c,#0a0e26);border:1.5px solid rgba(0,229,255,.28);
+  box-shadow:0 30px 80px -40px rgba(0,229,255,.6);}
+.tp-modal-t{margin:0 0 12px;font-size:17px;font-weight:800;color:#eef2ff;text-align:center;}
+
+/* ===== how-to-play polish ===== */
+.htp-head{display:flex;flex-direction:column;gap:6px;}
+.htp-step{font-size:12px;font-weight:700;color:#8fa3d8;text-align:center;}
+.htp-prog{height:4px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden;}
+.htp-prog-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#00e5ff,#7c4dff);transition:width .3s ease;}
+.htp-stage{position:relative;}
+.htp-badge{position:absolute;inset-inline-start:10px;top:2px;width:24px;height:24px;border-radius:50%;
+  display:grid;place-items:center;font-size:12px;font-weight:800;color:#08122a;
+  background:linear-gradient(140deg,#ffd76e,#ffb03a);}
+.htp-cta{margin-top:6px;width:100%;padding:12px;border-radius:14px;border:0;cursor:pointer;font-weight:800;font-size:14px;
+  color:#04102a;background:linear-gradient(120deg,#00e5ff,#7c4dff);}
+.htp-arrow{transition:background .2s ease;}
+.htp-arrow:hover{background:rgba(255,255,255,.12);}

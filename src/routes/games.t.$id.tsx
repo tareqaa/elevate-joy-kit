@@ -49,6 +49,7 @@ function TournamentPage() {
   const [me, setMe] = useState<Standing | null>(null);
   const [loyalty, setLoyalty] = useState<MyLoyalty | null>(null);
   const [how, setHow] = useState(false);
+  const [prizesOpen, setPrizesOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -89,6 +90,23 @@ function TournamentPage() {
     if (now < new Date(t.starts_at).getTime()) return "upcoming" as const;
     return "live" as const;
   }, [t, now]);
+
+  const sortedPrizes = useMemo(
+    () => [...(t?.prizes ?? [])].sort((a, b) => (a.place ?? 99) - (b.place ?? 99)),
+    [t],
+  );
+
+  // first visit to THIS tournament => auto-open the tutorial once
+  useEffect(() => {
+    if (!t) return;
+    const key = `gx-htp-${t.id}`;
+    try {
+      if (!window.localStorage.getItem(key)) {
+        setHow(true);
+        window.localStorage.setItem(key, "1");
+      }
+    } catch { /* storage unavailable */ }
+  }, [t]);
 
   if (t === undefined) {
     return (
@@ -252,27 +270,35 @@ function TournamentPage() {
 
           <aside className="tp-side">
             <section className="tp-card">
-              <h2>{ar ? "الجوائز الأسبوعية" : "Weekly rewards"}</h2>
+              <h2>{ar ? "جوائز البطولة" : "Tournament prizes"}</h2>
               {t.prizes.length === 0 ? (
                 <p className="tlb-empty">{ar ? "سيتم الإعلان عن الجوائز قريبًا." : "Prizes announced soon."}</p>
               ) : (
-                <div className="rwgrid">
-                  {t.prizes.map((p, i) => {
-                    const place = p.place ?? i + 1;
-                    return (
-                      <div key={place} className={`rw g${Math.min(place, 3)}`}>
-                        <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
-                        <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
-                        <span>{ar ? p.label_ar : p.label_en}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                <>
+                  <div className="przlist">
+                    {sortedPrizes.slice(0, 6).map((p, i) => {
+                      const place = p.place ?? i + 1;
+                      return (
+                        <div key={place} className={`przrow g${Math.min(place, 4)}`}>
+                          <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
+                          <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
+                          <span>{ar ? p.label_ar : p.label_en}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {sortedPrizes.length > 6 && (
+                    <button type="button" className="prz-all" onClick={() => setPrizesOpen(true)}>
+                      {ar ? `عرض كل الجوائز (${sortedPrizes.length})` : `View all prizes (${sortedPrizes.length})`}
+                    </button>
+                  )}
+                </>
               )}
               <p className="tp-winners">
                 {ar ? `عدد الفائزين في هذه البطولة: ${t.prizes.length}` : `Winners in this tournament: ${t.prizes.length}`}
               </p>
             </section>
+
 
             <section className="tp-card">
               <h2>GX Journey</h2>
@@ -309,9 +335,35 @@ function TournamentPage() {
         </div>
 
         {how && (
-          <section className="tp-card tp-howcard">
-            <HowToPlaySlides />
-          </section>
+          <div className="tp-modal" role="dialog" aria-modal="true" onClick={() => setHow(false)}>
+            <div className="tp-modal-card" onClick={(e) => e.stopPropagation()}>
+              <h3 className="tp-modal-t">{ar ? `كيف تلعب في ${t.title_ar}` : `How to play ${t.title_en}`}</h3>
+              <HowToPlaySlides onDone={() => setHow(false)} doneLabel={ar ? "يلا نبدأ" : "Let's go"} />
+            </div>
+          </div>
+        )}
+
+        {prizesOpen && (
+          <div className="tp-modal" role="dialog" aria-modal="true" onClick={() => setPrizesOpen(false)}>
+            <div className="tp-modal-card" onClick={(e) => e.stopPropagation()}>
+              <h3 className="tp-modal-t">{ar ? "كل جوائز البطولة" : "All tournament prizes"}</h3>
+              <div className="przlist scroll">
+                {sortedPrizes.map((p, i) => {
+                  const place = p.place ?? i + 1;
+                  return (
+                    <div key={place} className={`przrow g${Math.min(place, 4)}`}>
+                      <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
+                      <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
+                      <span>{ar ? p.label_ar : p.label_en}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <button type="button" className="btn btn-primary" onClick={() => setPrizesOpen(false)}>
+                {ar ? "إغلاق" : "Close"}
+              </button>
+            </div>
+          </div>
         )}
       </main>
     </StoreShell>
