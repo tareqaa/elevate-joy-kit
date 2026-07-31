@@ -320,12 +320,19 @@ export const GEN = {
   /** how many candidate trays are sampled per draw */
   candidates: 14,
   /** how many valid candidates are enough to stop sampling early */
-  enough: 8,
-  /** how many of the best candidates are kept for the weighted pick */
-  shortlist: 4,
-  /** softness of the weighted pick (higher = closer to pure best) */
-  sharpness: 2.2,
+  enough: 10,
+  /** how many candidates are kept for the weighted pick (wide = less scripted) */
+  shortlist: 9,
+  /** softness of the weighted pick (lower = far from "always the best") */
+  sharpness: 0.55,
+  /** how much the sharpness drops per difficulty step (less help over time) */
+  sharpnessDecay: 0.06,
+  /** penalty for a piece that completes a line right now with no planning */
+  instantClearPenalty: 26,
+  /** bonus when at least two pieces are usable on the current board */
+  twoOptionBonus: 45,
 };
+
 
 /** empty cells whose 4 neighbours are all blocked (edges count as blocked) */
 function countHoles(board: Board): number {
