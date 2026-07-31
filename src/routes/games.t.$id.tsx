@@ -6,7 +6,6 @@ import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
-import { HowToPlaySlides } from "@/components/gx/games/HowToPlaySlides";
 import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
 import { fetchMyLoyalty, type MyLoyalty } from "@/lib/gx/loyalty";
 
@@ -48,7 +47,6 @@ function TournamentPage() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [me, setMe] = useState<Standing | null>(null);
   const [loyalty, setLoyalty] = useState<MyLoyalty | null>(null);
-  const [how, setHow] = useState(false);
   const [prizesOpen, setPrizesOpen] = useState(false);
 
   useEffect(() => {
@@ -133,18 +131,6 @@ function TournamentPage() {
     [t],
   );
 
-  // first visit to THIS tournament => auto-open the tutorial once
-  useEffect(() => {
-    if (!t) return;
-    const key = `gx-htp-${t.id}`;
-    try {
-      if (!window.localStorage.getItem(key)) {
-        setHow(true);
-        window.localStorage.setItem(key, "1");
-      }
-    } catch { /* storage unavailable */ }
-  }, [t]);
-
   if (t === undefined) {
     return (
       <StoreShell>
@@ -203,6 +189,11 @@ function TournamentPage() {
               </div>
             </div>
 
+            <p className="tcar-dates" style={{ unicodeBidi: "isolate", margin: "10px 0 4px" }}>
+              <span>{ar ? "تبدأ" : "Starts"}: {formatDateTime(t.starts_at, ar)}</span>
+              <span>{ar ? "تنتهي" : "Ends"}: {formatDateTime(t.ends_at, ar)}</span>
+            </p>
+
             <div className="tp-actions" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {status !== "ended" && !registered ? (
                 <button type="button" className="ar-cta" disabled={joining} onClick={register}>
@@ -218,9 +209,6 @@ function TournamentPage() {
                   ⚡ {status === "live" ? (ar ? "ابدأ اللعب" : "Start playing") : status === "ended" ? (ar ? "انتهت البطولة" : "Tournament ended") : (ar ? "لم تبدأ بعد" : "Not started yet")}
                 </button>
               )}
-              <button type="button" className="btn tp-how" onClick={() => setHow((v) => !v)}>
-                {how ? (ar ? "إخفاء الشرح" : "Hide how to play") : (ar ? "كيف ألعب؟" : "How to play?")}
-              </button>
             </div>
             <p className="reg-note">
               {registered
@@ -347,15 +335,6 @@ function TournamentPage() {
             </section>
           </aside>
         </div>
-
-        {how && (
-          <div className="tp-modal" role="dialog" aria-modal="true" onClick={() => setHow(false)}>
-            <div className="tp-modal-card" onClick={(e) => e.stopPropagation()}>
-              <h3 className="tp-modal-t">{ar ? `كيف تلعب في ${t.title_ar}` : `How to play ${t.title_en}`}</h3>
-              <HowToPlaySlides onDone={() => setHow(false)} doneLabel={ar ? "يلا نبدأ" : "Let's go"} />
-            </div>
-          </div>
-        )}
 
         {prizesOpen && (
           <div className="tp-modal" role="dialog" aria-modal="true" onClick={() => setPrizesOpen(false)}>
