@@ -916,3 +916,22 @@
   .przrow{flex-wrap:wrap;}
   .przrow span{margin-inline-start:0; width:100%; text-align:start;}
 }
+
+/* ---------- Arena tournaments carousel ---------- */
+.car-scroller.tcar{display:flex;gap:14px;overflow-x:auto;scroll-behavior:smooth;padding:4px 2px 12px;scrollbar-width:none;}
+.car-scroller.tcar::-webkit-scrollbar{display:none;}
+.tcar-c{flex:0 0 clamp(230px,74vw,290px);scroll-snap-align:start;display:flex;flex-direction:column;gap:9px;padding:14px;border-radius:18px;background:linear-gradient(160deg,rgba(24,30,64,.96),rgba(13,17,40,.96));border:1px solid rgba(0,229,255,.16);box-shadow:0 16px 40px rgba(0,0,0,.38);}
+.tcar-c.is-live{border-color:rgba(0,229,255,.45);}
+.tcar-c.is-ended{opacity:.72;}
+.tcar-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.tcar-ic{display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:rgba(0,229,255,.08);}
+.tcar-nm{margin:0;font-size:16px;font-weight:800;line-height:1.35;}
+.tcar-time{margin:0;font-size:12.5px;color:#9fb0d8;}
+.tcar-meta{display:flex;gap:12px;font-size:12.5px;color:#c6d2ee;flex-wrap:wrap;}
+.tcar-go{margin-top:auto;display:block;text-align:center;padding:10px 12px;border-radius:12px;font-weight:800;font-size:13.5px;text-decoration:none;color:#04121c;background:linear-gradient(135deg,#00e5ff,#7dfffe);}
+.tcar-c.is-ended .tcar-go{background:rgba(255,255,255,.08);color:#cfe0ff;}
+@media(max-width:560px){.tcar-c{flex-basis:80vw;}}
+
+/* ---------- registration gate ---------- */
+.reg-note{margin:8px 0 0;font-size:13px;color:#9fb0d8;}
+.reg-ok{color:#7dffb0;font-weight:700;}
