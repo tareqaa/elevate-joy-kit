@@ -5,7 +5,7 @@ import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
-import { formatCountdownFull, gameLabel } from "@/lib/gx/games/time";
+import { gameLabel } from "@/lib/gx/games/time";
 import { CarouselRow } from "@/components/gx/CarouselRow";
 import { supabase } from "@/integrations/supabase/client";
 import { listTournaments, type TournamentRow, type TournamentPrize } from "@/lib/gx/tournaments.functions";
@@ -70,6 +70,27 @@ export function prizePool(prizes: TournamentPrize[]): number {
   }, 0);
 }
 
+/** clean segmented countdown: days / hours / minutes / seconds */
+function Countdown({ ms, ar }: { ms: number; ar: boolean }) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const units = [
+    { n: Math.floor(total / 86400), l: ar ? "يوم" : "days" },
+    { n: Math.floor((total % 86400) / 3600), l: ar ? "ساعة" : "hrs" },
+    { n: Math.floor((total % 3600) / 60), l: ar ? "دقيقة" : "min" },
+    { n: total % 60, l: ar ? "ثانية" : "sec" },
+  ];
+  return (
+    <div className="tcd" dir="ltr">
+      {units.map((u, i) => (
+        <div className="tcd-u" key={i}>
+          <span className="tcd-n">{String(u.n).padStart(2, "0")}</span>
+          <span className="tcd-l">{u.l}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function GamesPage() {
   const { serverNow, tournaments, carouselCount } = Route.useLoaderData() as {
     serverNow: string;
@@ -120,18 +141,17 @@ function GamesPage() {
           <div className="arena-hero arena-hero-sm">
             <ArenaFx />
             <div className="ar-in">
-              <span className="ar-kicker">GX ARENA</span>
+              <span className="ar-kicker">{ar ? "ساحة اللعب" : "PLAY ARENA"}</span>
               <h1 className="ar-title">GX ARENA</h1>
               <p className="ar-sub">
                 {ar
-                  ? "العب بطولات المتجر واربح جوائز حقيقية."
-                  : "Play store tournaments and win real rewards."}
+                  ? "سجّل في البطولة، العب، واصعد بالترتيب — أعلى النتائج تاخذ الجوائز."
+                  : "Join a tournament, play, and climb the ranks — top scores take the prizes."}
               </p>
               <div className="ar-perks">
                 <span className="ar-perk"><i aria-hidden>🪙</i>{ar ? "GX Coins للرصيد" : "GX Coins balance"}</span>
                 <span className="ar-perk"><i aria-hidden>🎟️</i>{ar ? "كوبونات خصم" : "Discount coupons"}</span>
                 <span className="ar-perk"><i aria-hidden>🎮</i>{ar ? "منتجات رقمية مجانية" : "Free digital products"}</span>
-                <span className="ar-perk"><i aria-hidden>🏆</i>{ar ? "ترتيبك بين اللاعبين" : "Global ranking"}</span>
               </div>
             </div>
           </div>
@@ -161,20 +181,20 @@ function GamesPage() {
                     <span className="tcar-game">🎮 {gameLabel(t.game_slug)}</span>
                     <h3 className="tcar-nm">{ar ? t.title_ar : t.title_en}</h3>
 
-                    <p className="tcar-time" style={{ unicodeBidi: "isolate" }}>
-                      🕒 {t.status === "ended"
-                        ? ar ? "انتهت" : "Finished"
-                        : (
-                          <>
-                            {t.status === "live" ? (ar ? "متبقي " : "Time left ") : ar ? "تبدأ بعد " : "Starts in "}
-                            <b>{formatCountdownFull((t.status === "live" ? t.end : t.start) - now, ar)}</b>
-                          </>
-                        )}
-                    </p>
+                    {t.status === "ended" ? (
+                      <p className="tcd-lbl">🕒 {ar ? "انتهت البطولة" : "Finished"}</p>
+                    ) : (
+                      <>
+                        <p className="tcd-lbl">
+                          🕒 {t.status === "live" ? (ar ? "المتبقي على النهاية" : "Time left") : ar ? "تبدأ بعد" : "Starts in"}
+                        </p>
+                        <Countdown ms={(t.status === "live" ? t.end : t.start) - now} ar={ar} />
+                      </>
+                    )}
 
                     <div className="tcar-meta">
-                      <span>👥 {t.participants.toLocaleString("en")} {ar ? "مشارك" : "players"}</span>
-                      <span>🎁 {t.prizes.length} {ar ? "جائزة" : "prizes"}</span>
+                      <span>👥 {ar ? "المشاركون" : "Players"}: {t.participants.toLocaleString("en")}</span>
+                      <span>🎁 {ar ? "عدد الجوائز" : "Prizes"}: {t.prizes.length}</span>
                     </div>
 
                     <Link to="/games/t/$id" params={{ id: t.id }} className="tcar-go">

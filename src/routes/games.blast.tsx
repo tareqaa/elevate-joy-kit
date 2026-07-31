@@ -18,6 +18,16 @@ import {
   type PieceDef,
 } from "@/lib/gx/games/blast-engine";
 
+/** decorative falling blocks behind the board (deterministic → SSR safe) */
+const BG_COLORS = ["#7f8ae0", "#8fd3f4", "#f6c177", "#8be3b5", "#e58fb0"];
+const BG_BITS = Array.from({ length: 16 }, (_, i) => ({
+  left: (i * 61) % 96,
+  size: 14 + ((i * 5) % 22),
+  dur: 16 + ((i * 7) % 14),
+  delay: (i * 3.5) % 22,
+  color: BG_COLORS[i % BG_COLORS.length],
+}));
+
 export const Route = createFileRoute("/games/blast")({
   ssr: false,
   validateSearch: (s: Record<string, unknown>): { t?: string } =>
@@ -702,6 +712,21 @@ function BlastPage() {
   return (
     <StoreShell bare>
       <main dir={dir} className="blast-page blast-fs">
+        <div className="bl-fx" aria-hidden>
+          {BG_BITS.map((b, i) => (
+            <i
+              key={i}
+              style={{
+                left: `${b.left}%`,
+                width: b.size,
+                height: b.size,
+                background: b.color,
+                animationDuration: `${b.dur}s`,
+                animationDelay: `-${b.delay}s`,
+              }}
+            />
+          ))}
+        </div>
         <header className="blast-bar">
           <Link to="/games" className="blast-back">{ar ? "‹ ساحة اللعب" : "‹ Play Arena"}</Link>
         </header>
