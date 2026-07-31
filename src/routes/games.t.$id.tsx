@@ -194,9 +194,6 @@ function TournamentPage() {
   }
 
   const target = status === "live" ? new Date(t.ends_at).getTime() - now : new Date(t.starts_at).getTime() - now;
-  const top3 = (rows ?? []).slice(0, 3);
-  const rest = (rows ?? []).slice(3);
-  const meInTop = !!me?.played && !!me.rank && me.rank <= 20;
   
 
   return (
