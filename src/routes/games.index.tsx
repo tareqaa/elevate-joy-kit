@@ -80,8 +80,9 @@ type TopRow = { rank: number; user_id: string; username: string | null; full_nam
 const nameOf = (r: TopRow) => r.username || r.full_name || "GX Player";
 
 function GamesPage() {
-  const loaded = Route.useLoaderData() as { serverNow: string; tournaments: TournamentRow[] };
-  const { serverNow, tournaments } = loaded;
+  const loaded = Route.useLoaderData() as { serverNow: string; tournaments: TournamentRow[]; carouselCount: number };
+  const { serverNow, tournaments, carouselCount } = loaded;
+
   const { lang, dir } = useLang();
   const ar = lang === "ar";
 
