@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
+import { supabase } from "@/integrations/supabase/client";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
 import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
