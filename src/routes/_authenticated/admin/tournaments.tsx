@@ -173,6 +173,20 @@ function TournamentsAdmin() {
     },
   });
 
+  // products for product-specific coupons
+  const productsQ = useQuery({
+    queryKey: ["admin-tournament-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("slug,name_ar")
+        .eq("is_active", true)
+        .order("name_ar");
+      if (error) throw error;
+      return (data ?? []) as { slug: string; name_ar: string }[];
+    },
+  });
+
 
   const setPrize = (i: number, patch: Partial<Prize>) =>
     setEdit((e) => {
