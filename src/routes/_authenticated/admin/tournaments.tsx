@@ -323,7 +323,7 @@ function TournamentsAdmin() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">الجوائز (عدد الفائزين: {(edit.prizes ?? []).length})</span>
-                  <Button size="sm" variant="outline" onClick={() => setEdit({ ...edit, prizes: [...(edit.prizes ?? []), { place: (edit.prizes ?? []).length + 1, label_ar: "", label_en: "" }] })}>
+                  <Button size="sm" variant="outline" onClick={() => setEdit({ ...edit, prizes: [...(edit.prizes ?? []), { place: (edit.prizes ?? []).length + 1, label_ar: "", label_en: "", reward_type: "custom", reward_value: null }] })}>
                     <Plus className="h-4 w-4 ms-1" /> مركز
                   </Button>
                 </div>
