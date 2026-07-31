@@ -34,7 +34,7 @@ export const Route = createFileRoute("/games/blast")({
 
 const BEST_KEY = "gx_blast_best";
 const MAX_POPUPS = 4;
-const BOARD_GAP_PX = 1;
+const BOARD_GAP_PX = 2;
 const BOARD_PADDING_PX = 6;
 const BOARD_BORDER_PX = 0;
 const BOARD_RESIZE_DEBOUNCE_MS = 120;
