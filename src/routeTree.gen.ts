@@ -25,6 +25,7 @@ import { Route as GamesIndexRouteImport } from './routes/games.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as GiftCardsSlugRouteImport } from './routes/gift-cards.$slug'
+import { Route as GamesBlastRouteImport } from './routes/games.blast'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
@@ -124,6 +125,11 @@ const ProductSlugRoute = ProductSlugRouteImport.update({
 const GiftCardsSlugRoute = GiftCardsSlugRouteImport.update({
   id: '/gift-cards/$slug',
   path: '/gift-cards/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesBlastRoute = GamesBlastRouteImport.update({
+  id: '/games/blast',
+  path: '/games/blast',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
@@ -263,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/category/$slug': typeof CategorySlugRoute
+  '/games/blast': typeof GamesBlastRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -300,6 +307,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/account': typeof AuthenticatedAccountRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/games/blast': typeof GamesBlastRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -340,6 +348,7 @@ export interface FileRoutesById {
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/category/$slug': typeof CategorySlugRoute
+  '/games/blast': typeof GamesBlastRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -380,6 +389,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/category/$slug'
+    | '/games/blast'
     | '/gift-cards/$slug'
     | '/product/$slug'
     | '/u/$username'
@@ -417,6 +427,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/account'
     | '/category/$slug'
+    | '/games/blast'
     | '/gift-cards/$slug'
     | '/product/$slug'
     | '/u/$username'
@@ -456,6 +467,7 @@ export interface FileRouteTypes {
     | '/_authenticated/account'
     | '/_authenticated/admin'
     | '/category/$slug'
+    | '/games/blast'
     | '/gift-cards/$slug'
     | '/product/$slug'
     | '/u/$username'
@@ -494,6 +506,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  GamesBlastRoute: typeof GamesBlastRoute
   GiftCardsSlugRoute: typeof GiftCardsSlugRoute
   ProductSlugRoute: typeof ProductSlugRoute
   UUsernameRoute: typeof UUsernameRoute
@@ -613,6 +626,13 @@ declare module '@tanstack/react-router' {
       path: '/gift-cards/$slug'
       fullPath: '/gift-cards/$slug'
       preLoaderRoute: typeof GiftCardsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/blast': {
+      id: '/games/blast'
+      path: '/games/blast'
+      fullPath: '/games/blast'
+      preLoaderRoute: typeof GamesBlastRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/category/$slug': {
@@ -834,6 +854,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   CategorySlugRoute: CategorySlugRoute,
+  GamesBlastRoute: GamesBlastRoute,
   GiftCardsSlugRoute: GiftCardsSlugRoute,
   ProductSlugRoute: ProductSlugRoute,
   UUsernameRoute: UUsernameRoute,
