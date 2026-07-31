@@ -626,7 +626,7 @@ function BlastPage() {
           <Link to="/games" className="blast-back">{ar ? "‹ ساحة اللعب" : "‹ Play Arena"}</Link>
         </header>
 
-        <section className="blast-stage">
+        <section className={"blast-stage" + (measured ? "" : " measuring")}>
           <div className="blast-play">
             <div className="blast-column" style={blockStyle}>
               {hud}
