@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
@@ -33,6 +33,8 @@ export const Route = createFileRoute("/games/blast")({
 });
 
 const BEST_KEY = "gx_blast_best";
+const PERF_KEY = "gx_blast_perf";
+const MAX_POPUPS = 4;
 
 /* --- VISUAL-ONLY palette override (engine colour ids -> vivid hex) --- */
 const VIVID: Record<number, string> = {
@@ -47,12 +49,20 @@ const VIVID: Record<number, string> = {
   9: "#ff8a1f",
 };
 
-function faceStyle(colorId: number): React.CSSProperties {
-  const c = VIVID[colorId] ?? "#22e8ff";
-  return {
-    backgroundImage: `linear-gradient(180deg, color-mix(in oklab, ${c} 72%, #ffffff) 0%, ${c} 46%, color-mix(in oklab, ${c} 82%, #000000) 100%)`,
-    boxShadow: `inset 0 1px 0 rgba(255,255,255,.55), inset 0 0 0 1px color-mix(in oklab, ${c} 60%, #ffffff)`,
-  };
+/** pre-built once: no new style object per cell per frame (keeps memo intact) */
+const FACES: Record<number, React.CSSProperties> = Object.fromEntries(
+  Object.entries(VIVID).map(([k, c]) => [
+    Number(k),
+    {
+      // gradient + inner border only — no box-shadow glow on 64 cells
+      backgroundImage: `linear-gradient(180deg, color-mix(in oklab, ${c} 74%, #ffffff) 0%, ${c} 48%, color-mix(in oklab, ${c} 80%, #000000) 100%)`,
+      boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${c} 58%, #ffffff)`,
+    } as React.CSSProperties,
+  ]),
+) as Record<number, React.CSSProperties>;
+
+function face(colorId: number): React.CSSProperties | undefined {
+  return FACES[colorId];
 }
 
 type DragState = {
@@ -82,14 +92,107 @@ function cellUnderPoint(x: number, y: number): { row: number; col: number } | nu
   return { row, col };
 }
 
+/* ============================================================
+   Memoized cell — only cells whose props actually changed repaint.
+   ============================================================ */
+const BoardCell = memo(function BoardCell({
+  row,
+  col,
+  colorId,
+  cls,
+  delay,
+}: {
+  row: number;
+  col: number;
+  colorId: number;
+  cls: string;
+  delay: number;
+}) {
+  const base = colorId ? face(colorId) : undefined;
+  const style = base && delay > 0 ? { ...base, animationDelay: `${delay}ms` } : base;
+  return <div data-row={row} data-col={col} className={cls} style={style} />;
+});
+
+/* ============================================================
+   Move timer — fully isolated. Its ticks never re-render the
+   board or the tray. Bar is written straight to the DOM.
+   ============================================================ */
+const MoveTimer = memo(function MoveTimer({
+  limitMs,
+  moveKey,
+  active,
+  onExpire,
+}: {
+  limitMs: number;
+  moveKey: number;
+  active: boolean;
+  onExpire: () => void;
+}) {
+  const [remain, setRemain] = useState(limitMs);
+  const barRef = useRef<HTMLElement | null>(null);
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const leftRef = useRef(limitMs);
+  const expireRef = useRef(onExpire);
+  expireRef.current = onExpire;
+
+  useEffect(() => {
+    leftRef.current = limitMs;
+    setRemain(limitMs);
+  }, [limitMs, moveKey]);
+
+  useEffect(() => {
+    if (!active) return;
+    const t0 = performance.now();
+    const start = leftRef.current;
+    let raf = 0;
+    let lastQ = -1;
+    let lastCls = "";
+    const tick = () => {
+      const left = Math.max(0, start - (performance.now() - t0));
+      const pct = Math.max(0, Math.min(1, left / Math.max(1, limitMs)));
+      if (barRef.current) barRef.current.style.transform = `scaleX(${pct})`;
+      const cls = "blast-timer" + (pct < 0.34 ? " low" : "") + (left <= 3000 ? " urgent" : "");
+      if (cls !== lastCls && boxRef.current) {
+        boxRef.current.className = cls;
+        lastCls = cls;
+      }
+      // integer seconds normally, tenths only in the last 3 seconds
+      const q = left <= 3000 ? Math.ceil(left / 100) : Math.ceil(left / 1000);
+      if (q !== lastQ) {
+        lastQ = q;
+        setRemain(left);
+      }
+      if (left <= 0) {
+        expireRef.current();
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      leftRef.current = Math.max(0, start - (performance.now() - t0));
+    };
+  }, [active, limitMs, moveKey]);
+
+  const secs = remain <= 3000 ? (remain / 1000).toFixed(1) : String(Math.ceil(remain / 1000));
+  return (
+    <div ref={boxRef} className="blast-timer" dir="ltr">
+      <i ref={barRef as React.RefObject<HTMLElement>} />
+      <b>{secs}s</b>
+    </div>
+  );
+});
+
 function BlastPage() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
 
   const [game, setGame] = useState<GameState>(() => createGame(makeSeed()));
-  const [drag, setDrag] = useState<DragState | null>(null);
+  const [dragInfo, setDragInfo] = useState<{ trayIndex: number; piece: PieceDef } | null>(null);
   const [target, setTarget] = useState<Target>(null);
   const [cellSize, setCellSize] = useState(40);
+  const [boardPx, setBoardPx] = useState(0);
   const [clearing, setClearing] = useState<Map<number, ClearCell>>(new Map());
   const [placed, setPlaced] = useState<number[]>([]);
   const [popups, setPopups] = useState<Popup[]>([]);
@@ -100,19 +203,79 @@ function BlastPage() {
   const [streakBreak, setStreakBreak] = useState(0);
   const [trayGen, setTrayGen] = useState(0);
   const [finalScore, setFinalScore] = useState(0);
-  const [remainMs, setRemainMs] = useState(game.moveLimitMs);
   const [paused, setPaused] = useState(false);
   const [speedNote, setSpeedNote] = useState<{ id: number; text: string } | null>(null);
-
+  const [lowFx, setLowFx] = useState(false);
 
   const boardRef = useRef<HTMLDivElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const areaRef = useRef<HTMLDivElement | null>(null);
+  const ghostRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<DragState | null>(null);
+  const targetRef = useRef<Target>(null);
+  const rafRef = useRef(0);
+  const pendingRef = useRef<{ x: number; y: number } | null>(null);
   const popupId = useRef(1);
   const prevStreak = useRef(0);
   const prevTrayCount = useRef(3);
   const prevLimit = useRef(0);
   const moveStart = useRef<number>(0);
+  const gameRef = useRef(game);
+  gameRef.current = game;
+  const cellRef = useRef(cellSize);
+  cellRef.current = cellSize;
 
+  /* ----- performance mode: auto-detect weak devices + manual switch ----- */
+  useEffect(() => {
+    let saved: string | null = null;
+    try { saved = localStorage.getItem(PERF_KEY); } catch { /* ignore */ }
+    if (saved === "1" || saved === "0") { setLowFx(saved === "1"); return; }
+    const cores = navigator.hardwareConcurrency ?? 8;
+    const area = window.screen.width * window.screen.height;
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    setLowFx(Boolean(reduced) || cores <= 4 || area < 500000);
+  }, []);
+  const togglePerf = useCallback(() => {
+    setLowFx((v) => {
+      const n = !v;
+      try { localStorage.setItem(PERF_KEY, n ? "1" : "0"); } catch { /* ignore */ }
+      return n;
+    });
+  }, []);
+
+  /* ----- no page scrolling at all while the game is mounted ----- */
+  useEffect(() => {
+    const b = document.body;
+    const html = document.documentElement;
+    const prev = [b.style.overflow, html.style.overflow, b.style.overscrollBehavior];
+    b.style.overflow = "hidden";
+    html.style.overflow = "hidden";
+    b.style.overscrollBehavior = "none";
+    const block = (e: TouchEvent) => { if (e.cancelable) e.preventDefault(); };
+    document.addEventListener("touchmove", block, { passive: false });
+    return () => {
+      b.style.overflow = prev[0];
+      html.style.overflow = prev[1];
+      b.style.overscrollBehavior = prev[2];
+      document.removeEventListener("touchmove", block);
+    };
+  }, []);
+
+  /* ----- board side = min(available height, available width) ----- */
+  useLayoutEffect(() => {
+    const el = areaRef.current;
+    if (!el) return;
+    const apply = () => {
+      const r = el.getBoundingClientRect();
+      const side = Math.max(180, Math.floor(Math.min(r.width, r.height)));
+      setBoardPx((p) => (Math.abs(p - side) > 1 ? side : p));
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    window.addEventListener("orientationchange", apply);
+    return () => { ro.disconnect(); window.removeEventListener("orientationchange", apply); };
+  }, []);
 
   /* ----- best score (local only) ----- */
   useEffect(() => {
@@ -149,7 +312,6 @@ function BlastPage() {
     prevLimit.current = lim;
   }, [game.moveLimitMs, ar]);
 
-
   /* ----- new tray => staggered entrance ----- */
   useEffect(() => {
     const count = game.tray.filter(Boolean).length;
@@ -160,6 +322,7 @@ function BlastPage() {
   /* ----- animated score count-up ----- */
   useEffect(() => {
     if (shownScore === game.score) return;
+    if (lowFx) { setShownScore(game.score); return; }
     let raf = 0;
     const start = shownScore;
     const diff = game.score - start;
@@ -174,11 +337,12 @@ function BlastPage() {
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game.score]);
+  }, [game.score, lowFx]);
 
   /* ----- game over: big count-up ----- */
   useEffect(() => {
     if (!game.over) { setFinalScore(0); return; }
+    if (lowFx) { setFinalScore(game.score); return; }
     let raf = 0;
     const t0 = performance.now();
     const step = (t: number) => {
@@ -189,69 +353,36 @@ function BlastPage() {
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [game.over, game.score]);
+  }, [game.over, game.score, lowFx]);
 
-  /* ----- move timer: runs only while pieces are actually playable ----- */
   const timerActive = !game.over && !paused;
+  const onExpire = useCallback(() => setGame((g) => timeoutGame(g)), []);
 
   useEffect(() => {
-    if (!timerActive) return;
-    moveStart.current = performance.now();
-    setRemainMs(game.moveLimitMs);
-    let raf = 0;
-    const tick = () => {
-      const left = game.moveLimitMs - (performance.now() - moveStart.current);
-      setRemainMs(Math.max(0, left));
-      if (left <= 0) { setGame((g) => timeoutGame(g)); return; }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    if (timerActive) moveStart.current = performance.now();
   }, [timerActive, game.moves.length, game.moveLimitMs]);
 
-  /* ----- visual cell size for the drag ghost (rendering only) ----- */
-  const measure = useCallback(() => {
+  /* ----- measure a real cell (used by the ghost + preview anchor) ----- */
+  useLayoutEffect(() => {
     const c0 = boardRef.current?.querySelector("[data-row]") as HTMLElement | null;
-    if (c0) setCellSize(c0.getBoundingClientRect().width);
-  }, []);
-  useEffect(() => {
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [measure]);
-
-  /* ----- ghost geometry: piece is centred on the pointer, lifted on touch ----- */
-  const ghost = useMemo(() => {
-    if (!drag) return null;
-    return {
-      left: drag.x - (drag.piece.w * cellSize) / 2,
-      top: drag.y - (drag.piece.h * cellSize) / 2 - drag.lift,
-    };
-  }, [drag, cellSize]);
-
-  /** identical resolution for preview and for the final commit */
-  const resolveTarget = useCallback(
-    (d: DragState): Target => {
-      const left = d.x - (d.piece.w * cellSize) / 2;
-      const top = d.y - (d.piece.h * cellSize) / 2 - d.lift;
-      const hit = cellUnderPoint(left + cellSize / 2, top + cellSize / 2);
-      if (!hit) return null;
-      return { row: hit.row, col: hit.col, ok: canPlace(game.board, d.piece, hit.row, hit.col) };
-    },
-    [cellSize, game.board],
-  );
+    if (c0) {
+      const w = c0.getBoundingClientRect().width;
+      if (w > 0) setCellSize(w);
+    }
+  }, [boardPx]);
 
   const previewCells = useMemo(() => {
     const map = new Map<number, boolean>();
-    if (!drag || !target) return map;
-    for (const [dr, dc] of drag.piece.cells) {
+    const d = dragInfo;
+    if (!d || !target) return map;
+    for (const [dr, dc] of d.piece.cells) {
       const r = target.row + dr;
       const c = target.col + dc;
       if (r < 0 || c < 0 || r >= BOARD_SIZE || c >= BOARD_SIZE) continue;
       map.set(idx(r, c), target.ok);
     }
     return map;
-  }, [drag, target]);
+  }, [dragInfo, target]);
 
   const deadTray = useMemo(
     () => game.tray.map((p) => (p ? !hasAnyPlacement(game.board, p) : false)),
@@ -263,55 +394,70 @@ function BlastPage() {
     [game.board],
   );
 
-  /* ----- pointer handlers (whole card is the grab surface) ----- */
-  const onPieceDown = (e: React.PointerEvent, trayIndex: number, piece: PieceDef) => {
-    if (game.over) return;
-    e.preventDefault();
-    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-    const touch = e.pointerType !== "mouse";
-    const d: DragState = {
-      trayIndex,
-      piece,
-      x: e.clientX,
-      y: e.clientY,
-      lift: touch ? cellSize : 0,
-    };
-    setDrag(d);
-    setTarget(resolveTarget(d));
-  };
+  /* ============================================================
+     DRAG — rAF throttled, ghost moved with translate3d only.
+     ============================================================ */
+  const applyFrame = useCallback(() => {
+    rafRef.current = 0;
+    const p = pendingRef.current;
+    const d = dragRef.current;
+    if (!p || !d) return;
+    d.x = p.x;
+    d.y = p.y;
+    const cs = cellRef.current;
+    const left = d.x - (d.piece.w * cs) / 2;
+    const top = d.y - (d.piece.h * cs) / 2 - d.lift;
+    if (ghostRef.current) {
+      ghostRef.current.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+    }
+    const hit = cellUnderPoint(left + cs / 2, top + cs / 2);
+    const next: Target = hit
+      ? { row: hit.row, col: hit.col, ok: canPlace(gameRef.current.board, d.piece, hit.row, hit.col) }
+      : null;
+    const cur = targetRef.current;
+    const same =
+      (!cur && !next) ||
+      (!!cur && !!next && cur.row === next.row && cur.col === next.col && cur.ok === next.ok);
+    if (!same) {
+      targetRef.current = next;
+      setTarget(next);
+    }
+  }, []);
 
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!drag) return;
-    e.preventDefault();
-    const d = { ...drag, x: e.clientX, y: e.clientY };
-    setDrag(d);
-    setTarget(resolveTarget(d));
-  };
+  const queueFrame = useCallback((x: number, y: number) => {
+    pendingRef.current = { x, y };
+    if (!rafRef.current) rafRef.current = requestAnimationFrame(applyFrame);
+  }, [applyFrame]);
 
-  const spawnPopup = (text: string, row: number, col: number, size: number) => {
+  const spawnPopup = useCallback((text: string, row: number, col: number, size: number) => {
     const el = boardRef.current;
     const wrap = wrapRef.current;
     if (!el || !wrap) return;
     const b = el.getBoundingClientRect();
     const w = wrap.getBoundingClientRect();
+    const cs = cellRef.current;
     const id = popupId.current++;
     setPopups((p) => [
-      ...p,
-      { id, text, size, top: b.top - w.top + (row + 0.5) * cellSize, left: b.left - w.left + (col + 0.5) * cellSize },
+      ...p.slice(-(MAX_POPUPS - 1)),
+      { id, text, size, top: b.top - w.top + (row + 0.5) * cs, left: b.left - w.left + (col + 0.5) * cs },
     ]);
     setTimeout(() => setPopups((p) => p.filter((x) => x.id !== id)), 950);
-  };
+  }, []);
 
-  const finishDrag = (e?: React.PointerEvent) => {
-    if (!drag) return;
-    const d = e ? { ...drag, x: e.clientX, y: e.clientY } : drag;
-    const t = e ? resolveTarget(d) : target;
-    setDrag(null);
+  const commitDrop = useCallback(() => {
+    const d = dragRef.current;
+    const t = targetRef.current;
+    dragRef.current = null;
+    targetRef.current = null;
+    pendingRef.current = null;
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = 0; }
+    setDragInfo(null);
     setTarget(null);
-    if (!t || !t.ok) return;
+    if (!d || !t || !t.ok) return;
 
+    const g = gameRef.current;
     const durationMs = performance.now() - moveStart.current;
-    const res = placePiece(game, d.trayIndex, t.row, t.col, durationMs);
+    const res = placePiece(g, d.trayIndex, t.row, t.col, durationMs);
     if (!res.ok) return;
 
     const justPlaced = d.piece.cells.map(([dr, dc]) => idx(t.row + dr, t.col + dc));
@@ -319,28 +465,29 @@ function BlastPage() {
     setTimeout(() => setPlaced([]), 240);
 
     if (res.lines > 0) {
-      const map = new Map<number, ClearCell>();
-      for (const r of res.clearedRows) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-          const i = idx(r, c);
-          map.set(i, { order: c, color: game.board[i] || d.piece.color });
+      if (!lowFx) {
+        const map = new Map<number, ClearCell>();
+        for (const r of res.clearedRows) {
+          for (let c = 0; c < BOARD_SIZE; c++) {
+            const i = idx(r, c);
+            map.set(i, { order: c, color: g.board[i] || d.piece.color });
+          }
         }
-      }
-      for (const c of res.clearedCols) {
-        for (let r = 0; r < BOARD_SIZE; r++) {
-          const i = idx(r, c);
-          if (!map.has(i)) map.set(i, { order: r, color: game.board[i] || d.piece.color });
+        for (const c of res.clearedCols) {
+          for (let r = 0; r < BOARD_SIZE; r++) {
+            const i = idx(r, c);
+            if (!map.has(i)) map.set(i, { order: r, color: g.board[i] || d.piece.color });
+          }
         }
+        for (const [dr, dc] of d.piece.cells) {
+          const i = idx(t.row + dr, t.col + dc);
+          const cur = map.get(i);
+          if (cur) map.set(i, { ...cur, color: d.piece.color });
+        }
+        setClearing(map);
+        setPaused(true);
+        setTimeout(() => { setClearing(new Map()); setPaused(false); }, 460);
       }
-      for (const [dr, dc] of d.piece.cells) {
-        const i = idx(t.row + dr, t.col + dc);
-        const cur = map.get(i);
-        if (cur) map.set(i, { ...cur, color: d.piece.color });
-      }
-      setClearing(map);
-      // timer stays frozen while the clear effect plays
-      setPaused(true);
-      setTimeout(() => { setClearing(new Map()); setPaused(false); }, 460);
 
       if (res.lines > 1) {
         const names = ar
@@ -352,11 +499,50 @@ function BlastPage() {
         setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 900);
       }
 
-      const size = res.gained >= 600 ? 3 : res.gained >= 300 ? 2 : 1;
-      spawnPopup(`+${res.gained}`, t.row, t.col, size);
+      if (!lowFx) {
+        const size = res.gained >= 600 ? 3 : res.gained >= 300 ? 2 : 1;
+        spawnPopup(`+${res.gained}`, t.row, t.col, size);
+      }
     }
 
     setGame(res.state);
+  }, [ar, lowFx, spawnPopup]);
+
+  /* window-level listeners: the pointer may leave the board mid-drag */
+  useEffect(() => {
+    if (!dragInfo) return;
+    const move = (e: PointerEvent) => { e.preventDefault(); queueFrame(e.clientX, e.clientY); };
+    const up = (e: PointerEvent) => {
+      pendingRef.current = { x: e.clientX, y: e.clientY };
+      applyFrame();
+      commitDrop();
+    };
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+    };
+  }, [dragInfo, queueFrame, applyFrame, commitDrop]);
+
+  const onPieceDown = (e: React.PointerEvent, trayIndex: number, piece: PieceDef) => {
+    if (game.over) return;
+    e.preventDefault();
+    const touch = e.pointerType !== "mouse";
+    dragRef.current = {
+      trayIndex,
+      piece,
+      x: e.clientX,
+      y: e.clientY,
+      lift: touch ? cellRef.current : 0,
+    };
+    targetRef.current = null;
+    setDragInfo({ trayIndex, piece });
+    setTarget(null);
+    pendingRef.current = { x: e.clientX, y: e.clientY };
+    requestAnimationFrame(applyFrame);
   };
 
   const restart = () => {
@@ -375,103 +561,156 @@ function BlastPage() {
   const heat = Math.min(8, game.streak);
   const isRecord = game.over && game.score > 0 && game.score >= best && game.score > bestAtStart;
   const diff = game.score - bestAtStart;
-  const timePct = Math.max(0, Math.min(1, remainMs / Math.max(1, game.moveLimitMs)));
   const timedOut = game.endReason === "timeout";
+  const trayCell = Math.max(12, Math.round((boardPx || 320) / 8 * 0.52));
+
+  const hud = (
+    <>
+      <div className="blast-hud">
+        <div className="hud-side">
+          <span>{ar ? "الأفضل" : "Best"}</span>
+          <b>{best.toLocaleString("en-US")}</b>
+        </div>
+
+        <div className="hud-main">
+          <span className="hud-lbl">{ar ? "النقاط" : "Score"}</span>
+          <span className="hud-val">{shownScore.toLocaleString("en-US")}</span>
+        </div>
+
+        <div
+          key={streakBreak}
+          className={
+            "hud-side hud-streak" +
+            (streakHot ? " hot heat-" + heat : "") +
+            (streakBreak > 0 && !streakHot ? " broke" : "")
+          }
+        >
+          <span>{ar ? "ستريك" : "Streak"}</span>
+          <b>{streakHot ? `🔥 ×${mult}` : "—"}</b>
+        </div>
+      </div>
+
+      <MoveTimer
+        limitMs={game.moveLimitMs}
+        moveKey={game.moves.length}
+        active={timerActive}
+        onExpire={onExpire}
+      />
+    </>
+  );
 
   return (
-    <StoreShell>
-      <main dir={dir} className="blast-page">
-        <section className="container blast-topbar">
+    <StoreShell bare>
+      <main dir={dir} className={"blast-page blast-fs" + (lowFx ? " lowfx" : "")}>
+        <header className="blast-bar">
           <Link to="/games" className="blast-back">{ar ? "‹ ساحة اللعب" : "‹ Play Arena"}</Link>
-        </section>
-
-        <section className="container blast-stage">
-          <div className="blast-hud">
-            <div className="hud-side">
-              <span>{ar ? "الأفضل" : "Best"}</span>
-              <b>{best.toLocaleString("en-US")}</b>
-            </div>
-
-            <div className="hud-main">
-              <span className="hud-lbl">{ar ? "النقاط" : "Score"}</span>
-              <span className="hud-val">{shownScore.toLocaleString("en-US")}</span>
-            </div>
-
-            <div
-              key={streakBreak}
-              className={
-                "hud-side hud-streak" +
-                (streakHot ? " hot heat-" + heat : "") +
-                (streakBreak > 0 && !streakHot ? " broke" : "")
-              }
-            >
-              <span>{ar ? "ستريك" : "Streak"}</span>
-              <b>{streakHot ? `🔥 ×${mult}` : "—"}</b>
-            </div>
-          </div>
-
-          <div
-            className={
-              "blast-timer" + (timePct < 0.34 ? " low" : "") + (remainMs <= 3000 && !game.over ? " urgent" : "")
-            }
-            dir="ltr"
+          <button
+            type="button"
+            className={"blast-perf" + (lowFx ? " on" : "")}
+            onClick={togglePerf}
+            aria-pressed={lowFx}
           >
-            <i style={{ transform: `scaleX(${timePct})` }} />
-            <b>{(remainMs / 1000).toFixed(1)}s</b>
-          </div>
+            ⚡ {ar ? "وضع الأداء" : "Performance"}
+          </button>
+        </header>
 
-          <div className="blast-wrap" ref={wrapRef}>
-            <div
-              ref={boardRef}
-              dir="ltr"
-              className={"blast-board" + (fillRatio > 0.75 ? " danger" : "")}
-              onPointerMove={onPointerMove}
-              onPointerUp={finishDrag}
-            >
-              {game.board.map((v, i) => {
-                const row = Math.floor(i / BOARD_SIZE);
-                const col = i % BOARD_SIZE;
-                const pv = previewCells.get(i);
-                const cl = clearing.get(i);
-                const colorId = cl ? cl.color : v;
-                const cls =
-                  "bb-cell" +
-                  (colorId ? " filled" : "") +
-                  (cl ? " clearing" : "") +
-                  (placed.includes(i) ? " popped" : "") +
-                  (pv === true ? " pv-ok" : pv === false ? " pv-bad" : "");
-                return (
-                  <div
-                    key={i}
-                    data-row={row}
-                    data-col={col}
-                    className={cls}
-                    style={
-                      colorId
-                        ? { ...faceStyle(colorId), ...(cl ? { animationDelay: `${cl.order * 20}ms` } : null) }
-                        : undefined
-                    }
-                  />
-                );
-              })}
+        <section className="blast-stage">
+          <aside className="blast-panel">{hud}</aside>
 
-              {banner && <span key={banner.id} className="bb-banner">{banner.text}</span>}
-              {speedNote && <span key={speedNote.id} className="bb-speed">{speedNote.text}</span>}
+          <div className="blast-play">
+            <div className="blast-area" ref={areaRef}>
+              <div
+                className="blast-wrap"
+                ref={wrapRef}
+                style={boardPx ? { width: boardPx, height: boardPx } : undefined}
+              >
+                <div
+                  ref={boardRef}
+                  dir="ltr"
+                  className={"blast-board" + (fillRatio > 0.75 ? " danger" : "")}
+                >
+                  {game.board.map((v, i) => {
+                    const row = Math.floor(i / BOARD_SIZE);
+                    const col = i % BOARD_SIZE;
+                    const pv = previewCells.get(i);
+                    const cl = clearing.get(i);
+                    const colorId = cl ? cl.color : v;
+                    const cls =
+                      "bb-cell" +
+                      (colorId ? " filled" : "") +
+                      (cl ? " clearing" : "") +
+                      (placed.includes(i) ? " popped" : "") +
+                      (pv === true ? " pv-ok" : pv === false ? " pv-bad" : "");
+                    return (
+                      <BoardCell
+                        key={i}
+                        row={row}
+                        col={col}
+                        colorId={colorId}
+                        cls={cls}
+                        delay={cl && !lowFx ? cl.order * 20 : 0}
+                      />
+                    );
+                  })}
+
+                  {banner && <span key={banner.id} className="bb-banner">{banner.text}</span>}
+                  {speedNote && <span key={speedNote.id} className="bb-speed">{speedNote.text}</span>}
+                </div>
+
+                {popups.map((p) => (
+                  <span key={p.id} className={"bb-pop s" + p.size} style={{ top: p.top, left: p.left }}>
+                    {p.text}
+                  </span>
+                ))}
+
+                {game.over && (
+                  <div className="blast-over">
+                    <div className={"bo-card" + (isRecord ? " record" : "")}>
+                      {isRecord && (
+                        <div className="bo-ribbon">
+                          <i>✦</i><i>✦</i><i>✦</i>
+                          <span>{ar ? "رقم قياسي جديد!" : "NEW RECORD!"}</span>
+                        </div>
+                      )}
+                      <div className="bo-ic">{timedOut ? "⏱️" : "💥"}</div>
+                      <h2>{timedOut ? (ar ? "انتهى الوقت" : "Time's up") : (ar ? "انتهت اللعبة" : "Game Over")}</h2>
+                      <p className="bo-why">
+                        {timedOut
+                          ? ar ? "نفدت مهلة الحركة" : "Move timer ran out"
+                          : ar ? "لم يعد هناك مكان لأي قطعة" : "No room left for any piece"}
+                      </p>
+                      <div className="bo-score">
+                        <span>{ar ? "النقاط النهائية" : "Final score"}</span>
+                        <b>{finalScore.toLocaleString("en-US")}</b>
+                      </div>
+                      <p className="bo-cmp">
+                        {isRecord
+                          ? ar ? `تجاوزت أفضل نتيجة بـ ${Math.max(diff, 0).toLocaleString("en-US")} نقطة` : `Beat your best by ${Math.max(diff, 0).toLocaleString("en-US")}`
+                          : ar ? `أفضل نتيجة: ${best.toLocaleString("en-US")} · ينقصك ${Math.max(best - game.score, 0).toLocaleString("en-US")}` : `Best: ${best.toLocaleString("en-US")} · ${Math.max(best - game.score, 0).toLocaleString("en-US")} to go`}
+                      </p>
+                      <button type="button" className="btn btn-primary bo-btn" onClick={restart}>
+                        {ar ? "العب مرة أخرى" : "Play again"}
+                      </button>
+                      <Link to="/games" className="bo-link">{ar ? "رجوع لساحة اللعب" : "Back to Play Arena"}</Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {popups.map((p) => (
-              <span key={p.id} className={"bb-pop s" + p.size} style={{ top: p.top, left: p.left }}>
-                {p.text}
-              </span>
-            ))}
+            <div className="blast-panel-inline">{hud}</div>
 
-            <div className="blast-tray" dir="ltr" onPointerMove={onPointerMove} onPointerUp={finishDrag}>
+            <div
+              className="blast-tray"
+              dir="ltr"
+              style={{ ["--tc" as string]: `${trayCell}px` }}
+            >
               {game.tray.map((p, i) => (
                 <div
                   key={i}
                   className={
                     "bt-slot" +
-                    (drag?.trayIndex === i ? " dragging" : "") +
+                    (dragInfo?.trayIndex === i ? " dragging" : "") +
                     (deadTray[i] ? " dead" : "")
                   }
                   style={{ touchAction: "none" }}
@@ -480,7 +719,7 @@ function BlastPage() {
                   {p && (
                     <div
                       key={`${trayGen}-${p.id}`}
-                      className="bt-piece enter"
+                      className={"bt-piece" + (lowFx ? "" : " enter")}
                       dir="ltr"
                       style={{
                         ["--i" as string]: i,
@@ -497,7 +736,7 @@ function BlastPage() {
                           <span
                             key={k}
                             className={"bt-cell" + (on ? " on" : "")}
-                            style={on ? faceStyle(p.color) : undefined}
+                            style={on ? face(p.color) : undefined}
                           />
                         );
                       })}
@@ -506,75 +745,35 @@ function BlastPage() {
                 </div>
               ))}
             </div>
-
-            {drag && (
-              <div
-                className="bb-ghost"
-                dir="ltr"
-                style={{
-                  left: ghost?.left ?? 0,
-                  top: ghost?.top ?? 0,
-                  gap: 0,
-                  pointerEvents: "none",
-                  gridTemplateColumns: `repeat(${drag.piece.w}, ${cellSize}px)`,
-                  gridTemplateRows: `repeat(${drag.piece.h}, ${cellSize}px)`,
-                }}
-              >
-                {Array.from({ length: drag.piece.w * drag.piece.h }).map((_, k) => {
-                  const r = Math.floor(k / drag.piece.w);
-                  const c = k % drag.piece.w;
-                  const on = drag.piece.cells.some(([cr, cc]) => cr === r && cc === c);
-                  return (
-                    <span
-                      key={k}
-                      className={"bg-cell" + (on ? " on" : "")}
-                      style={{ width: cellSize, height: cellSize, ...(on ? faceStyle(drag.piece.color) : null) }}
-                    />
-                  );
-                })}
-              </div>
-            )}
-
-            {game.over && (
-              <div className="blast-over">
-                <div className={"bo-card" + (isRecord ? " record" : "")}>
-                  {isRecord && (
-                    <div className="bo-ribbon">
-                      <i>✦</i><i>✦</i><i>✦</i>
-                      <span>{ar ? "رقم قياسي جديد!" : "NEW RECORD!"}</span>
-                    </div>
-                  )}
-                  <div className="bo-ic">{timedOut ? "⏱️" : "💥"}</div>
-                  <h2>{timedOut ? (ar ? "انتهى الوقت" : "Time's up") : (ar ? "انتهت اللعبة" : "Game Over")}</h2>
-                  <p className="bo-why">
-                    {timedOut
-                      ? ar ? "نفدت مهلة الحركة" : "Move timer ran out"
-                      : ar ? "لم يعد هناك مكان لأي قطعة" : "No room left for any piece"}
-                  </p>
-                  <div className="bo-score">
-                    <span>{ar ? "النقاط النهائية" : "Final score"}</span>
-                    <b>{finalScore.toLocaleString("en-US")}</b>
-                  </div>
-                  <p className="bo-cmp">
-                    {isRecord
-                      ? ar ? `تجاوزت أفضل نتيجة بـ ${Math.max(diff, 0).toLocaleString("en-US")} نقطة` : `Beat your best by ${Math.max(diff, 0).toLocaleString("en-US")}`
-                      : ar ? `أفضل نتيجة: ${best.toLocaleString("en-US")} · ينقصك ${Math.max(best - game.score, 0).toLocaleString("en-US")}` : `Best: ${best.toLocaleString("en-US")} · ${Math.max(best - game.score, 0).toLocaleString("en-US")} to go`}
-                  </p>
-                  <button type="button" className="btn btn-primary bo-btn" onClick={restart}>
-                    {ar ? "العب مرة أخرى" : "Play again"}
-                  </button>
-                  <Link to="/games" className="bo-link">{ar ? "رجوع لساحة اللعب" : "Back to Play Arena"}</Link>
-                </div>
-              </div>
-            )}
           </div>
-
-          <p className="blast-hint">
-            {ar
-              ? "اسحب أي قطعة وأفلتها على اللوح. أكمل صفًا أو عمودًا كاملًا لمسحه. لكل حركة مهلة زمنية."
-              : "Drag a piece onto the board. Fill a full row or column to clear it. Each move is timed."}
-          </p>
         </section>
+
+        {dragInfo && (
+          <div
+            ref={ghostRef}
+            className="bb-ghost"
+            dir="ltr"
+            style={{
+              gap: 0,
+              pointerEvents: "none",
+              gridTemplateColumns: `repeat(${dragInfo.piece.w}, ${cellSize}px)`,
+              gridTemplateRows: `repeat(${dragInfo.piece.h}, ${cellSize}px)`,
+            }}
+          >
+            {Array.from({ length: dragInfo.piece.w * dragInfo.piece.h }).map((_, k) => {
+              const r = Math.floor(k / dragInfo.piece.w);
+              const c = k % dragInfo.piece.w;
+              const on = dragInfo.piece.cells.some(([cr, cc]) => cr === r && cc === c);
+              return (
+                <span
+                  key={k}
+                  className={"bg-cell" + (on ? " on" : "")}
+                  style={{ width: cellSize, height: cellSize, ...(on ? face(dragInfo.piece.color) : null) }}
+                />
+              );
+            })}
+          </div>
+        )}
       </main>
     </StoreShell>
   );
