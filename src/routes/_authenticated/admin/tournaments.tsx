@@ -20,7 +20,7 @@ import {
   REWARD_TYPES,
   prizeRewards,
   prizeSummary,
-  rewardIcon,
+  
   type Prize,
   type Reward,
   type RewardType,
