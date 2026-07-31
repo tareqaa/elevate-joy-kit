@@ -295,6 +295,9 @@ function BlastPage() {
     window.visualViewport?.addEventListener("resize", schedule, { passive: true });
     return () => {
       window.clearTimeout(timer);
+      window.clearTimeout(settle);
+      cancelAnimationFrame(raf);
+      ro.disconnect();
       window.removeEventListener("resize", schedule);
       window.removeEventListener("orientationchange", schedule);
       window.visualViewport?.removeEventListener("resize", schedule);
