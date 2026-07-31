@@ -70,6 +70,27 @@ export function prizePool(prizes: TournamentPrize[]): number {
   }, 0);
 }
 
+/** clean segmented countdown: days / hours / minutes / seconds */
+function Countdown({ ms, ar }: { ms: number; ar: boolean }) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const units = [
+    { n: Math.floor(total / 86400), l: ar ? "يوم" : "days" },
+    { n: Math.floor((total % 86400) / 3600), l: ar ? "ساعة" : "hrs" },
+    { n: Math.floor((total % 3600) / 60), l: ar ? "دقيقة" : "min" },
+    { n: total % 60, l: ar ? "ثانية" : "sec" },
+  ];
+  return (
+    <div className="tcd" dir="ltr">
+      {units.map((u, i) => (
+        <div className="tcd-u" key={i}>
+          <span className="tcd-n">{String(u.n).padStart(2, "0")}</span>
+          <span className="tcd-l">{u.l}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function GamesPage() {
   const { serverNow, tournaments, carouselCount } = Route.useLoaderData() as {
     serverNow: string;
