@@ -646,7 +646,7 @@ function BlastPage() {
                         col={col}
                         colorId={colorId}
                         cls={cls}
-                        delay={cl && !lowFx ? cl.order * 20 : 0}
+                        delay={0}
                       />
                     );
                   })}
@@ -717,7 +717,7 @@ function BlastPage() {
                   {p && (
                     <div
                       key={`${trayGen}-${p.id}`}
-                      className={"bt-piece" + (lowFx ? "" : " enter")}
+                      className="bt-piece"
                       dir="ltr"
                       style={{
                         ["--i" as string]: i,
