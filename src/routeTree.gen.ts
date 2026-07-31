@@ -15,16 +15,17 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
-import { Route as GamesRouteImport } from './routes/games'
 import { Route as FortniteRouteImport } from './routes/fortnite'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as GamesIndexRouteImport } from './routes/games.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as GiftCardsSlugRouteImport } from './routes/gift-cards.$slug'
+import { Route as GamesBlastRouteImport } from './routes/games.blast'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
@@ -77,11 +78,6 @@ const LeaderboardRoute = LeaderboardRouteImport.update({
   path: '/leaderboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GamesRoute = GamesRouteImport.update({
-  id: '/games',
-  path: '/games',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const FortniteRoute = FortniteRouteImport.update({
   id: '/fortnite',
   path: '/fortnite',
@@ -111,6 +107,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GamesIndexRoute = GamesIndexRouteImport.update({
+  id: '/games/',
+  path: '/games/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UUsernameRoute = UUsernameRouteImport.update({
   id: '/u/$username',
   path: '/u/$username',
@@ -124,6 +125,11 @@ const ProductSlugRoute = ProductSlugRouteImport.update({
 const GiftCardsSlugRoute = GiftCardsSlugRouteImport.update({
   id: '/gift-cards/$slug',
   path: '/gift-cards/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesBlastRoute = GamesBlastRouteImport.update({
+  id: '/games/blast',
+  path: '/games/blast',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
@@ -252,7 +258,6 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
   '/fortnite': typeof FortniteRoute
-  '/games': typeof GamesRoute
   '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
@@ -264,9 +269,11 @@ export interface FileRoutesByFullPath {
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/category/$slug': typeof CategorySlugRoute
+  '/games/blast': typeof GamesBlastRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/games/': typeof GamesIndexRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/activity': typeof AuthenticatedAdminActivityRoute
   '/admin/avatars': typeof AuthenticatedAdminAvatarsRoute
@@ -290,7 +297,6 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
   '/fortnite': typeof FortniteRoute
-  '/games': typeof GamesRoute
   '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
@@ -301,9 +307,11 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/account': typeof AuthenticatedAccountRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/games/blast': typeof GamesBlastRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/games': typeof GamesIndexRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/activity': typeof AuthenticatedAdminActivityRoute
   '/admin/avatars': typeof AuthenticatedAdminAvatarsRoute
@@ -329,7 +337,6 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
   '/fortnite': typeof FortniteRoute
-  '/games': typeof GamesRoute
   '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
@@ -341,9 +348,11 @@ export interface FileRoutesById {
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/category/$slug': typeof CategorySlugRoute
+  '/games/blast': typeof GamesBlastRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
+  '/games/': typeof GamesIndexRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/activity': typeof AuthenticatedAdminActivityRoute
   '/_authenticated/admin/avatars': typeof AuthenticatedAdminAvatarsRoute
@@ -369,7 +378,6 @@ export interface FileRouteTypes {
     | '/cart'
     | '/faq'
     | '/fortnite'
-    | '/games'
     | '/leaderboard'
     | '/mcp'
     | '/policy'
@@ -381,9 +389,11 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/category/$slug'
+    | '/games/blast'
     | '/gift-cards/$slug'
     | '/product/$slug'
     | '/u/$username'
+    | '/games/'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/activity'
     | '/admin/avatars'
@@ -407,7 +417,6 @@ export interface FileRouteTypes {
     | '/cart'
     | '/faq'
     | '/fortnite'
-    | '/games'
     | '/leaderboard'
     | '/mcp'
     | '/policy'
@@ -418,9 +427,11 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/account'
     | '/category/$slug'
+    | '/games/blast'
     | '/gift-cards/$slug'
     | '/product/$slug'
     | '/u/$username'
+    | '/games'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/activity'
     | '/admin/avatars'
@@ -445,7 +456,6 @@ export interface FileRouteTypes {
     | '/cart'
     | '/faq'
     | '/fortnite'
-    | '/games'
     | '/leaderboard'
     | '/mcp'
     | '/policy'
@@ -457,9 +467,11 @@ export interface FileRouteTypes {
     | '/_authenticated/account'
     | '/_authenticated/admin'
     | '/category/$slug'
+    | '/games/blast'
     | '/gift-cards/$slug'
     | '/product/$slug'
     | '/u/$username'
+    | '/games/'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/activity'
     | '/_authenticated/admin/avatars'
@@ -485,7 +497,6 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   FaqRoute: typeof FaqRoute
   FortniteRoute: typeof FortniteRoute
-  GamesRoute: typeof GamesRoute
   LeaderboardRoute: typeof LeaderboardRoute
   McpRoute: typeof McpRoute
   PolicyRoute: typeof PolicyRoute
@@ -495,9 +506,11 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  GamesBlastRoute: typeof GamesBlastRoute
   GiftCardsSlugRoute: typeof GiftCardsSlugRoute
   ProductSlugRoute: typeof ProductSlugRoute
   UUsernameRoute: typeof UUsernameRoute
+  GamesIndexRoute: typeof GamesIndexRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
 
@@ -545,13 +558,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LeaderboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/games': {
-      id: '/games'
-      path: '/games'
-      fullPath: '/games'
-      preLoaderRoute: typeof GamesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/fortnite': {
       id: '/fortnite'
       path: '/fortnite'
@@ -594,6 +600,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/games/': {
+      id: '/games/'
+      path: '/games'
+      fullPath: '/games/'
+      preLoaderRoute: typeof GamesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/u/$username': {
       id: '/u/$username'
       path: '/u/$username'
@@ -613,6 +626,13 @@ declare module '@tanstack/react-router' {
       path: '/gift-cards/$slug'
       fullPath: '/gift-cards/$slug'
       preLoaderRoute: typeof GiftCardsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/blast': {
+      id: '/games/blast'
+      path: '/games/blast'
+      fullPath: '/games/blast'
+      preLoaderRoute: typeof GamesBlastRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/category/$slug': {
@@ -824,7 +844,6 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   FaqRoute: FaqRoute,
   FortniteRoute: FortniteRoute,
-  GamesRoute: GamesRoute,
   LeaderboardRoute: LeaderboardRoute,
   McpRoute: McpRoute,
   PolicyRoute: PolicyRoute,
@@ -835,9 +854,11 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   CategorySlugRoute: CategorySlugRoute,
+  GamesBlastRoute: GamesBlastRoute,
   GiftCardsSlugRoute: GiftCardsSlugRoute,
   ProductSlugRoute: ProductSlugRoute,
   UUsernameRoute: UUsernameRoute,
+  GamesIndexRoute: GamesIndexRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
 export const routeTree = rootRouteImport
