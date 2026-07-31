@@ -61,6 +61,17 @@ export function CartDrawer() {
           <Link to="/cart" className="checkout-btn" onClick={cart.closeDrawer} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none" }}>
             {t("cart.checkout_wa")}
           </Link>
+          {cart.items.length > 0 && (
+            <button
+              type="button"
+              className="cart-clear-link"
+              onClick={() => {
+                if (window.confirm(lang === "ar" ? "هل تريد حذف كل المنتجات من السلة؟" : "Remove all items from your cart?")) cart.clear();
+              }}
+            >
+              {lang === "ar" ? "🗑️ حذف كل المنتجات" : "🗑️ Clear cart"}
+            </button>
+          )}
         </div>
       </div>
     </>
