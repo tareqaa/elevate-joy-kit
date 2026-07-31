@@ -458,13 +458,12 @@ function BlastPage() {
   const previewCells = useMemo(() => {
     const map = new Map<number, boolean>();
     const d = dragInfo;
-    // never show a partial / out-of-board preview: valid placements only
-    if (!d || !target || !target.ok) return map;
+    if (!d || !target) return map;
     for (const [dr, dc] of d.piece.cells) {
       const r = target.row + dr;
       const c = target.col + dc;
       if (r < 0 || c < 0 || r >= BOARD_SIZE || c >= BOARD_SIZE) continue;
-      map.set(idx(r, c), true);
+      map.set(idx(r, c), target.ok);
     }
     return map;
   }, [dragInfo, target]);
@@ -772,14 +771,14 @@ function BlastPage() {
                     const col = i % BOARD_SIZE;
                     const pv = previewCells.get(i);
                     const cl = clearing.get(i);
-                    const isPv = pv === true && !v && !cl;
+                    const isPv = pv !== undefined && !v && !cl;
                     const colorId = cl ? cl.color : v || (isPv && dragInfo ? dragInfo.piece.color : 0);
                     const cls =
                       "bb-cell" +
                       (colorId ? " filled" : "") +
                       (cl ? " clearing" : "") +
                       (placed.includes(i) ? " popped" : "") +
-                      (isPv ? " pv-ok" : "");
+                      (isPv ? (pv ? " pv-ok" : " pv-no") : "");
                     return (
                       <BoardCell
                         key={i}
