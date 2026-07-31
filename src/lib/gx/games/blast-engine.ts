@@ -63,40 +63,57 @@ function mk(id: string, color: number, rows: string[]): PieceDef {
 }
 
 export const PIECES: PieceDef[] = [
+  // 1x1
   mk("dot", 1, ["x"]),
+  // horizontal lines
   mk("h2", 2, ["xx"]),
   mk("h3", 2, ["xxx"]),
   mk("h4", 2, ["xxxx"]),
   mk("h5", 2, ["xxxxx"]),
+  // vertical lines
   mk("v2", 3, ["x", "x"]),
   mk("v3", 3, ["x", "x", "x"]),
   mk("v4", 3, ["x", "x", "x", "x"]),
   mk("v5", 3, ["x", "x", "x", "x", "x"]),
+  // squares
   mk("sq2", 4, ["xx", "xx"]),
   mk("sq3", 5, ["xxx", "xxx", "xxx"]),
-  mk("rect23", 4, ["xxx", "xxx"]),
-  mk("rect32", 4, ["xx", "xx", "xx"]),
-  mk("l1", 6, ["x.", "x.", "xx"]),
-  mk("l2", 6, [".x", ".x", "xx"]),
-  mk("l3", 6, ["xx", "x.", "x."]),
-  mk("l4", 6, ["xx", ".x", ".x"]),
-  mk("l5", 6, ["x..", "xxx"]),
-  mk("l6", 6, ["..x", "xxx"]),
-  mk("l7", 6, ["xxx", "x.."]),
-  mk("l8", 6, ["xxx", "..x"]),
-  mk("cor1", 7, ["xx", "x."]),
-  mk("cor2", 7, ["xx", ".x"]),
-  mk("cor3", 7, ["x.", "xx"]),
-  mk("cor4", 7, [".x", "xx"]),
+  // 2x2 L (4 orientations)
+  mk("l2a", 7, ["xx", "x."]),
+  mk("l2b", 7, ["xx", ".x"]),
+  mk("l2c", 7, ["x.", "xx"]),
+  mk("l2d", 7, [".x", "xx"]),
+  // 3x3 L (4 orientations)
+  mk("l3a", 6, ["x..", "x..", "xxx"]),
+  mk("l3b", 6, ["..x", "..x", "xxx"]),
+  mk("l3c", 6, ["xxx", "x..", "x.."]),
+  mk("l3d", 6, ["xxx", "..x", "..x"]),
+  // T (3x2 / 2x3, 4 orientations)
   mk("t1", 8, ["xxx", ".x."]),
   mk("t2", 8, [".x.", "xxx"]),
   mk("t3", 8, ["x.", "xx", "x."]),
   mk("t4", 8, [".x", "xx", ".x"]),
+  // S / Z
+  mk("s1", 9, [".xx", "xx."]),
   mk("z1", 9, ["xx.", ".xx"]),
-  mk("z2", 9, [".xx", "xx."]),
-  mk("z3", 9, ["x.", "xx", ".x"]),
-  mk("z4", 9, [".x", "xx", "x."]),
 ];
+
+/** Generation weights: small/short shapes are common, big ones are rare. */
+const PIECE_WEIGHTS: Record<string, number> = {
+  dot: 10,
+  h2: 12, v2: 12,
+  h3: 10, v3: 10,
+  h4: 5, v4: 5,
+  h5: 2, v5: 2,
+  sq2: 9,
+  sq3: 1.2,
+  l2a: 8, l2b: 8, l2c: 8, l2d: 8,
+  l3a: 3, l3b: 3, l3c: 3, l3d: 3,
+  t1: 4, t2: 4, t3: 4, t4: 4,
+  s1: 3, z1: 3,
+};
+
+const WEIGHT_TOTAL = PIECES.reduce((sum, p) => sum + (PIECE_WEIGHTS[p.id] ?? 1), 0);
 
 /** Tailwind-free palette: index matches PieceDef.color */
 export const PIECE_COLORS: Record<number, string> = {
@@ -143,18 +160,36 @@ function nextRandom(state: number): [number, number] {
 
 function drawPiece(state: number): [PieceDef, number] {
   const [v, next] = nextRandom(state);
-  return [PIECES[Math.floor(v * PIECES.length) % PIECES.length], next];
+  let target = v * WEIGHT_TOTAL;
+  for (const p of PIECES) {
+    target -= PIECE_WEIGHTS[p.id] ?? 1;
+    if (target <= 0) return [p, next];
+  }
+  return [PIECES[PIECES.length - 1], next];
 }
 
-function drawTray(state: number): [Array<PieceDef | null>, number] {
+const MAX_TRAY_ATTEMPTS = 40;
+
+/**
+ * Draws a set of three pieces that is guaranteed (when possible) to contain at
+ * least one piece placeable on the CURRENT board. Fully deterministic given the
+ * incoming rng state.
+ */
+export function drawTray(board: Board, state: number): [Array<PieceDef | null>, number] {
   let s = state;
-  const tray: Array<PieceDef | null> = [];
-  for (let i = 0; i < 3; i++) {
-    const [p, ns] = drawPiece(s);
-    tray.push(p);
-    s = ns;
+  let fallback: Array<PieceDef | null> | null = null;
+  for (let attempt = 0; attempt < MAX_TRAY_ATTEMPTS; attempt++) {
+    const tray: Array<PieceDef | null> = [];
+    for (let i = 0; i < 3; i++) {
+      const [p, ns] = drawPiece(s);
+      tray.push(p);
+      s = ns;
+    }
+    if (!fallback) fallback = tray;
+    if (tray.some((p) => p && hasAnyPlacement(board, p))) return [tray, s];
   }
-  return [tray, s];
+  // Board is (practically) full — nothing fits; return the last attempt.
+  return [fallback as Array<PieceDef | null>, s];
 }
 
 /* ---------------- board helpers ---------------- */
@@ -227,11 +262,12 @@ function scoreFor(cellCount: number, lines: number, streakAfter: number): number
 
 export function createGame(seed: string = makeSeed()): GameState {
   const rng0 = hashSeed(seed);
-  const [tray, rngState] = drawTray(rng0);
+  const board = emptyBoard();
+  const [tray, rngState] = drawTray(board, rng0);
   return {
     seed,
     rngState,
-    board: emptyBoard(),
+    board,
     tray,
     score: 0,
     streak: 0,
@@ -265,7 +301,7 @@ export function placePiece(state: GameState, trayIndex: number, row: number, col
   let tray: Array<PieceDef | null> = state.tray.map((p, i) => (i === trayIndex ? null : p));
   let rngState = state.rngState;
   if (tray.every((p) => p === null)) {
-    const [fresh, ns] = drawTray(rngState);
+    const [fresh, ns] = drawTray(board, rngState);
     tray = fresh;
     rngState = ns;
   }
@@ -286,4 +322,46 @@ export function placePiece(state: GameState, trayIndex: number, row: number, col
   next.over = isGameOver(next.board, next.tray);
 
   return { state: next, ok: true, gained, clearedRows, clearedCols, lines, combo: lines > 1 };
+}
+
+/* ---------------- pure drop-coordinate resolution ---------------- */
+
+export type BoardMetrics = {
+  /** viewport x of the LEFT edge of the cell at (row 0, col 0) */
+  cell0Left: number;
+  /** viewport y of the TOP edge of the cell at (row 0, col 0) */
+  cell0Top: number;
+  /** measured cell width/height in px */
+  cellW: number;
+  cellH: number;
+  /** measured distance between the left edges of two adjacent columns (cell + gap) */
+  stepX: number;
+  /** measured distance between the top edges of two adjacent rows */
+  stepY: number;
+};
+
+/**
+ * Maps a viewport point (the CENTER of the piece's top-left cell) to logical
+ * board coordinates. Coordinates are always LTR/top-down regardless of the
+ * page's text direction — the caller must measure a board that renders LTR.
+ */
+export function pointToCell(metrics: BoardMetrics, x: number, y: number): { row: number; col: number } {
+  const col = Math.floor((x - metrics.cell0Left) / metrics.stepX);
+  const row = Math.floor((y - metrics.cell0Top) / metrics.stepY);
+  return { row, col };
+}
+
+/**
+ * Full drop resolution: returns the anchor cell (top-left of the shape) plus
+ * whether the placement is legal. Out-of-board placements are always invalid.
+ */
+export function resolveDrop(
+  board: Board,
+  piece: PieceDef,
+  metrics: BoardMetrics,
+  anchorCenterX: number,
+  anchorCenterY: number,
+): { row: number; col: number; ok: boolean } {
+  const { row, col } = pointToCell(metrics, anchorCenterX, anchorCenterY);
+  return { row, col, ok: canPlace(board, piece, row, col) };
 }

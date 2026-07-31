@@ -11,6 +11,8 @@ import {
   idx,
   makeSeed,
   placePiece,
+  resolveDrop,
+  type BoardMetrics,
   type GameState,
   type PieceDef,
 } from "@/lib/gx/games/blast-engine";
@@ -50,7 +52,7 @@ function BlastPage() {
 
   const [game, setGame] = useState<GameState>(() => createGame(makeSeed()));
   const [drag, setDrag] = useState<DragState | null>(null);
-  const [cell, setCell] = useState(40);
+  const [metrics, setMetrics] = useState<BoardMetrics | null>(null);
   const [clearing, setClearing] = useState<number[]>([]);
   const [popups, setPopups] = useState<Popup[]>([]);
   const [shownScore, setShownScore] = useState(0);
@@ -92,29 +94,61 @@ function BlastPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.score]);
 
-  /* ----- measure board cell size ----- */
-  const measure = useCallback(() => {
+  /* ----- measure real board geometry from the DOM (direction-agnostic) ----- */
+  const readMetrics = useCallback((): BoardMetrics | null => {
     const el = boardRef.current;
-    if (!el) return;
-    setCell(el.getBoundingClientRect().width / BOARD_SIZE);
+    if (!el) return null;
+    const c0 = el.children[0] as HTMLElement | undefined;
+    const c1 = el.children[1] as HTMLElement | undefined;
+    const cDown = el.children[BOARD_SIZE] as HTMLElement | undefined;
+    if (!c0 || !c1 || !cDown) return null;
+    const r0 = c0.getBoundingClientRect();
+    const r1 = c1.getBoundingClientRect();
+    const rd = cDown.getBoundingClientRect();
+    return {
+      cell0Left: r0.left,
+      cell0Top: r0.top,
+      cellW: r0.width,
+      cellH: r0.height,
+      stepX: Math.abs(r1.left - r0.left) || r0.width,
+      stepY: Math.abs(rd.top - r0.top) || r0.height,
+    };
   }, []);
+
+  const measure = useCallback(() => {
+    const m = readMetrics();
+    if (m) setMetrics(m);
+  }, [readMetrics]);
+
   useEffect(() => {
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, [measure]);
 
-  /* ----- drop target derived from drag position ----- */
+  const cell = metrics?.cellW ?? 40;
+  const stepX = metrics?.stepX ?? 44;
+  const stepY = metrics?.stepY ?? 44;
+
+  /* ----- ghost position: anchored on the piece's TOP-LEFT cell ----- */
+  const ghost = useMemo(() => {
+    if (!drag) return null;
+    const left = drag.x - drag.gx * drag.piece.w * stepX;
+    const top = drag.y - drag.gy * drag.piece.h * stepY - drag.lift;
+    return { left, top };
+  }, [drag, stepX, stepY]);
+
+  /* ----- drop target derived from measured geometry ----- */
   const target = useMemo(() => {
-    if (!drag || !boardRef.current) return null;
-    const rect = boardRef.current.getBoundingClientRect();
-    const ghostLeft = drag.x - drag.gx * drag.piece.w * cell;
-    const ghostTop = drag.y - drag.gy * drag.piece.h * cell - drag.lift;
-    const col = Math.round((ghostLeft - rect.left) / cell);
-    const row = Math.round((ghostTop - rect.top) / cell);
-    const ok = canPlace(game.board, drag.piece, row, col);
-    return { row, col, ok };
-  }, [drag, cell, game.board]);
+    if (!drag || !ghost || !metrics) return null;
+    return resolveDrop(
+      game.board,
+      drag.piece,
+      metrics,
+      ghost.left + metrics.cellW / 2,
+      ghost.top + metrics.cellH / 2,
+    );
+  }, [drag, ghost, metrics, game.board]);
 
   const previewCells = useMemo(() => {
     const map = new Map<number, boolean>();
@@ -127,6 +161,7 @@ function BlastPage() {
     }
     return map;
   }, [drag, target]);
+
 
   /* ----- pointer handlers ----- */
   const onPieceDown = (e: React.PointerEvent, trayIndex: number, piece: PieceDef) => {
@@ -227,10 +262,12 @@ function BlastPage() {
           <div className="blast-wrap">
             <div
               ref={boardRef}
+              dir="ltr"
               className="blast-board"
               onPointerMove={onPointerMove}
               onPointerUp={finishDrag}
             >
+
               {game.board.map((v, i) => {
                 const pv = previewCells.get(i);
                 const cls =
@@ -250,12 +287,13 @@ function BlastPage() {
               </span>
             ))}
 
-            <div className="blast-tray" onPointerMove={onPointerMove} onPointerUp={finishDrag}>
+            <div className="blast-tray" dir="ltr" onPointerMove={onPointerMove} onPointerUp={finishDrag}>
               {game.tray.map((p, i) => (
                 <div key={i} className={"bt-slot" + (drag?.trayIndex === i ? " dragging" : "")}>
                   {p && (
                     <div
                       className="bt-piece"
+                      dir="ltr"
                       onPointerDown={(e) => onPieceDown(e, i, p)}
                       style={{ gridTemplateColumns: `repeat(${p.w}, var(--tc))`, gridTemplateRows: `repeat(${p.h}, var(--tc))` }}
                     >
@@ -280,11 +318,13 @@ function BlastPage() {
             {drag && (
               <div
                 className="bb-ghost"
+                dir="ltr"
                 style={{
-                  left: drag.x - drag.gx * drag.piece.w * cell,
-                  top: drag.y - drag.gy * drag.piece.h * cell - drag.lift,
-                  gridTemplateColumns: `repeat(${drag.piece.w}, ${cell}px)`,
-                  gridTemplateRows: `repeat(${drag.piece.h}, ${cell}px)`,
+                  left: ghost?.left ?? 0,
+                  top: ghost?.top ?? 0,
+                  gap: 0,
+                  gridTemplateColumns: `repeat(${drag.piece.w}, ${stepX}px)`,
+                  gridTemplateRows: `repeat(${drag.piece.h}, ${stepY}px)`,
                 }}
               >
                 {Array.from({ length: drag.piece.w * drag.piece.h }).map((_, k) => {
@@ -295,7 +335,11 @@ function BlastPage() {
                     <span
                       key={k}
                       className={"bg-cell" + (on ? " on" : "")}
-                      style={on ? { background: PIECE_COLORS[drag.piece.color] } : undefined}
+                      style={{
+                        width: cell,
+                        height: cell,
+                        background: on ? PIECE_COLORS[drag.piece.color] : undefined,
+                      }}
                     />
                   );
                 })}
