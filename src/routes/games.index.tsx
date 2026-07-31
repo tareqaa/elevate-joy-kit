@@ -5,7 +5,7 @@ import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
-import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
+import { formatCountdown } from "@/lib/gx/games/time";
 import { CarouselRow } from "@/components/gx/CarouselRow";
 import { supabase } from "@/integrations/supabase/client";
 import { listTournaments, type TournamentRow, type TournamentPrize } from "@/lib/gx/tournaments.functions";
@@ -112,7 +112,6 @@ function GamesPage() {
   }, [tournaments, now]);
 
   const items = cards.slice(0, Math.max(1, carouselCount));
-  const liveCount = cards.filter((c) => c.status === "live").length;
 
   return (
     <StoreShell>
@@ -137,7 +136,6 @@ function GamesPage() {
           ) : (
             <CarouselRow className="tcar">
               {items.map((t) => {
-                const pool = prizePool(t.prizes);
                 return (
                   <article key={t.id} className={`tcar-c is-${t.status}`}>
                     <div className="tcar-top">
