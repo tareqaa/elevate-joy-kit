@@ -993,16 +993,17 @@
 /* --- GX Blast playfield backdrop --- */
 .blast-fs{
   position:relative;
+  isolation:isolate;
   background:
     radial-gradient(900px 520px at 50% -12%, #5f6ec2 0%, rgba(95,110,194,0) 62%),
     radial-gradient(700px 420px at 12% 108%, #3d4a8f 0%, rgba(61,74,143,0) 60%),
     linear-gradient(180deg,#4a55a0 0%,#394180 55%,#2c3268 100%);
 }
-.blast-fs > :not(.bl-fx):not(.bb-ghost){position:relative;z-index:1;}
+.blast-fs > :not(.bl-fx):not(.bb-ghost){position:relative;z-index:1;transform:translateZ(0);}
 .bl-fx{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
 .bl-fx i{
   position:absolute;top:-12%;border-radius:6px;opacity:.16;
-  animation:bl-fall linear infinite;will-change:transform;
+  animation:bl-fall linear infinite;
 }
 @keyframes bl-fall{
   0%{transform:translate3d(0,-15vh,0) rotate(0deg);}
@@ -1010,5 +1011,10 @@
 }
 @media(prefers-reduced-motion:reduce){.bl-fx{display:none;}}
 .blast-fs > .bb-ghost{position:fixed;z-index:60;}
+.blast-board,.blast-wrap,.blast-over,.bo-card{
+  backface-visibility:hidden;
+  transform:translateZ(0);
+}
+.bo-score b{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;}
 .pod-rank{font-size:13px;font-weight:900;color:#9fb0d8;letter-spacing:.04em;}
 .pod.p1 .pod-rank{color:var(--ar-gold);}
