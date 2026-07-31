@@ -34,6 +34,22 @@ export const Route = createFileRoute("/games/blast")({
 
 const BEST_KEY = "gx_blast_best";
 const MAX_POPUPS = 4;
+const BOARD_GAP_PX = 4;
+const BOARD_PADDING_PX = 8;
+const BOARD_BORDER_PX = 2;
+const BOARD_RESIZE_DEBOUNCE_MS = 120;
+
+type BoardLayout = { boardPx: number; cellPx: number };
+
+function calculateBoardLayout(availableWidth: number, availableHeight: number): BoardLayout {
+  const availablePx = Math.floor(Math.min(availableWidth, availableHeight));
+  const fixedPx = BOARD_GAP_PX * (BOARD_SIZE - 1) + BOARD_PADDING_PX * 2 + BOARD_BORDER_PX * 2;
+  const cellPx = Math.max(1, Math.floor((availablePx - fixedPx) / BOARD_SIZE));
+  return {
+    cellPx,
+    boardPx: cellPx * BOARD_SIZE + fixedPx,
+  };
+}
 
 /* --- VISUAL-ONLY palette override (engine colour ids -> calm, low-glare hex) --- */
 const VIVID: Record<number, string> = {
@@ -191,8 +207,11 @@ function BlastPage() {
   const [game, setGame] = useState<GameState>(() => createGame(makeSeed()));
   const [dragInfo, setDragInfo] = useState<{ trayIndex: number; piece: PieceDef } | null>(null);
   const [target, setTarget] = useState<Target>(null);
-  const [cellSize, setCellSize] = useState(40);
-  const [boardPx, setBoardPx] = useState(0);
+  const [boardLayout, setBoardLayout] = useState<BoardLayout>(() => ({
+    cellPx: 40,
+    boardPx: 40 * BOARD_SIZE + BOARD_GAP_PX * (BOARD_SIZE - 1) + BOARD_PADDING_PX * 2 + BOARD_BORDER_PX * 2,
+  }));
+  const { boardPx, cellPx: cellSize } = boardLayout;
   const [clearing, setClearing] = useState<Map<number, ClearCell>>(new Map());
   const [placed, setPlaced] = useState<number[]>([]);
   const [popups, setPopups] = useState<Popup[]>([]);
@@ -242,20 +261,35 @@ function BlastPage() {
     };
   }, []);
 
-  /* ----- board side = min(available height, available width) ----- */
+  /* ----- integer-pixel board layout, recalculated only after a real viewport resize ----- */
   useLayoutEffect(() => {
     const el = areaRef.current;
     if (!el) return;
+
     const apply = () => {
       const r = el.getBoundingClientRect();
-      const side = Math.max(180, Math.floor(Math.min(r.width, r.height)));
-      setBoardPx((p) => (Math.abs(p - side) > 1 ? side : p));
+      const next = calculateBoardLayout(r.width, r.height);
+      setBoardLayout((current) =>
+        current.boardPx === next.boardPx && current.cellPx === next.cellPx ? current : next,
+      );
     };
+
+    let timer = 0;
+    const schedule = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(apply, BOARD_RESIZE_DEBOUNCE_MS);
+    };
+
     apply();
-    const ro = new ResizeObserver(apply);
-    ro.observe(el);
-    window.addEventListener("orientationchange", apply);
-    return () => { ro.disconnect(); window.removeEventListener("orientationchange", apply); };
+    window.addEventListener("resize", schedule, { passive: true });
+    window.addEventListener("orientationchange", schedule);
+    window.visualViewport?.addEventListener("resize", schedule, { passive: true });
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("orientationchange", schedule);
+      window.visualViewport?.removeEventListener("resize", schedule);
+    };
   }, []);
 
   /* ----- best score (local only) ----- */
@@ -340,15 +374,6 @@ function BlastPage() {
   useEffect(() => {
     if (timerActive) moveStart.current = performance.now();
   }, [timerActive, game.moves.length, game.moveLimitMs]);
-
-  /* ----- measure a real cell (used by the ghost + preview anchor) ----- */
-  useLayoutEffect(() => {
-    const c0 = boardRef.current?.querySelector("[data-row]") as HTMLElement | null;
-    if (c0) {
-      const w = c0.getBoundingClientRect().width;
-      if (w > 0) setCellSize(w);
-    }
-  }, [boardPx]);
 
   const previewCells = useMemo(() => {
     const map = new Map<number, boolean>();
@@ -603,6 +628,12 @@ function BlastPage() {
                   ref={boardRef}
                   dir="ltr"
                   className={"blast-board" + (fillRatio > 0.75 ? " danger" : "")}
+                  style={{
+                    ["--board-cell" as string]: `${cellSize}px`,
+                    ["--board-gap" as string]: `${BOARD_GAP_PX}px`,
+                    ["--board-pad" as string]: `${BOARD_PADDING_PX}px`,
+                    ["--board-border" as string]: `${BOARD_BORDER_PX}px`,
+                  }}
                 >
 
                   {game.board.map((v, i) => {
