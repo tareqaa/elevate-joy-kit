@@ -134,6 +134,22 @@ function BlastPage() {
     prevStreak.current = game.streak;
   }, [game.streak]);
 
+  /* ----- speed-up notice when the move limit tier drops ----- */
+  useEffect(() => {
+    const lim = game.moveLimitMs;
+    if (prevLimit.current && lim < prevLimit.current) {
+      const secs = Math.round(lim / 1000);
+      const id = Date.now();
+      setSpeedNote({
+        id,
+        text: ar ? `تسارعت اللعبة — ${secs} ثوانٍ للحركة` : `Speeding up — ${secs}s per move`,
+      });
+      setTimeout(() => setSpeedNote((s) => (s && s.id === id ? null : s)), 1600);
+    }
+    prevLimit.current = lim;
+  }, [game.moveLimitMs, ar]);
+
+
   /* ----- new tray => staggered entrance ----- */
   useEffect(() => {
     const count = game.tray.filter(Boolean).length;
