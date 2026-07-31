@@ -66,8 +66,12 @@ function fmtLeft(ms: number, ar: boolean) {
 const MEDALS = ["🥇", "🥈", "🥉"];
 
 function GamesPage() {
-  const { serverNow, tournaments } = Route.useLoaderData();
-  const { lang, dir } = useLang();
+  const loaded = Route.useLoaderData() as {
+    serverNow: string;
+    tournaments: TournamentRow[];
+  };
+  const { serverNow, tournaments } = loaded;
+
   const ar = lang === "ar";
   const now = useServerClock(serverNow);
 
