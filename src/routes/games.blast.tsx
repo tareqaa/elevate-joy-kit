@@ -412,6 +412,20 @@ function BlastPage() {
     return () => cancelAnimationFrame(raf);
   }, [game.over, game.score]);
 
+
+  /* ----- tournament: submit the finished run once ----- */
+  const submitted = useRef<string>("");
+  useEffect(() => {
+    if (!tournamentId || !game.over || game.score <= 0) return;
+    const key = `${tournamentId}:${game.seed}`;
+    if (submitted.current === key) return;
+    submitted.current = key;
+    void supabase.rpc("submit_tournament_score", {
+      _tournament_id: tournamentId,
+      _score: game.score,
+    });
+  }, [tournamentId, game.over, game.score, game.seed]);
+
   const timerActive = !game.over && !paused;
   const onExpire = useCallback(() => setGame((g) => timeoutGame(g)), []);
 
