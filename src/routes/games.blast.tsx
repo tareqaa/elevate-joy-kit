@@ -267,6 +267,7 @@ function BlastPage() {
     const el = areaRef.current;
     if (!el) return;
 
+    let done = false;
     const apply = () => {
       const r = el.getBoundingClientRect();
       if (r.width < 40 || r.height < 40) return;
@@ -274,6 +275,7 @@ function BlastPage() {
       setBoardLayout((current) =>
         current.boardPx === next.boardPx && current.cellPx === next.cellPx ? current : next,
       );
+      done = true;
       setMeasured(true);
     };
 
@@ -286,7 +288,7 @@ function BlastPage() {
     apply();
     const raf = requestAnimationFrame(apply);
     const ro = new ResizeObserver(() => {
-      if (!measuredRef.current) apply();
+      if (!done) apply();
     });
     ro.observe(el);
     const settle = window.setTimeout(() => ro.disconnect(), 1500);
