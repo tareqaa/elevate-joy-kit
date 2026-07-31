@@ -21,7 +21,7 @@ type AccountTab = "profile" | "orders" | "wheel" | "security";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({ meta: [{ title: "حسابي — GX Store" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { tab?: AccountTab } => ({
     tab: (typeof s.tab === "string" ? s.tab : "profile") as AccountTab,
   }),
   component: AccountPage,

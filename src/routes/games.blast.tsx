@@ -3,6 +3,8 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
+import { supabase } from "@/integrations/supabase/client";
+import { HowToPlaySlides } from "@/components/gx/games/HowToPlaySlides";
 import {
   BOARD_SIZE,
   canPlace,
@@ -18,6 +20,9 @@ import {
 } from "@/lib/gx/games/blast-engine";
 
 export const Route = createFileRoute("/games/blast")({
+  ssr: false,
+  validateSearch: (s: Record<string, unknown>): { t?: string } =>
+    typeof s.t === "string" && s.t ? { t: s.t } : {},
   head: () => ({
     meta: [
       { title: "GX Blast — لعبة البلوكات داخل GX Store" },
@@ -229,6 +234,10 @@ const MoveTimer = memo(function MoveTimer({
 function BlastPage() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
+  const { t: tournamentId } = Route.useSearch();
+  const [showHowTo, setShowHowTo] = useState(false);
+
+
 
   const [game, setGame] = useState<GameState>(() => createGame(makeSeed()));
   const [dragInfo, setDragInfo] = useState<{ trayIndex: number; piece: PieceDef } | null>(null);
@@ -407,6 +416,20 @@ function BlastPage() {
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [game.over, game.score]);
+
+
+  /* ----- tournament: submit the finished run once ----- */
+  const submitted = useRef<string>("");
+  useEffect(() => {
+    if (!tournamentId || !game.over || game.score <= 0) return;
+    const key = `${tournamentId}:${game.seed}`;
+    if (submitted.current === key) return;
+    submitted.current = key;
+    void supabase.rpc("submit_tournament_score", {
+      _tournament_id: tournamentId,
+      _score: game.score,
+    });
+  }, [tournamentId, game.over, game.score, game.seed]);
 
   const timerActive = !game.over && !paused;
   const onExpire = useCallback(() => setGame((g) => timeoutGame(g)), []);
@@ -772,7 +795,18 @@ function BlastPage() {
                       <button type="button" className="btn btn-primary bo-btn" onClick={restart}>
                         {ar ? "العب مرة أخرى" : "Play again"}
                       </button>
+                      <button type="button" className="bo-help" onClick={() => setShowHowTo(true)}>
+                        {ar ? "كيف ألعب؟" : "How to play?"}
+                      </button>
                       <Link to="/games" className="bo-link">{ar ? "رجوع لساحة اللعب" : "Back to Play Arena"}</Link>
+                    </div>
+                  </div>
+                )}
+
+                {showHowTo && (
+                  <div className="blast-over" role="dialog" aria-modal="true">
+                    <div className="bo-card htp-card" dir="rtl">
+                      <HowToPlaySlides onDone={() => setShowHowTo(false)} doneLabel="إغلاق" />
                     </div>
                   </div>
                 )}

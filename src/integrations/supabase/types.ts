@@ -1275,6 +1275,44 @@ export type Database = {
         }
         Relationships: []
       }
+      tournament_best_scores: {
+        Row: {
+          created_at: string
+          id: string
+          is_valid: boolean
+          score: number
+          tournament_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_valid?: boolean
+          score?: number
+          tournament_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_valid?: boolean
+          score?: number
+          tournament_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_best_scores_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "game_tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_avatars: {
         Row: {
           avatar_id: string
@@ -1708,6 +1746,10 @@ export type Database = {
         }
         Returns: string
       }
+      my_tournament_standing: {
+        Args: { _tournament_id: string }
+        Returns: Json
+      }
       normalize_contact: { Args: { _v: string }; Returns: string }
       redeem_gx_coins: {
         Args: { _coins: number; _subtotal_jod: number }
@@ -1737,7 +1779,22 @@ export type Database = {
         Returns: Json
       }
       spin_wheel: { Args: never; Returns: Json }
+      submit_tournament_score: {
+        Args: { _score: number; _tournament_id: string }
+        Returns: Json
+      }
       sync_user_level: { Args: { _user_id: string }; Returns: undefined }
+      tournament_leaderboard: {
+        Args: { _limit?: number; _tournament_id: string }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          rank: number
+          score: number
+          user_id: string
+          username: string
+        }[]
+      }
       validate_coupon: {
         Args: {
           _category_slugs: string[]
