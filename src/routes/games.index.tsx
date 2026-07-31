@@ -162,7 +162,7 @@ function GamesPage() {
                         {live
                           ? fmtLeft(t.end - now, ar)
                           : ended
-                            ? new Date(t.ends_at).toLocaleDateString(ar ? "ar" : "en")
+                            ? new Date(t.ends_at).toLocaleDateString("en-GB")
                             : fmtLeft(t.start - now, ar)}
                       </b>
                     </div>
