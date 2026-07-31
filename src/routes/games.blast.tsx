@@ -695,13 +695,14 @@ function BlastPage() {
                     const col = i % BOARD_SIZE;
                     const pv = previewCells.get(i);
                     const cl = clearing.get(i);
-                    const colorId = cl ? cl.color : v;
+                    const isPv = pv === true && !v && !cl;
+                    const colorId = cl ? cl.color : v || (isPv && dragInfo ? dragInfo.piece.color : 0);
                     const cls =
                       "bb-cell" +
                       (colorId ? " filled" : "") +
                       (cl ? " clearing" : "") +
                       (placed.includes(i) ? " popped" : "") +
-                      (pv === true ? " pv-ok" : pv === false ? " pv-bad" : "");
+                      (isPv ? " pv-ok" : "");
                     return (
                       <BoardCell
                         key={i}
@@ -713,6 +714,7 @@ function BlastPage() {
                       />
                     );
                   })}
+
 
                   {banner && (
                     <span key={banner.id} className={"bb-banner b" + (banner.size || 1) + (banner.clean ? " clean" : "")}>
