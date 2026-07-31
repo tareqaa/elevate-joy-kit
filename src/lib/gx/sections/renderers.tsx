@@ -19,6 +19,8 @@ import type {
 } from "./types";
 import { activeCarouselSlides } from "./types";
 import { RichHtml } from "./rich-text";
+import { DiscountBadge } from "@/components/gx/DiscountBadge";
+import { formatTitle } from "@/lib/gx/text";
 
 /* ---------------- HERO ---------------- */
 
@@ -362,13 +364,13 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
               <div key={p.cartId} className="prod-card">
                 <Link to={p.link as never} style={{ display: "contents" }}>
                   <div className="prod-thumb" style={{ background: p.bg }}>
-                    <span className="discount-badge">-{discount}%</span>
+                    <DiscountBadge value={discount} />
                     {iconEl}
                   </div>
                 </Link>
                 <div className="prod-body">
                   <div className="prod-stars">★★★★★</div>
-                  <div className="prod-name">{localizeResolvedName(p.name, lang)}</div>
+                  <div className="prod-name">{formatTitle(localizeResolvedName(p.name, lang))}</div>
                   <div className="prod-prices">
                     <span className="prod-old">{format(p.oldPrice)}</span>
                     <span className="prod-new">{format(p.price)}</span>
@@ -417,13 +419,13 @@ export function ProductsRenderer({ data }: { data: ProductsData }) {
               <div key={p.cartId} className="prod-card">
                 <Link to={p.link as never} style={{ display: "contents" }}>
                   <div className="prod-thumb" style={{ background: p.bg }}>
-                    {discount > 0 && <span className="discount-badge">-{discount}%</span>}
+                    <DiscountBadge value={discount} />
                     {iconEl}
                   </div>
                 </Link>
                 <div className="prod-body">
                   <div className="prod-stars">★★★★★</div>
-                  <div className="prod-name">{localizeResolvedName(p.name, lang)}</div>
+                  <div className="prod-name">{formatTitle(localizeResolvedName(p.name, lang))}</div>
                   <div className="prod-prices">
                     <span className="prod-old">{format(p.oldPrice)}</span>
                     <span className="prod-new">{format(p.price)}</span>

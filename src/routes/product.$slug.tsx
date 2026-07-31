@@ -8,6 +8,7 @@ import { FeatureAccordion, DeliveryBox, SectionHead } from "@/components/gx/Prim
 import { useLang } from "@/lib/gx/i18n";
 import { localizedProduct } from "@/lib/gx/product-locale";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { DiscountBadge } from "@/components/gx/DiscountBadge";
 
 export const Route = createFileRoute("/product/$slug")({
   head: ({ params }) => {
@@ -63,7 +64,7 @@ function ProductPage() {
                 <div key={plan.id} className="prod-card">
                   <div className="prod-thumb" style={{ background: p.thumbBg }}>
                     {plan.tag && <span className="tag-badge">{plan.tag}</span>}
-                    {discount > 0 && <span className="discount-badge">-{discount}%</span>}
+                    <DiscountBadge value={discount} />
                     <ProductIcon product={p} />
                   </div>
                   <div className="prod-body">
