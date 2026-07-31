@@ -91,9 +91,10 @@
 .blast-perf.on{color:#c6ff3d; border-color:rgba(198,255,61,.45); background:rgba(198,255,61,.08);}
 
 .blast-stage{
-  flex:1 1 auto; min-height:0; display:flex;
+  flex:1 1 auto; min-height:0; display:flex; overflow:hidden;
   padding:0 10px 8px; align-items:stretch; justify-content:center;
 }
+.blast-stage.measuring{visibility:hidden;}
 .blast-play{
   flex:1 1 auto; min-width:0; display:flex; flex-direction:column;
   align-items:center; gap:6px;

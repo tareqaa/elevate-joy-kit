@@ -51,17 +51,17 @@ function calculateBoardLayout(availableWidth: number, availableHeight: number): 
   };
 }
 
-/* --- VISUAL-ONLY palette override (engine colour ids -> calm, low-glare hex) --- */
+/* --- VISUAL-ONLY palette: Block Blast style, bright but not neon --- */
 const VIVID: Record<number, string> = {
-  1: "#4f9fc4", // calm blue (was cyan)
-  2: "#c9566f", // muted rose
-  3: "#5f9e63", // deep green (was lime)
-  4: "#8f6fc0", // soft violet
-  5: "#c9a24a", // warm amber
-  6: "#5578b8", // dusty blue
-  7: "#4fa593", // teal
-  8: "#c07a9d", // dusty pink
-  9: "#c2814f", // clay orange
+  1: "#43a7ea", // blue
+  2: "#ef5f6b", // red
+  3: "#5fc76c", // green
+  4: "#a274e2", // purple
+  5: "#f0c24e", // yellow
+  6: "#6b8ee8", // indigo
+  7: "#46c6b2", // teal
+  8: "#f082b4", // pink
+  9: "#f2924f", // orange
 };
 
 /** pre-built once: no new style object per cell per frame (keeps memo intact) */
@@ -208,9 +208,10 @@ function BlastPage() {
   const [dragInfo, setDragInfo] = useState<{ trayIndex: number; piece: PieceDef } | null>(null);
   const [target, setTarget] = useState<Target>(null);
   const [boardLayout, setBoardLayout] = useState<BoardLayout>(() => ({
-    cellPx: 40,
-    boardPx: 40 * BOARD_SIZE + BOARD_GAP_PX * (BOARD_SIZE - 1) + BOARD_PADDING_PX * 2 + BOARD_BORDER_PX * 2,
+    cellPx: 0,
+    boardPx: 0,
   }));
+  const [measured, setMeasured] = useState(false);
   const { boardPx, cellPx: cellSize } = boardLayout;
   const [clearing, setClearing] = useState<Map<number, ClearCell>>(new Map());
   const [placed, setPlaced] = useState<number[]>([]);
@@ -266,12 +267,16 @@ function BlastPage() {
     const el = areaRef.current;
     if (!el) return;
 
+    let done = false;
     const apply = () => {
       const r = el.getBoundingClientRect();
+      if (r.width < 40 || r.height < 40) return;
       const next = calculateBoardLayout(r.width, r.height);
       setBoardLayout((current) =>
         current.boardPx === next.boardPx && current.cellPx === next.cellPx ? current : next,
       );
+      done = true;
+      setMeasured(true);
     };
 
     let timer = 0;
@@ -281,11 +286,20 @@ function BlastPage() {
     };
 
     apply();
+    const raf = requestAnimationFrame(apply);
+    const ro = new ResizeObserver(() => {
+      if (!done) apply();
+    });
+    ro.observe(el);
+    const settle = window.setTimeout(() => ro.disconnect(), 1500);
     window.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("orientationchange", schedule);
     window.visualViewport?.addEventListener("resize", schedule, { passive: true });
     return () => {
       window.clearTimeout(timer);
+      window.clearTimeout(settle);
+      cancelAnimationFrame(raf);
+      ro.disconnect();
       window.removeEventListener("resize", schedule);
       window.removeEventListener("orientationchange", schedule);
       window.visualViewport?.removeEventListener("resize", schedule);
@@ -612,7 +626,7 @@ function BlastPage() {
           <Link to="/games" className="blast-back">{ar ? "‹ ساحة اللعب" : "‹ Play Arena"}</Link>
         </header>
 
-        <section className="blast-stage">
+        <section className={"blast-stage" + (measured ? "" : " measuring")}>
           <div className="blast-play">
             <div className="blast-column" style={blockStyle}>
               {hud}
