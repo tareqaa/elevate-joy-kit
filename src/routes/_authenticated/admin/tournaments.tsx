@@ -122,6 +122,49 @@ function TournamentsAdmin() {
 
   const rows = listQ.data ?? [];
 
+  // how many tournaments the arena carousel shows (site setting)
+  const countQ = useQuery({
+    queryKey: ["arena-carousel-count"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "arena_carousel_count")
+        .maybeSingle();
+      const n = Number(data?.value ?? 6);
+      return Number.isFinite(n) && n > 0 ? n : 6;
+    },
+  });
+  const [countDraft, setCountDraft] = useState<string>("");
+  const countValue = countDraft !== "" ? countDraft : String(countQ.data ?? 6);
+
+  const saveCount = useMutation({
+    mutationFn: async (n: number) => {
+      const { error } = await supabase
+        .from("site_settings")
+        .upsert({ key: "arena_carousel_count", value: n as unknown as never }, { onConflict: "key" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم حفظ عدد البطولات في الكاروسيل");
+      qc.invalidateQueries({ queryKey: ["arena-carousel-count"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // registrations per tournament
+  const regQ = useQuery({
+    queryKey: ["tournament-registrations"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("tournament_registrations").select("tournament_id");
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      (data ?? []).forEach((r) => { map[r.tournament_id] = (map[r.tournament_id] ?? 0) + 1; });
+      return map;
+    },
+  });
+
+
   const setPrize = (i: number, patch: Partial<Prize>) =>
     setEdit((e) => {
       if (!e) return e;
@@ -147,6 +190,31 @@ function TournamentsAdmin() {
           </Button>
         </div>
       </div>
+
+      <Card>
+        <CardContent className="p-4 flex items-end gap-3 flex-wrap">
+          <div>
+            <label className="text-xs text-muted-foreground">عدد البطولات الظاهرة في كاروسيل ساحة اللعب</label>
+            <Input
+              type="number"
+              min={1}
+              max={24}
+              className="w-32"
+              value={countValue}
+              onChange={(e) => setCountDraft(e.target.value)}
+            />
+          </div>
+          <Button
+            size="sm"
+            disabled={saveCount.isPending}
+            onClick={() => saveCount.mutate(Math.max(1, Math.min(24, Number(countValue) || 6)))}
+          >
+            حفظ
+          </Button>
+        </CardContent>
+      </Card>
+
+
 
       {listQ.isLoading ? (
         <p className="text-muted-foreground text-sm">جارِ التحميل…</p>
@@ -177,7 +245,10 @@ function TournamentsAdmin() {
                     </li>
                   ))}
                 </ul>
-                <p className="text-xs text-muted-foreground">عدد الفائزين: {t.prizes.length}</p>
+                <p className="text-xs text-muted-foreground">
+                  عدد الفائزين: {t.prizes.length} · المسجّلون: {regQ.data?.[t.id] ?? 0}
+                </p>
+
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => setEdit({ ...t })}>
                     <Pencil className="h-4 w-4 ms-1" /> تعديل

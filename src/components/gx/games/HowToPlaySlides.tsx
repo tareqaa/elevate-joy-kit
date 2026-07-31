@@ -154,7 +154,7 @@ export function HowToPlaySlides({ onDone, doneLabel = "تخطي" }: { onDone?: (
       </div>
 
       <div className="htp-nav">
-        <button type="button" className="htp-arrow" onClick={() => { stop(); go(-1); }} aria-label="السابق">›</button>
+        <button type="button" className="htp-arrow" onClick={() => { stop(); go(1); }} aria-label="التالي">›</button>
         <div className="htp-dots" role="tablist">
           {HOWTO_SLIDES.map((_, n) => (
             <button
@@ -168,8 +168,9 @@ export function HowToPlaySlides({ onDone, doneLabel = "تخطي" }: { onDone?: (
             />
           ))}
         </div>
-        <button type="button" className="htp-arrow" onClick={() => { stop(); go(1); }} aria-label="التالي">‹</button>
+        <button type="button" className="htp-arrow" onClick={() => { stop(); go(-1); }} aria-label="السابق">‹</button>
       </div>
+
 
       {onDone && (
         <button type="button" className="htp-cta" onClick={() => (last ? onDone() : (stop(), go(1)))}>

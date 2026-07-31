@@ -76,6 +76,43 @@ function TournamentPage() {
     return () => { alive = false; };
   }, []);
 
+  // ---- tournament registration (must join before playing) ----
+  const [registered, setRegistered] = useState<boolean | null>(null);
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [joining, setJoining] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session?.user?.id ?? null;
+      if (!alive) return;
+      setSignedIn(!!uid);
+      if (!uid) { setRegistered(false); return; }
+      const { data } = await supabase
+        .from("tournament_registrations")
+        .select("id")
+        .eq("tournament_id", id)
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (alive) setRegistered(!!data);
+    })();
+    return () => { alive = false; };
+  }, [id]);
+
+  const register = async () => {
+    const { data: s } = await supabase.auth.getSession();
+    const uid = s.session?.user?.id;
+    if (!uid) { navigate({ to: "/auth" }); return; }
+    setJoining(true);
+    const { error } = await supabase
+      .from("tournament_registrations")
+      .insert({ tournament_id: id, user_id: uid });
+    setJoining(false);
+    if (!error || error.code === "23505") setRegistered(true);
+  };
+
+
   const offset = useMemo(() => (t ? new Date(t.server_now).getTime() - Date.now() : 0), [t]);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -167,18 +204,30 @@ function TournamentPage() {
             </div>
 
             <div className="tp-actions" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                className={"ar-cta" + (status !== "live" || !t.game_path ? " off" : "")}
-                disabled={status !== "live" || !t.game_path}
-                onClick={() => t.game_path && navigate({ to: t.game_path, search: { t: t.id } as never })}
-              >
-                ⚡ {status === "live" ? (ar ? "ابدأ اللعب" : "Start playing") : status === "ended" ? (ar ? "انتهت البطولة" : "Tournament ended") : (ar ? "لم تبدأ بعد" : "Not started yet")}
-              </button>
+              {status !== "ended" && !registered ? (
+                <button type="button" className="ar-cta" disabled={joining} onClick={register}>
+                  📝 {joining ? (ar ? "جارِ التسجيل…" : "Registering…") : signedIn === false ? (ar ? "سجّل دخولك للاشتراك" : "Sign in to register") : (ar ? "سجّل في البطولة" : "Register for tournament")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={"ar-cta" + (status !== "live" || !t.game_path ? " off" : "")}
+                  disabled={status !== "live" || !t.game_path}
+                  onClick={() => t.game_path && navigate({ to: t.game_path, search: { t: t.id } as never })}
+                >
+                  ⚡ {status === "live" ? (ar ? "ابدأ اللعب" : "Start playing") : status === "ended" ? (ar ? "انتهت البطولة" : "Tournament ended") : (ar ? "لم تبدأ بعد" : "Not started yet")}
+                </button>
+              )}
               <button type="button" className="btn tp-how" onClick={() => setHow((v) => !v)}>
                 {how ? (ar ? "إخفاء الشرح" : "Hide how to play") : (ar ? "كيف ألعب؟" : "How to play?")}
               </button>
             </div>
+            <p className="reg-note">
+              {registered
+                ? <span className="reg-ok">{ar ? "✅ أنت مسجّل في هذه البطولة" : "✅ You're registered"}</span>
+                : ar ? "لازم تسجّل بالبطولة قبل ما تبدأ اللعب." : "You must register before you can play."}
+            </p>
+
           </div>
         </header>
 
