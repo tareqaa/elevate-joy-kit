@@ -180,3 +180,6 @@
   .bs-val{font-size:32px;}
   .bt-slot{--tc:15px; min-height:80px;}
 }
+
+/* logical grid must never mirror in RTL */
+.blast-board, .blast-tray, .bt-piece, .bb-ghost{direction:ltr;}
