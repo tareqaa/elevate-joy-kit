@@ -345,16 +345,10 @@ function TournamentPage() {
               ) : (
                 <>
                   <div className="przlist">
-                    {sortedPrizes.slice(0, 6).map((p, i) => {
-                      const place = p.place ?? i + 1;
-                      return (
-                        <div key={place} className={`przrow g${Math.min(place, 4)}`}>
-                          <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
-                          <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
-                          <span>{p.reward_type && p.reward_type !== "custom" ? `${REWARD_ICON[p.reward_type]} ${rewardText(p, ar)}` : rewardText(p, ar)}</span>
-                        </div>
-                      );
-                    })}
+                    {sortedPrizes.slice(0, 6).map((p, i) => (
+                      <PrizeRow key={p.place ?? i + 1} p={p} place={p.place ?? i + 1} ar={ar} />
+                    ))}
+
                   </div>
                   {sortedPrizes.length > 6 && (
                     <button type="button" className="prz-all" onClick={() => setPrizesOpen(true)}>
