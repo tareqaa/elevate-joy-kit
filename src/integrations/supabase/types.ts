@@ -1313,6 +1313,35 @@ export type Database = {
           },
         ]
       }
+      tournament_registrations: {
+        Row: {
+          created_at: string
+          id: string
+          tournament_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tournament_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tournament_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_registrations_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "game_tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_avatars: {
         Row: {
           avatar_id: string
@@ -1794,6 +1823,10 @@ export type Database = {
           user_id: string
           username: string
         }[]
+      }
+      tournament_registration_count: {
+        Args: { _tournament_id: string }
+        Returns: number
       }
       validate_coupon: {
         Args: {
