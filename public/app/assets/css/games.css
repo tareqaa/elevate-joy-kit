@@ -200,7 +200,9 @@
   border-radius:16px; border:0; background:transparent;
 }
 .bt-slot{
-  min-height:calc(var(--tc,24px) * 3.4);
+  height:var(--tray-box, calc(var(--tc,24px) * 4));
+  min-height:var(--tray-box, calc(var(--tc,24px) * 4));
+  overflow:hidden;
   display:flex; align-items:center; justify-content:center;
   border-radius:12px; background:transparent;
   border:0;
