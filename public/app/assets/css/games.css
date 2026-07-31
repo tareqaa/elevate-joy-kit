@@ -991,3 +991,5 @@
   100%{transform:translate3d(0,115vh,0) rotate(180deg);}
 }
 @media(prefers-reduced-motion:reduce){.bl-fx{display:none;}}
+.pod-rank{font-size:13px;font-weight:900;color:#9fb0d8;letter-spacing:.04em;}
+.pod.p1 .pod-rank{color:var(--ar-gold);}
