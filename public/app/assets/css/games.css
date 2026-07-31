@@ -155,6 +155,8 @@
   border-radius:14px;
   border:var(--board-pad) solid #1C2242;
   background:#2A3157;
+  /* nothing may ever be painted outside the board frame */
+  overflow:hidden;
 }
 .blast-board.danger{border-color:#241d3a;}
 
@@ -167,8 +169,9 @@
 .bb-cell.filled{
   border-width:var(--bevel,4px); border-radius:3px;
 }
-.bb-cell.pv-ok{background:#2f4a55;}
-.bb-cell.pv-bad{background:#472a35;}
+/* in-grid preview: the target cells themselves, tinted with the piece colour */
+.bb-cell.pv-ok{opacity:.55;}
+
 
 
 .bb-cell.popped{animation:cellPop .2s var(--ease) 1;}
