@@ -44,8 +44,11 @@ function MaintenanceBanner() {
   );
 }
 
-export function StoreShell({ children }: { children: ReactNode }) {
+export function StoreShell({ children, bare = false }: { children: ReactNode; bare?: boolean }) {
   ensureStoreStyles();
+  // `bare` = immersive full-screen mode (mini games): no header, no footer,
+  // no overlays competing for the vertical space.
+  if (bare) return <>{children}</>;
   return (
     <>
       <MaintenanceBanner />
