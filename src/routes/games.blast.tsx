@@ -675,7 +675,9 @@ function BlastPage() {
                     ["--board-gap" as string]: `${BOARD_GAP_PX}px`,
                     ["--board-pad" as string]: `${BOARD_PADDING_PX}px`,
                     ["--board-border" as string]: `${BOARD_BORDER_PX}px`,
+                    ["--bevel" as string]: `${bevelPx(cellSize)}px`,
                   }}
+
                 >
 
                   {game.board.map((v, i) => {
