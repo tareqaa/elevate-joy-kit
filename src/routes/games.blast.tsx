@@ -450,12 +450,11 @@ function BlastPage() {
     const next: Target = hit
       ? { row: hit.row, col: hit.col, ok: canPlace(gameRef.current.board, d.piece, hit.row, hit.col) }
       : null;
-    // free, smooth pointer following outside the board; once the piece is a
-    // valid placement, the in-grid preview takes over so nothing can ever be
-    // painted past the board frame
+    // free, smooth pointer following: the ghost always follows the pointer
     if (ghostRef.current) {
       ghostRef.current.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-      ghostRef.current.style.visibility = next?.ok ? "hidden" : "visible";
+      ghostRef.current.style.visibility = "visible";
+      ghostRef.current.style.opacity = next?.ok ? "0.5" : "0.94";
     }
 
 
