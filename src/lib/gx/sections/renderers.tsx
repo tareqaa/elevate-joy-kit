@@ -21,8 +21,74 @@ import { activeCarouselSlides } from "./types";
 import { RichHtml } from "./rich-text";
 
 /* ---------------- HERO ---------------- */
+
+/** Slide 2 of the hero carousel — Mini Games / Tournaments teaser. */
+function HeroGamesSlide() {
+  const { lang } = useLang();
+  const ar = lang === "ar";
+  return (
+    <Link to="/games" className="hero-inner hero-games" aria-label={ar ? "الألعاب المصغّرة" : "Mini Games"}>
+      <div className="hg-noise" aria-hidden />
+      <div className="hero-text hg-text">
+        <div className="hero-badge hg-badge"><span className="dot" /> {ar ? "تورنمنتات وتحديات" : "Tournaments & Challenges"}</div>
+        <h2 className="hg-title">
+          {ar ? "ادخل " : "Enter the "}<span>{ar ? "ساحة اللعب" : "Play Arena"}</span><br />
+          {ar ? "وتحدّى لاعبي GX" : "and challenge GX players"}
+        </h2>
+        <p className="hg-sub">
+          {ar
+            ? "ألعاب مصغّرة، تحديات يومية، ولوحة متصدرين — اربح XP و GX Coins واصرفها بالمتجر."
+            : "Mini games, daily challenges and a leaderboard — earn XP & GX Coins and spend them in the store."}
+        </p>
+        <div className="hero-ctas">
+          <span className="btn btn-primary hg-cta">{ar ? "ابدأ اللعب" : "Start playing"}</span>
+          <span className="hg-meta">{ar ? "مجانًا • قريبًا" : "Free • Coming soon"}</span>
+        </div>
+      </div>
+      <div className="hero-visual hg-visual" aria-hidden>
+        <div className="hg-ring" />
+        <div className="hg-pad">
+          <svg viewBox="0 0 64 40" fill="none">
+            <rect x="1.5" y="6" width="61" height="30" rx="12" stroke="#00e5ff" strokeWidth="2" />
+            <path d="M14 15v8M10 19h8" stroke="#00e5ff" strokeWidth="2.4" strokeLinecap="round" />
+            <circle cx="46" cy="16.5" r="2.6" fill="#ff2d78" />
+            <circle cx="52" cy="23" r="2.6" fill="#c6ff3d" />
+          </svg>
+        </div>
+        <span className="hg-chip hg-chip-1">XP</span>
+        <span className="hg-chip hg-chip-2">GX</span>
+      </div>
+    </Link>
+  );
+}
+
 export function HeroRenderer({ data }: { data: HeroData }) {
   const { t } = useLang();
+  const [slide, setSlide] = useState(0);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const SLIDES = 2;
+
+  // autoplay (pauses on hover via CSS-free JS flag)
+  const pausedRef = useRef(false);
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (pausedRef.current) return;
+      setSlide((s) => (s + 1) % SLIDES);
+    }, 6500);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // swipe
+  const startX = useRef(0);
+  const onStart = (x: number) => { startX.current = x; };
+  const onEnd = (x: number) => {
+    const dx = x - startX.current;
+    if (Math.abs(dx) < 45) return;
+    const dirRtl = typeof document !== "undefined" && document.documentElement.dir === "rtl";
+    const forward = dirRtl ? dx > 0 : dx < 0;
+    setSlide((s) => (forward ? (s + 1) % SLIDES : (s - 1 + SLIDES) % SLIDES));
+  };
+
   const badge = data.badge || t("home.hero_badge");
   const titleA = data.title_a || t("home.hero_title_a");
   const titleB = data.title_b || t("home.hero_title_b");
