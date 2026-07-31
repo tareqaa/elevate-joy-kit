@@ -27,18 +27,27 @@ function HeroGamesSlide() {
   const { lang } = useLang();
   const ar = lang === "ar";
   return (
-    <Link to="/games" className="hero-inner hero-games" aria-label={ar ? "الألعاب المصغّرة" : "Mini Games"}>
+    <Link to="/games" className="hero-inner hero-games" aria-label={ar ? "الألعاب المصغّرة" : "Mini Games"} draggable={false}>
       <div className="hg-noise" aria-hidden />
+      {/* flying arcade bits (tetris blocks + pixel bird) */}
+      <div className="hg-arcade" aria-hidden>
+        <span className="hg-tet t1" /><span className="hg-tet t2" /><span className="hg-tet t3" />
+        <span className="hg-tet t4" /><span className="hg-tet t5" />
+        <span className="hg-bird">
+          <svg viewBox="0 0 24 18" fill="none"><rect x="4" y="4" width="14" height="10" rx="3" fill="#ffd54a" /><rect x="14" y="7" width="6" height="3" rx="1.5" fill="#ff8a3d" /><circle cx="14" cy="8" r="1.4" fill="#0b1020" /><rect x="5" y="8" width="7" height="4" rx="2" fill="#f5b400" /></svg>
+        </span>
+        <span className="hg-pix p1" /><span className="hg-pix p2" /><span className="hg-pix p3" />
+      </div>
       <div className="hero-text hg-text">
-        <div className="hero-badge hg-badge"><span className="dot" /> {ar ? "تورنمنتات وتحديات" : "Tournaments & Challenges"}</div>
+        <div className="hero-badge hg-badge"><span className="dot" /> {ar ? "بطولات وتحدّيات" : "Tournaments & Challenges"}</div>
         <h2 className="hg-title">
           {ar ? "ادخل " : "Enter the "}<span>{ar ? "ساحة اللعب" : "Play Arena"}</span><br />
-          {ar ? "وتحدّى لاعبي GX" : "and challenge GX players"}
+          {ar ? "ونافس لاعبي GX" : "and compete with GX players"}
         </h2>
         <p className="hg-sub">
           {ar
-            ? "ألعاب مصغّرة، تحديات يومية، ولوحة متصدرين — اربح XP و GX Coins واصرفها بالمتجر."
-            : "Mini games, daily challenges and a leaderboard — earn XP & GX Coins and spend them in the store."}
+            ? "العب، نافس، واربح خصومات على المنتجات الرقمية + GX Coins و XP تصرفها بالمتجر."
+            : "Play, compete and win digital product discounts + GX Coins & XP to spend in the store."}
         </p>
         <div className="hero-ctas">
           <span className="btn btn-primary hg-cta">{ar ? "ابدأ اللعب" : "Start playing"}</span>
@@ -57,6 +66,7 @@ function HeroGamesSlide() {
         </div>
         <span className="hg-chip hg-chip-1">XP</span>
         <span className="hg-chip hg-chip-2">GX</span>
+        <span className="hg-chip hg-chip-3">%</span>
       </div>
     </Link>
   );
@@ -65,10 +75,12 @@ function HeroGamesSlide() {
 export function HeroRenderer({ data }: { data: HeroData }) {
   const { t } = useLang();
   const [slide, setSlide] = useState(0);
-  const trackRef = useRef<HTMLDivElement | null>(null);
+  const carRef = useRef<HTMLDivElement | null>(null);
+  const [drag, setDrag] = useState(0);      // live px offset while dragging
+  const [dragging, setDragging] = useState(false);
   const SLIDES = 2;
 
-  // autoplay (pauses on hover via CSS-free JS flag)
+  // autoplay (pauses on hover / while dragging)
   const pausedRef = useRef(false);
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -78,15 +90,47 @@ export function HeroRenderer({ data }: { data: HeroData }) {
     return () => window.clearInterval(id);
   }, []);
 
-  // swipe
+  // --- unified pointer drag (mouse + touch) ---
   const startX = useRef(0);
-  const onStart = (x: number) => { startX.current = x; };
-  const onEnd = (x: number) => {
-    const dx = x - startX.current;
-    if (Math.abs(dx) < 45) return;
-    const dirRtl = typeof document !== "undefined" && document.documentElement.dir === "rtl";
-    const forward = dirRtl ? dx > 0 : dx < 0;
-    setSlide((s) => (forward ? (s + 1) % SLIDES : (s - 1 + SLIDES) % SLIDES));
+  const activeRef = useRef(false);
+  const movedRef = useRef(false);
+
+  const width = () => carRef.current?.offsetWidth || 1;
+  const dirRtl = () => typeof document !== "undefined" && document.documentElement.dir === "rtl";
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    activeRef.current = true;
+    movedRef.current = false;
+    startX.current = e.clientX;
+    pausedRef.current = true;
+    setDragging(true);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!activeRef.current) return;
+    const dx = e.clientX - startX.current;
+    if (Math.abs(dx) > 6) movedRef.current = true;
+    // resistance at the edges
+    const logical = dirRtl() ? -dx : dx;
+    const atEdge = (slide === 0 && logical > 0) || (slide === SLIDES - 1 && logical < 0);
+    setDrag(atEdge ? dx * 0.32 : dx);
+  };
+  const finish = () => {
+    if (!activeRef.current) return;
+    activeRef.current = false;
+    setDragging(false);
+    const dx = drag;
+    const threshold = Math.min(110, width() * 0.16);
+    if (Math.abs(dx) > threshold) {
+      const forward = dirRtl() ? dx > 0 : dx < 0;
+      setSlide((s) => Math.min(SLIDES - 1, Math.max(0, forward ? s + 1 : s - 1)));
+    }
+    setDrag(0);
+    pausedRef.current = false;
+  };
+  // block the Link navigation if the pointer was dragged
+  const onClickCapture = (e: React.MouseEvent) => {
+    if (movedRef.current) { e.preventDefault(); e.stopPropagation(); movedRef.current = false; }
   };
 
   const badge = data.badge || t("home.hero_badge");
@@ -98,17 +142,27 @@ export function HeroRenderer({ data }: { data: HeroData }) {
   const ctaALink = data.cta_primary_link || "#products";
   const ctaBText = data.cta_secondary_text || t("home.see_categories");
   const ctaBLink = data.cta_secondary_link || "#categories";
+  const basePct = slide * 100;
   return (
     <section className="hero">
       <div className="wrap">
         <div
-          className="hero-car"
+          className={"hero-car" + (dragging ? " is-dragging" : "")}
+          ref={carRef}
           onMouseEnter={() => { pausedRef.current = true; }}
-          onMouseLeave={() => { pausedRef.current = false; }}
-          onTouchStart={(e) => onStart(e.touches[0].clientX)}
-          onTouchEnd={(e) => onEnd(e.changedTouches[0].clientX)}
+          onMouseLeave={() => { if (!activeRef.current) pausedRef.current = false; }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={finish}
+          onPointerCancel={finish}
+          onPointerLeave={finish}
+          onClickCapture={onClickCapture}
+          onDragStart={(e) => e.preventDefault()}
         >
-          <div className="hero-car-track" ref={trackRef} style={{ transform: `translateX(calc(var(--gx-dir) * -${slide * 100}%))` }}>
+          <div
+            className="hero-car-track"
+            style={{ transform: `translate3d(calc(var(--gx-dir) * -${basePct}% + ${drag}px), 0, 0)` }}
+          >
             <div className="hero-car-slide">
               <div className="hero-inner fade-in">
                 <div className="hero-text">
@@ -122,7 +176,7 @@ export function HeroRenderer({ data }: { data: HeroData }) {
                 </div>
                 <div className="hero-visual">
                   {data.image_url ? (
-                    <img src={data.image_url} alt="" style={{ maxWidth: "100%", borderRadius: 20, boxShadow: "0 20px 60px rgba(0,0,0,.35)" }} />
+                    <img src={data.image_url} alt="" draggable={false} style={{ maxWidth: "100%", borderRadius: 20, boxShadow: "0 20px 60px rgba(0,0,0,.35)" }} />
                   ) : (
                     <>
                       <div className="orb" />
@@ -157,6 +211,7 @@ export function HeroRenderer({ data }: { data: HeroData }) {
     </section>
   );
 }
+
 
 
 /* ---------------- ANNOUNCEMENT ---------------- */
