@@ -309,29 +309,242 @@ export function canPlaceAll(board: Board, pieces: PieceDef[]): boolean {
   return false;
 }
 
+/* ============================================================
+   INTELLIGENT (ADAPTIVE) PIECE GENERATION
+   Deterministic: every random draw still comes from the seeded
+   rng state, so the server replays the exact same trays.
+   ============================================================ */
+
+/** tuning for the adaptive generator */
+export const GEN = {
+  /** how many candidate trays are sampled per draw */
+  candidates: 14,
+  /** how many valid candidates are enough to stop sampling early */
+  enough: 8,
+  /** how many of the best candidates are kept for the weighted pick */
+  shortlist: 4,
+  /** softness of the weighted pick (higher = closer to pure best) */
+  sharpness: 2.2,
+};
+
+/** empty cells whose 4 neighbours are all blocked (edges count as blocked) */
+function countHoles(board: Board): number {
+  let holes = 0;
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (board[idx(r, c)] !== 0) continue;
+      const up = r === 0 || board[idx(r - 1, c)] !== 0;
+      const dn = r === BOARD_SIZE - 1 || board[idx(r + 1, c)] !== 0;
+      const lf = c === 0 || board[idx(r, c - 1)] !== 0;
+      const rt = c === BOARD_SIZE - 1 || board[idx(r, c + 1)] !== 0;
+      if (up && dn && lf && rt) holes++;
+    }
+  }
+  return holes;
+}
+
+/** free (fully empty) 3x3 windows — a good proxy for "big open space" */
+function countFree3x3(board: Board): number {
+  let n = 0;
+  for (let r = 0; r <= BOARD_SIZE - 3; r++) {
+    outer: for (let c = 0; c <= BOARD_SIZE - 3; c++) {
+      for (let dr = 0; dr < 3; dr++)
+        for (let dc = 0; dc < 3; dc++) if (board[idx(r + dr, c + dc)] !== 0) continue outer;
+      n++;
+    }
+  }
+  return n;
+}
+
+function countPlacements(board: Board, piece: PieceDef, cap = 999): number {
+  let n = 0;
+  for (let r = 0; r <= BOARD_SIZE - piece.h; r++) {
+    for (let c = 0; c <= BOARD_SIZE - piece.w; c++) {
+      if (canPlace(board, piece, r, c)) {
+        n++;
+        if (n >= cap) return n;
+      }
+    }
+  }
+  return n;
+}
+
+/** how much freedom of movement the board still offers (0..1-ish) */
+function boardFreedom(board: Board): number {
+  let total = 0;
+  let weight = 0;
+  for (const p of PIECES) {
+    const w = PIECE_WEIGHTS[p.id] ?? 1;
+    weight += w;
+    total += w * Math.min(1, countPlacements(board, p, 6) / 6);
+  }
+  return weight === 0 ? 0 : total / weight;
+}
+
+function density(board: Board): number {
+  let filled = 0;
+  for (let i = 0; i < board.length; i++) if (board[i] !== 0) filled++;
+  return filled / board.length;
+}
+
+/** rows/cols that only need a few cells to complete */
+function nearComplete(board: Board): number {
+  let n = 0;
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    let empty = 0;
+    for (let c = 0; c < BOARD_SIZE; c++) if (board[idx(r, c)] === 0) empty++;
+    if (empty > 0 && empty <= 2) n++;
+  }
+  for (let c = 0; c < BOARD_SIZE; c++) {
+    let empty = 0;
+    for (let r = 0; r < BOARD_SIZE; r++) if (board[idx(r, c)] === 0) empty++;
+    if (empty > 0 && empty <= 2) n++;
+  }
+  return n;
+}
+
+/** value of a single placement: lines cleared, holes made, space kept */
+function placementValue(board: Board, piece: PieceDef, row: number, col: number): number {
+  const after = simulatePlacement(board, piece, row, col);
+  let filledBefore = 0;
+  for (let i = 0; i < board.length; i++) if (board[i] !== 0) filledBefore++;
+  let filledAfter = 0;
+  for (let i = 0; i < after.length; i++) if (after[i] !== 0) filledAfter++;
+  const cleared = filledBefore + piece.cells.length - filledAfter; // cells removed by clears
+  const holeDelta = countHoles(after) - countHoles(board);
+  return cleared * 1.6 - holeDelta * 6 + countFree3x3(after) * 0.6;
+}
+
 /**
- * Draws three pieces that are guaranteed (when possible) to be fully placeable
- * in some order on the CURRENT board. Fully deterministic given the rng state.
- * Difficulty is expressed only through WHICH shapes are drawn, never by dealing
- * an unsolvable tray.
+ * Greedily plays the three pieces (best-first) and returns the resulting board,
+ * or null when no order works. Cheap approximation of "a reasonable path".
+ */
+function greedyPlay(board: Board, pieces: PieceDef[]): { board: Board; value: number } | null {
+  let b = board;
+  let value = 0;
+  const left = pieces.slice();
+  while (left.length > 0) {
+    let best: { i: number; r: number; c: number; v: number } | null = null;
+    for (let i = 0; i < left.length; i++) {
+      const p = left[i];
+      for (let r = 0; r <= BOARD_SIZE - p.h; r++) {
+        for (let c = 0; c <= BOARD_SIZE - p.w; c++) {
+          if (!canPlace(b, p, r, c)) continue;
+          const v = placementValue(b, p, r, c);
+          if (!best || v > best.v) best = { i, r, c, v };
+        }
+      }
+    }
+    if (!best) return null;
+    b = simulatePlacement(b, left[best.i], best.r, best.c);
+    value += best.v;
+    left.splice(best.i, 1);
+  }
+  return { board: b, value };
+}
+
+/** quality of a full 3-piece set against the current board */
+function evaluateTray(board: Board, pieces: PieceDef[], score: number): number {
+  const played = greedyPlay(board, pieces);
+  if (!played) return -1e6; // instantly traps the player — rejected
+
+  const dens = density(board);
+  const steps = difficultySteps(score);
+  // late game / crowded board: freedom matters much more than raw pressure
+  const freedomWeight = 40 + dens * 60;
+
+  let q = 0;
+  q += played.value * 1.0;
+  q += boardFreedom(played.board) * freedomWeight;
+  q -= countHoles(played.board) * 5;
+  q += nearComplete(played.board) * 2.5;
+  q += countFree3x3(played.board) * 1.2;
+
+  // per-piece usability on the CURRENT board (multi-option = strategic)
+  let options = 0;
+  for (const p of pieces) options += Math.min(8, countPlacements(board, p, 8));
+  q += options * 0.8;
+
+  // variety: three identical shapes feel scripted and are usually harsh
+  const unique = new Set(pieces.map((p) => p.id)).size;
+  q += (unique - 1) * 3;
+
+  // difficulty ramp: as the score grows, stop over-rewarding comfortable sets
+  q -= steps * dens * 6;
+
+  return q;
+}
+
+/**
+ * Draws three pieces using board analysis + weighted candidate selection.
+ * Guaranteed (when possible) to be fully placeable in some order on the
+ * CURRENT board. Fully deterministic given the rng state.
  */
 export function drawTray(board: Board, state: number, score: number): [Array<PieceDef | null>, number] {
   let s = state;
-  let fallback: Array<PieceDef | null> | null = null;
-  let partial: Array<PieceDef | null> | null = null;
-  for (let attempt = 0; attempt < MAX_TRAY_ATTEMPTS; attempt++) {
-    const tray: Array<PieceDef | null> = [];
+  let fallback: PieceDef[] | null = null;
+  let partial: PieceDef[] | null = null;
+
+  const scored: Array<{ tray: PieceDef[]; q: number }> = [];
+  const seenKeys = new Set<string>();
+
+  const attempts = Math.min(MAX_TRAY_ATTEMPTS, GEN.candidates);
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const tray: PieceDef[] = [];
     for (let i = 0; i < 3; i++) {
       const [p, ns] = drawPiece(s, score);
       tray.push(p);
       s = ns;
     }
     if (!fallback) fallback = tray;
-    if (canPlaceAll(board, tray.filter(Boolean) as PieceDef[])) return [tray, s];
-    if (!partial && tray.some((p) => p && hasAnyPlacement(board, p))) partial = tray;
+
+    const key = tray
+      .map((p) => p.id)
+      .sort()
+      .join("|");
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+
+    if (!canPlaceAll(board, tray)) {
+      if (!partial && tray.some((p) => hasAnyPlacement(board, p))) partial = tray;
+      continue;
+    }
+    const q = evaluateTray(board, tray, score);
+    if (q <= -1e5) continue;
+    scored.push({ tray, q });
+    if (scored.length >= GEN.enough) break;
   }
-  return [(partial ?? fallback) as Array<PieceDef | null>, s];
+
+  if (scored.length === 0) {
+    return [((partial ?? fallback) as PieceDef[]).slice(), s];
+  }
+
+  // shortlist the best combinations, then pick between them with weighted
+  // probability so the result stays varied instead of scripted
+  scored.sort((a, b) => b.q - a.q);
+  const shortlist = scored.slice(0, GEN.shortlist);
+  const top = shortlist[0].q;
+  const bottom = shortlist[shortlist.length - 1].q;
+  const span = Math.max(1, top - bottom);
+
+  const weights = shortlist.map((c) => Math.pow((c.q - bottom) / span + 0.15, GEN.sharpness));
+  const totalW = weights.reduce((a, b) => a + b, 0);
+
+  const [v, ns] = nextRandom(s);
+  s = ns;
+  let target = v * totalW;
+  let chosen = shortlist[0].tray;
+  for (let i = 0; i < shortlist.length; i++) {
+    target -= weights[i];
+    if (target <= 0) {
+      chosen = shortlist[i].tray;
+      break;
+    }
+  }
+
+  return [chosen.slice(), s];
 }
+
 
 
 /* ============================================================
