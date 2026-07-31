@@ -24,9 +24,18 @@ export const Route = createFileRoute("/games/t/$id")({
   component: TournamentPage,
 });
 
-type Row = { rank: number; user_id: string; username: string | null; full_name: string | null; avatar_url: string | null; score: number };
-type Standing = { played: boolean; rank?: number; score?: number; username?: string | null; full_name?: string | null; avatar_url?: string | null };
-type Prize = { place: number; label_ar: string; label_en: string };
+type Row = {
+  rank: number; user_id: string; username: string | null; full_name: string | null;
+  avatar_url: string | null; score: number;
+  level_code?: string | null; level_name_ar?: string | null; level_name_en?: string | null;
+  level_color?: string | null; level_icon?: string | null;
+};
+type Standing = { played: boolean; rank?: number; total?: number; score?: number; username?: string | null; full_name?: string | null; avatar_url?: string | null };
+export type Prize = {
+  place: number; label_ar: string; label_en: string;
+  reward_type?: "coupon" | "coins" | "xp" | "custom" | null;
+  reward_value?: number | null;
+};
 type T = {
   id: string; game_slug: string; title_ar: string; title_en: string; game_path: string | null;
   starts_at: string; ends_at: string; prizes: Prize[]; live_status: "live" | "upcoming" | "ended";
@@ -35,6 +44,15 @@ type T = {
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 const nameOf = (r: { username: string | null; full_name: string | null }) => r.username || r.full_name || "لاعب GX";
+
+const REWARD_ICON: Record<string, string> = { coupon: "🎟️", coins: "🪙", xp: "⚡", custom: "🎁" };
+function rewardText(p: Prize, ar: boolean): string {
+  const v = Number(p.reward_value ?? 0);
+  if (p.reward_type === "coupon" && v > 0) return ar ? `كوبون خصم ${v}%` : `${v}% discount coupon`;
+  if (p.reward_type === "coins" && v > 0) return ar ? `${v.toLocaleString("en-US")} GX Coins` : `${v.toLocaleString("en-US")} GX Coins`;
+  if (p.reward_type === "xp" && v > 0) return ar ? `${v.toLocaleString("en-US")} XP` : `${v.toLocaleString("en-US")} XP`;
+  return ar ? p.label_ar : p.label_en;
+}
 
 function TournamentPage() {
   const { id } = Route.useParams();
@@ -50,7 +68,8 @@ function TournamentPage() {
 
   useEffect(() => {
     let alive = true;
-    (async () => {
+
+    const loadAll = async () => {
       const [list, lb, mine] = await Promise.all([
         supabase.rpc("list_tournaments"),
         supabase.rpc("tournament_leaderboard", { _tournament_id: id, _limit: 20 }),
@@ -61,9 +80,40 @@ function TournamentPage() {
       setT(found);
       setRows(((lb.data ?? []) as unknown as Row[]).map((r) => ({ ...r, rank: Number(r.rank) })));
       setMe((mine.data ?? { played: false }) as unknown as Standing);
-    })();
-    return () => { alive = false; };
+    };
+
+    const loadBoard = async () => {
+      const [lb, mine] = await Promise.all([
+        supabase.rpc("tournament_leaderboard", { _tournament_id: id, _limit: 20 }),
+        supabase.rpc("my_tournament_standing", { _tournament_id: id }),
+      ]);
+      if (!alive) return;
+      setRows(((lb.data ?? []) as unknown as Row[]).map((r) => ({ ...r, rank: Number(r.rank) })));
+      setMe((mine.data ?? { played: false }) as unknown as Standing);
+    };
+
+    void loadAll();
+
+    // live ranking: refresh on an interval and whenever the tab regains focus
+    const iv = window.setInterval(() => { if (!document.hidden) void loadBoard(); }, 10000);
+    const onVis = () => { if (!document.hidden) void loadBoard(); };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onVis);
+
+    const ch = supabase
+      .channel(`tbs-${id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournament_best_scores", filter: `tournament_id=eq.${id}` }, () => void loadBoard())
+      .subscribe();
+
+    return () => {
+      alive = false;
+      window.clearInterval(iv);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onVis);
+      supabase.removeChannel(ch);
+    };
   }, [id]);
+
 
 
 
