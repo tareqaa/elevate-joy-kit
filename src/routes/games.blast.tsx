@@ -208,9 +208,10 @@ function BlastPage() {
   const [dragInfo, setDragInfo] = useState<{ trayIndex: number; piece: PieceDef } | null>(null);
   const [target, setTarget] = useState<Target>(null);
   const [boardLayout, setBoardLayout] = useState<BoardLayout>(() => ({
-    cellPx: 40,
-    boardPx: 40 * BOARD_SIZE + BOARD_GAP_PX * (BOARD_SIZE - 1) + BOARD_PADDING_PX * 2 + BOARD_BORDER_PX * 2,
+    cellPx: 0,
+    boardPx: 0,
   }));
+  const [measured, setMeasured] = useState(false);
   const { boardPx, cellPx: cellSize } = boardLayout;
   const [clearing, setClearing] = useState<Map<number, ClearCell>>(new Map());
   const [placed, setPlaced] = useState<number[]>([]);
