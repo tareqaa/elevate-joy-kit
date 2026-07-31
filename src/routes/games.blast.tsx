@@ -3,6 +3,8 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
+import { supabase } from "@/integrations/supabase/client";
+import { HowToPlaySlides } from "@/components/gx/games/HowToPlaySlides";
 import {
   BOARD_SIZE,
   canPlace,
