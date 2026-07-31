@@ -34,9 +34,9 @@ export const Route = createFileRoute("/games/blast")({
 
 const BEST_KEY = "gx_blast_best";
 const MAX_POPUPS = 4;
-const BOARD_GAP_PX = 4;
-const BOARD_PADDING_PX = 8;
-const BOARD_BORDER_PX = 2;
+const BOARD_GAP_PX = 1;
+const BOARD_PADDING_PX = 6;
+const BOARD_BORDER_PX = 0;
 const BOARD_RESIZE_DEBOUNCE_MS = 120;
 
 type BoardLayout = { boardPx: number; cellPx: number };
@@ -51,35 +51,53 @@ function calculateBoardLayout(availableWidth: number, availableHeight: number): 
   };
 }
 
-/* --- VISUAL-ONLY palette: Block Blast style, bright but not neon --- */
+/** bevel band thickness ~12% of the cube side, always an integer number of px */
+function bevelPx(cell: number): number {
+  return Math.max(2, Math.floor(cell * 0.12));
+}
+
+/* --- VISUAL-ONLY palette: classic block-puzzle, moderately saturated --- */
 const VIVID: Record<number, string> = {
-  1: "#43a7ea", // blue
-  2: "#ef5f6b", // red
-  3: "#5fc76c", // green
-  4: "#a274e2", // purple
-  5: "#f0c24e", // yellow
-  6: "#6b8ee8", // indigo
-  7: "#46c6b2", // teal
-  8: "#f082b4", // pink
-  9: "#f2924f", // orange
+  1: "#5BC8E8", // سماوي
+  2: "#3B6FE0", // أزرق
+  3: "#52B84E", // أخضر
+  4: "#F0C040", // أصفر ذهبي
+  5: "#8A5BD6", // بنفسجي
+  6: "#E8862E", // برتقالي
+  7: "#D9483F", // أحمر
+  8: "#F0C040", // أصفر ذهبي
+  9: "#E8862E", // برتقالي
 };
 
-/** pre-built once: no new style object per cell per frame (keeps memo intact) */
+function mixHex(hex: string, target: number, amount: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) =>
+    Math.round(v + (target - v) * amount),
+  );
+  return "#" + ch.map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+/** pre-built once: flat face + light/dark chamfer drawn with inner borders only */
 const FACES: Record<number, React.CSSProperties> = Object.fromEntries(
-  Object.entries(VIVID).map(([k, c]) => [
-    Number(k),
-    {
-      // flat colour with a very subtle inner gradient — no glow, no outer shadow
-      backgroundImage: `linear-gradient(180deg, color-mix(in oklab, ${c} 96%, #ffffff) 0%, ${c} 60%, color-mix(in oklab, ${c} 95%, #000000) 100%)`,
-      boxShadow: `inset 0 0 0 1.5px color-mix(in oklab, ${c} 90%, #ffffff)`,
-    } as React.CSSProperties,
-  ]),
+  Object.entries(VIVID).map(([k, c]) => {
+    const light = mixHex(c, 255, 0.28);
+    const dark = mixHex(c, 0, 0.24);
+    return [
+      Number(k),
+      {
+        backgroundColor: c,
+        borderStyle: "solid",
+        borderColor: `${light} ${dark} ${dark} ${light}`,
+      } as React.CSSProperties,
+    ];
+  }),
 ) as Record<number, React.CSSProperties>;
 
 
 function face(colorId: number): React.CSSProperties | undefined {
   return FACES[colorId];
 }
+
 
 type DragState = {
   trayIndex: number;
