@@ -624,6 +624,10 @@ function BlastPage() {
   const diff = game.score - bestAtStart;
   const timedOut = game.endReason === "timeout";
   const trayCell = Math.max(12, Math.round((boardPx || 320) / 8 * 0.52));
+  /* fixed tray box: never grows/shrinks with the piece shape (5-long line, 3x3, ...) */
+  const trayBoxPx = trayCell * 4;
+  const trayCellFor = (w: number, h: number) =>
+    Math.max(6, Math.min(trayCell, Math.floor(trayBoxPx / Math.max(w, h))));
 
   const hud = (
     <>
