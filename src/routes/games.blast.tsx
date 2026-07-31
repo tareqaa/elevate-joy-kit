@@ -110,7 +110,9 @@ function BlastPage() {
   const popupId = useRef(1);
   const prevStreak = useRef(0);
   const prevTrayCount = useRef(3);
+  const prevLimit = useRef(0);
   const moveStart = useRef<number>(0);
+
 
   /* ----- best score (local only) ----- */
   useEffect(() => {
