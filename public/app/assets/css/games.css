@@ -288,7 +288,7 @@
 }
 .blast-timer i{
   display:block; width:100%; height:6px; border-radius:999px 999px 0 0;
-  transform-origin:right center; will-change:transform;
+  transform-origin:left center; will-change:transform;
   background:linear-gradient(90deg,#3f8f7e,#4f9fc4);
 }
 .blast-timer b{
@@ -313,36 +313,11 @@
 /* logical grid must never mirror in RTL */
 .blast-board,.blast-tray,.bt-piece,.bb-ghost{direction:ltr;}
 
-/* ---- wide screens: HUD moves to the side so the board grows ---- */
+/* ---- wide screens: keep one centred column, just wider ---- */
 @media (min-width:1000px){
-  .blast-panel{
-    display:flex; flex-direction:column; justify-content:center; gap:14px;
-    width:300px; flex:0 0 300px;
-  }
-  .blast-panel-inline{display:none;}
-  .blast-panel .blast-hud{
-    margin:0; width:100%; grid-template-columns:1fr 1fr; gap:10px;
-    grid-template-areas:"score score" "best streak";
-  }
-  .blast-panel .hud-main{
-    grid-area:score; padding:16px 12px; border-radius:18px;
-    border:1.5px solid var(--border); background:rgba(255,255,255,.03);
-  }
-  .blast-panel .blast-hud .hud-side:first-child{grid-area:best; justify-self:stretch;}
-  .blast-panel .blast-hud .hud-side:last-child{grid-area:streak; justify-self:stretch;}
-  .blast-panel .blast-timer{width:100%; max-width:none;}
-  .blast-tray{max-width:560px; margin:0 auto; width:100%;}
+  .blast-play{max-width:none;}
+  .blast-hud{gap:16px;}
 }
-
-/* ---- performance mode: keep only the essentials ---- */
-.blast-fs.lowfx .bb-cell.clearing,
-.blast-fs.lowfx .bb-cell.clearing::after,
-.blast-fs.lowfx .bt-piece.enter,
-.blast-fs.lowfx .bo-ribbon i,
-.blast-fs.lowfx .blast-timer.urgent b,
-.blast-fs.lowfx .hud-streak.broke{animation:none;}
-.blast-fs.lowfx .blast-board.danger{box-shadow:none;}
-.blast-fs.lowfx .bb-cell{transition:none;}
 
 @media (prefers-reduced-motion:reduce){
   .bb-cell.popped,.bt-piece.enter,.bo-ribbon i,.hud-streak.broke,
