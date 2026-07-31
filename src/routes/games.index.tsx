@@ -160,7 +160,7 @@ function GamesPage() {
                               ? "تبدأ خلال"
                               : "Starts in"}
                       </span>
-                      <b>
+                      <b dir="ltr" style={{ unicodeBidi: "isolate" }}>
                         {live
                           ? fmtLeft(t.end - now, ar)
                           : ended
