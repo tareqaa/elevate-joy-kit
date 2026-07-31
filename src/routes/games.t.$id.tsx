@@ -366,16 +366,10 @@ function TournamentPage() {
             <div className="tp-modal-card" onClick={(e) => e.stopPropagation()}>
               <h3 className="tp-modal-t">{ar ? "كل جوائز البطولة" : "All tournament prizes"}</h3>
               <div className="przlist scroll">
-                {sortedPrizes.map((p, i) => {
-                  const place = p.place ?? i + 1;
-                  return (
-                    <div key={place} className={`przrow g${Math.min(place, 4)}`}>
-                      <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
-                      <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
-                      <span>{p.reward_type && p.reward_type !== "custom" ? `${REWARD_ICON[p.reward_type]} ${rewardText(p, ar)}` : rewardText(p, ar)}</span>
-                    </div>
-                  );
-                })}
+                {sortedPrizes.map((p, i) => (
+                  <PrizeRow key={p.place ?? i + 1} p={p} place={p.place ?? i + 1} ar={ar} />
+                ))}
+
               </div>
               <button type="button" className="btn btn-primary" onClick={() => setPrizesOpen(false)}>
                 {ar ? "إغلاق" : "Close"}
