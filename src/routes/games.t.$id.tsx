@@ -6,8 +6,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
-import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
-import { fetchMyLoyalty, type MyLoyalty } from "@/lib/gx/loyalty";
+import { formatCountdownFull, formatDateTime } from "@/lib/gx/games/time";
 
 export const Route = createFileRoute("/games/t/$id")({
   ssr: false,
