@@ -45,7 +45,7 @@ function TournamentPage() {
   const [t, setT] = useState<T | null | undefined>(undefined);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [me, setMe] = useState<Standing | null>(null);
-  const [loyalty, setLoyalty] = useState<MyLoyalty | null>(null);
+  const [prizesOpen2] = useState(false);
   const [prizesOpen, setPrizesOpen] = useState(false);
 
   useEffect(() => {
@@ -65,13 +65,8 @@ function TournamentPage() {
     return () => { alive = false; };
   }, [id]);
 
-  useEffect(() => {
-    let alive = true;
-    fetchMyLoyalty()
-      .then((l) => { if (alive) setLoyalty(l); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, []);
+
+
 
   // ---- tournament registration (must join before playing) ----
   const [registered, setRegistered] = useState<boolean | null>(null);
