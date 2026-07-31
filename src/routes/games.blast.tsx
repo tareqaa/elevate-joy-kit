@@ -811,6 +811,8 @@ function BlastPage() {
             style={{
               gap: 0,
               pointerEvents: "none",
+              ["--bevel" as string]: `${bevelPx(cellSize)}px`,
+
               gridTemplateColumns: `repeat(${dragInfo.piece.w}, ${cellSize}px)`,
               gridTemplateRows: `repeat(${dragInfo.piece.h}, ${cellSize}px)`,
             }}
