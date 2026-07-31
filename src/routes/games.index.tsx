@@ -60,7 +60,7 @@ function useServerClock(serverNow: string) {
 /** visual only: sums the GX Coins across all rewards for a "prize pool" figure */
 export function prizePool(prizes: TournamentPrize[]): number {
   return prizes.reduce((sum, p) => {
-    const rewards = prizeRewards(p as never);
+    const rewards = prizeRewards(p as unknown as PrizeModel);
     const fromRewards = rewards
       .filter((r) => r.type === "coins")
       .reduce((s, r) => s + (Number(r.value ?? 0) || 0), 0);
