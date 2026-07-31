@@ -305,20 +305,19 @@ function BlastPage() {
     };
   }, []);
 
-  /* ----- integer-pixel board layout, recalculated only after a real viewport resize ----- */
+  /* ----- integer-pixel board layout, always live via ResizeObserver ----- */
   useLayoutEffect(() => {
     const el = areaRef.current;
     if (!el) return;
 
-    let done = false;
     const apply = () => {
       const r = el.getBoundingClientRect();
+      // ignore measurements taken before the HUD / tray have laid out
       if (r.width < 40 || r.height < 40) return;
       const next = calculateBoardLayout(r.width, r.height);
       setBoardLayout((current) =>
         current.boardPx === next.boardPx && current.cellPx === next.cellPx ? current : next,
       );
-      done = true;
       setMeasured(true);
     };
 
@@ -328,26 +327,30 @@ function BlastPage() {
       timer = window.setTimeout(apply, BOARD_RESIZE_DEBOUNCE_MS);
     };
 
-    apply();
-    const raf = requestAnimationFrame(apply);
-    const ro = new ResizeObserver(() => {
-      if (!done) apply();
+    // measure after the browser has painted every sibling element
+    const raf1 = requestAnimationFrame(() => {
+      apply();
     });
+    const raf2 = requestAnimationFrame(apply);
+
+    const ro = new ResizeObserver(schedule);
     ro.observe(el);
-    const settle = window.setTimeout(() => ro.disconnect(), 1500);
+    if (el.parentElement) ro.observe(el.parentElement);
     window.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("orientationchange", schedule);
     window.visualViewport?.addEventListener("resize", schedule, { passive: true });
     return () => {
       window.clearTimeout(timer);
-      window.clearTimeout(settle);
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
       ro.disconnect();
       window.removeEventListener("resize", schedule);
       window.removeEventListener("orientationchange", schedule);
       window.visualViewport?.removeEventListener("resize", schedule);
     };
-  }, []);
+    // re-measure at the start of every new round
+  }, [game.seed]);
+
 
   /* ----- best score (local only) ----- */
   useEffect(() => {
