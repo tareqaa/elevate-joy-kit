@@ -410,15 +410,17 @@ function BlastPage() {
   const previewCells = useMemo(() => {
     const map = new Map<number, boolean>();
     const d = dragInfo;
-    if (!d || !target) return map;
+    // never show a partial / out-of-board preview: valid placements only
+    if (!d || !target || !target.ok) return map;
     for (const [dr, dc] of d.piece.cells) {
       const r = target.row + dr;
       const c = target.col + dc;
       if (r < 0 || c < 0 || r >= BOARD_SIZE || c >= BOARD_SIZE) continue;
-      map.set(idx(r, c), target.ok);
+      map.set(idx(r, c), true);
     }
     return map;
   }, [dragInfo, target]);
+
 
   const deadTray = useMemo(
     () => game.tray.map((p) => (p ? !hasAnyPlacement(game.board, p) : false)),
