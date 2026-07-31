@@ -184,9 +184,9 @@ function GamesPage() {
                     )}
 
                     {live && t.game_path ? (
-                      <button type="button" className="btn btn-primary trn-btn" onClick={() => setOpenId(t.id)}>
+                      <Link to="/games/t/$id" params={{ id: t.id }} className="btn btn-primary trn-btn">
                         {ar ? "ادخل البطولة" : "Enter tournament"}
-                      </button>
+                      </Link>
                     ) : (
                       <button type="button" className="btn trn-btn trn-btn-off" disabled>
                         {ended
@@ -205,21 +205,6 @@ function GamesPage() {
           )}
         </section>
 
-        {openId && (() => {
-          const t = cards.find((c) => c.id === openId);
-          if (!t || !t.game_path) return null;
-          return (
-            <TournamentEntryModal
-              tournamentId={t.id}
-              title={ar ? t.title_ar : t.title_en}
-              gameSlug={t.game_slug}
-              gamePath={t.game_path}
-              endsAt={t.ends_at}
-              serverNow={serverNow}
-              onClose={() => setOpenId(null)}
-            />
-          );
-        })()}
       </main>
     </StoreShell>
   );
