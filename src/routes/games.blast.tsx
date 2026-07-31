@@ -600,25 +600,21 @@ function BlastPage() {
     </>
   );
 
+  const blockStyle = boardPx ? ({ width: boardPx } as React.CSSProperties) : undefined;
+
   return (
     <StoreShell bare>
-      <main dir={dir} className={"blast-page blast-fs" + (lowFx ? " lowfx" : "")}>
+      <main dir={dir} className="blast-page blast-fs">
         <header className="blast-bar">
           <Link to="/games" className="blast-back">{ar ? "‹ ساحة اللعب" : "‹ Play Arena"}</Link>
-          <button
-            type="button"
-            className={"blast-perf" + (lowFx ? " on" : "")}
-            onClick={togglePerf}
-            aria-pressed={lowFx}
-          >
-            ⚡ {ar ? "وضع الأداء" : "Performance"}
-          </button>
         </header>
 
         <section className="blast-stage">
-          <aside className="blast-panel">{hud}</aside>
-
           <div className="blast-play">
+            <div className="blast-column" style={blockStyle}>
+              {hud}
+            </div>
+
             <div className="blast-area" ref={areaRef}>
               <div
                 className="blast-wrap"
@@ -630,6 +626,7 @@ function BlastPage() {
                   dir="ltr"
                   className={"blast-board" + (fillRatio > 0.75 ? " danger" : "")}
                 >
+
                   {game.board.map((v, i) => {
                     const row = Math.floor(i / BOARD_SIZE);
                     const col = i % BOARD_SIZE;
