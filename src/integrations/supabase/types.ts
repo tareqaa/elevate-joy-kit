@@ -381,6 +381,92 @@ export type Database = {
         }
         Relationships: []
       }
+      game_tournament_scores: {
+        Row: {
+          created_at: string
+          id: string
+          score: number
+          tournament_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          score?: number
+          tournament_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          score?: number
+          tournament_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_tournament_scores_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "game_tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_tournaments: {
+        Row: {
+          created_at: string
+          ends_at: string
+          game_icon: string
+          game_path: string | null
+          game_slug: string
+          id: string
+          is_active: boolean
+          prizes: Json
+          sort_order: number
+          starts_at: string
+          status: string
+          title_ar: string
+          title_en: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          game_icon?: string
+          game_path?: string | null
+          game_slug: string
+          id?: string
+          is_active?: boolean
+          prizes?: Json
+          sort_order?: number
+          starts_at: string
+          status?: string
+          title_ar: string
+          title_en: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          game_icon?: string
+          game_path?: string | null
+          game_slug?: string
+          id?: string
+          is_active?: boolean
+          prizes?: Json
+          sort_order?: number
+          starts_at?: string
+          status?: string
+          title_ar?: string
+          title_en?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gx_coin_transactions: {
         Row: {
           amount: number
@@ -1594,6 +1680,24 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      list_tournaments: {
+        Args: never
+        Returns: {
+          ends_at: string
+          game_icon: string
+          game_path: string
+          game_slug: string
+          id: string
+          live_status: string
+          participants: number
+          prizes: Json
+          server_now: string
+          starts_at: string
+          title_ar: string
+          title_en: string
+          top_score: number
+        }[]
       }
       log_admin_action: {
         Args: {
