@@ -11,7 +11,8 @@
    cut-off edge is ever visible. No blur filters (perf). */
 .hero::before{
   content:""; position:absolute; z-index:-1; pointer-events:none;
-  inset-inline:0; top:-340px; bottom:-300px;
+  left:50%; transform:translateX(-50%); width:100vw; max-width:none;
+  top:-340px; bottom:-300px;
   background:
     radial-gradient(1100px 720px at 78% 34%, rgba(0,229,255,0.16), rgba(0,229,255,0) 72%),
     radial-gradient(1000px 720px at 18% 76%, rgba(255,45,120,0.14), rgba(255,45,120,0) 72%),
