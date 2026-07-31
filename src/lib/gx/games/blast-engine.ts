@@ -288,6 +288,11 @@ function simulatePlacement(board: Board, piece: PieceDef, row: number, col: numb
  */
 export function canPlaceAll(board: Board, pieces: PieceDef[]): boolean {
   if (pieces.length === 0) return true;
+  // cheap prune: if any single piece fits nowhere right now, no order can work
+  if (pieces.length > 1 && !pieces.every((p) => hasAnyPlacement(board, p))) {
+    // it may still fit after a clear, so only prune when nothing clears
+    if (!pieces.some((p) => hasAnyPlacement(board, p))) return false;
+  }
   const seen = new Set<string>();
   for (let i = 0; i < pieces.length; i++) {
     const piece = pieces[i];
