@@ -33,7 +33,6 @@ export const Route = createFileRoute("/games/blast")({
 });
 
 const BEST_KEY = "gx_blast_best";
-const PERF_KEY = "gx_blast_perf";
 const MAX_POPUPS = 4;
 
 /* --- VISUAL-ONLY palette override (engine colour ids -> calm, low-glare hex) --- */
@@ -206,7 +205,6 @@ function BlastPage() {
   const [finalScore, setFinalScore] = useState(0);
   const [paused, setPaused] = useState(false);
   const [speedNote, setSpeedNote] = useState<{ id: number; text: string } | null>(null);
-  const [lowFx, setLowFx] = useState(false);
 
   const boardRef = useRef<HTMLDivElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -225,24 +223,6 @@ function BlastPage() {
   gameRef.current = game;
   const cellRef = useRef(cellSize);
   cellRef.current = cellSize;
-
-  /* ----- performance mode: auto-detect weak devices + manual switch ----- */
-  useEffect(() => {
-    let saved: string | null = null;
-    try { saved = localStorage.getItem(PERF_KEY); } catch { /* ignore */ }
-    if (saved === "1" || saved === "0") { setLowFx(saved === "1"); return; }
-    const cores = navigator.hardwareConcurrency ?? 8;
-    const area = window.screen.width * window.screen.height;
-    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    setLowFx(Boolean(reduced) || cores <= 4 || area < 190000);
-  }, []);
-  const togglePerf = useCallback(() => {
-    setLowFx((v) => {
-      const n = !v;
-      try { localStorage.setItem(PERF_KEY, n ? "1" : "0"); } catch { /* ignore */ }
-      return n;
-    });
-  }, []);
 
   /* ----- no page scrolling at all while the game is mounted ----- */
   useEffect(() => {
@@ -323,7 +303,6 @@ function BlastPage() {
   /* ----- animated score count-up ----- */
   useEffect(() => {
     if (shownScore === game.score) return;
-    if (lowFx) { setShownScore(game.score); return; }
     let raf = 0;
     const start = shownScore;
     const diff = game.score - start;
@@ -338,12 +317,11 @@ function BlastPage() {
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game.score, lowFx]);
+  }, [game.score]);
 
   /* ----- game over: big count-up ----- */
   useEffect(() => {
     if (!game.over) { setFinalScore(0); return; }
-    if (lowFx) { setFinalScore(game.score); return; }
     let raf = 0;
     const t0 = performance.now();
     const step = (t: number) => {
@@ -354,7 +332,7 @@ function BlastPage() {
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [game.over, game.score, lowFx]);
+  }, [game.over, game.score]);
 
   const timerActive = !game.over && !paused;
   const onExpire = useCallback(() => setGame((g) => timeoutGame(g)), []);
@@ -466,7 +444,7 @@ function BlastPage() {
     setTimeout(() => setPlaced([]), 240);
 
     if (res.lines > 0) {
-      if (!lowFx) {
+      {
         const map = new Map<number, ClearCell>();
         for (const r of res.clearedRows) {
           for (let c = 0; c < BOARD_SIZE; c++) {
@@ -500,14 +478,14 @@ function BlastPage() {
         setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 900);
       }
 
-      if (!lowFx) {
+      {
         const size = res.gained >= 600 ? 3 : res.gained >= 300 ? 2 : 1;
         spawnPopup(`+${res.gained}`, t.row, t.col, size);
       }
     }
 
     setGame(res.state);
-  }, [ar, lowFx, spawnPopup]);
+  }, [ar, spawnPopup]);
 
   /* window-level listeners: the pointer may leave the board mid-drag */
   useEffect(() => {
@@ -695,8 +673,6 @@ function BlastPage() {
                 )}
               </div>
             </div>
-
-            <div className="blast-panel-inline">{hud}</div>
 
             <div
               className="blast-tray"
