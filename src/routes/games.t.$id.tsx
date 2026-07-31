@@ -173,7 +173,7 @@ function TournamentPage() {
             <div className="ar-stats">
               <div className="ar-stat live">
                 <span>{status === "live" ? (ar ? "تنتهي بعد" : "Ends in") : status === "ended" ? (ar ? "انتهت في" : "Ended on") : (ar ? "تبدأ بعد" : "Starts in")}</span>
-                <b style={{ unicodeBidi: "isolate" }}>{status === "ended" ? formatDateTime(t.ends_at, ar) : formatCountdown(target, ar)}</b>
+                <b style={{ unicodeBidi: "isolate" }}>{status === "ended" ? formatDateTime(t.ends_at, ar) : formatCountdownFull(target, ar)}</b>
               </div>
               <div className="ar-stat">
                 <span>{ar ? "المشاركون" : "Players"}</span>
@@ -210,21 +210,8 @@ function TournamentPage() {
           </div>
         </header>
 
-        {/* ---- player dashboard: competition only (XP/level live in the profile) ---- */}
-        <div className="adash adash-3">
-          <div className="adash-c rank">
-            <span>{ar ? "ترتيبك" : "Your rank"}</span>
-            <b>{me?.played && me.rank ? `#${me.rank}` : "—"}</b>
-          </div>
-          <div className="adash-c">
-            <span>{ar ? "أفضل نتيجة" : "Best score"}</span>
-            <b>{(me?.score ?? 0).toLocaleString("en-US")}</b>
-          </div>
-          <div className="adash-c coins">
-            <span>{ar ? "رصيد GX Coins" : "GX Coins"}</span>
-            <b>{(loyalty?.coins ?? 0).toLocaleString("en-US")}</b>
-          </div>
-        </div>
+
+
 
         <div className="tp-grid">
           <section className="tp-card tp-board">
