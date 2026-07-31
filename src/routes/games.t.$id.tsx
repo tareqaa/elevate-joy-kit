@@ -24,9 +24,18 @@ export const Route = createFileRoute("/games/t/$id")({
   component: TournamentPage,
 });
 
-type Row = { rank: number; user_id: string; username: string | null; full_name: string | null; avatar_url: string | null; score: number };
-type Standing = { played: boolean; rank?: number; score?: number; username?: string | null; full_name?: string | null; avatar_url?: string | null };
-type Prize = { place: number; label_ar: string; label_en: string };
+type Row = {
+  rank: number; user_id: string; username: string | null; full_name: string | null;
+  avatar_url: string | null; score: number;
+  level_code?: string | null; level_name_ar?: string | null; level_name_en?: string | null;
+  level_color?: string | null; level_icon?: string | null;
+};
+type Standing = { played: boolean; rank?: number; total?: number; score?: number; username?: string | null; full_name?: string | null; avatar_url?: string | null };
+export type Prize = {
+  place: number; label_ar: string; label_en: string;
+  reward_type?: "coupon" | "coins" | "xp" | "custom" | null;
+  reward_value?: number | null;
+};
 type T = {
   id: string; game_slug: string; title_ar: string; title_en: string; game_path: string | null;
   starts_at: string; ends_at: string; prizes: Prize[]; live_status: "live" | "upcoming" | "ended";
@@ -35,6 +44,15 @@ type T = {
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 const nameOf = (r: { username: string | null; full_name: string | null }) => r.username || r.full_name || "لاعب GX";
+
+const REWARD_ICON: Record<string, string> = { coupon: "🎟️", coins: "🪙", xp: "⚡", custom: "🎁" };
+function rewardText(p: Prize, ar: boolean): string {
+  const v = Number(p.reward_value ?? 0);
+  if (p.reward_type === "coupon" && v > 0) return ar ? `كوبون خصم ${v}%` : `${v}% discount coupon`;
+  if (p.reward_type === "coins" && v > 0) return ar ? `${v.toLocaleString("en-US")} GX Coins` : `${v.toLocaleString("en-US")} GX Coins`;
+  if (p.reward_type === "xp" && v > 0) return ar ? `${v.toLocaleString("en-US")} XP` : `${v.toLocaleString("en-US")} XP`;
+  return ar ? p.label_ar : p.label_en;
+}
 
 function TournamentPage() {
   const { id } = Route.useParams();
@@ -50,7 +68,8 @@ function TournamentPage() {
 
   useEffect(() => {
     let alive = true;
-    (async () => {
+
+    const loadAll = async () => {
       const [list, lb, mine] = await Promise.all([
         supabase.rpc("list_tournaments"),
         supabase.rpc("tournament_leaderboard", { _tournament_id: id, _limit: 20 }),
@@ -61,9 +80,40 @@ function TournamentPage() {
       setT(found);
       setRows(((lb.data ?? []) as unknown as Row[]).map((r) => ({ ...r, rank: Number(r.rank) })));
       setMe((mine.data ?? { played: false }) as unknown as Standing);
-    })();
-    return () => { alive = false; };
+    };
+
+    const loadBoard = async () => {
+      const [lb, mine] = await Promise.all([
+        supabase.rpc("tournament_leaderboard", { _tournament_id: id, _limit: 20 }),
+        supabase.rpc("my_tournament_standing", { _tournament_id: id }),
+      ]);
+      if (!alive) return;
+      setRows(((lb.data ?? []) as unknown as Row[]).map((r) => ({ ...r, rank: Number(r.rank) })));
+      setMe((mine.data ?? { played: false }) as unknown as Standing);
+    };
+
+    void loadAll();
+
+    // live ranking: refresh on an interval and whenever the tab regains focus
+    const iv = window.setInterval(() => { if (!document.hidden) void loadBoard(); }, 10000);
+    const onVis = () => { if (!document.hidden) void loadBoard(); };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onVis);
+
+    const ch = supabase
+      .channel(`tbs-${id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournament_best_scores", filter: `tournament_id=eq.${id}` }, () => void loadBoard())
+      .subscribe();
+
+    return () => {
+      alive = false;
+      window.clearInterval(iv);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onVis);
+      supabase.removeChannel(ch);
+    };
   }, [id]);
+
 
 
 
@@ -144,9 +194,6 @@ function TournamentPage() {
   }
 
   const target = status === "live" ? new Date(t.ends_at).getTime() - now : new Date(t.starts_at).getTime() - now;
-  const top3 = (rows ?? []).slice(0, 3);
-  const rest = (rows ?? []).slice(3);
-  const meInTop = !!me?.played && !!me.rank && me.rank <= 20;
   
 
   return (
@@ -209,64 +256,80 @@ function TournamentPage() {
 
         <div className="tp-grid">
           <section className="tp-card tp-board">
-            <h2>{ar ? "الترتيب المباشر" : "Live leaderboard"}</h2>
-            <div className="tlb">
+            <div className="lb-head">
+              <h2>{ar ? "الترتيب المباشر" : "Live leaderboard"}</h2>
+              <span className="lb-live"><i />{ar ? "مباشر" : "Live"}</span>
+            </div>
+
+            <div className="lb">
+              <div className="lb-cols">
+                <span className="c-r">#</span>
+                <span className="c-p">{ar ? "اللاعب" : "Player"}</span>
+                <span className="c-s">{ar ? "النقاط" : "Score"}</span>
+              </div>
+
               {rows === null ? (
                 <p className="tlb-empty">{ar ? "جارِ تحميل الترتيب…" : "Loading…"}</p>
               ) : rows.length === 0 ? (
                 <p className="tlb-empty">{ar ? "لا يوجد لاعبون بعد — كن أول من يسجّل سكور!" : "No players yet."}</p>
               ) : (
-                <>
-                  <div className="podium">
-                    {top3.map((r) => (
-                      <div key={r.user_id} className={`pod p${r.rank}`} style={{ animationDelay: `${r.rank * 80}ms` }}>
-                        {r.avatar_url ? (
-                          <img src={r.avatar_url} alt="" className="pod-av" loading="lazy" />
-                        ) : (
-                          <span className="pod-av ph">{nameOf(r).slice(0, 1)}</span>
-                        )}
-                        <span className="pod-rank">#{r.rank}</span>
-                        <span className="pod-name">{nameOf(r)}</span>
-                        <span className="pod-score" dir="ltr">{r.score.toLocaleString("en-US")}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div>
-                    {rest.map((r, i) => (
-                      <div
-                        key={r.user_id}
-                        className={"lbrow" + (me?.played && me.rank === r.rank ? " me" : "")}
-                        style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}
-                      >
-                        <span className="r">{r.rank}</span>
-                        {r.avatar_url ? <img src={r.avatar_url} alt="" className="av" loading="lazy" /> : <span className="av ph">{nameOf(r).slice(0, 1)}</span>}
-                        <span className="nm">{nameOf(r)}</span>
-                        <b className="sc" dir="ltr">{r.score.toLocaleString("en-US")}</b>
-                      </div>
-                    ))}
-                  </div>
-                </>
+                <div className="lb-body">
+                  {rows.map((r) => {
+                    const mine = me?.played && me.rank === r.rank;
+                    const glow = r.level_color || "#4aa8ff";
+                    const inner = (
+                      <>
+                        <span className={"lb-r" + (r.rank <= 3 ? ` top t${r.rank}` : "")}>
+                          {r.rank <= 3 ? MEDALS[r.rank - 1] : r.rank}
+                        </span>
+                        <span className="lb-avwrap" style={{ ["--glow" as string]: glow }}>
+                          {r.avatar_url
+                            ? <img src={r.avatar_url} alt="" className="lb-av" loading="lazy" decoding="async" />
+                            : <span className="lb-av ph">{nameOf(r).slice(0, 1)}</span>}
+                          {r.level_icon ? <i className="lb-lvl" style={{ borderColor: glow }}>{r.level_icon}</i> : null}
+                        </span>
+                        <span className="lb-who">
+                          <b className="lb-nm">{nameOf(r)}</b>
+                          {(ar ? r.level_name_ar : r.level_name_en) ? (
+                            <em className="lb-lvlname" style={{ color: glow }}>{ar ? r.level_name_ar : r.level_name_en}</em>
+                          ) : null}
+                        </span>
+                        <b className="lb-sc" dir="ltr">{r.score.toLocaleString("en-US")}</b>
+                      </>
+                    );
+                    const cls = "lb-row" + (mine ? " me" : "") + (r.rank <= 3 ? ` t${r.rank}` : "");
+                    return r.username ? (
+                      <Link key={r.user_id} to="/u/$username" params={{ username: r.username }} className={cls}>
+                        {inner}
+                      </Link>
+                    ) : (
+                      <div key={r.user_id} className={cls}>{inner}</div>
+                    );
+                  })}
+                </div>
               )}
 
               {/* always-visible "you" row, even outside the top 20 */}
-              <div className={"lbrow me me-sticky"}>
+              <div className="lb-row me sticky">
                 {me?.played ? (
                   <>
-                    <span className="r">{me.rank}</span>
-                    {me.avatar_url ? <img src={me.avatar_url} alt="" className="av" /> : <span className="av ph">{ar ? "أنا" : "Me"}</span>}
-                    <span className="nm">
-                      {ar ? "مركزك" : "Your rank"} — {nameOf({ username: me.username ?? null, full_name: me.full_name ?? null })}
-                      {meInTop ? "" : ar ? " (خارج العشرين الأوائل)" : " (outside top 20)"}
+                    <span className="lb-r">{me.rank}</span>
+                    <span className="lb-avwrap">
+                      {me.avatar_url ? <img src={me.avatar_url} alt="" className="lb-av" /> : <span className="lb-av ph">{ar ? "أنا" : "Me"}</span>}
                     </span>
-                    <b className="sc" dir="ltr">{(me.score ?? 0).toLocaleString("en-US")}</b>
+                    <span className="lb-who">
+                      <b className="lb-nm">{ar ? "مركزك" : "Your rank"} — {nameOf({ username: me.username ?? null, full_name: me.full_name ?? null })}</b>
+                      {me.total ? <em className="lb-lvlname">{ar ? `من ${me.total} لاعب` : `of ${me.total} players`}</em> : null}
+                    </span>
+                    <b className="lb-sc" dir="ltr">{(me.score ?? 0).toLocaleString("en-US")}</b>
                   </>
                 ) : (
-                  <span className="nm">{ar ? "لم تلعب بعد — جولة واحدة تكفي لتدخل الترتيب 💪" : "Play one round to enter the ranking 💪"}</span>
+                  <span className="lb-who"><b className="lb-nm">{ar ? "لم تلعب بعد — جولة واحدة تكفي لتدخل الترتيب 💪" : "Play one round to enter the ranking 💪"}</b></span>
                 )}
               </div>
             </div>
           </section>
+
 
           <aside className="tp-side">
             <section className="tp-card">
@@ -282,7 +345,7 @@ function TournamentPage() {
                         <div key={place} className={`przrow g${Math.min(place, 4)}`}>
                           <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
                           <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
-                          <span>{ar ? p.label_ar : p.label_en}</span>
+                          <span>{p.reward_type && p.reward_type !== "custom" ? `${REWARD_ICON[p.reward_type]} ${rewardText(p, ar)}` : rewardText(p, ar)}</span>
                         </div>
                       );
                     })}
@@ -309,7 +372,7 @@ function TournamentPage() {
                     <div key={place} className={`przrow g${Math.min(place, 4)}`}>
                       <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
                       <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
-                      <span>{ar ? p.label_ar : p.label_en}</span>
+                      <span>{p.reward_type && p.reward_type !== "custom" ? `${REWARD_ICON[p.reward_type]} ${rewardText(p, ar)}` : rewardText(p, ar)}</span>
                     </div>
                   );
                 })}

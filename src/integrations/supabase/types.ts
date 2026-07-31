@@ -1818,6 +1818,11 @@ export type Database = {
         Returns: {
           avatar_url: string
           full_name: string
+          level_code: string
+          level_color: string
+          level_icon: string
+          level_name_ar: string
+          level_name_en: string
           rank: number
           score: number
           user_id: string

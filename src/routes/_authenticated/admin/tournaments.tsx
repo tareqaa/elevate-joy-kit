@@ -16,7 +16,27 @@ export const Route = createFileRoute("/_authenticated/admin/tournaments")({
   component: TournamentsAdmin,
 });
 
-type Prize = { place: number; label_ar: string; label_en: string };
+type RewardType = "coupon" | "coins" | "xp" | "custom";
+type Prize = {
+  place: number;
+  label_ar: string;
+  label_en: string;
+  reward_type?: RewardType;
+  reward_value?: number | null;
+};
+const REWARD_TYPES: { v: RewardType; label: string }[] = [
+  { v: "coupon", label: "كوبون خصم %" },
+  { v: "coins", label: "GX Coins" },
+  { v: "xp", label: "XP" },
+  { v: "custom", label: "جائزة مخصصة" },
+];
+function autoLabels(type: RewardType, value: number): { label_ar: string; label_en: string } | null {
+  if (!value) return null;
+  if (type === "coupon") return { label_ar: `كوبون خصم ${value}%`, label_en: `${value}% discount coupon` };
+  if (type === "coins") return { label_ar: `${value} GX Coins`, label_en: `${value} GX Coins` };
+  if (type === "xp") return { label_ar: `${value} XP`, label_en: `${value} XP` };
+  return null;
+}
 type Row = {
   id: string;
   game_slug: string;
@@ -303,7 +323,7 @@ function TournamentsAdmin() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">الجوائز (عدد الفائزين: {(edit.prizes ?? []).length})</span>
-                  <Button size="sm" variant="outline" onClick={() => setEdit({ ...edit, prizes: [...(edit.prizes ?? []), { place: (edit.prizes ?? []).length + 1, label_ar: "", label_en: "" }] })}>
+                  <Button size="sm" variant="outline" onClick={() => setEdit({ ...edit, prizes: [...(edit.prizes ?? []), { place: (edit.prizes ?? []).length + 1, label_ar: "", label_en: "", reward_type: "custom", reward_value: null }] })}>
                     <Plus className="h-4 w-4 ms-1" /> مركز
                   </Button>
                 </div>
@@ -314,6 +334,32 @@ function TournamentsAdmin() {
                       <Button size="sm" variant="ghost" onClick={() => setEdit({ ...edit, prizes: (edit.prizes ?? []).filter((_, n) => n !== i) })}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        className="h-9 rounded-md border bg-background px-2 text-sm"
+                        value={p.reward_type ?? "custom"}
+                        onChange={(e) => {
+                          const rt = e.target.value as RewardType;
+                          const auto = autoLabels(rt, Number(p.reward_value ?? 0));
+                          setPrize(i, { reward_type: rt, ...(auto ?? {}) });
+                        }}
+                      >
+                        {REWARD_TYPES.map((r) => <option key={r.v} value={r.v}>{r.label}</option>)}
+                      </select>
+                      <Input
+                        type="number"
+                        min={0}
+                        placeholder="القيمة (نسبة/عدد)"
+                        disabled={(p.reward_type ?? "custom") === "custom"}
+                        value={p.reward_value ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value === "" ? null : Number(e.target.value);
+                          const rt = p.reward_type ?? "custom";
+                          const auto = autoLabels(rt, Number(val ?? 0));
+                          setPrize(i, { reward_value: val, ...(auto ?? {}) });
+                        }}
+                      />
                     </div>
                     <Input placeholder="الجائزة بالعربية (مثال: منتج رقمي مجاني)" value={p.label_ar} onChange={(e) => setPrize(i, { label_ar: e.target.value })} />
                     <Input placeholder="Prize in English" value={p.label_en} onChange={(e) => setPrize(i, { label_en: e.target.value })} />
