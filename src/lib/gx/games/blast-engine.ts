@@ -323,3 +323,45 @@ export function placePiece(state: GameState, trayIndex: number, row: number, col
 
   return { state: next, ok: true, gained, clearedRows, clearedCols, lines, combo: lines > 1 };
 }
+
+/* ---------------- pure drop-coordinate resolution ---------------- */
+
+export type BoardMetrics = {
+  /** viewport x of the LEFT edge of the cell at (row 0, col 0) */
+  cell0Left: number;
+  /** viewport y of the TOP edge of the cell at (row 0, col 0) */
+  cell0Top: number;
+  /** measured cell width/height in px */
+  cellW: number;
+  cellH: number;
+  /** measured distance between the left edges of two adjacent columns (cell + gap) */
+  stepX: number;
+  /** measured distance between the top edges of two adjacent rows */
+  stepY: number;
+};
+
+/**
+ * Maps a viewport point (the CENTER of the piece's top-left cell) to logical
+ * board coordinates. Coordinates are always LTR/top-down regardless of the
+ * page's text direction — the caller must measure a board that renders LTR.
+ */
+export function pointToCell(metrics: BoardMetrics, x: number, y: number): { row: number; col: number } {
+  const col = Math.floor((x - metrics.cell0Left) / metrics.stepX);
+  const row = Math.floor((y - metrics.cell0Top) / metrics.stepY);
+  return { row, col };
+}
+
+/**
+ * Full drop resolution: returns the anchor cell (top-left of the shape) plus
+ * whether the placement is legal. Out-of-board placements are always invalid.
+ */
+export function resolveDrop(
+  board: Board,
+  piece: PieceDef,
+  metrics: BoardMetrics,
+  anchorCenterX: number,
+  anchorCenterY: number,
+): { row: number; col: number; ok: boolean } {
+  const { row, col } = pointToCell(metrics, anchorCenterX, anchorCenterY);
+  return { row, col, ok: canPlace(board, piece, row, col) };
+}
