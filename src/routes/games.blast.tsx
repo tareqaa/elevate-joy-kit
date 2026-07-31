@@ -799,6 +799,8 @@ function BlastPage() {
                       dir="ltr"
                       style={{
                         ["--i" as string]: i,
+                        ["--tc" as string]: `${trayCellFor(p.w, p.h)}px`,
+                        ["--bevel" as string]: `${bevelPx(trayCellFor(p.w, p.h))}px`,
                         pointerEvents: "none",
                         gridTemplateColumns: `repeat(${p.w}, var(--tc))`,
                         gridTemplateRows: `repeat(${p.h}, var(--tc))`,
