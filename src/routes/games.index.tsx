@@ -3,6 +3,7 @@ import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { MINI_GAMES } from "@/lib/gx/mini-games";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/games/")({
   head: () => ({
@@ -55,6 +56,11 @@ function GamesPage() {
                     <span className="g-badge live">{ar ? "تورنمنت نشط" : "Live tournament"}</span>
                   )}
                 </div>
+                {g.status === "live" && g.path === "/games/blast" && (
+                  <Link to="/games/blast" className="btn btn-primary" style={{ justifyContent: "center", textDecoration: "none" }}>
+                    {ar ? "ابدأ اللعب" : "Start playing"}
+                  </Link>
+                )}
               </article>
             ))}
           </div>
