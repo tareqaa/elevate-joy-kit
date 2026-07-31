@@ -9,6 +9,7 @@ import { FeatureAccordion, SectionHead } from "@/components/gx/Primitives";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedProduct } from "@/lib/gx/product-locale";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { DiscountBadge } from "@/components/gx/DiscountBadge";
 
 export const Route = createFileRoute("/fortnite")({
   head: () => ({
@@ -54,7 +55,7 @@ function FortnitePage() {
                 <div key={pl.id} className="prod-card">
                   <div className="prod-thumb" style={{ background: p.thumbBg }}>
                     {pl.tag && <span className="tag-badge">{pl.tag}</span>}
-                    {discount > 0 && <span className="discount-badge">-{discount}%</span>}
+                    <DiscountBadge value={discount} />
                     <CrewIcon />
                   </div>
                   <div className="prod-body">
@@ -82,7 +83,7 @@ function FortnitePage() {
               return (
                 <div key={pl.id} className="prod-card">
                   <div className="prod-thumb" style={{ background: p.thumbBg }}>
-                    {discount > 0 && <span className="discount-badge">-{discount}%</span>}
+                    <DiscountBadge value={discount} />
                     <VbucksIcon tier={tier} />
                   </div>
                   <div className="prod-body">
