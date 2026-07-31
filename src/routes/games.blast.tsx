@@ -444,27 +444,15 @@ function BlastPage() {
     const step = cs + BOARD_GAP_PX;
     const left = d.x - (d.piece.w * step - BOARD_GAP_PX) / 2;
     const top = d.y - (d.piece.h * step - BOARD_GAP_PX) / 2 - d.lift;
+    // free, smooth pointer following (grid alignment is shown by the board preview)
+    if (ghostRef.current) {
+      ghostRef.current.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+    }
     const hit = cellUnderPoint(left + cs / 2, top + cs / 2);
     const next: Target = hit
       ? { row: hit.row, col: hit.col, ok: canPlace(gameRef.current.board, d.piece, hit.row, hit.col) }
       : null;
-    if (ghostRef.current) {
-      // snap onto the grid whenever the piece is over a cell, so the cubes
-      // always line up with the board instead of floating between rows
-      let gx = left;
-      let gy = top;
-      if (hit) {
-        const cell = document.querySelector<HTMLElement>(
-          `[data-row="${hit.row}"][data-col="${hit.col}"]`,
-        );
-        if (cell) {
-          const r = cell.getBoundingClientRect();
-          gx = Math.round(r.left);
-          gy = Math.round(r.top);
-        }
-      }
-      ghostRef.current.style.transform = `translate3d(${Math.round(gx)}px, ${Math.round(gy)}px, 0)`;
-    }
+
     const cur = targetRef.current;
     const same =
       (!cur && !next) ||
