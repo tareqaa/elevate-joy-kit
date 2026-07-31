@@ -922,35 +922,36 @@ function BlastPage() {
           </div>
         </section>
 
-        {dragInfo && (
-          <div
-            ref={ghostRef}
-            className="bb-ghost"
-            dir="ltr"
-            style={{
-              gap: BOARD_GAP_PX,
-              pointerEvents: "none",
-              ["--bevel" as string]: `${bevelPx(cellSize)}px`,
-
-              gridTemplateColumns: `repeat(${dragInfo.piece.w}, ${cellSize}px)`,
-              gridTemplateRows: `repeat(${dragInfo.piece.h}, ${cellSize}px)`,
-            }}
-          >
-
-            {Array.from({ length: dragInfo.piece.w * dragInfo.piece.h }).map((_, k) => {
-              const r = Math.floor(k / dragInfo.piece.w);
-              const c = k % dragInfo.piece.w;
-              const on = dragInfo.piece.cells.some(([cr, cc]) => cr === r && cc === c);
-              return (
-                <span
-                  key={k}
-                  className={"bg-cell" + (on ? " on" : "")}
-                  style={{ width: cellSize, height: cellSize, ...(on ? face(dragInfo.piece.color) : null) }}
-                />
-              );
-            })}
-          </div>
-        )}
+        <div
+          ref={ghostRef}
+          className="bb-ghost"
+          dir="ltr"
+          aria-hidden
+          style={{
+            gap: BOARD_GAP_PX,
+            pointerEvents: "none",
+            visibility: dragInfo ? undefined : "hidden",
+            opacity: dragInfo ? undefined : 0,
+            ["--bevel" as string]: `${bevelPx(cellSize)}px`,
+            gridTemplateColumns: `repeat(${dragInfo?.piece.w ?? 1}, ${dragInfo ? cellSize : 1}px)`,
+            gridTemplateRows: `repeat(${dragInfo?.piece.h ?? 1}, ${dragInfo ? cellSize : 1}px)`,
+          }}
+        >
+          {dragInfo
+            ? Array.from({ length: dragInfo.piece.w * dragInfo.piece.h }).map((_, k) => {
+                const r = Math.floor(k / dragInfo.piece.w);
+                const c = k % dragInfo.piece.w;
+                const on = dragInfo.piece.cells.some(([cr, cc]) => cr === r && cc === c);
+                return (
+                  <span
+                    key={k}
+                    className={"bg-cell" + (on ? " on" : "")}
+                    style={{ width: cellSize, height: cellSize, ...(on ? face(dragInfo.piece.color) : null) }}
+                  />
+                );
+              })
+            : null}
+        </div>
       </main>
     </StoreShell>
   );
