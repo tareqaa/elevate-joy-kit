@@ -21,6 +21,7 @@ import { activeCarouselSlides } from "./types";
 import { RichHtml } from "./rich-text";
 import { DiscountBadge } from "@/components/gx/DiscountBadge";
 import { formatTitle } from "@/lib/gx/text";
+import { CarouselRow } from "@/components/gx/CarouselRow";
 
 /* ---------------- HERO ---------------- */
 
@@ -350,7 +351,7 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
         <div className="section-head">
           <div><span className="k">{data.eyebrow || t("home.featured_eyebrow")}</span><h2>{data.title || t("home.featured_title")}</h2></div>
         </div>
-        <div className="featured-grid">
+        <CarouselRow className="featured-grid">
           {items.map(p => {
             const discount = Math.round((1 - p.price / p.oldPrice) * 100);
             const product = PRODUCTS_CATALOG[p.product];
@@ -380,7 +381,7 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
               </div>
             );
           })}
-        </div>
+        </CarouselRow>
       </div>
     </section>
   );
@@ -405,7 +406,7 @@ export function ProductsRenderer({ data }: { data: ProductsData }) {
             <h2>{data.title || "منتجات مختارة"}</h2>
           </div>
         </div>
-        <div className="featured-grid">
+        <CarouselRow className="featured-grid">
           {items.map((p) => {
             const discount = Math.round((1 - p.price / p.oldPrice) * 100);
             const product = PRODUCTS_CATALOG[p.product];
@@ -435,7 +436,7 @@ export function ProductsRenderer({ data }: { data: ProductsData }) {
               </div>
             );
           })}
-        </div>
+        </CarouselRow>
       </div>
     </section>
   );
