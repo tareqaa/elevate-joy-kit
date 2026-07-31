@@ -791,6 +791,9 @@
 .przrow i{font-style:normal;font-size:18px;line-height:1;}
 .przrow b{font-size:13px;color:#eef2ff;min-width:72px;}
 .przrow span{margin-inline-start:auto;font-size:13px;font-weight:700;color:#ffd76e;text-align:end;}
+.przrow span{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+.prz-reward{display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(255,215,110,.10);border:1px solid rgba(255,215,110,.22);font-size:12px;line-height:1.5;white-space:nowrap;}
+.przrow{align-items:flex-start;}
 .przrow.g1{border-color:rgba(255,215,110,.5);background:linear-gradient(120deg,rgba(255,215,110,.16),rgba(255,255,255,.02));}
 .przrow.g2{border-color:rgba(203,213,255,.4);}
 .przrow.g3{border-color:rgba(226,150,90,.4);}
