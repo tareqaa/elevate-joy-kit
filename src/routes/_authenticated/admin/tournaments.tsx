@@ -245,7 +245,10 @@ function TournamentsAdmin() {
                     </li>
                   ))}
                 </ul>
-                <p className="text-xs text-muted-foreground">عدد الفائزين: {t.prizes.length}</p>
+                <p className="text-xs text-muted-foreground">
+                  عدد الفائزين: {t.prizes.length} · المسجّلون: {regQ.data?.[t.id] ?? 0}
+                </p>
+
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => setEdit({ ...t })}>
                     <Pencil className="h-4 w-4 ms-1" /> تعديل
