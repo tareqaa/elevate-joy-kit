@@ -269,10 +269,12 @@ function BlastPage() {
 
     const apply = () => {
       const r = el.getBoundingClientRect();
+      if (r.width < 40 || r.height < 40) return;
       const next = calculateBoardLayout(r.width, r.height);
       setBoardLayout((current) =>
         current.boardPx === next.boardPx && current.cellPx === next.cellPx ? current : next,
       );
+      setMeasured(true);
     };
 
     let timer = 0;
@@ -282,6 +284,12 @@ function BlastPage() {
     };
 
     apply();
+    const raf = requestAnimationFrame(apply);
+    const ro = new ResizeObserver(() => {
+      if (!measuredRef.current) apply();
+    });
+    ro.observe(el);
+    const settle = window.setTimeout(() => ro.disconnect(), 1500);
     window.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("orientationchange", schedule);
     window.visualViewport?.addEventListener("resize", schedule, { passive: true });
