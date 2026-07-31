@@ -61,3 +61,122 @@
   .games-hero .gh-in{flex-direction:column; text-align:center;}
   .games-grid{grid-template-columns:1fr;}
 }
+
+/* ============================================================
+   GX BLAST — 8x8 block puzzle
+   ============================================================ */
+.blast-page{padding-bottom:40px; overscroll-behavior:contain;}
+.blast-top{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:14px; flex-wrap:wrap; padding:22px 0 10px;
+}
+.blast-back{
+  color:var(--gray); font-weight:800; font-size:13px; text-decoration:none;
+  border:1.5px solid var(--border); border-radius:999px; padding:7px 14px;
+  transition:border-color .2s var(--ease), color .2s var(--ease);
+}
+.blast-back:hover{border-color:rgba(0,229,255,.4); color:var(--cyan);}
+.blast-stats{display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+.bs-score{display:flex; flex-direction:column; line-height:1;}
+.bs-lbl{font-size:11px; font-weight:800; color:var(--gray); letter-spacing:.08em; text-transform:uppercase;}
+.bs-val{
+  font-size:40px; font-weight:900; margin-top:6px;
+  background:linear-gradient(90deg,#00e5ff,#a855f7 55%,#ff2d78);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.bs-side{display:flex; gap:8px; flex-wrap:wrap;}
+.bs-chip{
+  display:flex; flex-direction:column; gap:3px; padding:8px 14px;
+  border:1.5px solid var(--border); border-radius:14px; background:var(--card);
+}
+.bs-chip span{font-size:10px; font-weight:800; color:var(--gray);}
+.bs-chip b{font-size:14px; font-weight:900;}
+.bs-chip.hot{border-color:rgba(255,45,120,.45);}
+.bs-chip.hot b{color:var(--pink);}
+
+.blast-stage{display:flex; flex-direction:column; align-items:center; gap:14px;}
+.blast-wrap{position:relative; width:100%; max-width:520px;}
+
+.blast-board{
+  position:relative; width:100%; aspect-ratio:1/1;
+  display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr);
+  gap:4px; padding:10px; touch-action:none; user-select:none;
+  border-radius:22px; border:1.5px solid rgba(255,255,255,.10);
+  background:
+    radial-gradient(circle at 50% 0%,rgba(0,229,255,.10),transparent 60%),
+    linear-gradient(160deg,rgba(168,85,247,.08),rgba(11,16,32,.9));
+}
+.bb-cell{
+  border-radius:8px; background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.05);
+  transition:background .12s linear, opacity .16s linear, transform .16s linear;
+}
+.bb-cell.filled{border-color:rgba(255,255,255,.18);}
+.bb-cell.pv-ok{background:rgba(198,255,61,.30); border-color:rgba(198,255,61,.6);}
+.bb-cell.pv-bad{background:rgba(255,45,120,.26); border-color:rgba(255,45,120,.55);}
+.bb-cell.clearing{background:#fff; opacity:0; transform:scale(.6);}
+
+.bb-ghost{
+  position:fixed; z-index:60; display:grid; gap:4px; pointer-events:none; opacity:.92;
+}
+.bg-cell{border-radius:8px;}
+.bg-cell.on{border:1px solid rgba(255,255,255,.35);}
+
+.blast-tray{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+  margin-top:14px; padding:14px 10px; touch-action:none; user-select:none;
+  border-radius:20px; border:1.5px solid var(--border); background:var(--card);
+}
+.bt-slot{
+  --tc:19px;
+  min-height:96px; display:flex; align-items:center; justify-content:center;
+  border-radius:14px; background:rgba(255,255,255,.025);
+}
+.bt-slot.dragging{opacity:.25;}
+.bt-piece{display:grid; gap:3px; cursor:grab; touch-action:none;}
+.bt-piece:active{cursor:grabbing;}
+.bt-cell{border-radius:5px;}
+.bt-cell.on{border:1px solid rgba(255,255,255,.25);}
+
+.bb-pop{
+  position:absolute; z-index:40; transform:translate(-50%,-50%); pointer-events:none;
+  font-weight:900; font-size:15px; color:var(--lime); white-space:nowrap;
+  animation:bbPop .9s var(--ease) forwards;
+}
+.bb-pop.big{font-size:20px; color:var(--pink);}
+@keyframes bbPop{
+  0%{opacity:0; transform:translate(-50%,-30%) scale(.8);}
+  20%{opacity:1; transform:translate(-50%,-60%) scale(1);}
+  100%{opacity:0; transform:translate(-50%,-140%) scale(1);}
+}
+
+.blast-over{
+  position:absolute; inset:0; z-index:50; border-radius:22px;
+  display:flex; align-items:center; justify-content:center; padding:18px;
+  background:rgba(6,9,20,.86);
+}
+.bo-card{
+  width:100%; max-width:330px; text-align:center; padding:26px 22px;
+  border-radius:22px; border:1.5px solid rgba(0,229,255,.28); background:var(--card);
+}
+.bo-ic{font-size:42px;}
+.bo-card h2{font-size:22px; font-weight:900; margin:8px 0 6px;}
+.bo-card p{color:var(--gray); font-size:13px;}
+.bo-score{
+  margin:16px 0; padding:12px; border-radius:14px; background:rgba(255,255,255,.04);
+  display:flex; flex-direction:column; gap:4px;
+}
+.bo-score span{font-size:11px; font-weight:800; color:var(--gray);}
+.bo-score b{font-size:28px; font-weight:900; color:var(--cyan);}
+.bo-btn{width:100%; justify-content:center;}
+.bo-link{display:inline-block; margin-top:12px; font-size:12px; font-weight:800; color:var(--gray); text-decoration:none;}
+.bo-link:hover{color:var(--cyan);}
+
+.blast-hint{color:var(--gray); font-size:12px; text-align:center; max-width:460px;}
+
+@media(max-width:560px){
+  .blast-wrap{max-width:100%;}
+  .blast-board{gap:3px; padding:7px; border-radius:18px;}
+  .bs-val{font-size:32px;}
+  .bt-slot{--tc:15px; min-height:80px;}
+}
