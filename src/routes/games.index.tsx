@@ -28,14 +28,14 @@ export const Route = createFileRoute("/games/")({
   loader: () => listTournaments(),
   errorComponent: ({ error }) => (
     <StoreShell>
-      <main className="container" style={{ padding: "60px 0" }} role="alert">
+      <main className="wrap" style={{ padding: "60px 0" }} role="alert">
         {error.message}
       </main>
     </StoreShell>
   ),
   notFoundComponent: () => (
     <StoreShell>
-      <main className="container" style={{ padding: "60px 0" }}>
+      <main className="wrap" style={{ padding: "60px 0" }}>
         لا توجد بطولات.
       </main>
     </StoreShell>
@@ -124,7 +124,7 @@ function GamesPage() {
   return (
     <StoreShell>
       <main dir={dir} className="arena">
-        <section className="container">
+        <section className="wrap">
           <div className="arena-hero">
             <ArenaFx />
             <div className="ar-in">
@@ -203,7 +203,7 @@ function GamesPage() {
         </section>
 
         {featured && (
-          <section className="container">
+          <section className="wrap">
             <h2 className="ar-sec-title">🏆 {ar ? "أفضل اللاعبين" : "Top players"}</h2>
             <div className="tp3">
               {top === null ? (
@@ -231,7 +231,7 @@ function GamesPage() {
           </section>
         )}
 
-        <section className="container">
+        <section className="wrap">
           <h2 className="ar-sec-title">{ar ? "البطولات القادمة" : "Upcoming tournaments"}</h2>
           {upcoming.length === 0 ? (
             <p className="trn-empty">{ar ? "ما في بطولات قادمة حاليًا — ترقّب الأسبوع الجاي." : "Nothing scheduled yet — check back soon."}</p>
@@ -262,7 +262,7 @@ function GamesPage() {
         </section>
 
         {past.length > 0 && (
-          <section className="container">
+          <section className="wrap">
             <h2 className="ar-sec-title">{ar ? "سجل البطولات" : "Past tournaments"}</h2>
             <ul className="uplist past">
               {past.map((t) => (

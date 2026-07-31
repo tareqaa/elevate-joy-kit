@@ -111,14 +111,14 @@ function TournamentPage() {
   if (t === undefined) {
     return (
       <StoreShell>
-        <main dir={dir} className="container" style={{ padding: "60px 0" }}>{ar ? "جارِ تحميل البطولة…" : "Loading…"}</main>
+        <main dir={dir} className="wrap" style={{ padding: "60px 0" }}>{ar ? "جارِ تحميل البطولة…" : "Loading…"}</main>
       </StoreShell>
     );
   }
   if (!t) {
     return (
       <StoreShell>
-        <main dir={dir} className="container" style={{ padding: "60px 0" }}>
+        <main dir={dir} className="wrap" style={{ padding: "60px 0" }}>
           <p className="trn-empty">{ar ? "هذه البطولة غير متاحة." : "Tournament not available."}</p>
           <Link to="/games" className="btn btn-primary">{ar ? "عودة لساحة اللعب" : "Back to arena"}</Link>
         </main>
@@ -134,7 +134,7 @@ function TournamentPage() {
 
   return (
     <StoreShell>
-      <main dir={dir} className="container tpage arena">
+      <main dir={dir} className="wrap tpage arena">
         <header className={`arena-hero`} style={{ marginBottom: 18 }}>
           <ArenaFx />
           <div className="ar-in">
