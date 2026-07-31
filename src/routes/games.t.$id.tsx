@@ -314,9 +314,6 @@ function TournamentPage() {
                   )}
                 </>
               )}
-              <p className="tp-winners">
-                {ar ? `عدد الفائزين في هذه البطولة: ${t.prizes.length}` : `Winners in this tournament: ${t.prizes.length}`}
-              </p>
             </section>
           </aside>
         </div>
