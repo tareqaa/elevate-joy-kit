@@ -59,8 +59,9 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 /** visual only: sums the GX Coins mentioned in the prize labels for a "prize pool" figure */
 export function prizePool(prizes: TournamentPrize[]): number {
   return prizes.reduce((sum, p) => {
-    const text = `${p.label_ar ?? ""} ${p.label_en ?? ""}`;
+    const text = p.label_en || p.label_ar || "";
     const m = text.match(/(\d[\d,\.]*)\s*(?:gx\s*)?(?:coins?|كوين|كوينز)/gi);
+
     if (!m) return sum;
     const n = m.reduce((s, chunk) => {
       const num = Number((chunk.match(/\d[\d,\.]*/)?.[0] ?? "0").replace(/[,\.]/g, ""));
