@@ -264,10 +264,11 @@ function TournamentsAdmin() {
                     <li key={i} className="flex items-center gap-2">
                       <Medal className="h-4 w-4 text-amber-400" />
                       <span className="font-semibold">المركز {p.place ?? i + 1}:</span>
-                      <span className="text-muted-foreground truncate">{p.label_ar}</span>
+                      <span className="text-muted-foreground truncate">{prizeSummary(p, true)}</span>
                     </li>
                   ))}
                 </ul>
+
                 <p className="text-xs text-muted-foreground">
                   عدد الفائزين: {t.prizes.length} · المسجّلون: {regQ.data?.[t.id] ?? 0}
                 </p>
