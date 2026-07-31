@@ -955,3 +955,39 @@
   text-transform:uppercase;color:#7de6ff;border:1px solid rgba(0,229,255,.3);background:rgba(0,229,255,.08);
 }
 .tcar-time b{color:#e9f3ff;font-variant-numeric:tabular-nums;}
+
+/* --- premium arena hero --- */
+.arena-hero-sm .ar-kicker{letter-spacing:.28em;}
+.arena-hero-sm .ar-sub{max-width:640px;}
+.ar-perk{backdrop-filter:none;}
+
+/* --- segmented countdown --- */
+.tcd{display:flex;gap:6px;direction:ltr;justify-content:flex-start;margin:2px 0 0;}
+.tcd-u{
+  min-width:52px;padding:6px 4px;border-radius:12px;text-align:center;
+  border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.045);
+}
+.tcd-n{display:block;font-size:17px;font-weight:900;color:#eaf4ff;font-variant-numeric:tabular-nums;line-height:1.1;}
+.tcd-l{display:block;font-size:10px;font-weight:800;color:#8fa2cc;margin-top:2px;}
+.tcd-lbl{font-size:12px;color:#9fb0d8;margin:0 0 4px;}
+.is-live .tcd-u{border-color:rgba(0,229,255,.28);background:rgba(0,229,255,.07);}
+
+/* --- GX Blast playfield backdrop --- */
+.blast-fs{
+  position:relative;
+  background:
+    radial-gradient(900px 520px at 50% -12%, #5f6ec2 0%, rgba(95,110,194,0) 62%),
+    radial-gradient(700px 420px at 12% 108%, #3d4a8f 0%, rgba(61,74,143,0) 60%),
+    linear-gradient(180deg,#4a55a0 0%,#394180 55%,#2c3268 100%);
+}
+.blast-fs > *{position:relative;z-index:1;}
+.bl-fx{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+.bl-fx i{
+  position:absolute;top:-12%;border-radius:6px;opacity:.16;
+  animation:bl-fall linear infinite;will-change:transform;
+}
+@keyframes bl-fall{
+  0%{transform:translate3d(0,-15vh,0) rotate(0deg);}
+  100%{transform:translate3d(0,115vh,0) rotate(180deg);}
+}
+@media(prefers-reduced-motion:reduce){.bl-fx{display:none;}}
