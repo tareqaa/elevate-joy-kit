@@ -1,105 +1,53 @@
 /* ============================================================
-   GX BLAST — pure game logic (no React, no DOM).
-   Safe to run on a server later for score verification.
+   GX BLAST — pure game logic.
+   NO React. NO DOM. NO browser APIs (except Math.random inside
+   makeSeed(), which is the only entropy source and is never used
+   during a run). The server runs this exact file to re-verify a
+   submitted score, so every rule and every number lives here.
+   ============================================================ */
+
+/* ============================================================
+   TUNABLES — everything adjustable lives in this block.
    ============================================================ */
 
 export const BOARD_SIZE = 8;
 
-export type Cell = number; // 0 = empty, >0 = piece color id
-export type Board = Cell[]; // length BOARD_SIZE * BOARD_SIZE, row-major
+/** points per completed line (rows + cols counted together) */
+export const LINE_POINTS = 80;
 
-export type PieceDef = {
-  id: string;
-  color: number; // 1..N
-  cells: Array<[number, number]>; // [row, col] offsets, normalized to 0,0
-  w: number;
-  h: number;
+/** one-shot bonus for clearing L lines in a single move */
+export const MULTI_CLEAR_BONUS: Record<number, number> = {
+  1: 0,
+  2: 30,
+  3: 60,
+  4: 120,
+  5: 200,
 };
+/** used for L >= 6 (hard cap) */
+export const MULTI_CLEAR_BONUS_MAX = 300;
 
-export type Move = {
-  /** index (0..2) of the piece inside the tray shown at that moment */
-  trayIndex: number;
-  pieceId: string;
-  row: number;
-  col: number;
-  clearedRows: number[];
-  clearedCols: number[];
-  gained: number;
-};
+/** streak multiplier is capped at this value */
+export const MAX_STREAK_MULT = 8;
 
-export type GameState = {
-  seed: string;
-  /** internal PRNG cursor — advancing it is fully deterministic from the seed */
-  rngState: number;
-  board: Board;
-  tray: Array<PieceDef | null>;
-  score: number;
-  streak: number;
-  bestStreak: number;
-  moves: Move[];
-  over: boolean;
-};
+/** awarded when the board becomes completely empty after a clear */
+export const CLEAR_BOARD_BONUS = 360;
 
-export type PlaceResult = {
-  state: GameState;
-  ok: boolean;
-  gained: number;
-  clearedRows: number[];
-  clearedCols: number[];
-  lines: number;
-  combo: boolean;
-};
-
-/* ---------------- piece catalog (no rotation anywhere) ---------------- */
-
-function mk(id: string, color: number, rows: string[]): PieceDef {
-  const cells: Array<[number, number]> = [];
-  rows.forEach((line, r) => {
-    line.split("").forEach((ch, c) => {
-      if (ch !== ".") cells.push([r, c]);
-    });
-  });
-  return { id, color, cells, w: Math.max(...rows.map((r) => r.length)), h: rows.length };
-}
-
-export const PIECES: PieceDef[] = [
-  // 1x1
-  mk("dot", 1, ["x"]),
-  // horizontal lines
-  mk("h2", 2, ["xx"]),
-  mk("h3", 2, ["xxx"]),
-  mk("h4", 2, ["xxxx"]),
-  mk("h5", 2, ["xxxxx"]),
-  // vertical lines
-  mk("v2", 3, ["x", "x"]),
-  mk("v3", 3, ["x", "x", "x"]),
-  mk("v4", 3, ["x", "x", "x", "x"]),
-  mk("v5", 3, ["x", "x", "x", "x", "x"]),
-  // squares
-  mk("sq2", 4, ["xx", "xx"]),
-  mk("sq3", 5, ["xxx", "xxx", "xxx"]),
-  // 2x2 L (4 orientations)
-  mk("l2a", 7, ["xx", "x."]),
-  mk("l2b", 7, ["xx", ".x"]),
-  mk("l2c", 7, ["x.", "xx"]),
-  mk("l2d", 7, [".x", "xx"]),
-  // 3x3 L (4 orientations)
-  mk("l3a", 6, ["x..", "x..", "xxx"]),
-  mk("l3b", 6, ["..x", "..x", "xxx"]),
-  mk("l3c", 6, ["xxx", "x..", "x.."]),
-  mk("l3d", 6, ["xxx", "..x", "..x"]),
-  // T (3x2 / 2x3, 4 orientations)
-  mk("t1", 8, ["xxx", ".x."]),
-  mk("t2", 8, [".x.", "xxx"]),
-  mk("t3", 8, ["x.", "xx", "x."]),
-  mk("t4", 8, [".x", "xx", ".x"]),
-  // S / Z
-  mk("s1", 9, [".xx", "xx."]),
-  mk("z1", 9, ["xx.", ".xx"]),
+/** per-move time limit by accumulated score (ms). Evaluated top-down. */
+export const MOVE_TIME_TABLE: Array<{ minScore: number; ms: number }> = [
+  { minScore: 25000, ms: 5000 },
+  { minScore: 15000, ms: 6000 },
+  { minScore: 10000, ms: 7000 },
+  { minScore: 6000, ms: 8000 },
+  { minScore: 3000, ms: 10000 },
+  { minScore: 1000, ms: 12000 },
+  { minScore: 0, ms: 15000 },
 ];
 
-/** Generation weights: small/short shapes are common, big ones are rare. */
-const PIECE_WEIGHTS: Record<string, number> = {
+/** absolute floor — touch dragging is slower than mouse, never go below */
+export const MIN_MOVE_TIME_MS = 5000;
+
+/** base generation weights: small shapes common, board-killers rare */
+export const PIECE_WEIGHTS: Record<string, number> = {
   dot: 10,
   h2: 12, v2: 12,
   h3: 10, v3: 10,
@@ -113,9 +61,134 @@ const PIECE_WEIGHTS: Record<string, number> = {
   s1: 3, z1: 3,
 };
 
-const WEIGHT_TOTAL = PIECES.reduce((sum, p) => sum + (PIECE_WEIGHTS[p.id] ?? 1), 0);
+/** difficulty ramp — driven by ACCUMULATED SCORE only (never wall time) */
+export const DIFFICULTY = {
+  /** every this many points, one ramp step is applied */
+  scoreStep: 2500,
+  /** ramp steps are capped here */
+  maxSteps: 6,
+  /** per step: multiply "hard" shape weights by (1 + hardGain) */
+  hardGain: 0.35,
+  /** per step: multiply "easy" shape weights by (1 - easyLoss) */
+  easyLoss: 0.12,
+  /** shapes considered hard / board-killing */
+  hard: ["sq3", "h5", "v5", "h4", "v4", "l3a", "l3b", "l3c", "l3d", "s1", "z1", "t1", "t2", "t3", "t4"],
+  /** shapes considered easy */
+  easy: ["dot", "h2", "v2", "h3", "v3"],
+};
 
-/** Tailwind-free palette: index matches PieceDef.color */
+/** max attempts when drawing a solvable tray */
+export const MAX_TRAY_ATTEMPTS = 40;
+
+/** tolerated client/server clock slack when verifying a run (ms) */
+export const VERIFY_TIME_SLACK_MS = 4000;
+
+/* ============================================================
+   TYPES
+   ============================================================ */
+
+export type Cell = number; // 0 = empty, >0 = piece color id
+export type Board = Cell[]; // length BOARD_SIZE * BOARD_SIZE, row-major
+
+export type PieceDef = {
+  id: string;
+  color: number;
+  cells: Array<[number, number]>; // [row, col] offsets normalized to 0,0
+  w: number;
+  h: number;
+};
+
+export type Move = {
+  trayIndex: number;
+  pieceId: string;
+  row: number;
+  col: number;
+  clearedRows: number[];
+  clearedCols: number[];
+  gained: number;
+  /** how long the player took for this move, in milliseconds */
+  durationMs: number;
+};
+
+export type EndReason = "blocked" | "timeout" | null;
+
+export type GameState = {
+  seed: string;
+  rngState: number;
+  board: Board;
+  tray: Array<PieceDef | null>;
+  score: number;
+  streak: number;
+  bestStreak: number;
+  moves: Move[];
+  over: boolean;
+  endReason: EndReason;
+  /** time limit (ms) that applies to the NEXT move at the current score */
+  moveLimitMs: number;
+};
+
+export type PlaceResult = {
+  state: GameState;
+  ok: boolean;
+  gained: number;
+  placementPoints: number;
+  clearPoints: number;
+  boardClearBonus: number;
+  clearedRows: number[];
+  clearedCols: number[];
+  lines: number;
+  combo: boolean;
+  multiplier: number;
+};
+
+/* ============================================================
+   PIECE CATALOG — standard shapes only, no rotation at runtime,
+   so every orientation is its own entry.
+   ============================================================ */
+
+function mk(id: string, color: number, rows: string[]): PieceDef {
+  const cells: Array<[number, number]> = [];
+  rows.forEach((line, r) => {
+    line.split("").forEach((ch, c) => {
+      if (ch !== ".") cells.push([r, c]);
+    });
+  });
+  return { id, color, cells, w: Math.max(...rows.map((r) => r.length)), h: rows.length };
+}
+
+export const PIECES: PieceDef[] = [
+  mk("dot", 1, ["x"]),
+  mk("h2", 2, ["xx"]),
+  mk("h3", 2, ["xxx"]),
+  mk("h4", 2, ["xxxx"]),
+  mk("h5", 2, ["xxxxx"]),
+  mk("v2", 3, ["x", "x"]),
+  mk("v3", 3, ["x", "x", "x"]),
+  mk("v4", 3, ["x", "x", "x", "x"]),
+  mk("v5", 3, ["x", "x", "x", "x", "x"]),
+  mk("sq2", 4, ["xx", "xx"]),
+  mk("sq3", 5, ["xxx", "xxx", "xxx"]),
+  mk("l2a", 7, ["xx", "x."]),
+  mk("l2b", 7, ["xx", ".x"]),
+  mk("l2c", 7, ["x.", "xx"]),
+  mk("l2d", 7, [".x", "xx"]),
+  mk("l3a", 6, ["x..", "x..", "xxx"]),
+  mk("l3b", 6, ["..x", "..x", "xxx"]),
+  mk("l3c", 6, ["xxx", "x..", "x.."]),
+  mk("l3d", 6, ["xxx", "..x", "..x"]),
+  mk("t1", 8, ["xxx", ".x."]),
+  mk("t2", 8, [".x.", "xxx"]),
+  mk("t3", 8, ["x.", "xx", "x."]),
+  mk("t4", 8, [".x", "xx", ".x"]),
+  mk("s1", 9, [".xx", "xx."]),
+  mk("z1", 9, ["xx.", ".xx"]),
+];
+
+export const PIECE_BY_ID: Record<string, PieceDef> = Object.fromEntries(
+  PIECES.map((p) => [p.id, p]),
+);
+
+/** palette: index matches PieceDef.color */
 export const PIECE_COLORS: Record<number, string> = {
   1: "#00e5ff",
   2: "#ff2d78",
@@ -128,11 +201,38 @@ export const PIECE_COLORS: Record<number, string> = {
   9: "#f97316",
 };
 
-/* ---------------- seeded PRNG (mulberry32) ---------------- */
+/* ============================================================
+   DIFFICULTY / TIME
+   ============================================================ */
+
+export function difficultySteps(score: number): number {
+  if (!(score > 0)) return 0;
+  return Math.min(DIFFICULTY.maxSteps, Math.floor(score / DIFFICULTY.scoreStep));
+}
+
+/** weight of a shape at a given accumulated score (score-driven ramp only) */
+export function pieceWeight(id: string, score: number): number {
+  const base = PIECE_WEIGHTS[id] ?? 1;
+  const steps = difficultySteps(score);
+  if (steps === 0) return base;
+  if (DIFFICULTY.hard.includes(id)) return base * Math.pow(1 + DIFFICULTY.hardGain, steps);
+  if (DIFFICULTY.easy.includes(id)) return base * Math.pow(1 - DIFFICULTY.easyLoss, steps);
+  return base;
+}
+
+/** per-move time limit (ms) for the given accumulated score */
+export function moveLimitMs(score: number): number {
+  for (const row of MOVE_TIME_TABLE) {
+    if (score >= row.minScore) return Math.max(MIN_MOVE_TIME_MS, row.ms);
+  }
+  return Math.max(MIN_MOVE_TIME_MS, MOVE_TIME_TABLE[MOVE_TIME_TABLE.length - 1].ms);
+}
+
+/* ============================================================
+   SEEDED PRNG (mulberry32) — deterministic after seed creation
+   ============================================================ */
 
 export function makeSeed(): string {
-  // Seed creation is the only place randomness enters; everything after it is
-  // derived deterministically from this string.
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   let s = "";
   for (let i = 0; i < 12; i++) s += chars[Math.floor(Math.random() * chars.length)];
@@ -148,9 +248,8 @@ function hashSeed(seed: string): number {
   return h >>> 0;
 }
 
-/** returns [value 0..1, nextState] — pure */
 function nextRandom(state: number): [number, number] {
-  let t = (state + 0x6d2b79f5) >>> 0;
+  const t = (state + 0x6d2b79f5) >>> 0;
   let x = t;
   x = Math.imul(x ^ (x >>> 15), 1 | x);
   x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
@@ -158,41 +257,41 @@ function nextRandom(state: number): [number, number] {
   return [value, t];
 }
 
-function drawPiece(state: number): [PieceDef, number] {
+function drawPiece(state: number, score: number): [PieceDef, number] {
   const [v, next] = nextRandom(state);
-  let target = v * WEIGHT_TOTAL;
+  let total = 0;
+  for (const p of PIECES) total += pieceWeight(p.id, score);
+  let target = v * total;
   for (const p of PIECES) {
-    target -= PIECE_WEIGHTS[p.id] ?? 1;
+    target -= pieceWeight(p.id, score);
     if (target <= 0) return [p, next];
   }
   return [PIECES[PIECES.length - 1], next];
 }
 
-const MAX_TRAY_ATTEMPTS = 40;
-
 /**
- * Draws a set of three pieces that is guaranteed (when possible) to contain at
- * least one piece placeable on the CURRENT board. Fully deterministic given the
- * incoming rng state.
+ * Draws three pieces guaranteed (when possible) to contain at least one piece
+ * placeable on the CURRENT board. Fully deterministic given the rng state.
  */
-export function drawTray(board: Board, state: number): [Array<PieceDef | null>, number] {
+export function drawTray(board: Board, state: number, score: number): [Array<PieceDef | null>, number] {
   let s = state;
   let fallback: Array<PieceDef | null> | null = null;
   for (let attempt = 0; attempt < MAX_TRAY_ATTEMPTS; attempt++) {
     const tray: Array<PieceDef | null> = [];
     for (let i = 0; i < 3; i++) {
-      const [p, ns] = drawPiece(s);
+      const [p, ns] = drawPiece(s, score);
       tray.push(p);
       s = ns;
     }
     if (!fallback) fallback = tray;
     if (tray.some((p) => p && hasAnyPlacement(board, p))) return [tray, s];
   }
-  // Board is (practically) full — nothing fits; return the last attempt.
   return [fallback as Array<PieceDef | null>, s];
 }
 
-/* ---------------- board helpers ---------------- */
+/* ============================================================
+   BOARD HELPERS
+   ============================================================ */
 
 export function emptyBoard(): Board {
   return new Array(BOARD_SIZE * BOARD_SIZE).fill(0);
@@ -203,9 +302,11 @@ export function idx(row: number, col: number): number {
 }
 
 export function canPlace(board: Board, piece: PieceDef, row: number, col: number): boolean {
+  if (!Number.isInteger(row) || !Number.isInteger(col)) return false;
   for (const [dr, dc] of piece.cells) {
     const r = row + dr;
     const c = col + dc;
+    // hard out-of-bounds rejection: no cell may ever land outside the board
     if (r < 0 || c < 0 || r >= BOARD_SIZE || c >= BOARD_SIZE) return false;
     if (board[idx(r, c)] !== 0) return false;
   }
@@ -221,6 +322,7 @@ export function hasAnyPlacement(board: Board, piece: PieceDef): boolean {
   return false;
 }
 
+/** end-of-round check: only the pieces STILL IN the tray count */
 export function isGameOver(board: Board, tray: Array<PieceDef | null>): boolean {
   const remaining = tray.filter(Boolean) as PieceDef[];
   if (remaining.length === 0) return false;
@@ -243,27 +345,29 @@ function fullLines(board: Board): { rows: number[]; cols: number[] } {
   return { rows, cols };
 }
 
-/* ---------------- scoring ---------------- */
+/* ============================================================
+   SCORING
+   ============================================================ */
 
+export function multiClearBonus(lines: number): number {
+  if (lines <= 0) return 0;
+  if (lines >= 6) return MULTI_CLEAR_BONUS_MAX;
+  return MULTI_CLEAR_BONUS[lines] ?? 0;
+}
+
+/** streak multiplier = streak counter AFTER increment, capped */
 export function streakMultiplier(streak: number): number {
-  // grows gradually, capped so it stays sane
-  return 1 + Math.min(streak, 10) * 0.1;
+  return Math.max(1, Math.min(MAX_STREAK_MULT, streak));
 }
 
-function scoreFor(cellCount: number, lines: number, streakAfter: number): number {
-  const placement = cellCount; // small points per placed cell
-  const lineBase = lines > 0 ? 100 * lines : 0;
-  const comboBonus = lines > 1 ? 50 * lines * (lines - 1) : 0; // big multi-line bonus
-  const mult = lines > 0 ? streakMultiplier(streakAfter) : 1;
-  return Math.round((placement + lineBase + comboBonus) * mult);
-}
-
-/* ---------------- game lifecycle ---------------- */
+/* ============================================================
+   GAME LIFECYCLE
+   ============================================================ */
 
 export function createGame(seed: string = makeSeed()): GameState {
   const rng0 = hashSeed(seed);
   const board = emptyBoard();
-  const [tray, rngState] = drawTray(board, rng0);
+  const [tray, rngState] = drawTray(board, rng0, 0);
   return {
     seed,
     rngState,
@@ -274,94 +378,173 @@ export function createGame(seed: string = makeSeed()): GameState {
     bestStreak: 0,
     moves: [],
     over: false,
+    endReason: null,
+    moveLimitMs: moveLimitMs(0),
   };
 }
 
+/** ends the round because the current move's timer expired */
+export function timeoutGame(state: GameState): GameState {
+  if (state.over) return state;
+  return { ...state, over: true, endReason: "timeout" };
+}
+
 /**
- * Attempt to place tray[trayIndex] with its top-left anchor at (row, col).
- * Returns a brand-new state; the input state is never mutated.
+ * Place tray[trayIndex] with its top-left anchor at (row, col).
+ * Returns a brand-new state; the input is never mutated.
+ * Order of operations follows the spec exactly.
  */
-export function placePiece(state: GameState, trayIndex: number, row: number, col: number): PlaceResult {
+export function placePiece(
+  state: GameState,
+  trayIndex: number,
+  row: number,
+  col: number,
+  durationMs = 0,
+): PlaceResult {
   const piece = state.tray[trayIndex];
-  const fail: PlaceResult = { state, ok: false, gained: 0, clearedRows: [], clearedCols: [], lines: 0, combo: false };
+  const fail: PlaceResult = {
+    state, ok: false, gained: 0, placementPoints: 0, clearPoints: 0, boardClearBonus: 0,
+    clearedRows: [], clearedCols: [], lines: 0, combo: false, multiplier: 1,
+  };
+  // 1. validity
   if (state.over || !piece) return fail;
   if (!canPlace(state.board, piece, row, col)) return fail;
 
+  // 2. commit + placement points (never multiplied)
   const board = state.board.slice();
   for (const [dr, dc] of piece.cells) board[idx(row + dr, col + dc)] = piece.color;
+  const placementPoints = piece.cells.length;
 
+  // 3. detect ALL complete lines before clearing any of them
   const { rows: clearedRows, cols: clearedCols } = fullLines(board);
+
+  // 4. clear them all at once, no gravity
   for (const r of clearedRows) for (let c = 0; c < BOARD_SIZE; c++) board[idx(r, c)] = 0;
   for (const c of clearedCols) for (let r = 0; r < BOARD_SIZE; r++) board[idx(r, c)] = 0;
 
+  // 5-6. score + streak
   const lines = clearedRows.length + clearedCols.length;
   const streak = lines > 0 ? state.streak + 1 : 0;
-  const gained = scoreFor(piece.cells.length, lines, streak);
+  const multiplier = lines > 0 ? streakMultiplier(streak) : 1;
+  const clearPoints = lines > 0 ? (lines * LINE_POINTS + multiClearBonus(lines)) * multiplier : 0;
 
+  // 7. empty-board bonus (added after the multiplier, unaffected by it)
+  const boardEmpty = lines > 0 && board.every((v) => v === 0);
+  const boardClearBonus = boardEmpty ? CLEAR_BOARD_BONUS : 0;
+
+  const gained = placementPoints + clearPoints + boardClearBonus;
+  const score = state.score + gained;
+
+  // 8. refill the tray when all three pieces have been placed
   let tray: Array<PieceDef | null> = state.tray.map((p, i) => (i === trayIndex ? null : p));
   let rngState = state.rngState;
   if (tray.every((p) => p === null)) {
-    const [fresh, ns] = drawTray(board, rngState);
+    const [fresh, ns] = drawTray(board, rngState, score);
     tray = fresh;
     rngState = ns;
   }
 
-  const move: Move = { trayIndex, pieceId: piece.id, row, col, clearedRows, clearedCols, gained };
+  const move: Move = {
+    trayIndex, pieceId: piece.id, row, col, clearedRows, clearedCols, gained,
+    durationMs: Math.max(0, Math.round(durationMs)),
+  };
 
   const next: GameState = {
     ...state,
     board,
     tray,
     rngState,
-    score: state.score + gained,
+    score,
     streak,
     bestStreak: Math.max(state.bestStreak, streak),
     moves: [...state.moves, move],
     over: false,
+    endReason: null,
+    moveLimitMs: moveLimitMs(score),
   };
-  next.over = isGameOver(next.board, next.tray);
 
-  return { state: next, ok: true, gained, clearedRows, clearedCols, lines, combo: lines > 1 };
+  // 9. finally, end-of-round check
+  if (isGameOver(next.board, next.tray)) {
+    next.over = true;
+    next.endReason = "blocked";
+  }
+
+  return {
+    state: next, ok: true, gained, placementPoints, clearPoints, boardClearBonus,
+    clearedRows, clearedCols, lines, combo: lines > 1, multiplier,
+  };
 }
 
-/* ---------------- pure drop-coordinate resolution ---------------- */
+/* ============================================================
+   SERVER-SIDE VERIFICATION
+   Replays a submitted move log from the seed and re-derives the
+   score, the per-move time limits and the end condition.
+   ============================================================ */
 
-export type BoardMetrics = {
-  /** viewport x of the LEFT edge of the cell at (row 0, col 0) */
-  cell0Left: number;
-  /** viewport y of the TOP edge of the cell at (row 0, col 0) */
-  cell0Top: number;
-  /** measured cell width/height in px */
-  cellW: number;
-  cellH: number;
-  /** measured distance between the left edges of two adjacent columns (cell + gap) */
-  stepX: number;
-  /** measured distance between the top edges of two adjacent rows */
-  stepY: number;
+export type SubmittedMove = {
+  trayIndex: number;
+  pieceId: string;
+  row: number;
+  col: number;
+  durationMs: number;
 };
 
-/**
- * Maps a viewport point (the CENTER of the piece's top-left cell) to logical
- * board coordinates. Coordinates are always LTR/top-down regardless of the
- * page's text direction — the caller must measure a board that renders LTR.
- */
-export function pointToCell(metrics: BoardMetrics, x: number, y: number): { row: number; col: number } {
-  const col = Math.floor((x - metrics.cell0Left) / metrics.stepX);
-  const row = Math.floor((y - metrics.cell0Top) / metrics.stepY);
-  return { row, col };
-}
+export type VerifyInput = {
+  seed: string;
+  moves: SubmittedMove[];
+  claimedScore: number;
+  /** server-clock timestamps, in ms */
+  startedAtMs?: number;
+  submittedAtMs?: number;
+};
 
-/**
- * Full drop resolution: returns the anchor cell (top-left of the shape) plus
- * whether the placement is legal. Out-of-board placements are always invalid.
- */
-export function resolveDrop(
-  board: Board,
-  piece: PieceDef,
-  metrics: BoardMetrics,
-  anchorCenterX: number,
-  anchorCenterY: number,
-): { row: number; col: number; ok: boolean } {
-  const { row, col } = pointToCell(metrics, anchorCenterX, anchorCenterY);
-  return { row, col, ok: canPlace(board, piece, row, col) };
+export type VerifyResult = {
+  valid: boolean;
+  score: number;
+  endReason: EndReason;
+  reason?: string;
+  moveIndex?: number;
+};
+
+export function verifyRun(input: VerifyInput): VerifyResult {
+  let state = createGame(input.seed);
+  let elapsed = 0;
+
+  for (let i = 0; i < input.moves.length; i++) {
+    const m = input.moves[i];
+    if (state.over) {
+      return { valid: false, score: state.score, endReason: state.endReason, reason: "move-after-game-over", moveIndex: i };
+    }
+    // time limit is re-derived from the accumulated score, never trusted from the client
+    const limit = moveLimitMs(state.score);
+    const dur = Math.max(0, Math.round(m.durationMs ?? 0));
+    if (dur > limit) {
+      return { valid: false, score: state.score, endReason: "timeout", reason: "move-timeout", moveIndex: i };
+    }
+    elapsed += dur;
+
+    const piece = state.tray[m.trayIndex];
+    if (!piece || piece.id !== m.pieceId) {
+      return { valid: false, score: state.score, endReason: state.endReason, reason: "tray-mismatch", moveIndex: i };
+    }
+    const res = placePiece(state, m.trayIndex, m.row, m.col, dur);
+    if (!res.ok) {
+      return { valid: false, score: state.score, endReason: state.endReason, reason: "illegal-placement", moveIndex: i };
+    }
+    state = res.state;
+  }
+
+  if (state.score !== input.claimedScore) {
+    return { valid: false, score: state.score, endReason: state.endReason, reason: "score-mismatch" };
+  }
+
+  if (typeof input.startedAtMs === "number" && typeof input.submittedAtMs === "number") {
+    const wall = input.submittedAtMs - input.startedAtMs;
+    if (wall < 0 || elapsed > wall + VERIFY_TIME_SLACK_MS) {
+      return { valid: false, score: state.score, endReason: state.endReason, reason: "time-inconsistent" };
+    }
+  }
+
+  // the round must actually be finished: board blocked, or the client reported a timeout
+  return { valid: true, score: state.score, endReason: state.endReason };
 }
