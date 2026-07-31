@@ -80,10 +80,10 @@ function Countdown({ ms, ar }: { ms: number; ar: boolean }) {
     { n: total % 60, l: ar ? "ثانية" : "sec" },
   ];
   return (
-    <div className="tcd" dir="ltr">
+    <div className="tcd" dir={ar ? "rtl" : "ltr"}>
       {units.map((u, i) => (
         <div className="tcd-u" key={i}>
-          <span className="tcd-n">{String(u.n).padStart(2, "0")}</span>
+          <span className="tcd-n" dir="ltr">{String(u.n).padStart(2, "0")}</span>
           <span className="tcd-l">{u.l}</span>
         </div>
       ))}
