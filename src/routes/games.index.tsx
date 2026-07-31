@@ -120,18 +120,17 @@ function GamesPage() {
           <div className="arena-hero arena-hero-sm">
             <ArenaFx />
             <div className="ar-in">
-              <span className="ar-kicker">GX ARENA</span>
+              <span className="ar-kicker">{ar ? "ساحة اللعب" : "PLAY ARENA"}</span>
               <h1 className="ar-title">GX ARENA</h1>
               <p className="ar-sub">
                 {ar
-                  ? "العب بطولات المتجر واربح جوائز حقيقية."
-                  : "Play store tournaments and win real rewards."}
+                  ? "سجّل في البطولة، العب، واصعد بالترتيب — أعلى النتائج تاخذ الجوائز."
+                  : "Join a tournament, play, and climb the ranks — top scores take the prizes."}
               </p>
               <div className="ar-perks">
                 <span className="ar-perk"><i aria-hidden>🪙</i>{ar ? "GX Coins للرصيد" : "GX Coins balance"}</span>
                 <span className="ar-perk"><i aria-hidden>🎟️</i>{ar ? "كوبونات خصم" : "Discount coupons"}</span>
                 <span className="ar-perk"><i aria-hidden>🎮</i>{ar ? "منتجات رقمية مجانية" : "Free digital products"}</span>
-                <span className="ar-perk"><i aria-hidden>🏆</i>{ar ? "ترتيبك بين اللاعبين" : "Global ranking"}</span>
               </div>
             </div>
           </div>
