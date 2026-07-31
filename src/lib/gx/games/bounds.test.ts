@@ -9,7 +9,7 @@ describe("bounds", () => {
   it("v5 top ok, row4+ rejected", () => {
     expect(canPlace(b, vline(5), 0, 0)).toBe(true);
     expect(canPlace(b, vline(5), 3, 0)).toBe(true);
-    expect(canPlace(b, vline(5), 4, 0)).toBe(true);
+    expect(canPlace(b, vline(5), 4, 0)).toBe(false);
     expect(canPlace(b, vline(5), 5, 0)).toBe(false);
     expect(canPlace(b, vline(4), 5, 0)).toBe(false);
   });
