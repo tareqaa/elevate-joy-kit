@@ -189,11 +189,6 @@ function TournamentPage() {
               </div>
             </div>
 
-            <p className="tcar-dates" style={{ unicodeBidi: "isolate", margin: "10px 0 4px" }}>
-              <span>{ar ? "تبدأ" : "Starts"}: {formatDateTime(t.starts_at, ar)}</span>
-              <span>{ar ? "تنتهي" : "Ends"}: {formatDateTime(t.ends_at, ar)}</span>
-            </p>
-
             <div className="tp-actions" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {status !== "ended" && !registered ? (
                 <button type="button" className="ar-cta" disabled={joining} onClick={register}>
@@ -210,11 +205,7 @@ function TournamentPage() {
                 </button>
               )}
             </div>
-            <p className="reg-note">
-              {registered
-                ? <span className="reg-ok">{ar ? "✅ أنت مسجّل في هذه البطولة" : "✅ You're registered"}</span>
-                : ar ? "لازم تسجّل بالبطولة قبل ما تبدأ اللعب." : "You must register before you can play."}
-            </p>
+
 
           </div>
         </header>
