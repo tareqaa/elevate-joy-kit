@@ -758,7 +758,7 @@ function BlastPage() {
             <div
               className="blast-tray"
               dir="ltr"
-              style={{ ["--tc" as string]: `${trayCell}px`, ...(blockStyle || {}) }}
+              style={{ ["--tc" as string]: `${trayCell}px`, ["--bevel" as string]: `${bevelPx(trayCell)}px`, ...(blockStyle || {}) }}
             >
               {game.tray.map((p, i) => (
                 <div
