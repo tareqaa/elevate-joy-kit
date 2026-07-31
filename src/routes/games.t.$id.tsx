@@ -318,12 +318,6 @@ function TournamentPage() {
                 {ar ? `عدد الفائزين في هذه البطولة: ${t.prizes.length}` : `Winners in this tournament: ${t.prizes.length}`}
               </p>
             </section>
-
-
-            <section className="tp-card tp-stats">
-              <div><span>{ar ? "المشاركون" : "Players"}</span><b>{t.participants.toLocaleString("en")}</b></div>
-              <div><span>{ar ? "أعلى سكور" : "Top score"}</span><b>{t.top_score.toLocaleString("en")}</b></div>
-            </section>
           </aside>
         </div>
 
