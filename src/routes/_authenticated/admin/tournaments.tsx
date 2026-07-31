@@ -191,6 +191,31 @@ function TournamentsAdmin() {
         </div>
       </div>
 
+      <Card>
+        <CardContent className="p-4 flex items-end gap-3 flex-wrap">
+          <div>
+            <label className="text-xs text-muted-foreground">عدد البطولات الظاهرة في كاروسيل ساحة اللعب</label>
+            <Input
+              type="number"
+              min={1}
+              max={24}
+              className="w-32"
+              value={countValue}
+              onChange={(e) => setCountDraft(e.target.value)}
+            />
+          </div>
+          <Button
+            size="sm"
+            disabled={saveCount.isPending}
+            onClick={() => saveCount.mutate(Math.max(1, Math.min(24, Number(countValue) || 6)))}
+          >
+            حفظ
+          </Button>
+        </CardContent>
+      </Card>
+
+
+
       {listQ.isLoading ? (
         <p className="text-muted-foreground text-sm">جارِ التحميل…</p>
       ) : rows.length === 0 ? (
