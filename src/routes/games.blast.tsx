@@ -624,6 +624,10 @@ function BlastPage() {
   const diff = game.score - bestAtStart;
   const timedOut = game.endReason === "timeout";
   const trayCell = Math.max(12, Math.round((boardPx || 320) / 8 * 0.52));
+  /* fixed tray box: never grows/shrinks with the piece shape (5-long line, 3x3, ...) */
+  const trayBoxPx = trayCell * 4;
+  const trayCellFor = (w: number, h: number) =>
+    Math.max(6, Math.min(trayCell, Math.floor(trayBoxPx / Math.max(w, h))));
 
   const hud = (
     <>
@@ -775,7 +779,7 @@ function BlastPage() {
             <div
               className="blast-tray"
               dir="ltr"
-              style={{ ["--tc" as string]: `${trayCell}px`, ["--bevel" as string]: `${bevelPx(trayCell)}px`, ...(blockStyle || {}) }}
+              style={{ ["--tc" as string]: `${trayCell}px`, ["--tray-box" as string]: `${trayBoxPx}px`, ["--bevel" as string]: `${bevelPx(trayCell)}px`, ...(blockStyle || {}) }}
             >
               {game.tray.map((p, i) => (
                 <div
@@ -795,6 +799,8 @@ function BlastPage() {
                       dir="ltr"
                       style={{
                         ["--i" as string]: i,
+                        ["--tc" as string]: `${trayCellFor(p.w, p.h)}px`,
+                        ["--bevel" as string]: `${bevelPx(trayCellFor(p.w, p.h))}px`,
                         pointerEvents: "none",
                         gridTemplateColumns: `repeat(${p.w}, var(--tc))`,
                         gridTemplateRows: `repeat(${p.h}, var(--tc))`,
