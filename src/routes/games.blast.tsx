@@ -796,6 +796,9 @@ function BlastPage() {
                       <button type="button" className="btn btn-primary bo-btn" onClick={restart}>
                         {ar ? "العب مرة أخرى" : "Play again"}
                       </button>
+                      <button type="button" className="bo-help" onClick={() => setShowHowTo(true)}>
+                        {ar ? "كيف ألعب؟" : "How to play?"}
+                      </button>
                       <Link to="/games" className="bo-link">{ar ? "رجوع لساحة اللعب" : "Back to Play Arena"}</Link>
                     </div>
                   </div>
