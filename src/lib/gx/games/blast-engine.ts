@@ -269,12 +269,51 @@ function drawPiece(state: number, score: number): [PieceDef, number] {
 }
 
 /**
- * Draws three pieces guaranteed (when possible) to contain at least one piece
- * placeable on the CURRENT board. Fully deterministic given the rng state.
+ * Applies a placement (including line clears) and returns the resulting board.
+ * Used only by the tray solvability search — no scoring involved.
+ */
+function simulatePlacement(board: Board, piece: PieceDef, row: number, col: number): Board {
+  const b = board.slice();
+  for (const [dr, dc] of piece.cells) b[idx(row + dr, col + dc)] = piece.color;
+  const { rows, cols } = fullLines(b);
+  for (const r of rows) for (let c = 0; c < BOARD_SIZE; c++) b[idx(r, c)] = 0;
+  for (const c of cols) for (let r = 0; r < BOARD_SIZE; r++) b[idx(r, c)] = 0;
+  return b;
+}
+
+/**
+ * True when the given pieces can ALL be placed in SOME order on the board,
+ * taking line clears into account. This is the Block Blast rule: a tray is only
+ * dealt if a full solution exists — losing must always be the player's mistake.
+ */
+export function canPlaceAll(board: Board, pieces: PieceDef[]): boolean {
+  if (pieces.length === 0) return true;
+  const seen = new Set<string>();
+  for (let i = 0; i < pieces.length; i++) {
+    const piece = pieces[i];
+    if (seen.has(piece.id)) continue;
+    seen.add(piece.id);
+    const rest = pieces.filter((_, j) => j !== i);
+    for (let r = 0; r <= BOARD_SIZE - piece.h; r++) {
+      for (let c = 0; c <= BOARD_SIZE - piece.w; c++) {
+        if (!canPlace(board, piece, r, c)) continue;
+        if (canPlaceAll(simulatePlacement(board, piece, r, c), rest)) return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Draws three pieces that are guaranteed (when possible) to be fully placeable
+ * in some order on the CURRENT board. Fully deterministic given the rng state.
+ * Difficulty is expressed only through WHICH shapes are drawn, never by dealing
+ * an unsolvable tray.
  */
 export function drawTray(board: Board, state: number, score: number): [Array<PieceDef | null>, number] {
   let s = state;
   let fallback: Array<PieceDef | null> | null = null;
+  let partial: Array<PieceDef | null> | null = null;
   for (let attempt = 0; attempt < MAX_TRAY_ATTEMPTS; attempt++) {
     const tray: Array<PieceDef | null> = [];
     for (let i = 0; i < 3; i++) {
@@ -283,10 +322,12 @@ export function drawTray(board: Board, state: number, score: number): [Array<Pie
       s = ns;
     }
     if (!fallback) fallback = tray;
-    if (tray.some((p) => p && hasAnyPlacement(board, p))) return [tray, s];
+    if (canPlaceAll(board, tray.filter(Boolean) as PieceDef[])) return [tray, s];
+    if (!partial && tray.some((p) => p && hasAnyPlacement(board, p))) partial = tray;
   }
-  return [fallback as Array<PieceDef | null>, s];
+  return [(partial ?? fallback) as Array<PieceDef | null>, s];
 }
+
 
 /* ============================================================
    BOARD HELPERS
