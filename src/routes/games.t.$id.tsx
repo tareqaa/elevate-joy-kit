@@ -259,64 +259,80 @@ function TournamentPage() {
 
         <div className="tp-grid">
           <section className="tp-card tp-board">
-            <h2>{ar ? "الترتيب المباشر" : "Live leaderboard"}</h2>
-            <div className="tlb">
+            <div className="lb-head">
+              <h2>{ar ? "الترتيب المباشر" : "Live leaderboard"}</h2>
+              <span className="lb-live"><i />{ar ? "مباشر" : "Live"}</span>
+            </div>
+
+            <div className="lb">
+              <div className="lb-cols">
+                <span className="c-r">#</span>
+                <span className="c-p">{ar ? "اللاعب" : "Player"}</span>
+                <span className="c-s">{ar ? "النقاط" : "Score"}</span>
+              </div>
+
               {rows === null ? (
                 <p className="tlb-empty">{ar ? "جارِ تحميل الترتيب…" : "Loading…"}</p>
               ) : rows.length === 0 ? (
                 <p className="tlb-empty">{ar ? "لا يوجد لاعبون بعد — كن أول من يسجّل سكور!" : "No players yet."}</p>
               ) : (
-                <>
-                  <div className="podium">
-                    {top3.map((r) => (
-                      <div key={r.user_id} className={`pod p${r.rank}`} style={{ animationDelay: `${r.rank * 80}ms` }}>
-                        {r.avatar_url ? (
-                          <img src={r.avatar_url} alt="" className="pod-av" loading="lazy" />
-                        ) : (
-                          <span className="pod-av ph">{nameOf(r).slice(0, 1)}</span>
-                        )}
-                        <span className="pod-rank">#{r.rank}</span>
-                        <span className="pod-name">{nameOf(r)}</span>
-                        <span className="pod-score" dir="ltr">{r.score.toLocaleString("en-US")}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div>
-                    {rest.map((r, i) => (
-                      <div
-                        key={r.user_id}
-                        className={"lbrow" + (me?.played && me.rank === r.rank ? " me" : "")}
-                        style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}
-                      >
-                        <span className="r">{r.rank}</span>
-                        {r.avatar_url ? <img src={r.avatar_url} alt="" className="av" loading="lazy" /> : <span className="av ph">{nameOf(r).slice(0, 1)}</span>}
-                        <span className="nm">{nameOf(r)}</span>
-                        <b className="sc" dir="ltr">{r.score.toLocaleString("en-US")}</b>
-                      </div>
-                    ))}
-                  </div>
-                </>
+                <div className="lb-body">
+                  {rows.map((r) => {
+                    const mine = me?.played && me.rank === r.rank;
+                    const glow = r.level_color || "#4aa8ff";
+                    const inner = (
+                      <>
+                        <span className={"lb-r" + (r.rank <= 3 ? ` top t${r.rank}` : "")}>
+                          {r.rank <= 3 ? MEDALS[r.rank - 1] : r.rank}
+                        </span>
+                        <span className="lb-avwrap" style={{ ["--glow" as string]: glow }}>
+                          {r.avatar_url
+                            ? <img src={r.avatar_url} alt="" className="lb-av" loading="lazy" decoding="async" />
+                            : <span className="lb-av ph">{nameOf(r).slice(0, 1)}</span>}
+                          {r.level_icon ? <i className="lb-lvl" style={{ borderColor: glow }}>{r.level_icon}</i> : null}
+                        </span>
+                        <span className="lb-who">
+                          <b className="lb-nm">{nameOf(r)}</b>
+                          {(ar ? r.level_name_ar : r.level_name_en) ? (
+                            <em className="lb-lvlname" style={{ color: glow }}>{ar ? r.level_name_ar : r.level_name_en}</em>
+                          ) : null}
+                        </span>
+                        <b className="lb-sc" dir="ltr">{r.score.toLocaleString("en-US")}</b>
+                      </>
+                    );
+                    const cls = "lb-row" + (mine ? " me" : "") + (r.rank <= 3 ? ` t${r.rank}` : "");
+                    return r.username ? (
+                      <Link key={r.user_id} to="/u/$username" params={{ username: r.username }} className={cls}>
+                        {inner}
+                      </Link>
+                    ) : (
+                      <div key={r.user_id} className={cls}>{inner}</div>
+                    );
+                  })}
+                </div>
               )}
 
               {/* always-visible "you" row, even outside the top 20 */}
-              <div className={"lbrow me me-sticky"}>
+              <div className="lb-row me sticky">
                 {me?.played ? (
                   <>
-                    <span className="r">{me.rank}</span>
-                    {me.avatar_url ? <img src={me.avatar_url} alt="" className="av" /> : <span className="av ph">{ar ? "أنا" : "Me"}</span>}
-                    <span className="nm">
-                      {ar ? "مركزك" : "Your rank"} — {nameOf({ username: me.username ?? null, full_name: me.full_name ?? null })}
-                      {meInTop ? "" : ar ? " (خارج العشرين الأوائل)" : " (outside top 20)"}
+                    <span className="lb-r">{me.rank}</span>
+                    <span className="lb-avwrap">
+                      {me.avatar_url ? <img src={me.avatar_url} alt="" className="lb-av" /> : <span className="lb-av ph">{ar ? "أنا" : "Me"}</span>}
                     </span>
-                    <b className="sc" dir="ltr">{(me.score ?? 0).toLocaleString("en-US")}</b>
+                    <span className="lb-who">
+                      <b className="lb-nm">{ar ? "مركزك" : "Your rank"} — {nameOf({ username: me.username ?? null, full_name: me.full_name ?? null })}</b>
+                      {me.total ? <em className="lb-lvlname">{ar ? `من ${me.total} لاعب` : `of ${me.total} players`}</em> : null}
+                    </span>
+                    <b className="lb-sc" dir="ltr">{(me.score ?? 0).toLocaleString("en-US")}</b>
                   </>
                 ) : (
-                  <span className="nm">{ar ? "لم تلعب بعد — جولة واحدة تكفي لتدخل الترتيب 💪" : "Play one round to enter the ranking 💪"}</span>
+                  <span className="lb-who"><b className="lb-nm">{ar ? "لم تلعب بعد — جولة واحدة تكفي لتدخل الترتيب 💪" : "Play one round to enter the ranking 💪"}</b></span>
                 )}
               </div>
             </div>
           </section>
+
 
           <aside className="tp-side">
             <section className="tp-card">
