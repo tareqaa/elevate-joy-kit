@@ -44,17 +44,27 @@ export const listTournaments = createServerFn({ method: "GET" }).handler(
       },
     });
 
-    const { data, error } = await client.rpc("list_tournaments");
-    if (error) return { serverNow: new Date().toISOString(), tournaments: [] };
+    const [{ data, error }, settingRes] = await Promise.all([
+      client.rpc("list_tournaments"),
+      client.from("site_settings").select("value").eq("key", "arena_carousel_count").maybeSingle(),
+    ]);
+
+    const raw = settingRes.data?.value as unknown;
+    const parsed = typeof raw === "number" ? raw : Number(raw);
+    const carouselCount = Number.isFinite(parsed) && parsed > 0 ? Math.min(24, Math.round(parsed)) : 6;
+
+    if (error) return { serverNow: new Date().toISOString(), tournaments: [], carouselCount };
 
     const rows = (data ?? []) as (TournamentRow & { server_now: string })[];
     const serverNow = rows[0]?.server_now ?? new Date().toISOString();
     return {
       serverNow,
+      carouselCount,
       tournaments: rows.map(({ server_now: _ignored, ...t }) => ({
         ...t,
         prizes: Array.isArray(t.prizes) ? (t.prizes as TournamentPrize[]) : [],
       })),
     };
+
   },
 );
