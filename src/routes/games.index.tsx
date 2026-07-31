@@ -160,20 +160,20 @@ function GamesPage() {
                     <span className="tcar-game">🎮 {gameLabel(t.game_slug)}</span>
                     <h3 className="tcar-nm">{ar ? t.title_ar : t.title_en}</h3>
 
-                    <p className="tcar-time" style={{ unicodeBidi: "isolate" }}>
-                      🕒 {t.status === "ended"
-                        ? ar ? "انتهت" : "Finished"
-                        : (
-                          <>
-                            {t.status === "live" ? (ar ? "متبقي " : "Time left ") : ar ? "تبدأ بعد " : "Starts in "}
-                            <b>{formatCountdownFull((t.status === "live" ? t.end : t.start) - now, ar)}</b>
-                          </>
-                        )}
-                    </p>
+                    {t.status === "ended" ? (
+                      <p className="tcd-lbl">🕒 {ar ? "انتهت البطولة" : "Finished"}</p>
+                    ) : (
+                      <>
+                        <p className="tcd-lbl">
+                          🕒 {t.status === "live" ? (ar ? "المتبقي على النهاية" : "Time left") : ar ? "تبدأ بعد" : "Starts in"}
+                        </p>
+                        <Countdown ms={(t.status === "live" ? t.end : t.start) - now} ar={ar} />
+                      </>
+                    )}
 
                     <div className="tcar-meta">
-                      <span>👥 {t.participants.toLocaleString("en")} {ar ? "مشارك" : "players"}</span>
-                      <span>🎁 {t.prizes.length} {ar ? "جائزة" : "prizes"}</span>
+                      <span>👥 {ar ? "المشاركون" : "Players"}: {t.participants.toLocaleString("en")}</span>
+                      <span>🎁 {ar ? "عدد الجوائز" : "Prizes"}: {t.prizes.length}</span>
                     </div>
 
                     <Link to="/games/t/$id" params={{ id: t.id }} className="tcar-go">
