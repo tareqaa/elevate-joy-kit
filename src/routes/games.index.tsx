@@ -75,6 +75,7 @@ function GamesPage() {
   const { serverNow, tournaments } = loaded;
   const { lang, dir } = useLang();
   const ar = lang === "ar";
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const now = useServerClock(serverNow);
 
