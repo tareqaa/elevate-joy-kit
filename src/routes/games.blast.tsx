@@ -92,29 +92,61 @@ function BlastPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.score]);
 
-  /* ----- measure board cell size ----- */
-  const measure = useCallback(() => {
+  /* ----- measure real board geometry from the DOM (direction-agnostic) ----- */
+  const readMetrics = useCallback((): BoardMetrics | null => {
     const el = boardRef.current;
-    if (!el) return;
-    setCell(el.getBoundingClientRect().width / BOARD_SIZE);
+    if (!el) return null;
+    const c0 = el.children[0] as HTMLElement | undefined;
+    const c1 = el.children[1] as HTMLElement | undefined;
+    const cDown = el.children[BOARD_SIZE] as HTMLElement | undefined;
+    if (!c0 || !c1 || !cDown) return null;
+    const r0 = c0.getBoundingClientRect();
+    const r1 = c1.getBoundingClientRect();
+    const rd = cDown.getBoundingClientRect();
+    return {
+      cell0Left: r0.left,
+      cell0Top: r0.top,
+      cellW: r0.width,
+      cellH: r0.height,
+      stepX: Math.abs(r1.left - r0.left) || r0.width,
+      stepY: Math.abs(rd.top - r0.top) || r0.height,
+    };
   }, []);
+
+  const measure = useCallback(() => {
+    const m = readMetrics();
+    if (m) setMetrics(m);
+  }, [readMetrics]);
+
   useEffect(() => {
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, [measure]);
 
-  /* ----- drop target derived from drag position ----- */
+  const cell = metrics?.cellW ?? 40;
+  const stepX = metrics?.stepX ?? 44;
+  const stepY = metrics?.stepY ?? 44;
+
+  /* ----- ghost position: anchored on the piece's TOP-LEFT cell ----- */
+  const ghost = useMemo(() => {
+    if (!drag) return null;
+    const left = drag.x - drag.gx * drag.piece.w * stepX;
+    const top = drag.y - drag.gy * drag.piece.h * stepY - drag.lift;
+    return { left, top };
+  }, [drag, stepX, stepY]);
+
+  /* ----- drop target derived from measured geometry ----- */
   const target = useMemo(() => {
-    if (!drag || !boardRef.current) return null;
-    const rect = boardRef.current.getBoundingClientRect();
-    const ghostLeft = drag.x - drag.gx * drag.piece.w * cell;
-    const ghostTop = drag.y - drag.gy * drag.piece.h * cell - drag.lift;
-    const col = Math.round((ghostLeft - rect.left) / cell);
-    const row = Math.round((ghostTop - rect.top) / cell);
-    const ok = canPlace(game.board, drag.piece, row, col);
-    return { row, col, ok };
-  }, [drag, cell, game.board]);
+    if (!drag || !ghost || !metrics) return null;
+    return resolveDrop(
+      game.board,
+      drag.piece,
+      metrics,
+      ghost.left + metrics.cellW / 2,
+      ghost.top + metrics.cellH / 2,
+    );
+  }, [drag, ghost, metrics, game.board]);
 
   const previewCells = useMemo(() => {
     const map = new Map<number, boolean>();
@@ -127,6 +159,7 @@ function BlastPage() {
     }
     return map;
   }, [drag, target]);
+
 
   /* ----- pointer handlers ----- */
   const onPieceDown = (e: React.PointerEvent, trayIndex: number, piece: PieceDef) => {
