@@ -456,6 +456,7 @@ function BlastPage() {
               })}
 
               {banner && <span key={banner.id} className="bb-banner">{banner.text}</span>}
+              {speedNote && <span key={speedNote.id} className="bb-speed">{speedNote.text}</span>}
             </div>
 
             {popups.map((p) => (
