@@ -183,7 +183,7 @@
   position:fixed; left:0; top:0; z-index:60; display:grid; gap:0;
   pointer-events:none; opacity:.94; will-change:transform;
 }
-.bg-cell{border-radius:8px;}
+.bg-cell{border-radius:11px;}
 
 /* ---- tray ---- */
 .blast-tray{
@@ -205,7 +205,7 @@
 .bt-piece:active{cursor:grabbing;}
 .bt-piece.enter{animation:pieceIn .26s var(--ease) both; animation-delay:calc(var(--i,0) * 70ms);}
 @keyframes pieceIn{0%{opacity:0; transform:translateY(10px) scale(.82);}100%{opacity:1; transform:none;}}
-.bt-cell{border-radius:6px;}
+.bt-cell{border-radius:9px;}
 
 /* ---- floating score / banners ---- */
 .bb-pop{
