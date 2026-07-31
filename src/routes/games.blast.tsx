@@ -51,7 +51,7 @@ const MAX_POPUPS = 4;
 const BOARD_GAP_PX = 2;
 const BOARD_PADDING_PX = 6;
 const BOARD_BORDER_PX = 0;
-const BOARD_RESIZE_DEBOUNCE_MS = 120;
+const BOARD_RESIZE_DEBOUNCE_MS = 160;
 
 type BoardLayout = { boardPx: number; cellPx: number };
 
@@ -315,9 +315,19 @@ function BlastPage() {
       // ignore measurements taken before the HUD / tray have laid out
       if (r.width < 40 || r.height < 40) return;
       const next = calculateBoardLayout(r.width, r.height);
-      setBoardLayout((current) =>
-        current.boardPx === next.boardPx && current.cellPx === next.cellPx ? current : next,
-      );
+      setBoardLayout((current) => {
+        if (current.cellPx === 0 || current.cellPx === next.cellPx) return next;
+
+        // Chrome can alternate a fractional ResizeObserver measurement around
+        // one grid threshold at non-100% zoom. Keep the current integer cell
+        // while it still fits; resize only when a complete cell step is gained
+        // or the board genuinely overflows its available square.
+        const availablePx = Math.floor(Math.min(r.width, r.height));
+        const currentFits = current.boardPx <= availablePx;
+        const roomForNextStep = availablePx >= current.boardPx + BOARD_SIZE;
+        if (currentFits && !roomForNextStep && next.cellPx === current.cellPx - 1) return current;
+        return next;
+      });
       setMeasured(true);
     };
 
@@ -335,10 +345,8 @@ function BlastPage() {
 
     const ro = new ResizeObserver(schedule);
     ro.observe(el);
-    if (el.parentElement) ro.observe(el.parentElement);
     window.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("orientationchange", schedule);
-    window.visualViewport?.addEventListener("resize", schedule, { passive: true });
     return () => {
       window.clearTimeout(timer);
       cancelAnimationFrame(raf1);
@@ -346,7 +354,6 @@ function BlastPage() {
       ro.disconnect();
       window.removeEventListener("resize", schedule);
       window.removeEventListener("orientationchange", schedule);
-      window.visualViewport?.removeEventListener("resize", schedule);
     };
     // re-measure at the start of every new round
   }, [game.seed]);
