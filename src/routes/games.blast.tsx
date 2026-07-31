@@ -410,15 +410,17 @@ function BlastPage() {
   const previewCells = useMemo(() => {
     const map = new Map<number, boolean>();
     const d = dragInfo;
-    if (!d || !target) return map;
+    // never show a partial / out-of-board preview: valid placements only
+    if (!d || !target || !target.ok) return map;
     for (const [dr, dc] of d.piece.cells) {
       const r = target.row + dr;
       const c = target.col + dc;
       if (r < 0 || c < 0 || r >= BOARD_SIZE || c >= BOARD_SIZE) continue;
-      map.set(idx(r, c), target.ok);
+      map.set(idx(r, c), true);
     }
     return map;
   }, [dragInfo, target]);
+
 
   const deadTray = useMemo(
     () => game.tray.map((p) => (p ? !hasAnyPlacement(game.board, p) : false)),
@@ -444,14 +446,18 @@ function BlastPage() {
     const step = cs + BOARD_GAP_PX;
     const left = d.x - (d.piece.w * step - BOARD_GAP_PX) / 2;
     const top = d.y - (d.piece.h * step - BOARD_GAP_PX) / 2 - d.lift;
-    // free, smooth pointer following (grid alignment is shown by the board preview)
-    if (ghostRef.current) {
-      ghostRef.current.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-    }
     const hit = cellUnderPoint(left + cs / 2, top + cs / 2);
     const next: Target = hit
       ? { row: hit.row, col: hit.col, ok: canPlace(gameRef.current.board, d.piece, hit.row, hit.col) }
       : null;
+    // free, smooth pointer following outside the board; once the piece is a
+    // valid placement, the in-grid preview takes over so nothing can ever be
+    // painted past the board frame
+    if (ghostRef.current) {
+      ghostRef.current.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+      ghostRef.current.style.visibility = next?.ok ? "hidden" : "visible";
+    }
+
 
     const cur = targetRef.current;
     const same =
@@ -689,13 +695,14 @@ function BlastPage() {
                     const col = i % BOARD_SIZE;
                     const pv = previewCells.get(i);
                     const cl = clearing.get(i);
-                    const colorId = cl ? cl.color : v;
+                    const isPv = pv === true && !v && !cl;
+                    const colorId = cl ? cl.color : v || (isPv && dragInfo ? dragInfo.piece.color : 0);
                     const cls =
                       "bb-cell" +
                       (colorId ? " filled" : "") +
                       (cl ? " clearing" : "") +
                       (placed.includes(i) ? " popped" : "") +
-                      (pv === true ? " pv-ok" : pv === false ? " pv-bad" : "");
+                      (isPv ? " pv-ok" : "");
                     return (
                       <BoardCell
                         key={i}
@@ -707,6 +714,7 @@ function BlastPage() {
                       />
                     );
                   })}
+
 
                   {banner && (
                     <span key={banner.id} className={"bb-banner b" + (banner.size || 1) + (banner.clean ? " clean" : "")}>
