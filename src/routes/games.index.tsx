@@ -6,8 +6,10 @@ import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
+import { HowToPlaySlides } from "@/components/gx/games/HowToPlaySlides";
 import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
 import { listTournaments, type TournamentRow, type TournamentPrize } from "@/lib/gx/tournaments.functions";
+
 
 export const Route = createFileRoute("/games/")({
   head: () => ({
@@ -28,14 +30,14 @@ export const Route = createFileRoute("/games/")({
   loader: () => listTournaments(),
   errorComponent: ({ error }) => (
     <StoreShell>
-      <main className="container" style={{ padding: "60px 0" }} role="alert">
+      <main className="wrap" style={{ padding: "60px 0" }} role="alert">
         {error.message}
       </main>
     </StoreShell>
   ),
   notFoundComponent: () => (
     <StoreShell>
-      <main className="container" style={{ padding: "60px 0" }}>
+      <main className="wrap" style={{ padding: "60px 0" }}>
         لا توجد بطولات.
       </main>
     </StoreShell>
@@ -106,13 +108,16 @@ function GamesPage() {
   const upcoming = cards.filter((c) => c.id !== featured?.id && c.status !== "ended");
   const past = cards.filter((c) => c.id !== featured?.id && c.status === "ended");
 
-  // small "top players" board for the featured tournament — gives a daily reason to come back
+  // leaderboard for the featured tournament — gives a daily reason to come back
   const [top, setTop] = useState<TopRow[] | null>(null);
+  const [how, setHow] = useState(false);
+  const [prizesOpen, setPrizesOpen] = useState(false);
+
   useEffect(() => {
     if (!featured?.id) return;
     let alive = true;
     supabase
-      .rpc("tournament_leaderboard", { _tournament_id: featured.id, _limit: 3 })
+      .rpc("tournament_leaderboard", { _tournament_id: featured.id, _limit: 10 })
       .then(({ data }) => {
         if (alive) setTop(((data ?? []) as unknown as TopRow[]).map((r) => ({ ...r, rank: Number(r.rank) })));
       });
@@ -121,10 +126,29 @@ function GamesPage() {
     };
   }, [featured?.id]);
 
+  const prizes = useMemo(
+    () => [...(featured?.prizes ?? [])].sort((a, b) => (a.place ?? 99) - (b.place ?? 99)),
+    [featured],
+  );
+
+  const steps = ar
+    ? [
+        { i: "🧩", t: "اسحب القطعة", d: "عندك ٣ قطع — اسحب أي وحدة وحطها على اللوح ٨×٨." },
+        { i: "💥", t: "امسح خط", d: "كمّل صف أو عمود كامل ليختفي وتاخذ نقاط." },
+        { i: "🔥", t: "اجمع كومبو", d: "امسح أكثر من خط بحركة وحدة، والنقاط تتضاعف." },
+        { i: "🏆", t: "اصعد بالترتيب", d: "أعلى سكور بالبطولة بياخذ جائزة مركزه." },
+      ]
+    : [
+        { i: "🧩", t: "Drag a piece", d: "You get 3 pieces — drop any of them on the 8×8 board." },
+        { i: "💥", t: "Clear a line", d: "Fill a full row or column to clear it and score." },
+        { i: "🔥", t: "Chain combos", d: "Clear multiple lines in one move to multiply points." },
+        { i: "🏆", t: "Climb the ranks", d: "Your best score decides your prize placement." },
+      ];
+
   return (
     <StoreShell>
       <main dir={dir} className="arena">
-        <section className="container">
+        <section className="wrap">
           <div className="arena-hero">
             <ArenaFx />
             <div className="ar-in">
@@ -143,8 +167,8 @@ function GamesPage() {
                             ? ar ? "البطولة القادمة" : "Next up"
                             : ar ? "انتهت" : "Ended"}
                       </span>
-                      <h1 className="ar-title">{ar ? featured.title_ar : featured.title_en}</h1>
-                      <p className="ar-sub">{featured.game_slug.toUpperCase()} · GX ARENA</p>
+                      <h1 className="ar-title">GX BLAST</h1>
+                      <p className="ar-sub">{ar ? featured.title_ar : featured.title_en}</p>
                     </div>
                   </div>
 
@@ -180,21 +204,26 @@ function GamesPage() {
                     </div>
                   </div>
 
-                  {featured.status === "live" ? (
-                    <Link to="/games/t/$id" params={{ id: featured.id }} className="ar-cta">
-                      ⚡ {ar ? "العب الآن" : "Play now"}
-                    </Link>
-                  ) : (
-                    <span className="ar-cta off">
-                      {featured.status === "ended"
-                        ? ar ? "انتهت البطولة" : "Tournament ended"
-                        : ar ? "لم تبدأ بعد" : "Not started yet"}
-                    </span>
-                  )}
+                  <div className="ar-actions">
+                    {featured.status === "live" ? (
+                      <Link to="/games/t/$id" params={{ id: featured.id }} className="ar-cta">
+                        ⚡ {ar ? "العب الآن" : "Play now"}
+                      </Link>
+                    ) : (
+                      <span className="ar-cta off">
+                        {featured.status === "ended"
+                          ? ar ? "انتهت البطولة" : "Tournament ended"
+                          : ar ? "لم تبدأ بعد" : "Not started yet"}
+                      </span>
+                    )}
+                    <button type="button" className="ar-cta2" onClick={() => setHow(true)}>
+                      🎮 {ar ? "كيف ألعب؟" : "How to play"}
+                    </button>
+                  </div>
                 </>
               ) : (
                 <>
-                  <h1 className="ar-title">GX ARENA</h1>
+                  <h1 className="ar-title">GX BLAST</h1>
                   <span className="ar-cta off">{ar ? "لا توجد بطولات حاليًا" : "No tournaments yet"}</span>
                 </>
               )}
@@ -203,35 +232,88 @@ function GamesPage() {
         </section>
 
         {featured && (
-          <section className="container">
-            <h2 className="ar-sec-title">🏆 {ar ? "أفضل اللاعبين" : "Top players"}</h2>
-            <div className="tp3">
-              {top === null ? (
-                <p className="trn-empty">{ar ? "جارِ تحميل الترتيب…" : "Loading…"}</p>
-              ) : top.length === 0 ? (
-                <p className="trn-empty">{ar ? "ما في لاعبين بعد — كن أول اسم على القمة." : "No players yet — be the first."}</p>
-              ) : (
-                top.map((r) => (
-                  <div key={r.user_id} className={`tp3-row m${r.rank}`}>
-                    <i aria-hidden>{MEDALS[r.rank - 1] ?? "🎮"}</i>
-                    {r.avatar_url ? (
-                      <img src={r.avatar_url} alt="" className="tp3-av" loading="lazy" />
-                    ) : (
-                      <span className="tp3-av ph">{nameOf(r).slice(0, 1)}</span>
-                    )}
-                    <span className="tp3-nm">{nameOf(r)}</span>
-                    <b className="tp3-sc" dir="ltr">{r.score.toLocaleString("en")}</b>
-                  </div>
-                ))
-              )}
-              <Link to="/games/t/$id" params={{ id: featured.id }} className="tp3-all">
-                {ar ? "الترتيب الكامل" : "Full leaderboard"}
-              </Link>
+          <section className="wrap">
+            <div className="ar-cols">
+              {/* ---- leaderboard ---- */}
+              <div className="ar-panel">
+                <h2 className="ar-sec-title" style={{ marginTop: 0 }}>🏆 {ar ? "الترتيب المباشر" : "Live leaderboard"}</h2>
+                <div className="tp3">
+                  {top === null ? (
+                    <p className="trn-empty">{ar ? "جارِ تحميل الترتيب…" : "Loading…"}</p>
+                  ) : top.length === 0 ? (
+                    <p className="trn-empty">{ar ? "ما في لاعبين بعد — كن أول اسم على القمة." : "No players yet — be the first."}</p>
+                  ) : (
+                    top.map((r) => (
+                      <div key={r.user_id} className={`tp3-row m${r.rank}`}>
+                        <i aria-hidden>{MEDALS[r.rank - 1] ?? `#${r.rank}`}</i>
+                        {r.avatar_url ? (
+                          <img src={r.avatar_url} alt="" className="tp3-av" loading="lazy" />
+                        ) : (
+                          <span className="tp3-av ph">{nameOf(r).slice(0, 1)}</span>
+                        )}
+                        <span className="tp3-nm">{nameOf(r)}</span>
+                        <b className="tp3-sc" dir="ltr">{r.score.toLocaleString("en")}</b>
+                      </div>
+                    ))
+                  )}
+                  <Link to="/games/t/$id" params={{ id: featured.id }} className="tp3-all">
+                    {ar ? "الترتيب الكامل" : "Full leaderboard"}
+                  </Link>
+                </div>
+              </div>
+
+              {/* ---- prizes ---- */}
+              <div className="ar-panel">
+                <h2 className="ar-sec-title" style={{ marginTop: 0 }}>🎁 {ar ? "جوائز البطولة" : "Tournament prizes"}</h2>
+                <div className="tp3">
+                  {prizes.length === 0 ? (
+                    <p className="trn-empty">{ar ? "سيتم الإعلان عن الجوائز قريبًا." : "Prizes announced soon."}</p>
+                  ) : (
+                    <>
+                      <div className="przlist">
+                        {prizes.slice(0, 5).map((p, i) => {
+                          const place = p.place ?? i + 1;
+                          return (
+                            <div key={place} className={`przrow g${Math.min(place, 4)}`}>
+                              <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
+                              <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
+                              <span>{ar ? p.label_ar : p.label_en}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {prizes.length > 5 && (
+                        <button type="button" className="prz-all" onClick={() => setPrizesOpen(true)}>
+                          {ar ? `عرض كل الجوائز (${prizes.length})` : `View all prizes (${prizes.length})`}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </section>
         )}
 
-        <section className="container">
+        {/* ---- how to play ---- */}
+        <section className="wrap">
+          <h2 className="ar-sec-title">🎮 {ar ? "كيف تلعب GX BLAST" : "How to play GX BLAST"}</h2>
+          <div className="htg">
+            {steps.map((s, i) => (
+              <article key={s.t} className="htg-c" style={{ animationDelay: `${i * 70}ms` }}>
+                <span className="htg-n">{i + 1}</span>
+                <i aria-hidden>{s.i}</i>
+                <b>{s.t}</b>
+                <p>{s.d}</p>
+              </article>
+            ))}
+          </div>
+          <button type="button" className="prz-all" onClick={() => setHow(true)}>
+            {ar ? "شاهد الشرح خطوة بخطوة" : "Watch the step-by-step guide"}
+          </button>
+        </section>
+
+        <section className="wrap">
           <h2 className="ar-sec-title">{ar ? "البطولات القادمة" : "Upcoming tournaments"}</h2>
           {upcoming.length === 0 ? (
             <p className="trn-empty">{ar ? "ما في بطولات قادمة حاليًا — ترقّب الأسبوع الجاي." : "Nothing scheduled yet — check back soon."}</p>
@@ -262,7 +344,7 @@ function GamesPage() {
         </section>
 
         {past.length > 0 && (
-          <section className="container">
+          <section className="wrap">
             <h2 className="ar-sec-title">{ar ? "سجل البطولات" : "Past tournaments"}</h2>
             <ul className="uplist past">
               {past.map((t) => (
@@ -281,7 +363,40 @@ function GamesPage() {
             </ul>
           </section>
         )}
+
+        {how && (
+          <div className="tp-modal" role="dialog" aria-modal="true" onClick={() => setHow(false)}>
+            <div className="tp-modal-card" onClick={(e) => e.stopPropagation()}>
+              <h3 className="tp-modal-t">{ar ? "كيف تلعب GX BLAST" : "How to play GX BLAST"}</h3>
+              <HowToPlaySlides onDone={() => setHow(false)} doneLabel={ar ? "تمام" : "Got it"} />
+            </div>
+          </div>
+        )}
+
+        {prizesOpen && (
+          <div className="tp-modal" role="dialog" aria-modal="true" onClick={() => setPrizesOpen(false)}>
+            <div className="tp-modal-card" onClick={(e) => e.stopPropagation()}>
+              <h3 className="tp-modal-t">{ar ? "كل جوائز البطولة" : "All tournament prizes"}</h3>
+              <div className="przlist scroll">
+                {prizes.map((p, i) => {
+                  const place = p.place ?? i + 1;
+                  return (
+                    <div key={place} className={`przrow g${Math.min(place, 4)}`}>
+                      <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
+                      <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
+                      <span>{ar ? p.label_ar : p.label_en}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <button type="button" className="prz-all" onClick={() => setPrizesOpen(false)}>
+                {ar ? "إغلاق" : "Close"}
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </StoreShell>
   );
 }
+
