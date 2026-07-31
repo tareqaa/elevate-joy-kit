@@ -18,6 +18,10 @@ import {
 } from "@/lib/gx/games/blast-engine";
 
 export const Route = createFileRoute("/games/blast")({
+  ssr: false,
+  validateSearch: (s: Record<string, unknown>) => ({
+    t: typeof s.t === "string" && s.t ? s.t : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "GX Blast — لعبة البلوكات داخل GX Store" },
