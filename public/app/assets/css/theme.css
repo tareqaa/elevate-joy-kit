@@ -595,7 +595,7 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   .stat-number{font-size:22px;}
 
   .prod-card{min-width:0;}
-  .prod-name{font-size:13.5px; min-height:0;}
+  .prod-name{font-size:13.5px; min-height:calc(2 * 1.4em); max-height:calc(2 * 1.4em);}
   .prod-new{font-size:17px;}
   .add-cart-btn, .buy-now-btn{padding:10px; font-size:12.5px;}
 
