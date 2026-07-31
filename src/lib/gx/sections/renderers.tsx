@@ -381,7 +381,7 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
               </div>
             );
           })}
-        </div>
+        </CarouselRow>
       </div>
     </section>
   );
