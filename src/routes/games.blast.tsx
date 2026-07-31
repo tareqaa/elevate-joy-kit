@@ -721,7 +721,7 @@ function BlastPage() {
   const streakHot = game.streak > 0;
   const heat = Math.min(8, game.streak);
   const isRecord = game.over && game.score > 0 && game.score >= best && game.score > bestAtStart;
-  const diff = game.score - bestAtStart;
+  
   const timedOut = game.endReason === "timeout";
   const trayCell = Math.max(12, Math.round((boardPx || 320) / 8 * 0.52));
   /* fixed tray box: never grows/shrinks with the piece shape (5-long line, 3x3, ...) */
