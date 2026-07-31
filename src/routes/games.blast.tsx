@@ -420,16 +420,25 @@ function BlastPage() {
 
   /* ----- tournament: submit the finished run once ----- */
   const submitted = useRef<string>("");
+  const [arenaRank, setArenaRank] = useState<{ rank: number | null; delta: number | null } | null>(null);
   useEffect(() => {
     if (!tournamentId || !game.over || game.score <= 0) return;
     const key = `${tournamentId}:${game.seed}`;
     if (submitted.current === key) return;
     submitted.current = key;
-    void supabase.rpc("submit_tournament_score", {
-      _tournament_id: tournamentId,
-      _score: game.score,
-    });
+    void (async () => {
+      const before = await supabase.rpc("my_tournament_standing", { _tournament_id: tournamentId });
+      const prevRank = (before.data as { played?: boolean; rank?: number } | null)?.rank ?? null;
+      await supabase.rpc("submit_tournament_score", { _tournament_id: tournamentId, _score: game.score });
+      const after = await supabase.rpc("my_tournament_standing", { _tournament_id: tournamentId });
+      const newRank = (after.data as { played?: boolean; rank?: number } | null)?.rank ?? null;
+      setArenaRank({
+        rank: newRank,
+        delta: prevRank && newRank ? prevRank - newRank : null,
+      });
+    })();
   }, [tournamentId, game.over, game.score, game.seed]);
+
 
   const timerActive = !game.over && !paused;
   const onExpire = useCallback(() => setGame((g) => timeoutGame(g)), []);
