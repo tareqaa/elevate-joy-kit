@@ -204,18 +204,30 @@ function TournamentPage() {
             </div>
 
             <div className="tp-actions" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                className={"ar-cta" + (status !== "live" || !t.game_path ? " off" : "")}
-                disabled={status !== "live" || !t.game_path}
-                onClick={() => t.game_path && navigate({ to: t.game_path, search: { t: t.id } as never })}
-              >
-                ⚡ {status === "live" ? (ar ? "ابدأ اللعب" : "Start playing") : status === "ended" ? (ar ? "انتهت البطولة" : "Tournament ended") : (ar ? "لم تبدأ بعد" : "Not started yet")}
-              </button>
+              {status !== "ended" && !registered ? (
+                <button type="button" className="ar-cta" disabled={joining} onClick={register}>
+                  📝 {joining ? (ar ? "جارِ التسجيل…" : "Registering…") : signedIn === false ? (ar ? "سجّل دخولك للاشتراك" : "Sign in to register") : (ar ? "سجّل في البطولة" : "Register for tournament")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={"ar-cta" + (status !== "live" || !t.game_path ? " off" : "")}
+                  disabled={status !== "live" || !t.game_path}
+                  onClick={() => t.game_path && navigate({ to: t.game_path, search: { t: t.id } as never })}
+                >
+                  ⚡ {status === "live" ? (ar ? "ابدأ اللعب" : "Start playing") : status === "ended" ? (ar ? "انتهت البطولة" : "Tournament ended") : (ar ? "لم تبدأ بعد" : "Not started yet")}
+                </button>
+              )}
               <button type="button" className="btn tp-how" onClick={() => setHow((v) => !v)}>
                 {how ? (ar ? "إخفاء الشرح" : "Hide how to play") : (ar ? "كيف ألعب؟" : "How to play?")}
               </button>
             </div>
+            <p className="reg-note">
+              {registered
+                ? <span className="reg-ok">{ar ? "✅ أنت مسجّل في هذه البطولة" : "✅ You're registered"}</span>
+                : ar ? "لازم تسجّل بالبطولة قبل ما تبدأ اللعب." : "You must register before you can play."}
+            </p>
+
           </div>
         </header>
 
