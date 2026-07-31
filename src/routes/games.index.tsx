@@ -5,8 +5,9 @@ import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
-import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
+import { formatCountdown } from "@/lib/gx/games/time";
 import { CarouselRow } from "@/components/gx/CarouselRow";
+import { supabase } from "@/integrations/supabase/client";
 import { listTournaments, type TournamentRow, type TournamentPrize } from "@/lib/gx/tournaments.functions";
 
 export const Route = createFileRoute("/games/")({
@@ -80,6 +81,20 @@ function GamesPage() {
   const ar = lang === "ar";
   const now = useServerClock(serverNow);
 
+  // which tournaments the current user already joined (button label only)
+  const [joined, setJoined] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session?.user?.id;
+      if (!uid) return;
+      const { data } = await supabase.from("tournament_registrations").select("tournament_id").eq("user_id", uid);
+      if (alive && data) setJoined(new Set(data.map((r) => r.tournament_id as string)));
+    })();
+    return () => { alive = false; };
+  }, []);
+
   // recompute status from the SERVER-anchored clock, never the raw browser clock
   const cards = useMemo(() => {
     const rank = { live: 0, upcoming: 1, ended: 2 } as const;
@@ -97,7 +112,6 @@ function GamesPage() {
   }, [tournaments, now]);
 
   const items = cards.slice(0, Math.max(1, carouselCount));
-  const liveCount = cards.filter((c) => c.status === "live").length;
 
   return (
     <StoreShell>
@@ -106,25 +120,14 @@ function GamesPage() {
           <div className="arena-hero arena-hero-sm">
             <ArenaFx />
             <div className="ar-in">
-              <span className="ar-kicker">GX ARENA</span>
               <h1 className="ar-title">GX BLAST</h1>
               <p className="ar-sub">
-                {ar
-                  ? "اختر بطولة، سجّل فيها، والعب بحرية طول مدتها — أعلى سكور يفوز بجائزة مركزه."
-                  : "Pick a tournament, register, then play freely until it ends — the best score takes its prize."}
-              </p>
-              <p className="ar-sub">
-                {liveCount > 0
-                  ? ar
-                    ? `🔥 ${liveCount} بطولة متاحة الآن`
-                    : `🔥 ${liveCount} tournament(s) live now`
-                  : ar
-                    ? "لا توجد بطولة نشطة حاليًا"
-                    : "No live tournament right now"}
+                {ar ? "سجّل، العب، واربح جوائز." : "Register, play, win prizes."}
               </p>
             </div>
           </div>
         </section>
+
 
         <section className="wrap">
           <h2 className="ar-sec-title">{ar ? "البطولات المتاحة" : "Available tournaments"}</h2>
@@ -133,7 +136,6 @@ function GamesPage() {
           ) : (
             <CarouselRow className="tcar">
               {items.map((t) => {
-                const pool = prizePool(t.prizes);
                 return (
                   <article key={t.id} className={`tcar-c is-${t.status}`}>
                     <div className="tcar-top">
@@ -149,29 +151,27 @@ function GamesPage() {
 
                     <h3 className="tcar-nm">{ar ? t.title_ar : t.title_en}</h3>
 
-                    <div className="tcar-dates" style={{ unicodeBidi: "isolate" }}>
-                      <span>{ar ? "تبدأ" : "Starts"}: {formatDateTime(t.starts_at, ar)}</span>
-                      <span>{ar ? "تنتهي" : "Ends"}: {formatDateTime(t.ends_at, ar)}</span>
-                    </div>
-
                     <p className="tcar-time" style={{ unicodeBidi: "isolate" }}>
                       🕒 {t.status === "ended"
-                        ? ar ? "البطولة منتهية" : "Tournament finished"
+                        ? ar ? "انتهت" : "Finished"
                         : t.status === "live"
-                          ? `${ar ? "متبقٍ" : "Time left"} ${formatCountdown(t.end - now, ar)}`
+                          ? `${ar ? "يتبقى" : "Time left"} ${formatCountdown(t.end - now, ar)}`
                           : `${ar ? "تبدأ بعد" : "Starts in"} ${formatCountdown(t.start - now, ar)}`}
                     </p>
 
                     <div className="tcar-meta">
                       <span>👥 {t.participants.toLocaleString("en")} {ar ? "مشارك" : "players"}</span>
-                      <span>🎁 {pool > 0 ? `${pool.toLocaleString("en")} GX` : `${t.prizes.length} ${ar ? "جوائز" : "prizes"}`}</span>
+                      <span>🎁 {t.prizes.length} {ar ? "جائزة" : "prizes"}</span>
                     </div>
 
                     <Link to="/games/t/$id" params={{ id: t.id }} className="tcar-go">
                       {t.status === "ended"
-                        ? ar ? "شوف النتائج" : "View results"
-                        : ar ? "سجّل وادخل البطولة" : "Register & enter"}
+                        ? ar ? "النتائج" : "Results"
+                        : joined.has(t.id)
+                          ? ar ? "ادخل البطولة" : "Enter tournament"
+                          : ar ? "سجّل الآن" : "Register now"}
                     </Link>
+
                   </article>
                 );
               })}
