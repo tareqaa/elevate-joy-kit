@@ -314,55 +314,51 @@ function GamesPage() {
         </section>
 
         <section className="wrap">
-          <h2 className="ar-sec-title">{ar ? "البطولات القادمة" : "Upcoming tournaments"}</h2>
-          {upcoming.length === 0 ? (
-            <p className="trn-empty">{ar ? "ما في بطولات قادمة حاليًا — ترقّب الأسبوع الجاي." : "Nothing scheduled yet — check back soon."}</p>
+          <h2 className="ar-sec-title">{ar ? "كل البطولات" : "All tournaments"}</h2>
+          {carouselItems.length === 0 ? (
+            <p className="trn-empty">{ar ? "ما في بطولات حاليًا — ترقّب الأسبوع الجاي." : "Nothing scheduled yet — check back soon."}</p>
           ) : (
-            <ul className="uplist">
-              {upcoming.map((t, i) => {
+            <CarouselRow className="tcar">
+              {carouselItems.map((t) => {
                 const pool = prizePool(t.prizes);
                 return (
-                  <li key={t.id} className={`uprow is-${t.status}`} style={{ animationDelay: `${Math.min(i, 6) * 60}ms` }}>
-                    <span className="up-ic" aria-hidden><GameIcon slug={t.game_slug} size={34} /></span>
-                    <span className="up-nm">{ar ? t.title_ar : t.title_en}</span>
-                    <span className="up-time" style={{ unicodeBidi: "isolate" }}>
-                      🕒 {t.status === "live"
-                        ? `${ar ? "ينتهي خلال" : "Ends in"} ${formatCountdown(t.end - now, ar)}`
-                        : `${ar ? "تبدأ خلال" : "Starts in"} ${formatCountdown(t.start - now, ar)}`}
-                    </span>
-                    <span className="up-prz">
-                      🏆 {pool > 0 ? `${pool.toLocaleString("en")} GX Coin` : `${t.prizes.length} ${ar ? "جوائز" : "prizes"}`}
-                    </span>
-                    <Link to="/games/t/$id" params={{ id: t.id }} className="up-go">
-                      {t.status === "live" ? (ar ? "🚀 العب الآن" : "🚀 Play now") : ar ? "التفاصيل" : "Details"}
+                  <article key={t.id} className={`tcar-c is-${t.status}`}>
+                    <div className="tcar-top">
+                      <span className="tcar-ic" aria-hidden><GameIcon slug={t.game_slug} size={40} /></span>
+                      <span className={`trn-badge b-${t.status}`}>
+                        {t.status === "live"
+                          ? ar ? "🔥 نشطة الآن" : "🔥 Live"
+                          : t.status === "upcoming"
+                            ? ar ? "قريبًا" : "Upcoming"
+                            : ar ? "انتهت" : "Ended"}
+                      </span>
+                    </div>
+                    <h3 className="tcar-nm">{ar ? t.title_ar : t.title_en}</h3>
+                    <p className="tcar-time" style={{ unicodeBidi: "isolate" }}>
+                      🕒 {t.status === "ended"
+                        ? `${ar ? "انتهت في" : "Ended on"} ${formatDateTime(t.ends_at, ar)}`
+                        : t.status === "live"
+                          ? `${ar ? "ينتهي خلال" : "Ends in"} ${formatCountdown(t.end - now, ar)}`
+                          : `${ar ? "تبدأ خلال" : "Starts in"} ${formatCountdown(t.start - now, ar)}`}
+                    </p>
+                    <div className="tcar-meta">
+                      <span>🏆 {pool > 0 ? `${pool.toLocaleString("en")} GX` : `${t.prizes.length} ${ar ? "جوائز" : "prizes"}`}</span>
+                      <span>👥 {t.participants.toLocaleString("en")}</span>
+                    </div>
+                    <Link to="/games/t/$id" params={{ id: t.id }} className="tcar-go">
+                      {t.status === "live"
+                        ? ar ? "🚀 سجّل والعب" : "🚀 Register & play"
+                        : t.status === "upcoming"
+                          ? ar ? "سجّل الآن" : "Register now"
+                          : ar ? "النتائج" : "Results"}
                     </Link>
-                  </li>
+                  </article>
                 );
               })}
-            </ul>
+            </CarouselRow>
           )}
         </section>
 
-        {past.length > 0 && (
-          <section className="wrap">
-            <h2 className="ar-sec-title">{ar ? "سجل البطولات" : "Past tournaments"}</h2>
-            <ul className="uplist past">
-              {past.map((t) => (
-                <li key={t.id} className="uprow is-ended">
-                  <span className="up-ic" aria-hidden><GameIcon slug={t.game_slug} size={34} /></span>
-                  <span className="up-nm">{ar ? t.title_ar : t.title_en}</span>
-                  <span className="up-time" style={{ unicodeBidi: "isolate" }}>
-                    {ar ? "انتهت في" : "Ended on"} {formatDateTime(t.ends_at, ar)}
-                  </span>
-                  <span className="up-prz">👥 {t.participants.toLocaleString("en")}</span>
-                  <Link to="/games/t/$id" params={{ id: t.id }} className="up-go ghost">
-                    {ar ? "النتائج" : "Results"}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
 
         {how && (
           <div className="tp-modal" role="dialog" aria-modal="true" onClick={() => setHow(false)}>
