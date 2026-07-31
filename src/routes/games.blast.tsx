@@ -54,8 +54,8 @@ const FACES: Record<number, React.CSSProperties> = Object.fromEntries(
     Number(k),
     {
       // flat colour with a very subtle inner gradient — no glow, no outer shadow
-      backgroundImage: `linear-gradient(180deg, color-mix(in oklab, ${c} 92%, #ffffff) 0%, ${c} 55%, color-mix(in oklab, ${c} 92%, #000000) 100%)`,
-      boxShadow: `inset 0 0 0 1.5px color-mix(in oklab, ${c} 88%, #ffffff)`,
+      backgroundImage: `linear-gradient(180deg, color-mix(in oklab, ${c} 96%, #ffffff) 0%, ${c} 60%, color-mix(in oklab, ${c} 95%, #000000) 100%)`,
+      boxShadow: `inset 0 0 0 1.5px color-mix(in oklab, ${c} 90%, #ffffff)`,
     } as React.CSSProperties,
   ]),
 ) as Record<number, React.CSSProperties>;
