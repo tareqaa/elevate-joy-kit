@@ -91,15 +91,19 @@
 .blast-perf.on{color:#c6ff3d; border-color:rgba(198,255,61,.45); background:rgba(198,255,61,.08);}
 
 .blast-stage{
-  flex:1 1 auto; min-height:0; display:flex; gap:18px;
+  flex:1 1 auto; min-height:0; display:flex;
   padding:0 10px 8px; align-items:stretch; justify-content:center;
 }
-.blast-play{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:8px;}
-.blast-panel{display:none;}
-.blast-panel-inline{flex:0 0 auto; order:-1;}
+.blast-play{
+  flex:1 1 auto; min-width:0; display:flex; flex-direction:column;
+  align-items:center; gap:6px;
+}
+.blast-column{max-width:100%; margin:0 auto;}
+.blast-panel,.blast-panel-inline{display:none;}
 
-.blast-area{flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center;}
+.blast-area{flex:1 1 auto; min-height:0; width:100%; display:flex; align-items:center; justify-content:center;}
 .blast-wrap{position:relative; max-width:100%; max-height:100%;}
+
 
 /* ---- HUD ---- */
 .blast-hud{
