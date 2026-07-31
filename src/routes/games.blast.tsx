@@ -5,13 +5,13 @@ import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import {
   BOARD_SIZE,
-  PIECE_COLORS,
-  canPlace,
   createGame,
+  hasAnyPlacement,
   idx,
   makeSeed,
   placePiece,
   resolveDrop,
+  streakMultiplier,
   type BoardMetrics,
   type GameState,
   type PieceDef,
@@ -34,17 +34,39 @@ export const Route = createFileRoute("/games/blast")({
 
 const BEST_KEY = "gx_blast_best";
 
+/* --- VISUAL-ONLY palette override (engine colour ids -> vivid hex) --- */
+const VIVID: Record<number, string> = {
+  1: "#22e8ff", // cyan
+  2: "#ff3d8b", // pink
+  3: "#c6ff3d", // lime
+  4: "#b45cff", // violet
+  5: "#ffc422", // yellow
+  6: "#3b8cff", // blue
+  7: "#25f2b0", // mint
+  8: "#ff7ac2", // rose
+  9: "#ff8a1f", // orange
+};
+
+function faceStyle(colorId: number): React.CSSProperties {
+  const c = VIVID[colorId] ?? "#22e8ff";
+  return {
+    backgroundImage: `linear-gradient(180deg, color-mix(in oklab, ${c} 72%, #ffffff) 0%, ${c} 46%, color-mix(in oklab, ${c} 82%, #000000) 100%)`,
+    boxShadow: `inset 0 1px 0 rgba(255,255,255,.55), inset 0 0 0 1px color-mix(in oklab, ${c} 60%, #ffffff)`,
+  };
+}
+
 type DragState = {
   trayIndex: number;
   piece: PieceDef;
   x: number;
   y: number;
-  gx: number; // grab ratio inside the piece (0..1)
+  gx: number;
   gy: number;
   lift: number;
 };
 
-type Popup = { id: number; text: string; top: number; left: number; big: boolean };
+type Popup = { id: number; text: string; top: number; left: number; size: number };
+type ClearCell = { order: number; color: number };
 
 function BlastPage() {
   const { lang, dir } = useLang();
@@ -53,19 +75,27 @@ function BlastPage() {
   const [game, setGame] = useState<GameState>(() => createGame(makeSeed()));
   const [drag, setDrag] = useState<DragState | null>(null);
   const [metrics, setMetrics] = useState<BoardMetrics | null>(null);
-  const [clearing, setClearing] = useState<number[]>([]);
+  const [clearing, setClearing] = useState<Map<number, ClearCell>>(new Map());
+  const [placed, setPlaced] = useState<number[]>([]);
   const [popups, setPopups] = useState<Popup[]>([]);
+  const [banner, setBanner] = useState<{ id: number; text: string } | null>(null);
   const [shownScore, setShownScore] = useState(0);
   const [best, setBest] = useState(0);
+  const [bestAtStart, setBestAtStart] = useState(0);
+  const [streakBreak, setStreakBreak] = useState(0);
+  const [trayGen, setTrayGen] = useState(0);
+  const [finalScore, setFinalScore] = useState(0);
 
   const boardRef = useRef<HTMLDivElement | null>(null);
   const popupId = useRef(1);
+  const prevStreak = useRef(0);
+  const prevTrayCount = useRef(3);
 
   /* ----- best score (local only) ----- */
   useEffect(() => {
     try {
       const v = Number(localStorage.getItem(BEST_KEY) || 0);
-      if (Number.isFinite(v)) setBest(v);
+      if (Number.isFinite(v)) { setBest(v); setBestAtStart(v); }
     } catch { /* ignore */ }
   }, []);
   useEffect(() => {
@@ -74,6 +104,19 @@ function BlastPage() {
       try { localStorage.setItem(BEST_KEY, String(game.score)); } catch { /* ignore */ }
     }
   }, [game.score, best]);
+
+  /* ----- streak break flash ----- */
+  useEffect(() => {
+    if (prevStreak.current >= 3 && game.streak === 0) setStreakBreak((n) => n + 1);
+    prevStreak.current = game.streak;
+  }, [game.streak]);
+
+  /* ----- new tray => staggered entrance ----- */
+  useEffect(() => {
+    const count = game.tray.filter(Boolean).length;
+    if (count > prevTrayCount.current) setTrayGen((n) => n + 1);
+    prevTrayCount.current = count;
+  }, [game.tray]);
 
   /* ----- animated score count-up ----- */
   useEffect(() => {
@@ -93,6 +136,22 @@ function BlastPage() {
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.score]);
+
+  /* ----- game over: big count-up ----- */
+  useEffect(() => {
+    if (!game.over) { setFinalScore(0); return; }
+    let raf = 0;
+    const t0 = performance.now();
+    const dur = 900;
+    const step = (t: number) => {
+      const p = Math.min(1, (t - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setFinalScore(Math.round(game.score * eased));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [game.over, game.score]);
 
   /* ----- measure real board geometry from the DOM (direction-agnostic) ----- */
   const readMetrics = useCallback((): BoardMetrics | null => {
@@ -138,7 +197,6 @@ function BlastPage() {
     return { left, top };
   }, [drag, stepX, stepY]);
 
-  /* ----- drop target derived from measured geometry ----- */
   const target = useMemo(() => {
     if (!drag || !ghost || !metrics) return null;
     return resolveDrop(
@@ -162,6 +220,16 @@ function BlastPage() {
     return map;
   }, [drag, target]);
 
+  /* ----- which tray pieces are stuck (visual hint only) ----- */
+  const deadTray = useMemo(
+    () => game.tray.map((p) => (p ? !hasAnyPlacement(game.board, p) : false)),
+    [game.tray, game.board],
+  );
+
+  const fillRatio = useMemo(
+    () => game.board.reduce((n, v) => n + (v ? 1 : 0), 0) / (BOARD_SIZE * BOARD_SIZE),
+    [game.board],
+  );
 
   /* ----- pointer handlers ----- */
   const onPieceDown = (e: React.PointerEvent, trayIndex: number, piece: PieceDef) => {
@@ -186,7 +254,7 @@ function BlastPage() {
     setDrag({ ...drag, x: e.clientX, y: e.clientY });
   };
 
-  const spawnPopup = (text: string, row: number, col: number, big: boolean) => {
+  const spawnPopup = (text: string, row: number, col: number, size: number) => {
     const el = boardRef.current;
     const wrap = el?.parentElement;
     if (!el || !wrap) return;
@@ -195,12 +263,12 @@ function BlastPage() {
     const id = popupId.current++;
     setPopups((p) => [
       ...p,
-      { id, text, big, top: b.top - w.top + (row + 0.5) * cell, left: b.left - w.left + (col + 0.5) * cell },
+      { id, text, size, top: b.top - w.top + (row + 0.5) * cell, left: b.left - w.left + (col + 0.5) * cell },
     ]);
-    setTimeout(() => setPopups((p) => p.filter((x) => x.id !== id)), 900);
+    setTimeout(() => setPopups((p) => p.filter((x) => x.id !== id)), 950);
   };
 
-  const finishDrag = (e: React.PointerEvent) => {
+  const finishDrag = () => {
     if (!drag) return;
     const d = drag;
     const t = target;
@@ -210,92 +278,159 @@ function BlastPage() {
     const res = placePiece(game, d.trayIndex, t.row, t.col);
     if (!res.ok) return;
 
+    // placement pulse
+    const justPlaced = d.piece.cells.map(([dr, dc]) => idx(t.row + dr, t.col + dc));
+    setPlaced(justPlaced);
+    setTimeout(() => setPlaced([]), 240);
+
     if (res.lines > 0) {
-      const cells: number[] = [];
-      for (const r of res.clearedRows) for (let c = 0; c < BOARD_SIZE; c++) cells.push(idx(r, c));
-      for (const c of res.clearedCols) for (let r = 0; r < BOARD_SIZE; r++) cells.push(idx(r, c));
-      setClearing(cells);
-      setTimeout(() => setClearing([]), 320);
-      const streakAfter = game.streak + 1;
-      const label =
-        res.lines > 1
-          ? `+${res.gained} ${ar ? "كومبو" : "COMBO"} ×${res.lines}`
-          : streakAfter > 1
-            ? `+${res.gained} ${ar ? "ستريك" : "STREAK"} ×${streakAfter}`
-            : `+${res.gained}`;
-      spawnPopup(label, t.row, t.col, res.lines > 1 || streakAfter > 2);
+      const map = new Map<number, ClearCell>();
+      for (const r of res.clearedRows) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+          const i = idx(r, c);
+          map.set(i, { order: c, color: game.board[i] || d.piece.color });
+        }
+      }
+      for (const c of res.clearedCols) {
+        for (let r = 0; r < BOARD_SIZE; r++) {
+          const i = idx(r, c);
+          if (!map.has(i)) map.set(i, { order: r, color: game.board[i] || d.piece.color });
+        }
+      }
+      for (const [dr, dc] of d.piece.cells) {
+        const i = idx(t.row + dr, t.col + dc);
+        const cur = map.get(i);
+        if (cur) map.set(i, { ...cur, color: d.piece.color });
+      }
+      setClearing(map);
+      setTimeout(() => setClearing(new Map()), 460);
+
+      if (res.lines > 1) {
+        const names = ar
+          ? ["", "", "مسح مزدوج", "مسح ثلاثي", "مسح رباعي", "مسح خماسي"]
+          : ["", "", "DOUBLE CLEAR", "TRIPLE CLEAR", "QUAD CLEAR", "PENTA CLEAR"];
+        const text = names[Math.min(res.lines, 5)] || (ar ? "مسح هائل" : "MEGA CLEAR");
+        const id = popupId.current++;
+        setBanner({ id, text });
+        setTimeout(() => setBanner((b) => (b && b.id === id ? null : b)), 900);
+      }
+
+      const size = res.gained >= 600 ? 3 : res.gained >= 300 ? 2 : 1;
+      spawnPopup(`+${res.gained}`, t.row, t.col, size);
     }
 
     setGame(res.state);
-    void e;
   };
 
   const restart = () => {
-    setClearing([]);
+    setClearing(new Map());
     setPopups([]);
+    setBanner(null);
+    setPlaced([]);
     setShownScore(0);
+    setBestAtStart(best);
     setGame(createGame(makeSeed()));
   };
 
-  const mult = 1 + Math.min(game.streak, 10) * 0.1;
+  const mult = streakMultiplier(game.streak);
+  const streakHot = mult > 1;
+  const heat = Math.min(8, game.streak);
+  const isRecord = game.over && game.score > 0 && game.score >= best && game.score > bestAtStart;
+  const diff = game.score - bestAtStart;
 
   return (
     <StoreShell>
       <main dir={dir} className="blast-page">
-        <section className="container blast-top">
+        <section className="container blast-topbar">
           <Link to="/games" className="blast-back">{ar ? "‹ ساحة اللعب" : "‹ Play Arena"}</Link>
-          <div className="blast-stats">
-            <div className="bs-score">
-              <span className="bs-lbl">{ar ? "النقاط" : "Score"}</span>
-              <span className="bs-val">{shownScore.toLocaleString("en-US")}</span>
-            </div>
-            <div className="bs-side">
-              <div className="bs-chip"><span>{ar ? "الأفضل" : "Best"}</span><b>{best.toLocaleString("en-US")}</b></div>
-              <div className={"bs-chip" + (game.streak > 0 ? " hot" : "")}>
-                <span>{ar ? "ستريك" : "Streak"}</span><b>{game.streak} · ×{mult.toFixed(1)}</b>
-              </div>
-            </div>
-          </div>
         </section>
 
         <section className="container blast-stage">
+          <div className="blast-hud">
+            <div className="hud-side">
+              <span>{ar ? "الأفضل" : "Best"}</span>
+              <b>{best.toLocaleString("en-US")}</b>
+            </div>
+
+            <div className="hud-main">
+              <span className="hud-lbl">{ar ? "النقاط" : "Score"}</span>
+              <span className="hud-val">{shownScore.toLocaleString("en-US")}</span>
+            </div>
+
+            <div
+              key={streakBreak}
+              className={
+                "hud-side hud-streak" +
+                (streakHot ? " hot heat-" + heat : "") +
+                (streakBreak > 0 && !streakHot ? " broke" : "")
+              }
+            >
+              <span>{ar ? "ستريك" : "Streak"}</span>
+              <b>{streakHot ? `🔥 ×${mult.toFixed(1).replace(/\.0$/, "")}` : "—"}</b>
+            </div>
+          </div>
+
           <div className="blast-wrap">
             <div
               ref={boardRef}
               dir="ltr"
-              className="blast-board"
+              className={"blast-board" + (fillRatio > 0.75 ? " danger" : "")}
               onPointerMove={onPointerMove}
               onPointerUp={finishDrag}
             >
-
               {game.board.map((v, i) => {
                 const pv = previewCells.get(i);
+                const cl = clearing.get(i);
+                const colorId = cl ? cl.color : v;
                 const cls =
                   "bb-cell" +
-                  (v ? " filled" : "") +
-                  (clearing.includes(i) ? " clearing" : "") +
+                  (colorId ? " filled" : "") +
+                  (cl ? " clearing" : "") +
+                  (placed.includes(i) ? " popped" : "") +
                   (pv === true ? " pv-ok" : pv === false ? " pv-bad" : "");
                 return (
-                  <div key={i} className={cls} style={v ? { background: PIECE_COLORS[v] } : undefined} />
+                  <div
+                    key={i}
+                    className={cls}
+                    style={
+                      colorId
+                        ? { ...faceStyle(colorId), ...(cl ? { animationDelay: `${cl.order * 20}ms` } : null) }
+                        : undefined
+                    }
+                  />
                 );
               })}
+
+              {banner && <span key={banner.id} className="bb-banner">{banner.text}</span>}
             </div>
 
             {popups.map((p) => (
-              <span key={p.id} className={"bb-pop" + (p.big ? " big" : "")} style={{ top: p.top, left: p.left }}>
+              <span key={p.id} className={"bb-pop s" + p.size} style={{ top: p.top, left: p.left }}>
                 {p.text}
               </span>
             ))}
 
             <div className="blast-tray" dir="ltr" onPointerMove={onPointerMove} onPointerUp={finishDrag}>
               {game.tray.map((p, i) => (
-                <div key={i} className={"bt-slot" + (drag?.trayIndex === i ? " dragging" : "")}>
+                <div
+                  key={i}
+                  className={
+                    "bt-slot" +
+                    (drag?.trayIndex === i ? " dragging" : "") +
+                    (deadTray[i] ? " dead" : "")
+                  }
+                >
                   {p && (
                     <div
-                      className="bt-piece"
+                      key={`${trayGen}-${p.id}`}
+                      className="bt-piece enter"
                       dir="ltr"
                       onPointerDown={(e) => onPieceDown(e, i, p)}
-                      style={{ gridTemplateColumns: `repeat(${p.w}, var(--tc))`, gridTemplateRows: `repeat(${p.h}, var(--tc))` }}
+                      style={{
+                        ["--i" as string]: i,
+                        gridTemplateColumns: `repeat(${p.w}, var(--tc))`,
+                        gridTemplateRows: `repeat(${p.h}, var(--tc))`,
+                      }}
                     >
                       {Array.from({ length: p.w * p.h }).map((_, k) => {
                         const r = Math.floor(k / p.w);
@@ -305,7 +440,7 @@ function BlastPage() {
                           <span
                             key={k}
                             className={"bt-cell" + (on ? " on" : "")}
-                            style={on ? { background: PIECE_COLORS[p.color] } : undefined}
+                            style={on ? faceStyle(p.color) : undefined}
                           />
                         );
                       })}
@@ -335,11 +470,7 @@ function BlastPage() {
                     <span
                       key={k}
                       className={"bg-cell" + (on ? " on" : "")}
-                      style={{
-                        width: cell,
-                        height: cell,
-                        background: on ? PIECE_COLORS[drag.piece.color] : undefined,
-                      }}
+                      style={{ width: cell, height: cell, ...(on ? faceStyle(drag.piece.color) : null) }}
                     />
                   );
                 })}
@@ -348,14 +479,24 @@ function BlastPage() {
 
             {game.over && (
               <div className="blast-over">
-                <div className="bo-card">
+                <div className={"bo-card" + (isRecord ? " record" : "")}>
+                  {isRecord && (
+                    <div className="bo-ribbon">
+                      <i>✦</i><i>✦</i><i>✦</i>
+                      <span>{ar ? "رقم قياسي جديد!" : "NEW RECORD!"}</span>
+                    </div>
+                  )}
                   <div className="bo-ic">💥</div>
                   <h2>{ar ? "انتهت اللعبة" : "Game Over"}</h2>
-                  <p>{ar ? "ما في مكان لأي قطعة من الثلاث." : "None of the three pieces fits anymore."}</p>
                   <div className="bo-score">
                     <span>{ar ? "النقاط النهائية" : "Final score"}</span>
-                    <b>{game.score.toLocaleString("en-US")}</b>
+                    <b>{finalScore.toLocaleString("en-US")}</b>
                   </div>
+                  <p className="bo-cmp">
+                    {isRecord
+                      ? ar ? `تجاوزت أفضل نتيجة بـ ${Math.max(diff, 0).toLocaleString("en-US")} نقطة` : `Beat your best by ${Math.max(diff, 0).toLocaleString("en-US")}`
+                      : ar ? `أفضل نتيجة: ${best.toLocaleString("en-US")} · ينقصك ${Math.max(best - game.score, 0).toLocaleString("en-US")}` : `Best: ${best.toLocaleString("en-US")} · ${Math.max(best - game.score, 0).toLocaleString("en-US")} to go`}
+                  </p>
                   <button type="button" className="btn btn-primary bo-btn" onClick={restart}>
                     {ar ? "العب مرة أخرى" : "Play again"}
                   </button>
