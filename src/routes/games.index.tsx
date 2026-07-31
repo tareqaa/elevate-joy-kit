@@ -9,6 +9,8 @@ import { gameLabel } from "@/lib/gx/games/time";
 import { CarouselRow } from "@/components/gx/CarouselRow";
 import { supabase } from "@/integrations/supabase/client";
 import { listTournaments, type TournamentRow, type TournamentPrize } from "@/lib/gx/tournaments.functions";
+import { prizeRewards, type Prize as PrizeModel } from "@/lib/gx/tournament-prizes";
+
 
 export const Route = createFileRoute("/games/")({
   head: () => ({
