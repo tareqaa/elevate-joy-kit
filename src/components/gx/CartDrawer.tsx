@@ -62,14 +62,8 @@ export function CartDrawer() {
             {t("cart.checkout_wa")}
           </Link>
           {cart.items.length > 0 && (
-            <button
-              type="button"
-              className="cart-clear-link"
-              onClick={() => {
-                if (window.confirm(lang === "ar" ? "هل تريد حذف كل المنتجات من السلة؟" : "Remove all items from your cart?")) cart.clear();
-              }}
-            >
-              {lang === "ar" ? "🗑️ حذف كل المنتجات" : "🗑️ Clear cart"}
+            <button type="button" className="cart-clear-link" onClick={() => cart.clear()}>
+              {lang === "ar" ? "تفريغ السلة" : "Clear cart"}
             </button>
           )}
         </div>
