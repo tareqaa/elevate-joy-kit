@@ -11,6 +11,8 @@ import {
   idx,
   makeSeed,
   placePiece,
+  resolveDrop,
+  type BoardMetrics,
   type GameState,
   type PieceDef,
 } from "@/lib/gx/games/blast-engine";
@@ -50,7 +52,7 @@ function BlastPage() {
 
   const [game, setGame] = useState<GameState>(() => createGame(makeSeed()));
   const [drag, setDrag] = useState<DragState | null>(null);
-  const [cell, setCell] = useState(40);
+  const [metrics, setMetrics] = useState<BoardMetrics | null>(null);
   const [clearing, setClearing] = useState<number[]>([]);
   const [popups, setPopups] = useState<Popup[]>([]);
   const [shownScore, setShownScore] = useState(0);
