@@ -45,7 +45,7 @@ function TournamentPage() {
   const [t, setT] = useState<T | null | undefined>(undefined);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [me, setMe] = useState<Standing | null>(null);
-  const [prizesOpen2] = useState(false);
+  
   const [prizesOpen, setPrizesOpen] = useState(false);
 
   useEffect(() => {
