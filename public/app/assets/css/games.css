@@ -121,10 +121,8 @@
   position:relative; width:100%; aspect-ratio:1/1;
   display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr);
   gap:4px; padding:10px; touch-action:none; user-select:none;
-  border-radius:22px; border:1.5px solid rgba(255,255,255,.10);
-  background:
-    radial-gradient(circle at 50% 0%,rgba(0,229,255,.10),transparent 60%),
-    linear-gradient(160deg,rgba(168,85,247,.08),rgba(8,11,24,.94));
+  border-radius:22px; border:1.5px solid rgba(255,255,255,.12);
+  background:linear-gradient(160deg,#070a14,#05070f);
 }
 .blast-board.danger{
   border-color:rgba(255,45,120,.42);
@@ -132,13 +130,14 @@
 }
 .bb-cell{
   position:relative; border-radius:8px;
-  background:rgba(255,255,255,.028);
-  border:1px solid rgba(255,255,255,.045);
+  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.055));
+  border:1px solid rgba(255,255,255,.11);
   transition:background .12s linear, border-color .12s linear;
 }
 .bb-cell.filled{border-color:transparent;}
 .bb-cell.pv-ok{background:rgba(198,255,61,.32); border-color:rgba(198,255,61,.65);}
 .bb-cell.pv-bad{background:rgba(255,45,120,.26); border-color:rgba(255,45,120,.55);}
+
 
 .bb-cell.popped{animation:cellPop .2s var(--ease) 1;}
 @keyframes cellPop{0%{transform:scale(.72);}60%{transform:scale(1.08);}100%{transform:scale(1);}}
