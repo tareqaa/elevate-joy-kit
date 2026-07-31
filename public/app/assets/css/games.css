@@ -190,19 +190,19 @@
   pointer-events:none; opacity:.94; will-change:transform;
 }
 .bg-cell{box-sizing:border-box;}
-.bg-cell.on{border-width:var(--bevel,4px); border-radius:3px;}
+.bg-cell.on{border-width:var(--bevel,4px); border-radius:5px;}
 
 /* ---- tray ---- */
 .blast-tray{
   flex:0 0 auto;
   display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
   padding:10px; touch-action:none; user-select:none;
-  border-radius:16px; border:0; background:#3B4585;
+  border-radius:16px; border:0; background:transparent;
 }
 .bt-slot{
   min-height:calc(var(--tc,24px) * 3.4);
   display:flex; align-items:center; justify-content:center;
-  border-radius:12px; background:rgba(28,34,66,.35);
+  border-radius:12px; background:transparent;
   border:0;
   transition:opacity .2s var(--ease);
 }
@@ -213,7 +213,7 @@
 .bt-piece.enter{animation:pieceIn .26s var(--ease) both; animation-delay:calc(var(--i,0) * 70ms);}
 @keyframes pieceIn{0%{opacity:0; transform:translateY(10px) scale(.82);}100%{opacity:1; transform:none;}}
 .bt-cell{box-sizing:border-box;}
-.bt-cell.on{border-width:var(--bevel,3px); border-radius:3px;}
+.bt-cell.on{border-width:var(--bevel,3px); border-radius:5px;}
 
 
 /* ---- floating score / banners ---- */
