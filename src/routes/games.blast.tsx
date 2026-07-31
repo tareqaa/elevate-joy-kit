@@ -51,17 +51,17 @@ function calculateBoardLayout(availableWidth: number, availableHeight: number): 
   };
 }
 
-/* --- VISUAL-ONLY palette override (engine colour ids -> calm, low-glare hex) --- */
+/* --- VISUAL-ONLY palette: Block Blast style, bright but not neon --- */
 const VIVID: Record<number, string> = {
-  1: "#4f9fc4", // calm blue (was cyan)
-  2: "#c9566f", // muted rose
-  3: "#5f9e63", // deep green (was lime)
-  4: "#8f6fc0", // soft violet
-  5: "#c9a24a", // warm amber
-  6: "#5578b8", // dusty blue
-  7: "#4fa593", // teal
-  8: "#c07a9d", // dusty pink
-  9: "#c2814f", // clay orange
+  1: "#43a7ea", // blue
+  2: "#ef5f6b", // red
+  3: "#5fc76c", // green
+  4: "#a274e2", // purple
+  5: "#f0c24e", // yellow
+  6: "#6b8ee8", // indigo
+  7: "#46c6b2", // teal
+  8: "#f082b4", // pink
+  9: "#f2924f", // orange
 };
 
 /** pre-built once: no new style object per cell per frame (keeps memo intact) */
