@@ -8,7 +8,7 @@ import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
 import { HowToPlaySlides } from "@/components/gx/games/HowToPlaySlides";
 import { formatCountdown, formatDateTime } from "@/lib/gx/games/time";
-import { fetchMyLoyalty, levelName, levelProgress, type MyLoyalty } from "@/lib/gx/loyalty";
+import { fetchMyLoyalty, type MyLoyalty } from "@/lib/gx/loyalty";
 
 export const Route = createFileRoute("/games/t/$id")({
   ssr: false,
