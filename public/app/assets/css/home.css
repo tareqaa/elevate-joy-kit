@@ -11,13 +11,14 @@
    cut-off edge is ever visible. No blur filters (perf). */
 .hero::before{
   content:""; position:absolute; z-index:-1; pointer-events:none;
-  inset-inline:-30vw; top:-340px; bottom:-300px;
+  inset-inline:0; top:-340px; bottom:-300px;
   background:
-    radial-gradient(900px 620px at 78% 34%, rgba(0,229,255,0.16), rgba(0,229,255,0) 70%),
-    radial-gradient(820px 620px at 18% 76%, rgba(255,45,120,0.14), rgba(255,45,120,0) 70%),
-    radial-gradient(700px 520px at 50% 8%, rgba(198,255,61,0.08), rgba(198,255,61,0) 72%);
-  -webkit-mask-image:radial-gradient(115% 95% at 50% 34%, #000 24%, rgba(0,0,0,0.55) 58%, rgba(0,0,0,0) 100%);
-  mask-image:radial-gradient(115% 95% at 50% 34%, #000 24%, rgba(0,0,0,0.55) 58%, rgba(0,0,0,0) 100%);
+    radial-gradient(1100px 720px at 78% 34%, rgba(0,229,255,0.16), rgba(0,229,255,0) 72%),
+    radial-gradient(1000px 720px at 18% 76%, rgba(255,45,120,0.14), rgba(255,45,120,0) 72%),
+    radial-gradient(900px 600px at 50% 8%, rgba(198,255,61,0.08), rgba(198,255,61,0) 74%);
+  -webkit-mask-image:radial-gradient(72% 88% at 50% 34%, #000 20%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0) 100%);
+  mask-image:radial-gradient(72% 88% at 50% 34%, #000 20%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0) 100%);
+
 }
 .hero > *{position:relative; z-index:1;}
 
