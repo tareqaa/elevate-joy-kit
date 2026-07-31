@@ -51,22 +51,22 @@ function calculateBoardLayout(availableWidth: number, availableHeight: number): 
   };
 }
 
-/** bevel band thickness ~12% of the cube side, always an integer number of px */
+/** bevel band thickness ~14% of the cube side, always an integer number of px */
 function bevelPx(cell: number): number {
-  return Math.max(2, Math.floor(cell * 0.12));
+  return Math.max(2, Math.floor(cell * 0.14));
 }
 
-/* --- VISUAL-ONLY palette: classic block-puzzle, moderately saturated --- */
+/* --- VISUAL-ONLY palette: classic Block-Blast cubes --- */
 const VIVID: Record<number, string> = {
-  1: "#5BC8E8", // سماوي
-  2: "#3B6FE0", // أزرق
-  3: "#52B84E", // أخضر
-  4: "#F0C040", // أصفر ذهبي
-  5: "#8A5BD6", // بنفسجي
-  6: "#E8862E", // برتقالي
-  7: "#D9483F", // أحمر
-  8: "#F0C040", // أصفر ذهبي
-  9: "#E8862E", // برتقالي
+  1: "#2FC4F0", // سماوي
+  2: "#2F6BEF", // أزرق
+  3: "#22B341", // أخضر
+  4: "#F5C21B", // أصفر ذهبي
+  5: "#9A55DD", // بنفسجي
+  6: "#F08A22", // برتقالي
+  7: "#E5372F", // أحمر
+  8: "#F5C21B", // أصفر ذهبي
+  9: "#F08A22", // برتقالي
 };
 
 function mixHex(hex: string, target: number, amount: number): string {
@@ -77,21 +77,27 @@ function mixHex(hex: string, target: number, amount: number): string {
   return "#" + ch.map((v) => v.toString(16).padStart(2, "0")).join("");
 }
 
-/** pre-built once: flat face + light/dark chamfer drawn with inner borders only */
+/** pre-built once: glossy top face + light/dark chamfer drawn with inner borders */
 const FACES: Record<number, React.CSSProperties> = Object.fromEntries(
   Object.entries(VIVID).map(([k, c]) => {
-    const light = mixHex(c, 255, 0.28);
-    const dark = mixHex(c, 0, 0.24);
+    const light = mixHex(c, 255, 0.45);
+    const lighter = mixHex(c, 255, 0.62);
+    const dark = mixHex(c, 0, 0.3);
+    const darker = mixHex(c, 0, 0.45);
+    const faceTop = mixHex(c, 255, 0.14);
+    const faceBottom = mixHex(c, 0, 0.1);
     return [
       Number(k),
       {
         backgroundColor: c,
+        backgroundImage: `linear-gradient(180deg, ${faceTop} 0%, ${c} 46%, ${faceBottom} 100%)`,
         borderStyle: "solid",
-        borderColor: `${light} ${dark} ${dark} ${light}`,
+        borderColor: `${lighter} ${dark} ${darker} ${light}`,
       } as React.CSSProperties,
     ];
   }),
 ) as Record<number, React.CSSProperties>;
+
 
 
 function face(colorId: number): React.CSSProperties | undefined {
