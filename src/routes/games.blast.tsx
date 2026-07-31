@@ -4,7 +4,6 @@ import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
-import { HowToPlaySlides } from "@/components/gx/games/HowToPlaySlides";
 import {
   BOARD_SIZE,
   canPlace,
@@ -235,7 +234,6 @@ function BlastPage() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
   const { t: tournamentId } = Route.useSearch();
-  const [showHowTo, setShowHowTo] = useState(false);
 
 
 
@@ -832,22 +830,12 @@ function BlastPage() {
                       <button type="button" className="btn btn-primary bo-btn" onClick={restart}>
                         {ar ? "العب مرة أخرى" : "Play again"}
                       </button>
-                      <button type="button" className="bo-help" onClick={() => setShowHowTo(true)}>
-                        {ar ? "كيف ألعب؟" : "How to play?"}
-                      </button>
                       <Link to="/games" className="bo-link">{ar ? "رجوع لساحة اللعب" : "Back to Play Arena"}</Link>
                     </div>
                   </div>
                 )}
 
-                {showHowTo && (
-                  <div className="blast-over" role="dialog" aria-modal="true">
-                    <div className="bo-card htp-card" dir="rtl">
-                      <HowToPlaySlides onDone={() => setShowHowTo(false)} doneLabel="إغلاق" />
-                    </div>
-                  </div>
-                )}
-              </div>
+             </div>
             </div>
 
             <div
