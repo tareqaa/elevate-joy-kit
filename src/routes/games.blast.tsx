@@ -494,7 +494,17 @@ function BlastPage() {
     const step = cs + BOARD_GAP_PX;
     const left = d.x - (d.piece.w * step - BOARD_GAP_PX) / 2;
     const top = d.y - (d.piece.h * step - BOARD_GAP_PX) / 2 - d.lift;
-    const hit = cellUnderPoint(left + cs / 2, top + cs / 2);
+    const probeX = left + cs / 2;
+    const probeY = top + cs / 2;
+    let hit = cellUnderPoint(probeX, probeY);
+    // The probe can land on the narrow grid gap between cells. Keep the
+    // visual marker stable by resolving that same point against the board.
+    if (!hit && boardRef.current) {
+      const boardRect = boardRef.current.getBoundingClientRect();
+      const col = Math.floor((probeX - boardRect.left - BOARD_PADDING_PX) / step);
+      const row = Math.floor((probeY - boardRect.top - BOARD_PADDING_PX) / step);
+      if (row >= 0 && col >= 0 && row < BOARD_SIZE && col < BOARD_SIZE) hit = { row, col };
+    }
     const next: Target = hit
       ? { row: hit.row, col: hit.col, ok: canPlace(gameRef.current.board, d.piece, hit.row, hit.col) }
       : null;
