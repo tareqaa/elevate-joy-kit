@@ -208,13 +208,17 @@
 [dir="rtl"] .hero-car{--gx-dir:-1;}
 [dir="ltr"] .hero-car{--gx-dir:1;}
 .hero-car-track{
-  display:flex; width:100%;
+  display:flex; width:100%; align-items:stretch;
   transition:transform .55s cubic-bezier(.22,.8,.24,1);
   will-change:transform;
 }
 .hero-car.is-dragging .hero-car-track{transition:none;}
-.hero-car-slide{flex:0 0 100%; min-width:100%;}
+/* both slides share the exact same box so switching never resizes/jumps */
+.hero-car-slide{flex:0 0 100%; min-width:100%; display:flex;}
+.hero-car-slide > *{flex:1 1 auto; width:100%; min-height:100%; border-radius:var(--radius-xl);}
+.hero-car .hero-inner{margin:0; height:auto;}
 .hero-car img, .hero-car a{-webkit-user-drag:none;}
+
 
 .hero-car-dots{
   position:absolute; bottom:14px; inset-inline-start:50%; transform:translateX(-50%);
