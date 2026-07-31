@@ -16,27 +16,16 @@ export const Route = createFileRoute("/_authenticated/admin/tournaments")({
   component: TournamentsAdmin,
 });
 
-type RewardType = "coupon" | "coins" | "xp" | "custom";
-type Prize = {
-  place: number;
-  label_ar: string;
-  label_en: string;
-  reward_type?: RewardType;
-  reward_value?: number | null;
-};
-const REWARD_TYPES: { v: RewardType; label: string }[] = [
-  { v: "coupon", label: "كوبون خصم %" },
-  { v: "coins", label: "GX Coins" },
-  { v: "xp", label: "XP" },
-  { v: "custom", label: "جائزة مخصصة" },
-];
-function autoLabels(type: RewardType, value: number): { label_ar: string; label_en: string } | null {
-  if (!value) return null;
-  if (type === "coupon") return { label_ar: `كوبون خصم ${value}%`, label_en: `${value}% discount coupon` };
-  if (type === "coins") return { label_ar: `${value} GX Coins`, label_en: `${value} GX Coins` };
-  if (type === "xp") return { label_ar: `${value} XP`, label_en: `${value} XP` };
-  return null;
-}
+import {
+  REWARD_TYPES,
+  prizeRewards,
+  prizeSummary,
+  rewardIcon,
+  type Prize,
+  type Reward,
+  type RewardType,
+} from "@/lib/gx/tournament-prizes";
+
 type Row = {
   id: string;
   game_slug: string;
