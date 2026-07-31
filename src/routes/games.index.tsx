@@ -125,7 +125,7 @@ function GamesPage() {
                   <article key={t.id} className={`trn-card is-${t.status}`}>
                     <header className="trn-top">
                       <div className="trn-ic" aria-hidden>
-                        {t.game_icon}
+                        <GameIcon slug={t.game_slug} size={40} />
                       </div>
                       <div className="trn-titles">
                         <h2>{ar ? t.title_ar : t.title_en}</h2>
