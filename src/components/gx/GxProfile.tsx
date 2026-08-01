@@ -425,7 +425,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                   return (
                     <div key={l.id} className={`gxp-level${reached ? " on" : ""}`}>
                       <div className="gxp-level-top">
-                        <span className="ico">{l.icon}</span>
+                        <span className="ico"><RankBadge color={l.color || "#4aa8ff"} label={l.sort_order ?? undefined} size={34} glow={reached} title={levelName(l, lang)} /></span>
                         <div>
                           <b style={{ color: l.color }}>{levelName(l, lang)}</b>
                           <em>{l.min_xp.toLocaleString("en-US")} XP</em>
