@@ -126,6 +126,9 @@ function AdminLayout() {
       <style>{adminCss}</style>
 
       <aside className={`gx-aside ${openMobile ? "open" : ""} ${collapsed ? "collapsed" : ""}`}>
+        <button className="gx-aside-close" onClick={() => setOpenMobile(false)} aria-label="إغلاق القائمة">
+          <X size={16} />
+        </button>
         <div className="gx-aside-brand">
           <div className="gx-brand-mark"><img src="/app/assets/img/gx-logo.png" alt="GX" /></div>
           {!collapsed && (
@@ -135,6 +138,7 @@ function AdminLayout() {
             </div>
           )}
         </div>
+
 
         <nav className="gx-aside-nav">
           {NAV.map((n) => {
