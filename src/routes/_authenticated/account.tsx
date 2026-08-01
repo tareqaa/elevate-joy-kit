@@ -418,7 +418,7 @@ function OrderCard({ order: o }: { order: OrderRow }) {
                   {t("acc.your_codes")}
                 </div>
                 {extraCodes.map((c, k) => (
-                  <DeliveryBlock key={k} data={c} index={k} onReveal={reveal} revealing={revealing} />
+                  <DeliveryBlock key={k} data={c} index={k} onReveal={reveal} revealing={revealing} revealKey={`${o.id}:extra:${k}`} />
                 ))}
               </div>
             )}
