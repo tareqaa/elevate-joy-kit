@@ -305,7 +305,7 @@ function OrderCard({ order: o }: { order: OrderRow }) {
   const items = Array.isArray(o.items) ? (o.items as Array<{ name?: string; qty?: number; price?: number }>) : [];
   const delivery = o.delivery_data && typeof o.delivery_data === "object" ? o.delivery_data as Record<string, unknown> : {};
   const codes = Array.isArray((delivery as { codes?: unknown }).codes)
-    ? (delivery as { codes: Array<{ label?: string; value?: string; email?: string; password?: string; kind?: string }> }).codes : [];
+    ? (delivery as { codes: Array<{ label?: string; value?: string; email?: string; password?: string; kind?: string; region?: string }> }).codes : [];
   const locale = ar ? "ar-EG" : "en-US";
   const currencyLabel = ar ? "د.أ" : "JOD";
   const itemsCount = items.reduce((n, it) => n + (it.qty ?? 1), 0);
