@@ -314,14 +314,26 @@ function OrderCard({ order: o }: { order: OrderRow }) {
           </div>
           <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${status.className}`}>{status.label}</span>
         </div>
-        <div className="mt-3 space-y-1 text-sm">
-          {items.map((it, i) => (
-            <div key={i} className="flex justify-between">
-              <span>{it.name} × {it.qty}</span>
-              <span>{((it.price ?? 0) * (it.qty ?? 1)).toFixed(2)} {currencyLabel}</span>
-            </div>
-          ))}
-        </div>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="mt-3 flex w-full items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm font-semibold transition hover:bg-muted/60"
+          aria-expanded={open}
+        >
+          <span>{t("acc.items_label") === "acc.items_label" ? "المنتجات" : t("acc.items_label")} ({items.length})</span>
+          <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && (
+          <div className="mt-2 space-y-1 text-sm">
+            {items.map((it, i) => (
+              <div key={i} className="flex justify-between gap-2 rounded-md bg-muted/20 px-2 py-1.5">
+                <span className="min-w-0 break-words">{it.name} × {it.qty}</span>
+                <span className="shrink-0">{((it.price ?? 0) * (it.qty ?? 1)).toFixed(2)} {currencyLabel}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="mt-3 flex justify-between font-bold border-t pt-2">
           <span>{t("acc.total_label")}</span>
           <span>{Number(o.total_jod).toFixed(2)} {currencyLabel}</span>
