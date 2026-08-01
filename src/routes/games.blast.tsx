@@ -4,6 +4,7 @@ import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   BOARD_SIZE,
   canPlace,
