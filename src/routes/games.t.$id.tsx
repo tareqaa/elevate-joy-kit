@@ -320,24 +320,30 @@ function TournamentPage() {
                 </div>
               )}
 
-              {/* always-visible "you" row, even outside the top 20 */}
-              <div className="lb-row me sticky">
-                {me?.played ? (
-                  <>
-                    <span className="lb-r">{me.rank}</span>
-                    <span className="lb-avwrap">
-                      {me.avatar_url ? <img src={me.avatar_url} alt="" className="lb-av" /> : <span className="lb-av ph">{ar ? "أنا" : "Me"}</span>}
-                    </span>
-                    <span className="lb-who">
-                      <b className="lb-nm">{ar ? "مركزك" : "Your rank"} — {nameOf({ username: me.username ?? null, full_name: me.full_name ?? null })}</b>
-                      {me.total ? <em className="lb-lvlname">{ar ? `من ${me.total} لاعب` : `of ${me.total} players`}</em> : null}
-                    </span>
-                    <b className="lb-sc" dir="ltr">{(me.score ?? 0).toLocaleString("en-US")}</b>
-                  </>
-                ) : (
-                  <span className="lb-who"><b className="lb-nm">{ar ? "لم تلعب بعد — جولة واحدة تكفي لتدخل الترتيب 💪" : "Play one round to enter the ranking 💪"}</b></span>
-                )}
-              </div>
+              {/* "you" row only when outside the visible list */}
+              {me?.played && rows.some((r) => r.rank === me.rank) ? null : (
+                <div className="lb-row me sticky">
+                  {me?.played ? (
+                    <>
+                      <span className="lb-r">{me.rank}</span>
+                      <span className="lb-avwrap">
+                        {me.avatar_url ? <img src={me.avatar_url} alt="" className="lb-av" /> : <span className="lb-av ph">{ar ? "أنا" : "Me"}</span>}
+                      </span>
+                      <span className="lb-who">
+                        <b className="lb-nm">
+                          {nameOf({ username: me.username ?? null, full_name: me.full_name ?? null })}
+                          <span className="lb-youtag">{ar ? "أنت" : "You"}</span>
+                        </b>
+                        {me.total ? <em className="lb-lvlname">{ar ? `من ${me.total} لاعب` : `of ${me.total} players`}</em> : null}
+                      </span>
+                      <b className="lb-sc" dir="ltr">{(me.score ?? 0).toLocaleString("en-US")}</b>
+                    </>
+                  ) : (
+                    <span className="lb-who"><b className="lb-nm">{ar ? "لم تلعب بعد — جولة واحدة تكفي لتدخل الترتيب 💪" : "Play one round to enter the ranking 💪"}</b></span>
+                  )}
+                </div>
+              )}
+
             </div>
           </section>
 
