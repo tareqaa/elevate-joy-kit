@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AdminCommandPalette } from "@/components/gx/admin/AdminCommandPalette";
 import {
   LayoutDashboard, Package, Users, Search, Bell, ChevronLeft, ChevronRight,
-  Store, User, LogOut, Command, FolderTree, ShoppingBag, Activity, Settings, Ticket, Home, Star, Sparkles, Smile, Award, Trophy, Disc3, Gamepad2,
+  Store, User, LogOut, X, Command, FolderTree, ShoppingBag, Activity, Settings, Ticket, Home, Star, Sparkles, Smile, Award, Trophy, Disc3, Gamepad2,
 } from "lucide-react";
 
 // Cache the admin-role check per user for the lifetime of the tab so moving
@@ -74,6 +74,17 @@ function AdminLayout() {
   useEffect(() => {
     localStorage.setItem("gx_admin_side_collapsed", collapsed ? "1" : "0");
   }, [collapsed]);
+
+  useEffect(() => {
+    setOpenMobile(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!openMobile) return;
+    const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpenMobile(false); };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [openMobile]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
