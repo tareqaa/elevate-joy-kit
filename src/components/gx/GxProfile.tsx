@@ -588,7 +588,13 @@ function PlayerSearch({ isAr }: { isAr: boolean }) {
 
 const css = `
 .gxp-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
-@media (max-width:980px){.gxp-grid{grid-template-columns:1fr}}
+.gxp-search-mobile{display:none}
+@media (max-width:980px){
+  .gxp-grid{grid-template-columns:1fr}
+  .gxp-search-mobile{display:block;order:-1}
+  .gxp-search-desktop{display:none}
+}
+
 .gxp-main,.gxp-side{display:grid;gap:14px;min-width:0}
 .gxp-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:18px;padding:16px;overflow:hidden}
 .gxp-h{margin:0 0 12px;font-size:15px;color:#e6f7ff}
