@@ -485,6 +485,14 @@ function TournamentsAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <TournamentScoresDialog
+        tournamentId={scoresFor?.id ?? null}
+        title={scoresFor?.title_ar ?? ""}
+        open={!!scoresFor}
+        onClose={() => setScoresFor(null)}
+      />
     </div>
+
   );
 }
