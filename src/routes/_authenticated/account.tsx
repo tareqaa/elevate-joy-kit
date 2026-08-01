@@ -293,7 +293,6 @@ function OrderCard({ order: o }: { order: OrderRow }) {
   const ar = lang === "ar";
   const [open, setOpen] = useState(false);
   const [revealing, setRevealing] = useState(false);
-  const [revealing, setRevealing] = useState(false);
   const STATUS_STYLE: Record<string, { label: string; pill: string; bar: string }> = {
     pending: { label: t("acc.status_pending"), pill: "bg-amber-500/15 text-amber-400 border-amber-500/40", bar: "from-amber-500/70" },
     paid: { label: t("acc.status_paid"), pill: "bg-sky-500/15 text-sky-400 border-sky-500/40", bar: "from-sky-500/70" },
