@@ -403,7 +403,8 @@ function OrderCard({ order: o }: { order: OrderRow }) {
                       {ar ? "بيانات التسليم لهذا المنتج" : "Delivery data for this product"}
                     </div>
                     {g.codes.map((c, k) => (
-                      <DeliveryBlock key={k} data={c} index={k} onReveal={reveal} revealing={revealing} />
+                      <DeliveryBlock key={k} data={c} index={k} onReveal={reveal} revealing={revealing} revealKey={`${o.id}:${i}:${k}`} />
+
                     ))}
                   </div>
                 )}
@@ -417,7 +418,7 @@ function OrderCard({ order: o }: { order: OrderRow }) {
                   {t("acc.your_codes")}
                 </div>
                 {extraCodes.map((c, k) => (
-                  <DeliveryBlock key={k} data={c} index={k} onReveal={reveal} revealing={revealing} />
+                  <DeliveryBlock key={k} data={c} index={k} onReveal={reveal} revealing={revealing} revealKey={`${o.id}:extra:${k}`} />
                 ))}
               </div>
             )}
@@ -447,11 +448,12 @@ function OrderCard({ order: o }: { order: OrderRow }) {
   );
 }
 
-function DeliveryBlock({ data, index, onReveal, revealing }: {
+function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
   data: { label?: string; value?: string; email?: string; password?: string; kind?: string; region?: string };
   index: number;
   onReveal: () => Promise<void> | void;
   revealing?: boolean;
+  revealKey: string;
 }) {
   const { t, lang } = useLang();
   const ar = lang === "ar";
@@ -460,8 +462,16 @@ function DeliveryBlock({ data, index, onReveal, revealing }: {
   const isAccount = data.kind === "account" || (!!data.email && !data.value);
   const region = (data.region || "").trim();
 
+  // Once a key has been revealed it stays visible forever on this device.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(`gx_revealed:${revealKey}`) === "1") setOpen(true);
+    } catch { /* noop */ }
+  }, [revealKey]);
+
   async function confirmReveal() {
     await onReveal();
+    try { localStorage.setItem(`gx_revealed:${revealKey}`, "1"); } catch { /* noop */ }
     setConfirming(false);
     setOpen(true);
   }
@@ -484,15 +494,24 @@ function DeliveryBlock({ data, index, onReveal, revealing }: {
               <Globe className="h-3 w-3" />
               {region || (ar ? "عالمي / Global" : "Global")}
             </span>
+            {open && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                <Eye className="h-3 w-3" />
+                {ar ? "تم الإظهار" : "Revealed"}
+              </span>
+            )}
           </div>
         </div>
-        <Button size="sm" variant={open ? "outline" : "default"} className="h-8 shrink-0 gap-1.5"
-          disabled={revealing}
-          onClick={() => (open ? setOpen(false) : setConfirming(true))}>
-          {open ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          <span className="text-[11px] font-bold">{open ? (ar ? "إخفاء" : "Hide") : (ar ? "إظهار" : "Reveal")}</span>
-        </Button>
+        {!open && (
+          <Button size="sm" className="h-8 shrink-0 gap-1.5"
+            disabled={revealing}
+            onClick={() => setConfirming(true)}>
+            <Eye className="h-3.5 w-3.5" />
+            <span className="text-[11px] font-bold">{ar ? "إظهار" : "Reveal"}</span>
+          </Button>
+        )}
       </div>
+
 
       {confirming && !open && (
         <div className="space-y-2 border-b border-amber-500/20 bg-amber-500/[0.07] px-3 py-2.5">
