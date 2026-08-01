@@ -613,7 +613,11 @@ const css = `
 
 .gxp-main,.gxp-side{display:grid;gap:14px;min-width:0}
 .gxp-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:18px;padding:16px;overflow:hidden}
-.gxp-h{margin:0 0 12px;font-size:15px;color:#e6f7ff}
+.gxp-h{margin:0 0 12px;font-size:15px;color:#e6f7ff;display:flex;align-items:center;gap:7px}
+.gxp-h svg{color:#00e5ff}
+.gxp-stat .l{display:inline-flex;align-items:center;gap:6px}
+.gxp-level-state{display:inline-flex;align-items:center;color:#8b90a0}
+.gxp-level.on .gxp-level-state{color:#00e5ff}
 .gxp-muted{color:#8b90a0;font-size:12.5px;margin:6px 0 0}
 .gxp-empty{text-align:center;padding:34px 16px}
 .gxp-empty h2{margin:0 0 6px;font-size:18px;color:#e6f7ff}
