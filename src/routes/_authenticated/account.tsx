@@ -353,54 +353,71 @@ function OrderCard({ order: o }: { order: OrderRow }) {
           className="mt-2 flex w-full items-center justify-between gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm font-semibold transition hover:bg-muted/40"
           aria-expanded={open}
         >
-          <span>{ar ? "تفاصيل الطلب" : "Order details"}</span>
+          <span className="flex items-center gap-2">
+            {ar ? "تفاصيل الطلب" : "Order details"}
+            {hasCodes && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                <ShieldCheck className="h-3 w-3" />
+                {ar ? `${codes.length} مفتاح` : `${codes.length} key${codes.length === 1 ? "" : "s"}`}
+              </span>
+            )}
+          </span>
           <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
         {open && (
-          <div className="mt-2 space-y-1 text-sm">
-            {items.map((it, i) => (
-              <div key={i} className="flex justify-between gap-2 rounded-lg bg-muted/20 px-2.5 py-2">
-                <span className="min-w-0 break-words">{it.name} × {it.qty}</span>
-                <span className="shrink-0 font-semibold">{((it.price ?? 0) * (it.qty ?? 1)).toFixed(2)} {currencyLabel}</span>
+          <div className="mt-2 space-y-2 text-sm">
+            {groups.map((g, i) => (
+              <div key={i} className="overflow-hidden rounded-xl border border-white/10 bg-muted/15">
+                <div className="flex justify-between gap-2 px-3 py-2.5">
+                  <span className="min-w-0 break-words font-semibold">{g.item.name} × {g.item.qty ?? 1}</span>
+                  <span className="shrink-0 font-bold">{((g.item.price ?? 0) * (g.item.qty ?? 1)).toFixed(2)} {currencyLabel}</span>
+                </div>
+                {g.codes.length > 0 && (
+                  <div className="space-y-2 border-t border-primary/15 bg-primary/[0.04] p-2.5">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      {ar ? "بيانات التسليم لهذا المنتج" : "Delivery data for this product"}
+                    </div>
+                    {g.codes.map((c, k) => (
+                      <DeliveryBlock key={k} data={c} index={k} onReveal={reveal} revealing={revealing} />
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
-          </div>
-        )}
 
-        {o.status === "delivered" && codes.length > 0 && (
-          <div className="mt-3 overflow-hidden rounded-xl border border-primary/25 bg-primary/[0.04]">
-            <div className="flex items-center justify-between gap-2 border-b border-primary/15 bg-primary/[0.06] px-3 py-2.5">
-              <div className="flex min-w-0 items-center gap-2 text-sm font-bold text-primary">
-                <ShieldCheck className="h-4 w-4 shrink-0" />
-                <span className="truncate">{t("acc.your_codes")}</span>
+            {extraCodes.length > 0 && (
+              <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/[0.04] p-2.5">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  {t("acc.your_codes")}
+                </div>
+                {extraCodes.map((c, k) => (
+                  <DeliveryBlock key={k} data={c} index={k} onReveal={reveal} revealing={revealing} />
+                ))}
               </div>
-              <span className="shrink-0 rounded-full border border-primary/30 bg-background/60 px-2 py-0.5 text-[11px] font-bold text-primary">
-                {ar ? `${codes.length} مفتاح` : `${codes.length} key${codes.length === 1 ? "" : "s"}`}
-              </span>
-            </div>
+            )}
 
-            <div className="space-y-2 p-3">
-              {codes.map((c, i) => (
-                <DeliveryBlock key={i} data={c} index={i} onReveal={reveal} revealing={revealing} />
-              ))}
-            </div>
-
-            <div className="flex items-start gap-2 border-t border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
-              <p className="text-[11px] leading-relaxed text-amber-200/90">
-                {ar
-                  ? "بمجرد إظهار أي مفتاح يُعتبر مُستلمًا ولا يمكن استرجاعه أو استبداله. تأكد من المنطقة (Region) ومتطلبات المنتج قبل الإظهار — المتجر غير مسؤول عن تفعيل مفتاح في منطقة خاطئة."
-                  : "Once a key is revealed it counts as delivered and cannot be refunded or replaced. Check the region and product requirements before revealing — the store is not responsible for keys redeemed in the wrong region."}
-              </p>
-            </div>
-
-            <p className="px-3 pb-3 text-[11px] text-muted-foreground">
-              {o.codes_revealed_at
-                ? (ar ? `أول فتح: ${new Date(o.codes_revealed_at).toLocaleString(locale)}` : `First opened: ${new Date(o.codes_revealed_at).toLocaleString(locale)}`)
-                : (ar ? "لم يتم فتح أي مفتاح بعد — كل عملية إظهار تُسجَّل لدى المتجر." : "No key opened yet — every reveal is recorded by the store.")}
-            </p>
+            {hasCodes && (
+              <>
+                <div className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
+                  <p className="text-[11px] leading-relaxed text-amber-200/90">
+                    {ar
+                      ? "بمجرد إظهار أي مفتاح يُعتبر مُستلمًا ولا يمكن استرجاعه أو استبداله. تأكد من المنطقة (Region) ومتطلبات المنتج قبل الإظهار — المتجر غير مسؤول عن تفعيل مفتاح في منطقة خاطئة."
+                      : "Once a key is revealed it counts as delivered and cannot be refunded or replaced. Check the region and product requirements before revealing — the store is not responsible for keys redeemed in the wrong region."}
+                  </p>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {o.codes_revealed_at
+                    ? (ar ? `أول فتح: ${new Date(o.codes_revealed_at).toLocaleString(locale)}` : `First opened: ${new Date(o.codes_revealed_at).toLocaleString(locale)}`)
+                    : (ar ? "لم يتم فتح أي مفتاح بعد — كل عملية إظهار تُسجَّل لدى المتجر." : "No key opened yet — every reveal is recorded by the store.")}
+                </p>
+              </>
+            )}
           </div>
         )}
+
       </CardContent>
     </Card>
   );
