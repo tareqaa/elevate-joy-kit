@@ -137,6 +137,17 @@ export async function createStoreOrder(input: CreateOrderInput) {
   validateOrderInput(input);
   const supabase = getOrderClient(input.accessToken);
 
+  // Blocked IPs never reach the purchase transaction.
+  const clientIp = (input.client?.ip ?? "").trim();
+  if (clientIp) {
+    const { data: blocked } = await (supabase as any).rpc("is_ip_blocked", { _ip: clientIp });
+    if (blocked === true) {
+      throw new Error("تعذّر إتمام الطلب من هذا الاتصال. تواصل معنا للمساعدة.");
+    }
+  }
+
+
+
 
 
   const deliveryData: Record<string, unknown> = { ...(input.deliveryData ?? {}) };
