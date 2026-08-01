@@ -436,7 +436,8 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
 
           {/* Sidebar: search + leaderboard */}
           <aside className="gxp-side">
-            <div className="gxp-card">
+            <div className="gxp-card gxp-search-desktop">
+
               <h3 className="gxp-h">🔎 {isAr ? "ابحث عن لاعب" : "Find a player"}</h3>
               <PlayerSearch isAr={isAr} />
             </div>
