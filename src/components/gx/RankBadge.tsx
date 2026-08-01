@@ -64,9 +64,9 @@ export function RankBadge({
   const text = String(label ?? "");
   const showBanner = banner ?? text.length > 0;
 
-  const face = lighten(color, 0.08);
-  const faceDeep = darken(color, 0.45);
-  const acc = accent || lighten(color, 0.62);
+  const face = darken(color, 0.18);
+  const faceDeep = darken(color, 0.58);
+  const acc = accent || lighten(color, 0.72);
   const accHi = lighten(acc, 0.55);
   const accDeep = darken(acc, 0.42);
 
@@ -88,7 +88,7 @@ export function RankBadge({
       {title ? <title>{title}</title> : null}
       <defs>
         <linearGradient id={`${uid}f`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={lighten(color, 0.32)} />
+          <stop offset="0%" stopColor={lighten(color, 0.18)} />
           <stop offset="55%" stopColor={face} />
           <stop offset="100%" stopColor={faceDeep} />
         </linearGradient>
@@ -122,12 +122,12 @@ export function RankBadge({
       {/* banner tail */}
       {showBanner ? (
         <g>
-          <path d="M23 38 H41 V54 L32 60 L23 54 Z" fill={`url(#${uid}f)`} stroke={accDeep} strokeWidth="1.2" strokeLinejoin="round" />
+          <path d="M23 38 H41 V54 L32 60 L23 54 Z" fill={`url(#${uid}a)`} stroke={accDeep} strokeWidth="1.2" strokeLinejoin="round" />
           {text ? (
             <text
               x="32" y="49" textAnchor="middle" dominantBaseline="middle"
               fontSize={text.length >= 3 ? 9 : text.length === 2 ? 11 : 13}
-              fontWeight="800" fill={accHi}
+              fontWeight="800" fill={darken(acc, 0.62)}
               style={{ letterSpacing: "0.2px" }}
             >
               {text}
