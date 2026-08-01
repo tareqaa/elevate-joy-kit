@@ -280,9 +280,13 @@ const adminCss = `
 .gx-content::-webkit-scrollbar{width:8px;} .gx-content::-webkit-scrollbar-thumb{background:rgba(0,212,255,.15);border-radius:4px;} .gx-content::-webkit-scrollbar-thumb:hover{background:rgba(0,212,255,.3);}
 
 @media (max-width:900px){
-  .gx-aside{position:fixed;inset-block:0;inset-inline-end:0;transform:translateX(100%);}
+  /* Physical right anchoring: RTL logical props flip this to the wrong side */
+  .gx-aside{position:fixed;top:0;bottom:0;right:0;left:auto;width:min(280px,86vw);
+    transform:translateX(105%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    box-shadow:-18px 0 45px rgba(0,0,0,.5);}
   .gx-aside.open{transform:translateX(0);}
-  .gx-aside.collapsed{width:260px;padding:18px 12px;}
+  .gx-aside.collapsed{width:min(280px,86vw);padding:18px 12px;}
+  .gx-aside-close{display:grid;}
   .gx-collapse-btn{display:none;}
   .gx-burger{display:grid;place-items:center;}
   .gx-search-trigger span{display:none;}
@@ -291,7 +295,10 @@ const adminCss = `
   .gx-top{padding:10px 12px;gap:10px;}
   .gx-search-trigger{max-width:none;padding:8px 10px;}
   .gx-kbd{display:none;}
+  .gx-aside-nav{gap:2px;}
+  .gx-nav-link{padding:12px 12px;font-size:14px;}
 }
+
 
 /* --- Phones: keep every admin page inside the viewport ------------------ */
 @media (max-width:640px){
