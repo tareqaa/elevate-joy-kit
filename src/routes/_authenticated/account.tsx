@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown, Eye, EyeOff, AlertTriangle, Globe, KeyRound, Lock } from "lucide-react";
+import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown, Eye, EyeOff, AlertTriangle, Globe, KeyRound, Lock, Wallet } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 import { GxProfile } from "@/components/gx/GxProfile";
@@ -445,18 +445,20 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
 }) {
   const { t, lang } = useLang();
   const ar = lang === "ar";
-  const isAccount = data.kind === "account" || (!!data.email && !data.value);
-  const [open, setOpen] = useState(isAccount);
+  const isTopup = data.kind === "topup";
+  const isAccount = !isTopup && (data.kind === "account" || (!!data.email && !data.value));
+  const isKey = !isTopup && !isAccount;
+  const [open, setOpen] = useState(!isKey);
   const [confirming, setConfirming] = useState(false);
   const region = (data.region || "").trim();
 
   // Once a key has been revealed it stays visible forever on this device.
   useEffect(() => {
-    if (isAccount) return;
+    if (!isKey) return;
     try {
       if (localStorage.getItem(`gx_revealed:${revealKey}`) === "1") setOpen(true);
     } catch { /* noop */ }
-  }, [revealKey, isAccount]);
+  }, [revealKey, isKey]);
 
   async function confirmReveal() {
     await onReveal();
@@ -468,24 +470,30 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
   return (
     <div className="overflow-hidden rounded-xl border border-white/10 bg-background/50">
       <div className="flex flex-wrap items-center gap-2 border-b border-white/5 px-3 py-2">
-        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${isAccount ? "bg-fuchsia-500/15 text-fuchsia-300" : "bg-cyan-500/15 text-cyan-300"}`}>
-          {isAccount ? <UserIcon className="h-3.5 w-3.5" /> : <KeyRound className="h-3.5 w-3.5" />}
+        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${isTopup ? "bg-emerald-500/15 text-emerald-300" : isAccount ? "bg-fuchsia-500/15 text-fuchsia-300" : "bg-cyan-500/15 text-cyan-300"}`}>
+          {isTopup ? <Wallet className="h-3.5 w-3.5" /> : isAccount ? <UserIcon className="h-3.5 w-3.5" /> : <KeyRound className="h-3.5 w-3.5" />}
         </span>
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-bold">
-            {data.label || (isAccount ? (ar ? "حساب" : "Account") : (ar ? `مفتاح ${index + 1}` : `Key ${index + 1}`))}
+            {data.label || (isTopup ? (ar ? "تعبئة رصيد" : "Top up") : isAccount ? (ar ? "حساب" : "Account") : (ar ? `مفتاح ${index + 1}` : `Key ${index + 1}`))}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
             <span className="rounded-full border border-white/10 bg-muted/30 px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
-              {isAccount ? (ar ? "حساب" : "Account") : (ar ? "مفتاح رقمي" : "Digital key")}
+              {isTopup ? (ar ? "تعبئة على حسابك" : "Account top-up") : isAccount ? (ar ? "حساب" : "Account") : (ar ? "مفتاح رقمي" : "Digital key")}
             </span>
-            {!isAccount && (
+            {isTopup && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                <Check className="h-3 w-3" />
+                {ar ? "تمت التعبئة" : "Topped up"}
+              </span>
+            )}
+            {isKey && (
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
                 <Globe className="h-3 w-3" />
                 {region || (ar ? "عالمي / Global" : "Global")}
               </span>
             )}
-            {!isAccount && open && (
+            {isKey && open && (
               <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
                 <Eye className="h-3 w-3" />
                 {ar ? "تم الإظهار" : "Revealed"}
@@ -493,7 +501,7 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
             )}
           </div>
         </div>
-        {!isAccount && !open && (
+        {isKey && !open && (
           <Button size="sm" className="h-8 shrink-0 gap-1.5"
             disabled={revealing}
             onClick={() => setConfirming(true)}>
@@ -502,6 +510,7 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
           </Button>
         )}
       </div>
+
 
 
       {confirming && !open && (
@@ -541,7 +550,20 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
       )}
 
       <div className="space-y-2 p-3">
-        {open ? (
+        {isTopup ? (
+          <>
+            <div className="flex items-start gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2 text-[11px] leading-relaxed text-emerald-200/90">
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
+              <span>
+                {ar
+                  ? "تمت تعبئة الرصيد/الاشتراك مباشرة على حسابك. تحقق من الحساب، وإذا ما ظهر خلال دقائق تواصل مع الدعم."
+                  : "The balance/subscription was topped up directly on your account. Check it, and contact support if it doesn't appear within a few minutes."}
+              </span>
+            </div>
+            {data.email && <CodeBox label={ar ? "الحساب الذي تمت التعبئة عليه" : "Topped-up account"} value={data.email} />}
+            {data.value && <CodeBox label={ar ? "تفاصيل التعبئة" : "Top-up details"} value={data.value} />}
+          </>
+        ) : open ? (
           isAccount ? (
             <>
               {data.email && <CodeBox label="acc.your_email_label" value={data.email} />}
@@ -557,6 +579,7 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
           </div>
         )}
       </div>
+
       {open && <div className="sr-only">{t("acc.your_codes")}</div>}
     </div>
   );
