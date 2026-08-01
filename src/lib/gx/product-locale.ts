@@ -242,13 +242,33 @@ const FORTNITE_DELIVERY_EN = {
 
 /* --- FAQ translations --- */
 export const FAQ_EN = [
-  { icon: "🛒", title: "How do I order from the store?", desc: "Pick the right product, add it to cart, then press \"Checkout via WhatsApp\". We'll review the order, confirm availability, price and payment method before starting." },
-  { icon: "⏱️", title: "How long does delivery take?", desc: "Order processing begins after payment is confirmed. Most digital orders are delivered within minutes to a couple of hours, depending on the product type, availability and region." },
-  { icon: "✅", title: "How do I know my order is confirmed?", desc: "We send a WhatsApp confirmation after reviewing the order and receiving proof of payment. Keep the order message until delivery is complete." },
-  { icon: "💰", title: "Are the displayed prices final?", desc: "Prices shown are updated as much as possible. Final price and availability are confirmed on WhatsApp before payment, especially for special or region-dependent orders." },
-  { icon: "🆘", title: "What if I have an issue with my order?", desc: "Contact us on WhatsApp directly with your order number or a screenshot of the chat. We'll review and provide a fix as soon as possible." },
-  { icon: "🛡️", title: "What's the warranty & refund policy?", desc: "We have a dedicated page that explains warranty and returns step by step. Open the warranty page from the menu." },
+  // Ordering & delivery
+  { icon: "🛒", title: "How do I order from the store?", desc: "Pick your product, add it to the cart, then press \"Checkout via WhatsApp\". We review the order and confirm availability, price and payment method before we start." },
+  { icon: "🌍", title: "Do you deliver worldwide?", desc: "Yes. All our products are digital, so we deliver anywhere in the world. Some region-locked items (gift cards, game currency) require you to pick the matching region for your account." },
+  { icon: "⏱️", title: "How long does delivery take?", desc: "Processing starts once payment is confirmed. Most digital orders arrive within minutes and up to a couple of hours, depending on the product, availability and region." },
+  { icon: "✅", title: "How do I know my order is confirmed?", desc: "You get a WhatsApp confirmation plus an in-account notification, and the order appears in \"My orders\" with a live status: pending, processing, delivered." },
+  { icon: "💳", title: "What payment methods do you accept?", desc: "Payment is arranged over WhatsApp: local transfers, e-wallets and other available methods. You can also pay part of the order with store credit or GX Coins." },
+  { icon: "💰", title: "Are the displayed prices final?", desc: "Prices are shown in your local currency using live exchange rates and are updated continuously. The final price is confirmed on WhatsApp before payment." },
+
+  // Loyalty: XP, levels, coins, credit
+  { icon: "⚡", title: "What is XP and how do I earn it?", desc: "Every 1 JOD of order value gives you 100 XP. XP raises your level, and each level unlocks a bigger coin bonus, avatars and level coupons." },
+  { icon: "🪙", title: "What are GX Coins and how do I earn them?", desc: "Every 1 JOD you actually pay gives you 10 GX Coins, multiplied by your level bonus. You also earn coins from the lucky wheel and from tournament prizes." },
+  { icon: "🧮", title: "How do I spend GX Coins?", desc: "1000 GX Coins = 1 JOD discount, and coins can cover up to 50% of any order. You choose how many coins to use at checkout." },
+  { icon: "📅", title: "Do GX Coins expire?", desc: "Yes — GX Coins are valid for one year from the date you earn them. Coins that pass one year without being used expire, so it's best to spend them on your next orders." },
+  { icon: "🎫", title: "What's the difference between store credit and coins?", desc: "Store credit is a real balance in your currency (from refunds or admin credits) and can cover a full order. GX Coins are a reward currency capped at 50% of an order. Both are private and visible only to you inside your own profile." },
+
+  // Games & tournaments
+  { icon: "🎮", title: "What is GX Arena?", desc: "GX Arena is our games hub. You play mini games such as GX Blast, register in the live tournament and compete for the top spots on a real-time leaderboard." },
+  { icon: "🏆", title: "How do tournaments work?", desc: "Each tournament runs for a set period with a clear start and end. Your best valid score during that window is the one on the leaderboard, and the ranking refreshes automatically." },
+  { icon: "🎁", title: "What are the tournament prizes?", desc: "Prizes are set per placement and may include discount coupons (percentage, fixed amount, or product-specific), GX Coins, XP or custom prizes. All prizes are listed on the tournament page." },
+  { icon: "🎡", title: "What is the lucky wheel?", desc: "A free daily spin that can award XP, GX Coins, a discount coupon or a temporary double-rewards boost. Extra spins can be granted by the store team." },
+
+  // Support & policies
+  { icon: "🆘", title: "What if I have an issue with my order?", desc: "Message us on WhatsApp with your order number or a screenshot of the chat. We review the case and provide a solution as fast as possible." },
+  { icon: "🛡️", title: "What's the warranty & refund policy?", desc: "We have a dedicated page explaining warranty and refunds step by step, including covered cases and exclusions. Open the warranty page from the menu." },
+  { icon: "🔐", title: "Is my account data safe?", desc: "We only ask for the data required to deliver your order (such as a username or email) and never ask for your password unless the product requires it. Your balances and orders are visible only to you." },
 ];
+
 
 /* --- Policy translations --- */
 export const POLICY_EN = [

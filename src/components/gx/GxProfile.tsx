@@ -225,7 +225,13 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
     <section className="section" dir={dir}>
       <div className="wrap gxp">
         <div className="gxp-grid">
+          {/* Mobile: search sits at the very top, not at the bottom of the page. */}
+          <div className="gxp-card gxp-search-mobile">
+            <h3 className="gxp-h">🔎 {isAr ? "ابحث عن لاعب" : "Find a player"}</h3>
+            <PlayerSearch isAr={isAr} />
+          </div>
           <div className="gxp-main">
+
             {!username && (
               <div className="gxp-card gxp-empty">
                 <h2>{isAr ? "ملفات اللاعبين" : "Player profiles"}</h2>
@@ -279,15 +285,19 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                   </div>
 
                   <div className="gxp-stats">
-                    <Stat label="GX Coins" value={(mine?.coins ?? 0).toLocaleString("en-US")}
-                      hint={isOwner ? `≈ ${formatCoins(mine?.coins ?? 0)}` : undefined}
-                      hidden={!isOwner} icon="🪙" />
-                    <Stat label={isAr ? "رصيد المتجر" : "Store credit"}
-                      value={format(Number(mine?.store_credit ?? 0))} hint={currency}
-                      hidden={!isOwner} icon="💳" />
+                    {/* Coins & store credit are private: only the owner sees them. */}
+                    {isOwner && (
+                      <>
+                        <Stat label="GX Coins" value={(mine?.coins ?? 0).toLocaleString("en-US")}
+                          hint={`≈ ${formatCoins(mine?.coins ?? 0)}`} icon="🪙" />
+                        <Stat label={isAr ? "رصيد المتجر" : "Store credit"}
+                          value={format(Number(mine?.store_credit ?? 0))} hint={currency} icon="💳" />
+                      </>
+                    )}
                     <Stat label="XP" value={xp.toLocaleString("en-US")} icon="⚡" />
                     <Stat label={isAr ? "الطلبات" : "Orders"} value={String(mine?.orders_count ?? p.orders_count ?? 0)} icon="📦" />
                   </div>
+
 
                   {isOwner && lvl && (
                     <p className="gxp-note">
@@ -426,7 +436,8 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
 
           {/* Sidebar: search + leaderboard */}
           <aside className="gxp-side">
-            <div className="gxp-card">
+            <div className="gxp-card gxp-search-desktop">
+
               <h3 className="gxp-h">🔎 {isAr ? "ابحث عن لاعب" : "Find a player"}</h3>
               <PlayerSearch isAr={isAr} />
             </div>
@@ -577,7 +588,13 @@ function PlayerSearch({ isAr }: { isAr: boolean }) {
 
 const css = `
 .gxp-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
-@media (max-width:980px){.gxp-grid{grid-template-columns:1fr}}
+.gxp-search-mobile{display:none}
+@media (max-width:980px){
+  .gxp-grid{grid-template-columns:1fr}
+  .gxp-search-mobile{display:block;order:-1}
+  .gxp-search-desktop{display:none}
+}
+
 .gxp-main,.gxp-side{display:grid;gap:14px;min-width:0}
 .gxp-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:18px;padding:16px;overflow:hidden}
 .gxp-h{margin:0 0 12px;font-size:15px;color:#e6f7ff}
