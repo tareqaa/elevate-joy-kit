@@ -91,7 +91,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "GX Store — متجر الألعاب والاشتراكات الرقمية" },
-      { name: "description", content: "متجرك الرقمي لكل الاشتراكات وبطاقات الألعاب — تفعيل رسمي وسريع لكل الدول العربية." },
+      { name: "description", content: "وجهتك الرقمية للاشتراكات وبطاقات الألعاب — تفعيل رسمي وتسليم فوري، أينما كنت حول العالم." },
       { property: "og:title", content: "GX Store" },
       { property: "og:description", content: "اشتراكات، بطاقات ألعاب، وتفعيل فوري." },
       { property: "og:type", content: "website" },

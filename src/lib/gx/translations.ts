@@ -173,7 +173,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "gc.empty_desc_b": "— لو حابب تطلب قيمة معينة هلق، تواصل معنا مباشرة عالواتساب وبنساعدك.",
     // FAQ
     "faq.title": "الأسئلة الشائعة",
-    "faq.desc": "كل ما تحتاج معرفته عن طريقة الطلب، وقت التسليم، وتأكيد الطلب.",
+    "faq.desc": "كل ما تحتاج معرفته عن الطلب والتسليم والدفع، إضافة إلى نظام GX Coins والمستويات وبطولات الألعاب.",
     // Policy
     "policy.title": "سياسة الضمان والاسترجاع",
     "policy.desc": "نحرص على تقديم منتجات رقمية موثوقة وخدمة مميزة لعملائنا.",
@@ -211,7 +211,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "auth.update_password": "تحديث كلمة المرور",
     "auth.password_updated": "تم تحديث كلمة المرور ✅",
     // Footer
-    "footer.tagline": "متجرك الرقمي لكل الاشتراكات وبطاقات الألعاب — تفعيل رسمي وسريع لكل الدول العربية.",
+    "footer.tagline": "وجهتك الرقمية للاشتراكات وبطاقات الألعاب — تفعيل رسمي وتسليم فوري، أينما كنت حول العالم.",
     "footer.sections": "الأقسام",
     "footer.links": "روابط",
     "footer.contact": "تواصل معنا",
@@ -452,7 +452,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "gc.empty_desc_a": "We're preparing",
     "gc.empty_desc_b": "packs — if you'd like a specific amount now, contact us on WhatsApp and we'll help.",
     "faq.title": "Frequently Asked Questions",
-    "faq.desc": "Everything you need to know about ordering, delivery times and order confirmation.",
+    "faq.desc": "Everything about ordering, delivery and payment — plus GX Coins, levels and game tournaments.",
     "policy.title": "Warranty & Refund Policy",
     "policy.desc": "We're committed to reliable digital products and outstanding service for our customers.",
     "policy.footer": "Completing a purchase means the customer has read and agreed to the warranty & refund policy and the store's terms of use.",
@@ -486,7 +486,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "auth.new_password": "New password",
     "auth.update_password": "Update password",
     "auth.password_updated": "Password updated ✅",
-    "footer.tagline": "Your digital store for all subscriptions and game top-ups — official and fast activation across the region.",
+    "footer.tagline": "Your digital hub for subscriptions and game cards — official activation, instant delivery, worldwide.",
     "footer.sections": "Categories",
     "footer.links": "Links",
     "footer.contact": "Contact us",
