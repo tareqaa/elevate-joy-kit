@@ -225,7 +225,13 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
     <section className="section" dir={dir}>
       <div className="wrap gxp">
         <div className="gxp-grid">
+          {/* Mobile: search sits at the very top, not at the bottom of the page. */}
+          <div className="gxp-card gxp-search-mobile">
+            <h3 className="gxp-h">🔎 {isAr ? "ابحث عن لاعب" : "Find a player"}</h3>
+            <PlayerSearch isAr={isAr} />
+          </div>
           <div className="gxp-main">
+
             {!username && (
               <div className="gxp-card gxp-empty">
                 <h2>{isAr ? "ملفات اللاعبين" : "Player profiles"}</h2>
