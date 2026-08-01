@@ -547,8 +547,8 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
         kind,
         label: (c.label || "").trim(), value: (c.value || "").trim(),
         email: (c.email || "").trim(), password: (c.password || "").trim(),
-        // Keys always carry a region; accounts never do.
-        region: kind === "account" ? "" : ((c.region || "").trim() || "Global"),
+        // Keys always carry a region; accounts and top-ups never do.
+        region: kind === "code" ? ((c.region || "").trim() || "Global") : "",
       };
     }).filter((c) => c.label || c.value || c.email || c.password);
     return { status: nextStatus, admin_notes: notes.trim() || null, delivery_data: { codes: cleanCodes } };
@@ -557,7 +557,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
   function save() { onSave(buildPatch(status)); }
   function markDelivered() {
     const anyValue = codes.some((c) => (c.value || "").trim() || (c.email || "").trim() || (c.password || "").trim());
-    const missingRegion = codes.some((c) => (c.kind || "code") !== "account" && (c.value || "").trim() && !(c.region || "").trim());
+    const missingRegion = codes.some((c) => (c.kind || "code") === "code" && (c.value || "").trim() && !(c.region || "").trim());
     if (missingRegion) { alert("في مفاتيح بدون ريجون. حدّد المنطقة لكل مفتاح قبل التسليم."); return; }
     if (!anyValue && !confirm("ما في أكواد/حسابات مدخلة. تأكد من تسليم الطلب بدون بيانات؟")) return;
     setStatus("delivered"); onSave(buildPatch("delivered"));
