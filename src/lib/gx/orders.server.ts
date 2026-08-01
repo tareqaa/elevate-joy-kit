@@ -208,9 +208,21 @@ export async function createStoreOrder(input: CreateOrderInput) {
   const result = data as { id?: string; order_number?: string } | null;
   if (!result?.order_number) throw new Error("Order was not created");
 
+  // Attach the request fingerprint (best-effort: never fails the order).
+  if (result.id && (clientIp || input.client?.userAgent)) {
+    try {
+      await (supabase as any).rpc("record_order_client_meta", {
+        _order_id: result.id,
+        _ip: clientIp || null,
+        _ua: input.client?.userAgent ?? null,
+        _meta: (input.client?.meta ?? {}) as Json,
+      });
+    } catch { /* noop */ }
+  }
 
   return { id: result.id as string, order_number: result.order_number };
 }
+
 
 
 
