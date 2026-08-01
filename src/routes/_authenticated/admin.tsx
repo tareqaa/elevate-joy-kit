@@ -250,6 +250,10 @@ const adminCss = `
 .gx-collapse-btn{position:absolute;inset-inline-start:-11px;top:64px;width:22px;height:22px;border-radius:50%;background:#0d1220;border:1px solid rgba(0,212,255,.35);color:#00d4ff;display:grid;place-items:center;cursor:pointer;z-index:5;box-shadow:0 0 12px rgba(0,212,255,.25);}
 .gx-collapse-btn:hover{background:rgba(0,212,255,.15);}
 
+.gx-aside-close{display:none;position:absolute;top:14px;inset-inline-start:12px;width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#c8ceda;place-items:center;cursor:pointer;z-index:6;}
+.gx-aside-close:hover{background:rgba(255,107,107,.12);color:#ff8888;border-color:rgba(255,107,107,.35);}
+
+
 .gx-scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:25;backdrop-filter:blur(3px);}
 
 .gx-main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
