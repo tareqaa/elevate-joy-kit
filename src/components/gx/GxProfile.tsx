@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/gx/i18n";
 import { useCurrency } from "@/lib/gx/currency";
 import { fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM, XP_PER_JOD } from "@/lib/gx/loyalty";
-import { RankBadge, RANK_COLORS } from "@/components/gx/RankBadge";
+import { RankBadge } from "@/components/gx/RankBadge";
 import { GxIcon, type GxIconName } from "@/components/gx/GxIcon";
 
 
@@ -463,9 +463,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                     <Link key={r.user_id} to="/u/$username" params={{ username: r.username || "" }}
                       className={`gxp-brow${r.username?.toLowerCase() === (username || "").toLowerCase() ? " me" : ""}`}>
                       <span className="r">
-                        {rank <= 3
-                          ? <RankBadge color={RANK_COLORS[rank]} label={rank} size={30} glow />
-                          : <b className="rnum">{rank}</b>}
+                        <b className={`rnum${rank <= 3 ? ` t${rank}` : ""}`}>{rank}</b>
                       </span>
                       <img src={av} alt="" loading="lazy" />
                       <span className="n">{r.username}</span>
@@ -720,7 +718,10 @@ const css = `
 .gxp-brow:hover{background:rgba(255,255,255,.04)}
 .gxp-brow.me{border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.06)}
 .gxp-brow .r{width:32px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;color:#8b90a0}
-.gxp-brow .r .rnum{font-size:12.5px;color:#8b90a0}
+.gxp-brow .r .rnum{font-size:13px;color:#8b90a0;font-variant-numeric:tabular-nums}
+.gxp-brow .r .rnum.t1{color:#ffc53d}
+.gxp-brow .r .rnum.t2{color:#d9e2ee}
+.gxp-brow .r .rnum.t3{color:#ff7a45}
 
 .gxp-brow img{width:30px;height:30px;border-radius:50%;background:#0b1220}
 .gxp-brow .n{flex:1;min-width:0;font-size:12.5px;color:#e6f7ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
