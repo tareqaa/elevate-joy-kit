@@ -13,8 +13,9 @@ import { toast } from "sonner";
 import {
   Search, Download, Volume2, VolumeX, RefreshCw, Filter, Bell,
   CheckCircle2, XCircle, Clock, CreditCard, Package as PackageIcon,
-  Undo2, AlertTriangle, Loader2,
+  Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor,
 } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/admin/orders")({
   head: () => ({ meta: [{ title: "الطلبات — لوحة التحكم" }] }),
@@ -56,9 +57,13 @@ type OrderRow = {
   coins_discount_jod?: number | null;
   coins_refunded?: number | null;
   refunded_jod?: number | null;
+  client_ip?: string | null;
+  user_agent?: string | null;
+  client_meta?: Record<string, unknown> | null;
 
   created_at: string;
 };
+
 
 type OrderWithEmail = OrderRow & { user_email: string | null; user_username: string | null };
 
@@ -624,6 +629,10 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             </div>
           </div>
 
+          <SecurityBlock order={order} />
+
+
+
           {/* Products */}
           <div className="gx-od-sec">
             <div className="gx-od-sec-h">
@@ -1006,6 +1015,141 @@ function AmountsBlock({ order }: { order: OrderWithEmail }) {
               {busy ? <><Loader2 size={14} className="ml-1 animate-spin" /> جاري الحفظ…</> : "حفظ القيمة والعملات"}
             </Button>
           </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Security: request fingerprint of the order + IP blocking
+// ---------------------------------------------------------------------------
+function parseUa(ua: string | null | undefined) {
+  const s = ua || "";
+  if (!s) return { device: "—", os: "—", browser: "—" };
+  const os =
+    /Windows NT 10/.test(s) ? "Windows 10/11" :
+    /Windows/.test(s) ? "Windows" :
+    /iPhone|iPad|iPod/.test(s) ? "iOS" :
+    /Android/.test(s) ? "Android" :
+    /Mac OS X/.test(s) ? "macOS" :
+    /Linux/.test(s) ? "Linux" : "غير معروف";
+  const browser =
+    /Edg\//.test(s) ? "Edge" :
+    /OPR\//.test(s) ? "Opera" :
+    /Chrome\//.test(s) ? "Chrome" :
+    /Firefox\//.test(s) ? "Firefox" :
+    /Safari\//.test(s) ? "Safari" : "غير معروف";
+  const device = /Mobile|Android|iPhone/.test(s) ? "هاتف" : /iPad|Tablet/.test(s) ? "تابلت" : "كمبيوتر";
+  return { device, os, browser };
+}
+
+function SecurityBlock({ order }: { order: OrderWithEmail }) {
+  const qc = useQueryClient();
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const ip = (order.client_ip || "").trim();
+  const meta = (order.client_meta && typeof order.client_meta === "object" ? order.client_meta : {}) as Record<string, unknown>;
+  const ua = parseUa(order.user_agent);
+  const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim().replace(/"/g, "") : null);
+
+  const blockedQ = useQuery({
+    queryKey: ["blocked-ip", ip],
+    enabled: !!ip,
+    queryFn: async () => {
+      const { data } = await supabase.from("blocked_ips").select("ip,reason,created_at").eq("ip", ip).maybeSingle();
+      return data;
+    },
+  });
+
+  const sameIpQ = useQuery({
+    queryKey: ["orders-same-ip", ip],
+    enabled: !!ip,
+    queryFn: async () => {
+      const { count } = await supabase.from("orders").select("id", { count: "exact", head: true }).eq("client_ip", ip);
+      return count ?? 0;
+    },
+  });
+
+  async function toggleBlock(block: boolean) {
+    if (!ip) return;
+    setBusy(true);
+    const { data, error } = await supabase.rpc(block ? "admin_block_ip" : "admin_unblock_ip",
+      block ? { _ip: ip, _reason: reason.trim() || null } : { _ip: ip });
+    setBusy(false);
+    const res = data as { ok?: boolean; error?: string } | null;
+    if (error || !res?.ok) { toast.error(error?.message || res?.error || "فشلت العملية"); return; }
+    toast.success(block ? "تم حظر هذا العنوان" : "تم رفع الحظر");
+    qc.invalidateQueries({ queryKey: ["blocked-ip", ip] });
+  }
+
+  const rows: Array<[string, string | null]> = [
+    ["عنوان IP", ip || null],
+    ["الجهاز", ua.device],
+    ["نظام التشغيل", ua.os],
+    ["المتصفح", ua.browser],
+    ["الدولة", str(meta.country)],
+    ["المدينة", str(meta.city)],
+    ["اللغة", str(meta.language)],
+    ["المنصّة", str(meta.platform)],
+    ["مصدر الزيارة", str(meta.referer)],
+  ];
+
+  return (
+    <div className="gx-od-sec">
+      <div className="gx-od-sec-h">
+        <div className="gx-od-sec-t"><ShieldAlert size={14} /> بيانات الأمان والجهاز</div>
+        {ip && (sameIpQ.data ?? 0) > 1 && (
+          <span className="text-[11px] text-amber-300">{sameIpQ.data} طلب من نفس العنوان</span>
+        )}
+      </div>
+
+      {!ip && !order.user_agent ? (
+        <p className="text-xs text-cyan-100/50 p-1">لا توجد بيانات جهاز لهذا الطلب (طلب قديم قبل تفعيل التتبع).</p>
+      ) : (
+        <>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {rows.filter(([, v]) => v).map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between gap-2 rounded-lg border border-cyan-500/10 bg-black/20 px-3 py-1.5">
+                <span className="text-[11px] text-cyan-400/70">{k}</span>
+                <span className="text-xs font-mono text-cyan-100 truncate max-w-[60%]" dir="ltr">{v}</span>
+              </div>
+            ))}
+          </div>
+
+          {order.user_agent && (
+            <details className="mt-2">
+              <summary className="cursor-pointer text-[11px] text-cyan-400/70 flex items-center gap-1">
+                <Monitor size={12} /> User-Agent الكامل
+              </summary>
+              <p className="mt-1 text-[11px] font-mono text-cyan-100/70 break-all" dir="ltr">{order.user_agent}</p>
+            </details>
+          )}
+
+          {ip && (
+            <div className="mt-3 rounded-lg border border-rose-500/20 bg-rose-500/5 p-3">
+              {blockedQ.data ? (
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-xs text-rose-300 flex items-center gap-1">
+                    <Ban size={13} /> هذا العنوان محظور{blockedQ.data.reason ? ` — ${blockedQ.data.reason}` : ""}
+                  </span>
+                  <Button size="sm" variant="outline" disabled={busy} onClick={() => toggleBlock(false)}>
+                    <ShieldCheck size={14} className="ms-1" /> رفع الحظر
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-[1fr_auto] items-end">
+                  <div>
+                    <Label className="text-[11px] text-cyan-400/70">سبب الحظر (اختياري)</Label>
+                    <Input className="gx-adm-input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="محاولة احتيال…" />
+                  </div>
+                  <Button size="sm" variant="destructive" disabled={busy} onClick={() => toggleBlock(true)}>
+                    <Ban size={14} className="ms-1" /> حظر هذا الـ IP
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>

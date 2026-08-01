@@ -26,8 +26,15 @@ type CreateOrderInput = {
   creditJod?: number | null;
   /** Caller's Supabase access token (used when no service-role key is set). */
   accessToken?: string | null;
+  /** Request fingerprint captured on the server (IP / device / geo). */
+  client?: {
+    ip?: string | null;
+    userAgent?: string | null;
+    meta?: Record<string, unknown> | null;
+  } | null;
 
 };
+
 
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
@@ -130,6 +137,17 @@ export async function createStoreOrder(input: CreateOrderInput) {
   validateOrderInput(input);
   const supabase = getOrderClient(input.accessToken);
 
+  // Blocked IPs never reach the purchase transaction.
+  const clientIp = (input.client?.ip ?? "").trim();
+  if (clientIp) {
+    const { data: blocked } = await (supabase as any).rpc("is_ip_blocked", { _ip: clientIp });
+    if (blocked === true) {
+      throw new Error("تعذّر إتمام الطلب من هذا الاتصال. تواصل معنا للمساعدة.");
+    }
+  }
+
+
+
 
 
   const deliveryData: Record<string, unknown> = { ...(input.deliveryData ?? {}) };
@@ -190,9 +208,21 @@ export async function createStoreOrder(input: CreateOrderInput) {
   const result = data as { id?: string; order_number?: string } | null;
   if (!result?.order_number) throw new Error("Order was not created");
 
+  // Attach the request fingerprint (best-effort: never fails the order).
+  if (result.id && (clientIp || input.client?.userAgent)) {
+    try {
+      await (supabase as any).rpc("record_order_client_meta", {
+        _order_id: result.id,
+        _ip: clientIp || null,
+        _ua: input.client?.userAgent ?? null,
+        _meta: (input.client?.meta ?? {}) as Json,
+      });
+    } catch { /* noop */ }
+  }
 
   return { id: result.id as string, order_number: result.order_number };
 }
+
 
 
 

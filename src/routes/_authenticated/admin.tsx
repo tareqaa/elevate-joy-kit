@@ -288,5 +288,37 @@ const adminCss = `
   .gx-search-trigger span{display:none;}
   .gx-me-text{display:none;}
   .gx-content{padding:14px;}
+  .gx-top{padding:10px 12px;gap:10px;}
+  .gx-search-trigger{max-width:none;padding:8px 10px;}
+  .gx-kbd{display:none;}
+}
+
+/* --- Phones: keep every admin page inside the viewport ------------------ */
+@media (max-width:640px){
+  .gx-content{padding:10px;}
+  .gx-content *{min-width:0;}
+  .gx-live{display:none;}
+  .gx-top{gap:8px;}
+  .gx-me{padding:3px;}
+  /* Tables never push the layout wider than the screen */
+  .gx-content table{width:100%;font-size:12px;}
+  .gx-content table th,.gx-content table td{padding:8px 6px !important;white-space:nowrap;}
+  .gx-adm-table-wrap,.gx-content .overflow-x-auto{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .gx-adm-card{padding:12px;border-radius:14px;}
+  /* Toolbars / filter rows stack instead of overflowing */
+  .gx-adm-toolbar{flex-direction:column;align-items:stretch;}
+  .gx-adm-toolbar > *{width:100%;}
+  /* Any 2+ column grid collapses to one column */
+  .gx-content [class*="grid-cols-"]{grid-template-columns:1fr !important;}
+  .gx-content .flex-wrap > *{max-width:100%;}
+  h1{font-size:20px !important;}
+  h2{font-size:17px !important;}
+}
+
+/* Dialogs on small screens: full width, scrollable, no clipped actions */
+@media (max-width:640px){
+  [role="dialog"]{width:calc(100vw - 20px) !important;max-width:calc(100vw - 20px) !important;max-height:88vh !important;overflow-y:auto;}
+  [role="dialog"] [class*="grid-cols-"]{grid-template-columns:1fr !important;}
+  [role="dialog"] input,[role="dialog"] select,[role="dialog"] textarea{max-width:100%;}
 }
 `;
