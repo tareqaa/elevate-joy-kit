@@ -202,8 +202,9 @@ html[dir="ltr"] .featured-grid{
   .featured-grid .prod-card{flex:0 0 calc((100% - 20px - var(--gx-peek)) / 2);}
 }
 @media(max-width:560px){
-  .featured-grid{--gx-peek:22px; --gx-fade:40px;}
-  .featured-grid .prod-card{flex:0 0 calc(100% - var(--gx-peek));}
+  .featured-grid{--gx-peek:0px; --gx-fade:34px; gap:12px; scroll-snap-type:none;}
+  /* 2.5 cards visible so it's obvious the row scrolls */
+  .featured-grid .prod-card{flex:0 0 calc((100% - 2 * 12px) / 2.5);}
 }
 
 
