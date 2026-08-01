@@ -726,9 +726,38 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                     ) : (
                       <Input placeholder="الكود" dir="ltr" value={c.value} onChange={(e) => updateCode(i, { value: e.target.value })} className="gx-adm-input h-9 text-sm font-mono" />
                     )}
-                    <Input placeholder="المنطقة / الريجون (مثلاً: Global · US · EU · TR)" value={c.region || ""} onChange={(e) => updateCode(i, { region: e.target.value })} className="gx-adm-input h-9 text-sm mt-2" />
-
+                    {!isAccount && (
+                      <div className="mt-2">
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                          <span className="text-[10px] font-bold text-cyan-100/60">الريجون (مطلوب للمفاتيح):</span>
+                          {["Global", "US", "EU", "TR", "UK", "SA", "AE"].map((r) => (
+                            <button
+                              key={r}
+                              type="button"
+                              onClick={() => updateCode(i, { region: r })}
+                              className={`text-[10px] px-2 py-0.5 rounded-full border font-bold transition ${
+                                (c.region || "").trim().toLowerCase() === r.toLowerCase()
+                                  ? "bg-cyan-500/25 text-cyan-200 border-cyan-400/60"
+                                  : "bg-white/5 text-cyan-100/60 border-white/10 hover:bg-white/10"
+                              }`}
+                            >
+                              {r}
+                            </button>
+                          ))}
+                        </div>
+                        <Input
+                          placeholder="المنطقة / الريجون (مثلاً: Global · US · EU · TR)"
+                          value={c.region || ""}
+                          onChange={(e) => updateCode(i, { region: e.target.value })}
+                          className={`gx-adm-input h-9 text-sm ${!(c.region || "").trim() && (c.value || "").trim() ? "border-amber-500/60" : ""}`}
+                        />
+                        {!(c.region || "").trim() && (c.value || "").trim() && (
+                          <div className="text-[10px] text-amber-400 mt-1">حدّد الريجون قبل التسليم — المفاتيح لازم يكون إلها منطقة.</div>
+                        )}
+                      </div>
+                    )}
                   </div>
+
                 );
               })}
             </div>
