@@ -17,10 +17,9 @@ const PATHS: Record<GxIconName, React.ReactNode> = {
   ),
   discount: (
     <>
-      <path d="M7.5 16.5 16.5 7.5" />
-      <circle cx="8.5" cy="8.5" r="1.8" />
-      <circle cx="15.5" cy="15.5" r="1.8" />
-      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <path d="M6 18 18 6" />
+      <circle cx="8" cy="8" r="2.4" />
+      <circle cx="16" cy="16" r="2.4" />
     </>
   ),
   medal: (
