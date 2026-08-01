@@ -726,6 +726,8 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                     ) : (
                       <Input placeholder="الكود" dir="ltr" value={c.value} onChange={(e) => updateCode(i, { value: e.target.value })} className="gx-adm-input h-9 text-sm font-mono" />
                     )}
+                    <Input placeholder="المنطقة / الريجون (مثلاً: Global · US · EU · TR)" value={c.region || ""} onChange={(e) => updateCode(i, { region: e.target.value })} className="gx-adm-input h-9 text-sm mt-2" />
+
                   </div>
                 );
               })}
