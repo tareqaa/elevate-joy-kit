@@ -18,7 +18,13 @@ type Ctx = {
   pick: <T>(ar: T, en: T) => T;
 };
 
-const LangContext = createContext<Ctx | null>(null);
+// Keep a single context instance across HMR module replacements, otherwise a
+// hot update recreates the context while the mounted provider still holds the
+// old one → "useLang must be used inside LanguageProvider".
+const g = globalThis as unknown as { __gxLangContext?: React.Context<Ctx | null> };
+const LangContext = g.__gxLangContext ?? createContext<Ctx | null>(null);
+g.__gxLangContext = LangContext;
+
 
 const GEO_KEY = "gx_lang_geo_cc";
 
