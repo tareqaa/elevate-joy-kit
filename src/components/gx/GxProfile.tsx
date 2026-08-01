@@ -453,21 +453,25 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
               <PlayerSearch isAr={isAr} />
             </div>
             <div className="gxp-card">
-              <h3 className="gxp-h">🏆 {isAr ? "المتصدرون" : "Leaderboard"}</h3>
+              <h3 className="gxp-h">{isAr ? "المتصدرون" : "Leaderboard"}</h3>
               <div className="gxp-board">
                 {(boardQ.data ?? []).map((r) => {
                   const rank = Number(r.rank);
-                  const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`;
                   const av = r.avatar_url || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(r.username || "gx")}&skinColor=f2d3b1&radius=50`;
                   return (
                     <Link key={r.user_id} to="/u/$username" params={{ username: r.username || "" }}
                       className={`gxp-brow${r.username?.toLowerCase() === (username || "").toLowerCase() ? " me" : ""}`}>
-                      <span className="r">{medal}</span>
+                      <span className="r">
+                        {rank <= 3
+                          ? <RankBadge color={RANK_COLORS[rank]} label={rank} size={30} glow />
+                          : <b className="rnum">{rank}</b>}
+                      </span>
                       <img src={av} alt="" loading="lazy" />
                       <span className="n">{r.username}</span>
                       <span className="x">{Number(r.xp).toLocaleString("en-US")}</span>
                     </Link>
                   );
+
                 })}
               </div>
             </div>
