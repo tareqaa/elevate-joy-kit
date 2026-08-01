@@ -56,9 +56,13 @@ type OrderRow = {
   coins_discount_jod?: number | null;
   coins_refunded?: number | null;
   refunded_jod?: number | null;
+  client_ip?: string | null;
+  user_agent?: string | null;
+  client_meta?: Record<string, unknown> | null;
 
   created_at: string;
 };
+
 
 type OrderWithEmail = OrderRow & { user_email: string | null; user_username: string | null };
 
