@@ -6,6 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/gx/i18n";
 import { useCurrency } from "@/lib/gx/currency";
 import { fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM, XP_PER_JOD } from "@/lib/gx/loyalty";
+import { RankBadge, RANK_COLORS } from "@/components/gx/RankBadge";
+import { GxIcon, type GxIconName } from "@/components/gx/GxIcon";
+
 
 type PublicProfile = {
   id: string; username: string; full_name: string | null; avatar_url: string | null;
@@ -227,7 +230,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
         <div className="gxp-grid">
           {/* Mobile: search sits at the very top, not at the bottom of the page. */}
           <div className="gxp-card gxp-search-mobile">
-            <h3 className="gxp-h">🔎 {isAr ? "ابحث عن لاعب" : "Find a player"}</h3>
+            <h3 className="gxp-h"><GxIcon name="search" /> {isAr ? "ابحث عن لاعب" : "Find a player"}</h3>
             <PlayerSearch isAr={isAr} />
           </div>
           <div className="gxp-main">
@@ -257,8 +260,17 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                     <div className="gxp-id">
                       <h1 dir="ltr">@{p.username}</h1>
                       <div className="gxp-chips">
-                        {lvl && <span className="gxp-chip" style={{ background: lvl.gradient }}>{lvl.icon} {levelName(lvl, lang)}</span>}
-                        <span className="gxp-chip ghost">🏆 #{Number(mine?.rank ?? p.rank)}</span>
+                        {lvl && (
+                          <span className="gxp-rankchip" style={{ ["--rc" as string]: lvl.color || "#4aa8ff" }}>
+                            <RankBadge color={lvl.color || "#4aa8ff"} label={lvl.sort_order ?? undefined} size={40} glow title={levelName(lvl, lang)} />
+                            <span className="rc-txt">
+                              <em>{isAr ? "الرتبة" : "Rank"}</em>
+                              <b>{levelName(lvl, lang)}</b>
+                            </span>
+                          </span>
+                        )}
+                        <span className="gxp-chip ghost">#{Number(mine?.rank ?? p.rank)}</span>
+
                         <span className="gxp-chip ghost">
                           {isAr ? "عضو منذ" : "Member since"} {new Date(p.created_at).toLocaleDateString(isAr ? "ar-EG" : "en-US", { year: "numeric", month: "long" })}
                         </span>
@@ -289,13 +301,13 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                     {isOwner && (
                       <>
                         <Stat label="GX Coins" value={(mine?.coins ?? 0).toLocaleString("en-US")}
-                          hint={`≈ ${formatCoins(mine?.coins ?? 0)}`} icon="🪙" />
+                          hint={`≈ ${formatCoins(mine?.coins ?? 0)}`} icon="coin" />
                         <Stat label={isAr ? "رصيد المتجر" : "Store credit"}
-                          value={format(Number(mine?.store_credit ?? 0))} hint={currency} icon="💳" />
+                          value={format(Number(mine?.store_credit ?? 0))} hint={currency} icon="card" />
                       </>
                     )}
-                    <Stat label="XP" value={xp.toLocaleString("en-US")} icon="⚡" />
-                    <Stat label={isAr ? "الطلبات" : "Orders"} value={String(mine?.orders_count ?? p.orders_count ?? 0)} icon="📦" />
+                    <Stat label="XP" value={xp.toLocaleString("en-US")} icon="bolt" />
+                    <Stat label={isAr ? "الطلبات" : "Orders"} value={String(mine?.orders_count ?? p.orders_count ?? 0)} icon="box" />
                   </div>
 
 
@@ -338,7 +350,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                             <div key={col.id}>
                               <div className="gxp-col-head">
                                 <b>{isAr ? col.name_ar : col.name_en}</b>
-                                {!unlocked && <span className="t lock">🔒 {levelName(need, lang)}</span>}
+                                {!unlocked && <span className="t lock"><GxIcon name="lock" size={12} /> {levelName(need, lang)}</span>}
                               </div>
                               <div className="gxp-avs">
                                 {col.avatars.map((a) => (
@@ -392,15 +404,15 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
 
             {/* How GX Rewards works — always visible (merged from the old /rewards page) */}
             <div className="gxp-card">
-              <h3 className="gxp-h">🎁 {isAr ? "كيف يعمل نظام GX Rewards" : "How GX Rewards works"}</h3>
+              <h3 className="gxp-h"><GxIcon name="gift" /> {isAr ? "كيف يعمل نظام GX Rewards" : "How GX Rewards works"}</h3>
               <div className="gxp-rules">
-                <Rule icon="⚡" title={isAr ? "اكسب XP" : "Earn XP"}
+                <Rule icon="bolt" title={isAr ? "اكسب XP" : "Earn XP"}
                   text={isAr ? `كل 1 دينار تنفقه = ${XP_PER_JOD} نقطة خبرة.` : `Every 1 JOD spent = ${XP_PER_JOD} XP.`} />
-                <Rule icon="🪙" title="GX Coins"
+                <Rule icon="coin" title="GX Coins"
                   text={isAr ? "كل 1 دينار مدفوع = 10 عملات × مضاعف مستواك." : "Every 1 JOD paid = 10 coins × your level multiplier."} />
-                <Rule icon="💸" title={isAr ? "استبدال العملات" : "Redeem coins"}
+                <Rule icon="discount" title={isAr ? "استبدال العملات" : "Redeem coins"}
                   text={isAr ? `${COINS_PER_JOD_REDEEM} عملة = 1 دينار خصم (حتى 50% من الطلب).` : `${COINS_PER_JOD_REDEEM} coins = 1 JOD off (up to 50% per order).`} />
-                <Rule icon="🏅" title={isAr ? "مكافآت المستوى" : "Level rewards"}
+                <Rule icon="medal" title={isAr ? "مكافآت المستوى" : "Level rewards"}
                   text={isAr ? "كل مستوى يمنحك عملات وكوبون خصم وأفاتارات حصرية." : "Each level unlocks coins, a coupon and exclusive avatars."} />
               </div>
             </div>
@@ -414,12 +426,12 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                   return (
                     <div key={l.id} className={`gxp-level${reached ? " on" : ""}`}>
                       <div className="gxp-level-top">
-                        <span className="ico">{l.icon}</span>
+                        <span className="ico"><RankBadge color={l.color || "#4aa8ff"} label={l.sort_order ?? undefined} size={34} glow={reached} title={levelName(l, lang)} /></span>
                         <div>
                           <b style={{ color: l.color }}>{levelName(l, lang)}</b>
                           <em>{l.min_xp.toLocaleString("en-US")} XP</em>
                         </div>
-                        <span className="gxp-level-state">{reached ? "✓" : "🔒"}</span>
+                        <span className="gxp-level-state">{reached ? <GxIcon name="check" size={14} /> : <GxIcon name="lock" size={14} />}</span>
                       </div>
                       <div className="gxp-tags">
                         {l.reward_coins > 0 && <span className="t amber">+{l.reward_coins} Coins</span>}
@@ -442,21 +454,25 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
               <PlayerSearch isAr={isAr} />
             </div>
             <div className="gxp-card">
-              <h3 className="gxp-h">🏆 {isAr ? "المتصدرون" : "Leaderboard"}</h3>
+              <h3 className="gxp-h">{isAr ? "المتصدرون" : "Leaderboard"}</h3>
               <div className="gxp-board">
                 {(boardQ.data ?? []).map((r) => {
                   const rank = Number(r.rank);
-                  const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`;
                   const av = r.avatar_url || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(r.username || "gx")}&skinColor=f2d3b1&radius=50`;
                   return (
                     <Link key={r.user_id} to="/u/$username" params={{ username: r.username || "" }}
                       className={`gxp-brow${r.username?.toLowerCase() === (username || "").toLowerCase() ? " me" : ""}`}>
-                      <span className="r">{medal}</span>
+                      <span className="r">
+                        {rank <= 3
+                          ? <RankBadge color={RANK_COLORS[rank]} label={rank} size={30} glow />
+                          : <b className="rnum">{rank}</b>}
+                      </span>
                       <img src={av} alt="" loading="lazy" />
                       <span className="n">{r.username}</span>
                       <span className="x">{Number(r.xp).toLocaleString("en-US")}</span>
                     </Link>
                   );
+
                 })}
               </div>
             </div>
@@ -468,20 +484,20 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
   );
 }
 
-function Stat({ icon, label, value, hint, hidden }: { icon: string; label: string; value: string; hint?: string; hidden?: boolean }) {
+function Stat({ icon, label, value, hint, hidden }: { icon: GxIconName; label: string; value: string; hint?: string; hidden?: boolean }) {
   return (
     <div className="gxp-stat">
-      <span className="l">{icon} {label}</span>
+      <span className="l"><GxIcon name={icon} size={14} /> {label}</span>
       <b>{hidden ? "—" : value}</b>
       {!hidden && hint && <em>{hint}</em>}
     </div>
   );
 }
 
-function Rule({ icon, title, text }: { icon: string; title: string; text: string }) {
+function Rule({ icon, title, text }: { icon: GxIconName; title: string; text: string }) {
   return (
     <div className="gxp-rule">
-      <span className="ico">{icon}</span>
+      <span className="ico"><GxIcon name={icon} size={18} /></span>
       <div><b>{title}</b><em>{text}</em></div>
     </div>
   );
@@ -597,7 +613,11 @@ const css = `
 
 .gxp-main,.gxp-side{display:grid;gap:14px;min-width:0}
 .gxp-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:18px;padding:16px;overflow:hidden}
-.gxp-h{margin:0 0 12px;font-size:15px;color:#e6f7ff}
+.gxp-h{margin:0 0 12px;font-size:15px;color:#e6f7ff;display:flex;align-items:center;gap:7px}
+.gxp-h svg{color:#00e5ff}
+.gxp-stat .l{display:inline-flex;align-items:center;gap:6px}
+.gxp-level-state{display:inline-flex;align-items:center;color:#8b90a0}
+.gxp-level.on .gxp-level-state{color:#00e5ff}
 .gxp-muted{color:#8b90a0;font-size:12.5px;margin:6px 0 0}
 .gxp-empty{text-align:center;padding:34px 16px}
 .gxp-empty h2{margin:0 0 6px;font-size:18px;color:#e6f7ff}
@@ -612,6 +632,14 @@ const css = `
 .gxp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .gxp-chip{font-size:11px;font-weight:800;padding:4px 10px;border-radius:99px;color:#08101a}
 .gxp-chip.ghost{background:rgba(255,255,255,.06);color:#c8d6e2}
+.gxp-rankchip{display:inline-flex;align-items:center;gap:9px;padding:5px 12px 5px 8px;border-radius:14px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--rc) 22%,transparent),color-mix(in srgb,var(--rc) 8%,transparent));
+  border:1px solid color-mix(in srgb,var(--rc) 45%,transparent);
+  box-shadow:0 6px 18px -12px var(--rc)}
+.gxp-rankchip .rc-txt{display:flex;flex-direction:column;line-height:1.15}
+.gxp-rankchip .rc-txt em{font-style:normal;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#9fb0c0}
+.gxp-rankchip .rc-txt b{font-size:14px;font-weight:900;color:var(--rc);text-shadow:0 0 14px color-mix(in srgb,var(--rc) 45%,transparent)}
+
 .gxp-edit{align-self:center}
 .gxp-bar{padding:16px 16px 0}
 .gxp-bar-top{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:#8b90a0;margin-bottom:6px}
@@ -633,7 +661,7 @@ const css = `
 .gxp-level{border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:11px;opacity:.6}
 .gxp-level.on{opacity:1;border-color:rgba(0,229,255,.35);background:rgba(0,229,255,.05)}
 .gxp-level-top{display:flex;align-items:center;gap:9px}
-.gxp-level-top .ico{font-size:20px}
+.gxp-level-top .ico{font-size:20px;display:inline-flex;align-items:center}
 .gxp-level-top b{display:block;font-size:13.5px}
 .gxp-level-top em{font-style:normal;font-size:11px;color:#8b90a0}
 .gxp-level-state{margin-inline-start:auto;font-size:12px}
@@ -691,7 +719,9 @@ const css = `
 .gxp-brow{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:12px;text-decoration:none;color:inherit;border:1px solid transparent}
 .gxp-brow:hover{background:rgba(255,255,255,.04)}
 .gxp-brow.me{border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.06)}
-.gxp-brow .r{width:28px;font-weight:900;font-size:12px;color:#8b90a0;text-align:center}
+.gxp-brow .r{width:32px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;color:#8b90a0}
+.gxp-brow .r .rnum{font-size:12.5px;color:#8b90a0}
+
 .gxp-brow img{width:30px;height:30px;border-radius:50%;background:#0b1220}
 .gxp-brow .n{flex:1;min-width:0;font-size:12.5px;color:#e6f7ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gxp-brow .x{font-size:11.5px;font-weight:900;color:#00e5ff}

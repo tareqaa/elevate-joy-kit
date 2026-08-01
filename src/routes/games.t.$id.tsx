@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
 import { formatCountdownFull, formatDateTime } from "@/lib/gx/games/time";
+import { RankBadge, RANK_COLORS } from "@/components/gx/RankBadge";
+
 
 export const Route = createFileRoute("/games/t/$id")({
   ssr: false,
@@ -286,14 +288,17 @@ function TournamentPage() {
                     const inner = (
                       <>
                         <span className={"lb-r" + (r.rank <= 3 ? ` top t${r.rank}` : "")}>
-                          {r.rank <= 3 ? MEDALS[r.rank - 1] : r.rank}
+                          {r.rank <= 3
+                            ? <RankBadge color={RANK_COLORS[r.rank]} label={r.rank} size={30} glow />
+                            : r.rank}
                         </span>
                         <span className="lb-avwrap" style={{ ["--glow" as string]: glow }}>
                           {r.avatar_url
                             ? <img src={r.avatar_url} alt="" className="lb-av" loading="lazy" decoding="async" />
                             : <span className="lb-av ph">{nameOf(r).slice(0, 1)}</span>}
-                          {r.level_icon ? <i className="lb-lvl" style={{ borderColor: glow }}>{r.level_icon}</i> : null}
+                          <i className="lb-lvl plain" style={{ borderColor: glow }}><RankBadge color={glow} size={20} /></i>
                         </span>
+
                         <span className="lb-who">
                           <b className="lb-nm">{nameOf(r)}</b>
                           {(ar ? r.level_name_ar : r.level_name_en) ? (
