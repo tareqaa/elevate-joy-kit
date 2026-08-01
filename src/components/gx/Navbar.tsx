@@ -16,6 +16,7 @@ import { CurrencyModal } from "./CurrencyModal";
 import { ReviewModal } from "./ReviewModal";
 import { SpinWheelModal } from "./SpinWheel";
 import { useLang } from "@/lib/gx/i18n";
+import { GxIcon } from "@/components/gx/GxIcon";
 import { localizedCategoryLink, localizedProduct, localizedGiftCard } from "@/lib/gx/product-locale";
 
 type SearchEntry = { key: string; title: string; sub: string; icon: string; iconImg?: string; link: string; hay: string };
@@ -402,13 +403,13 @@ export function Navbar() {
                     </div>
                     {username ? (
                       <Link to="/u/$username" params={{ username }} className="acc-bal acc-bal--link" onClick={() => setAccountOpen(false)}>
-                        <span className="acc-bal__l">🪙 GX Coins ›</span>
+                        <span className="acc-bal__l"><GxIcon name="coin" size={14} /> GX Coins ›</span>
                         <b className="acc-bal__v coins">{Number(profile?.gx_coins ?? 0).toLocaleString("en-US")}</b>
                         <small>≈ {formatCoins(Number(profile?.gx_coins ?? 0))}</small>
                       </Link>
                     ) : (
                       <Link to="/rewards" className="acc-bal acc-bal--link" onClick={() => setAccountOpen(false)}>
-                        <span className="acc-bal__l">🪙 GX Coins ›</span>
+                        <span className="acc-bal__l"><GxIcon name="coin" size={14} /> GX Coins ›</span>
                         <b className="acc-bal__v coins">{Number(profile?.gx_coins ?? 0).toLocaleString("en-US")}</b>
                         <small>≈ {formatCoins(Number(profile?.gx_coins ?? 0))}</small>
                       </Link>

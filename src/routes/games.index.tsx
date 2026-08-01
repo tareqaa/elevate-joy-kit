@@ -4,6 +4,7 @@ import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { GameIcon } from "@/components/gx/games/GameIcon";
+import { GxIcon } from "@/components/gx/GxIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
 import { gameLabel } from "@/lib/gx/games/time";
 import { CarouselRow } from "@/components/gx/CarouselRow";
@@ -157,7 +158,7 @@ function GamesPage() {
                   : "Join a tournament, play, and climb the ranks — top scores take the prizes."}
               </p>
               <div className="ar-perks">
-                <span className="ar-perk"><i aria-hidden>🪙</i>{ar ? "GX Coins للرصيد" : "GX Coins balance"}</span>
+                <span className="ar-perk"><GxIcon name="coin" size={14} />{ar ? "GX Coins للرصيد" : "GX Coins balance"}</span>
                 <span className="ar-perk"><i aria-hidden>🎟️</i>{ar ? "كوبونات خصم" : "Discount coupons"}</span>
                 <span className="ar-perk"><i aria-hidden>🎮</i>{ar ? "منتجات رقمية مجانية" : "Free digital products"}</span>
               </div>

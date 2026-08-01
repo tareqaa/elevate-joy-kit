@@ -3,6 +3,7 @@ import { StoreShell } from "@/components/gx/StoreShell";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
+import { GxIcon } from "@/components/gx/GxIcon";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
@@ -425,7 +426,7 @@ function CoinsBlock() {
   return (
     <div className="gx-coupon-block">
       <div className="gx-cb-title">
-        🪙 GX Coins
+        <GxIcon name="coin" size={16} /> GX Coins
         <span className="gx-bal-pill" style={{ color: "#ffc400" }}>
           {balance.toLocaleString("en-US")} ≈ {format(coinsToJod(balance))}
         </span>
