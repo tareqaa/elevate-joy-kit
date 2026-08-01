@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
 import { formatCountdownFull, formatDateTime } from "@/lib/gx/games/time";
+import { RankBadge, RANK_COLORS } from "@/components/gx/RankBadge";
+
 
 export const Route = createFileRoute("/games/t/$id")({
   ssr: false,
