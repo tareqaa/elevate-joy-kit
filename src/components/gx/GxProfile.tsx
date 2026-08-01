@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/gx/i18n";
 import { useCurrency } from "@/lib/gx/currency";
-import { fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM, XP_PER_JOD } from "@/lib/gx/loyalty";
+import { fetchLevels, fetchMyLoyalty, levelName, levelProgress } from "@/lib/gx/loyalty";
+import { useLoyaltyCopy } from "@/lib/gx/loyalty-copy";
 import { RankBadge } from "@/components/gx/RankBadge";
 import { GxIcon, type GxIconName } from "@/components/gx/GxIcon";
 
