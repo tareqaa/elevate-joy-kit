@@ -627,6 +627,14 @@ const css = `
 .gxp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .gxp-chip{font-size:11px;font-weight:800;padding:4px 10px;border-radius:99px;color:#08101a}
 .gxp-chip.ghost{background:rgba(255,255,255,.06);color:#c8d6e2}
+.gxp-rankchip{display:inline-flex;align-items:center;gap:9px;padding:5px 12px 5px 8px;border-radius:14px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--rc) 22%,transparent),color-mix(in srgb,var(--rc) 8%,transparent));
+  border:1px solid color-mix(in srgb,var(--rc) 45%,transparent);
+  box-shadow:0 6px 18px -12px var(--rc)}
+.gxp-rankchip .rc-txt{display:flex;flex-direction:column;line-height:1.15}
+.gxp-rankchip .rc-txt em{font-style:normal;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#9fb0c0}
+.gxp-rankchip .rc-txt b{font-size:14px;font-weight:900;color:var(--rc);text-shadow:0 0 14px color-mix(in srgb,var(--rc) 45%,transparent)}
+
 .gxp-edit{align-self:center}
 .gxp-bar{padding:16px 16px 0}
 .gxp-bar-top{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:#8b90a0;margin-bottom:6px}
