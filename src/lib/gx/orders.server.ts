@@ -26,8 +26,15 @@ type CreateOrderInput = {
   creditJod?: number | null;
   /** Caller's Supabase access token (used when no service-role key is set). */
   accessToken?: string | null;
+  /** Request fingerprint captured on the server (IP / device / geo). */
+  client?: {
+    ip?: string | null;
+    userAgent?: string | null;
+    meta?: Record<string, unknown> | null;
+  } | null;
 
 };
+
 
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
