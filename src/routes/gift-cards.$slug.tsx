@@ -28,7 +28,7 @@ export const Route = createFileRoute("/gift-cards/$slug")({
 });
 
 function GiftCardPage() {
-  const { slug } = Route.useLoaderData();
+  const { slug } = Route.useLoaderData() as { slug: string };
   const { lang, t } = useLang();
   const gc = localizedGiftCard(GIFT_CARDS_CATALOG[slug], lang);
   const { format } = useCurrency();
