@@ -566,6 +566,14 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
   const dialogCss = `
     .gx-od-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
     .gx-od-tile{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.15);border-radius:12px;padding:10px 12px}
+    .gx-od-reveal{display:flex;align-items:flex-start;gap:10px;border-radius:12px;padding:10px 12px;margin-bottom:12px;border:1px solid}
+    .gx-od-reveal .dot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex-shrink:0}
+    .gx-od-reveal .t{font-size:12.5px;font-weight:800}
+    .gx-od-reveal .s{font-size:11px;opacity:.75;margin-top:2px}
+    .gx-od-reveal.on{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.3);color:#6ee7b7}
+    .gx-od-reveal.on .dot{background:#10b981;box-shadow:0 0 8px #10b981}
+    .gx-od-reveal.off{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3);color:#fbbf24}
+    .gx-od-reveal.off .dot{background:#f59e0b;box-shadow:0 0 8px #f59e0b}
     .gx-od-tile .k{font-size:10px;color:#7d92a8;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:3px}
     .gx-od-tile .v{font-size:14px;color:#e6f7ff;font-weight:700}
     .gx-od-sec{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px}
