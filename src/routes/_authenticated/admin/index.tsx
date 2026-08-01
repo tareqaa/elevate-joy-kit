@@ -613,4 +613,26 @@ const dashCss = `
 .gx-badge.s-delivered{background:rgba(0,212,255,.12);color:#7dfffe;border-color:rgba(0,212,255,.3);}
 .gx-badge.s-cancelled{background:rgba(100,116,139,.15);color:#94a3b8;border-color:rgba(100,116,139,.3);}
 .gx-badge.s-refunded{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.3);}
+
+/* ---- Phones: keep the dashboard fully inside the viewport -------------- */
+@media (max-width:640px){
+  .gx-dash{gap:12px;}
+  .gx-dash-head{align-items:stretch;gap:10px;}
+  .gx-dash-title{font-size:18px;}
+  .gx-head-tools{width:100%;justify-content:space-between;}
+  .gx-range{flex:1;justify-content:space-between;}
+  .gx-range button{flex:1;padding:6px 4px;font-size:11.5px;}
+  .gx-alerts{gap:8px;}
+  .gx-alert{width:100%;font-size:11.5px;padding:9px 11px;}
+  .gx-kpi-grid,.gx-quick{gap:8px;}
+  .gx-card{padding:12px;border-radius:14px;}
+  .gx-chart-wrap{margin:6px -10px 0;}
+  .gx-recent-row,.gx-top-list li{padding:8px;gap:8px;}
+  .gx-recent-meta{gap:6px;}
+  .gx-recent-amt{font-size:11.5px;}
+}
+@media (max-width:420px){
+  .gx-kpi-grid{grid-template-columns:1fr;}
+  .gx-quick{grid-template-columns:1fr 1fr;}
+}
 `;
