@@ -403,7 +403,8 @@ function OrderCard({ order: o }: { order: OrderRow }) {
                       {ar ? "بيانات التسليم لهذا المنتج" : "Delivery data for this product"}
                     </div>
                     {g.codes.map((c, k) => (
-                      <DeliveryBlock key={k} data={c} index={k} onReveal={reveal} revealing={revealing} />
+                      <DeliveryBlock key={k} data={c} index={k} onReveal={reveal} revealing={revealing} revealKey={`${o.id}:${i}:${k}`} />
+
                     ))}
                   </div>
                 )}
