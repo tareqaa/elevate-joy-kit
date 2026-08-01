@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/gx/i18n";
 import { useCurrency } from "@/lib/gx/currency";
 import { fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM, XP_PER_JOD } from "@/lib/gx/loyalty";
+import { RankBadge, RANK_COLORS } from "@/components/gx/RankBadge";
+
 
 type PublicProfile = {
   id: string; username: string; full_name: string | null; avatar_url: string | null;
