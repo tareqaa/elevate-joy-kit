@@ -120,11 +120,11 @@ export function LoyaltyTab({ userId }: { userId: string }) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
             <MiniStat icon={<Coins className="w-3.5 h-3.5" />} label={isAr ? "GX Coins" : "GX Coins"}
               value={(loyalty?.coins ?? 0).toLocaleString("en-US")}
-              hint={`≈ ${coinsToJod(loyalty?.coins ?? 0).toFixed(2)} ${isAr ? "د.أ" : "JOD"}`} />
+              hint={`≈ ${bidi(format(coinsToJod(loyalty?.coins ?? 0)))}`} />
             <MiniStat icon={<Sparkles className="w-3.5 h-3.5" />} label="XP" value={(loyalty?.xp ?? 0).toLocaleString("en-US")} />
             <MiniStat icon={<Star className="w-3.5 h-3.5" />} label={isAr ? "الطلبات" : "Orders"} value={String(loyalty?.orders_count ?? 0)} />
             <MiniStat icon={<Trophy className="w-3.5 h-3.5" />} label={isAr ? "إجمالي الإنفاق" : "Total spent"}
-              value={`${Number(loyalty?.total_spent ?? 0).toFixed(2)}`} hint={isAr ? "د.أ" : "JOD"} />
+              value={bidi(format(Number(loyalty?.total_spent ?? 0)))} />
           </div>
 
           {loyalty?.level && (
