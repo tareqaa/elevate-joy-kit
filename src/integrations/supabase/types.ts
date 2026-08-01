@@ -743,6 +743,8 @@ export type Database = {
           admin_notes: string | null
           client_ip: string | null
           client_meta: Json
+          codes_reveal_count: number
+          codes_revealed_at: string | null
           coins_awarded: number
           coins_discount_jod: number
           coins_multiplier: number
@@ -781,6 +783,8 @@ export type Database = {
           admin_notes?: string | null
           client_ip?: string | null
           client_meta?: Json
+          codes_reveal_count?: number
+          codes_revealed_at?: string | null
           coins_awarded?: number
           coins_discount_jod?: number
           coins_multiplier?: number
@@ -819,6 +823,8 @@ export type Database = {
           admin_notes?: string | null
           client_ip?: string | null
           client_meta?: Json
+          codes_reveal_count?: number
+          codes_revealed_at?: string | null
           coins_awarded?: number
           coins_discount_jod?: number
           coins_multiplier?: number
@@ -1945,6 +1951,7 @@ export type Database = {
         Args: { _kind?: string; _order_id: string; _ratio: number }
         Returns: number
       }
+      reveal_order_codes: { Args: { _order_id: string }; Returns: Json }
       revoke_ineligible_rewards: { Args: { _user_id: string }; Returns: Json }
       search_public_profiles: {
         Args: { _limit?: number; _q: string }
