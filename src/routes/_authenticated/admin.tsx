@@ -341,6 +341,12 @@ const adminCss = `
   /* Any 2+ column grid collapses to one column */
   .gx-content [class*="grid-cols-"]{grid-template-columns:1fr !important;}
   .gx-content .flex-wrap > *{max-width:100%;}
+  /* Pill/tab rows scroll sideways instead of breaking the layout */
+  .gx-adm-tabs,.gx-content [role="tablist"]{display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:6px;}
+  .gx-adm-tabs::-webkit-scrollbar,.gx-content [role="tablist"]::-webkit-scrollbar{display:none;}
+  .gx-adm-tabs > *,.gx-content [role="tablist"] > *{flex:0 0 auto;}
+  .gx-content select,.gx-content input,.gx-content textarea{max-width:100%;}
+  .gx-content button{white-space:nowrap;}
   h1{font-size:20px !important;}
   h2{font-size:17px !important;}
 }
