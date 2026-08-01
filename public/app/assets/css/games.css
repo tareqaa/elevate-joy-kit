@@ -1045,6 +1045,7 @@ a.lb-row:hover{background:rgba(255,255,255,.075);border-color:rgba(255,255,255,.
 .lb-row.sticky{margin-top:10px}
 
 .lb-r{width:38px;text-align:center;font-weight:900;font-size:14px;color:var(--gray);font-variant-numeric:tabular-nums}
+.lb-r.t1{color:#ffc53d}.lb-r.t2{color:#d9e2ee}.lb-r.t3{color:#ff7a45}
 .lb-r.top{font-size:18px}
 .lb-avwrap{position:relative;width:36px;height:36px;flex-shrink:0}
 .lb-av{width:36px;height:36px;border-radius:50%;object-fit:cover;display:block;
