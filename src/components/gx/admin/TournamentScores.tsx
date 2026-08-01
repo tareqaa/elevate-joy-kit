@@ -193,6 +193,10 @@ export function TournamentScoresDialog({
             </div>
           )}
 
+          <WinnersSection tournamentId={tournamentId} open={open} />
+
+
+
           <DialogFooter>
             <Button variant="outline" onClick={onClose}>
               إغلاق
