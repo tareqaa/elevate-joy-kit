@@ -514,7 +514,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
   const initialCodes = (() => {
     if (existingDelivery.codes && existingDelivery.codes.length > 0) {
       return existingDelivery.codes.map((c) => ({
-        kind: (c.kind || (c.email ? "account" : "code")) as "code" | "account",
+        kind: (c.kind || (c.email ? "account" : "code")) as CodeKind,
         label: c.label || "", value: c.value || "", email: c.email || "", password: c.password || "",
         region: c.region || "",
       }));
