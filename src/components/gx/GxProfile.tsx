@@ -313,9 +313,8 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
 
                   {isOwner && lvl && (
                     <p className="gxp-note">
-                      {isAr
-                        ? `كل 1 دينار مدفوع = 10 GX Coins × ${(1 + Number(lvl.coins_bonus_pct) / 100).toFixed(2)} (مكافأة مستواك) · ${COINS_PER_JOD_REDEEM} عملة = 1 دينار خصم (بحد أقصى 50% من الطلب)`
-                        : `Every 1 JOD paid = 10 GX Coins × ${(1 + Number(lvl.coins_bonus_pct) / 100).toFixed(2)} (level bonus) · ${COINS_PER_JOD_REDEEM} coins = 1 JOD off (max 50% per order)`}
+                      {copy.summary(lvl.coins_bonus_pct)}
+
                     </p>
                   )}
                 </div>
