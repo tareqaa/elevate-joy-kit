@@ -241,6 +241,7 @@ export type Database = {
           created_at: string
           description_ar: string | null
           description_en: string | null
+          icon: string | null
           icon_url: string | null
           id: string
           is_active: boolean
@@ -250,6 +251,8 @@ export type Database = {
           parent_id: string | null
           slug: string
           sort_order: number
+          tagline_ar: string | null
+          tagline_en: string | null
           theme_color: string | null
           theme_gradient: string | null
           updated_at: string
@@ -259,6 +262,7 @@ export type Database = {
           created_at?: string
           description_ar?: string | null
           description_en?: string | null
+          icon?: string | null
           icon_url?: string | null
           id?: string
           is_active?: boolean
@@ -268,6 +272,8 @@ export type Database = {
           parent_id?: string | null
           slug: string
           sort_order?: number
+          tagline_ar?: string | null
+          tagline_en?: string | null
           theme_color?: string | null
           theme_gradient?: string | null
           updated_at?: string
@@ -277,6 +283,7 @@ export type Database = {
           created_at?: string
           description_ar?: string | null
           description_en?: string | null
+          icon?: string | null
           icon_url?: string | null
           id?: string
           is_active?: boolean
@@ -286,6 +293,8 @@ export type Database = {
           parent_id?: string | null
           slug?: string
           sort_order?: number
+          tagline_ar?: string | null
+          tagline_en?: string | null
           theme_color?: string | null
           theme_gradient?: string | null
           updated_at?: string
@@ -957,6 +966,53 @@ export type Database = {
           },
         ]
       }
+      product_features: {
+        Row: {
+          created_at: string
+          desc_ar: string | null
+          desc_en: string | null
+          icon: string | null
+          id: string
+          product_id: string
+          sort_order: number
+          title_ar: string
+          title_en: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          desc_ar?: string | null
+          desc_en?: string | null
+          icon?: string | null
+          id?: string
+          product_id: string
+          sort_order?: number
+          title_ar: string
+          title_en: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          desc_ar?: string | null
+          desc_en?: string | null
+          icon?: string | null
+          id?: string
+          product_id?: string
+          sort_order?: number
+          title_ar?: string
+          title_en?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_features_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_variants: {
         Row: {
           created_at: string
@@ -966,9 +1022,13 @@ export type Database = {
           is_active: boolean
           label_ar: string
           label_en: string
+          old_price_jod: number | null
+          plan_group: string | null
           price_jod: number
           product_id: string
           sort_order: number
+          tag_ar: string | null
+          tag_en: string | null
           updated_at: string
         }
         Insert: {
@@ -979,9 +1039,13 @@ export type Database = {
           is_active?: boolean
           label_ar: string
           label_en: string
+          old_price_jod?: number | null
+          plan_group?: string | null
           price_jod: number
           product_id: string
           sort_order?: number
+          tag_ar?: string | null
+          tag_en?: string | null
           updated_at?: string
         }
         Update: {
@@ -992,9 +1056,13 @@ export type Database = {
           is_active?: boolean
           label_ar?: string
           label_en?: string
+          old_price_jod?: number | null
+          plan_group?: string | null
           price_jod?: number
           product_id?: string
           sort_order?: number
+          tag_ar?: string | null
+          tag_en?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1013,20 +1081,36 @@ export type Database = {
           base_price_jod: number | null
           category_id: string | null
           created_at: string
+          delivery_details: Json
+          delivery_instructions_ar: string | null
+          delivery_instructions_en: string | null
+          delivery_method_ar: string | null
+          delivery_method_en: string | null
+          delivery_type: Database["public"]["Enums"]["product_delivery_type"]
           description_ar: string | null
           description_en: string | null
+          icon: string | null
+          icon_image_url: string | null
           id: string
+          identifier_label_ar: string | null
+          identifier_label_en: string | null
+          identifier_placeholder: string | null
           image_url: string | null
           is_active: boolean
           is_featured: boolean
           is_pinned_bestseller: boolean
           name_ar: string
           name_en: string
+          page_template: Database["public"]["Enums"]["product_page_template"]
           pinned_sort: number
           purchases_count: number
+          region: string | null
+          requires_player_id: boolean
           sku: string | null
           slug: string
           sort_order: number
+          tagline_ar: string | null
+          tagline_en: string | null
           updated_at: string
         }
         Insert: {
@@ -1034,20 +1118,36 @@ export type Database = {
           base_price_jod?: number | null
           category_id?: string | null
           created_at?: string
+          delivery_details?: Json
+          delivery_instructions_ar?: string | null
+          delivery_instructions_en?: string | null
+          delivery_method_ar?: string | null
+          delivery_method_en?: string | null
+          delivery_type?: Database["public"]["Enums"]["product_delivery_type"]
           description_ar?: string | null
           description_en?: string | null
+          icon?: string | null
+          icon_image_url?: string | null
           id?: string
+          identifier_label_ar?: string | null
+          identifier_label_en?: string | null
+          identifier_placeholder?: string | null
           image_url?: string | null
           is_active?: boolean
           is_featured?: boolean
           is_pinned_bestseller?: boolean
           name_ar: string
           name_en: string
+          page_template?: Database["public"]["Enums"]["product_page_template"]
           pinned_sort?: number
           purchases_count?: number
+          region?: string | null
+          requires_player_id?: boolean
           sku?: string | null
           slug: string
           sort_order?: number
+          tagline_ar?: string | null
+          tagline_en?: string | null
           updated_at?: string
         }
         Update: {
@@ -1055,20 +1155,36 @@ export type Database = {
           base_price_jod?: number | null
           category_id?: string | null
           created_at?: string
+          delivery_details?: Json
+          delivery_instructions_ar?: string | null
+          delivery_instructions_en?: string | null
+          delivery_method_ar?: string | null
+          delivery_method_en?: string | null
+          delivery_type?: Database["public"]["Enums"]["product_delivery_type"]
           description_ar?: string | null
           description_en?: string | null
+          icon?: string | null
+          icon_image_url?: string | null
           id?: string
+          identifier_label_ar?: string | null
+          identifier_label_en?: string | null
+          identifier_placeholder?: string | null
           image_url?: string | null
           is_active?: boolean
           is_featured?: boolean
           is_pinned_bestseller?: boolean
           name_ar?: string
           name_en?: string
+          page_template?: Database["public"]["Enums"]["product_page_template"]
           pinned_sort?: number
           purchases_count?: number
+          region?: string | null
+          requires_player_id?: boolean
           sku?: string | null
           slug?: string
           sort_order?: number
+          tagline_ar?: string | null
+          tagline_en?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2020,6 +2136,8 @@ export type Database = {
         | "delivered"
         | "cancelled"
         | "refunded"
+      product_delivery_type: "code" | "account" | "topup" | "manual"
+      product_page_template: "standard" | "multi_account" | "dual_plans"
       review_status: "pending" | "approved" | "rejected" | "hidden"
       wheel_rarity: "common" | "rare" | "epic" | "legendary"
       wheel_reward_type:
@@ -2168,6 +2286,8 @@ export const Constants = {
         "cancelled",
         "refunded",
       ],
+      product_delivery_type: ["code", "account", "topup", "manual"],
+      product_page_template: ["standard", "multi_account", "dual_plans"],
       review_status: ["pending", "approved", "rejected", "hidden"],
       wheel_rarity: ["common", "rare", "epic", "legendary"],
       wheel_reward_type: [
