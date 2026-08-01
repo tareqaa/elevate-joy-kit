@@ -74,6 +74,8 @@ function TournamentsAdmin() {
   const qc = useQueryClient();
   const [edit, setEdit] = useState<Partial<Row> | null>(null);
   const [confirmDel, setConfirmDel] = useState<Row | null>(null);
+  const [scoresFor, setScoresFor] = useState<Row | null>(null);
+
 
   const listQ = useQuery({
     queryKey: ["admin-tournaments"],
