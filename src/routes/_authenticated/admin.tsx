@@ -298,7 +298,8 @@ const adminCss = `
   .gx-admin-root{height:100dvh;max-width:100vw;overflow-x:hidden;}
   .gx-main{max-width:100vw;}
   .gx-content{padding:10px;width:100%;max-width:100vw;overflow-x:hidden;}
-  .gx-content *{min-width:0;max-width:100%;}
+  .gx-content *{min-width:0;}
+  .gx-content > *,.gx-content > * > *{max-width:100%;}
   .gx-content img,.gx-content svg{max-width:100%;}
   .gx-live{display:none;}
   .gx-top{gap:8px;}
