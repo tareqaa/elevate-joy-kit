@@ -35,11 +35,13 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
   }).parse(data))
   .handler(async ({ data }) => {
     let userId: string | null = null;
+    let accessToken: string | null = null;
     const authHeader = getRequestHeader("authorization");
 
     if (authHeader?.toLowerCase().startsWith("bearer ")) {
       const token = authHeader.slice(7).trim();
       if (token) {
+        accessToken = token;
         const url = process.env.SUPABASE_URL;
         const key = process.env.SUPABASE_PUBLISHABLE_KEY;
         if (url && key) {
@@ -48,6 +50,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
           });
           const { data: userData } = await supabase.auth.getUser(token);
           userId = userData.user?.id ?? null;
+          if (!userId) accessToken = null;
         }
       }
     }
@@ -61,6 +64,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       contactType: data.contactType,
       deliveryData: data.notes?.trim() ? { customer_notes: data.notes.trim() } : {},
       userId,
+      accessToken,
       coupon: data.coupon ?? null,
       coins: data.coins ?? null,
       creditJod: data.creditJod ?? 0,
