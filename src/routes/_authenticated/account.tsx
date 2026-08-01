@@ -314,7 +314,6 @@ function OrderCard({ order: o }: { order: OrderRow }) {
     const { error } = await supabase.rpc("reveal_order_codes", { _order_id: o.id });
     setRevealing(false);
     if (error) { toast.error(error.message); return; }
-    setRevealed(true);
   }
 
   return (
