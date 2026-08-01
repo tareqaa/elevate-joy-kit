@@ -1057,7 +1057,8 @@ a.lb-row:hover{background:rgba(255,255,255,.075);border-color:rgba(255,255,255,.
 .lb-r svg{margin-inline:auto}
 
 .lb-who{min-width:0;display:flex;flex-direction:column;gap:1px}
-.lb-nm{font-size:13.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-nm{font-size:13.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px;justify-content:inherit}
+.lb-youtag{flex:none;font-size:10px;font-weight:800;letter-spacing:.4px;padding:2px 7px;border-radius:999px;background:color-mix(in srgb, var(--brand, #4aa8ff) 22%, transparent);color:var(--brand, #4aa8ff);border:1px solid color-mix(in srgb, var(--brand, #4aa8ff) 45%, transparent)}
 .lb-lvlname{font-style:normal;font-size:11px;font-weight:700;color:var(--gray)}
 .lb-sc{font-weight:900;font-size:15px;font-variant-numeric:tabular-nums;color:#8fd7ff}
 .lb-row.t1 .lb-sc{color:#ffd76e}
