@@ -707,22 +707,25 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           <div className="gx-od-sec">
             <div className="gx-od-sec-h">
               <div className="gx-od-sec-t"><CheckCircle2 size={14} /> بيانات التسليم</div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button type="button" size="sm" variant="outline" onClick={addCode} className="h-8 text-xs">+ كود</Button>
                 <Button type="button" size="sm" variant="outline" onClick={addAccount} className="h-8 text-xs">+ حساب</Button>
+                <Button type="button" size="sm" variant="outline" onClick={addTopup} className="h-8 text-xs">+ تعبئة رصيد (Top Up)</Button>
               </div>
             </div>
-            {codes.length === 0 && <div className="text-xs text-cyan-100/50 text-center py-3">لا يوجد بيانات تسليم — أضف كود أو حساب</div>}
+            {codes.length === 0 && <div className="text-xs text-cyan-100/50 text-center py-3">لا يوجد بيانات تسليم — أضف كود أو حساب أو تعبئة</div>}
             <div>
               {codes.map((c, i) => {
-                const isAccount = c.kind === "account";
+                const kind = c.kind || "code";
+                const isAccount = kind === "account";
+                const isTopup = kind === "topup";
                 return (
                   <div key={i} className="gx-od-code">
                     <div className="flex gap-2 items-center mb-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isAccount ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"}`}>
-                        {isAccount ? "حساب" : "كود"}
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isTopup ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : isAccount ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"}`}>
+                        {isTopup ? "تعبئة" : isAccount ? "حساب" : "كود"}
                       </span>
-                      <Input placeholder="الوصف (مثلاً: كود PS 25$ / حساب Netflix)" value={c.label} onChange={(e) => updateCode(i, { label: e.target.value })} className="gx-adm-input flex-1 h-9 text-sm" />
+                      <Input placeholder={isTopup ? "الوصف (مثلاً: شحن 1000 UC · اشتراك شهر)" : "الوصف (مثلاً: كود PS 25$ / حساب Netflix)"} value={c.label} onChange={(e) => updateCode(i, { label: e.target.value })} className="gx-adm-input flex-1 h-9 text-sm" />
                       <button type="button" onClick={() => removeCode(i)} className="text-rose-400 hover:text-rose-300 p-1.5 rounded hover:bg-rose-500/10" title="حذف">
                         <XCircle size={16} />
                       </button>
@@ -732,10 +735,15 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                         <Input placeholder="الإيميل" dir="ltr" value={c.email || ""} onChange={(e) => updateCode(i, { email: e.target.value })} className="gx-adm-input h-9 text-sm" />
                         <Input placeholder="كلمة السر" dir="ltr" value={c.password || ""} onChange={(e) => updateCode(i, { password: e.target.value })} className="gx-adm-input h-9 text-sm" />
                       </div>
+                    ) : isTopup ? (
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        <Input placeholder="الحساب/المعرّف الذي تمت التعبئة عليه (ID / إيميل / رقم)" dir="ltr" value={c.email || ""} onChange={(e) => updateCode(i, { email: e.target.value })} className="gx-adm-input h-9 text-sm" />
+                        <Input placeholder="تفاصيل التعبئة (المبلغ / المدة / ملاحظة)" value={c.value} onChange={(e) => updateCode(i, { value: e.target.value })} className="gx-adm-input h-9 text-sm" />
+                      </div>
                     ) : (
                       <Input placeholder="الكود" dir="ltr" value={c.value} onChange={(e) => updateCode(i, { value: e.target.value })} className="gx-adm-input h-9 text-sm font-mono" />
                     )}
-                    {!isAccount && (
+                    {!isAccount && !isTopup && (
                       <div className="mt-2">
                         <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
                           <span className="text-[10px] font-bold text-cyan-100/60">الريجون (مطلوب للمفاتيح):</span>
