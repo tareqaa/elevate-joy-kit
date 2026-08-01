@@ -406,12 +406,9 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
             <div className="gxp-card">
               <h3 className="gxp-h"><GxIcon name="gift" /> {isAr ? "كيف يعمل نظام GX Rewards" : "How GX Rewards works"}</h3>
               <div className="gxp-rules">
-                <Rule icon="bolt" title={isAr ? "اكسب XP" : "Earn XP"}
-                  text={isAr ? `كل 1 دينار تنفقه = ${XP_PER_JOD} نقطة خبرة.` : `Every 1 JOD spent = ${XP_PER_JOD} XP.`} />
-                <Rule icon="coin" title="GX Coins"
-                  text={isAr ? "كل 1 دينار مدفوع = 10 عملات × مضاعف مستواك." : "Every 1 JOD paid = 10 coins × your level multiplier."} />
-                <Rule icon="discount" title={isAr ? "استبدال العملات" : "Redeem coins"}
-                  text={isAr ? `${COINS_PER_JOD_REDEEM} عملة = 1 دينار خصم (حتى 50% من الطلب).` : `${COINS_PER_JOD_REDEEM} coins = 1 JOD off (up to 50% per order).`} />
+                <Rule icon="bolt" title={isAr ? "اكسب XP" : "Earn XP"} text={copy.earnXp} />
+                <Rule icon="coin" title="GX Coins" text={copy.earnCoins(lvl?.coins_bonus_pct)} />
+                <Rule icon="discount" title={isAr ? "استبدال العملات" : "Redeem coins"} text={copy.redeem} />
                 <Rule icon="medal" title={isAr ? "مكافآت المستوى" : "Level rewards"}
                   text={isAr ? "كل مستوى يمنحك عملات وكوبون خصم وأفاتارات حصرية." : "Each level unlocks coins, a coupon and exclusive avatars."} />
               </div>
