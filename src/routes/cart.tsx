@@ -424,7 +424,8 @@ function CoinsBlock() {
         </span>
       </div>
       <div className="gx-help">
-        {t("cart.coins_help_a")} <b>{COINS_PER_JOD_REDEEM.toLocaleString("en-US")}</b> {t("cart.coins_help_b")} <b>{format(capJod)}</b>.
+        {copy.redeem}{" "}
+        {isAr ? `في هذا الطلب يمكنك خصم حتى ${bidi(format(capJod))}.` : `On this order you can knock off up to ${bidi(format(capJod))}.`}
       </div>
       {cart.coins ? (
         <div className="gx-coupon-applied">
