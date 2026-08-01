@@ -423,22 +423,10 @@ function OrderCard({ order: o }: { order: OrderRow }) {
               </div>
             )}
 
-            {hasCodes && (
-              <>
-                <div className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5">
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
-                  <p className="text-[11px] leading-relaxed text-amber-200/90">
-                    {ar
-                      ? "بمجرد إظهار أي مفتاح يُعتبر مُستلمًا ولا يمكن استرجاعه أو استبداله. تأكد من المنطقة (Region) ومتطلبات المنتج قبل الإظهار — المتجر غير مسؤول عن تفعيل مفتاح في منطقة خاطئة."
-                      : "Once a key is revealed it counts as delivered and cannot be refunded or replaced. Check the region and product requirements before revealing — the store is not responsible for keys redeemed in the wrong region."}
-                  </p>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  {o.codes_revealed_at
-                    ? (ar ? `أول فتح: ${new Date(o.codes_revealed_at).toLocaleString(locale)}` : `First opened: ${new Date(o.codes_revealed_at).toLocaleString(locale)}`)
-                    : (ar ? "لم يتم فتح أي مفتاح بعد — كل عملية إظهار تُسجَّل لدى المتجر." : "No key opened yet — every reveal is recorded by the store.")}
-                </p>
-              </>
+            {hasCodes && o.codes_revealed_at && (
+              <p className="text-[11px] text-muted-foreground">
+                {ar ? `أول فتح: ${new Date(o.codes_revealed_at).toLocaleString(locale)}` : `First opened: ${new Date(o.codes_revealed_at).toLocaleString(locale)}`}
+              </p>
             )}
           </div>
         )}
@@ -457,17 +445,18 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
 }) {
   const { t, lang } = useLang();
   const ar = lang === "ar";
-  const [open, setOpen] = useState(false);
-  const [confirming, setConfirming] = useState(false);
   const isAccount = data.kind === "account" || (!!data.email && !data.value);
+  const [open, setOpen] = useState(isAccount);
+  const [confirming, setConfirming] = useState(false);
   const region = (data.region || "").trim();
 
   // Once a key has been revealed it stays visible forever on this device.
   useEffect(() => {
+    if (isAccount) return;
     try {
       if (localStorage.getItem(`gx_revealed:${revealKey}`) === "1") setOpen(true);
     } catch { /* noop */ }
-  }, [revealKey]);
+  }, [revealKey, isAccount]);
 
   async function confirmReveal() {
     await onReveal();
@@ -490,11 +479,13 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
             <span className="rounded-full border border-white/10 bg-muted/30 px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
               {isAccount ? (ar ? "حساب" : "Account") : (ar ? "مفتاح رقمي" : "Digital key")}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
-              <Globe className="h-3 w-3" />
-              {region || (ar ? "عالمي / Global" : "Global")}
-            </span>
-            {open && (
+            {!isAccount && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                <Globe className="h-3 w-3" />
+                {region || (ar ? "عالمي / Global" : "Global")}
+              </span>
+            )}
+            {!isAccount && open && (
               <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
                 <Eye className="h-3 w-3" />
                 {ar ? "تم الإظهار" : "Revealed"}
@@ -502,7 +493,7 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
             )}
           </div>
         </div>
-        {!open && (
+        {!isAccount && !open && (
           <Button size="sm" className="h-8 shrink-0 gap-1.5"
             disabled={revealing}
             onClick={() => setConfirming(true)}>
@@ -517,11 +508,26 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
         <div className="space-y-2 border-b border-amber-500/20 bg-amber-500/[0.07] px-3 py-2.5">
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
-            <p className="text-[11px] leading-relaxed text-amber-200/90">
-              {ar
-                ? `المنطقة: ${region || "عالمي / Global"} — بعد الإظهار لا يمكن الاسترجاع أو الاستبدال، والمتجر غير مسؤول عن استخدام المفتاح في منطقة غير مناسبة.`
-                : `Region: ${region || "Global"} — after revealing, no refund or replacement is possible, and the store is not responsible for redeeming in the wrong region.`}
-            </p>
+            <div className="space-y-1 text-[11px] leading-relaxed text-amber-200/90">
+              <p className="font-bold text-amber-300">
+                {ar ? "قبل إظهار المفتاح" : "Before you reveal this key"}
+              </p>
+              <p>
+                {ar
+                  ? `هذا المفتاح مخصّص لمنطقة: ${region || "عالمي / Global"}. تأكد أن حسابك/جهازك يدعم هذه المنطقة ومتطلبات المنتج قبل المتابعة.`
+                  : `This key is for region: ${region || "Global"}. Make sure your account/platform supports this region and the product requirements before continuing.`}
+              </p>
+              <p>
+                {ar
+                  ? "بمجرد الإظهار يُعتبر المفتاح مُستلمًا، ولا يمكن استرجاعه أو استبداله أو إلغاؤه — كما هو معمول به في متاجر المفاتيح الرقمية."
+                  : "Once revealed, the key is considered delivered and is non-refundable, non-replaceable and non-cancellable — standard practice for digital key stores."}
+              </p>
+              <p>
+                {ar
+                  ? "إذا واجهت مشكلة في التفعيل، لا تحاول استخدامه مرة أخرى وتواصل مع الدعم فورًا مع لقطة شاشة للخطأ."
+                  : "If activation fails, stop and contact support right away with a screenshot of the error."}
+              </p>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button size="sm" className="h-8 flex-1 text-[11px] font-bold" disabled={revealing} onClick={confirmReveal}>
