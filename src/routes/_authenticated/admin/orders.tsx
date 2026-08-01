@@ -628,6 +628,10 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             </div>
           </div>
 
+          <SecurityBlock order={order} />
+
+
+
           {/* Products */}
           <div className="gx-od-sec">
             <div className="gx-od-sec-h">
