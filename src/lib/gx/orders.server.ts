@@ -125,7 +125,8 @@ function validateOrderInput(input: CreateOrderInput) {
 
 export async function createStoreOrder(input: CreateOrderInput) {
   validateOrderInput(input);
-  const supabase = getAdminClient();
+  const supabase = getOrderClient(input.accessToken);
+
 
 
   const deliveryData: Record<string, unknown> = { ...(input.deliveryData ?? {}) };
