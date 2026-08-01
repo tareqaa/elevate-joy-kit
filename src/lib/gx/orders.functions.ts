@@ -55,6 +55,24 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       }
     }
 
+    // --- Client fingerprint (anti-abuse) -----------------------------------
+    const ip =
+      (getRequestHeader("cf-connecting-ip") ||
+        getRequestHeader("x-real-ip") ||
+        (getRequestHeader("x-forwarded-for") || "").split(",")[0] ||
+        "").trim() || null;
+    const userAgent = (getRequestHeader("user-agent") || "").slice(0, 500) || null;
+    const clientMeta = {
+      country: getRequestHeader("cf-ipcountry") || null,
+      city: getRequestHeader("cf-ipcity") || null,
+      region: getRequestHeader("cf-region") || null,
+      language: (getRequestHeader("accept-language") || "").split(",")[0] || null,
+      platform: getRequestHeader("sec-ch-ua-platform") || null,
+      mobile: getRequestHeader("sec-ch-ua-mobile") || null,
+      referer: getRequestHeader("referer") || null,
+      at: new Date().toISOString(),
+    };
+
     return createStoreOrder({
       items: data.items,
       totalJOD: data.totalJOD,
@@ -68,5 +86,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       coupon: data.coupon ?? null,
       coins: data.coins ?? null,
       creditJod: data.creditJod ?? 0,
+      client: { ip, userAgent, meta: clientMeta },
     });
   });
+
