@@ -257,8 +257,17 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                     <div className="gxp-id">
                       <h1 dir="ltr">@{p.username}</h1>
                       <div className="gxp-chips">
-                        {lvl && <span className="gxp-chip" style={{ background: lvl.gradient }}>{lvl.icon} {levelName(lvl, lang)}</span>}
-                        <span className="gxp-chip ghost">🏆 #{Number(mine?.rank ?? p.rank)}</span>
+                        {lvl && (
+                          <span className="gxp-rankchip" style={{ ["--rc" as string]: lvl.color || "#4aa8ff" }}>
+                            <RankBadge color={lvl.color || "#4aa8ff"} label={lvl.sort_order ?? undefined} size={40} glow title={levelName(lvl, lang)} />
+                            <span className="rc-txt">
+                              <em>{isAr ? "الرتبة" : "Rank"}</em>
+                              <b>{levelName(lvl, lang)}</b>
+                            </span>
+                          </span>
+                        )}
+                        <span className="gxp-chip ghost">#{Number(mine?.rank ?? p.rank)}</span>
+
                         <span className="gxp-chip ghost">
                           {isAr ? "عضو منذ" : "Member since"} {new Date(p.created_at).toLocaleDateString(isAr ? "ar-EG" : "en-US", { year: "numeric", month: "long" })}
                         </span>
