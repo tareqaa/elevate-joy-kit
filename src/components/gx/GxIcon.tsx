@@ -1,4 +1,6 @@
+import coinImg from "@/assets/gx-coin.png";
 /**
+
  * GxIcon — tiny inline SVG icon set.
  * Replaces emoji so the UI looks identical on every OS / device.
  */
