@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { Coins, Sparkles, Trophy, Ticket, Copy, Check, Lock, Star } from "lucide-react";
 import { useLang } from "@/lib/gx/i18n";
 import { coinsToJod, fetchLevels, fetchMyLoyalty, levelName, levelProgress } from "@/lib/gx/loyalty";
+import { useCurrency } from "@/lib/gx/currency";
+import { bidi } from "@/lib/gx/loyalty-copy";
 
 export function LoyaltyTab({ userId }: { userId: string }) {
   const { lang, dir } = useLang();
