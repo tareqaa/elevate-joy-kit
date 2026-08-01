@@ -7,6 +7,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { useCurrency } from "@/lib/gx/currency";
 import { fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM, XP_PER_JOD } from "@/lib/gx/loyalty";
 import { RankBadge, RANK_COLORS } from "@/components/gx/RankBadge";
+import { GxIcon, type GxIconName } from "@/components/gx/GxIcon";
 
 
 type PublicProfile = {
@@ -229,7 +230,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
         <div className="gxp-grid">
           {/* Mobile: search sits at the very top, not at the bottom of the page. */}
           <div className="gxp-card gxp-search-mobile">
-            <h3 className="gxp-h">🔎 {isAr ? "ابحث عن لاعب" : "Find a player"}</h3>
+            <h3 className="gxp-h"><GxIcon name="search" /> {isAr ? "ابحث عن لاعب" : "Find a player"}</h3>
             <PlayerSearch isAr={isAr} />
           </div>
           <div className="gxp-main">
@@ -300,13 +301,13 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                     {isOwner && (
                       <>
                         <Stat label="GX Coins" value={(mine?.coins ?? 0).toLocaleString("en-US")}
-                          hint={`≈ ${formatCoins(mine?.coins ?? 0)}`} icon="🪙" />
+                          hint={`≈ ${formatCoins(mine?.coins ?? 0)}`} icon="coin" />
                         <Stat label={isAr ? "رصيد المتجر" : "Store credit"}
-                          value={format(Number(mine?.store_credit ?? 0))} hint={currency} icon="💳" />
+                          value={format(Number(mine?.store_credit ?? 0))} hint={currency} icon="card" />
                       </>
                     )}
-                    <Stat label="XP" value={xp.toLocaleString("en-US")} icon="⚡" />
-                    <Stat label={isAr ? "الطلبات" : "Orders"} value={String(mine?.orders_count ?? p.orders_count ?? 0)} icon="📦" />
+                    <Stat label="XP" value={xp.toLocaleString("en-US")} icon="bolt" />
+                    <Stat label={isAr ? "الطلبات" : "Orders"} value={String(mine?.orders_count ?? p.orders_count ?? 0)} icon="box" />
                   </div>
 
 
@@ -349,7 +350,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                             <div key={col.id}>
                               <div className="gxp-col-head">
                                 <b>{isAr ? col.name_ar : col.name_en}</b>
-                                {!unlocked && <span className="t lock">🔒 {levelName(need, lang)}</span>}
+                                {!unlocked && <span className="t lock"><GxIcon name="lock" size={12} /> {levelName(need, lang)}</span>}
                               </div>
                               <div className="gxp-avs">
                                 {col.avatars.map((a) => (
@@ -403,15 +404,15 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
 
             {/* How GX Rewards works — always visible (merged from the old /rewards page) */}
             <div className="gxp-card">
-              <h3 className="gxp-h">🎁 {isAr ? "كيف يعمل نظام GX Rewards" : "How GX Rewards works"}</h3>
+              <h3 className="gxp-h"><GxIcon name="gift" /> {isAr ? "كيف يعمل نظام GX Rewards" : "How GX Rewards works"}</h3>
               <div className="gxp-rules">
-                <Rule icon="⚡" title={isAr ? "اكسب XP" : "Earn XP"}
+                <Rule icon="bolt" title={isAr ? "اكسب XP" : "Earn XP"}
                   text={isAr ? `كل 1 دينار تنفقه = ${XP_PER_JOD} نقطة خبرة.` : `Every 1 JOD spent = ${XP_PER_JOD} XP.`} />
-                <Rule icon="🪙" title="GX Coins"
+                <Rule icon="coin" title="GX Coins"
                   text={isAr ? "كل 1 دينار مدفوع = 10 عملات × مضاعف مستواك." : "Every 1 JOD paid = 10 coins × your level multiplier."} />
-                <Rule icon="💸" title={isAr ? "استبدال العملات" : "Redeem coins"}
+                <Rule icon="discount" title={isAr ? "استبدال العملات" : "Redeem coins"}
                   text={isAr ? `${COINS_PER_JOD_REDEEM} عملة = 1 دينار خصم (حتى 50% من الطلب).` : `${COINS_PER_JOD_REDEEM} coins = 1 JOD off (up to 50% per order).`} />
-                <Rule icon="🏅" title={isAr ? "مكافآت المستوى" : "Level rewards"}
+                <Rule icon="medal" title={isAr ? "مكافآت المستوى" : "Level rewards"}
                   text={isAr ? "كل مستوى يمنحك عملات وكوبون خصم وأفاتارات حصرية." : "Each level unlocks coins, a coupon and exclusive avatars."} />
               </div>
             </div>
@@ -430,7 +431,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                           <b style={{ color: l.color }}>{levelName(l, lang)}</b>
                           <em>{l.min_xp.toLocaleString("en-US")} XP</em>
                         </div>
-                        <span className="gxp-level-state">{reached ? "✓" : "🔒"}</span>
+                        <span className="gxp-level-state">{reached ? <GxIcon name="check" size={14} /> : <GxIcon name="lock" size={14} />}</span>
                       </div>
                       <div className="gxp-tags">
                         {l.reward_coins > 0 && <span className="t amber">+{l.reward_coins} Coins</span>}
@@ -483,20 +484,20 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
   );
 }
 
-function Stat({ icon, label, value, hint, hidden }: { icon: string; label: string; value: string; hint?: string; hidden?: boolean }) {
+function Stat({ icon, label, value, hint, hidden }: { icon: GxIconName; label: string; value: string; hint?: string; hidden?: boolean }) {
   return (
     <div className="gxp-stat">
-      <span className="l">{icon} {label}</span>
+      <span className="l"><GxIcon name={icon} size={14} /> {label}</span>
       <b>{hidden ? "—" : value}</b>
       {!hidden && hint && <em>{hint}</em>}
     </div>
   );
 }
 
-function Rule({ icon, title, text }: { icon: string; title: string; text: string }) {
+function Rule({ icon, title, text }: { icon: GxIconName; title: string; text: string }) {
   return (
     <div className="gxp-rule">
-      <span className="ico">{icon}</span>
+      <span className="ico"><GxIcon name={icon} size={18} /></span>
       <div><b>{title}</b><em>{text}</em></div>
     </div>
   );
