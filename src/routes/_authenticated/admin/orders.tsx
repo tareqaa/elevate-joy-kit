@@ -60,6 +60,8 @@ type OrderRow = {
   client_ip?: string | null;
   user_agent?: string | null;
   client_meta?: Record<string, unknown> | null;
+  codes_revealed_at?: string | null;
+  codes_reveal_count?: number | null;
 
   created_at: string;
 };
@@ -628,6 +630,20 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
               <div className="v text-emerald-300">{Number(order.total_jod).toFixed(2)} <span className="text-xs text-cyan-400/70">د.أ</span></div>
             </div>
           </div>
+
+          {order.status === "delivered" && (
+            <div className={`gx-od-reveal ${order.codes_revealed_at ? "on" : "off"}`}>
+              <span className="dot" />
+              <div>
+                <div className="t">{order.codes_revealed_at ? "العميل فتح الكود" : "العميل لم يفتح الكود بعد"}</div>
+                <div className="s">
+                  {order.codes_revealed_at
+                    ? `أول فتح: ${new Date(order.codes_revealed_at).toLocaleString("ar-EG")} • عدد مرات العرض: ${order.codes_reveal_count ?? 1}`
+                    : "بمجرد ضغط العميل على زر إظهار الكود في صفحة طلباتي سيظهر التوقيت هنا"}
+                </div>
+              </div>
+            </div>
+          )}
 
           <SecurityBlock order={order} />
 
