@@ -550,7 +550,20 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
       )}
 
       <div className="space-y-2 p-3">
-        {open ? (
+        {isTopup ? (
+          <>
+            <div className="flex items-start gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2 text-[11px] leading-relaxed text-emerald-200/90">
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
+              <span>
+                {ar
+                  ? "تمت تعبئة الرصيد/الاشتراك مباشرة على حسابك. تحقق من الحساب، وإذا ما ظهر خلال دقائق تواصل مع الدعم."
+                  : "The balance/subscription was topped up directly on your account. Check it, and contact support if it doesn't appear within a few minutes."}
+              </span>
+            </div>
+            {data.email && <CodeBox label={ar ? "الحساب الذي تمت التعبئة عليه" : "Topped-up account"} value={data.email} />}
+            {data.value && <CodeBox label={ar ? "تفاصيل التعبئة" : "Top-up details"} value={data.value} />}
+          </>
+        ) : open ? (
           isAccount ? (
             <>
               {data.email && <CodeBox label="acc.your_email_label" value={data.email} />}
@@ -566,6 +579,7 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
           </div>
         )}
       </div>
+
       {open && <div className="sr-only">{t("acc.your_codes")}</div>}
     </div>
   );
