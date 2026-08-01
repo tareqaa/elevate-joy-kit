@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown } from "lucide-react";
+import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 import { GxProfile } from "@/components/gx/GxProfile";
@@ -215,6 +215,7 @@ function AccountPage() {
 type OrderRow = {
   id: string; order_number: string; status: string; created_at: string; total_jod: number;
   items: unknown; delivery_data: unknown;
+  codes_revealed_at?: string | null; codes_reveal_count?: number | null;
 };
 
 function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }) {
