@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/gx/i18n";
 import { useCurrency } from "@/lib/gx/currency";
-import { fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM, XP_PER_JOD } from "@/lib/gx/loyalty";
+import { fetchLevels, fetchMyLoyalty, levelName, levelProgress } from "@/lib/gx/loyalty";
+import { useLoyaltyCopy } from "@/lib/gx/loyalty-copy";
 import { RankBadge } from "@/components/gx/RankBadge";
 import { GxIcon, type GxIconName } from "@/components/gx/GxIcon";
 
@@ -107,6 +108,7 @@ function CouponCard({ c, dead, isAr }: { c: UserCouponRow; dead: boolean; isAr: 
 export function GxProfile({ username: usernameProp }: { username?: string }) {
   const { lang, dir } = useLang();
   const { format, formatCoins, currency } = useCurrency();
+  const copy = useLoyaltyCopy();
   const isAr = lang === "ar";
   const qc = useQueryClient();
   const [myId, setMyId] = useState<string | null>(null);
@@ -313,9 +315,8 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
 
                   {isOwner && lvl && (
                     <p className="gxp-note">
-                      {isAr
-                        ? `كل 1 دينار مدفوع = 10 GX Coins × ${(1 + Number(lvl.coins_bonus_pct) / 100).toFixed(2)} (مكافأة مستواك) · ${COINS_PER_JOD_REDEEM} عملة = 1 دينار خصم (بحد أقصى 50% من الطلب)`
-                        : `Every 1 JOD paid = 10 GX Coins × ${(1 + Number(lvl.coins_bonus_pct) / 100).toFixed(2)} (level bonus) · ${COINS_PER_JOD_REDEEM} coins = 1 JOD off (max 50% per order)`}
+                      {copy.summary(lvl.coins_bonus_pct)}
+
                     </p>
                   )}
                 </div>
@@ -406,12 +407,9 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
             <div className="gxp-card">
               <h3 className="gxp-h"><GxIcon name="gift" /> {isAr ? "كيف يعمل نظام GX Rewards" : "How GX Rewards works"}</h3>
               <div className="gxp-rules">
-                <Rule icon="bolt" title={isAr ? "اكسب XP" : "Earn XP"}
-                  text={isAr ? `كل 1 دينار تنفقه = ${XP_PER_JOD} نقطة خبرة.` : `Every 1 JOD spent = ${XP_PER_JOD} XP.`} />
-                <Rule icon="coin" title="GX Coins"
-                  text={isAr ? "كل 1 دينار مدفوع = 10 عملات × مضاعف مستواك." : "Every 1 JOD paid = 10 coins × your level multiplier."} />
-                <Rule icon="discount" title={isAr ? "استبدال العملات" : "Redeem coins"}
-                  text={isAr ? `${COINS_PER_JOD_REDEEM} عملة = 1 دينار خصم (حتى 50% من الطلب).` : `${COINS_PER_JOD_REDEEM} coins = 1 JOD off (up to 50% per order).`} />
+                <Rule icon="bolt" title={isAr ? "اكسب XP" : "Earn XP"} text={copy.earnXp} />
+                <Rule icon="coin" title="GX Coins" text={copy.earnCoins(lvl?.coins_bonus_pct)} />
+                <Rule icon="discount" title={isAr ? "استبدال العملات" : "Redeem coins"} text={copy.redeem} />
                 <Rule icon="medal" title={isAr ? "مكافآت المستوى" : "Level rewards"}
                   text={isAr ? "كل مستوى يمنحك عملات وكوبون خصم وأفاتارات حصرية." : "Each level unlocks coins, a coupon and exclusive avatars."} />
               </div>

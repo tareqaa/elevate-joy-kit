@@ -7,7 +7,8 @@ import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { OrderConfirmedModal } from "@/components/gx/OrderConfirmedModal";
-import { coinsToJod, jodToCoins, COINS_PER_JOD_REDEEM, MAX_COINS_DISCOUNT_RATIO } from "@/lib/gx/loyalty";
+import { coinsToJod, jodToCoins, MAX_COINS_DISCOUNT_RATIO } from "@/lib/gx/loyalty";
+import { useLoyaltyCopy, bidi } from "@/lib/gx/loyalty-copy";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/cart")({
@@ -376,7 +377,9 @@ const summaryCss = `
 function CoinsBlock() {
   const cart = useCart();
   const { format } = useCurrency();
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const copy = useLoyaltyCopy();
+  const isAr = lang !== "en";
   const [balance, setBalance] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -424,7 +427,8 @@ function CoinsBlock() {
         </span>
       </div>
       <div className="gx-help">
-        {t("cart.coins_help_a")} <b>{COINS_PER_JOD_REDEEM.toLocaleString("en-US")}</b> {t("cart.coins_help_b")} <b>{format(capJod)}</b>.
+        {copy.redeem}{" "}
+        {isAr ? `في هذا الطلب يمكنك خصم حتى ${bidi(format(capJod))}.` : `On this order you can knock off up to ${bidi(format(capJod))}.`}
       </div>
       {cart.coins ? (
         <div className="gx-coupon-applied">

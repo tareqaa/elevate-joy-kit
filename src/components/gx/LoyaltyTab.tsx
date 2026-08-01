@@ -8,10 +8,13 @@ import { toast } from "sonner";
 import { Coins, Sparkles, Trophy, Ticket, Copy, Check, Lock, Star } from "lucide-react";
 import { useLang } from "@/lib/gx/i18n";
 import { coinsToJod, fetchLevels, fetchMyLoyalty, levelName, levelProgress } from "@/lib/gx/loyalty";
+import { useCurrency } from "@/lib/gx/currency";
+import { bidi } from "@/lib/gx/loyalty-copy";
 
 export function LoyaltyTab({ userId }: { userId: string }) {
   const { lang, dir } = useLang();
   const qc = useQueryClient();
+  const { format } = useCurrency();
   const isAr = lang === "ar";
 
   const loyaltyQ = useQuery({ queryKey: ["my-loyalty", userId], queryFn: fetchMyLoyalty });
@@ -118,11 +121,11 @@ export function LoyaltyTab({ userId }: { userId: string }) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
             <MiniStat icon={<Coins className="w-3.5 h-3.5" />} label={isAr ? "GX Coins" : "GX Coins"}
               value={(loyalty?.coins ?? 0).toLocaleString("en-US")}
-              hint={`≈ ${coinsToJod(loyalty?.coins ?? 0).toFixed(2)} ${isAr ? "د.أ" : "JOD"}`} />
+              hint={`≈ ${bidi(format(coinsToJod(loyalty?.coins ?? 0)))}`} />
             <MiniStat icon={<Sparkles className="w-3.5 h-3.5" />} label="XP" value={(loyalty?.xp ?? 0).toLocaleString("en-US")} />
             <MiniStat icon={<Star className="w-3.5 h-3.5" />} label={isAr ? "الطلبات" : "Orders"} value={String(loyalty?.orders_count ?? 0)} />
             <MiniStat icon={<Trophy className="w-3.5 h-3.5" />} label={isAr ? "إجمالي الإنفاق" : "Total spent"}
-              value={`${Number(loyalty?.total_spent ?? 0).toFixed(2)}`} hint={isAr ? "د.أ" : "JOD"} />
+              value={bidi(format(Number(loyalty?.total_spent ?? 0)))} />
           </div>
 
           {loyalty?.level && (
@@ -241,6 +244,7 @@ function CouponRow({ code, percent, max, used, expired, expiresAt, isAr }: {
   code: string; percent: number; max: number | null; used: boolean; expired: boolean; expiresAt: string; isAr: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const { format } = useCurrency();
   const dead = used || expired;
   return (
     <div className={`flex items-center justify-between gap-3 rounded-xl border p-3 ${dead ? "border-white/10 opacity-55" : "border-emerald-500/30 bg-emerald-500/5"}`}>
@@ -248,7 +252,7 @@ function CouponRow({ code, percent, max, used, expired, expiresAt, isAr }: {
         <div className="font-mono font-black tracking-wider text-emerald-300" dir="ltr">{code}</div>
         <div className="text-[11px] text-muted-foreground">
           {isAr ? `خصم ${percent}%` : `${percent}% off`}
-          {max ? (isAr ? ` — بحد أقصى ${max} د.أ` : ` — up to ${max} JOD`) : ""}
+          {max ? (isAr ? ` — بحد أقصى ${bidi(format(max))}` : ` — up to ${bidi(format(max))}`) : ""}
           {" · "}
           {used ? (isAr ? "مستخدم" : "Used") : expired ? (isAr ? "منتهي" : "Expired")
             : (isAr ? `ينتهي ${new Date(expiresAt).toLocaleDateString("ar-EG")}` : `Expires ${new Date(expiresAt).toLocaleDateString("en-US")}`)}
