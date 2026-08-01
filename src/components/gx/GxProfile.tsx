@@ -656,7 +656,7 @@ const css = `
 .gxp-level{border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:11px;opacity:.6}
 .gxp-level.on{opacity:1;border-color:rgba(0,229,255,.35);background:rgba(0,229,255,.05)}
 .gxp-level-top{display:flex;align-items:center;gap:9px}
-.gxp-level-top .ico{font-size:20px}
+.gxp-level-top .ico{font-size:20px;display:inline-flex;align-items:center}
 .gxp-level-top b{display:block;font-size:13.5px}
 .gxp-level-top em{font-style:normal;font-size:11px;color:#8b90a0}
 .gxp-level-state{margin-inline-start:auto;font-size:12px}
