@@ -502,7 +502,8 @@ function QuickFulfill({ onPick }: { onPick: (o: OrderWithEmail) => void }) {
   );
 }
 
-type DeliveryCode = { label: string; value: string; email?: string; password?: string; kind?: "code" | "account"; region?: string };
+type CodeKind = "code" | "account" | "topup";
+type DeliveryCode = { label: string; value: string; email?: string; password?: string; kind?: CodeKind; region?: string };
 
 function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
   const [status, setStatus] = useState(order.status);
