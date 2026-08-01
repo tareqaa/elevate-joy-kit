@@ -26,6 +26,8 @@ import {
   type RewardType,
 } from "@/lib/gx/tournament-prizes";
 
+import { TournamentScoresDialog } from "@/components/gx/admin/TournamentScores";
+
 type Row = {
   id: string;
   game_slug: string;
@@ -39,6 +41,7 @@ type Row = {
   prizes: Prize[];
   is_active: boolean;
   sort_order: number;
+  max_players: number | null;
 };
 
 /** datetime-local <-> ISO helpers */
@@ -63,12 +66,16 @@ const EMPTY: Partial<Row> = {
   prizes: [{ place: 1, label_ar: "منتج رقمي مجاني", label_en: "Free digital product" }],
   is_active: true,
   sort_order: 0,
+  max_players: null,
 };
+
 
 function TournamentsAdmin() {
   const qc = useQueryClient();
   const [edit, setEdit] = useState<Partial<Row> | null>(null);
   const [confirmDel, setConfirmDel] = useState<Row | null>(null);
+  const [scoresFor, setScoresFor] = useState<Row | null>(null);
+
 
   const listQ = useQuery({
     queryKey: ["admin-tournaments"],
@@ -99,7 +106,12 @@ function TournamentsAdmin() {
         prizes: (row.prizes ?? []).map((p, i) => ({ ...p, place: i + 1 })),
         is_active: row.is_active ?? true,
         sort_order: row.sort_order ?? 0,
+        max_players:
+          row.max_players === null || row.max_players === undefined || Number(row.max_players) <= 0
+            ? null
+            : Math.round(Number(row.max_players)),
       };
+
       if (row.id) {
         const { error } = await supabase.from("game_tournaments").update(payload).eq("id", row.id);
         if (error) throw error;
@@ -270,17 +282,22 @@ function TournamentsAdmin() {
                 </ul>
 
                 <p className="text-xs text-muted-foreground">
-                  عدد الفائزين: {t.prizes.length} · المسجّلون: {regQ.data?.[t.id] ?? 0}
+                  عدد الفائزين: {t.prizes.length} · المسجّلون: {regQ.data?.[t.id] ?? 0} · الحد الأقصى للاعبين:{" "}
+                  {t.max_players && t.max_players > 0 ? t.max_players : "مفتوح"}
                 </p>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button size="sm" variant="outline" onClick={() => setEdit({ ...t })}>
                     <Pencil className="h-4 w-4 ms-1" /> تعديل
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => setScoresFor(t)}>
+                    <Medal className="h-4 w-4 ms-1" /> النتائج
                   </Button>
                   <Button size="sm" variant="destructive" onClick={() => setConfirmDel(t)}>
                     <Trash2 className="h-4 w-4 ms-1" /> حذف
                   </Button>
                 </div>
+
               </CardContent>
             </Card>
           ))}
@@ -317,7 +334,22 @@ function TournamentsAdmin() {
                   <label className="text-xs text-muted-foreground">تنتهي في</label>
                   <Input type="datetime-local" value={toLocalInput(edit.ends_at!)} onChange={(e) => setEdit({ ...edit, ends_at: fromLocalInput(e.target.value) })} />
                 </div>
+                <div className="col-span-2">
+                  <label className="text-xs text-muted-foreground">
+                    الحد الأقصى لعدد اللاعبين (اتركه فارغاً = مفتوح للجميع)
+                  </label>
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="مفتوح"
+                    value={edit.max_players ?? ""}
+                    onChange={(e) =>
+                      setEdit({ ...edit, max_players: e.target.value === "" ? null : Number(e.target.value) })
+                    }
+                  />
+                </div>
               </div>
+
 
               <div className="flex items-center gap-2">
                 <Switch checked={edit.is_active ?? true} onCheckedChange={(v) => setEdit({ ...edit, is_active: v })} />
@@ -453,6 +485,14 @@ function TournamentsAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <TournamentScoresDialog
+        tournamentId={scoresFor?.id ?? null}
+        title={scoresFor?.title_ar ?? ""}
+        open={!!scoresFor}
+        onClose={() => setScoresFor(null)}
+      />
     </div>
+
   );
 }

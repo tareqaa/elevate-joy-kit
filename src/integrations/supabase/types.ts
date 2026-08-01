@@ -425,6 +425,7 @@ export type Database = {
           game_slug: string
           id: string
           is_active: boolean
+          max_players: number | null
           prizes: Json
           sort_order: number
           starts_at: string
@@ -441,6 +442,7 @@ export type Database = {
           game_slug: string
           id?: string
           is_active?: boolean
+          max_players?: number | null
           prizes?: Json
           sort_order?: number
           starts_at: string
@@ -457,6 +459,7 @@ export type Database = {
           game_slug?: string
           id?: string
           is_active?: boolean
+          max_players?: number | null
           prizes?: Json
           sort_order?: number
           starts_at?: string
@@ -1640,12 +1643,20 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_delete_tournament_score: {
+        Args: { _tournament_id: string; _user_id: string }
+        Returns: Json
+      }
       admin_grant_wheel_spins: {
         Args: { _count: number; _target: string }
         Returns: Json
       }
       admin_refund_order: {
         Args: { _amount: number; _order_id: string; _reason: string }
+        Returns: Json
+      }
+      admin_reset_tournament_scores: {
+        Args: { _clear_registrations?: boolean; _tournament_id: string }
         Returns: Json
       }
       admin_set_order_amounts: {
@@ -1656,6 +1667,27 @@ export type Database = {
           _subtotal_jod: number
         }
         Returns: Json
+      }
+      admin_set_tournament_score: {
+        Args: {
+          _is_valid?: boolean
+          _score: number
+          _tournament_id: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      admin_tournament_scores: {
+        Args: { _tournament_id: string }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          is_valid: boolean
+          score: number
+          updated_at: string
+          user_id: string
+          username: string
+        }[]
       }
       auto_cancel_stale_orders: { Args: never; Returns: number }
       award_badges: { Args: { _user_id: string }; Returns: undefined }
