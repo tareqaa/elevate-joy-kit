@@ -45,10 +45,12 @@ const nameOf = (r: { username: string | null; full_name: string | null }) => r.u
 
 function PrizeRow({ p, place, ar }: { p: Prize; place: number; ar: boolean }) {
   const rewards = prizeRewards(p);
+  const isRange = !!(p.place_to && Number(p.place_to) > place);
   return (
     <div className={`przrow g${Math.min(place, 4)}`}>
-      <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
-      <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
+      <i aria-hidden>{!isRange ? (MEDALS[place - 1] ?? "🎁") : "🎁"}</i>
+      <b>{placeLabel(p, ar, place)}</b>
+
       <span>
         {rewards.map((r, n) => (
           <span key={n} className="prz-reward">
