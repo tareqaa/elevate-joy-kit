@@ -70,7 +70,22 @@ const PATHS: Record<GxIconName, React.ReactNode> = {
 export function GxIcon({ name, size = 16, className, strokeWidth = 1.9 }: {
   name: GxIconName; size?: number; className?: string; strokeWidth?: number;
 }) {
+  if (name === "coin") {
+    return (
+      <img
+        src={coinImg}
+        alt=""
+        width={size}
+        height={size}
+        loading="lazy"
+        aria-hidden="true"
+        className={className}
+        style={{ display: "inline-block", verticalAlign: "-0.2em", flex: "none", objectFit: "contain" }}
+      />
+    );
+  }
   return (
+
     <svg
       className={className}
       width={size}
