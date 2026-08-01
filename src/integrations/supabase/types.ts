@@ -208,6 +208,33 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_ips: {
+        Row: {
+          blocked_by: string | null
+          blocked_by_email: string | null
+          created_at: string
+          id: string
+          ip: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_by?: string | null
+          blocked_by_email?: string | null
+          created_at?: string
+          id?: string
+          ip: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_by?: string | null
+          blocked_by_email?: string | null
+          created_at?: string
+          id?: string
+          ip?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           accent_color: string | null
@@ -714,6 +741,8 @@ export type Database = {
       orders: {
         Row: {
           admin_notes: string | null
+          client_ip: string | null
+          client_meta: Json
           coins_awarded: number
           coins_discount_jod: number
           coins_multiplier: number
@@ -741,6 +770,7 @@ export type Database = {
           subtotal_jod: number
           total_jod: number
           updated_at: string
+          user_agent: string | null
           user_coupon_id: string | null
           user_id: string | null
           xp_awarded: number
@@ -749,6 +779,8 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          client_ip?: string | null
+          client_meta?: Json
           coins_awarded?: number
           coins_discount_jod?: number
           coins_multiplier?: number
@@ -776,6 +808,7 @@ export type Database = {
           subtotal_jod?: number
           total_jod?: number
           updated_at?: string
+          user_agent?: string | null
           user_coupon_id?: string | null
           user_id?: string | null
           xp_awarded?: number
@@ -784,6 +817,8 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          client_ip?: string | null
+          client_meta?: Json
           coins_awarded?: number
           coins_discount_jod?: number
           coins_multiplier?: number
@@ -811,6 +846,7 @@ export type Database = {
           subtotal_jod?: number
           total_jod?: number
           updated_at?: string
+          user_agent?: string | null
           user_coupon_id?: string | null
           user_id?: string | null
           xp_awarded?: number
@@ -1345,6 +1381,59 @@ export type Database = {
           },
         ]
       }
+      tournament_winners: {
+        Row: {
+          awarded: boolean
+          awarded_at: string | null
+          awarded_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          prize: Json
+          rank: number
+          score: number
+          tournament_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          awarded?: boolean
+          awarded_at?: string | null
+          awarded_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          prize?: Json
+          rank: number
+          score?: number
+          tournament_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          awarded?: boolean
+          awarded_at?: string | null
+          awarded_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          prize?: Json
+          rank?: number
+          score?: number
+          tournament_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_winners_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "game_tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_avatars: {
         Row: {
           avatar_id: string
@@ -1643,8 +1732,13 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_block_ip: { Args: { _ip: string; _reason?: string }; Returns: Json }
       admin_delete_tournament_score: {
         Args: { _tournament_id: string; _user_id: string }
+        Returns: Json
+      }
+      admin_finalize_tournament: {
+        Args: { _top?: number; _tournament_id: string }
         Returns: Json
       }
       admin_grant_wheel_spins: {
@@ -1677,6 +1771,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_set_winner_awarded: {
+        Args: { _awarded: boolean; _note?: string; _winner_id: string }
+        Returns: Json
+      }
       admin_tournament_scores: {
         Args: { _tournament_id: string }
         Returns: {
@@ -1689,6 +1787,23 @@ export type Database = {
           username: string
         }[]
       }
+      admin_tournament_winners: {
+        Args: { _tournament_id: string }
+        Returns: {
+          avatar_url: string
+          awarded: boolean
+          awarded_at: string
+          full_name: string
+          id: string
+          note: string
+          prize: Json
+          rank: number
+          score: number
+          user_id: string
+          username: string
+        }[]
+      }
+      admin_unblock_ip: { Args: { _ip: string }; Returns: Json }
       auto_cancel_stale_orders: { Args: never; Returns: number }
       award_badges: { Args: { _user_id: string }; Returns: undefined }
       create_store_order: {
@@ -1746,6 +1861,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_ip_blocked: { Args: { _ip: string }; Returns: boolean }
       issue_level_coupon: {
         Args: {
           _level: Database["public"]["Tables"]["levels"]["Row"]
@@ -1813,6 +1929,10 @@ export type Database = {
         Returns: Json
       }
       normalize_contact: { Args: { _v: string }; Returns: string }
+      record_order_client_meta: {
+        Args: { _ip: string; _meta?: Json; _order_id: string; _ua: string }
+        Returns: undefined
+      }
       redeem_gx_coins: {
         Args: { _coins: number; _subtotal_jod: number }
         Returns: Json
