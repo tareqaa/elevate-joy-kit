@@ -107,7 +107,7 @@ function rewardSummary(r: SpinResult) {
     case "xp":
       return { value: `+${v.toLocaleString("en-US")} XP`, desc: "نقاط خبرة تُضاف لمستواك فورًا" };
     case "gx_coins":
-      return { value: `+${v.toLocaleString("en-US")} 🪙`, desc: "GX Coins أُضيفت إلى رصيدك" };
+      return { value: `+${v.toLocaleString("en-US")} 💰`, desc: "GX Coins أُضيفت إلى رصيدك" };
     case "discount_percent":
       return { value: `${v}% خصم`, desc: "كوبون خصم لمرة واحدة على طلبك القادم" };
     case "boost_double_coins":

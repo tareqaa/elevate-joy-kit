@@ -36,7 +36,7 @@ export const REWARD_TYPES: { v: RewardType; label_ar: string; icon: string }[] =
   { v: "coupon_percent", label_ar: "كوبون خصم %", icon: "🎟️" },
   { v: "coupon_fixed", label_ar: "كوبون خصم بقيمة (د.أ)", icon: "💵" },
   { v: "coupon_product", label_ar: "كوبون لمنتج محدد", icon: "🛍️" },
-  { v: "coins", label_ar: "GX Coins", icon: "🪙" },
+  { v: "coins", label_ar: "GX Coins", icon: "💰" },
   { v: "xp", label_ar: "XP", icon: "⚡" },
   { v: "custom", label_ar: "جائزة مخصصة", icon: "🎁" },
 ];
