@@ -107,6 +107,7 @@ function CouponCard({ c, dead, isAr }: { c: UserCouponRow; dead: boolean; isAr: 
 export function GxProfile({ username: usernameProp }: { username?: string }) {
   const { lang, dir } = useLang();
   const { format, formatCoins, currency } = useCurrency();
+  const copy = useLoyaltyCopy();
   const isAr = lang === "ar";
   const qc = useQueryClient();
   const [myId, setMyId] = useState<string | null>(null);
