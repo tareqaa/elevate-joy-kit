@@ -536,6 +536,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
 
   function addCode() { setCodes([...codes, { kind: "code", label: "", value: "", email: "", password: "", region: "Global" }]); }
   function addAccount() { setCodes([...codes, { kind: "account", label: "", value: "", email: "", password: "", region: "" }]); }
+  function addTopup() { setCodes([...codes, { kind: "topup", label: "", value: "", email: "", password: "", region: "" }]); }
   function updateCode(i: number, patch: Partial<DeliveryCode>) { setCodes(codes.map((c, idx) => idx === i ? { ...c, ...patch } : c)); }
   function removeCode(i: number) { setCodes(codes.filter((_, idx) => idx !== i)); }
 
