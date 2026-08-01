@@ -24,6 +24,9 @@ type CreateOrderInput = {
   } | null;
   /** Store credit (refund balance) applied to this order, in JOD. */
   creditJod?: number | null;
+  /** Caller's Supabase access token (used when no service-role key is set). */
+  accessToken?: string | null;
+
 };
 
 function isNewSupabaseApiKey(value: string): boolean {
