@@ -445,18 +445,20 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
 }) {
   const { t, lang } = useLang();
   const ar = lang === "ar";
-  const isAccount = data.kind === "account" || (!!data.email && !data.value);
-  const [open, setOpen] = useState(isAccount);
+  const isTopup = data.kind === "topup";
+  const isAccount = !isTopup && (data.kind === "account" || (!!data.email && !data.value));
+  const isKey = !isTopup && !isAccount;
+  const [open, setOpen] = useState(!isKey);
   const [confirming, setConfirming] = useState(false);
   const region = (data.region || "").trim();
 
   // Once a key has been revealed it stays visible forever on this device.
   useEffect(() => {
-    if (isAccount) return;
+    if (!isKey) return;
     try {
       if (localStorage.getItem(`gx_revealed:${revealKey}`) === "1") setOpen(true);
     } catch { /* noop */ }
-  }, [revealKey, isAccount]);
+  }, [revealKey, isKey]);
 
   async function confirmReveal() {
     await onReveal();
@@ -468,24 +470,30 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
   return (
     <div className="overflow-hidden rounded-xl border border-white/10 bg-background/50">
       <div className="flex flex-wrap items-center gap-2 border-b border-white/5 px-3 py-2">
-        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${isAccount ? "bg-fuchsia-500/15 text-fuchsia-300" : "bg-cyan-500/15 text-cyan-300"}`}>
-          {isAccount ? <UserIcon className="h-3.5 w-3.5" /> : <KeyRound className="h-3.5 w-3.5" />}
+        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${isTopup ? "bg-emerald-500/15 text-emerald-300" : isAccount ? "bg-fuchsia-500/15 text-fuchsia-300" : "bg-cyan-500/15 text-cyan-300"}`}>
+          {isTopup ? <Wallet className="h-3.5 w-3.5" /> : isAccount ? <UserIcon className="h-3.5 w-3.5" /> : <KeyRound className="h-3.5 w-3.5" />}
         </span>
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-bold">
-            {data.label || (isAccount ? (ar ? "حساب" : "Account") : (ar ? `مفتاح ${index + 1}` : `Key ${index + 1}`))}
+            {data.label || (isTopup ? (ar ? "تعبئة رصيد" : "Top up") : isAccount ? (ar ? "حساب" : "Account") : (ar ? `مفتاح ${index + 1}` : `Key ${index + 1}`))}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
             <span className="rounded-full border border-white/10 bg-muted/30 px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
-              {isAccount ? (ar ? "حساب" : "Account") : (ar ? "مفتاح رقمي" : "Digital key")}
+              {isTopup ? (ar ? "تعبئة على حسابك" : "Account top-up") : isAccount ? (ar ? "حساب" : "Account") : (ar ? "مفتاح رقمي" : "Digital key")}
             </span>
-            {!isAccount && (
+            {isTopup && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                <Check className="h-3 w-3" />
+                {ar ? "تمت التعبئة" : "Topped up"}
+              </span>
+            )}
+            {isKey && (
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
                 <Globe className="h-3 w-3" />
                 {region || (ar ? "عالمي / Global" : "Global")}
               </span>
             )}
-            {!isAccount && open && (
+            {isKey && open && (
               <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
                 <Eye className="h-3 w-3" />
                 {ar ? "تم الإظهار" : "Revealed"}
@@ -493,7 +501,7 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
             )}
           </div>
         </div>
-        {!isAccount && !open && (
+        {isKey && !open && (
           <Button size="sm" className="h-8 shrink-0 gap-1.5"
             disabled={revealing}
             onClick={() => setConfirming(true)}>
@@ -502,6 +510,7 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
           </Button>
         )}
       </div>
+
 
 
       {confirming && !open && (
