@@ -24,6 +24,8 @@ export type Reward = {
 
 export type Prize = {
   place: number;
+  /** optional range end: prize covers places `place`..`place_to` */
+  place_to?: number | null;
   label_ar?: string | null;
   label_en?: string | null;
   rewards?: Reward[];
@@ -95,4 +97,12 @@ export function prizeSummary(p: Prize, ar: boolean): string {
   return prizeRewards(p)
     .map((r) => `${rewardIcon(r.type)} ${rewardText(r, ar)}`)
     .join(ar ? " + " : " + ");
+}
+
+/** Label for a place or a range of places (e.g. "المراكز 20 - 50"). */
+export function placeLabel(p: Prize, ar: boolean, fallbackPlace?: number): string {
+  const from = p.place ?? fallbackPlace ?? 1;
+  const to = p.place_to && Number(p.place_to) > from ? Number(p.place_to) : null;
+  if (to) return ar ? `المراكز ${from} - ${to}` : `Places ${from} - ${to}`;
+  return ar ? `المركز ${from}` : `Place ${from}`;
 }

@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/admin/tournaments")({
 
 import {
   REWARD_TYPES,
+  placeLabel,
   prizeRewards,
   prizeSummary,
   
@@ -103,7 +104,13 @@ function TournamentsAdmin() {
         starts_at: row.starts_at!,
         ends_at: row.ends_at!,
         status: row.status ?? "active",
-        prizes: (row.prizes ?? []).map((p, i) => ({ ...p, place: i + 1 })),
+        prizes: (row.prizes ?? [])
+          .map((p, i) => {
+            const from = Math.max(1, Math.round(Number(p.place ?? i + 1)) || i + 1);
+            const to = Number(p.place_to ?? 0);
+            return { ...p, place: from, place_to: to > from ? Math.round(to) : null };
+          })
+          .sort((a, b) => a.place - b.place),
         is_active: row.is_active ?? true,
         sort_order: row.sort_order ?? 0,
         max_players:
@@ -275,7 +282,7 @@ function TournamentsAdmin() {
                   {t.prizes.map((p, i) => (
                     <li key={i} className="flex items-center gap-2">
                       <Medal className="h-4 w-4 text-amber-400" />
-                      <span className="font-semibold">المركز {p.place ?? i + 1}:</span>
+                      <span className="font-semibold">{placeLabel(p, true, i + 1)}:</span>
                       <span className="text-muted-foreground truncate">{prizeSummary(p, true)}</span>
                     </li>
                   ))}
@@ -374,6 +381,23 @@ function TournamentsAdmin() {
                   >
                     <Plus className="h-4 w-4 ms-1" /> مركز
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const prev = edit.prizes ?? [];
+                      const last = prev.reduce((m, x) => Math.max(m, Number(x.place_to || x.place || 0)), 0);
+                      setEdit({
+                        ...edit,
+                        prizes: [
+                          ...prev,
+                          { place: last + 1, place_to: last + 10, label_ar: "", label_en: "", rewards: [{ type: "custom" }] },
+                        ],
+                      });
+                    }}
+                  >
+                    <Plus className="h-4 w-4 ms-1" /> مدى مراكز
+                  </Button>
                 </div>
                 {(edit.prizes ?? []).map((p, i) => {
                   const rewards = prizeRewards(p);
@@ -382,8 +406,29 @@ function TournamentsAdmin() {
                     setRewards(rewards.map((r, n) => (n === ri ? { ...r, ...patch } : r)));
                   return (
                     <div key={i} className="rounded-lg border p-2 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold">المركز {i + 1}</span>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold">من المركز</span>
+                          <Input
+                            type="number"
+                            min={1}
+                            className="h-8 w-16 text-xs"
+                            value={p.place ?? i + 1}
+                            onChange={(ev) => setPrize(i, { place: Math.max(1, Number(ev.target.value) || 1) })}
+                          />
+                          <span className="text-xs font-bold">إلى</span>
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="—"
+                            className="h-8 w-16 text-xs"
+                            value={p.place_to ?? ""}
+                            onChange={(ev) =>
+                              setPrize(i, { place_to: ev.target.value === "" ? null : Number(ev.target.value) })
+                            }
+                          />
+                          <span className="text-[11px] text-muted-foreground">{placeLabel(p, true, i + 1)}</span>
+                        </div>
                         <Button size="sm" variant="ghost" onClick={() => setEdit({ ...edit, prizes: (edit.prizes ?? []).filter((_, n) => n !== i) })}>
                           <Trash2 className="h-4 w-4" />
                         </Button>

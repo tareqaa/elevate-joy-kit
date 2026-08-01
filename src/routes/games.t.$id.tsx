@@ -32,7 +32,7 @@ type Row = {
   level_color?: string | null; level_icon?: string | null;
 };
 type Standing = { played: boolean; rank?: number; total?: number; score?: number; username?: string | null; full_name?: string | null; avatar_url?: string | null };
-import { prizeRewards, rewardIcon, rewardText, type Prize } from "@/lib/gx/tournament-prizes";
+import { placeLabel, prizeRewards, rewardIcon, rewardText, type Prize } from "@/lib/gx/tournament-prizes";
 export type { Prize };
 type T = {
   id: string; game_slug: string; title_ar: string; title_en: string; game_path: string | null;
@@ -45,10 +45,12 @@ const nameOf = (r: { username: string | null; full_name: string | null }) => r.u
 
 function PrizeRow({ p, place, ar }: { p: Prize; place: number; ar: boolean }) {
   const rewards = prizeRewards(p);
+  const isRange = !!(p.place_to && Number(p.place_to) > place);
   return (
     <div className={`przrow g${Math.min(place, 4)}`}>
-      <i aria-hidden>{MEDALS[place - 1] ?? "🎁"}</i>
-      <b>{ar ? `المركز ${place}` : `Place ${place}`}</b>
+      <i aria-hidden>{!isRange ? (MEDALS[place - 1] ?? "🎁") : "🎁"}</i>
+      <b>{placeLabel(p, ar, place)}</b>
+
       <span>
         {rewards.map((r, n) => (
           <span key={n} className="prz-reward">
@@ -356,12 +358,12 @@ function TournamentPage() {
               ) : (
                 <>
                   <div className="przlist">
-                    {sortedPrizes.slice(0, 6).map((p, i) => (
+                    {sortedPrizes.slice(0, 3).map((p, i) => (
                       <PrizeRow key={p.place ?? i + 1} p={p} place={p.place ?? i + 1} ar={ar} />
                     ))}
 
                   </div>
-                  {sortedPrizes.length > 6 && (
+                  {sortedPrizes.length > 3 && (
                     <button type="button" className="prz-all" onClick={() => setPrizesOpen(true)}>
                       {ar ? `عرض كل الجوائز (${sortedPrizes.length})` : `View all prizes (${sortedPrizes.length})`}
                     </button>
