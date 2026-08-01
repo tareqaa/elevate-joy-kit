@@ -321,7 +321,7 @@ function TournamentPage() {
               )}
 
               {/* "you" row only when outside the visible list */}
-              {me?.played && rows.some((r) => r.rank === me.rank) ? null : (
+              {me?.played && (rows ?? []).some((r) => r.rank === me.rank) ? null : (
                 <div className="lb-row me sticky">
                   {me?.played ? (
                     <>
