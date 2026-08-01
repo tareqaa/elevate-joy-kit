@@ -296,11 +296,15 @@ function TournamentPage() {
                         </span>
 
                         <span className="lb-who">
-                          <b className="lb-nm">{nameOf(r)}</b>
+                          <b className="lb-nm">
+                            {nameOf(r)}
+                            {mine ? <span className="lb-youtag">{ar ? "أنت" : "You"}</span> : null}
+                          </b>
                           {(ar ? r.level_name_ar : r.level_name_en) ? (
                             <em className="lb-lvlname" style={{ color: glow }}>{ar ? r.level_name_ar : r.level_name_en}</em>
                           ) : null}
                         </span>
+
                         <b className="lb-sc" dir="ltr">{r.score.toLocaleString("en-US")}</b>
                       </>
                     );
