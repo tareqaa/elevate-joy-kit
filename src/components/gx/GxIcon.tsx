@@ -7,7 +7,7 @@ export type GxIconName =
   | "bolt" | "coin" | "discount" | "medal" | "gift" | "search" | "trophy"
   | "lock" | "check" | "card" | "box";
 
-const PATHS: Record<GxIconName, JSX.Element> = {
+const PATHS: Record<GxIconName, React.ReactNode> = {
   bolt: <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" />,
   coin: (
     <>
