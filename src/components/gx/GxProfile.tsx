@@ -706,7 +706,9 @@ const css = `
 .gxp-brow{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:12px;text-decoration:none;color:inherit;border:1px solid transparent}
 .gxp-brow:hover{background:rgba(255,255,255,.04)}
 .gxp-brow.me{border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.06)}
-.gxp-brow .r{width:28px;font-weight:900;font-size:12px;color:#8b90a0;text-align:center}
+.gxp-brow .r{width:32px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;color:#8b90a0}
+.gxp-brow .r .rnum{font-size:12.5px;color:#8b90a0}
+
 .gxp-brow img{width:30px;height:30px;border-radius:50%;background:#0b1220}
 .gxp-brow .n{flex:1;min-width:0;font-size:12.5px;color:#e6f7ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gxp-brow .x{font-size:11.5px;font-weight:900;color:#00e5ff}
