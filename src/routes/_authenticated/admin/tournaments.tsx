@@ -282,17 +282,22 @@ function TournamentsAdmin() {
                 </ul>
 
                 <p className="text-xs text-muted-foreground">
-                  عدد الفائزين: {t.prizes.length} · المسجّلون: {regQ.data?.[t.id] ?? 0}
+                  عدد الفائزين: {t.prizes.length} · المسجّلون: {regQ.data?.[t.id] ?? 0} · الحد الأقصى للاعبين:{" "}
+                  {t.max_players && t.max_players > 0 ? t.max_players : "مفتوح"}
                 </p>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button size="sm" variant="outline" onClick={() => setEdit({ ...t })}>
                     <Pencil className="h-4 w-4 ms-1" /> تعديل
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => setScoresFor(t)}>
+                    <Medal className="h-4 w-4 ms-1" /> النتائج
                   </Button>
                   <Button size="sm" variant="destructive" onClick={() => setConfirmDel(t)}>
                     <Trash2 className="h-4 w-4 ms-1" /> حذف
                   </Button>
                 </div>
+
               </CardContent>
             </Card>
           ))}
