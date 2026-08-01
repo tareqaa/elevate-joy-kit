@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3 } from "lucide-react";
+import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 import { GxProfile } from "@/components/gx/GxProfile";
@@ -289,6 +289,7 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
 
 function OrderCard({ order: o }: { order: OrderRow }) {
   const { t, lang } = useLang();
+  const [open, setOpen] = useState(false);
   const STATUS_LABELS: Record<string, { label: string; className: string }> = {
     pending: { label: t("acc.status_pending"), className: "bg-amber-500/15 text-amber-400 border-amber-500/40" },
     paid: { label: t("acc.status_paid"), className: "bg-sky-500/15 text-sky-400 border-sky-500/40" },
@@ -320,7 +321,7 @@ function OrderCard({ order: o }: { order: OrderRow }) {
           className="mt-3 flex w-full items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm font-semibold transition hover:bg-muted/60"
           aria-expanded={open}
         >
-          <span>{t("acc.items_label") === "acc.items_label" ? "المنتجات" : t("acc.items_label")} ({items.length})</span>
+          <span>{lang === "ar" ? "المنتجات" : "Items"} ({items.length})</span>
           <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
         {open && (
