@@ -241,6 +241,7 @@ function CouponRow({ code, percent, max, used, expired, expiresAt, isAr }: {
   code: string; percent: number; max: number | null; used: boolean; expired: boolean; expiresAt: string; isAr: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const { format } = useCurrency();
   const dead = used || expired;
   return (
     <div className={`flex items-center justify-between gap-3 rounded-xl border p-3 ${dead ? "border-white/10 opacity-55" : "border-emerald-500/30 bg-emerald-500/5"}`}>
@@ -248,7 +249,7 @@ function CouponRow({ code, percent, max, used, expired, expiresAt, isAr }: {
         <div className="font-mono font-black tracking-wider text-emerald-300" dir="ltr">{code}</div>
         <div className="text-[11px] text-muted-foreground">
           {isAr ? `خصم ${percent}%` : `${percent}% off`}
-          {max ? (isAr ? ` — بحد أقصى ${max} د.أ` : ` — up to ${max} JOD`) : ""}
+          {max ? (isAr ? ` — بحد أقصى ${bidi(format(max))}` : ` — up to ${bidi(format(max))}`) : ""}
           {" · "}
           {used ? (isAr ? "مستخدم" : "Used") : expired ? (isAr ? "منتهي" : "Expired")
             : (isAr ? `ينتهي ${new Date(expiresAt).toLocaleDateString("ar-EG")}` : `Expires ${new Date(expiresAt).toLocaleDateString("en-US")}`)}
