@@ -334,7 +334,22 @@ function TournamentsAdmin() {
                   <label className="text-xs text-muted-foreground">تنتهي في</label>
                   <Input type="datetime-local" value={toLocalInput(edit.ends_at!)} onChange={(e) => setEdit({ ...edit, ends_at: fromLocalInput(e.target.value) })} />
                 </div>
+                <div className="col-span-2">
+                  <label className="text-xs text-muted-foreground">
+                    الحد الأقصى لعدد اللاعبين (اتركه فارغاً = مفتوح للجميع)
+                  </label>
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="مفتوح"
+                    value={edit.max_players ?? ""}
+                    onChange={(e) =>
+                      setEdit({ ...edit, max_players: e.target.value === "" ? null : Number(e.target.value) })
+                    }
+                  />
+                </div>
               </div>
+
 
               <div className="flex items-center gap-2">
                 <Switch checked={edit.is_active ?? true} onCheckedChange={(v) => setEdit({ ...edit, is_active: v })} />
