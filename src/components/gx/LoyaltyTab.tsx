@@ -14,6 +14,7 @@ import { bidi } from "@/lib/gx/loyalty-copy";
 export function LoyaltyTab({ userId }: { userId: string }) {
   const { lang, dir } = useLang();
   const qc = useQueryClient();
+  const { format } = useCurrency();
   const isAr = lang === "ar";
 
   const loyaltyQ = useQuery({ queryKey: ["my-loyalty", userId], queryFn: fetchMyLoyalty });
