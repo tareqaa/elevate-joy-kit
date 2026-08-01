@@ -519,23 +519,24 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
             <div className="space-y-1 text-[11px] leading-relaxed text-amber-200/90">
               <p className="font-bold text-amber-300">
-                {ar ? "قبل إظهار المفتاح" : "Before you reveal this key"}
+                {ar ? "⚠️ قبل إظهار المفتاح" : "Before you reveal this key"}
               </p>
               <p>
                 {ar
-                  ? `هذا المفتاح مخصّص لمنطقة: ${region || "عالمي / Global"}. تأكد أن حسابك/جهازك يدعم هذه المنطقة ومتطلبات المنتج قبل المتابعة.`
-                  : `This key is for region: ${region || "Global"}. Make sure your account/platform supports this region and the product requirements before continuing.`}
+                  ? `هذا المفتاح مخصص لمنطقة: ${region || "عالمي (Global)"}. تأكد من توافق حسابك أو جهازك مع المنتج قبل المتابعة.`
+                  : `This key is for region: ${region || "Global"}. Make sure your account or device is compatible with the product before continuing.`}
               </p>
               <p>
                 {ar
-                  ? "بمجرد الإظهار يُعتبر المفتاح مُستلمًا، ولا يمكن استرجاعه أو استبداله أو إلغاؤه — كما هو معمول به في متاجر المفاتيح الرقمية."
-                  : "Once revealed, the key is considered delivered and is non-refundable, non-replaceable and non-cancellable — standard practice for digital key stores."}
+                  ? "بعد إظهار المفتاح، يُعتبر الطلب مستلمًا ولا يمكن استرجاعه أو استبداله بسبب طبيعة المنتجات الرقمية."
+                  : "Once revealed, the order is considered delivered and cannot be refunded or replaced due to the nature of digital products."}
               </p>
               <p>
                 {ar
-                  ? "إذا واجهت مشكلة في التفعيل، لا تحاول استخدامه مرة أخرى وتواصل مع الدعم فورًا مع لقطة شاشة للخطأ."
-                  : "If activation fails, stop and contact support right away with a screenshot of the error."}
+                  ? "في حال وجود مشكلة أثناء التفعيل، يرجى التواصل مع الدعم مباشرة وإرفاق صورة للخطأ لمساعدتك."
+                  : "If you face any activation issue, please contact support directly and attach a screenshot of the error."}
               </p>
+
             </div>
           </div>
           <div className="flex gap-2">
