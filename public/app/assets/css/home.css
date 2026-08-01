@@ -205,6 +205,17 @@ html[dir="ltr"] .featured-grid{
   .featured-grid{--gx-peek:0px; --gx-fade:34px; gap:12px; scroll-snap-type:none;}
   /* 2.5 cards visible so it's obvious the row scrolls */
   .featured-grid .prod-card{flex:0 0 calc((100% - 2 * 12px) / 2.5);}
+  /* compact cards on phones */
+  .featured-grid .prod-thumb{height:96px; font-size:34px;}
+  .featured-grid .prod-body{padding:10px 10px 12px; gap:7px;}
+  .featured-grid .prod-name{font-size:12px;}
+  .featured-grid .prod-stars{font-size:10.5px;}
+  .featured-grid .prod-old{font-size:10.5px;}
+  .featured-grid .prod-new{font-size:15px;}
+  .featured-grid .add-cart-btn{padding:8px; font-size:11.5px; gap:5px; border-radius:9px;}
+  .featured-grid .add-cart-btn svg{width:14px; height:14px;}
+  .featured-grid .discount-badge{top:7px; inset-inline-end:7px; font-size:10px; padding:3px 7px;}
+  .featured-grid .tag-badge{top:7px; left:7px; font-size:9.5px; padding:3px 7px;}
 }
 
 
