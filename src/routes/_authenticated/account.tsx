@@ -423,22 +423,10 @@ function OrderCard({ order: o }: { order: OrderRow }) {
               </div>
             )}
 
-            {hasCodes && (
-              <>
-                <div className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5">
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
-                  <p className="text-[11px] leading-relaxed text-amber-200/90">
-                    {ar
-                      ? "بمجرد إظهار أي مفتاح يُعتبر مُستلمًا ولا يمكن استرجاعه أو استبداله. تأكد من المنطقة (Region) ومتطلبات المنتج قبل الإظهار — المتجر غير مسؤول عن تفعيل مفتاح في منطقة خاطئة."
-                      : "Once a key is revealed it counts as delivered and cannot be refunded or replaced. Check the region and product requirements before revealing — the store is not responsible for keys redeemed in the wrong region."}
-                  </p>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  {o.codes_revealed_at
-                    ? (ar ? `أول فتح: ${new Date(o.codes_revealed_at).toLocaleString(locale)}` : `First opened: ${new Date(o.codes_revealed_at).toLocaleString(locale)}`)
-                    : (ar ? "لم يتم فتح أي مفتاح بعد — كل عملية إظهار تُسجَّل لدى المتجر." : "No key opened yet — every reveal is recorded by the store.")}
-                </p>
-              </>
+            {hasCodes && o.codes_revealed_at && (
+              <p className="text-[11px] text-muted-foreground">
+                {ar ? `أول فتح: ${new Date(o.codes_revealed_at).toLocaleString(locale)}` : `First opened: ${new Date(o.codes_revealed_at).toLocaleString(locale)}`}
+              </p>
             )}
           </div>
         )}
