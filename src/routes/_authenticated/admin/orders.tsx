@@ -525,35 +525,42 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
         seeded.push({
           kind: "code",
           label: qty > 1 ? `${it.name || "منتج"} (${k + 1}/${qty})` : (it.name || "منتج"),
-          value: "", email: "", password: "", region: "",
+          value: "", email: "", password: "", region: "Global",
         });
       }
     });
-    return seeded.length > 0 ? seeded : [{ kind: "code" as const, label: "", value: "", email: "", password: "", region: "" }];
+    return seeded.length > 0 ? seeded : [{ kind: "code" as const, label: "", value: "", email: "", password: "", region: "Global" }];
   })();
   const [codes, setCodes] = useState<DeliveryCode[]>(initialCodes);
 
-  function addCode() { setCodes([...codes, { kind: "code", label: "", value: "", email: "", password: "", region: "" }]); }
+  function addCode() { setCodes([...codes, { kind: "code", label: "", value: "", email: "", password: "", region: "Global" }]); }
   function addAccount() { setCodes([...codes, { kind: "account", label: "", value: "", email: "", password: "", region: "" }]); }
   function updateCode(i: number, patch: Partial<DeliveryCode>) { setCodes(codes.map((c, idx) => idx === i ? { ...c, ...patch } : c)); }
   function removeCode(i: number) { setCodes(codes.filter((_, idx) => idx !== i)); }
 
   function buildPatch(nextStatus: string) {
-    const cleanCodes = codes.map((c) => ({
-      kind: c.kind || "code",
-      label: (c.label || "").trim(), value: (c.value || "").trim(),
-      email: (c.email || "").trim(), password: (c.password || "").trim(),
-      region: (c.region || "").trim(),
-    })).filter((c) => c.label || c.value || c.email || c.password);
+    const cleanCodes = codes.map((c) => {
+      const kind = c.kind || "code";
+      return {
+        kind,
+        label: (c.label || "").trim(), value: (c.value || "").trim(),
+        email: (c.email || "").trim(), password: (c.password || "").trim(),
+        // Keys always carry a region; accounts never do.
+        region: kind === "account" ? "" : ((c.region || "").trim() || "Global"),
+      };
+    }).filter((c) => c.label || c.value || c.email || c.password);
     return { status: nextStatus, admin_notes: notes.trim() || null, delivery_data: { codes: cleanCodes } };
   }
 
   function save() { onSave(buildPatch(status)); }
   function markDelivered() {
     const anyValue = codes.some((c) => (c.value || "").trim() || (c.email || "").trim() || (c.password || "").trim());
+    const missingRegion = codes.some((c) => (c.kind || "code") !== "account" && (c.value || "").trim() && !(c.region || "").trim());
+    if (missingRegion) { alert("في مفاتيح بدون ريجون. حدّد المنطقة لكل مفتاح قبل التسليم."); return; }
     if (!anyValue && !confirm("ما في أكواد/حسابات مدخلة. تأكد من تسليم الطلب بدون بيانات؟")) return;
     setStatus("delivered"); onSave(buildPatch("delivered"));
   }
+
   function cancelOrder() {
     if (!confirm("متأكد إنك بدك تلغي هالطلب؟")) return;
     setStatus("cancelled"); onSave(buildPatch("cancelled"));
