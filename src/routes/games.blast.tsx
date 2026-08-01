@@ -473,7 +473,11 @@ function BlastPage() {
       if (submitted.current !== key) {
         submitted.current = key;
         prevRank = (await readStanding())?.rank ?? null;
-        await supabase.rpc("submit_tournament_score", { _tournament_id: activeTid, _score: game.score });
+        const { data: subRes } = await supabase.rpc("submit_tournament_score", { _tournament_id: activeTid, _score: game.score });
+        const sub = subRes as { ok?: boolean; error?: string } | null;
+        if (sub && sub.ok === false && sub.error === "tournament_full") {
+          toast.error(ar ? "اكتمل عدد اللاعبين في هذه البطولة" : "This tournament is full");
+        }
       }
       const after = await readStanding();
       if (!alive) return;
