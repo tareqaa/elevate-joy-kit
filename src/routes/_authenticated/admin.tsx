@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AdminCommandPalette } from "@/components/gx/admin/AdminCommandPalette";
 import {
   LayoutDashboard, Package, Users, Search, Bell, ChevronLeft, ChevronRight,
-  Store, User, LogOut, Command, FolderTree, ShoppingBag, Activity, Settings, Ticket, Home, Star, Sparkles, Smile, Award, Trophy, Disc3, Gamepad2,
+  Store, User, LogOut, X, Command, FolderTree, ShoppingBag, Activity, Settings, Ticket, Home, Star, Sparkles, Smile, Award, Trophy, Disc3, Gamepad2,
 } from "lucide-react";
 
 // Cache the admin-role check per user for the lifetime of the tab so moving
@@ -76,6 +76,17 @@ function AdminLayout() {
   }, [collapsed]);
 
   useEffect(() => {
+    setOpenMobile(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!openMobile) return;
+    const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpenMobile(false); };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [openMobile]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -126,6 +137,9 @@ function AdminLayout() {
       <style>{adminCss}</style>
 
       <aside className={`gx-aside ${openMobile ? "open" : ""} ${collapsed ? "collapsed" : ""}`}>
+        <button className="gx-aside-close" onClick={() => setOpenMobile(false)} aria-label="إغلاق القائمة">
+          <X size={16} />
+        </button>
         <div className="gx-aside-brand">
           <div className="gx-brand-mark"><img src="/app/assets/img/gx-logo.png" alt="GX" /></div>
           {!collapsed && (
@@ -135,6 +149,7 @@ function AdminLayout() {
             </div>
           )}
         </div>
+
 
         <nav className="gx-aside-nav">
           {NAV.map((n) => {
@@ -250,6 +265,10 @@ const adminCss = `
 .gx-collapse-btn{position:absolute;inset-inline-start:-11px;top:64px;width:22px;height:22px;border-radius:50%;background:#0d1220;border:1px solid rgba(0,212,255,.35);color:#00d4ff;display:grid;place-items:center;cursor:pointer;z-index:5;box-shadow:0 0 12px rgba(0,212,255,.25);}
 .gx-collapse-btn:hover{background:rgba(0,212,255,.15);}
 
+.gx-aside-close{display:none;position:absolute;top:14px;inset-inline-start:12px;width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#c8ceda;place-items:center;cursor:pointer;z-index:6;}
+.gx-aside-close:hover{background:rgba(255,107,107,.12);color:#ff8888;border-color:rgba(255,107,107,.35);}
+
+
 .gx-scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:25;backdrop-filter:blur(3px);}
 
 .gx-main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
@@ -280,9 +299,13 @@ const adminCss = `
 .gx-content::-webkit-scrollbar{width:8px;} .gx-content::-webkit-scrollbar-thumb{background:rgba(0,212,255,.15);border-radius:4px;} .gx-content::-webkit-scrollbar-thumb:hover{background:rgba(0,212,255,.3);}
 
 @media (max-width:900px){
-  .gx-aside{position:fixed;inset-block:0;inset-inline-end:0;transform:translateX(100%);}
+  /* Physical right anchoring: RTL logical props flip this to the wrong side */
+  .gx-aside{position:fixed;top:0;bottom:0;right:0;left:auto;width:min(280px,86vw);
+    transform:translateX(105%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    box-shadow:-18px 0 45px rgba(0,0,0,.5);}
   .gx-aside.open{transform:translateX(0);}
-  .gx-aside.collapsed{width:260px;padding:18px 12px;}
+  .gx-aside.collapsed{width:min(280px,86vw);padding:18px 12px;}
+  .gx-aside-close{display:grid;}
   .gx-collapse-btn{display:none;}
   .gx-burger{display:grid;place-items:center;}
   .gx-search-trigger span{display:none;}
@@ -291,7 +314,10 @@ const adminCss = `
   .gx-top{padding:10px 12px;gap:10px;}
   .gx-search-trigger{max-width:none;padding:8px 10px;}
   .gx-kbd{display:none;}
+  .gx-aside-nav{gap:2px;}
+  .gx-nav-link{padding:12px 12px;font-size:14px;}
 }
+
 
 /* --- Phones: keep every admin page inside the viewport ------------------ */
 @media (max-width:640px){
@@ -315,6 +341,12 @@ const adminCss = `
   /* Any 2+ column grid collapses to one column */
   .gx-content [class*="grid-cols-"]{grid-template-columns:1fr !important;}
   .gx-content .flex-wrap > *{max-width:100%;}
+  /* Pill/tab rows scroll sideways instead of breaking the layout */
+  .gx-adm-tabs,.gx-content [role="tablist"]{display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:6px;}
+  .gx-adm-tabs::-webkit-scrollbar,.gx-content [role="tablist"]::-webkit-scrollbar{display:none;}
+  .gx-adm-tabs > *,.gx-content [role="tablist"] > *{flex:0 0 auto;}
+  .gx-content select,.gx-content input,.gx-content textarea{max-width:100%;}
+  .gx-content button{white-space:nowrap;}
   h1{font-size:20px !important;}
   h2{font-size:17px !important;}
 }
