@@ -289,60 +289,121 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
 
 function OrderCard({ order: o }: { order: OrderRow }) {
   const { t, lang } = useLang();
+  const ar = lang === "ar";
   const [open, setOpen] = useState(false);
-  const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-    pending: { label: t("acc.status_pending"), className: "bg-amber-500/15 text-amber-400 border-amber-500/40" },
-    paid: { label: t("acc.status_paid"), className: "bg-sky-500/15 text-sky-400 border-sky-500/40" },
-    processing: { label: t("acc.status_processing"), className: "bg-indigo-500/15 text-indigo-400 border-indigo-500/40" },
-    delivered: { label: t("acc.status_delivered"), className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/40" },
-    cancelled: { label: t("acc.status_cancelled"), className: "bg-rose-500/15 text-rose-400 border-rose-500/40" },
+  const [revealed, setRevealed] = useState(false);
+  const [revealing, setRevealing] = useState(false);
+  const STATUS_STYLE: Record<string, { label: string; pill: string; bar: string }> = {
+    pending: { label: t("acc.status_pending"), pill: "bg-amber-500/15 text-amber-400 border-amber-500/40", bar: "from-amber-500/70" },
+    paid: { label: t("acc.status_paid"), pill: "bg-sky-500/15 text-sky-400 border-sky-500/40", bar: "from-sky-500/70" },
+    processing: { label: t("acc.status_processing"), pill: "bg-indigo-500/15 text-indigo-400 border-indigo-500/40", bar: "from-indigo-500/70" },
+    delivered: { label: t("acc.status_delivered"), pill: "bg-emerald-500/15 text-emerald-400 border-emerald-500/40", bar: "from-emerald-500/70" },
+    cancelled: { label: t("acc.status_cancelled"), pill: "bg-rose-500/15 text-rose-400 border-rose-500/40", bar: "from-rose-500/70" },
   };
-  const status = STATUS_LABELS[o.status] ?? { label: o.status, className: "bg-muted text-muted-foreground border-border" };
+  const status = STATUS_STYLE[o.status] ?? { label: o.status, pill: "bg-muted text-muted-foreground border-border", bar: "from-muted" };
   const items = Array.isArray(o.items) ? (o.items as Array<{ name?: string; qty?: number; price?: number }>) : [];
   const delivery = o.delivery_data && typeof o.delivery_data === "object" ? o.delivery_data as Record<string, unknown> : {};
   const codes = Array.isArray((delivery as { codes?: unknown }).codes)
     ? (delivery as { codes: Array<{ label?: string; value?: string; email?: string; password?: string; kind?: string }> }).codes : [];
-  const locale = lang === "ar" ? "ar-EG" : "en-US";
-  const currencyLabel = lang === "ar" ? "د.أ" : "JOD";
+  const locale = ar ? "ar-EG" : "en-US";
+  const currencyLabel = ar ? "د.أ" : "JOD";
+  const itemsCount = items.reduce((n, it) => n + (it.qty ?? 1), 0);
+
+  async function reveal() {
+    setRevealing(true);
+    const { error } = await supabase.rpc("reveal_order_codes", { _order_id: o.id });
+    setRevealing(false);
+    if (error) { toast.error(error.message); return; }
+    setRevealed(true);
+  }
 
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div>
-            <div className="font-mono text-sm font-semibold">{o.order_number}</div>
-            <div className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString(locale)}</div>
+    <Card className="overflow-hidden border-white/10 bg-card/60 backdrop-blur transition hover:border-primary/30">
+      <div className={`h-1 w-full bg-gradient-to-l ${status.bar} to-transparent`} />
+      <CardContent className="p-4 sm:p-5">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <Package className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <div className="truncate font-mono text-sm font-bold tracking-wide" dir="ltr">{o.order_number}</div>
+                <div className="text-[11px] text-muted-foreground">{new Date(o.created_at).toLocaleString(locale)}</div>
+              </div>
+            </div>
           </div>
-          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${status.className}`}>{status.label}</span>
+          <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${status.pill}`}>
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {status.label}
+          </span>
         </div>
+
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-muted/20 px-3 py-2.5">
+          <div className="min-w-0 text-xs text-muted-foreground">
+            {ar ? `${itemsCount} منتج` : `${itemsCount} item${itemsCount === 1 ? "" : "s"}`}
+          </div>
+          <div className="shrink-0 text-base font-extrabold">
+            {Number(o.total_jod).toFixed(2)} <span className="text-xs font-bold text-muted-foreground">{currencyLabel}</span>
+          </div>
+        </div>
+
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="mt-3 flex w-full items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm font-semibold transition hover:bg-muted/60"
+          className="mt-2 flex w-full items-center justify-between gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm font-semibold transition hover:bg-muted/40"
           aria-expanded={open}
         >
-          <span>{lang === "ar" ? "المنتجات" : "Items"} ({items.length})</span>
+          <span>{ar ? "تفاصيل الطلب" : "Order details"}</span>
           <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
         {open && (
           <div className="mt-2 space-y-1 text-sm">
             {items.map((it, i) => (
-              <div key={i} className="flex justify-between gap-2 rounded-md bg-muted/20 px-2 py-1.5">
+              <div key={i} className="flex justify-between gap-2 rounded-lg bg-muted/20 px-2.5 py-2">
                 <span className="min-w-0 break-words">{it.name} × {it.qty}</span>
-                <span className="shrink-0">{((it.price ?? 0) * (it.qty ?? 1)).toFixed(2)} {currencyLabel}</span>
+                <span className="shrink-0 font-semibold">{((it.price ?? 0) * (it.qty ?? 1)).toFixed(2)} {currencyLabel}</span>
               </div>
             ))}
           </div>
         )}
 
-        <div className="mt-3 flex justify-between font-bold border-t pt-2">
-          <span>{t("acc.total_label")}</span>
-          <span>{Number(o.total_jod).toFixed(2)} {currencyLabel}</span>
-        </div>
         {o.status === "delivered" && codes.length > 0 && (
-          <div className="mt-3 bg-muted/40 rounded-lg p-3 space-y-3 border">
-            <div className="text-sm font-semibold">{t("acc.your_codes")}</div>
-            {codes.map((c, i) => <DeliveryBlock key={i} data={c} />)}
+          <div className="mt-3 rounded-xl border border-primary/25 bg-primary/[0.04] p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2 text-sm font-bold text-primary">
+                <ShieldCheck className="h-4 w-4 shrink-0" />
+                <span className="truncate">{t("acc.your_codes")}</span>
+              </div>
+              <Button size="sm" variant={revealed ? "outline" : "default"} className="shrink-0 gap-1.5"
+                onClick={() => (revealed ? setRevealed(false) : reveal())} disabled={revealing}>
+                {revealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                <span className="text-xs font-bold">
+                  {revealed ? (ar ? "إخفاء" : "Hide") : (ar ? "إظهار الكود" : "Reveal code")}
+                </span>
+              </Button>
+            </div>
+
+            <div className="relative mt-3 space-y-3">
+              <div className={revealed ? "" : "pointer-events-none select-none space-y-3 blur-[6px] opacity-60"}>
+                {codes.map((c, i) => <DeliveryBlock key={i} data={c} masked={!revealed} />)}
+              </div>
+              {!revealed && (
+                <button type="button" onClick={reveal} disabled={revealing}
+                  className="absolute inset-0 grid place-items-center rounded-lg text-xs font-bold text-primary">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-background/85 px-3 py-1.5 shadow">
+                    <Eye className="h-3.5 w-3.5" />
+                    {ar ? "اضغط لإظهار الكود" : "Tap to reveal"}
+                  </span>
+                </button>
+              )}
+            </div>
+
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              {o.codes_revealed_at
+                ? (ar ? `تم فتح الكود بتاريخ ${new Date(o.codes_revealed_at).toLocaleString(locale)}` : `Code first opened on ${new Date(o.codes_revealed_at).toLocaleString(locale)}`)
+                : (ar ? "لم يتم فتح الكود بعد — بمجرد إظهاره يُسجَّل ذلك لدى المتجر." : "Not opened yet — revealing it is recorded by the store.")}
+            </p>
           </div>
         )}
       </CardContent>
@@ -350,24 +411,24 @@ function OrderCard({ order: o }: { order: OrderRow }) {
   );
 }
 
-function DeliveryBlock({ data }: { data: { label?: string; value?: string; email?: string; password?: string; kind?: string } }) {
+function DeliveryBlock({ data, masked }: { data: { label?: string; value?: string; email?: string; password?: string; kind?: string }; masked?: boolean }) {
   const isAccount = data.kind === "account" || (!!data.email && !data.value);
   return (
-    <div className="rounded-md border bg-background/40 p-2.5 space-y-2">
+    <div className="rounded-lg border bg-background/50 p-2.5 space-y-2">
       {data.label && <div className="text-xs font-semibold text-primary">{data.label}</div>}
       {isAccount ? (
         <>
-          {data.email && <CodeBox label="acc.your_email_label" value={data.email} />}
-          {data.password && <CodeBox label="acc.your_password_label" value={data.password} />}
+          {data.email && <CodeBox label="acc.your_email_label" value={data.email} masked={masked} />}
+          {data.password && <CodeBox label="acc.your_password_label" value={data.password} masked={masked} />}
         </>
       ) : (
-        data.value && <CodeBox label="acc.your_code_label" value={data.value} />
+        data.value && <CodeBox label="acc.your_code_label" value={data.value} masked={masked} />
       )}
     </div>
   );
 }
 
-function CodeBox({ label, value }: { label?: string; value?: string }) {
+function CodeBox({ label, value, masked }: { label?: string; value?: string; masked?: boolean }) {
   const { t } = useLang();
   const [copied, setCopied] = useState(false);
   async function copy() {
@@ -378,18 +439,22 @@ function CodeBox({ label, value }: { label?: string; value?: string }) {
     setTimeout(() => setCopied(false), 1500);
   }
   const labelText = label && label.startsWith("acc.") ? t(label) : label;
+  const shown = masked ? "•".repeat(Math.min(Math.max((value ?? "").length, 8), 22)) : value;
   return (
     <div className="text-sm">
       {labelText && <div className="text-muted-foreground text-xs mb-1">{labelText}</div>}
       <div className="flex items-center gap-2">
-        <div className="flex-1 font-mono bg-background border rounded p-2 select-all break-all" dir="ltr">{value}</div>
-        <Button size="icon" variant="outline" onClick={copy} className="shrink-0">
-          {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
-        </Button>
+        <div className="flex-1 font-mono bg-background border rounded p-2 select-all break-all" dir="ltr">{shown}</div>
+        {!masked && (
+          <Button size="icon" variant="outline" onClick={copy} className="shrink-0">
+            {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
+          </Button>
+        )}
       </div>
     </div>
   );
 }
+
 
 function SecurityTab({ email }: { email: string }) {
   const { t } = useLang();
