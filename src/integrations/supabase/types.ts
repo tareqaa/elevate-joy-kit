@@ -1738,6 +1738,7 @@ export type Database = {
         }[]
       }
       get_wheel_status: { Args: never; Returns: Json }
+      guard_store_order_user: { Args: { _claimed: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -32,7 +32,7 @@ export const Route = createFileRoute("/product/$slug")({
 });
 
 function ProductPage() {
-  const { slug } = Route.useLoaderData();
+  const { slug } = Route.useLoaderData() as { slug: string };
   const { lang, t } = useLang();
   const p = localizedProduct(PRODUCTS_CATALOG[slug], lang);
   const { format } = useCurrency();

@@ -24,6 +24,9 @@ type CreateOrderInput = {
   } | null;
   /** Store credit (refund balance) applied to this order, in JOD. */
   creditJod?: number | null;
+  /** Caller's Supabase access token (used when no service-role key is set). */
+  accessToken?: string | null;
+
 };
 
 function isNewSupabaseApiKey(value: string): boolean {
@@ -46,24 +49,38 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
-function getAdminClient() {
+/**
+ * Server-side Supabase client used to place the order.
+ * Prefers the service-role key. When it is not configured, it falls back to
+ * the publishable key while forwarding the shopper's bearer token, so the
+ * `create_store_order` security-definer function still runs as the right user.
+ */
+function getOrderClient(accessToken?: string | null) {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const key =
+  const serviceKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_SECRET_KEY ||
     process.env.SERVICE_ROLE_KEY;
+  const publishableKey =
+    process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const key = serviceKey || publishableKey;
   if (!url || !key) {
     throw new Error(
       "Backend is not configured: missing " +
-        (!url ? "SUPABASE_URL" : "SUPABASE_SERVICE_ROLE_KEY") +
+        (!url ? "SUPABASE_URL" : "SUPABASE_PUBLISHABLE_KEY") +
         " in the server environment.",
     );
   }
+  const useUserToken = !serviceKey && !!accessToken;
   return createClient<Database>(url, key, {
-    global: { fetch: createSupabaseFetch(key) },
+    global: {
+      fetch: createSupabaseFetch(key),
+      ...(useUserToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {}),
+    },
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
   });
 }
+
 
 /** 1000 GX Coins = 1 JOD */
 const COINS_PER_JOD = 1000;
@@ -111,7 +128,8 @@ function validateOrderInput(input: CreateOrderInput) {
 
 export async function createStoreOrder(input: CreateOrderInput) {
   validateOrderInput(input);
-  const supabase = getAdminClient();
+  const supabase = getOrderClient(input.accessToken);
+
 
 
   const deliveryData: Record<string, unknown> = { ...(input.deliveryData ?? {}) };

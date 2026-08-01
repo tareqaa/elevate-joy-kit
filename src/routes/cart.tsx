@@ -181,6 +181,10 @@ function CartSummary() {
       const url = cart.buildWhatsAppUrl(orderNumber);
       cart.clear();
       setConfirmed({ orderNumber, waUrl: url });
+    } catch (e) {
+      const { toast } = await import("sonner");
+      const msg = e instanceof Error ? e.message : String(e ?? "");
+      toast.error(msg || t("cart.checkout_saving"));
     } finally {
       setBusy(false);
     }

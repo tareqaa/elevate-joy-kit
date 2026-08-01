@@ -27,7 +27,7 @@ export const Route = createFileRoute("/category/$slug")({
 });
 
 function CategoryPage() {
-  const { slug } = Route.useLoaderData();
+  const { slug } = Route.useLoaderData() as { slug: string };
   const { lang, t } = useLang();
   const meta = localizedCategoryMeta(slug, CATEGORY_META[slug], lang);
   const subs = SUBCATEGORIES[slug] || [];
