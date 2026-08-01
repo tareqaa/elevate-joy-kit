@@ -279,15 +279,19 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                   </div>
 
                   <div className="gxp-stats">
-                    <Stat label="GX Coins" value={(mine?.coins ?? 0).toLocaleString("en-US")}
-                      hint={isOwner ? `≈ ${formatCoins(mine?.coins ?? 0)}` : undefined}
-                      hidden={!isOwner} icon="🪙" />
-                    <Stat label={isAr ? "رصيد المتجر" : "Store credit"}
-                      value={format(Number(mine?.store_credit ?? 0))} hint={currency}
-                      hidden={!isOwner} icon="💳" />
+                    {/* Coins & store credit are private: only the owner sees them. */}
+                    {isOwner && (
+                      <>
+                        <Stat label="GX Coins" value={(mine?.coins ?? 0).toLocaleString("en-US")}
+                          hint={`≈ ${formatCoins(mine?.coins ?? 0)}`} icon="🪙" />
+                        <Stat label={isAr ? "رصيد المتجر" : "Store credit"}
+                          value={format(Number(mine?.store_credit ?? 0))} hint={currency} icon="💳" />
+                      </>
+                    )}
                     <Stat label="XP" value={xp.toLocaleString("en-US")} icon="⚡" />
                     <Stat label={isAr ? "الطلبات" : "Orders"} value={String(mine?.orders_count ?? p.orders_count ?? 0)} icon="📦" />
                   </div>
+
 
                   {isOwner && lvl && (
                     <p className="gxp-note">
