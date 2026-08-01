@@ -7,7 +7,8 @@ import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { OrderConfirmedModal } from "@/components/gx/OrderConfirmedModal";
-import { coinsToJod, jodToCoins, COINS_PER_JOD_REDEEM, MAX_COINS_DISCOUNT_RATIO } from "@/lib/gx/loyalty";
+import { coinsToJod, jodToCoins, MAX_COINS_DISCOUNT_RATIO } from "@/lib/gx/loyalty";
+import { useLoyaltyCopy, bidi } from "@/lib/gx/loyalty-copy";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/cart")({
@@ -376,7 +377,9 @@ const summaryCss = `
 function CoinsBlock() {
   const cart = useCart();
   const { format } = useCurrency();
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const copy = useLoyaltyCopy();
+  const isAr = lang !== "en";
   const [balance, setBalance] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -481,7 +484,9 @@ function CoinsBlock() {
 function CreditBlock() {
   const cart = useCart();
   const { format } = useCurrency();
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const copy = useLoyaltyCopy();
+  const isAr = lang !== "en";
   const [balance, setBalance] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
