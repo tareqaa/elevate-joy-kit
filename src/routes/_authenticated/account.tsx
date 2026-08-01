@@ -370,40 +370,36 @@ function OrderCard({ order: o }: { order: OrderRow }) {
         )}
 
         {o.status === "delivered" && codes.length > 0 && (
-          <div className="mt-3 rounded-xl border border-primary/25 bg-primary/[0.04] p-3">
-            <div className="flex items-center justify-between gap-2">
+          <div className="mt-3 overflow-hidden rounded-xl border border-primary/25 bg-primary/[0.04]">
+            <div className="flex items-center justify-between gap-2 border-b border-primary/15 bg-primary/[0.06] px-3 py-2.5">
               <div className="flex min-w-0 items-center gap-2 text-sm font-bold text-primary">
                 <ShieldCheck className="h-4 w-4 shrink-0" />
                 <span className="truncate">{t("acc.your_codes")}</span>
               </div>
-              <Button size="sm" variant={revealed ? "outline" : "default"} className="shrink-0 gap-1.5"
-                onClick={() => (revealed ? setRevealed(false) : reveal())} disabled={revealing}>
-                {revealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                <span className="text-xs font-bold">
-                  {revealed ? (ar ? "إخفاء" : "Hide") : (ar ? "إظهار الكود" : "Reveal code")}
-                </span>
-              </Button>
+              <span className="shrink-0 rounded-full border border-primary/30 bg-background/60 px-2 py-0.5 text-[11px] font-bold text-primary">
+                {ar ? `${codes.length} مفتاح` : `${codes.length} key${codes.length === 1 ? "" : "s"}`}
+              </span>
             </div>
 
-            <div className="relative mt-3 space-y-3">
-              <div className={revealed ? "" : "pointer-events-none select-none space-y-3 blur-[6px] opacity-60"}>
-                {codes.map((c, i) => <DeliveryBlock key={i} data={c} masked={!revealed} />)}
-              </div>
-              {!revealed && (
-                <button type="button" onClick={reveal} disabled={revealing}
-                  className="absolute inset-0 grid place-items-center rounded-lg text-xs font-bold text-primary">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-background/85 px-3 py-1.5 shadow">
-                    <Eye className="h-3.5 w-3.5" />
-                    {ar ? "اضغط لإظهار الكود" : "Tap to reveal"}
-                  </span>
-                </button>
-              )}
+            <div className="space-y-2 p-3">
+              {codes.map((c, i) => (
+                <DeliveryBlock key={i} data={c} index={i} onReveal={reveal} revealing={revealing} />
+              ))}
             </div>
 
-            <p className="mt-2 text-[11px] text-muted-foreground">
+            <div className="flex items-start gap-2 border-t border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
+              <p className="text-[11px] leading-relaxed text-amber-200/90">
+                {ar
+                  ? "بمجرد إظهار أي مفتاح يُعتبر مُستلمًا ولا يمكن استرجاعه أو استبداله. تأكد من المنطقة (Region) ومتطلبات المنتج قبل الإظهار — المتجر غير مسؤول عن تفعيل مفتاح في منطقة خاطئة."
+                  : "Once a key is revealed it counts as delivered and cannot be refunded or replaced. Check the region and product requirements before revealing — the store is not responsible for keys redeemed in the wrong region."}
+              </p>
+            </div>
+
+            <p className="px-3 pb-3 text-[11px] text-muted-foreground">
               {o.codes_revealed_at
-                ? (ar ? `تم فتح الكود بتاريخ ${new Date(o.codes_revealed_at).toLocaleString(locale)}` : `Code first opened on ${new Date(o.codes_revealed_at).toLocaleString(locale)}`)
-                : (ar ? "لم يتم فتح الكود بعد — بمجرد إظهاره يُسجَّل ذلك لدى المتجر." : "Not opened yet — revealing it is recorded by the store.")}
+                ? (ar ? `أول فتح: ${new Date(o.codes_revealed_at).toLocaleString(locale)}` : `First opened: ${new Date(o.codes_revealed_at).toLocaleString(locale)}`)
+                : (ar ? "لم يتم فتح أي مفتاح بعد — كل عملية إظهار تُسجَّل لدى المتجر." : "No key opened yet — every reveal is recorded by the store.")}
             </p>
           </div>
         )}
@@ -412,24 +408,97 @@ function OrderCard({ order: o }: { order: OrderRow }) {
   );
 }
 
-function DeliveryBlock({ data, masked }: { data: { label?: string; value?: string; email?: string; password?: string; kind?: string }; masked?: boolean }) {
+function DeliveryBlock({ data, index, onReveal, revealing }: {
+  data: { label?: string; value?: string; email?: string; password?: string; kind?: string; region?: string };
+  index: number;
+  onReveal: () => Promise<void> | void;
+  revealing?: boolean;
+}) {
+  const { t, lang } = useLang();
+  const ar = lang === "ar";
+  const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const isAccount = data.kind === "account" || (!!data.email && !data.value);
+  const region = (data.region || "").trim();
+
+  async function confirmReveal() {
+    await onReveal();
+    setConfirming(false);
+    setOpen(true);
+  }
+
   return (
-    <div className="rounded-lg border bg-background/50 p-2.5 space-y-2">
-      {data.label && <div className="text-xs font-semibold text-primary">{data.label}</div>}
-      {isAccount ? (
-        <>
-          {data.email && <CodeBox label="acc.your_email_label" value={data.email} masked={masked} />}
-          {data.password && <CodeBox label="acc.your_password_label" value={data.password} masked={masked} />}
-        </>
-      ) : (
-        data.value && <CodeBox label="acc.your_code_label" value={data.value} masked={masked} />
+    <div className="overflow-hidden rounded-xl border border-white/10 bg-background/50">
+      <div className="flex flex-wrap items-center gap-2 border-b border-white/5 px-3 py-2">
+        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${isAccount ? "bg-fuchsia-500/15 text-fuchsia-300" : "bg-cyan-500/15 text-cyan-300"}`}>
+          {isAccount ? <UserIcon className="h-3.5 w-3.5" /> : <KeyRound className="h-3.5 w-3.5" />}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-bold">
+            {data.label || (isAccount ? (ar ? "حساب" : "Account") : (ar ? `مفتاح ${index + 1}` : `Key ${index + 1}`))}
+          </div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+            <span className="rounded-full border border-white/10 bg-muted/30 px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+              {isAccount ? (ar ? "حساب" : "Account") : (ar ? "مفتاح رقمي" : "Digital key")}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+              <Globe className="h-3 w-3" />
+              {region || (ar ? "عالمي / Global" : "Global")}
+            </span>
+          </div>
+        </div>
+        <Button size="sm" variant={open ? "outline" : "default"} className="h-8 shrink-0 gap-1.5"
+          disabled={revealing}
+          onClick={() => (open ? setOpen(false) : setConfirming(true))}>
+          {open ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          <span className="text-[11px] font-bold">{open ? (ar ? "إخفاء" : "Hide") : (ar ? "إظهار" : "Reveal")}</span>
+        </Button>
+      </div>
+
+      {confirming && !open && (
+        <div className="space-y-2 border-b border-amber-500/20 bg-amber-500/[0.07] px-3 py-2.5">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
+            <p className="text-[11px] leading-relaxed text-amber-200/90">
+              {ar
+                ? `المنطقة: ${region || "عالمي / Global"} — بعد الإظهار لا يمكن الاسترجاع أو الاستبدال، والمتجر غير مسؤول عن استخدام المفتاح في منطقة غير مناسبة.`
+                : `Region: ${region || "Global"} — after revealing, no refund or replacement is possible, and the store is not responsible for redeeming in the wrong region.`}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" className="h-8 flex-1 text-[11px] font-bold" disabled={revealing} onClick={confirmReveal}>
+              {ar ? "أوافق، أظهر المفتاح" : "I agree, reveal"}
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setConfirming(false)}>
+              {ar ? "إلغاء" : "Cancel"}
+            </Button>
+          </div>
+        </div>
       )}
+
+      <div className="space-y-2 p-3">
+        {open ? (
+          isAccount ? (
+            <>
+              {data.email && <CodeBox label="acc.your_email_label" value={data.email} />}
+              {data.password && <CodeBox label="acc.your_password_label" value={data.password} />}
+            </>
+          ) : (
+            data.value && <CodeBox label="acc.your_code_label" value={data.value} />
+          )
+        ) : (
+          <div className="flex items-center gap-2 rounded-lg border border-dashed border-white/15 bg-muted/20 px-3 py-2.5">
+            <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="font-mono text-sm tracking-[0.25em] text-muted-foreground" dir="ltr">••••-••••-••••</span>
+          </div>
+        )}
+      </div>
+      {open && <div className="sr-only">{t("acc.your_codes")}</div>}
     </div>
   );
 }
 
-function CodeBox({ label, value, masked }: { label?: string; value?: string; masked?: boolean }) {
+function CodeBox({ label, value }: { label?: string; value?: string }) {
   const { t } = useLang();
   const [copied, setCopied] = useState(false);
   async function copy() {
@@ -440,21 +509,19 @@ function CodeBox({ label, value, masked }: { label?: string; value?: string; mas
     setTimeout(() => setCopied(false), 1500);
   }
   const labelText = label && label.startsWith("acc.") ? t(label) : label;
-  const shown = masked ? "•".repeat(Math.min(Math.max((value ?? "").length, 8), 22)) : value;
   return (
     <div className="text-sm">
       {labelText && <div className="text-muted-foreground text-xs mb-1">{labelText}</div>}
       <div className="flex items-center gap-2">
-        <div className="flex-1 font-mono bg-background border rounded p-2 select-all break-all" dir="ltr">{shown}</div>
-        {!masked && (
-          <Button size="icon" variant="outline" onClick={copy} className="shrink-0">
-            {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
-          </Button>
-        )}
+        <div className="flex-1 font-mono bg-background border rounded p-2 select-all break-all" dir="ltr">{value}</div>
+        <Button size="icon" variant="outline" onClick={copy} className="shrink-0">
+          {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
+        </Button>
       </div>
     </div>
   );
 }
+
 
 
 function SecurityTab({ email }: { email: string }) {
