@@ -26,6 +26,8 @@ import {
   type RewardType,
 } from "@/lib/gx/tournament-prizes";
 
+import { TournamentScoresDialog } from "@/components/gx/admin/TournamentScores";
+
 type Row = {
   id: string;
   game_slug: string;
@@ -39,6 +41,7 @@ type Row = {
   prizes: Prize[];
   is_active: boolean;
   sort_order: number;
+  max_players: number | null;
 };
 
 /** datetime-local <-> ISO helpers */
@@ -63,7 +66,9 @@ const EMPTY: Partial<Row> = {
   prizes: [{ place: 1, label_ar: "منتج رقمي مجاني", label_en: "Free digital product" }],
   is_active: true,
   sort_order: 0,
+  max_players: null,
 };
+
 
 function TournamentsAdmin() {
   const qc = useQueryClient();
