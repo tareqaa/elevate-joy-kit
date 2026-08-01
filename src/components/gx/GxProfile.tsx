@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/gx/i18n";
 import { useCurrency } from "@/lib/gx/currency";
 import { fetchLevels, fetchMyLoyalty, levelName, levelProgress, COINS_PER_JOD_REDEEM, XP_PER_JOD } from "@/lib/gx/loyalty";
-import { RankBadge, RANK_COLORS } from "@/components/gx/RankBadge";
+import { RankBadge } from "@/components/gx/RankBadge";
 import { GxIcon, type GxIconName } from "@/components/gx/GxIcon";
 
 
@@ -463,9 +463,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
                     <Link key={r.user_id} to="/u/$username" params={{ username: r.username || "" }}
                       className={`gxp-brow${r.username?.toLowerCase() === (username || "").toLowerCase() ? " me" : ""}`}>
                       <span className="r">
-                        {rank <= 3
-                          ? <RankBadge color={RANK_COLORS[rank]} label={rank} size={30} glow />
-                          : <b className="rnum">{rank}</b>}
+                        <b className={`rnum${rank <= 3 ? ` t${rank}` : ""}`}>{rank}</b>
                       </span>
                       <img src={av} alt="" loading="lazy" />
                       <span className="n">{r.username}</span>
