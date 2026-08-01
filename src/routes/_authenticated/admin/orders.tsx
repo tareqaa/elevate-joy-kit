@@ -502,7 +502,7 @@ function QuickFulfill({ onPick }: { onPick: (o: OrderWithEmail) => void }) {
   );
 }
 
-type DeliveryCode = { label: string; value: string; email?: string; password?: string; kind?: "code" | "account" };
+type DeliveryCode = { label: string; value: string; email?: string; password?: string; kind?: "code" | "account"; region?: string };
 
 function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
   const [status, setStatus] = useState(order.status);
@@ -515,6 +515,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
       return existingDelivery.codes.map((c) => ({
         kind: (c.kind || (c.email ? "account" : "code")) as "code" | "account",
         label: c.label || "", value: c.value || "", email: c.email || "", password: c.password || "",
+        region: c.region || "",
       }));
     }
     const seeded: DeliveryCode[] = [];
@@ -524,16 +525,16 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
         seeded.push({
           kind: "code",
           label: qty > 1 ? `${it.name || "منتج"} (${k + 1}/${qty})` : (it.name || "منتج"),
-          value: "", email: "", password: "",
+          value: "", email: "", password: "", region: "",
         });
       }
     });
-    return seeded.length > 0 ? seeded : [{ kind: "code" as const, label: "", value: "", email: "", password: "" }];
+    return seeded.length > 0 ? seeded : [{ kind: "code" as const, label: "", value: "", email: "", password: "", region: "" }];
   })();
   const [codes, setCodes] = useState<DeliveryCode[]>(initialCodes);
 
-  function addCode() { setCodes([...codes, { kind: "code", label: "", value: "", email: "", password: "" }]); }
-  function addAccount() { setCodes([...codes, { kind: "account", label: "", value: "", email: "", password: "" }]); }
+  function addCode() { setCodes([...codes, { kind: "code", label: "", value: "", email: "", password: "", region: "" }]); }
+  function addAccount() { setCodes([...codes, { kind: "account", label: "", value: "", email: "", password: "", region: "" }]); }
   function updateCode(i: number, patch: Partial<DeliveryCode>) { setCodes(codes.map((c, idx) => idx === i ? { ...c, ...patch } : c)); }
   function removeCode(i: number) { setCodes(codes.filter((_, idx) => idx !== i)); }
 
@@ -542,9 +543,11 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
       kind: c.kind || "code",
       label: (c.label || "").trim(), value: (c.value || "").trim(),
       email: (c.email || "").trim(), password: (c.password || "").trim(),
+      region: (c.region || "").trim(),
     })).filter((c) => c.label || c.value || c.email || c.password);
     return { status: nextStatus, admin_notes: notes.trim() || null, delivery_data: { codes: cleanCodes } };
   }
+
   function save() { onSave(buildPatch(status)); }
   function markDelivered() {
     const anyValue = codes.some((c) => (c.value || "").trim() || (c.email || "").trim() || (c.password || "").trim());
