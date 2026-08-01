@@ -309,6 +309,30 @@ function OrderCard({ order: o }: { order: OrderRow }) {
   const currencyLabel = ar ? "د.أ" : "JOD";
   const itemsCount = items.reduce((n, it) => n + (it.qty ?? 1), 0);
 
+  type CodeData = { label?: string; value?: string; email?: string; password?: string; kind?: string; region?: string };
+  const showCodes = o.status === "delivered" && codes.length > 0;
+  const hasCodes = showCodes;
+  // Attach each delivery code to the product it belongs to (label match first,
+  // then sequential distribution by quantity).
+  const { groups, extraCodes } = (() => {
+    const pool: CodeData[] = showCodes ? [...codes] : [];
+    const result = items.map((item) => {
+      const qty = Math.max(1, item.qty ?? 1);
+      const mine: CodeData[] = [];
+      const name = (item.name || "").trim().toLowerCase();
+      if (name) {
+        for (let i = pool.length - 1; i >= 0 && mine.length < qty; i--) {
+          const lbl = (pool[i].label || "").trim().toLowerCase();
+          if (lbl && lbl.includes(name)) mine.unshift(...pool.splice(i, 1));
+        }
+      }
+      while (mine.length < qty && pool.length > 0) mine.push(pool.shift()!);
+      return { item, codes: mine };
+    });
+    return { groups: result, extraCodes: pool };
+  })();
+
+
   async function reveal() {
     setRevealing(true);
     const { error } = await supabase.rpc("reveal_order_codes", { _order_id: o.id });
