@@ -560,8 +560,22 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
                   : "The balance/subscription was topped up directly on your account. Check it, and contact support if it doesn't appear within a few minutes."}
               </span>
             </div>
-            {data.email && <CodeBox label={ar ? "الحساب الذي تمت التعبئة عليه" : "Topped-up account"} value={data.email} />}
-            {data.value && <CodeBox label={ar ? "تفاصيل التعبئة" : "Top-up details"} value={data.value} />}
+            {(data.email || data.value) && (
+              <div className="space-y-1.5 rounded-lg border border-white/10 bg-muted/20 px-3 py-2">
+                {data.email && (
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px]">
+                    <span className="text-muted-foreground">{ar ? "الحساب المستفيد:" : "Account:"}</span>
+                    <span className="font-semibold break-all">{data.email}</span>
+                  </div>
+                )}
+                {data.value && (
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px]">
+                    <span className="text-muted-foreground">{ar ? "التفاصيل:" : "Details:"}</span>
+                    <span className="font-semibold break-all">{data.value}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         ) : open ? (
           isAccount ? (
