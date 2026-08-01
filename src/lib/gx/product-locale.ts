@@ -252,7 +252,7 @@ export const FAQ_EN = [
 
   // Loyalty: XP, levels, coins, credit
   { icon: "⚡", title: "What is XP and how do I earn it?", desc: "Every {UNIT} of order value earns you {XP_PER_UNIT} XP. XP raises your level, and each level unlocks a bigger coin bonus, avatars and level coupons." },
-  { icon: "🪙", title: "What are GX Coins and how do I earn them?", desc: "Every {UNIT} you actually pay earns you {COINS_PER_UNIT} GX Coins, increased by your level bonus. You also earn coins from the lucky wheel and from tournament prizes." },
+  { icon: "💰", title: "What are GX Coins and how do I earn them?", desc: "Every {UNIT} you actually pay earns you {COINS_PER_UNIT} GX Coins, increased by your level bonus. You also earn coins from the lucky wheel and from tournament prizes." },
   { icon: "🧮", title: "How do I spend GX Coins?", desc: "{REDEEM_COINS} GX Coins = {REDEEM_VALUE} off, and coins can cover up to {MAX_PCT} of any order. You choose how many coins to use at checkout." },
   { icon: "📅", title: "Do GX Coins expire?", desc: "Yes — GX Coins are valid for one year from the date you earn them. Coins that pass one year without being used expire, so it's best to spend them on your next orders." },
   { icon: "🎫", title: "What's the difference between store credit and coins?", desc: "Store credit is a real balance in your currency (from refunds or admin credits) and can cover a full order. GX Coins are a reward currency capped at {MAX_PCT} of an order. Both are private and visible only to you inside your own profile." },

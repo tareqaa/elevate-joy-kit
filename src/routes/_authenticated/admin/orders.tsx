@@ -962,7 +962,7 @@ function AmountsBlock({ order }: { order: OrderWithEmail }) {
   return (
     <div className="gx-od-sec">
       <div className="gx-od-sec-h">
-        <div className="gx-od-sec-t">🪙 القيمة و GX Coins</div>
+        <div className="gx-od-sec-t">💰 القيمة و GX Coins</div>
         <span className="gx-adm-badge bg-amber-500/15 text-amber-300 border-amber-500/40">
           مستخدم: {Number(order.coins_used ?? 0)} GX
           {Number(order.coins_refunded ?? 0) > 0 ? ` • مُعاد: ${Number(order.coins_refunded)}` : ""}
