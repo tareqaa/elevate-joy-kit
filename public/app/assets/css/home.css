@@ -202,8 +202,21 @@ html[dir="ltr"] .featured-grid{
   .featured-grid .prod-card{flex:0 0 calc((100% - 20px - var(--gx-peek)) / 2);}
 }
 @media(max-width:560px){
-  .featured-grid{--gx-peek:22px; --gx-fade:40px;}
-  .featured-grid .prod-card{flex:0 0 calc(100% - var(--gx-peek));}
+  .featured-grid{--gx-peek:0px; --gx-fade:34px; gap:12px; scroll-snap-type:none;}
+  /* 2.5 cards visible so it's obvious the row scrolls */
+  .featured-grid .prod-card{flex:0 0 calc((100% - 2 * 12px) / 2.5);}
+  /* compact cards on phones */
+  .featured-grid .prod-thumb{height:96px; font-size:34px;}
+  .featured-grid .prod-body{padding:10px 10px 12px; gap:7px;}
+  .featured-grid .prod-name{font-size:12px;}
+  .featured-grid .prod-stars{font-size:10.5px;}
+  .featured-grid .prod-old{font-size:10.5px; white-space:nowrap;}
+  .featured-grid .prod-new{font-size:14px; white-space:nowrap;}
+  .featured-grid .prod-prices{gap:6px; flex-wrap:wrap;}
+  .featured-grid .add-cart-btn{padding:8px; font-size:11.5px; gap:5px; border-radius:9px;}
+  .featured-grid .add-cart-btn svg{width:14px; height:14px;}
+  .featured-grid .discount-badge{top:7px; inset-inline-end:7px; font-size:10px; padding:3px 7px;}
+  .featured-grid .tag-badge{top:7px; left:7px; font-size:9.5px; padding:3px 7px;}
 }
 
 
@@ -279,8 +292,8 @@ html[dir="ltr"] .featured-grid{
 
 
 .hero-car-dots{
-  position:absolute; bottom:14px; inset-inline-start:50%; transform:translateX(-50%);
-  display:flex; gap:8px; z-index:3;
+  position:absolute; bottom:14px; inset-inline:0; transform:none;
+  display:flex; justify-content:center; gap:8px; z-index:3;
 }
 .hcd{
   width:8px; height:8px; border-radius:999px; border:0; cursor:pointer; padding:0;
