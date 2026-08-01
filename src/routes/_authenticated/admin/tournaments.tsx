@@ -106,7 +106,12 @@ function TournamentsAdmin() {
         prizes: (row.prizes ?? []).map((p, i) => ({ ...p, place: i + 1 })),
         is_active: row.is_active ?? true,
         sort_order: row.sort_order ?? 0,
+        max_players:
+          row.max_players === null || row.max_players === undefined || Number(row.max_players) <= 0
+            ? null
+            : Math.round(Number(row.max_players)),
       };
+
       if (row.id) {
         const { error } = await supabase.from("game_tournaments").update(payload).eq("id", row.id);
         if (error) throw error;
