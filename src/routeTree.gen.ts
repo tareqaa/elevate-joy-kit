@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SnapchatRouteImport } from './routes/snapchat'
 import { Route as RewardsRouteImport } from './routes/rewards'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
@@ -63,6 +64,11 @@ const RewardsRoute = RewardsRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PolicyRoute = PolicyRouteImport.update({
@@ -274,6 +280,7 @@ export interface FileRoutesByFullPath {
   '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/rewards': typeof RewardsRoute
   '/snapchat': typeof SnapchatRoute
@@ -315,6 +322,7 @@ export interface FileRoutesByTo {
   '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/rewards': typeof RewardsRoute
   '/snapchat': typeof SnapchatRoute
@@ -357,6 +365,7 @@ export interface FileRoutesById {
   '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
   '/policy': typeof PolicyRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/rewards': typeof RewardsRoute
   '/snapchat': typeof SnapchatRoute
@@ -400,6 +409,7 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/mcp'
     | '/policy'
+    | '/privacy-policy'
     | '/reset-password'
     | '/rewards'
     | '/snapchat'
@@ -441,6 +451,7 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/mcp'
     | '/policy'
+    | '/privacy-policy'
     | '/reset-password'
     | '/rewards'
     | '/snapchat'
@@ -482,6 +493,7 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/mcp'
     | '/policy'
+    | '/privacy-policy'
     | '/reset-password'
     | '/rewards'
     | '/snapchat'
@@ -525,6 +537,7 @@ export interface RootRouteChildren {
   LeaderboardRoute: typeof LeaderboardRoute
   McpRoute: typeof McpRoute
   PolicyRoute: typeof PolicyRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   RewardsRoute: typeof RewardsRoute
   SnapchatRoute: typeof SnapchatRoute
@@ -561,6 +574,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/policy': {
@@ -889,6 +909,7 @@ const rootRouteChildren: RootRouteChildren = {
   LeaderboardRoute: LeaderboardRoute,
   McpRoute: McpRoute,
   PolicyRoute: PolicyRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   RewardsRoute: RewardsRoute,
   SnapchatRoute: SnapchatRoute,
