@@ -425,30 +425,43 @@ function TreeNode({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="gx-row-title">{node.name_ar}</span>
-              <span className="text-xs text-cyan-100/60">— {node.name_en}</span>
-              {node.is_main && <span className="gx-chip main"><Home size={9} /> رئيسي بالواجهة</span>}
-              {depth > 0 && <span className="gx-chip sub">L{depth + 1}</span>}
-              <span className="gx-count"><Package size={9} /> {productCount} منتج</span>
-              {children.length > 0 && <span className="gx-count"><FolderTree size={9} /> {children.length} فرعي</span>}
+              <span className="text-xs text-cyan-100/50">{node.name_en}</span>
+              {node.is_main && <span className="gx-chip main"><Home size={9} /> بالقائمة الرئيسية</span>}
+              {!node.is_active && <span className="gx-chip off"><EyeOff size={9} /> مخفي</span>}
             </div>
-            <div className="gx-row-meta">/{node.slug} · ترتيب: {node.sort_order}</div>
+            <div className="gx-row-meta">
+              /{node.slug} · <Package size={9} className="inline" /> {productCount} منتج
+              {children.length > 0 ? ` · ${children.length} قسم فرعي` : ""}
+            </div>
           </div>
 
-          <div className="flex items-center gap-1">
-            {canHaveChildren && (
-              <button className="gx-btn outline" onClick={() => onAddChild(node.id)} title="إضافة قسم فرعي">
-                <Plus size={11} /> فرعي
-              </button>
-            )}
-            <button className="gx-btn primary" onClick={() => onManageProducts(node)} title="إضافة وإدارة منتجات القسم">
-              <Plus size={11} /> إضافة/المنتجات
+          <div className="gx-row-actions">
+            <button className="gx-btn primary" onClick={() => onManageProducts(node)}>
+              <ShoppingBag size={11} /> المنتجات
             </button>
-            <button className="gx-btn outline" onClick={() => onEdit(node)} title="تعديل"><Pencil size={11} /></button>
-            <button className="gx-btn ghost" onClick={() => onDuplicate(node)} title="نسخ"><Copy size={11} /></button>
-            <button className="gx-btn outline" onClick={() => onToggleActive(node.id, !node.is_active)} title={node.is_active ? "إخفاء" : "إظهار"}>
-              {node.is_active ? <Eye size={11} /> : <EyeOff size={11} />}
-            </button>
-            <button className="gx-btn danger" onClick={() => onDelete(node.id, node.name_ar)} title="حذف"><Trash2 size={11} /></button>
+            <button className="gx-btn outline" onClick={() => onEdit(node)}><Pencil size={11} /> تعديل</button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="gx-btn ghost" aria-label="خيارات أخرى"><MoreHorizontal size={14} /></button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" dir="rtl" className="min-w-44">
+                {canHaveChildren && (
+                  <DropdownMenuItem onSelect={() => onAddChild(node.id)}>
+                    <FolderPlus size={13} className="ms-1" /> إضافة قسم فرعي
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onSelect={() => onToggleActive(node.id, !node.is_active)}>
+                  {node.is_active ? <><EyeOff size={13} className="ms-1" /> إخفاء من المتجر</> : <><Eye size={13} className="ms-1" /> إظهار في المتجر</>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onDuplicate(node)}>
+                  <Copy size={13} className="ms-1" /> نسخة مطابقة
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-red-400 focus:text-red-400" onSelect={() => onDelete(node.id, node.name_ar)}>
+                  <Trash2 size={13} className="ms-1" /> حذف
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -469,51 +482,6 @@ function TreeNode({
   );
 }
 
-
-function FlatRow({
-  node, parent, count, onEdit, onManageProducts, onDelete, onToggleActive, onDuplicate,
-}: {
-  node: Category;
-  parent: Category | null;
-  count: number;
-  onEdit: (c: Category) => void;
-  onManageProducts: (c: Category) => void;
-  onDelete: (id: string, name: string) => void;
-  onToggleActive: (id: string, next: boolean) => void;
-  onDuplicate: (c: Category) => void;
-}) {
-  return (
-    <div className={`gx-row ${node.is_active ? "" : "off"}`}>
-      <div className="gx-row-inner">
-        <div className="gx-swatch" style={{ background: node.theme_gradient || node.accent_color || "rgba(0,229,255,.15)" }} />
-        <div className="gx-row-icon">
-          {node.icon_url ? <img src={node.icon_url} alt="" /> : <FolderTree size={18} className="text-cyan-400/70" />}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            {parent && <span className="text-xs text-cyan-100/50">{parent.name_ar} ›</span>}
-            <span className="gx-row-title">{node.name_ar}</span>
-            {node.is_main && <span className="gx-chip main"><Home size={9} /> رئيسي</span>}
-            <span className="gx-count"><Package size={9} /> {count} منتج</span>
-          </div>
-          <div className="gx-row-meta">/{node.slug} · ترتيب: {node.sort_order}</div>
-        </div>
-        <div className="flex items-center gap-1">
-          <button className="gx-btn primary" onClick={() => onManageProducts(node)} title="إضافة وإدارة منتجات القسم">
-            <Plus size={11} /> إضافة/المنتجات
-          </button>
-          <button className="gx-btn outline" onClick={() => onEdit(node)} title="تعديل"><Pencil size={11} /></button>
-          <button className="gx-btn ghost" onClick={() => onDuplicate(node)} title="نسخ"><Copy size={11} /></button>
-          <button className="gx-btn outline" onClick={() => onToggleActive(node.id, !node.is_active)}>
-            {node.is_active ? <Eye size={11} /> : <EyeOff size={11} />}
-          </button>
-          <button className="gx-btn danger" onClick={() => onDelete(node.id, node.name_ar)} title="حذف"><Trash2 size={11} /></button>
-        </div>
-
-      </div>
-    </div>
-  );
-}
 
 function pathOf(cat: Category, all: Category[]): string {
   const path: string[] = [];
