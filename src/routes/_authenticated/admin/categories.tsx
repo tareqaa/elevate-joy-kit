@@ -27,24 +27,34 @@ type Category = {
   name_ar: string;
   name_en: string;
   icon_url: string | null;
+  icon: string | null;
   sort_order: number;
   is_active: boolean;
   parent_id: string | null;
   is_main: boolean;
   accent_color: string | null;
+  theme_color: string | null;
   theme_gradient: string | null;
+  tagline_ar: string | null;
+  tagline_en: string | null;
   description_ar: string | null;
   description_en: string | null;
 };
 
-const PRESET_GRADIENTS = [
-  { label: "سماوي", value: "linear-gradient(135deg,#00e5ff,#0091ff)" },
-  { label: "بنفسجي", value: "linear-gradient(135deg,#8b5cf6,#ec4899)" },
-  { label: "ذهبي", value: "linear-gradient(135deg,#f59e0b,#ef4444)" },
-  { label: "أخضر", value: "linear-gradient(135deg,#10b981,#06b6d4)" },
-  { label: "أزرق ملكي", value: "linear-gradient(135deg,#1e40af,#7c3aed)" },
-  { label: "وردي", value: "linear-gradient(135deg,#f472b6,#a855f7)" },
-];
+/** Ready-made looks taken from the store's live category styles. */
+const CATEGORY_THEMES = [
+  { id: "apps", label: "البرامج والتطبيقات", hint: "سماوي تقني — نفس ستايل قسم البرامج", gradient: "linear-gradient(135deg,#00e5ff,#0091ff)", accent: "#00e5ff", icon: "🧩" },
+  { id: "snap", label: "سناب شات", hint: "أصفر لامع — لأقسام الحسابات والمتابعين", gradient: "linear-gradient(135deg,#fffc00,#ffb300)", accent: "#ffd400", icon: "👻" },
+  { id: "fortnite", label: "فورتنايت / الألعاب", hint: "بنفسجي وسماوي — لأقسام الألعاب والشحن", gradient: "linear-gradient(135deg,#7c3aed,#22d3ee)", accent: "#a259ff", icon: "🎮" },
+  { id: "giftcards", label: "بطاقات الهدايا", hint: "ذهبي دافئ — لبطاقات الشحن والهدايا", gradient: "linear-gradient(135deg,#f59e0b,#ef4444)", accent: "#f59e0b", icon: "🎁" },
+  { id: "subs", label: "الاشتراكات", hint: "وردي بنفسجي — للاشتراكات الشهرية", gradient: "linear-gradient(135deg,#f472b6,#a855f7)", accent: "#f472b6", icon: "📺" },
+  { id: "fresh", label: "أخضر منعش", hint: "أخضر مائي — لأقسام العروض والجديد", gradient: "linear-gradient(135deg,#10b981,#06b6d4)", accent: "#10b981", icon: "⚡" },
+  { id: "royal", label: "أزرق ملكي", hint: "داكن فخم — للأقسام المميزة", gradient: "linear-gradient(135deg,#1e40af,#7c3aed)", accent: "#4f7cff", icon: "👑" },
+  { id: "dark", label: "أسود أنيق", hint: "حيادي داكن — يناسب كل الأقسام", gradient: "linear-gradient(135deg,#111827,#374151)", accent: "#9fb4c7", icon: "◼️" },
+] as const;
+
+const PRESET_GRADIENTS = CATEGORY_THEMES.map((t) => ({ label: t.label, value: t.gradient }));
+
 
 const css = `
 .gx-cats{color:#e6f7ff}
