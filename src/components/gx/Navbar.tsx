@@ -108,6 +108,7 @@ export function Navbar() {
   const cart = useCart();
   const { currency, format, formatCoins } = useCurrency();
   const { t, lang, setLang } = useLang();
+  const hiddenCats = useHiddenCategorySlugs();
   const [menuOpen, setMenuOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);

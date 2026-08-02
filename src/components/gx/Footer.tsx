@@ -8,6 +8,7 @@ import { useSiteSettings } from "@/lib/gx/site-settings";
 
 export function Footer() {
   const { t, lang } = useLang();
+  const hiddenCats = useHiddenCategorySlugs();
   const s = useSiteSettings();
   // Site settings resolve on the client; render them only after hydration
   // so the SSR markup and first client render match exactly.
