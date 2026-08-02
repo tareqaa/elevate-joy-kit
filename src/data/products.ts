@@ -444,18 +444,16 @@ export function findPlanByCartId(cartId: string): ResolvedPlan | null {
 }
 
 export function getProductLink(slug: string): string {
-  if (slug === "snapchat") return "/snapchat";
-  if (slug === "fortnite") return "/fortnite";
   return `/product/${slug}`;
 }
 
 export function getCategoryLink(slug: string): string {
-  if (slug === "snapchat") return "/snapchat";
+  if (slug === "snapchat") return "/product/snapchat";
   return `/category/${slug}`;
 }
 
 export function getGiftCardLink(slug: string): string {
-  return `/gift-cards/${slug}`;
+  return `/product/${slug}`;
 }
 
 export type FeaturedItem = {
