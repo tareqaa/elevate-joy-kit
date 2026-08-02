@@ -33,7 +33,6 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as GamesTIdRouteImport } from './routes/games.t.$id'
-import { Route as ApiPublicSeedCatalogRouteImport } from './routes/api/public/seed-catalog'
 import { Route as AuthenticatedAdminWheelRouteImport } from './routes/_authenticated/admin/wheel'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as AuthenticatedAdminTournamentsRouteImport } from './routes/_authenticated/admin/tournaments'
@@ -172,11 +171,6 @@ const GamesTIdRoute = GamesTIdRouteImport.update({
   path: '/games/t/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicSeedCatalogRoute = ApiPublicSeedCatalogRouteImport.update({
-  id: '/api/public/seed-catalog',
-  path: '/api/public/seed-catalog',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedAdminWheelRoute = AuthenticatedAdminWheelRouteImport.update({
   id: '/wheel',
   path: '/wheel',
@@ -309,7 +303,6 @@ export interface FileRoutesByFullPath {
   '/admin/tournaments': typeof AuthenticatedAdminTournamentsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/wheel': typeof AuthenticatedAdminWheelRoute
-  '/api/public/seed-catalog': typeof ApiPublicSeedCatalogRoute
   '/games/t/$id': typeof GamesTIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
@@ -350,7 +343,6 @@ export interface FileRoutesByTo {
   '/admin/tournaments': typeof AuthenticatedAdminTournamentsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/wheel': typeof AuthenticatedAdminWheelRoute
-  '/api/public/seed-catalog': typeof ApiPublicSeedCatalogRoute
   '/games/t/$id': typeof GamesTIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
@@ -394,7 +386,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/tournaments': typeof AuthenticatedAdminTournamentsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/wheel': typeof AuthenticatedAdminWheelRoute
-  '/api/public/seed-catalog': typeof ApiPublicSeedCatalogRoute
   '/games/t/$id': typeof GamesTIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
@@ -438,7 +429,6 @@ export interface FileRouteTypes {
     | '/admin/tournaments'
     | '/admin/users'
     | '/admin/wheel'
-    | '/api/public/seed-catalog'
     | '/games/t/$id'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
@@ -479,7 +469,6 @@ export interface FileRouteTypes {
     | '/admin/tournaments'
     | '/admin/users'
     | '/admin/wheel'
-    | '/api/public/seed-catalog'
     | '/games/t/$id'
     | '/admin'
   id:
@@ -522,7 +511,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/tournaments'
     | '/_authenticated/admin/users'
     | '/_authenticated/admin/wheel'
-    | '/api/public/seed-catalog'
     | '/games/t/$id'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
@@ -549,7 +537,6 @@ export interface RootRouteChildren {
   UUsernameRoute: typeof UUsernameRoute
   GamesIndexRoute: typeof GamesIndexRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
-  ApiPublicSeedCatalogRoute: typeof ApiPublicSeedCatalogRoute
   GamesTIdRoute: typeof GamesTIdRoute
 }
 
@@ -721,13 +708,6 @@ declare module '@tanstack/react-router' {
       path: '/games/t/$id'
       fullPath: '/games/t/$id'
       preLoaderRoute: typeof GamesTIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/seed-catalog': {
-      id: '/api/public/seed-catalog'
-      path: '/api/public/seed-catalog'
-      fullPath: '/api/public/seed-catalog'
-      preLoaderRoute: typeof ApiPublicSeedCatalogRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/wheel': {
@@ -922,7 +902,6 @@ const rootRouteChildren: RootRouteChildren = {
   UUsernameRoute: UUsernameRoute,
   GamesIndexRoute: GamesIndexRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
-  ApiPublicSeedCatalogRoute: ApiPublicSeedCatalogRoute,
   GamesTIdRoute: GamesTIdRoute,
 }
 export const routeTree = rootRouteImport
