@@ -395,12 +395,64 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
   );
 }
 
+const TEMPLATES = [
+  {
+    id: "standard",
+    name: "منتج عادي (خطط وأسعار)",
+    hint: "مثل قسم البرامج والتطبيقات — خطط بأسعار مختلفة + مزايا + طريقة التسليم",
+    preview: "linear-gradient(135deg,#0091ff,#00e5ff)",
+    icon: "🧩",
+  },
+  {
+    id: "multi_account",
+    name: "حسابات متعددة (نمط سناب شات)",
+    hint: "الزبون يختار مدة ويضيف أكثر من اسم مستخدم بنفس الطلب",
+    preview: "linear-gradient(135deg,#fffc00,#ffb300)",
+    icon: "👥",
+  },
+  {
+    id: "dual_plans",
+    name: "مجموعتان من الخطط (نمط فورتنايت)",
+    hint: "مجموعتين منفصلتين (اشتراك + عملة داخل اللعبة) مع بلوك تسليم مفصّل",
+    preview: "linear-gradient(135deg,#7c3aed,#22d3ee)",
+    icon: "🎮",
+  },
+  {
+    id: "gift_card",
+    name: "بطاقات هدايا حسب الدولة",
+    hint: "فئات مقسومة على دول مع أعلام — كل خيار يحمل كود الدولة",
+    preview: "linear-gradient(135deg,#f59e0b,#ef4444)",
+    icon: "🎁",
+  },
+] as const;
+
+const DELIVERY_TYPES = [
+  { id: "code", label: "كود / مفتاح رقمي" },
+  { id: "account", label: "حساب جاهز (بيانات دخول)" },
+  { id: "topup", label: "شحن مباشر (Top Up)" },
+  { id: "manual", label: "تسليم يدوي" },
+] as const;
+
+const THUMB_PRESETS = [
+  "linear-gradient(135deg,#0f172a,#1e293b)",
+  "linear-gradient(135deg,#0091ff,#00e5ff)",
+  "linear-gradient(135deg,#7c3aed,#ec4899)",
+  "linear-gradient(135deg,#f59e0b,#ef4444)",
+  "linear-gradient(135deg,#10b981,#06b6d4)",
+  "linear-gradient(135deg,#111827,#374151)",
+];
+
 function ProductDialog({ product, categories, defaultCategoryId, onClose, onSaved }: { product: Product | null; categories: Category[]; defaultCategoryId?: string; onClose: () => void; onSaved: () => void }) {
+  const [tab, setTab] = useState<"basic" | "template" | "design" | "delivery" | "variants">("basic");
+  const [savedId, setSavedId] = useState<string | null>(product?.id ?? null);
+
   const [nameAr, setNameAr] = useState(product?.name_ar ?? "");
   const [nameEn, setNameEn] = useState(product?.name_en ?? "");
   const [slug, setSlug] = useState(product?.slug ?? "");
   const [sku, setSku] = useState(product?.sku ?? "");
   const [categoryId, setCategoryId] = useState<string>(product?.category_id ?? defaultCategoryId ?? "");
+  const [taglineAr, setTaglineAr] = useState(product?.tagline_ar ?? "");
+  const [taglineEn, setTaglineEn] = useState(product?.tagline_en ?? "");
   const [descAr, setDescAr] = useState(product?.description_ar ?? "");
   const [descEn, setDescEn] = useState(product?.description_en ?? "");
   const [imageUrl, setImageUrl] = useState(product?.image_url ?? "");
@@ -409,9 +461,30 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
   const [sortOrder, setSortOrder] = useState<number>(product?.sort_order ?? 0);
   const [isActive, setIsActive] = useState<boolean>(product?.is_active ?? true);
   const [isFeatured, setIsFeatured] = useState<boolean>(product?.is_featured ?? false);
+
+  // Template + presentation
+  const [pageTemplate, setPageTemplate] = useState<string>(product?.page_template ?? "standard");
+  const [icon, setIcon] = useState(product?.icon ?? "");
+  const [iconImageUrl, setIconImageUrl] = useState(product?.icon_image_url ?? "");
+  const [thumbBg, setThumbBg] = useState(product?.thumb_bg ?? "");
+  const [accentColor, setAccentColor] = useState(product?.accent_color ?? "#00e5ff");
+  const [cardGradient, setCardGradient] = useState(product?.card_gradient ?? "");
+
+  // Delivery
+  const [deliveryType, setDeliveryType] = useState<string>(product?.delivery_type ?? "code");
+  const [region, setRegion] = useState(product?.region ?? "");
+  const [requiresPlayerId, setRequiresPlayerId] = useState<boolean>(product?.requires_player_id ?? false);
+  const [idLabelAr, setIdLabelAr] = useState(product?.identifier_label_ar ?? "");
+  const [idLabelEn, setIdLabelEn] = useState(product?.identifier_label_en ?? "");
+  const [idPlaceholder, setIdPlaceholder] = useState(product?.identifier_placeholder ?? "");
+  const [delMethodAr, setDelMethodAr] = useState(product?.delivery_method_ar ?? "");
+  const [delMethodEn, setDelMethodEn] = useState(product?.delivery_method_en ?? "");
+  const [delInstrAr, setDelInstrAr] = useState(product?.delivery_instructions_ar ?? "");
+  const [delInstrEn, setDelInstrEn] = useState(product?.delivery_instructions_en ?? "");
+
   const [saving, setSaving] = useState(false);
 
-  async function save() {
+  async function save(stay = false) {
     if (!nameAr.trim() || !nameEn.trim()) { toast.error("الاسم بالعربي والإنجليزي مطلوبين"); return; }
     const finalSlug = slug.trim() || slugify(nameEn);
     if (!finalSlug) { toast.error("المعرّف مطلوب"); return; }
@@ -419,20 +492,34 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
     try {
       const payload = {
         slug: finalSlug, sku: sku.trim().toUpperCase() || null, name_ar: nameAr.trim(), name_en: nameEn.trim(),
+        tagline_ar: taglineAr.trim() || null, tagline_en: taglineEn.trim() || null,
         description_ar: descAr.trim() || null, description_en: descEn.trim() || null,
         image_url: imageUrl.trim() || null, category_id: categoryId || null,
         base_price_jod: basePrice.trim() === "" ? null : Number(basePrice),
         badge: badge.trim() || null, sort_order: sortOrder,
         is_active: isActive, is_featured: isFeatured,
+        page_template: pageTemplate as Product["page_template"],
+        icon: icon.trim() || null, icon_image_url: iconImageUrl.trim() || null,
+        thumb_bg: thumbBg.trim() || null, accent_color: accentColor.trim() || null,
+        card_gradient: cardGradient.trim() || null,
+        delivery_type: deliveryType as Product["delivery_type"],
+        region: region.trim() || null,
+        requires_player_id: requiresPlayerId,
+        identifier_label_ar: idLabelAr.trim() || null, identifier_label_en: idLabelEn.trim() || null,
+        identifier_placeholder: idPlaceholder.trim() || null,
+        delivery_method_ar: delMethodAr.trim() || null, delivery_method_en: delMethodEn.trim() || null,
+        delivery_instructions_ar: delInstrAr.trim() || null, delivery_instructions_en: delInstrEn.trim() || null,
       };
-      if (product) {
-        const { error } = await supabase.from("products").update(payload).eq("id", product.id);
+      if (savedId) {
+        const { error } = await supabase.from("products").update(payload).eq("id", savedId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("products").insert(payload);
+        const { data, error } = await supabase.from("products").insert(payload).select("id").single();
         if (error) throw error;
+        setSavedId(data.id as string);
       }
-      toast.success(product ? "تم التحديث" : "تمت الإضافة");
+      toast.success(savedId ? "تم التحديث" : "تمت الإضافة — أضف الخيارات والأسعار الآن");
+      if (stay) { setTab("variants"); return; }
       onSaved();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل الحفظ");
@@ -441,92 +528,226 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
     }
   }
 
-  async function upload(file: File) {
+  async function upload(file: File, setter: (u: string) => void) {
     const ext = file.name.split(".").pop();
     const path = `products/${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage.from("product-images").upload(path, file, { upsert: true });
     if (error) { toast.error(error.message); return; }
     const { data } = supabase.storage.from("product-images").getPublicUrl(path);
-    setImageUrl(data.publicUrl);
+    setter(data.publicUrl);
     toast.success("تم رفع الصورة");
   }
 
+  const tabs = [
+    ["basic", "المعلومات"],
+    ["template", "القالب"],
+    ["design", "الشكل"],
+    ["delivery", "التسليم"],
+    ["variants", "الخيارات والأسعار"],
+  ] as const;
+
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" dir="rtl">
+    <Dialog open onOpenChange={() => { onSaved(); onClose(); }}>
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto" dir="rtl">
         <style dangerouslySetInnerHTML={{ __html: css }} />
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShoppingBag size={17} className="text-cyan-400" /> {product ? `تعديل: ${product.name_ar}` : "منتج جديد"}
           </DialogTitle>
         </DialogHeader>
+
+        <div className="flex gap-2 flex-wrap">
+          {tabs.map(([k, label]) => (
+            <button key={k} className={`gx-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{label}</button>
+          ))}
+        </div>
+
         <div className="space-y-3">
-          <div className="gx-fieldset">
-            <div className="gx-fs-title"><Pencil size={12} /> المعلومات الأساسية</div>
-            <div className="grid md:grid-cols-2 gap-3">
-              <div><Label>الاسم (عربي)</Label><Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} className="gx-adm-input" /></div>
-              <div><Label>الاسم (English)</Label><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} className="gx-adm-input" dir="ltr" /></div>
-              <div>
-                <Label>المعرّف (slug)</Label>
-                <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={slugify(nameEn)} className="gx-adm-input" dir="ltr" />
-                <p className="text-[11px] text-cyan-100/45 mt-1">يُستخدم بالرابط وبالكوبونات</p>
+          {tab === "basic" && (
+            <>
+              <div className="gx-fieldset">
+                <div className="gx-fs-title"><Pencil size={12} /> المعلومات الأساسية</div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div><Label>الاسم (عربي)</Label><Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} className="gx-adm-input" /></div>
+                  <div><Label>الاسم (English)</Label><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} className="gx-adm-input" dir="ltr" /></div>
+                  <div>
+                    <Label>المعرّف (slug)</Label>
+                    <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={slugify(nameEn)} className="gx-adm-input" dir="ltr" />
+                    <p className="text-[11px] text-cyan-100/45 mt-1">يُستخدم بالرابط وبالكوبونات</p>
+                  </div>
+                  <div>
+                    <Label>رقم المنتج (SKU)</Label>
+                    <Input value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())} placeholder="مثال: S-3 أو FN-1000" className="gx-adm-input" dir="ltr" />
+                  </div>
+                  <div>
+                    <Label>القسم</Label>
+                    <Select value={categoryId} onValueChange={setCategoryId}>
+                      <SelectTrigger className="gx-adm-input"><SelectValue placeholder="اختر قسم" /></SelectTrigger>
+                      <SelectContent>
+                        {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>ترتيب الظهور</Label><Input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value) || 0)} className="gx-adm-input" /></div>
+                  <div><Label>عنوان جانبي (عربي)</Label><Input value={taglineAr} onChange={(e) => setTaglineAr(e.target.value)} className="gx-adm-input" placeholder="يظهر كعنوان كبير بصفحة المنتج" /></div>
+                  <div><Label>Tagline (English)</Label><Input value={taglineEn} onChange={(e) => setTaglineEn(e.target.value)} className="gx-adm-input" dir="ltr" /></div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-3 mt-3">
+                  <div><Label>الوصف (عربي)</Label><Textarea value={descAr} onChange={(e) => setDescAr(e.target.value)} rows={3} /></div>
+                  <div><Label>الوصف (English)</Label><Textarea value={descEn} onChange={(e) => setDescEn(e.target.value)} rows={3} dir="ltr" /></div>
+                </div>
               </div>
-              <div>
-                <Label>رقم المنتج (SKU)</Label>
-                <Input value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())} placeholder="مثال: S-3 أو FN-1000" className="gx-adm-input" dir="ltr" />
-                <p className="text-[11px] text-cyan-100/45 mt-1">يتولّد تلقائياً — تقدر تعدّله، وبتقدر تبحث فيه وتربطه بالكوبونات</p>
-              </div>
-              <div>
-                <Label>القسم</Label>
-                <Select value={categoryId} onValueChange={setCategoryId}>
-                  <SelectTrigger className="gx-adm-input"><SelectValue placeholder="اختر قسم" /></SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
 
-          <div className="gx-fieldset">
-            <div className="gx-fs-title"><ShoppingBag size={12} /> الصورة والوصف</div>
-            <div className="flex items-start gap-3 flex-wrap">
-              <div className="gx-prod-img" style={{ width: 92, height: 92 }}>
-                {imageUrl ? <img src={imageUrl} alt="" /> : <ShoppingBag size={30} className="text-cyan-400/40" />}
+              <div className="gx-fieldset">
+                <div className="gx-fs-title"><Layers size={12} /> السعر والعرض</div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div><Label>سعر أساسي (د.أ)</Label><Input type="number" step="0.01" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="اختياري لو في خيارات" className="gx-adm-input" /></div>
+                  <div><Label>شارة</Label><Input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="Premium / Hot / New" className="gx-adm-input" /></div>
+                </div>
+                <div className="flex gap-6 flex-wrap mt-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="accent-cyan-400 w-4 h-4" />
+                    <span className="text-sm">مفعّل (ظاهر للزبائن)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} className="accent-cyan-400 w-4 h-4" />
+                    <span className="text-sm">منتج مميّز (يظهر بالواجهة)</span>
+                  </label>
+                </div>
               </div>
-              <div className="flex-1 min-w-[220px] space-y-2">
-                <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="رابط الصورة" className="gx-adm-input" dir="ltr" />
-                <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} className="text-xs text-cyan-100/70" />
-              </div>
-            </div>
-            <div className="grid md:grid-cols-2 gap-3 mt-3">
-              <div><Label>الوصف (عربي)</Label><Textarea value={descAr} onChange={(e) => setDescAr(e.target.value)} rows={3} /></div>
-              <div><Label>الوصف (English)</Label><Textarea value={descEn} onChange={(e) => setDescEn(e.target.value)} rows={3} dir="ltr" /></div>
-            </div>
-          </div>
+            </>
+          )}
 
-          <div className="gx-fieldset">
-            <div className="gx-fs-title"><Layers size={12} /> السعر والعرض</div>
-            <div className="grid sm:grid-cols-3 gap-3">
-              <div><Label>سعر أساسي (د.أ)</Label><Input type="number" step="0.01" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="اختياري لو في خيارات" className="gx-adm-input" /></div>
-              <div><Label>شارة</Label><Input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="Premium / Hot / New" className="gx-adm-input" /></div>
-              <div><Label>ترتيب الظهور</Label><Input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value) || 0)} className="gx-adm-input" /></div>
+          {tab === "template" && (
+            <div className="gx-fieldset">
+              <div className="gx-fs-title"><Layers size={12} /> شكل صفحة المنتج</div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {TEMPLATES.map((tp) => (
+                  <button
+                    key={tp.id}
+                    type="button"
+                    onClick={() => setPageTemplate(tp.id)}
+                    className="text-right"
+                    style={{
+                      borderRadius: 14, padding: 12, cursor: "pointer",
+                      background: pageTemplate === tp.id ? "rgba(0,229,255,.09)" : "rgba(0,0,0,.28)",
+                      border: `1.5px solid ${pageTemplate === tp.id ? "rgba(0,229,255,.6)" : "rgba(255,255,255,.08)"}`,
+                    }}
+                  >
+                    <div style={{ height: 58, borderRadius: 10, background: tp.preview, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>{tp.icon}</div>
+                    <div className="mt-2 text-[13.5px] font-extrabold text-cyan-100">{tp.name}</div>
+                    <div className="text-[11.5px] text-cyan-100/55 mt-1 leading-relaxed">{tp.hint}</div>
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11.5px] text-cyan-100/50 mt-3">القالب يحدد كيف تُعرض الخيارات والأسعار بصفحة المنتج — نفس أشكال أقسام البرامج، سناب، فورتنايت، وبطاقات الهدايا.</p>
             </div>
-            <div className="flex gap-6 flex-wrap mt-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="accent-cyan-400 w-4 h-4" />
-                <span className="text-sm">مفعّل (ظاهر للزبائن)</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} className="accent-cyan-400 w-4 h-4" />
-                <span className="text-sm">منتج مميّز (يظهر بالواجهة)</span>
-              </label>
+          )}
+
+          {tab === "design" && (
+            <div className="gx-fieldset">
+              <div className="gx-fs-title"><ShoppingBag size={12} /> الصور والألوان</div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label>صورة المنتج</Label>
+                  <div className="flex items-start gap-3 mt-1">
+                    <div className="gx-prod-img" style={{ width: 82, height: 82 }}>
+                      {imageUrl ? <img src={imageUrl} alt="" /> : <ShoppingBag size={26} className="text-cyan-400/40" />}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="رابط الصورة" className="gx-adm-input" dir="ltr" />
+                      <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], setImageUrl)} className="text-xs text-cyan-100/70" />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <Label>أيقونة المنتج (صورة)</Label>
+                  <div className="flex items-start gap-3 mt-1">
+                    <div className="gx-prod-img" style={{ width: 82, height: 82 }}>
+                      {iconImageUrl ? <img src={iconImageUrl} alt="" /> : <span className="text-2xl">{icon || "✨"}</span>}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Input value={iconImageUrl} onChange={(e) => setIconImageUrl(e.target.value)} placeholder="رابط الأيقونة" className="gx-adm-input" dir="ltr" />
+                      <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], setIconImageUrl)} className="text-xs text-cyan-100/70" />
+                      <Input value={icon} onChange={(e) => setIcon(e.target.value)} placeholder="أو رمز إيموجي 🎮" className="gx-adm-input" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <Label>خلفية بطاقة المنتج</Label>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-2">
+                  {THUMB_PRESETS.map((g) => (
+                    <button key={g} type="button" onClick={() => setThumbBg(g)}
+                      style={{ height: 40, borderRadius: 10, background: g, cursor: "pointer", border: `2px solid ${thumbBg === g ? "#00e5ff" : "transparent"}` }} />
+                  ))}
+                </div>
+                <Input value={thumbBg} onChange={(e) => setThumbBg(e.target.value)} className="gx-adm-input mt-2" dir="ltr" placeholder="linear-gradient(135deg,#…,#…)" />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-3 mt-3">
+                <div>
+                  <Label>اللون المميز</Label>
+                  <div className="flex items-center gap-2">
+                    <input type="color" value={/^#/.test(accentColor) ? accentColor : "#00e5ff"} onChange={(e) => setAccentColor(e.target.value)} className="w-10 h-10 rounded-lg bg-transparent border border-cyan-400/20 cursor-pointer" />
+                    <Input value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="gx-adm-input flex-1" dir="ltr" />
+                  </div>
+                </div>
+                <div>
+                  <Label>تدرّج البطاقة (لبطاقات الهدايا)</Label>
+                  <Input value={cardGradient} onChange={(e) => setCardGradient(e.target.value)} className="gx-adm-input" dir="ltr" placeholder="linear-gradient(135deg,#…,#…)" />
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {tab === "delivery" && (
+            <div className="gx-fieldset">
+              <div className="gx-fs-title"><Globe size={12} /> التسليم والبيانات المطلوبة</div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <Label>نوع التسليم</Label>
+                  <Select value={deliveryType} onValueChange={setDeliveryType}>
+                    <SelectTrigger className="gx-adm-input"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {DELIVERY_TYPES.map((d) => <SelectItem key={d.id} value={d.id}>{d.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>المنطقة / الريجن</Label><Input value={region} onChange={(e) => setRegion(e.target.value)} className="gx-adm-input" placeholder="Global / US / EU" dir="ltr" /></div>
+                <div><Label>اسم الحقل المطلوب (عربي)</Label><Input value={idLabelAr} onChange={(e) => setIdLabelAr(e.target.value)} className="gx-adm-input" placeholder="اسم المستخدم / ID اللاعب" /></div>
+                <div><Label>Field label (English)</Label><Input value={idLabelEn} onChange={(e) => setIdLabelEn(e.target.value)} className="gx-adm-input" dir="ltr" /></div>
+                <div><Label>نص توضيحي داخل الحقل</Label><Input value={idPlaceholder} onChange={(e) => setIdPlaceholder(e.target.value)} className="gx-adm-input" dir="ltr" /></div>
+                <label className="flex items-center gap-2 cursor-pointer mt-6">
+                  <input type="checkbox" checked={requiresPlayerId} onChange={(e) => setRequiresPlayerId(e.target.checked)} className="accent-cyan-400 w-4 h-4" />
+                  <span className="text-sm">يتطلب ID اللاعب قبل الشراء</span>
+                </label>
+                <div><Label>طريقة التسليم (عربي)</Label><Input value={delMethodAr} onChange={(e) => setDelMethodAr(e.target.value)} className="gx-adm-input" placeholder="تسليم فوري بعد الدفع" /></div>
+                <div><Label>Delivery method (English)</Label><Input value={delMethodEn} onChange={(e) => setDelMethodEn(e.target.value)} className="gx-adm-input" dir="ltr" /></div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-3 mt-3">
+                <div><Label>تعليمات التسليم (عربي)</Label><Textarea value={delInstrAr} onChange={(e) => setDelInstrAr(e.target.value)} rows={3} /></div>
+                <div><Label>Delivery instructions (English)</Label><Textarea value={delInstrEn} onChange={(e) => setDelInstrEn(e.target.value)} rows={3} dir="ltr" /></div>
+              </div>
+            </div>
+          )}
+
+          {tab === "variants" && (
+            savedId ? (
+              <VariantsPanel productId={savedId} productSlug={slug.trim() || slugify(nameEn)} />
+            ) : (
+              <div className="text-center py-10 text-cyan-100/60 border border-dashed border-cyan-400/20 rounded-xl">
+                احفظ المنتج أولاً ثم أضف الخيارات والأسعار.
+                <div className="mt-3"><button className="gx-btn primary" onClick={() => save(true)} disabled={saving}>حفظ ومتابعة</button></div>
+              </div>
+            )
+          )}
 
           <div className="flex justify-end gap-2 pt-1">
-            <button className="gx-btn outline" onClick={onClose}>إلغاء</button>
-            <button className="gx-btn primary" onClick={save} disabled={saving}>{saving ? "جاري الحفظ..." : "حفظ المنتج"}</button>
+            <button className="gx-btn outline" onClick={() => { onSaved(); onClose(); }}>إغلاق</button>
+            {tab !== "variants" && <button className="gx-btn outline" onClick={() => save(true)} disabled={saving}>حفظ ومتابعة للخيارات</button>}
+            <button className="gx-btn primary" onClick={() => save(false)} disabled={saving}>{saving ? "جاري الحفظ..." : "حفظ المنتج"}</button>
           </div>
         </div>
       </DialogContent>
@@ -534,6 +755,79 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
 
   );
 }
+
+/** Inline variants editor — used inside the product dialog. */
+function VariantsPanel({ productId, productSlug }: { productId: string; productSlug: string }) {
+  const qc = useQueryClient();
+  const [editingVariant, setEditingVariant] = useState<Variant | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [managingCountry, setManagingCountry] = useState<Variant | null>(null);
+
+  const q = useQuery({
+    queryKey: ["admin-variants", productId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("product_variants").select("*").eq("product_id", productId).order("sort_order").order("price_jod");
+      if (error) throw error;
+      return (data ?? []) as Variant[];
+    },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("product_variants").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تم الحذف"); qc.invalidateQueries({ queryKey: ["admin-variants", productId] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="gx-fieldset space-y-3">
+      <div className="gx-fs-title"><Layers size={12} /> الخيارات والأسعار (مدد / فئات / باقات)</div>
+      <button className="gx-btn primary" onClick={() => setAdding(true)}><Plus size={12} /> خيار جديد</button>
+
+      {q.isLoading ? (
+        <div className="text-center py-6 text-cyan-100/60">جاري التحميل...</div>
+      ) : (q.data ?? []).length === 0 ? (
+        <div className="text-center py-6 text-cyan-100/60 border border-dashed border-cyan-400/20 rounded-lg">
+          لا يوجد خيارات. أضف مثلاً: شهر / 3 شهور / سنة — أو 25$ / 50$ / 100$.
+        </div>
+      ) : (q.data ?? []).map((v) => (
+        <div key={v.id} className="gx-variant">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <div className="font-bold text-cyan-100">{v.label_ar} <span className="text-xs text-cyan-100/60">/ {v.label_en}</span></div>
+              <div className="text-xs text-cyan-100/70 mt-1 flex flex-wrap gap-2 items-center">
+                <span className="gx-price">{Number(v.price_jod).toFixed(2)} د.أ</span>
+                {v.old_price_jod ? <span className="line-through opacity-60">{Number(v.old_price_jod).toFixed(2)}</span> : null}
+                {v.plan_group && <span className="gx-pill">{v.plan_group}</span>}
+                {v.cart_id && <span className="gx-pill" dir="ltr">{v.cart_id}</span>}
+                {!v.is_active && <span className="gx-badge-off">مخفي</span>}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button className="gx-btn outline" onClick={() => setManagingCountry(v)}><Globe size={12} /> أسعار الدول</button>
+              <button className="gx-btn outline" onClick={() => setEditingVariant(v)}><Pencil size={12} /></button>
+              <button className="gx-btn danger" onClick={() => { if (confirm(`حذف "${v.label_ar}"؟`)) deleteMut.mutate(v.id); }}><Trash2 size={12} /></button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {(editingVariant || adding) && (
+        <VariantForm
+          variant={editingVariant}
+          productId={productId}
+          productSlug={productSlug}
+          onClose={() => { setEditingVariant(null); setAdding(false); }}
+          onSaved={() => { setEditingVariant(null); setAdding(false); qc.invalidateQueries({ queryKey: ["admin-variants", productId] }); }}
+        />
+      )}
+      {managingCountry && <CountryPricesDialog variant={managingCountry} onClose={() => setManagingCountry(null)} />}
+    </div>
+  );
+}
+
 
 function VariantsDialog({ product, onClose }: { product: Product; onClose: () => void }) {
   const qc = useQueryClient();
