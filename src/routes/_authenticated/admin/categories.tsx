@@ -692,17 +692,31 @@ function CategoryDialog({
           </div>
 
           {/* Theme */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2"><Palette size={13} /> الثيم واللون</Label>
-            <div className="gx-grad-grid">
-              {PRESET_GRADIENTS.map((g) => (
-                <button key={g.value} type="button" onClick={() => setThemeGradient(g.value)}
-                  className={`gx-grad ${themeGradient === g.value ? "selected" : ""}`}
-                  style={{ background: g.value }}>
-                  {g.label}
-                </button>
-              ))}
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2"><Palette size={13} /> ثيم القسم — اختر شكل جاهز</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {CATEGORY_THEMES.map((th) => {
+                const on = themeGradient === th.gradient;
+                return (
+                  <button
+                    key={th.id}
+                    type="button"
+                    onClick={() => { setThemeGradient(th.gradient); setAccentColor(th.accent); setThemeColor(th.accent); if (!emoji) setEmoji(th.icon); }}
+                    className="text-right"
+                    style={{
+                      borderRadius: 14, padding: 8, cursor: "pointer",
+                      background: on ? "rgba(0,229,255,.08)" : "rgba(0,0,0,.28)",
+                      border: `1.5px solid ${on ? "rgba(0,229,255,.65)" : "rgba(255,255,255,.08)"}`,
+                    }}
+                  >
+                    <div style={{ height: 54, borderRadius: 10, background: th.gradient, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>{th.icon}</div>
+                    <div className="mt-2 text-[12.5px] font-extrabold text-cyan-100">{th.label}</div>
+                    <div className="text-[10.5px] text-cyan-100/55 leading-relaxed">{th.hint}</div>
+                  </button>
+                );
+              })}
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">تدرّج مخصص (CSS)</Label>
@@ -711,10 +725,37 @@ function CategoryDialog({
               <div>
                 <Label className="text-xs">اللون الأساسي</Label>
                 <div className="flex items-center gap-2">
-                  <input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="w-10 h-10 rounded-lg bg-transparent border border-cyan-400/20 cursor-pointer" />
+                  <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(accentColor) ? accentColor : "#00e5ff"} onChange={(e) => { setAccentColor(e.target.value); setThemeColor(e.target.value); }} className="w-10 h-10 rounded-lg bg-transparent border border-cyan-400/20 cursor-pointer" />
                   <Input value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="gx-adm-input flex-1" dir="ltr" />
                 </div>
               </div>
+              <div>
+                <Label className="text-xs">رمز القسم (إيموجي)</Label>
+                <Input value={emoji} onChange={(e) => setEmoji(e.target.value)} className="gx-adm-input" placeholder="🎮" />
+              </div>
+              <div>
+                <Label className="text-xs">لون الثيم الثانوي</Label>
+                <Input value={themeColor} onChange={(e) => setThemeColor(e.target.value)} className="gx-adm-input" dir="ltr" placeholder="#00e5ff" />
+              </div>
+              <div>
+                <Label className="text-xs">عنوان جانبي (عربي)</Label>
+                <Input value={taglineAr} onChange={(e) => setTaglineAr(e.target.value)} className="gx-adm-input" placeholder="كل ألعابك بمكان واحد" />
+              </div>
+              <div>
+                <Label className="text-xs">Tagline (English)</Label>
+                <Input value={taglineEn} onChange={(e) => setTaglineEn(e.target.value)} className="gx-adm-input" dir="ltr" />
+              </div>
+            </div>
+
+            {/* Live preview */}
+            <div style={{ borderRadius: 16, padding: 16, background: themeGradient, color: "#00131a" }}>
+              <div style={{ fontSize: 22 }}>{emoji || "✨"}</div>
+              <div style={{ fontWeight: 900, fontSize: 16, marginTop: 4 }}>{nameAr || "اسم القسم"}</div>
+              <div style={{ fontSize: 12, opacity: .8 }}>{taglineAr || taglineEn || "معاينة شكل القسم"}</div>
+            </div>
+          </div>
+
+
             </div>
           </div>
 
