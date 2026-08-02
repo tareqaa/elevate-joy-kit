@@ -89,6 +89,14 @@ const css = `
 .gx-ord{display:flex;flex-direction:column;gap:2px}
 .gx-ord button{background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.18);color:#00e5ff;border-radius:6px;width:22px;height:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .gx-ord button:disabled{opacity:.25;cursor:not-allowed}
+.gx-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:linear-gradient(180deg,rgba(16,24,32,.7),rgba(10,15,22,.8));border:1px solid rgba(0,229,255,.12);border-radius:14px;padding:10px 12px}
+.gx-segment{display:flex;gap:2px;background:rgba(0,0,0,.32);padding:4px;border-radius:10px;border:1px solid rgba(255,255,255,.06)}
+.gx-seg{padding:7px 12px;border-radius:8px;background:transparent;border:none;color:#7d92a8;font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.gx-seg.active{background:rgba(0,229,255,.12);color:#00e5ff}
+.gx-row-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.gx-chip.off{background:rgba(255,80,80,.12);color:#ff9a9a;border:1px solid rgba(255,80,80,.3)}
+.gx-empty{text-align:center;padding:56px 16px;color:#7d92a8;border:1px dashed rgba(0,229,255,.18);border-radius:16px}
+@media(max-width:640px){.gx-row-inner{flex-wrap:wrap}.gx-row-actions{width:100%;justify-content:flex-end}}
 `;
 
 
@@ -110,7 +118,6 @@ function CategoriesAdmin() {
   const [creating, setCreating] = useState<{ parentId: string | null } | null>(null);
   const [managingProducts, setManagingProducts] = useState<Category | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [tab, setTab] = useState<"tree" | "flat">("tree");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "hidden" | "main">("all");
 
@@ -444,7 +451,7 @@ function TreeNode({
               <DropdownMenuTrigger asChild>
                 <button className="gx-btn ghost" aria-label="خيارات أخرى"><MoreHorizontal size={14} /></button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" dir="rtl" className="min-w-44">
+              <DropdownMenuContent align="end" className="min-w-44 text-right">
                 {canHaveChildren && (
                   <DropdownMenuItem onSelect={() => onAddChild(node.id)}>
                     <FolderPlus size={13} className="ms-1" /> إضافة قسم فرعي
