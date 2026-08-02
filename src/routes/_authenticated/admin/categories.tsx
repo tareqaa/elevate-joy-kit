@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +14,11 @@ import { CategoryProducts } from "@/components/gx/admin/ProductsManager";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
   head: () => ({ meta: [{ title: "الأقسام — لوحة التحكم" }] }),
-  component: CategoriesAdmin,
+  // Catalog management now lives in a single place: /admin/products
+  beforeLoad: () => {
+    throw redirect({ to: "/admin/products", search: { tab: "categories" } as never });
+  },
+  component: () => null,
 });
 
 type Category = {
@@ -112,7 +116,7 @@ function norm(s: string) {
     .trim();
 }
 
-function CategoriesAdmin() {
+export function CategoriesManager() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Category | null>(null);
   const [creating, setCreating] = useState<{ parentId: string | null } | null>(null);
