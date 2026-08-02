@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { getCatalogCategory } from "@/lib/gx/catalog.functions";
+import type { CatalogCategoryChild } from "@/lib/gx/catalog.functions";
 import { useLang } from "@/lib/gx/i18n";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
@@ -57,7 +58,7 @@ function CategoryPage() {
       <section className="section">
         <div className="wrap">
           <div className="subcat-grid">
-            {category.children.map((s) => {
+            {category.children.map((s: CatalogCategoryChild) => {
               const name = pick(s.nameAr, s.nameEn);
               const iconInner = s.iconImage ? (
                 <img src={s.iconImage} alt={name} style={{ width: 44, height: 44, objectFit: "contain", filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.35))" }} />
