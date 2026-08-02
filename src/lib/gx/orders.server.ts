@@ -160,11 +160,13 @@ export async function createStoreOrder(input: CreateOrderInput) {
   // Nothing money-related from the client is trusted. Every line is re-priced
   // from the catalog + live overrides, and the total is rebuilt from scratch.
   const rawItems = Array.isArray(input.items) ? (input.items as unknown as any[]) : [];
-  const [overrides, isAdmin] = await Promise.all([
+  const [overrides, isAdmin, basePrices] = await Promise.all([
     loadCatalogPriceOverrides(supabase),
     isAdminUser(supabase, input.userId),
+    loadDbBasePrices(supabase, rawItems.map((it) => String(it?.cartId ?? ""))),
   ]);
-  const priced = priceCartItems(rawItems, overrides, { allowCustom: isAdmin });
+  const priced = priceCartItems(rawItems, overrides, { allowCustom: isAdmin, basePrices });
+
   const subtotal = priced.subtotal;
 
   // Rewrite the stored line prices with the verified ones.
