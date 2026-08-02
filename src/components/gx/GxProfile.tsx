@@ -342,34 +342,23 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
 
                 {isOwner && (
                   <>
-                    {/* Avatars — only place avatars can be picked */}
+                    {/* Avatars — flat gallery, no tiers or names */}
                     <div className="gxp-card">
-                      <h3 className="gxp-h">{isAr ? "شخصيات الأفاتار" : "Avatar characters"}</h3>
-                      <div className="gxp-cols">
-                        {(avatarsQ.data ?? []).map((col) => {
-                          const need = levels.find((l) => l.code === col.required_level_code);
-                          const unlocked = (need?.sort_order ?? 0) <= currentSort;
-                          return (
-                            <div key={col.id}>
-                              <div className="gxp-col-head">
-                                <b>{isAr ? col.name_ar : col.name_en}</b>
-                                {!unlocked && <span className="t lock"><GxIcon name="lock" size={12} /> {levelName(need, lang)}</span>}
-                              </div>
-                              <div className="gxp-avs">
-                                {col.avatars.map((a) => (
-                                  <button key={a.id} type="button" disabled={!unlocked}
-                                    onClick={() => pickAvatar(a.image_url, a.id, col.border_css)}
-                                    className={`gxp-avbtn${!unlocked ? " off" : ""}${p.avatar_url === a.image_url ? " sel" : ""}`}
-                                    title={a.name}>
-                                    <img src={a.image_url} alt={a.name} loading="lazy" />
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
+                      <h3 className="gxp-h">{isAr ? "الصورة الشخصية" : "Profile picture"}</h3>
+                      <div className="gxp-avs">
+                        {(avatarsQ.data ?? []).flatMap((col) =>
+                          col.avatars.map((a) => (
+                            <button key={a.id} type="button"
+                              onClick={() => pickAvatar(a.image_url, a.id, col.border_css)}
+                              className={`gxp-avbtn${p.avatar_url === a.image_url ? " sel" : ""}`}
+                              aria-label={isAr ? "اختيار الصورة" : "Select avatar"}>
+                              <img src={a.image_url} alt="" loading="lazy" />
+                            </button>
+                          )),
+                        )}
                       </div>
                     </div>
+
 
                     {/* Coupons */}
                     <div className="gxp-card">
