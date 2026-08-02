@@ -547,7 +547,11 @@ function CategoryDialog({
   const [parentId, setParentId] = useState<string>(category?.parent_id ?? defaultParentId ?? "__root__");
   const [isMain, setIsMain] = useState<boolean>(category?.is_main ?? (defaultParentId === null && !category));
   const [accentColor, setAccentColor] = useState<string>(category?.accent_color ?? "#00e5ff");
+  const [themeColor, setThemeColor] = useState<string>(category?.theme_color ?? "");
   const [themeGradient, setThemeGradient] = useState<string>(category?.theme_gradient ?? PRESET_GRADIENTS[0].value);
+  const [emoji, setEmoji] = useState<string>(category?.icon ?? "");
+  const [taglineAr, setTaglineAr] = useState(category?.tagline_ar ?? "");
+  const [taglineEn, setTaglineEn] = useState(category?.tagline_en ?? "");
   const [descAr, setDescAr] = useState(category?.description_ar ?? "");
   const [descEn, setDescEn] = useState(category?.description_en ?? "");
   const [saving, setSaving] = useState(false);
