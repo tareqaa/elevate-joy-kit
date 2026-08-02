@@ -164,7 +164,9 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
     queryKey: ["my-level-coupons", myId],
     queryFn: async () => {
       const { data, error } = await supabase.from("user_coupons").select("*")
-        .eq("user_id", myId!).order("created_at", { ascending: false });
+        .eq("user_id", myId!)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },

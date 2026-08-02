@@ -25,6 +25,7 @@ export function LoyaltyTab({ userId }: { userId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_coupons").select("*").eq("user_id", userId)
+        .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
