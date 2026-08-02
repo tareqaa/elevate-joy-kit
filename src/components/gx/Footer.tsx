@@ -54,6 +54,7 @@ export function Footer() {
             <Link to="/cart">{t("nav.cart")}</Link>
             <Link to="/faq">{t("nav.faq")}</Link>
             <Link to="/policy">{t("nav.policy")}</Link>
+            <Link to="/privacy-policy">{lang === "en" ? "Privacy Policy" : "سياسة الخصوصية"}</Link>
           </div>
           <div className="footer-col">
             <h5>{t("footer.contact")}</h5>
