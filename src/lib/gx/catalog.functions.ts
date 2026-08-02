@@ -25,6 +25,15 @@ export type CatalogVariant = {
   deliveryType: string | null;
 };
 
+export type DeliveryBlockCopy = {
+  intro?: string;
+  requirements?: string[];
+  safety?: string[];
+  platformNotes?: string[];
+};
+
+export type DeliveryDetails = { ar?: DeliveryBlockCopy; en?: DeliveryBlockCopy };
+
 export type CatalogFeature = {
   icon: string | null;
   titleAr: string;
@@ -53,7 +62,7 @@ export type CatalogProduct = {
   identifierPlaceholder: string | null;
   deliveryMethodAr: string | null;
   deliveryMethodEn: string | null;
-  deliveryDetails: Record<string, unknown> | null;
+  deliveryDetails: DeliveryDetails | null;
   pageTemplate: string;
   deliveryType: string;
   region: string | null;
@@ -173,7 +182,7 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
       deliveryMethodEn: p.delivery_method_en ?? null,
       deliveryDetails:
         p.delivery_details && typeof p.delivery_details === "object" && !Array.isArray(p.delivery_details)
-          ? (p.delivery_details as Record<string, unknown>)
+          ? (p.delivery_details as DeliveryDetails)
           : null,
       pageTemplate: p.page_template ?? "standard",
       deliveryType: p.delivery_type ?? "manual",
