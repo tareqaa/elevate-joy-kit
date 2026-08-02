@@ -203,40 +203,26 @@ export function LoyaltyTab({ userId }: { userId: string }) {
 
       {/* Avatars */}
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-base">{isAr ? "مجموعات الأفاتار" : "Avatar collections"}</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          {(avatarsQ.data ?? []).map((col) => {
-            const need = levels.find((l) => l.code === col.required_level_code);
-            const unlocked = (need?.sort_order ?? 0) <= currentSort;
-            return (
-              <div key={col.id}>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="text-sm font-bold">{isAr ? col.name_ar : col.name_en}</div>
-                  {!unlocked && (
-                    <Badge variant="outline" className="text-[10px] gap-1">
-                      <Lock className="w-3 h-3" /> {levelName(need, lang)}
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {col.avatars.map((a) => (
-                    <button
-                      key={a.id}
-                      type="button"
-                      disabled={!unlocked}
-                      onClick={() => pickAvatar(a.image_url, a.id, col.border_css)}
-                      className={`w-14 h-14 rounded-full overflow-hidden border-2 transition ${unlocked ? "border-white/15 hover:border-primary hover:scale-105" : "border-white/5 opacity-40 cursor-not-allowed"}`}
-                      title={a.name}
-                    >
-                      <img src={a.image_url} alt={a.name} className="w-full h-full object-cover" loading="lazy" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+        <CardHeader className="pb-2"><CardTitle className="text-base">{isAr ? "الصورة الشخصية" : "Profile picture"}</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {(avatarsQ.data ?? []).flatMap((col) =>
+              col.avatars.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => pickAvatar(a.image_url, a.id, col.border_css)}
+                  className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/15 hover:border-primary hover:scale-105 transition"
+                  aria-label={isAr ? "اختيار الصورة" : "Select avatar"}
+                >
+                  <img src={a.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                </button>
+              )),
+            )}
+          </div>
         </CardContent>
       </Card>
+
     </div>
   );
 }
