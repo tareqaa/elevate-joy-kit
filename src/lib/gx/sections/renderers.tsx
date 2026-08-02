@@ -10,7 +10,7 @@ import { ProductIcon, CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
 import { BuyActions } from "@/components/gx/BuyActions";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-locale";
-import { useHiddenCategorySlugs } from "@/lib/gx/category-visibility";
+import { useStorefrontCategories } from "@/lib/gx/category-visibility";
 import { supabase } from "@/integrations/supabase/client";
 import { initialOf, avatarColorFor } from "@/lib/gx/reviews";
 import { translateTexts } from "@/lib/gx/translate.functions";
@@ -287,12 +287,12 @@ export function CarouselRenderer({ data }: { data: CarouselData }) {
 export function CategoriesRenderer({ data }: { data: CategoriesData }) {
   const { t, lang } = useLang();
   const overrides = data.overrides || {};
-  const hiddenCats = useHiddenCategorySlugs();
-  const links = CATEGORY_LINKS
+  const databaseCategories = useStorefrontCategories();
+  const links = databaseCategories
     .map((c) => {
       const meta = overrides[c.slug] || {};
-      if (meta.hidden || hiddenCats.has(c.slug)) return null;
-      return { ...c, _o_name: meta.name, _o_desc: meta.desc, _o_accent: meta.accent, _sort: typeof meta.sort === "number" ? meta.sort : 999 };
+      if (meta.hidden) return null;
+      return { ...c, _o_name: meta.name, _o_desc: meta.desc, _o_accent: meta.accent, _sort: typeof meta.sort === "number" ? meta.sort : c.sortOrder };
     })
     .filter((x): x is NonNullable<typeof x> => !!x)
     .sort((a, b) => a._sort - b._sort);
@@ -304,14 +304,17 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
         </div>
         <div className="cat-grid-big">
           {links.map(c0 => {
-            const c = localizedCategoryLink(c0, lang);
-            const name = c0._o_name || c.name;
-            const desc = c0._o_desc || c.desc;
-            const accent = c0._o_accent || c.accent;
+            const name = c0._o_name || (lang === "en" ? c0.nameEn || c0.nameAr : c0.nameAr || c0.nameEn);
+            const desc = c0._o_desc || (lang === "en" ? c0.descriptionEn || c0.descriptionAr : c0.descriptionAr || c0.descriptionEn);
+            const accent = c0._o_accent || c0.accent;
             return (
-              <Link key={c.slug} to={getCategoryLink(c.slug) as never} className="cat-card-big" style={{ ["--accent" as string]: accent } as React.CSSProperties}>
+              <Link key={c0.slug} to={getCategoryLink(c0.slug) as never} className="cat-card-big" style={{ ["--accent" as string]: accent } as React.CSSProperties}>
                 <div className="ccb-top">
-                  {c.slug === "design" ? (
+                  {c0.iconImage ? (
+                    <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>
+                      <img src={c0.iconImage} alt="" style={{ width: "70%", height: "70%", objectFit: "contain" }} />
+                    </div>
+                  ) : c0.slug === "design" ? (
                     <div className="app-icon-grid">
                       <span style={{ background: "linear-gradient(135deg,#3b7bf6,#1e4fd1)" }}>Ps</span>
                       <span style={{ background: "linear-gradient(135deg,#ff7a3d,#e0402a)" }}>Ai</span>
@@ -319,7 +322,7 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
                       <span style={{ background: "linear-gradient(135deg,#22c1a8,#0e7a6a)" }}>Id</span>
                     </div>
                   ) : (
-                    <div className="cat-ic" style={{ background: c.bg, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>{c.icon}</div>
+                    <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>{c0.icon}</div>
                   )}
                   <div className="ccb-glow" style={{ background: accent }} />
                 </div>

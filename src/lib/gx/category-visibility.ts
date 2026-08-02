@@ -6,9 +6,66 @@
  * `categories.is_active` must disappear from those menus instead of leading
  * to a 404 page.
  */
-import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+
+export type StorefrontCategory = {
+  slug: string;
+  nameAr: string;
+  nameEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  icon: string;
+  iconImage: string | null;
+  accent: string;
+  background: string;
+  sortOrder: number;
+};
+
+/** Active root categories used by the homepage. New admin categories appear here automatically. */
+export function useStorefrontCategories(): StorefrontCategory[] {
+  const queryClient = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["storefront-root-categories"],
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("categories")
+        .select("slug,name_ar,name_en,description_ar,description_en,icon,icon_url,accent_color,theme_gradient,sort_order")
+        .is("parent_id", null)
+        .eq("is_main", true)
+        .eq("is_active", true)
+        .order("sort_order");
+      if (error) throw error;
+      return (rows ?? []).map((row) => ({
+        slug: row.slug,
+        nameAr: row.name_ar,
+        nameEn: row.name_en,
+        descriptionAr: row.description_ar ?? "",
+        descriptionEn: row.description_en ?? "",
+        icon: row.icon ?? "◈",
+        iconImage: row.icon_url,
+        accent: row.accent_color ?? "var(--cyan)",
+        background: row.theme_gradient ?? "var(--surface-2)",
+        sortOrder: row.sort_order,
+      })) as StorefrontCategory[];
+    },
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("storefront-root-categories-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["storefront-root-categories"] });
+        queryClient.invalidateQueries({ queryKey: ["storefront-category-visibility"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
+  return data ?? [];
+}
 
 export function useHiddenCategorySlugs(): Set<string> {
   const { data } = useQuery({
