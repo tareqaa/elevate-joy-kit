@@ -756,8 +756,6 @@ function CategoryDialog({
           </div>
 
 
-            </div>
-          </div>
 
           {/* Options */}
           <div className="grid grid-cols-3 gap-3 pt-2 border-t border-white/5">
