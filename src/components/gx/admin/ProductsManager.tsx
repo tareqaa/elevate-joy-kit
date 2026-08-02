@@ -14,16 +14,31 @@ type Category = { id: string; name_ar: string; name_en: string };
 type Product = {
   id: string; category_id: string | null; slug: string; sku: string | null;
   name_ar: string; name_en: string;
+  tagline_ar: string | null; tagline_en: string | null;
   description_ar: string | null; description_en: string | null;
   image_url: string | null; base_price_jod: number | null;
   badge: string | null; purchases_count: number;
   is_featured: boolean; is_active: boolean; sort_order: number;
+  page_template: "standard" | "multi_account" | "dual_plans" | "gift_card";
+  icon: string | null; icon_image_url: string | null;
+  thumb_bg: string | null; accent_color: string | null; card_gradient: string | null;
+  delivery_type: "code" | "account" | "topup" | "manual";
+  region: string | null; requires_player_id: boolean;
+  identifier_label_ar: string | null; identifier_label_en: string | null;
+  identifier_placeholder: string | null;
+  delivery_method_ar: string | null; delivery_method_en: string | null;
+  delivery_instructions_ar: string | null; delivery_instructions_en: string | null;
 };
 type Variant = {
   id: string; product_id: string; label_ar: string; label_en: string;
-  price_jod: number; face_value: number | null; face_currency: string | null;
+  price_jod: number; old_price_jod: number | null;
+  face_value: number | null; face_currency: string | null;
+  tag_ar: string | null; tag_en: string | null;
+  plan_group: string | null; region: string | null; cart_id: string | null;
+  delivery_type: "code" | "account" | "topup" | "manual" | null;
   is_active: boolean; sort_order: number;
 };
+
 type CountryPrice = {
   id: string; variant_id: string; country_code: string; currency: string;
   price_local: number; price_jod: number | null;
