@@ -51,17 +51,19 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
   async function google() {
     setMsg({ text: "..." });
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin + "/",
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin + "/",
+          queryParams: { prompt: "select_account" },
+        },
       });
-      if (result.error) return setMsg({ text: (result.error as Error).message || "Google sign-in failed" });
-      if (result.redirected) return;
-      setMsg({ text: t("auth.signed_in_ok"), ok: true });
-      setTimeout(() => { onClose(); window.location.reload(); }, 400);
+      if (error) setMsg({ text: error.message || "Google sign-in failed" });
     } catch (err) {
       setMsg({ text: (err as Error).message || "Google sign-in failed" });
     }
   }
+
 
 
   return (

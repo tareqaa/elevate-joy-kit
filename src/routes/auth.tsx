@@ -76,11 +76,16 @@ function AuthPage() {
 
   async function handleGoogle() {
     setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
-    if (result.error) { setLoading(false); toast.error(result.error.message); return; }
-    if (result.redirected) return;
-    navigate({ to: "/account" });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/account`,
+        queryParams: { prompt: "select_account" },
+      },
+    });
+    if (error) { setLoading(false); toast.error(error.message); }
   }
+
 
   return (
     <div className="gx-auth-root">
