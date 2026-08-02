@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { useLang } from "@/lib/gx/i18n";
 
 export function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
