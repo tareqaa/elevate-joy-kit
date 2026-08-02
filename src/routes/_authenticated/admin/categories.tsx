@@ -283,16 +283,10 @@ function CategoriesAdmin() {
             <FolderTree size={22} className="text-cyan-400" /> الأقسام
           </h1>
           <p className="text-sm text-cyan-100/60 mt-1">
-            بنية هرمية حتى 3 مستويات — قسم رئيسي (يظهر بالواجهة) → فرعي → فرعي داخلي. اختر ثيماً ولوناً لكل قسم.
+            القسم الرئيسي يظهر في قائمة المتجر — إخفاؤه يزيله من القائمة مباشرة.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {tab === "tree" && (
-            <>
-              <button className="gx-btn ghost" onClick={expandAll}>توسيع الكل</button>
-              <button className="gx-btn ghost" onClick={collapseAll}>طيّ الكل</button>
-            </>
-          )}
           <button className="gx-btn primary" onClick={() => setCreating({ parentId: null })}>
             <Plus size={13} /> قسم رئيسي جديد
           </button>
