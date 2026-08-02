@@ -1016,6 +1016,9 @@ export type Database = {
       product_variants: {
         Row: {
           created_at: string
+          delivery_type:
+            | Database["public"]["Enums"]["product_delivery_type"]
+            | null
           face_currency: string | null
           face_value: number | null
           id: string
@@ -1026,6 +1029,7 @@ export type Database = {
           plan_group: string | null
           price_jod: number
           product_id: string
+          region: string | null
           sort_order: number
           tag_ar: string | null
           tag_en: string | null
@@ -1033,6 +1037,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delivery_type?:
+            | Database["public"]["Enums"]["product_delivery_type"]
+            | null
           face_currency?: string | null
           face_value?: number | null
           id?: string
@@ -1043,6 +1050,7 @@ export type Database = {
           plan_group?: string | null
           price_jod: number
           product_id: string
+          region?: string | null
           sort_order?: number
           tag_ar?: string | null
           tag_en?: string | null
@@ -1050,6 +1058,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delivery_type?:
+            | Database["public"]["Enums"]["product_delivery_type"]
+            | null
           face_currency?: string | null
           face_value?: number | null
           id?: string
@@ -1060,6 +1071,7 @@ export type Database = {
           plan_group?: string | null
           price_jod?: number
           product_id?: string
+          region?: string | null
           sort_order?: number
           tag_ar?: string | null
           tag_en?: string | null
