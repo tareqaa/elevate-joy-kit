@@ -591,7 +591,11 @@ function CategoryDialog({
         parent_id: parentId === "__root__" ? null : parentId,
         is_main: parentId === "__root__" ? isMain : false,
         accent_color: accentColor || null,
+        theme_color: themeColor || accentColor || null,
         theme_gradient: themeGradient || null,
+        icon: emoji.trim() || null,
+        tagline_ar: taglineAr.trim() || null,
+        tagline_en: taglineEn.trim() || null,
         description_ar: descAr.trim() || null,
         description_en: descEn.trim() || null,
       };
