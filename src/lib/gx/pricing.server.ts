@@ -54,19 +54,44 @@ export async function loadCatalogPriceOverrides(
 }
 
 /**
- * Re-prices every cart line from trusted sources.
- * Throws when a line cannot be resolved (unknown cartId) or when a custom
- * (client-priced) line is present but not allowed.
+ * Loads the authoritative base prices for the given cart ids straight from
+ * `product_variants` (active variants of active products only).
+ */
+export async function loadDbBasePrices(
+  supabase: SupabaseClient<any, any, any>,
+  cartIds: string[],
+): Promise<Map<string, number>> {
+  const ids = Array.from(new Set(cartIds.filter(Boolean)));
+  const out = new Map<string, number>();
+  if (ids.length === 0) return out;
+  const { data, error } = await supabase
+    .from("product_variants")
+    .select("cart_id, price_jod, is_active, products!inner(is_active)")
+    .in("cart_id", ids)
+    .eq("is_active", true);
+  if (error) throw new Error("تعذّر التحقق من الأسعار، حاول مرة أخرى");
+  for (const row of (data ?? []) as Record<string, any>[]) {
+    if (row.products?.is_active === false) continue;
+    if (row.cart_id) out.set(String(row.cart_id), Number(row.price_jod) || 0);
+  }
+  return out;
+}
+
+/**
+ * Re-prices every cart line from trusted sources (database prices + admin
+ * overrides). Throws when a line cannot be resolved (unknown cartId) or when
+ * a custom (client-priced) line is present but not allowed.
  */
 export function priceCartItems(
   items: IncomingItem[],
   overrides: Record<string, { price?: number }>,
-  opts: { allowCustom: boolean },
+  opts: { allowCustom: boolean; basePrices: Map<string, number> },
 ): PricingResult {
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error("السلة فارغة");
   }
 
+  const basePrices = opts.basePrices;
   const lines: PricedLine[] = [];
   let subtotal = 0;
 
@@ -79,13 +104,13 @@ export function priceCartItems(
       throw new Error("كمية غير صالحة في السلة");
     }
 
-    const isCustom = cartId.startsWith("custom-") || !BASE_PRICES.has(cartId);
+    const isCustom = cartId.startsWith("custom-") || !basePrices.has(cartId);
     let unitPrice: number;
 
-    if (BASE_PRICES.has(cartId)) {
+    if (basePrices.has(cartId)) {
       const override = overrides?.[cartId];
       const o = typeof override?.price === "number" && override.price >= 0 ? override.price : null;
-      unitPrice = o ?? (BASE_PRICES.get(cartId) as number);
+      unitPrice = o ?? (basePrices.get(cartId) as number);
     } else {
       // Unknown cartId — only an admin may push a hand-priced (custom) line.
       if (!opts.allowCustom) {
@@ -104,6 +129,7 @@ export function priceCartItems(
 
   return { lines, subtotal: roundJod(subtotal) };
 }
+
 
 /** True when the given user has the admin role. */
 export async function isAdminUser(
