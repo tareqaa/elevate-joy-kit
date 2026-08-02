@@ -102,15 +102,11 @@ const AR = {
       body: "نستخدم الكوكيز والتخزين المحلي في المتصفح لأغراض أساسية: إبقاء تسجيل الدخول فعّالًا، حفظ محتويات السلة، وتذكّر اللغة والعملة المفضلة لديك. يمكنك حذفها من إعدادات متصفحك، مع العلم أن بعض وظائف الموقع قد تتوقف عن العمل.",
     },
     {
-      id: "children", icon: "👤", title: "٧. حسابات القاصرين",
-      body: "المتجر موجّه للمستخدمين البالغين أو لمن يستخدمه بإشراف ولي الأمر. إذا تبيّن أننا جمعنا بيانات من قاصر دون إذن، نحذفها فور إبلاغنا.",
-    },
-    {
-      id: "changes", icon: "🔄", title: "٨. تحديثات السياسة",
+      id: "changes", icon: "🔄", title: "٧. تحديثات السياسة",
       body: "قد نحدّث هذه السياسة من وقت لآخر بما يتوافق مع تطوّر الخدمة أو المتطلبات القانونية، ويُعتبر التاريخ الظاهر أعلاه هو تاريخ آخر تحديث ساري.",
     },
     {
-      id: "contact", icon: "💬", title: "٩. التواصل بخصوص الخصوصية",
+      id: "contact", icon: "💬", title: "٨. التواصل بخصوص الخصوصية",
       body: "لأي استفسار أو طلب يتعلق ببياناتك (اطلاع، تعديل، حذف)، تواصل معنا عبر:",
       listKind: "process",
       items: contact.length ? contact : ["الدعم عبر واتساب من صفحة المتجر الرئيسية."],
@@ -190,15 +186,11 @@ const EN = {
       body: "We use cookies and browser local storage for essential purposes: keeping you signed in, saving your cart, and remembering your preferred language and currency. You can clear them from your browser settings, though some site features may stop working.",
     },
     {
-      id: "children", icon: "👤", title: "7. Minors",
-      body: "The store is intended for adults, or for minors using it under a guardian's supervision. If we learn that we collected data from a minor without permission, we delete it as soon as we are notified.",
-    },
-    {
-      id: "changes", icon: "🔄", title: "8. Policy updates",
+      id: "changes", icon: "🔄", title: "7. Policy updates",
       body: "We may update this policy from time to time as the service evolves or legal requirements change. The date shown above is the last effective update.",
     },
     {
-      id: "contact", icon: "💬", title: "9. Privacy contact",
+      id: "contact", icon: "💬", title: "8. Privacy contact",
       body: "For any question or request about your data (access, correction, deletion), contact us at:",
       listKind: "process",
       items: contact.length ? contact : ["Support via WhatsApp from the store home page."],
