@@ -42,7 +42,7 @@ export const Route = createFileRoute("/api/public/seed-catalog")({
           };
           if (ar.identifierLabel) { patch['identifier_label_ar'] = ar.identifierLabel; patch['identifier_label_en'] = en.identifierLabel ?? ar.identifierLabel; }
           if (ar.identifierPlaceholder) patch['identifier_placeholder'] = ar.identifierPlaceholder;
-          ck(await sb.from("products").update(patch).eq("slug", slug), "upd " + slug);
+          ck(await sb.from("products").update(patch as never).eq("slug", slug), "upd " + slug);
 
           const { data: prow } = await sb.from("products").select("id").eq("slug", slug).single();
           if (!prow) { log.push("missing product " + slug); continue; }
@@ -95,7 +95,7 @@ export const Route = createFileRoute("/api/public/seed-catalog")({
             delivery_method_en: "We send the digital card code after your order is confirmed — make sure the region matches your account.",
             sort_order: gcSort++, is_active: true, delivery_details: {},
           };
-          ck(await sb.from("products").upsert(row, { onConflict: "slug" }), "gc " + slug);
+          ck(await sb.from("products").upsert(row as never, { onConflict: "slug" }), "gc " + slug);
           const { data: prow } = await sb.from("products").select("id").eq("slug", slug).single();
           if (!prow) continue;
           const rows: any[] = [];
