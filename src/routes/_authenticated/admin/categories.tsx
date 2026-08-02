@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FolderTree, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronUp, ChevronLeft, Home, Palette, Search, Package, Copy, ShoppingBag } from "lucide-react";
+import { FolderTree, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronUp, ChevronLeft, Home, Palette, Search, Package, Copy, ShoppingBag, MoreHorizontal, FolderPlus } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CategoryProducts } from "@/components/gx/admin/ProductsManager";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
@@ -298,33 +299,25 @@ function CategoriesAdmin() {
         </div>
       </div>
 
-      <div className="gx-stats">
-        <div className="gx-stat"><b>{stats.total}</b><span>إجمالي الأقسام</span></div>
-        <div className="gx-stat"><b>{stats.main}</b><span>أقسام رئيسية بالواجهة</span></div>
-        <div className="gx-stat"><b>{stats.active}</b><span>مفعّلة</span></div>
-        <div className="gx-stat"><b>{stats.hidden}</b><span>مخفية</span></div>
-      </div>
-
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="gx-tabs" style={{ maxWidth: 260 }}>
-          <button className={`gx-tab ${tab === "tree" ? "active" : ""}`} onClick={() => setTab("tree")}>عرض شجري</button>
-          <button className={`gx-tab ${tab === "flat" ? "active" : ""}`} onClick={() => setTab("flat")}>عرض كامل</button>
-        </div>
-        <div className="gx-tabs" style={{ maxWidth: 380 }}>
-          {([["all", "الكل"], ["active", "مفعّلة"], ["hidden", "مخفية"], ["main", "رئيسية"]] as const).map(([k, label]) => (
-            <button key={k} className={`gx-tab ${filter === k ? "active" : ""}`} onClick={() => setFilter(k)}>{label}</button>
-          ))}
-        </div>
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="gx-toolbar">
+        <div className="relative flex-1 min-w-[220px]">
           <Search size={14} className="absolute top-1/2 -translate-y-1/2 right-3 text-cyan-100/40" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="ابحث بالاسم أو المعرّف..."
+            placeholder="ابحث بالاسم أو المعرّف…"
             className="gx-adm-input"
             style={{ paddingInlineStart: 34 }}
           />
         </div>
+        <div className="gx-segment">
+          {([["all", `الكل ${stats.total}`], ["main", `رئيسية ${stats.main}`], ["active", `ظاهرة ${stats.active}`], ["hidden", `مخفية ${stats.hidden}`]] as const).map(([k, label]) => (
+            <button key={k} className={`gx-seg ${filter === k ? "active" : ""}`} onClick={() => setFilter(k)}>{label}</button>
+          ))}
+        </div>
+        <button className="gx-btn ghost" onClick={expanded.size ? collapseAll : expandAll}>
+          {expanded.size ? "طيّ الكل" : "توسيع الكل"}
+        </button>
       </div>
 
       {q.isLoading ? (
@@ -332,13 +325,13 @@ function CategoriesAdmin() {
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="gx-skel" />)}
         </div>
       ) : all.length === 0 ? (
-        <div className="text-center py-20 text-cyan-100/60">
-          <FolderTree size={48} className="mx-auto opacity-30 mb-3" />
+        <div className="gx-empty">
+          <FolderTree size={44} className="mx-auto opacity-30 mb-3" />
           <p>لا يوجد أقسام بعد. ابدأ بإضافة قسم رئيسي.</p>
         </div>
-      ) : (tab === "tree" ? roots.length === 0 : filteredFlat.length === 0) ? (
-        <div className="text-center py-16 text-cyan-100/60">لا توجد نتائج مطابقة.</div>
-      ) : tab === "tree" ? (
+      ) : roots.length === 0 ? (
+        <div className="gx-empty">لا توجد نتائج مطابقة.</div>
+      ) : (
         <div className="gx-tree">
           {roots.map((c) => (
             <TreeNode
@@ -360,23 +353,6 @@ function CategoriesAdmin() {
             />
           ))}
         </div>
-      ) : (
-        <div className="gx-tree">
-          {filteredFlat.map((c) => (
-            <FlatRow
-              key={c.id}
-              node={c}
-              count={counts[c.id] ?? 0}
-              parent={all.find((x) => x.id === c.parent_id) ?? null}
-              onEdit={setEditing}
-              onManageProducts={setManagingProducts}
-              onDelete={(id, name) => { if (confirm(`حذف "${name}"؟`)) deleteMut.mutate(id); }}
-              onToggleActive={(id, next) => toggleMut.mutate({ id, is_active: next })}
-              onDuplicate={(n) => duplicateMut.mutate(n)}
-            />
-          ))}
-        </div>
-
       )}
 
       {managingProducts && (
