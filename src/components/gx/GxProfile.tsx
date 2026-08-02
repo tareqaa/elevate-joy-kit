@@ -168,6 +168,7 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false });
       if (error) throw error;
+      return data ?? [];
     },
   });
 
