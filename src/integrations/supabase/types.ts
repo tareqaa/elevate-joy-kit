@@ -1015,6 +1015,7 @@ export type Database = {
       }
       product_variants: {
         Row: {
+          cart_id: string | null
           created_at: string
           delivery_type:
             | Database["public"]["Enums"]["product_delivery_type"]
@@ -1036,6 +1037,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cart_id?: string | null
           created_at?: string
           delivery_type?:
             | Database["public"]["Enums"]["product_delivery_type"]
@@ -1057,6 +1059,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cart_id?: string | null
           created_at?: string
           delivery_type?:
             | Database["public"]["Enums"]["product_delivery_type"]
@@ -1089,8 +1092,10 @@ export type Database = {
       }
       products: {
         Row: {
+          accent_color: string | null
           badge: string | null
           base_price_jod: number | null
+          card_gradient: string | null
           category_id: string | null
           created_at: string
           delivery_details: Json
@@ -1123,11 +1128,14 @@ export type Database = {
           sort_order: number
           tagline_ar: string | null
           tagline_en: string | null
+          thumb_bg: string | null
           updated_at: string
         }
         Insert: {
+          accent_color?: string | null
           badge?: string | null
           base_price_jod?: number | null
+          card_gradient?: string | null
           category_id?: string | null
           created_at?: string
           delivery_details?: Json
@@ -1160,11 +1168,14 @@ export type Database = {
           sort_order?: number
           tagline_ar?: string | null
           tagline_en?: string | null
+          thumb_bg?: string | null
           updated_at?: string
         }
         Update: {
+          accent_color?: string | null
           badge?: string | null
           base_price_jod?: number | null
+          card_gradient?: string | null
           category_id?: string | null
           created_at?: string
           delivery_details?: Json
@@ -1197,6 +1208,7 @@ export type Database = {
           sort_order?: number
           tagline_ar?: string | null
           tagline_en?: string | null
+          thumb_bg?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2149,7 +2161,11 @@ export type Database = {
         | "cancelled"
         | "refunded"
       product_delivery_type: "code" | "account" | "topup" | "manual"
-      product_page_template: "standard" | "multi_account" | "dual_plans"
+      product_page_template:
+        | "standard"
+        | "multi_account"
+        | "dual_plans"
+        | "gift_card"
       review_status: "pending" | "approved" | "rejected" | "hidden"
       wheel_rarity: "common" | "rare" | "epic" | "legendary"
       wheel_reward_type:
@@ -2299,7 +2315,12 @@ export const Constants = {
         "refunded",
       ],
       product_delivery_type: ["code", "account", "topup", "manual"],
-      product_page_template: ["standard", "multi_account", "dual_plans"],
+      product_page_template: [
+        "standard",
+        "multi_account",
+        "dual_plans",
+        "gift_card",
+      ],
       review_status: ["pending", "approved", "rejected", "hidden"],
       wheel_rarity: ["common", "rare", "epic", "legendary"],
       wheel_reward_type: [
