@@ -845,92 +845,42 @@ function VariantsPanel({ productId, productSlug }: { productId: string; productS
 
 
 function VariantsDialog({ product, onClose }: { product: Product; onClose: () => void }) {
-  const qc = useQueryClient();
-  const [editingVariant, setEditingVariant] = useState<Variant | null>(null);
-  const [addingVariant, setAddingVariant] = useState(false);
-  const [managingCountry, setManagingCountry] = useState<Variant | null>(null);
-
-  const q = useQuery({
-    queryKey: ["admin-variants", product.id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("product_variants").select("*").eq("product_id", product.id).order("sort_order").order("price_jod");
-      if (error) throw error;
-      return (data ?? []) as Variant[];
-    },
-  });
-
-  const deleteMut = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("product_variants").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("تم الحذف"); qc.invalidateQueries({ queryKey: ["admin-variants", product.id] }); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto" dir="rtl">
         <style dangerouslySetInnerHTML={{ __html: css }} />
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Layers size={18} className="text-cyan-400" /> خيارات وأسعار — {product.name_ar}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
-          <button className="gx-btn primary" onClick={() => setAddingVariant(true)}><Plus size={12} /> خيار جديد</button>
-
-          {q.isLoading ? (
-            <div className="text-center py-6 text-cyan-100/60">جاري التحميل...</div>
-          ) : (q.data ?? []).length === 0 ? (
-            <div className="text-center py-6 text-cyan-100/60 border border-dashed border-cyan-400/20 rounded-lg">
-              لا يوجد خيارات. أضف خيار (مثال: 25$ / 50$ / 100$).
-            </div>
-          ) : (q.data ?? []).map((v) => (
-            <div key={v.id} className="gx-variant">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div>
-                  <div className="font-bold text-cyan-100">{v.label_ar} <span className="text-xs text-cyan-100/60">/ {v.label_en}</span></div>
-                  <div className="text-xs text-cyan-100/70 mt-1">
-                    <span className="gx-price">{Number(v.price_jod).toFixed(2)} د.أ</span>
-                    {v.face_value && v.face_currency && <span className="ms-2">• قيمة اسمية: {v.face_value} {v.face_currency}</span>}
-                    {!v.is_active && <span className="gx-badge-off ms-2">مخفي</span>}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button className="gx-btn outline" onClick={() => setManagingCountry(v)}><Globe size={12} /> الأسعار حسب الدولة</button>
-                  <button className="gx-btn outline" onClick={() => setEditingVariant(v)}><Pencil size={12} /></button>
-                  <button className="gx-btn danger" onClick={() => { if (confirm(`حذف "${v.label_ar}"؟`)) deleteMut.mutate(v.id); }}><Trash2 size={12} /></button>
-                </div>
-              </div>
-            </div>
-          ))}
+        <VariantsPanel productId={product.id} productSlug={product.slug} />
+        <div className="flex justify-end pt-2">
+          <button className="gx-btn outline" onClick={onClose}>إغلاق</button>
         </div>
-
-        {(editingVariant || addingVariant) && (
-          <VariantForm
-            variant={editingVariant}
-            productId={product.id}
-            onClose={() => { setEditingVariant(null); setAddingVariant(false); }}
-            onSaved={() => { setEditingVariant(null); setAddingVariant(false); qc.invalidateQueries({ queryKey: ["admin-variants", product.id] }); }}
-          />
-        )}
-
-        {managingCountry && <CountryPricesDialog variant={managingCountry} onClose={() => setManagingCountry(null)} />}
       </DialogContent>
     </Dialog>
   );
 }
 
-function VariantForm({ variant, productId, onClose, onSaved }: { variant: Variant | null; productId: string; onClose: () => void; onSaved: () => void }) {
+function VariantForm({ variant, productId, productSlug, onClose, onSaved }: { variant: Variant | null; productId: string; productSlug: string; onClose: () => void; onSaved: () => void }) {
   const [labelAr, setLabelAr] = useState(variant?.label_ar ?? "");
   const [labelEn, setLabelEn] = useState(variant?.label_en ?? "");
   const [priceJod, setPriceJod] = useState<string>(variant?.price_jod?.toString() ?? "");
+  const [oldPrice, setOldPrice] = useState<string>(variant?.old_price_jod?.toString() ?? "");
   const [faceValue, setFaceValue] = useState<string>(variant?.face_value?.toString() ?? "");
   const [faceCurrency, setFaceCurrency] = useState<string>(variant?.face_currency ?? "");
+  const [tagAr, setTagAr] = useState(variant?.tag_ar ?? "");
+  const [tagEn, setTagEn] = useState(variant?.tag_en ?? "");
+  const [planGroup, setPlanGroup] = useState(variant?.plan_group ?? "");
+  const [region, setRegion] = useState(variant?.region ?? "");
+  const [cartId, setCartId] = useState(variant?.cart_id ?? "");
+  const [deliveryType, setDeliveryType] = useState<string>(variant?.delivery_type ?? "");
   const [sortOrder, setSortOrder] = useState<number>(variant?.sort_order ?? 0);
   const [isActive, setIsActive] = useState<boolean>(variant?.is_active ?? true);
   const [saving, setSaving] = useState(false);
+
+  const autoCart = `${productSlug || "item"}-${slugify(labelEn) || Date.now().toString(36)}`;
 
   async function save() {
     if (!labelAr.trim() || !labelEn.trim()) { toast.error("الاسم بالعربي والإنجليزي مطلوبين"); return; }
@@ -941,8 +891,14 @@ function VariantForm({ variant, productId, onClose, onSaved }: { variant: Varian
         product_id: productId,
         label_ar: labelAr.trim(), label_en: labelEn.trim(),
         price_jod: Number(priceJod),
+        old_price_jod: oldPrice.trim() === "" ? null : Number(oldPrice),
         face_value: faceValue.trim() === "" ? null : Number(faceValue),
         face_currency: faceCurrency.trim() || null,
+        tag_ar: tagAr.trim() || null, tag_en: tagEn.trim() || null,
+        plan_group: planGroup.trim() || null,
+        region: region.trim() || null,
+        cart_id: (cartId.trim() || autoCart).toLowerCase(),
+        delivery_type: (deliveryType || null) as Variant["delivery_type"],
         sort_order: sortOrder, is_active: isActive,
       };
       if (variant) {
@@ -963,14 +919,22 @@ function VariantForm({ variant, productId, onClose, onSaved }: { variant: Varian
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md" dir="rtl">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+        <style dangerouslySetInnerHTML={{ __html: css }} />
         <DialogHeader><DialogTitle>{variant ? "تعديل خيار" : "خيار جديد"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>الاسم (عربي)</Label><Input value={labelAr} onChange={(e) => setLabelAr(e.target.value)} className="gx-adm-input" placeholder="كرت 25$" /></div>
-            <div><Label>الاسم (English)</Label><Input value={labelEn} onChange={(e) => setLabelEn(e.target.value)} className="gx-adm-input" dir="ltr" placeholder="$25 Card" /></div>
+            <div><Label>الاسم (عربي)</Label><Input value={labelAr} onChange={(e) => setLabelAr(e.target.value)} className="gx-adm-input" placeholder="3 شهور" /></div>
+            <div><Label>الاسم (English)</Label><Input value={labelEn} onChange={(e) => setLabelEn(e.target.value)} className="gx-adm-input" dir="ltr" placeholder="3 Months" /></div>
           </div>
-          <div><Label>السعر بالدينار (د.أ)</Label><Input type="number" step="0.01" value={priceJod} onChange={(e) => setPriceJod(e.target.value)} className="gx-adm-input" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>السعر (د.أ)</Label><Input type="number" step="0.01" value={priceJod} onChange={(e) => setPriceJod(e.target.value)} className="gx-adm-input" /></div>
+            <div><Label>السعر قبل الخصم</Label><Input type="number" step="0.01" value={oldPrice} onChange={(e) => setOldPrice(e.target.value)} className="gx-adm-input" placeholder="اختياري" /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>شارة الخيار (عربي)</Label><Input value={tagAr} onChange={(e) => setTagAr(e.target.value)} className="gx-adm-input" placeholder="الأكثر طلباً" /></div>
+            <div><Label>Tag (English)</Label><Input value={tagEn} onChange={(e) => setTagEn(e.target.value)} className="gx-adm-input" dir="ltr" /></div>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>القيمة الاسمية</Label><Input type="number" step="0.01" value={faceValue} onChange={(e) => setFaceValue(e.target.value)} className="gx-adm-input" placeholder="25" /></div>
             <div>
@@ -981,6 +945,32 @@ function VariantForm({ variant, productId, onClose, onSaved }: { variant: Varian
                   {CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>المجموعة (plan group)</Label>
+              <Input value={planGroup} onChange={(e) => setPlanGroup(e.target.value)} className="gx-adm-input" dir="ltr" placeholder="crew / vbucks / us" />
+              <p className="text-[11px] text-cyan-100/45 mt-1">لقالب المجموعتين، أو كود الدولة لبطاقات الهدايا</p>
+            </div>
+            <div>
+              <Label>المنطقة</Label>
+              <Input value={region} onChange={(e) => setRegion(e.target.value)} className="gx-adm-input" dir="ltr" placeholder="أمريكا|USA|🇺🇸" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>نوع التسليم لهذا الخيار</Label>
+              <Select value={deliveryType} onValueChange={setDeliveryType}>
+                <SelectTrigger className="gx-adm-input"><SelectValue placeholder="نفس المنتج" /></SelectTrigger>
+                <SelectContent>
+                  {DELIVERY_TYPES.map((d) => <SelectItem key={d.id} value={d.id}>{d.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>معرّف السلة (cart id)</Label>
+              <Input value={cartId} onChange={(e) => setCartId(e.target.value)} className="gx-adm-input" dir="ltr" placeholder={autoCart} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -1001,6 +991,7 @@ function VariantForm({ variant, productId, onClose, onSaved }: { variant: Varian
     </Dialog>
   );
 }
+
 
 function CountryPricesDialog({ variant, onClose }: { variant: Variant; onClose: () => void }) {
   const qc = useQueryClient();
