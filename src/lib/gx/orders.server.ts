@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
-import { loadCatalogPriceOverrides, priceCartItems, isAdminUser } from "./pricing.server";
+import { loadCatalogPriceOverrides, priceCartItems, isAdminUser, loadDbBasePrices } from "./pricing.server";
 
 
 type CreateOrderInput = {
