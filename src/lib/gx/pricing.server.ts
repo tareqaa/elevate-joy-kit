@@ -1,34 +1,14 @@
 /* ============================================================
    GX STORE — SERVER-SIDE PRICE VERIFICATION
    The server NEVER trusts a money value coming from the browser.
-   Every cart line is re-priced from the static catalog (resolved by its
-   stable `cartId`) plus the live overrides stored in
-   `site_settings.catalog_prices` — the same source `catalog-prices.ts`
-   uses on the client.
+   Every cart line is re-priced from the database: the variant row is
+   resolved by its stable `cart_id` in `product_variants`, then the live
+   admin overrides stored in `site_settings.catalog_prices` are applied
+   on top — the exact same resolution the product pages use.
    ============================================================ */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { PRODUCTS_CATALOG, GIFT_CARDS_CATALOG } from "@/data/products";
 
-/** cartId (plan / denomination id) -> base catalog price, snapshotted at import
- *  time so nothing that mutates the catalog objects can affect verification. */
-const BASE_PRICES = new Map<string, number>();
-
-for (const slug in PRODUCTS_CATALOG) {
-  const p = PRODUCTS_CATALOG[slug];
-  for (const list of [p.plans, p.crewPlans, p.vbucksPlans]) {
-    for (const plan of list ?? []) {
-      if (!BASE_PRICES.has(plan.id)) BASE_PRICES.set(plan.id, Number(plan.price) || 0);
-    }
-  }
-}
-for (const slug in GIFT_CARDS_CATALOG) {
-  for (const region of GIFT_CARDS_CATALOG[slug].regions) {
-    for (const d of region.denominations) {
-      if (!BASE_PRICES.has(d.id)) BASE_PRICES.set(d.id, Number(d.price) || 0);
-    }
-  }
-}
 
 export type PricedLine = {
   cartId: string;
