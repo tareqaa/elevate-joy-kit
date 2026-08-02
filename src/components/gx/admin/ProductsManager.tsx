@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Star, Search, Layers, Globe, ArrowUp, ArrowDown } from "lucide-react";
+import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Star, Search, Layers, Globe, ArrowUp, ArrowDown, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type Category = { id: string; name_ar: string; name_en: string };
 type Product = {
@@ -237,7 +238,7 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
 
       <div className="gx-panel p-4 space-y-4">
       <div className="flex gap-2 flex-wrap items-center">
-        <div className="relative flex-1 min-w-[240px] max-w-md">
+        <div className="relative flex-1 min-w-[220px] max-w-md">
           <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400/70 pointer-events-none" />
           <Input placeholder="بحث بالاسم أو المعرّف أو رقم المنتج (SKU)" value={search} onChange={(e) => setSearch(e.target.value)} className="gx-adm-input ps-9" />
         </div>
@@ -332,19 +333,39 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
                     <Layers size={12} /> الخيارات والأسعار
                   </button>
                   <button className="gx-btn outline" onClick={() => setEditing(p)}><Pencil size={12} /> تعديل</button>
-                  <button className="gx-btn outline" onClick={() => toggleMut.mutate({ id: p.id, patch: { is_featured: !p.is_featured } })} title="تمييز">
-                    <Star size={12} className={p.is_featured ? "fill-cyan-400 text-cyan-400" : ""} />
+                  <button
+                    className={`gx-btn ${p.is_active ? "outline" : "danger"}`}
+                    onClick={() => toggleMut.mutate({ id: p.id, patch: { is_active: !p.is_active } })}
+                  >
+                    {p.is_active ? <><Eye size={12} /> ظاهر بالمتجر</> : <><EyeOff size={12} /> مخفي</>}
                   </button>
-                  <button className="gx-btn outline" onClick={() => toggleMut.mutate({ id: p.id, patch: { is_active: !p.is_active } })}>
-                    {p.is_active ? <><Eye size={12} /> ظاهر</> : <><EyeOff size={12} /> مخفي</>}
-                  </button>
-                  {sortBy === "order" && (
-                    <>
-                      <button className="gx-btn outline" title="تقديم" disabled={i === 0} onClick={() => move(i, -1)}><ArrowUp size={12} /></button>
-                      <button className="gx-btn outline" title="تأخير" disabled={i === filtered.length - 1} onClick={() => move(i, 1)}><ArrowDown size={12} /></button>
-                    </>
-                  )}
-                  <button className="gx-btn danger" onClick={() => { if (confirm(`حذف "${p.name_ar}"؟`)) deleteMut.mutate(p.id); }}><Trash2 size={12} /></button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="gx-btn outline" aria-label="خيارات أخرى"><MoreHorizontal size={14} /></button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-44 text-right">
+                      <DropdownMenuItem onSelect={() => toggleMut.mutate({ id: p.id, patch: { is_featured: !p.is_featured } })}>
+                        <Star size={13} className="ms-1" /> {p.is_featured ? "إلغاء التمييز" : "تمييز المنتج"}
+                      </DropdownMenuItem>
+                      {sortBy === "order" && (
+                        <>
+                          <DropdownMenuItem disabled={i === 0} onSelect={() => move(i, -1)}>
+                            <ArrowUp size={13} className="ms-1" /> تقديم في الترتيب
+                          </DropdownMenuItem>
+                          <DropdownMenuItem disabled={i === filtered.length - 1} onSelect={() => move(i, 1)}>
+                            <ArrowDown size={13} className="ms-1" /> تأخير في الترتيب
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-red-400 focus:text-red-400"
+                        onSelect={() => { if (confirm(`حذف "${p.name_ar}"؟`)) deleteMut.mutate(p.id); }}
+                      >
+                        <Trash2 size={13} className="ms-1" /> حذف المنتج
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>

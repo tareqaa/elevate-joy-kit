@@ -18,6 +18,7 @@ import { SpinWheelModal } from "./SpinWheel";
 import { useLang } from "@/lib/gx/i18n";
 import { GxIcon } from "@/components/gx/GxIcon";
 import { localizedCategoryLink, localizedProduct, localizedGiftCard } from "@/lib/gx/product-locale";
+import { useHiddenCategorySlugs } from "@/lib/gx/category-visibility";
 
 type SearchEntry = { key: string; title: string; sub: string; icon: string; iconImg?: string; link: string; hay: string };
 
@@ -107,6 +108,7 @@ export function Navbar() {
   const cart = useCart();
   const { currency, format, formatCoins } = useCurrency();
   const { t, lang, setLang } = useLang();
+  const hiddenCats = useHiddenCategorySlugs();
   const [menuOpen, setMenuOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -264,6 +266,7 @@ export function Navbar() {
       });
     }
     for (const raw of CATEGORY_LINKS) {
+      if (hiddenCats.has(raw.slug)) continue;
       const c = localizedCategoryLink(raw, lang);
       out.push({
         key: `c:${c.slug}`,
@@ -275,7 +278,7 @@ export function Navbar() {
       });
     }
     return out;
-  }, [lang]);
+  }, [lang, hiddenCats]);
 
   const results = useMemo(() => {
     const q = normalizeQuery(query);
@@ -493,7 +496,7 @@ export function Navbar() {
                 <div className="menu-divider" />
                 <div className="menu-section">
                   <div className="ms-title">{t("nav.categories")}</div>
-                  {CATEGORY_LINKS.map(c0 => {
+                  {CATEGORY_LINKS.filter(c0 => !hiddenCats.has(c0.slug)).map(c0 => {
                     const c = localizedCategoryLink(c0, lang);
                     return (
                       <Link key={c.slug} to={getCategoryLink(c.slug) as never} className="menu-link" onClick={() => setMenuOpen(false)}>

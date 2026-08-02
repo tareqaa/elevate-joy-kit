@@ -10,6 +10,7 @@ import { ProductIcon, CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
 import { BuyActions } from "@/components/gx/BuyActions";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-locale";
+import { useHiddenCategorySlugs } from "@/lib/gx/category-visibility";
 import { supabase } from "@/integrations/supabase/client";
 import { initialOf, avatarColorFor } from "@/lib/gx/reviews";
 import { translateTexts } from "@/lib/gx/translate.functions";
@@ -286,10 +287,11 @@ export function CarouselRenderer({ data }: { data: CarouselData }) {
 export function CategoriesRenderer({ data }: { data: CategoriesData }) {
   const { t, lang } = useLang();
   const overrides = data.overrides || {};
+  const hiddenCats = useHiddenCategorySlugs();
   const links = CATEGORY_LINKS
     .map((c) => {
       const meta = overrides[c.slug] || {};
-      if (meta.hidden) return null;
+      if (meta.hidden || hiddenCats.has(c.slug)) return null;
       return { ...c, _o_name: meta.name, _o_desc: meta.desc, _o_accent: meta.accent, _sort: typeof meta.sort === "number" ? meta.sort : 999 };
     })
     .filter((x): x is NonNullable<typeof x> => !!x)

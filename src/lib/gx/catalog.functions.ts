@@ -236,17 +236,21 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
       .order("sort_order", { ascending: true });
 
     const kidIds = (kids ?? []).map((k: Record<string, any>) => k.id);
+    // Fetch products regardless of `is_active`: a sub-category whose product was
+    // switched off must disappear entirely, while a sub-category that never had
+    // a product yet keeps showing the "coming soon" tile.
     const { data: prods } = kidIds.length
       ? await supabase
           .from("products")
-          .select("slug, category_id, icon, icon_image_url, thumb_bg")
+          .select("slug, category_id, icon, icon_image_url, thumb_bg, is_active")
           .in("category_id", kidIds)
-          .eq("is_active", true)
       : { data: [] as Record<string, any>[] };
 
     const byCat = new Map<string, Record<string, any>>();
+    const hasAnyProduct = new Set<string>();
     for (const p of (prods ?? []) as Record<string, any>[]) {
-      if (!byCat.has(p.category_id)) byCat.set(p.category_id, p);
+      hasAnyProduct.add(p.category_id);
+      if (p.is_active && !byCat.has(p.category_id)) byCat.set(p.category_id, p);
     }
 
     return {
@@ -256,7 +260,9 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
       taglineAr: c.tagline_ar ?? null,
       taglineEn: c.tagline_en ?? null,
       icon: c.icon ?? null,
-      children: (kids ?? []).map((k: Record<string, any>) => {
+      children: (kids ?? [])
+        .filter((k: Record<string, any>) => byCat.has(k.id) || !hasAnyProduct.has(k.id))
+        .map((k: Record<string, any>) => {
         const prod = byCat.get(k.id);
         return {
           slug: k.slug,

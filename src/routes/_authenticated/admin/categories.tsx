@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FolderTree, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronUp, ChevronLeft, Home, Palette, Search, Package, Copy, ShoppingBag } from "lucide-react";
+import { FolderTree, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronUp, ChevronLeft, Home, Palette, Search, Package, Copy, ShoppingBag, MoreHorizontal, FolderPlus } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CategoryProducts } from "@/components/gx/admin/ProductsManager";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
@@ -88,6 +89,14 @@ const css = `
 .gx-ord{display:flex;flex-direction:column;gap:2px}
 .gx-ord button{background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.18);color:#00e5ff;border-radius:6px;width:22px;height:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .gx-ord button:disabled{opacity:.25;cursor:not-allowed}
+.gx-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:linear-gradient(180deg,rgba(16,24,32,.7),rgba(10,15,22,.8));border:1px solid rgba(0,229,255,.12);border-radius:14px;padding:10px 12px}
+.gx-segment{display:flex;gap:2px;background:rgba(0,0,0,.32);padding:4px;border-radius:10px;border:1px solid rgba(255,255,255,.06)}
+.gx-seg{padding:7px 12px;border-radius:8px;background:transparent;border:none;color:#7d92a8;font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.gx-seg.active{background:rgba(0,229,255,.12);color:#00e5ff}
+.gx-row-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.gx-chip.off{background:rgba(255,80,80,.12);color:#ff9a9a;border:1px solid rgba(255,80,80,.3)}
+.gx-empty{text-align:center;padding:56px 16px;color:#7d92a8;border:1px dashed rgba(0,229,255,.18);border-radius:16px}
+@media(max-width:640px){.gx-row-inner{flex-wrap:wrap}.gx-row-actions{width:100%;justify-content:flex-end}}
 `;
 
 
@@ -109,7 +118,6 @@ function CategoriesAdmin() {
   const [creating, setCreating] = useState<{ parentId: string | null } | null>(null);
   const [managingProducts, setManagingProducts] = useState<Category | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [tab, setTab] = useState<"tree" | "flat">("tree");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "hidden" | "main">("all");
 
@@ -282,49 +290,35 @@ function CategoriesAdmin() {
             <FolderTree size={22} className="text-cyan-400" /> الأقسام
           </h1>
           <p className="text-sm text-cyan-100/60 mt-1">
-            بنية هرمية حتى 3 مستويات — قسم رئيسي (يظهر بالواجهة) → فرعي → فرعي داخلي. اختر ثيماً ولوناً لكل قسم.
+            القسم الرئيسي يظهر في قائمة المتجر — إخفاؤه يزيله من القائمة مباشرة.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {tab === "tree" && (
-            <>
-              <button className="gx-btn ghost" onClick={expandAll}>توسيع الكل</button>
-              <button className="gx-btn ghost" onClick={collapseAll}>طيّ الكل</button>
-            </>
-          )}
           <button className="gx-btn primary" onClick={() => setCreating({ parentId: null })}>
             <Plus size={13} /> قسم رئيسي جديد
           </button>
         </div>
       </div>
 
-      <div className="gx-stats">
-        <div className="gx-stat"><b>{stats.total}</b><span>إجمالي الأقسام</span></div>
-        <div className="gx-stat"><b>{stats.main}</b><span>أقسام رئيسية بالواجهة</span></div>
-        <div className="gx-stat"><b>{stats.active}</b><span>مفعّلة</span></div>
-        <div className="gx-stat"><b>{stats.hidden}</b><span>مخفية</span></div>
-      </div>
-
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="gx-tabs" style={{ maxWidth: 260 }}>
-          <button className={`gx-tab ${tab === "tree" ? "active" : ""}`} onClick={() => setTab("tree")}>عرض شجري</button>
-          <button className={`gx-tab ${tab === "flat" ? "active" : ""}`} onClick={() => setTab("flat")}>عرض كامل</button>
-        </div>
-        <div className="gx-tabs" style={{ maxWidth: 380 }}>
-          {([["all", "الكل"], ["active", "مفعّلة"], ["hidden", "مخفية"], ["main", "رئيسية"]] as const).map(([k, label]) => (
-            <button key={k} className={`gx-tab ${filter === k ? "active" : ""}`} onClick={() => setFilter(k)}>{label}</button>
-          ))}
-        </div>
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="gx-toolbar">
+        <div className="relative flex-1 min-w-[220px]">
           <Search size={14} className="absolute top-1/2 -translate-y-1/2 right-3 text-cyan-100/40" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="ابحث بالاسم أو المعرّف..."
+            placeholder="ابحث بالاسم أو المعرّف…"
             className="gx-adm-input"
             style={{ paddingInlineStart: 34 }}
           />
         </div>
+        <div className="gx-segment">
+          {([["all", `الكل ${stats.total}`], ["main", `رئيسية ${stats.main}`], ["active", `ظاهرة ${stats.active}`], ["hidden", `مخفية ${stats.hidden}`]] as const).map(([k, label]) => (
+            <button key={k} className={`gx-seg ${filter === k ? "active" : ""}`} onClick={() => setFilter(k)}>{label}</button>
+          ))}
+        </div>
+        <button className="gx-btn ghost" onClick={expanded.size ? collapseAll : expandAll}>
+          {expanded.size ? "طيّ الكل" : "توسيع الكل"}
+        </button>
       </div>
 
       {q.isLoading ? (
@@ -332,13 +326,13 @@ function CategoriesAdmin() {
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="gx-skel" />)}
         </div>
       ) : all.length === 0 ? (
-        <div className="text-center py-20 text-cyan-100/60">
-          <FolderTree size={48} className="mx-auto opacity-30 mb-3" />
+        <div className="gx-empty">
+          <FolderTree size={44} className="mx-auto opacity-30 mb-3" />
           <p>لا يوجد أقسام بعد. ابدأ بإضافة قسم رئيسي.</p>
         </div>
-      ) : (tab === "tree" ? roots.length === 0 : filteredFlat.length === 0) ? (
-        <div className="text-center py-16 text-cyan-100/60">لا توجد نتائج مطابقة.</div>
-      ) : tab === "tree" ? (
+      ) : roots.length === 0 ? (
+        <div className="gx-empty">لا توجد نتائج مطابقة.</div>
+      ) : (
         <div className="gx-tree">
           {roots.map((c) => (
             <TreeNode
@@ -360,23 +354,6 @@ function CategoriesAdmin() {
             />
           ))}
         </div>
-      ) : (
-        <div className="gx-tree">
-          {filteredFlat.map((c) => (
-            <FlatRow
-              key={c.id}
-              node={c}
-              count={counts[c.id] ?? 0}
-              parent={all.find((x) => x.id === c.parent_id) ?? null}
-              onEdit={setEditing}
-              onManageProducts={setManagingProducts}
-              onDelete={(id, name) => { if (confirm(`حذف "${name}"؟`)) deleteMut.mutate(id); }}
-              onToggleActive={(id, next) => toggleMut.mutate({ id, is_active: next })}
-              onDuplicate={(n) => duplicateMut.mutate(n)}
-            />
-          ))}
-        </div>
-
       )}
 
       {managingProducts && (
@@ -455,30 +432,43 @@ function TreeNode({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="gx-row-title">{node.name_ar}</span>
-              <span className="text-xs text-cyan-100/60">— {node.name_en}</span>
-              {node.is_main && <span className="gx-chip main"><Home size={9} /> رئيسي بالواجهة</span>}
-              {depth > 0 && <span className="gx-chip sub">L{depth + 1}</span>}
-              <span className="gx-count"><Package size={9} /> {productCount} منتج</span>
-              {children.length > 0 && <span className="gx-count"><FolderTree size={9} /> {children.length} فرعي</span>}
+              <span className="text-xs text-cyan-100/50">{node.name_en}</span>
+              {node.is_main && <span className="gx-chip main"><Home size={9} /> بالقائمة الرئيسية</span>}
+              {!node.is_active && <span className="gx-chip off"><EyeOff size={9} /> مخفي</span>}
             </div>
-            <div className="gx-row-meta">/{node.slug} · ترتيب: {node.sort_order}</div>
+            <div className="gx-row-meta">
+              /{node.slug} · <Package size={9} className="inline" /> {productCount} منتج
+              {children.length > 0 ? ` · ${children.length} قسم فرعي` : ""}
+            </div>
           </div>
 
-          <div className="flex items-center gap-1">
-            {canHaveChildren && (
-              <button className="gx-btn outline" onClick={() => onAddChild(node.id)} title="إضافة قسم فرعي">
-                <Plus size={11} /> فرعي
-              </button>
-            )}
-            <button className="gx-btn primary" onClick={() => onManageProducts(node)} title="إضافة وإدارة منتجات القسم">
-              <Plus size={11} /> إضافة/المنتجات
+          <div className="gx-row-actions">
+            <button className="gx-btn primary" onClick={() => onManageProducts(node)}>
+              <ShoppingBag size={11} /> المنتجات
             </button>
-            <button className="gx-btn outline" onClick={() => onEdit(node)} title="تعديل"><Pencil size={11} /></button>
-            <button className="gx-btn ghost" onClick={() => onDuplicate(node)} title="نسخ"><Copy size={11} /></button>
-            <button className="gx-btn outline" onClick={() => onToggleActive(node.id, !node.is_active)} title={node.is_active ? "إخفاء" : "إظهار"}>
-              {node.is_active ? <Eye size={11} /> : <EyeOff size={11} />}
-            </button>
-            <button className="gx-btn danger" onClick={() => onDelete(node.id, node.name_ar)} title="حذف"><Trash2 size={11} /></button>
+            <button className="gx-btn outline" onClick={() => onEdit(node)}><Pencil size={11} /> تعديل</button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="gx-btn ghost" aria-label="خيارات أخرى"><MoreHorizontal size={14} /></button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-44 text-right">
+                {canHaveChildren && (
+                  <DropdownMenuItem onSelect={() => onAddChild(node.id)}>
+                    <FolderPlus size={13} className="ms-1" /> إضافة قسم فرعي
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onSelect={() => onToggleActive(node.id, !node.is_active)}>
+                  {node.is_active ? <><EyeOff size={13} className="ms-1" /> إخفاء من المتجر</> : <><Eye size={13} className="ms-1" /> إظهار في المتجر</>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onDuplicate(node)}>
+                  <Copy size={13} className="ms-1" /> نسخة مطابقة
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-red-400 focus:text-red-400" onSelect={() => onDelete(node.id, node.name_ar)}>
+                  <Trash2 size={13} className="ms-1" /> حذف
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -499,51 +489,6 @@ function TreeNode({
   );
 }
 
-
-function FlatRow({
-  node, parent, count, onEdit, onManageProducts, onDelete, onToggleActive, onDuplicate,
-}: {
-  node: Category;
-  parent: Category | null;
-  count: number;
-  onEdit: (c: Category) => void;
-  onManageProducts: (c: Category) => void;
-  onDelete: (id: string, name: string) => void;
-  onToggleActive: (id: string, next: boolean) => void;
-  onDuplicate: (c: Category) => void;
-}) {
-  return (
-    <div className={`gx-row ${node.is_active ? "" : "off"}`}>
-      <div className="gx-row-inner">
-        <div className="gx-swatch" style={{ background: node.theme_gradient || node.accent_color || "rgba(0,229,255,.15)" }} />
-        <div className="gx-row-icon">
-          {node.icon_url ? <img src={node.icon_url} alt="" /> : <FolderTree size={18} className="text-cyan-400/70" />}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            {parent && <span className="text-xs text-cyan-100/50">{parent.name_ar} ›</span>}
-            <span className="gx-row-title">{node.name_ar}</span>
-            {node.is_main && <span className="gx-chip main"><Home size={9} /> رئيسي</span>}
-            <span className="gx-count"><Package size={9} /> {count} منتج</span>
-          </div>
-          <div className="gx-row-meta">/{node.slug} · ترتيب: {node.sort_order}</div>
-        </div>
-        <div className="flex items-center gap-1">
-          <button className="gx-btn primary" onClick={() => onManageProducts(node)} title="إضافة وإدارة منتجات القسم">
-            <Plus size={11} /> إضافة/المنتجات
-          </button>
-          <button className="gx-btn outline" onClick={() => onEdit(node)} title="تعديل"><Pencil size={11} /></button>
-          <button className="gx-btn ghost" onClick={() => onDuplicate(node)} title="نسخ"><Copy size={11} /></button>
-          <button className="gx-btn outline" onClick={() => onToggleActive(node.id, !node.is_active)}>
-            {node.is_active ? <Eye size={11} /> : <EyeOff size={11} />}
-          </button>
-          <button className="gx-btn danger" onClick={() => onDelete(node.id, node.name_ar)} title="حذف"><Trash2 size={11} /></button>
-        </div>
-
-      </div>
-    </div>
-  );
-}
 
 function pathOf(cat: Category, all: Category[]): string {
   const path: string[] = [];
