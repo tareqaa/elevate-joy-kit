@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { CATEGORY_LINKS, getCategoryLink } from "@/data/products";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink } from "@/lib/gx/product-locale";
+import { useHiddenCategorySlugs } from "@/lib/gx/category-visibility";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 
 export function Footer() {
@@ -43,7 +44,7 @@ export function Footer() {
           </div>
           <div className="footer-col">
             <h5>{t("footer.sections")}</h5>
-            {CATEGORY_LINKS.map(c => {
+            {CATEGORY_LINKS.filter(c => !hiddenCats.has(c.slug)).map(c => {
               const lc = localizedCategoryLink(c, lang);
               return <Link key={c.slug} to={getCategoryLink(c.slug) as never}>{lc.name}</Link>;
             })}
