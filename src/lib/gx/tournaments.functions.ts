@@ -28,8 +28,9 @@ export type TournamentsPayload = {
 
 export const listTournaments = createServerFn({ method: "GET" }).handler(
   async (): Promise<TournamentsPayload> => {
-    const url = process.env.SUPABASE_URL!;
-    const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
+    const url = (process.env["SUPABASE_URL"] || process.env["VITE_SUPABASE_URL"])!;
+    const key = (process.env["SUPABASE_PUBLISHABLE_KEY"] ||
+      process.env["VITE_SUPABASE_PUBLISHABLE_KEY"])!;
     const client = createClient(url, key, {
       auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
       global: {
