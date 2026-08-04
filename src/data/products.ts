@@ -113,7 +113,7 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
     slug: "linkedin",
     name: "LinkedIn Premium Business",
     icon: "💼",
-    iconImg: "/app/assets/img/linkedin-logo.png",
+    iconImg: "/app/assets/img/linkedin-logo.svg",
     thumbBg: "linear-gradient(145deg,#082a4a,#03101e)",
     category: "البرامج والتطبيقات",
     tagline: "لينكدإن بريميوم بزنس سنة كاملة",
@@ -274,7 +274,7 @@ export const GIFT_CARDS_CATALOG: Record<string, GiftCard> = {
   playstation: {
     name: "PlayStation Gift Cards",
     icon: "🎮",
-    iconImg: "/app/assets/img/playstation-logo.png",
+    iconImg: "/app/assets/img/playstation-logo.svg",
     accent: "#00a3ff",
     cardGradient: "linear-gradient(135deg,#0a3d91,#0066cc 45%,#00a3ff)",
     regions: [
@@ -335,7 +335,7 @@ export const GIFT_CARDS_CATALOG: Record<string, GiftCard> = {
   itunes: {
     name: "iTunes Gift Cards",
     icon: "🎵",
-    iconImg: "/app/assets/img/itunes-logo.png",
+    iconImg: "/app/assets/img/itunes-logo.svg",
     accent: "#f107a3",
     cardGradient: "linear-gradient(135deg,#7b2ff7,#f107a3 55%,#ff5c8a)",
     regions: [
@@ -387,7 +387,7 @@ export const SUBCATEGORIES: Record<string, Subcategory[]> = {
     { slug: "microsoft365", product: "microsoft365", name: "Microsoft 365", icon: "🅼", iconImg: "/app/assets/img/microsoft365-logo.svg", bg: "linear-gradient(145deg,#3a1208,#180804)" },
     { slug: "windows", product: "windows", name: "تفعيل ويندوز", icon: "🪟", iconImg: "/app/assets/img/windows-logo.svg", bg: "linear-gradient(145deg,#0a2540,#04101c)" },
     { slug: "autodesk", product: "autodesk", name: "Autodesk", icon: "📐", iconImg: "/app/assets/img/autodesk-logo.svg", bg: "linear-gradient(145deg,#2a1a10,#140a05)" },
-    { slug: "linkedin", product: "linkedin", name: "LinkedIn Premium", icon: "💼", iconImg: "/app/assets/img/linkedin-logo.png", bg: "linear-gradient(145deg,#3a2b08,#1a1305)" },
+    { slug: "linkedin", product: "linkedin", name: "LinkedIn Premium", icon: "💼", iconImg: "/app/assets/img/linkedin-logo.svg", bg: "linear-gradient(145deg,#3a2b08,#1a1305)" },
   ],
   ai: [
     { slug: "gemini", product: "gemini", name: "Gemini Pro", icon: "✨", iconImg: "/app/assets/img/gemini-logo.svg", bg: "linear-gradient(145deg,#2a1a4a,#0e0820)" },
@@ -395,14 +395,14 @@ export const SUBCATEGORIES: Record<string, Subcategory[]> = {
   games: [
     { slug: "fortnite", product: "fortnite", name: "فورت نايت", icon: "🪂", iconImg: "/app/assets/img/fortnite-logo.png", bg: "linear-gradient(145deg,#0d1a30,#080d18)" },
     { slug: "steam", product: null, name: "ألعاب Steam", icon: "🎮", iconImg: "/app/assets/img/steam-logo.svg", bg: "linear-gradient(145deg,#101a24,#05090d)", comingSoon: true },
-    { slug: "sony", product: null, name: "ألعاب بلايستيشن", icon: "🎮", iconImg: "/app/assets/img/playstation-logo.png", bg: "linear-gradient(145deg,#0d1430,#080a18)", comingSoon: true },
+    { slug: "sony", product: null, name: "ألعاب بلايستيشن", icon: "🎮", iconImg: "/app/assets/img/playstation-logo.svg", bg: "linear-gradient(145deg,#0d1430,#080a18)", comingSoon: true },
     { slug: "xbox", product: null, name: "ألعاب إكسبوكس", icon: "🕹️", iconImg: "/app/assets/img/xbox-logo.svg", bg: "linear-gradient(145deg,#0d2a1a,#081510)", comingSoon: true },
   ],
   "gift-cards": [
-    { slug: "playstation", name: "PlayStation Gift Cards", icon: "🎮", iconImg: "/app/assets/img/playstation-logo.png", bg: "linear-gradient(145deg, rgba(0,163,255,0.18), rgba(0,163,255,0.04))", cardGradient: "linear-gradient(135deg,#0a3d91,#0066cc 45%,#00a3ff)", accent: "#00a3ff" },
+    { slug: "playstation", name: "PlayStation Gift Cards", icon: "🎮", iconImg: "/app/assets/img/playstation-logo.svg", bg: "linear-gradient(145deg, rgba(0,163,255,0.18), rgba(0,163,255,0.04))", cardGradient: "linear-gradient(135deg,#0a3d91,#0066cc 45%,#00a3ff)", accent: "#00a3ff" },
     { slug: "xbox", name: "Xbox Gift Cards", icon: "🕹️", iconImg: "/app/assets/img/xbox-logo.svg", bg: "linear-gradient(145deg, rgba(79,220,79,0.18), rgba(79,220,79,0.04))", cardGradient: "linear-gradient(135deg,#0e4d0e,#107c10 45%,#4fdc4f)", accent: "#4fdc4f" },
     { slug: "google-play", name: "Google Play Gift Cards", icon: "▶️", iconImg: "/app/assets/img/googleplay-logo.png", bg: "linear-gradient(145deg, rgba(52,168,83,0.18), rgba(52,168,83,0.04))", cardGradient: "linear-gradient(135deg,#1a73e8,#34a853 35%,#fbbc04 70%,#ea4335)", accent: "#34a853" },
-    { slug: "itunes", name: "iTunes Gift Cards", icon: "🎵", iconImg: "/app/assets/img/itunes-logo.png", bg: "linear-gradient(145deg, rgba(241,7,163,0.18), rgba(241,7,163,0.04))", cardGradient: "linear-gradient(135deg,#7b2ff7,#f107a3 55%,#ff5c8a)", accent: "#f107a3" },
+    { slug: "itunes", name: "iTunes Gift Cards", icon: "🎵", iconImg: "/app/assets/img/itunes-logo.svg", bg: "linear-gradient(145deg, rgba(241,7,163,0.18), rgba(241,7,163,0.04))", cardGradient: "linear-gradient(135deg,#7b2ff7,#f107a3 55%,#ff5c8a)", accent: "#f107a3" },
   ],
 };
 
