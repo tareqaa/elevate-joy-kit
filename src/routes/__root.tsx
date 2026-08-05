@@ -17,7 +17,7 @@ import { CurrencyProvider } from "@/lib/gx/currency";
 import { CartProvider } from "@/lib/gx/cart";
 import { LanguageProvider } from "@/lib/gx/i18n";
 import { SiteSettingsProvider } from "@/lib/gx/site-settings";
-import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { CORE_CSS } from "@/lib/gx/store-head";
 
 // Core store CSS is injected into store routes via head().
 // The static injection here is removed to allow granular loading.
