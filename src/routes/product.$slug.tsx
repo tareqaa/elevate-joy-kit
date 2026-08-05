@@ -2,7 +2,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { getCatalogProduct } from "@/lib/gx/catalog.functions";
 import { ProductTemplate } from "@/components/gx/ProductTemplates";
-import { getStoreHeadLinks } from "@/lib/gx/store-head";
+import { getStoreHeadLinks, PAGE_CSS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/product/$slug")({
   loader: async ({ params }) => {
@@ -18,8 +18,8 @@ export const Route = createFileRoute("/product/$slug")({
     // Choose specific CSS based on template
     const cssKeys: (keyof typeof PAGE_CSS)[] = ["product"];
     if (p?.pageTemplate === "multi_account") cssKeys.push("snapchat");
-    if (p?.pageTemplate === "gift_card") cssKeys.push("giftcard");
-    if (p?.pageTemplate === "dual_plans") cssKeys.push("fortnite");
+    else if (p?.pageTemplate === "gift_card") cssKeys.push("giftcard");
+    else if (p?.pageTemplate === "dual_plans") cssKeys.push("fortnite");
 
     return {
       meta: [
