@@ -73,7 +73,7 @@ function ProductHero({ p, l, onEdit }: { p: CatalogProduct; l: ReturnType<typeof
   return (
     <section className="product-hero">
       <div className="wrap">
-        <div className="product-hero-inner fade-in">
+        <div className="product-hero-inner fade-in" style={{ position: "relative" }}>
           {isAdmin && (
             <div className="admin-product-actions" style={{ position: "absolute", top: 0, insetInlineEnd: 0, display: "flex", gap: 10, zIndex: 10 }}>
               <button onClick={onEdit} className="gx-btn outline" style={{ background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)" }}>
@@ -456,9 +456,16 @@ export function GiftCardTemplate({ product, onEdit }: { product: CatalogProduct;
           </div>
         </section>
       )}
+      {managingVariants && (
+        <VariantsDialog
+          product={managingVariants}
+          onClose={() => setManagingVariants(null)}
+        />
+      )}
     </>
   );
 }
+
 
 export function ProductTemplate({ product }: { product: CatalogProduct }) {
   const [editing, setEditing] = useState<any>(null);

@@ -100,11 +100,8 @@ function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
 }
 
-export function VariantsDialog({ product, onClose }: { product: Product; onClose: () => void }) {
-  return null; // Implementation would follow existing VariantsDialog logic
-}
-
 export function CategoryProducts({ categoryId, categoryName }: { categoryId: string; categoryName: string }) {
+
 
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Product | null>(null);
@@ -887,7 +884,7 @@ function VariantsPanel({ productId, productSlug }: { productId: string; productS
 }
 
 
-function VariantsDialog({ product, onClose }: { product: Product; onClose: () => void }) {
+export function VariantsDialog({ product, onClose }: { product: Product; onClose: () => void }) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto" dir="rtl">
