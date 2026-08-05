@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Trash2, Settings } from "lucide-react";
 import { ProductDialog, VariantsDialog } from "@/components/gx/admin/ProductsManager";
+import { QuickAddProduct } from "./QuickAddProduct";
 
 
 
@@ -536,14 +537,11 @@ export function ProductTemplate({ product }: { product: CatalogProduct }) {
       )}
 
       {editing && (
-        <ProductDialog
+        <QuickAddProduct
+          categoryId={editing.category_id}
           product={editing}
-          categories={[]} // Will be fetched inside if needed, or we can fetch here
           onClose={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null);
-            window.location.reload(); // Refresh to see changes
-          }}
+          open={true}
         />
       )}
 
