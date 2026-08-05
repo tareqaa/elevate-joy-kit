@@ -1,4 +1,3 @@
-export const BlastPage = () => null;
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -265,7 +264,7 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-function BlastPage_B() {
+export function BlastPage() {
 
   const { lang, dir } = useLang();
   const ar = lang === "ar";
