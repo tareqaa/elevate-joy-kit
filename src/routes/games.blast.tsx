@@ -273,12 +273,8 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-function BlastPage() {
-  // Use a stable reference that isn't exported as 'BlastPage' to avoid the TS modifier error
-  // but matches what the lazy loader expects.
-}
+export function BlastPage() {
 
-function BlastPage_Internal() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
   const { t: tournamentId } = Route.useSearch();
@@ -1027,4 +1023,3 @@ function BlastPage_Internal() {
     </StoreShell>
   );
 
-}
