@@ -15,6 +15,7 @@ import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 import { GxProfile } from "@/components/gx/GxProfile";
 import { SpinWheel } from "@/components/gx/SpinWheel";
+import { getStoreHeadLinks } from "@/lib/gx/store-head";
 import { Pager, usePager } from "@/components/gx/Pager";
 
 type AccountTab = "profile" | "orders" | "wheel" | "security";
