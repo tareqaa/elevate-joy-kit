@@ -10,12 +10,14 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown, Eye, EyeOff, AlertTriangle, Globe, KeyRound, Lock, Wallet } from "lucide-react";
+import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown, Eye, EyeOff, AlertTriangle, Globe, KeyRound, Lock, Wallet, Star } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 import { GxProfile } from "@/components/gx/GxProfile";
 import { SpinWheel } from "@/components/gx/SpinWheel";
 import { Pager, usePager } from "@/components/gx/Pager";
+import { ReviewModal } from "@/components/gx/ReviewModal";
+
 
 type AccountTab = "profile" | "orders" | "wheel" | "security";
 
@@ -306,9 +308,6 @@ function OrderCard({ order: o }: { order: OrderRow }) {
     enabled: o.status === "delivered",
   });
 
-  const ar = lang === "ar";
-  const [open, setOpen] = useState(false);
-  const [revealing, setRevealing] = useState(false);
   const STATUS_STYLE: Record<string, { label: string; pill: string; bar: string }> = {
     pending: { label: t("acc.status_pending"), pill: "bg-amber-500/15 text-amber-400 border-amber-500/40", bar: "from-amber-500/70" },
     paid: { label: t("acc.status_paid"), pill: "bg-sky-500/15 text-sky-400 border-sky-500/40", bar: "from-sky-500/70" },
