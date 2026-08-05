@@ -1,3 +1,4 @@
+
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
@@ -47,7 +48,18 @@ export const Route = createFileRoute("/games/blast")({
   component: BlastPage,
 });
 
+
+
+
 const BEST_KEY = "gx_blast_best";
+
+export function BlastPage() {
+  const { lang, dir } = useLang();
+  const ar = lang === "ar";
+  const { t: tournamentId } = Route.useSearch();
+
+
+
 const MAX_POPUPS = 4;
 const BOARD_GAP_PX = 2;
 const BOARD_PADDING_PX = 6;
@@ -251,13 +263,6 @@ const MoveTimer = memo(function MoveTimer({
     </div>
   );
 });
-
-function BlastPage() {
-  const { lang, dir } = useLang();
-  const ar = lang === "ar";
-  const { t: tournamentId } = Route.useSearch();
-
-
 
   const [game, setGame] = useState<GameState>(() => createGame(makeSeed()));
   const [dragInfo, setDragInfo] = useState<{ trayIndex: number; piece: PieceDef } | null>(null);
@@ -999,4 +1004,5 @@ function BlastPage() {
       </main>
     </StoreShell>
   );
+
 }

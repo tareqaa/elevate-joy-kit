@@ -22,8 +22,20 @@ export const Route = createFileRoute("/games/t/$id")({
     ],
     links: getStoreHeadLinks(["games"]),
   }),
-  component: TournamentPage,
+  component: TournamentPageLazy,
 });
+
+function TournamentPageLazy() {
+  const [Comp, setComp] = useState<any>(null);
+
+  useEffect(() => {
+    import("./games.t.$id").then(m => setComp(() => m.TournamentPage));
+  }, []);
+
+  if (!Comp) return <div className="min-h-screen bg-[#090b10] flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  return <Comp />;
+}
+
 
 type Row = {
   rank: number; user_id: string; username: string | null; full_name: string | null;
@@ -63,7 +75,7 @@ function PrizeRow({ p, place, ar }: { p: Prize; place: number; ar: boolean }) {
 }
 
 
-function TournamentPage() {
+export function TournamentPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { lang, dir } = useLang();
