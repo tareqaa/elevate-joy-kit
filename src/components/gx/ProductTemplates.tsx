@@ -18,8 +18,9 @@ import { CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
 import { useIsAdmin } from "@/lib/gx/admin-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Trash2, Plus, Settings } from "lucide-react";
+import { Trash2, Settings } from "lucide-react";
 import { ProductDialog, VariantsDialog } from "@/components/gx/admin/ProductsManager";
+
 
 
 const pick = (lang: Lang, ar: string | null | undefined, en: string | null | undefined) =>

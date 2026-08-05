@@ -7,6 +7,8 @@ import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useIsAdmin } from "@/lib/gx/admin-auth";
 import { QuickAddCategory } from "@/components/gx/QuickAddCategory";
 import { Plus, PackagePlus } from "lucide-react";
+import { QuickAddProduct } from "@/components/gx/QuickAddProduct";
+
 import { RichHtml } from "@/lib/gx/sections/rich-text";
 
 export const Route = createFileRoute("/category/$slug")({
