@@ -3,6 +3,7 @@
 
 export const CORE_CSS = [
   { rel: "stylesheet", href: "/app/assets/css/theme.css", "data-gx-store": "/app/assets/css/theme.css" },
+  { rel: "stylesheet", href: "/app/assets/css/gx-animations.css", "data-gx-store": "/app/assets/css/gx-animations.css" },
 ];
 
 export const PAGE_CSS = {
@@ -26,9 +27,3 @@ export function getStoreHeadLinks(keys: (keyof typeof PAGE_CSS)[] = []) {
   const specific = keys.map(k => PAGE_CSS[k]);
   return [...CORE_CSS, ...specific];
 }
-
-// Legacy export for compatibility during migration (deprecated)
-export const STORE_HEAD_LINKS = [
-  ...CORE_CSS,
-  ...Object.values(PAGE_CSS)
-];
