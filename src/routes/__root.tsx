@@ -161,12 +161,12 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <SiteSettingsProvider>
         <LanguageProvider>
-          <CurrencyProvider>
-            <CartProvider>
+          <CartProvider>
+            <CurrencyProvider>
               <Outlet />
               <Toaster richColors position="top-center" />
-            </CartProvider>
-          </CurrencyProvider>
+            </CurrencyProvider>
+          </CartProvider>
         </LanguageProvider>
       </SiteSettingsProvider>
     </QueryClientProvider>
