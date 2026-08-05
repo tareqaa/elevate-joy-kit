@@ -270,7 +270,7 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-function BlastPage() {
+export function BlastPage() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
   const { t: tournamentId } = Route.useSearch();
