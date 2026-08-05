@@ -54,20 +54,19 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
         imageUrl: category?.icon_url || category?.iconImage || ""
       });
     } else if (!category) {
-        setForm({
-          nameAr: "",
-          nameEn: "",
-          descAr: "",
-          descEn: "",
-          taglineAr: "",
-          taglineEn: "",
-          pageTemplate: "standard",
-          icon: "💎",
-          accent: "#00e5ff",
-          gradient: "linear-gradient(135deg,#00e5ff,#0091ff)",
-          imageUrl: ""
-        });
-      }
+      setForm({
+        nameAr: "",
+        nameEn: "",
+        descAr: "",
+        descEn: "",
+        taglineAr: "",
+        taglineEn: "",
+        pageTemplate: "standard",
+        icon: "💎",
+        accent: "#00e5ff",
+        gradient: "linear-gradient(135deg,#00e5ff,#0091ff)",
+        imageUrl: ""
+      });
     }
   }, [open, category]);
 
