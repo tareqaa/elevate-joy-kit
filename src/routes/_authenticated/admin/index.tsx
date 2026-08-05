@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +38,7 @@ const PAID_LIKE = new Set(["paid", "processing", "delivered"]);
 
 function AdminOverview() {
   const [range, setRange] = useState<RangeKey>(30);
+  const navigate = useNavigate();
 
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["admin-dashboard-v3", range],
