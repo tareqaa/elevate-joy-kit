@@ -4,7 +4,7 @@
    render from the database DTO returned by catalog.functions.ts.
    ============================================================ */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CatalogProduct, CatalogVariant } from "@/lib/gx/catalog.functions";
 import { useCurrency } from "@/lib/gx/currency";
