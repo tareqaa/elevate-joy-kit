@@ -2,7 +2,7 @@
 // renders the section for the public homepage. Reuses existing store CSS
 // classes so styling stays consistent with the rest of the site.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react"; from "react";
 import { Link } from "@tanstack/react-router";
 import { CATEGORY_LINKS, getCategoryLink, getFeaturedItems, PRODUCTS_CATALOG, type FeaturedItem } from "@/data/products";
 import { useCurrency } from "@/lib/gx/currency";
@@ -416,7 +416,7 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
           <div><span className="k">{data.eyebrow || t("home.featured_eyebrow")}</span><h2>{data.title || t("home.featured_title")}</h2></div>
         </div>
         <CarouselRow className="featured-grid">
-          {items.map(p => {
+          {items.map((p: any) => {
             const discount = Math.round((1 - p.price / p.oldPrice) * 100);
             const product = PRODUCTS_CATALOG[p.product];
             let iconEl: React.ReactNode = <ProductIcon product={product} />;
