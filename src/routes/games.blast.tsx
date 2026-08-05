@@ -45,7 +45,7 @@ export const Route = createFileRoute("/games/blast")({
     ],
     links: getStoreHeadLinks(["games"]),
   }),
-  component: BlastPageLazy,
+  component: BlastPage,
 });
 
 
@@ -53,7 +53,7 @@ export const Route = createFileRoute("/games/blast")({
 
 const BEST_KEY = "gx_blast_best";
 
-function BlastPage() {
+export function BlastPage() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
   const { t: tournamentId } = Route.useSearch();
@@ -264,7 +264,7 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-function BlastPage() {
+export function BlastPage() {
 
   const { lang, dir } = useLang();
   const ar = lang === "ar";
