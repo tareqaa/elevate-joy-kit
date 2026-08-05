@@ -122,7 +122,18 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
 
   return (
     <>
-      {trigger || (
+      {trigger ? (
+        <div 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(true);
+          }}
+          className="inline-block"
+        >
+          {trigger}
+        </div>
+      ) : (
         <button 
           type="button"
           className={className || "subcat-card edit-parent-btn"} 
