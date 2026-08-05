@@ -33,10 +33,10 @@ import {
   containerMaxWidth, sectionWrapperStyle, themeToCssVars,
   type HomeLayout, type Section, type SectionType, type SectionStyle, type ThemeConfig,
 } from "@/lib/gx/sections/types";
-import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { getStoreHeadLinks } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/_authenticated/admin/home")({
-  head: () => ({ meta: [{ title: "محرر الصفحة الرئيسية — لوحة التحكم" }], links: STORE_HEAD_LINKS }),
+  head: () => ({ meta: [{ title: "محرر الصفحة الرئيسية — لوحة التحكم" }], links: getStoreHeadLinks(["home"]) }),
   component: HomeBuilder,
 });
 
