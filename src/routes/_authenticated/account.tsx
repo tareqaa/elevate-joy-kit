@@ -10,14 +10,12 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown, Eye, EyeOff, AlertTriangle, Globe, KeyRound, Lock, Wallet, Star } from "lucide-react";
+import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown, Eye, EyeOff, AlertTriangle, Globe, KeyRound, Lock, Wallet } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 import { GxProfile } from "@/components/gx/GxProfile";
 import { SpinWheel } from "@/components/gx/SpinWheel";
 import { Pager, usePager } from "@/components/gx/Pager";
-import { ReviewModal } from "@/components/gx/ReviewModal";
-
 
 type AccountTab = "profile" | "orders" | "wheel" | "security";
 
@@ -221,9 +219,6 @@ type OrderRow = {
 };
 
 function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }) {
-  const { user } = Route.useRouteContext();
-  const qc = useQueryClient();
-  const [reviewOrderId, setReviewOrderId] = useState<string | null>(null);
   const { t, dir, lang } = useLang();
   const STATUS_TABS: Array<{ key: string; label: string; match: (s: string) => boolean }> = [
     { key: "pending", label: t("acc.status_pending"), match: (s) => s === "pending" },
@@ -283,27 +278,9 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
         </CardContent></Card>
       ) : (
         <>
-          {pager.slice.map((o) => (
-            <OrderCard
-              key={o.id}
-              order={o}
-              onReview={() => setReviewOrderId(o.id)}
-            />
-          ))}
+          {pager.slice.map((o) => <OrderCard key={o.id} order={o} />)}
           <Pager page={pager.page} pageCount={pager.pageCount} total={pager.total} size={pager.size}
             onPage={pager.setPage} onSize={pager.setSize} sizes={[5, 10, 20]} lang={lang === "ar" ? "ar" : "en"} />
-          
-          <ReviewModal 
-            open={!!reviewOrderId} 
-            onClose={() => setReviewOrderId(null)} 
-            userId={user.id} 
-            initialOrderId={reviewOrderId || undefined}
-            onSuccess={() => {
-              if (reviewOrderId) {
-                qc.invalidateQueries({ queryKey: ["order-review", reviewOrderId] });
-              }
-            }}
-          />
         </>
       )}
     </div>
@@ -311,22 +288,11 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
 }
 
 
-function OrderCard({ order: o, onReview }: { order: OrderRow; onReview: () => void }) {
+function OrderCard({ order: o }: { order: OrderRow }) {
   const { t, lang } = useLang();
   const ar = lang === "ar";
   const [open, setOpen] = useState(false);
   const [revealing, setRevealing] = useState(false);
-
-  // Check if this order has a review already
-  const { data: existingReview } = useQuery({
-    queryKey: ["order-review", o.id],
-    queryFn: async () => {
-      const { data } = await supabase.from("reviews").select("id").eq("order_id", o.id).maybeSingle();
-      return data;
-    },
-    enabled: o.status === "delivered",
-  });
-
   const STATUS_STYLE: Record<string, { label: string; pill: string; bar: string }> = {
     pending: { label: t("acc.status_pending"), pill: "bg-amber-500/15 text-amber-400 border-amber-500/40", bar: "from-amber-500/70" },
     paid: { label: t("acc.status_paid"), pill: "bg-sky-500/15 text-sky-400 border-sky-500/40", bar: "from-sky-500/70" },
@@ -376,8 +342,6 @@ function OrderCard({ order: o, onReview }: { order: OrderRow; onReview: () => vo
 
   return (
     <Card className="overflow-hidden border-white/10 bg-card/60 backdrop-blur transition hover:border-primary/30">
-
-
       <div className={`h-1 w-full bg-gradient-to-l ${status.bar} to-transparent`} />
       <CardContent className="p-4 sm:p-5">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
@@ -392,29 +356,11 @@ function OrderCard({ order: o, onReview }: { order: OrderRow; onReview: () => vo
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${status.pill}`}>
-              <span className="h-1.5 w-1.5 rounded-full bg-current" />
-              {status.label}
-            </span>
-            {o.status === "delivered" && !existingReview && (
-              <button
-                onClick={onReview}
-                className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1"
-              >
-                <Star className="w-3 h-3" />
-                {ar ? "أضف تقييم" : "Rate order"}
-              </button>
-            )}
-            {existingReview && (
-              <span className="text-[10px] font-medium text-emerald-500/80 flex items-center gap-1">
-                <Check className="w-3 h-3" />
-                {ar ? "تم التقييم" : "Rated"}
-              </span>
-            )}
-          </div>
+          <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${status.pill}`}>
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {status.label}
+          </span>
         </div>
-
 
         <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-muted/20 px-3 py-2.5">
           <div className="min-w-0 text-xs text-muted-foreground">

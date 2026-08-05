@@ -251,7 +251,7 @@ export function CarouselRenderer({ data }: { data: CarouselData }) {
     const id = setInterval(() => setIdx((v) => (v + 1) % items.length), interval);
     return () => clearInterval(id);
   }, [autoplay, interval, items.length]);
-  if (!data || items.length === 0) return null;
+  if (items.length === 0) return null;
   const pickSrc = (b: (typeof items)[number]) =>
     (vw < 640 ? b.image_url_mobile : vw < 1024 ? b.image_url_tablet : null) || b.image_url;
   return (
@@ -401,7 +401,7 @@ export function ProductsRenderer({ data }: { data: ProductsData }) {
   const items: FeaturedItem[] = ids.length
     ? ids.map((id) => base.find((b) => b.cartId === id)).filter((x): x is FeaturedItem => !!x)
     : [];
-  if (!data || items.length === 0) return null;
+  if (items.length === 0) return null;
   return (
     <section className="section">
       <div className="wrap">
@@ -652,7 +652,7 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
 export function FaqRenderer({ data }: { data: FaqData }) {
   const items = data.items || [];
   const [open, setOpen] = useState<string | null>(null);
-  if (!data || items.length === 0) return null;
+  if (items.length === 0) return null;
   return (
     <section className="section">
       <div className="wrap">
