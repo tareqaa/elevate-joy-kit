@@ -1106,3 +1106,63 @@ function CountryPricesDialog({ variant, onClose }: { variant: Variant; onClose: 
  */
 // BulkVariantButton already added in previous thought but failed to parse.
 // Let's rewrite the end of the file carefully.
+
+import { bulkCreateVariants } from "@/lib/gx/catalog.functions";
+
+function BulkVariantButton({ productId }: { productId: string }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const qc = useQueryClient();
+  const bulkCreateRpc = useServerFn(bulkCreateVariants);
+
+  async function handleBulk() {
+    if (!text.trim()) return;
+    setSaving(true);
+    try {
+      await bulkCreateRpc({ data: { productId, rows: text.trim() } });
+      toast.success("تم إضافة الخيارات بنجاح");
+      qc.invalidateQueries({ queryKey: ["admin-variants", productId] });
+      setOpen(false);
+      setText("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل الإضافة الجماعية");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <>
+      <button className="gx-btn outline" onClick={() => setOpen(true)}>
+        <Plus size={12} /> إضافة جماعية
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إضافة جماعية للخيارات</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-xs text-cyan-100/60 leading-relaxed">
+              أدخل الخيارات سطر بسطر بالتنسيق التالي:<br />
+              <code className="text-cyan-400">الاسم بالعربي, الاسم بالإنجليزي, السعر, السعر القديم(اختياري), معرف السلة(اختياري)</code>
+            </p>
+            <Textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="شهر, 1 Month, 5.00, 7.00, month-1\n3 شهور, 3 Months, 12.00, 15.00, month-3"
+              rows={8}
+              className="gx-adm-input min-h-[200px]"
+            />
+            <div className="flex justify-end gap-2">
+              <button className="gx-btn outline" onClick={() => setOpen(false)}>إلغاء</button>
+              <button className="gx-btn primary" onClick={handleBulk} disabled={saving}>
+                {saving ? "جاري الإضافة..." : "إضافة الكل"}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
