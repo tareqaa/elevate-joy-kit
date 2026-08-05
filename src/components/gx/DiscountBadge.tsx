@@ -12,10 +12,10 @@ export function DiscountBadge({ value }: { value: number }) {
       style={{ isolation: 'isolate', flexWrap: 'nowrap' }}
     >
       {lang === "ar" ? (
-        <>
-          <span className="opacity-90 inline-block align-middle" style={{ order: 2 }}>خصم</span>
-          <span className="text-[1.1em] inline-block align-middle leading-none" style={{ order: 1 }}>{value}%</span>
-        </>
+        <div className="flex items-center gap-1" style={{ flexDirection: 'row-reverse' }}>
+          <span className="opacity-90 inline-block">خصم</span>
+          <span className="text-[1.1em] inline-block leading-none">{value}%</span>
+        </div>
       ) : (
         <>
           <span className="text-[1.1em] inline-block align-middle leading-none">{value}%</span>
