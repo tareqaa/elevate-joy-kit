@@ -291,7 +291,6 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
       accentColor: c.accent_color ?? null,
       themeGradient: c.theme_gradient ?? null,
       children: (kids ?? [])
-        .filter((k: Record<string, any>) => byCat.has(k.id) || !hasAnyProduct.has(k.id))
         .map((k: Record<string, any>) => {
         const prod = byCat.get(k.id);
         return {
