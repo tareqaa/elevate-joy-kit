@@ -5,11 +5,10 @@ export function setupAuthListener() {
   if (typeof window === "undefined") return;
   
   supabase.auth.onAuthStateChange(async (event, session) => {
-    // Both SIGNED_IN (initial session or login) and SIGNED_UP
-    if ((event === "SIGNED_UP" || event === "SIGNED_IN") && session?.user) {
+    // Check for "INITIAL_SESSION" or "SIGNED_IN" logic
+    if ((event === "INITIAL_SESSION" || event === "SIGNED_IN") && session?.user) {
       const user = session.user;
       
-      // Check if user already has an avatar
       const { data: profile } = await supabase
         .from("profiles")
         .select("avatar_id")

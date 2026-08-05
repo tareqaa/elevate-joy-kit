@@ -459,6 +459,9 @@ const THUMB_PRESETS = [
 ];
 
 function ProductDialog({ product, categories, defaultCategoryId, onClose, onSaved }: { product: Product | null; categories: Category[]; defaultCategoryId?: string; onClose: () => void; onSaved: () => void }) {
+  // Check if we have a product ID to show bulk upload
+  const canBulk = !!product?.id;
+
   const [tab, setTab] = useState<"basic" | "template" | "design" | "delivery" | "variants">("basic");
   const [savedId, setSavedId] = useState<string | null>(product?.id ?? null);
 
