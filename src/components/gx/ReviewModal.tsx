@@ -13,15 +13,15 @@ type OrderLite = {
 
 const css = `
 .gx-rv-ov{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}
-.gx-rv{width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:20px;border:1px solid rgba(0,229,255,.22);background:linear-gradient(180deg,#0b1119,#070b11);box-shadow:0 30px 80px -30px rgba(0,229,255,.35);position:relative}
+.gx-rv{width:100%;max-width:520px;max-height:92vh;overflow-y:auto;overflow-x:hidden;border-radius:20px;border:1px solid rgba(0,229,255,.22);background:linear-gradient(180deg,#0b1119,#070b11);box-shadow:0 30px 80px -30px rgba(0,229,255,.35);position:relative;box-sizing:border-box}
 .gx-rv-close-outer{position:absolute;top:12px;left:12px;z-index:10}
-.gx-rv-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.07)}
+.gx-rv-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.07);box-sizing:border-box}
 .gx-rv-bd{padding:18px;display:grid;gap:14px}
 .gx-rv-lb{font-size:12px;font-weight:800;color:#8ba3b8;margin-bottom:6px;display:block}
 .gx-rv-in{width:100%;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.4);border:1px solid rgba(0,229,255,.18);color:#e6f7ff;font-size:13.5px;font-family:inherit;outline:none}
 .gx-rv-in:focus{border-color:rgba(0,229,255,.55);box-shadow:0 0 0 3px rgba(0,229,255,.12)}
 .gx-rv-star{background:none;border:0;cursor:pointer;padding:2px;line-height:0}
-.gx-rv-ft{display:flex;gap:8px;justify-content:flex-end;padding:14px 18px;border-top:1px solid rgba(255,255,255,.07)}
+.gx-rv-ft{display:flex;gap:8px;justify-content:flex-end;padding:14px 18px;border-top:1px solid rgba(255,255,255,.07);box-sizing:border-box}
 .gx-rv-btn{padding:10px 18px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;border:1px solid transparent}
 .gx-rv-btn.primary{background:linear-gradient(135deg,#00e5ff,#0098d4);color:#04131b}
 .gx-rv-btn.primary:disabled{opacity:.5;cursor:not-allowed}
