@@ -352,6 +352,7 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
         };
       }),
     };
+  });
 
 export const getFeaturedCatalogItems = createServerFn({ method: "GET" })
   .handler(async (): Promise<CatalogProduct[]> => {
