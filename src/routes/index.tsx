@@ -1,19 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, Suspense, lazy } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { containerMaxWidth, sectionWrapperStyle, themeToCssVars, type HomeLayout } from "@/lib/gx/sections/types";
 import { AnimatedSection } from "@/components/gx/AnimatedSection";
-
-// Lazy load heavy section components to speed up initial hydration
-const HeroRenderer = lazy(() => import("@/lib/gx/sections/renderers").then(m => ({ default: m.HeroRenderer })));
-const CarouselRenderer = lazy(() => import("@/lib/gx/sections/renderers").then(m => ({ default: m.CarouselRenderer })));
-const TrustRenderer = lazy(() => import("@/lib/gx/sections/renderers").then(m => ({ default: m.TrustRenderer })));
-const ReviewsRenderer = lazy(() => import("@/lib/gx/sections/renderers").then(m => ({ default: m.ReviewsRenderer })));
-
-// Critical sections kept synchronous or mapped via registry for direct access
 import { SECTION_REGISTRY } from "@/lib/gx/sections/registry";
 
 
@@ -61,12 +53,7 @@ function Home() {
           const def = SECTION_REGISTRY[s.type];
           if (!def) return null;
           
-          // Use specific lazy renderers for heavy sections to avoid blocking hydration
-          let SectionComponent = def.Renderer;
-          if (s.type === "hero") SectionComponent = HeroRenderer as any;
-          else if (s.type === "carousel") SectionComponent = CarouselRenderer as any;
-          else if (s.type === "trust") SectionComponent = TrustRenderer as any;
-          else if (s.type === "reviews") SectionComponent = ReviewsRenderer as any;
+          const SectionComponent = def.Renderer;
 
           const wrapStyle = sectionWrapperStyle(s.style);
           const maxW = containerMaxWidth(s.style?.container);
