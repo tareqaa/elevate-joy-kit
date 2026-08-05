@@ -27,26 +27,8 @@ export function createRouter() {
   return getRouter();
 }
 
-  if (typeof window !== "undefined") setupAuthListener();
-  
-  const queryClient = new QueryClient();
-
-  const router = createTanStackRouter({
-    routeTree,
-    context: { queryClient },
-    scrollRestoration: true,
-    defaultPreload: "intent",
-    defaultPreloadDelay: 20,
-    defaultPreloadStaleTime: 0,
-    defaultPendingMs: 400,
-    defaultPendingMinMs: 200,
-  });
-
-  return router;
-}
-
 declare module "@tanstack/react-router" {
   interface Register {
-    router: ReturnType<typeof createRouter>;
+    router: ReturnType<typeof getRouter>;
   }
 }
