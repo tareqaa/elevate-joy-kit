@@ -1006,6 +1006,3 @@ const MoveTimer = memo(function MoveTimer({
   );
 
 }
-
-
-}
