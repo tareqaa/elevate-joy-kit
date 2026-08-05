@@ -132,13 +132,14 @@ function resolve(items: CartItem[]): ResolvedItem[] {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const [isPending, startTransition] = useTransition();
   const [rawItems, setRawItems] = useState<CartItem[]>([]);
   const [notes, setNotesState] = useState("");
   const [contact, setContactState] = useState<ContactInfo>(DEFAULT_CONTACT);
   const [coupon, setCouponState] = useState<AppliedCoupon | null>(null);
   const [coins, setCoinsState] = useState<AppliedCoins | null>(null);
   const [creditJOD, setCreditState] = useState(0);
-  const loadingRef = useRef(false);
+  const loadingRef = useRef<string | null>(null);
 
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const { currency, format } = useCurrency();
@@ -161,12 +162,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     // Prefill from the signed-in user's profile when local contact is empty.
     (async () => {
-      if (loadingRef.current) return;
-      loadingRef.current = true;
       try {
         const { data: sess } = await supabase.auth.getSession();
         const uid = sess.session?.user?.id;
-        if (!uid) return;
+        if (!uid || loadingRef.current === uid) return;
+        loadingRef.current = uid;
         const { data: prof } = await supabase
           .from("profiles")
           .select("full_name, whatsapp")
