@@ -168,21 +168,14 @@ function CategoryPage() {
                   label={lang === "ar" ? "إضافة قسم فرعي" : "Add Sub-category"}
                 />
                 
-                <button 
+                <QuickAddProduct
+                  categoryId={category.id}
                   className="subcat-card add-product-btn"
-                  onClick={() => {
-                    // Navigate to admin products tab and trigger new product flow
-                    window.location.href = `/admin/products?tab=products&new=1&category_id=${category.id}`;
-                  }}
-                >
-                  <div className="subcat-ic admin-plus"><PackagePlus size={24} /></div>
-                  <div>
-                    <div className="subcat-name">{lang === "ar" ? "إضافة منتج" : "Add Product"}</div>
-                    <div className="subcat-status">{lang === "ar" ? "افتح معالج الإضافة" : "Open product wizard"}</div>
-                  </div>
-                </button>
+                  label={lang === "ar" ? "إضافة منتج" : "Add Product"}
+                />
               </div>
             )}
+
           </div>
         </div>
       </section>
