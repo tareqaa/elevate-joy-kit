@@ -499,13 +499,21 @@ export function ProductTemplate({ product }: { product: CatalogProduct }) {
 
   // We need to fetch the full product row for the editor since CatalogProduct is a transformed DTO
   async function triggerEdit() {
-    const { data } = await supabase.from("products").select("*").eq("slug", product.slug).single();
-    if (data) setEditing(data);
+    const { data, error } = await supabase.from("products").select("*").eq("slug", product.slug).single();
+    if (error) {
+      toast.error(error.message);
+    } else if (data) {
+      setEditing(data);
+    }
   }
 
   async function triggerVariants() {
-    const { data } = await supabase.from("products").select("*").eq("slug", product.slug).single();
-    if (data) setManagingVariants(data);
+    const { data, error } = await supabase.from("products").select("*").eq("slug", product.slug).single();
+    if (error) {
+      toast.error(error.message);
+    } else if (data) {
+      setManagingVariants(data);
+    }
   }
 
 
