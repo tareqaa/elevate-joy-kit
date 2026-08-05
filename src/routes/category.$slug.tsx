@@ -174,7 +174,7 @@ function CategoryPage() {
           {/* Direct Products Grid (Standard Layout) */}
           {category.products.length > 0 && (
             <div className="category-products-grid mb-12">
-              {category.products.map(p => (
+              {category.products.map((p: any) => (
                 <Link key={p.slug} to="/product/$slug" params={{ slug: p.slug }} className="subcat-card clickable">
                   <div className="subcat-ic" style={{ background: p.thumbBg || undefined }}>
                     {p.iconImage ? (
