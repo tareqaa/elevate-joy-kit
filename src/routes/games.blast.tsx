@@ -1,3 +1,4 @@
+export const BlastPage = () => null;
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -45,7 +46,7 @@ export const Route = createFileRoute("/games/blast")({
     ],
     links: getStoreHeadLinks(["games"]),
   }),
-  component: BlastPage,
+  component: BlastPage_A,
 });
 
 
@@ -53,7 +54,7 @@ export const Route = createFileRoute("/games/blast")({
 
 const BEST_KEY = "gx_blast_best";
 
-export function BlastPage() {
+function BlastPage_A() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
   const { t: tournamentId } = Route.useSearch();
@@ -264,7 +265,7 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-export function BlastPage() {
+function BlastPage_B() {
 
   const { lang, dir } = useLang();
   const ar = lang === "ar";
