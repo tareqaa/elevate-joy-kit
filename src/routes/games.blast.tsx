@@ -58,7 +58,7 @@ function BlastPageLazy() {
   return <Comp />;
 }
 
-export function BlastPageInternal() {
+
 
 const BEST_KEY = "gx_blast_best";
 
