@@ -529,9 +529,25 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
         const { error } = await supabase.from("products").update(payload).eq("id", savedId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from("products").insert(payload).select("id").single();
-        if (error) throw error;
-        setSavedId(data.id as string);
+        const { data: newProd, error: prodErr } = await supabase.from("products").insert(payload).select("id").single();
+        if (prodErr) throw prodErr;
+        const newId = newProd.id as string;
+        setSavedId(newId);
+
+        // Auto-create a default variant so the product is immediately buyable if it's simple
+        if (pageTemplate === "standard" && payload.base_price_jod !== null) {
+          const variantPayload = {
+            product_id: newId,
+            cart_id: `${finalSlug}-default`,
+            label_ar: "تفعيل أساسي",
+            label_en: "Standard Activation",
+            price_jod: payload.base_price_jod,
+            is_active: true,
+            sort_order: 0,
+            delivery_type: deliveryType
+          };
+          await supabase.from("product_variants").insert(variantPayload as any);
+        }
       }
       toast.success(savedId ? "تم التحديث" : "تمت الإضافة — أضف الخيارات والأسعار الآن");
       if (stay) { setTab("variants"); return; }

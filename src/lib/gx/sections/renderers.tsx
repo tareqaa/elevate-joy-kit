@@ -609,7 +609,8 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
           {cards.map((it, i) => {
             const original = lang === "en" ? it.quote_en : it.quote_ar;
             const trans = tr[it.id];
-            const q = trans?.text || original;
+            const [showOriginal, setShowOriginal] = useState(false);
+            const q = (trans && !showOriginal) ? trans.text : original;
             const stars = Math.max(1, Math.min(5, it.rating ?? 5));
             return (
               <div key={`${it.id}-${i}`} className="testi-card">
@@ -630,11 +631,30 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
                   <div className="testi-quote testi-clamp">
                     {q}
                     {trans && (
-                      <span style={{ display: "block", marginTop: 6, fontSize: 11, opacity: .6 }}>
-                        {lang === "en"
-                          ? `Translated from ${trans.from === "ar" ? "Arabic" : trans.from.toUpperCase()} · Google`
-                          : `مُترجم من ${trans.from === "en" ? "الإنجليزية" : trans.from.toUpperCase()} · Google`}
-                      </span>
+                      <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11, opacity: .6 }}>
+                          {lang === "en"
+                            ? `Translated from ${trans.from === "ar" ? "Arabic" : trans.from.toUpperCase()} · Google`
+                            : `مُترجم من ${trans.from === "en" ? "الإنجليزية" : trans.from.toUpperCase()} · Google`}
+                        </span>
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowOriginal(!showOriginal); }}
+                          style={{
+                            background: "rgba(0,229,255,0.1)",
+                            border: "1px solid rgba(0,229,255,0.2)",
+                            borderRadius: 6,
+                            padding: "2px 6px",
+                            fontSize: 10,
+                            color: "#00e5ff",
+                            cursor: "pointer",
+                            fontWeight: 700
+                          }}
+                        >
+                          {showOriginal 
+                            ? (lang === "ar" ? "عرض الترجمة" : "Show Translation") 
+                            : (lang === "ar" ? "عرض الأصل" : "View Original")}
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}
