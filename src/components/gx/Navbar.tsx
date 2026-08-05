@@ -118,8 +118,9 @@ export function Navbar() {
     return readCachedProfile(storedUser?.id) ?? profileFromUser(storedUser);
   });
   const [accountOpen, setAccountOpen] = useState(false);
-  const [canReview, setCanReview] = useState(false);
+  const [canReview, setCanReview] = useState(false); // Legacy - kept for safety if needed
   const [reviewOpen, setReviewOpen] = useState(false);
+
   const [wheelOpen, setWheelOpen] = useState(false);
   // Admin state lives in memory only — never in localStorage, which any user
   // could forge to reveal the admin entry. It is always (re)verified against
@@ -438,15 +439,6 @@ export function Navbar() {
                     <Link to="/account" search={{ tab: "security" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">⚙️</span><span>{t("nav.settings")}</span>
                     </Link>
-                    {canReview && (
-                      <button
-                        type="button"
-                        className="acc-link"
-                        onClick={() => { setAccountOpen(false); setReviewOpen(true); }}
-                      >
-                        <span className="ai">⭐</span><span>{lang === "en" ? "Leave a Review" : "اكتب مراجعة"}</span>
-                      </button>
-                    )}
                     {isAdmin && (
                       <Link to="/admin" className="acc-link acc-admin" onClick={() => setAccountOpen(false)}>
                         <span className="ai">🛡️</span><span>{t("nav.admin_panel")}</span>
@@ -521,7 +513,8 @@ export function Navbar() {
       </nav>
       <CurrencyModal open={currencyOpen} onClose={() => setCurrencyOpen(false)} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
-      <ReviewModal open={reviewOpen} onClose={() => setReviewOpen(false)} userId={session?.userId ?? null} />
+      {/* ReviewModal in Navbar is now legacy, reviews are handled in Orders page */}
+      {reviewOpen && <ReviewModal open={reviewOpen} onClose={() => setReviewOpen(false)} userId={session?.userId ?? null} />}
       <SpinWheelModal open={wheelOpen} onOpenChange={setWheelOpen} />
     </>
   );

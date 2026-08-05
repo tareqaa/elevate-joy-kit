@@ -27,10 +27,11 @@ const css = `
 .gx-rv-hint{font-size:11.5px;color:#7d92a8;line-height:1.7}
 `;
 
-export function ReviewModal({ open, onClose, userId }: { open: boolean; onClose: () => void; userId: string | null }) {
+export function ReviewModal({ open, onClose, userId, initialOrderId }: { open: boolean; onClose: () => void; userId: string | null; initialOrderId?: string }) {
   const [orders, setOrders] = useState<OrderLite[]>([]);
   const [loading, setLoading] = useState(false);
-  const [orderId, setOrderId] = useState("");
+  const [orderId, setOrderId] = useState(initialOrderId || "");
+
   const [rating, setRating] = useState(5);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
