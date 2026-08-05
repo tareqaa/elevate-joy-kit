@@ -5,7 +5,7 @@
    ============================================================ */
 
 import { useMemo } from "react";
-import { useNavigate, Link } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import type { CatalogProduct, CatalogVariant } from "@/lib/gx/catalog.functions";
 import { useCurrency } from "@/lib/gx/currency";
 import { useCart } from "@/lib/gx/cart";
@@ -370,7 +370,12 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
             </div>
             <div className="plans-grid">
               {reg.items.map((v) => (
-                <Link key={v.cartId} to="/checkout" search={{ variant: v.cartId }} className="prod-card gc-item-card">
+                <Link 
+                  key={v.cartId} 
+                  to="/cart" 
+                  search={{ variant: v.cartId }} 
+                  className="prod-card gc-item-card"
+                >
                   <div className="gc-item-body">
                     <div className="gc-item-val">{v.label}</div>
                     <div className="gc-item-prices">
