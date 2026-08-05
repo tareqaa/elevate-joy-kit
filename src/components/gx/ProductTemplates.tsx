@@ -4,8 +4,8 @@
    render from the database DTO returned by catalog.functions.ts.
    ============================================================ */
 
-import { useMemo, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { useNavigate, Link } from "@tanstack/react-router";
 import type { CatalogProduct, CatalogVariant } from "@/lib/gx/catalog.functions";
 import { useCurrency } from "@/lib/gx/currency";
 import { useCart } from "@/lib/gx/cart";
@@ -128,6 +128,7 @@ function VariantCard({
 export function StandardTemplate({ product }: { product: CatalogProduct }) {
   const { t } = useLang();
   const l = useLocalized(product);
+  const { format } = useCurrency();
   
   // If no variants exist (newly added simple product), show a single "Buy Now" box
   const hasVariants = l.variants.length > 0;
@@ -154,7 +155,7 @@ export function StandardTemplate({ product }: { product: CatalogProduct }) {
                   <div className="prod-name" style={{ minHeight: "auto", fontSize: 18, fontWeight: 900 }}>{l.name}</div>
                   {product.basePriceJOD !== null && (
                     <div className="prod-prices">
-                      <span className="prod-new" style={{ fontSize: 24 }}>{useCurrency().format(product.basePriceJOD)}</span>
+                      <span className="prod-new" style={{ fontSize: 24 }}>{format(product.basePriceJOD)}</span>
                     </div>
                   )}
                   <div style={{ marginTop: 15 }}>
@@ -176,10 +177,10 @@ export function StandardTemplate({ product }: { product: CatalogProduct }) {
         </section>
       )}
 
-      {product.deliveryDetails && (
+      {(l.deliveryMethod || l.identifierLabel) && (
         <section className="section" style={{ background: "var(--bg2)" }}>
           <div className="wrap">
-            <DeliveryBox details={product.deliveryDetails} />
+            <DeliveryBox method={l.deliveryMethod} identifierLabel={l.identifierLabel} />
           </div>
         </section>
       )}
@@ -213,10 +214,10 @@ export function MultiAccountTemplate({ product }: { product: CatalogProduct }) {
         </section>
       )}
 
-      {product.deliveryDetails && (
+      {(l.deliveryMethod || l.identifierLabel) && (
         <section className="section" style={{ background: "var(--bg2)" }}>
           <div className="wrap">
-            <DeliveryBox details={product.deliveryDetails} />
+            <DeliveryBox method={l.deliveryMethod} identifierLabel={l.identifierLabel} />
           </div>
         </section>
       )}
@@ -369,7 +370,7 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
             </div>
             <div className="plans-grid">
               {reg.items.map((v) => (
-                <Link key={v.cartId} to={`/checkout?variant=${v.cartId}`} className="prod-card gc-item-card">
+                <Link key={v.cartId} to="/checkout" search={{ variant: v.cartId }} className="prod-card gc-item-card">
                   <div className="gc-item-body">
                     <div className="gc-item-val">{v.label}</div>
                     <div className="gc-item-prices">
@@ -396,4 +397,11 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
   );
 }
 
-import { Link } from "@tanstack/react-router";
+export function ProductTemplate({ product }: { product: CatalogProduct }) {
+  switch (product.pageTemplate) {
+    case "snapchat": return <MultiAccountTemplate product={product} />;
+    case "fortnite": return <DualPlansTemplate product={product} />;
+    case "gift_card": return <GiftCardTemplate product={product} />;
+    default: return <StandardTemplate product={product} />;
+  }
+}

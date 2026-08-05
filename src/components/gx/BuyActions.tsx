@@ -4,7 +4,7 @@ import { useCart } from "@/lib/gx/cart";
 import { useLang } from "@/lib/gx/i18n";
 import { CART_ADDED_EVENT } from "./AddedToCartModal";
 
-export function BuyActions({ cartId }: { cartId: string }) {
+export function BuyActions({ cartId, deliveryType }: { cartId: string; deliveryType?: string }) {
   const cart = useCart();
   const { t } = useLang();
   const navigate = useNavigate();
