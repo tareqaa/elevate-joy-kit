@@ -420,11 +420,7 @@ export function ProductTemplate({ product }: { product: CatalogProduct }) {
 
   return (
     <>
-      {product.pageTemplate === "snapchat" ? (
-        <MultiAccountTemplate {...commonProps} />
-      ) : product.pageTemplate === "fortnite" ? (
-        <DualPlansTemplate {...commonProps} />
-      ) : product.pageTemplate === "gift_card" ? (
+      {product.pageTemplate === "gift_card" ? (
         <GiftCardTemplate {...commonProps} />
       ) : (
         <StandardTemplate {...commonProps} />
