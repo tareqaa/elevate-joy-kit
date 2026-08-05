@@ -221,6 +221,9 @@ type OrderRow = {
 };
 
 function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }) {
+  const { user } = Route.useRouteContext();
+  const qc = useQueryClient();
+  const [reviewOrderId, setReviewOrderId] = useState<string | null>(null);
   const { t, dir, lang } = useLang();
   const STATUS_TABS: Array<{ key: string; label: string; match: (s: string) => boolean }> = [
     { key: "pending", label: t("acc.status_pending"), match: (s) => s === "pending" },
@@ -280,9 +283,27 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
         </CardContent></Card>
       ) : (
         <>
-          {pager.slice.map((o) => <OrderCard key={o.id} order={o} />)}
+          {pager.slice.map((o) => (
+            <OrderCard
+              key={o.id}
+              order={o}
+              onReview={() => setReviewOrderId(o.id)}
+            />
+          ))}
           <Pager page={pager.page} pageCount={pager.pageCount} total={pager.total} size={pager.size}
             onPage={pager.setPage} onSize={pager.setSize} sizes={[5, 10, 20]} lang={lang === "ar" ? "ar" : "en"} />
+          
+          <ReviewModal 
+            open={!!reviewOrderId} 
+            onClose={() => setReviewOrderId(null)} 
+            userId={user.id} 
+            initialOrderId={reviewOrderId || undefined}
+            onSuccess={() => {
+              if (reviewOrderId) {
+                qc.invalidateQueries({ queryKey: ["order-review", reviewOrderId] });
+              }
+            }}
+          />
         </>
       )}
     </div>
@@ -290,10 +311,8 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
 }
 
 
-function OrderCard({ order: o }: { order: OrderRow }) {
-  const { user } = Route.useRouteContext();
+function OrderCard({ order: o, onReview }: { order: OrderRow; onReview: () => void }) {
   const { t, lang } = useLang();
-  const [showReview, setShowReview] = useState(false);
   const ar = lang === "ar";
   const [open, setOpen] = useState(false);
   const [revealing, setRevealing] = useState(false);
@@ -357,7 +376,7 @@ function OrderCard({ order: o }: { order: OrderRow }) {
 
   return (
     <Card className="overflow-hidden border-white/10 bg-card/60 backdrop-blur transition hover:border-primary/30">
-      <ReviewModal open={showReview} onClose={() => setShowReview(false)} userId={user.id} initialOrderId={o.id} />
+
 
       <div className={`h-1 w-full bg-gradient-to-l ${status.bar} to-transparent`} />
       <CardContent className="p-4 sm:p-5">
@@ -380,7 +399,7 @@ function OrderCard({ order: o }: { order: OrderRow }) {
             </span>
             {o.status === "delivered" && !existingReview && (
               <button
-                onClick={() => setShowReview(true)}
+                onClick={onReview}
                 className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1"
               >
                 <Star className="w-3 h-3" />
