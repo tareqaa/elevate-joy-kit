@@ -539,6 +539,20 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
         const { data, error } = await supabase.from("products").insert(payload).select("id").single();
         if (error) throw error;
         setSavedId(data.id as string);
+        
+        // Auto-create a default variant if this is a new product with a base price
+        if (basePrice.trim() !== "") {
+          const { error: vErr } = await supabase.from("product_variants").insert({
+            product_id: data.id,
+            name_ar: "أساسي",
+            name_en: "Standard",
+            price_jod: Number(basePrice),
+            cart_id: finalSlug,
+            is_active: true,
+            sort_order: 0
+          });
+          if (vErr) console.warn("[GX] Auto-variant creation failed", vErr);
+        }
       }
       toast.success(savedId ? "تم التحديث" : "تمت الإضافة — أضف الخيارات والأسعار الآن");
       if (stay) { setTab("variants"); return; }
@@ -592,11 +606,22 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
                 <div className="grid md:grid-cols-2 gap-3">
                   <div><Label>الاسم (عربي)</Label><Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} className="gx-adm-input" /></div>
                   <div><Label>الاسم (English)</Label><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} className="gx-adm-input" dir="ltr" /></div>
-                  <div>
-                    <Label>المعرّف (slug)</Label>
-                    <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={slugify(nameEn)} className="gx-adm-input" dir="ltr" />
-                    <p className="text-[11px] text-cyan-100/45 mt-1">يُستخدم بالرابط وبالكوبونات</p>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <Label>المعرّف (slug)</Label>
+                      <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={slugify(nameEn)} className="gx-adm-input" dir="ltr" />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      onClick={() => setSlug(slugify(nameEn))}
+                    >
+                      توليد
+                    </Button>
                   </div>
+                  <p className="text-[11px] text-cyan-100/45 mt-1">يُستخدم بالرابط وبالكوبونات</p>
                   <div>
                     <Label>رقم المنتج (SKU)</Label>
                     <Input value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())} placeholder="مثال: S-3 أو FN-1000" className="gx-adm-input" dir="ltr" />
