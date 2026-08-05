@@ -264,15 +264,6 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-function BlastPage() {
-
-  const { lang, dir } = useLang();
-  const ar = lang === "ar";
-  const { t: tournamentId } = Route.useSearch();
-
-
-
-
   const [game, setGame] = useState<GameState>(() => createGame(makeSeed()));
   const [dragInfo, setDragInfo] = useState<{ trayIndex: number; piece: PieceDef } | null>(null);
   const [target, setTarget] = useState<Target>(null);
