@@ -471,7 +471,22 @@ export function Navbar() {
                 <span>{currency}</span>
               </button>
               <span className="cl-sep">|</span>
-              <button type="button" className="cl-part cl-lang" onClick={() => setCurrencyOpen(true)} title={t("common.language")} aria-label={t("common.language")}>
+              <button type="button" className="cl-part cl-lang" onClick={() => setCurrencyOpen(true)} title="For the code present, I get the error below.
+
+Please think step-by-step in order to resolve it.
+```
+useCart must be used inside CartProvider
+
+{
+  &quot;timestamp&quot;: 1785933604937,
+  &quot;error_type&quot;: &quot;RUNTIME_ERROR&quot;,
+  &quot;filename&quot;: &quot;/&quot;,
+  &quot;lineno&quot;: 0,
+  &quot;colno&quot;: 0,
+  &quot;stack&quot;: &quot;Error: useCart must be used inside CartProvider\n    at useCart (https://b8ad17fa-ee3e-44c1-a1e8-6e5d280c75e7.lovableproject.com/src/lib/gx/cart.tsx:719:18)\n    at Navbar (https://b8ad17fa-ee3e-44c1-a1e8-6e5d280c75e7.lovableproject.com/src/components/gx/Navbar.tsx:81:15)\n    at Object.react_stack_bottom_frame (https://b8ad17fa-ee3e-44c1-a1e8-6e5d280c75e7.lovableproject.com/node_modules/.vite/deps/react-dom_client.js?v=96f29a2d:12868:12)\n    at renderWithHooks (https://b8ad17fa-ee3e-44c1-a1e8-6e5d280c75e7.lovableproject.com/node_modules/.vite/deps/react-dom_client.js?v=96f29a2d:4213:19)\n    at updateFunctionComponent (https://b8ad17fa-ee3e-44c1-a1e8-6e5d280c75e7.lovableproject.com/node_modules/.vite/deps/react-dom_client.js?v=96f29a2d:5569:16)\n    at beginWork (https://b8ad17fa-ee3e-44c1-a1e8-6e5d280c75e7.lovableproject.com/node_modules/.vite/deps/react-dom_client.js?v=96f29a2d:6140:20)\n    at runWithFiberInDEV (https://b8ad17fa-ee3e-44c1-a1e8-6e5d280c75e7.lovableproject.com/node_modules/.vite/deps/react-dom_client.js?v=96f29a2d:851:66)\n    at performUnitOfWork (https://b8ad17fa-ee3e-44c1-a1e8-6e5d280c75e7.lovableproject.com/node_modules/.vite/deps/react-dom_client.js?v=96f29a2d:8429:92)\n    at workLoopSync (https://b8ad17fa-ee3e-44c1-a1e8-6e5d280c75e7.lovableproject.com/node_modules/.vite/deps/react-dom_client.js?v=96f29a2d:8325:37)\n    at renderRootSync (https://b8ad17fa-ee3e-44c1-a1e8-6e5d280c75e7.lovableproject.com/node_modules/.vite/deps/react-dom_client.js?v=96f29a2d:8309:6)&quot;,
+  &quot;has_blank_screen&quot;: true
+}
+```" aria-label={t("common.language")}>
                 <span>{lang === "ar" ? "AR" : "EN"}</span>
               </button>
             </div>
