@@ -483,7 +483,7 @@ export function Navbar() {
                 <span>{currency}</span>
               </button>
               <span className="cl-sep">|</span>
-              <button type="button" className="cl-part cl-lang" onClick={() => setCurrencyOpen(true)} title="كانه صارت مشكلة اثناء شغلك اتأكد من الكوماند خلصته ؟" aria-label={t("common.language")}>
+              <button type="button" className="cl-part cl-lang" onClick={() => setCurrencyOpen(true)} title="هاي المنطقة الليبيل فيه مشكلة" aria-label={t("common.language")}>
                 <span>{lang === "ar" ? "AR" : "EN"}</span>
               </button>
             </div>
