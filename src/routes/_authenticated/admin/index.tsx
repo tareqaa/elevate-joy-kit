@@ -431,6 +431,26 @@ function AdminOverview() {
         </div>
       </div>
 
+      {/* Quick Actions */}
+      <div className="gx-quick">
+        <QuickLink to="/admin/orders" icon={<CheckCircle2 size={16} />} label="إدارة الطلبات" hint="تنفيذ ومعالجة طلبات العملاء" />
+        <button 
+          className="gx-quick-item" 
+          onClick={() => window.location.href = '/admin/products?tab=products&new=1'}
+        >
+          <span className="gx-quick-icon"><Package size={16} /></span>
+          <span className="gx-quick-body">
+            <span className="gx-quick-label">منتج جديد</span>
+            <span className="gx-quick-hint">إضافة اشتراك أو بطاقة</span>
+          </span>
+          <ArrowUpRight size={13} className="gx-quick-arrow" />
+        </button>
+        <QuickLink to="/admin/loyalty" icon={<Trophy size={16} />} label="الولاء والمكافآت" hint="تعديل الرتب والعملات والجوائز" />
+        <QuickLink to="/admin/coupons" icon={<Ticket size={16} />} label="الكوبونات" hint="إنشاء وإدارة أكواد الخصم" />
+        <QuickLink to="/admin/reviews" icon={<MessageSquare size={16} />} label="المراجعات" hint="عرض وإخفاء تقييمات العملاء" />
+        <QuickLink to="/admin/users" icon={<Users size={16} />} label="المستخدمين" hint="إدارة حسابات المسجلين" />
+      </div>
+
       {stats.pendingList.length > 0 && (
         <div className="gx-card">
           <div className="gx-card-head">
