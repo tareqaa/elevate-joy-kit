@@ -188,10 +188,10 @@
 .bb-cell.popped{animation:cellPop .2s var(--ease) 1;}
 @keyframes cellPop{0%{opacity:.55;}60%{opacity:.85;}100%{opacity:1;}}
 
-.bb-cell.clearing{animation:cellClear .34s var(--ease) both;}
+.bb-cell.clearing{animation:cellClear .26s var(--ease) both;}
 @keyframes cellClear{
-  0%{opacity:1; transform:scale(1); z-index:10;}
-  100%{opacity:0; transform:scale(.6); z-index:10;}
+  0%{opacity:1; transform:scale(1);}
+  100%{opacity:0; transform:scale(.82);}
 }
 
 /* dragged piece: fixed at 0,0 and moved with translate3d only */
