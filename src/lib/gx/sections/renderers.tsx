@@ -628,7 +628,15 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
                 </div>
                 {q && (
                   <div className="testi-quote testi-clamp">
-                    {q}
+                    <div className="testi-quote-inner">
+                      {q}
+                      {trans && (
+                        <div className="testi-original" dir={trans.from === "ar" ? "rtl" : "ltr"}>
+                          <div className="testi-orig-label">{lang === "en" ? "Original:" : "الأصلي:"}</div>
+                          {original}
+                        </div>
+                      )}
+                    </div>
                     {trans && (
                       <span style={{ display: "block", marginTop: 6, fontSize: 11, opacity: .6 }}>
                         {lang === "en"

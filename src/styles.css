@@ -195,3 +195,41 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* GX Instant Buy Button (Steam style) */
+.buy-now-btn-instant {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1b2838 0%, #2a475e 100%) !important;
+  color: #67c1f5 !important;
+  border: 1px solid rgba(103, 193, 245, 0.2) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.buy-now-btn-instant:hover {
+  background: linear-gradient(135deg, #2a475e 0%, #1b2838 100%) !important;
+  border-color: #67c1f5 !important;
+  box-shadow: 0 0 15px rgba(103, 193, 245, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Reviews Translation Styles */
+.testi-quote-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.testi-original {
+  font-size: 0.85em;
+  opacity: 0.6;
+  border-inline-start: 2px solid rgba(255,255,255,0.1);
+  padding-inline-start: 8px;
+  margin-top: 4px;
+}
+.testi-orig-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  font-weight: 800;
+  color: var(--gx-primary, #00e5ff);
+}

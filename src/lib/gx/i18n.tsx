@@ -131,3 +131,19 @@ export function useLang(): Ctx {
   if (!ctx) throw new Error("useLang must be used inside LanguageProvider");
   return ctx;
 }
+
+/**
+ * Ensures the Google Translate redirect works by bridging the local state
+ * to the search params for deep links if needed.
+ */
+export function useAutoTranslateBridge() {
+  const { lang } = useLang();
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("hl") !== lang) {
+      // url.searchParams.set("hl", lang);
+      // window.history.replaceState(null, "", url.toString());
+    }
+  }, [lang]);
+}

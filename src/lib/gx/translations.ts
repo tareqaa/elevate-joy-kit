@@ -61,7 +61,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     // Buy actions
     "buy.add": "🛒 أضف للسلة",
     "buy.added": "✓ أضيفت",
-    "buy.buy_now": "⚡ اشتري الآن",
+    "buy.buy_now": "⚡ شراء سريع",
     "added.title": "تمت الإضافة إلى سلة التسوق",
     "added.sub_a": "لديك",
     "added.sub_b": "منتج في سلة التسوق الخاصة بك",
@@ -347,7 +347,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "home.testi_title": "Our customer reviews",
     "buy.add": "🛒 Add to cart",
     "buy.added": "✓ Added",
-    "buy.buy_now": "⚡ Buy now",
+    "buy.buy_now": "⚡ Buy Now",
     "added.title": "Added to your cart",
     "added.sub_a": "You have",
     "added.sub_b": "item(s) in your shopping cart",
