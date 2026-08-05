@@ -15,6 +15,7 @@ import { useIsAdmin } from "@/lib/gx/admin-auth";
 import { QuickAddCategory } from "@/components/gx/QuickAddCategory";
 import { Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { initialOf, avatarColorFor } from "@/lib/gx/reviews";
 import { translateTexts } from "@/lib/gx/translate.functions";
 import type {
@@ -290,6 +291,7 @@ export function CarouselRenderer({ data }: { data: CarouselData }) {
 export function CategoriesRenderer({ data }: { data: CategoriesData }) {
   const { t, lang } = useLang();
   const { isAdmin } = useIsAdmin();
+  const queryClient = useQueryClient();
   const overrides = data.overrides || {};
   const databaseCategories = useStorefrontCategories();
   const links = databaseCategories
@@ -314,14 +316,15 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
             return (
               <div key={c0.slug} style={{ position: "relative" }}>
                 {isAdmin && (
-                  <QuickAddCategory
-                    category={c0}
-                    trigger={
-                      <button className="admin-cat-edit-btn" style={{ position: "absolute", top: 12, insetInlineEnd: 12, zIndex: 20, width: 32, height: 32, borderRadius: "50%", background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)", border: "1px solid rgba(0,229,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#00e5ff", cursor: "pointer" }}>
-                        <Settings size={14} />
-                      </button>
-                    }
-                  />
+                      <QuickAddCategory
+                        category={c0}
+                        onClose={() => queryClient.invalidateQueries({ queryKey: ["storefront-root-categories"] })}
+                        trigger={
+                          <button className="admin-cat-edit-btn" style={{ position: "absolute", top: 12, insetInlineEnd: 12, zIndex: 20, width: 32, height: 32, borderRadius: "50%", background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)", border: "1px solid rgba(0,229,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#00e5ff", cursor: "pointer" }}>
+                            <Settings size={14} />
+                          </button>
+                        }
+                      />
                 )}
                 <Link to={getCategoryLink(c0.slug) as never} className="cat-card-big" style={{ ["--accent" as string]: accent } as React.CSSProperties}>
                   <div className="ccb-top">
