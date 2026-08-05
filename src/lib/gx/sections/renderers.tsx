@@ -320,9 +320,9 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
                         category={c0}
                         onClose={() => queryClient.invalidateQueries({ queryKey: ["storefront-root-categories"] })}
                         trigger={
-                          <button className="admin-cat-edit-btn" style={{ position: "absolute", top: 12, insetInlineEnd: 12, zIndex: 20, width: 32, height: 32, borderRadius: "50%", background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)", border: "1px solid rgba(0,229,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#00e5ff", cursor: "pointer" }}>
+                          <div className="admin-cat-edit-btn" style={{ position: "absolute", top: 12, insetInlineEnd: 12, zIndex: 20, width: 32, height: 32, borderRadius: "50%", background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)", border: "1px solid rgba(0,229,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#00e5ff", cursor: "pointer" }}>
                             <Settings size={14} />
-                          </button>
+                          </div>
                         }
                       />
                 )}
