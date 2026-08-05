@@ -9,13 +9,17 @@ interface QuickAddProductProps {
   label?: string;
 }
 
-export function QuickAddProduct({ categoryId, className, label }: QuickAddProductProps) {
+export function QuickAddProduct({ categoryId, className, label, product }: QuickAddProductProps & { product?: any }) {
   const [open, setOpen] = useState(false);
   const { lang } = useLang();
 
+  const trigger = (
+      {controlledOpen === undefined && trigger}
+  );
+
   return (
     <>
-      <button 
+      {controlledOpen === undefined && ( 
         type="button"
         className={className} 
         onClick={() => setOpen(true)}
@@ -27,15 +31,16 @@ export function QuickAddProduct({ categoryId, className, label }: QuickAddProduc
           <div className="subcat-name">{label || (lang === "ar" ? "إضافة منتج" : "Add Product")}</div>
           <div className="subcat-status">{lang === "ar" ? "إضافة مباشرة هنا" : "Add directly here"}</div>
         </div>
-      </button>
+      )}
 
       {open && (
         <ProductDialog
-          product={null}
+          product={product || null}
           defaultCategoryId={categoryId}
           onClose={() => setOpen(false)}
           onSaved={() => {
             setOpen(false);
+            // We use reload to reflect new product in category list without complex cache management for nested loaders
             window.location.reload();
           }}
         />
