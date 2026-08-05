@@ -261,10 +261,14 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
     
     // Fetch products for both children and the category itself
     const allTargetIds = [c.id, ...kidIds];
-    const { data: prods } = await supabase
+    const { data: prods, error: prodError } = await supabase
       .from("products")
       .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, theme_gradient, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, base_price_jod, region, is_active, is_featured, badge_ar, badge_en, label_color, category_id")
       .in("category_id", allTargetIds);
+    
+    if (prodError) {
+      console.error("Error fetching products for category:", prodError);
+    }
     // Note: We removed the is_active check here because the reveal system 
     // and empty categories need to load metadata even if products are inactive.
     // However, we should filter for the UI if needed.
@@ -272,7 +276,7 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
     const productsForThisCat: CatalogProduct[] = [];
     const productsByChild = new Map<string, any[]>();
 
-    for (const p of (prods ?? []) as Record<string, any>[]) {
+    for (const p of (prods ?? []) as any[]) {
       if (!p.is_active) continue;
 
       if (p.category_id === c.id) {
