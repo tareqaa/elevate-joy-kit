@@ -163,25 +163,37 @@ export function Navbar() {
     }
     (async () => {
       try {
-        const { data: prof } = await supabase.from("profiles").select("username, full_name, avatar_url, level, email, gx_coins, store_credit_jod").eq("id", session.userId).maybeSingle();
-        const next = prof ? { ...prof, id: session.userId } : { id: session.userId, email: session.email };
-        setProfile(next);
-        try {
-          localStorage.setItem(`gx:profile:${session.userId}`, JSON.stringify(next));
-          localStorage.setItem("gx_profile_cache", JSON.stringify(next));
-        } catch { /* noop */ }
-      } catch { setProfile((p) => p ?? { email: session.email }); }
-      try {
-        const { data: adminData } = await supabase.rpc("has_role", { _user_id: session.userId, _role: "admin" });
-        setIsAdmin(!!adminData);
-      } catch { setIsAdmin(false); }
+        // Fetch profile, admin role, and order count in parallel
+        const [profRes, adminRes, countRes] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("username, full_name, avatar_url, level, email, gx_coins, store_credit_jod")
+            .eq("id", session.userId)
+            .maybeSingle(),
+          supabase.rpc("has_role", { _user_id: session.userId, _role: "admin" }),
+          supabase
+            .from("orders")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", session.userId)
+            .eq("status", "delivered"),
+        ]);
 
-      try {
-        const { count } = await supabase.from("orders")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", session.userId).eq("status", "delivered");
-        setCanReview((count ?? 0) > 0);
-      } catch { /* noop */ }
+        if (profRes.data) {
+          const next = { ...profRes.data, id: session.userId };
+          setProfile(next);
+          try {
+            localStorage.setItem(`gx:profile:${session.userId}`, JSON.stringify(next));
+            localStorage.setItem("gx_profile_cache", JSON.stringify(next));
+          } catch { /* noop */ }
+        } else {
+          setProfile((p) => p ?? { email: session.email });
+        }
+
+        setIsAdmin(!!adminRes.data);
+        setCanReview((countRes.count ?? 0) > 0);
+      } catch (e) {
+        console.error("[Navbar] Initial data fetch failed", e);
+      }
     })();
   }, [session]);
 

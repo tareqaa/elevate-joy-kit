@@ -18,9 +18,9 @@ import { CartProvider } from "@/lib/gx/cart";
 import { LanguageProvider } from "@/lib/gx/i18n";
 import { SiteSettingsProvider } from "@/lib/gx/site-settings";
 import { CORE_CSS } from "@/lib/gx/store-head";
+import { StoreSkeleton } from "@/components/gx/StoreSkeleton";
+import { useHydrated } from "@/hooks/use-hydrated"; // We'll need to check if this exists or create it
 
-// Core store CSS is injected into store routes via head().
-// The static injection here is removed to allow granular loading.
 
 
 function NotFoundComponent() {
@@ -136,6 +136,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const hydrated = useHydrated();
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
@@ -145,6 +146,10 @@ function RootComponent() {
     });
     return () => sub.subscription.unsubscribe();
   }, [router, queryClient]);
+
+  if (!hydrated) {
+    return <StoreSkeleton />;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
