@@ -1,4 +1,4 @@
-/** Execute esta instrucao no projeto: مرحبا **/
+/** Execute esta instrucao no projeto: في مشكلة في صفحة عرض ال gimini ليبل الي فيه خصم فيه تحته ليبل طالعين فوق بعض هاي المشكلة جاي بالغةالعربية اللغة الانجليزية مش موجودة فيها **/
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";

@@ -86,8 +86,10 @@ function VariantCard({
   return (
     <div className="prod-card">
       <div className="prod-thumb" style={{ background: p.thumbBg || undefined }}>
-        {v.tag && <span className="tag-badge">{v.tag}</span>}
-        <DiscountBadge value={discountOf(v)} />
+        <div className="badge-stack">
+          {v.tag && <span className="tag-badge">{v.tag}</span>}
+          <DiscountBadge value={discountOf(v)} />
+        </div>
         {icon ??
           (p.iconImage ? (
             <img src={p.iconImage} alt="" style={{ width: 64, height: 64, objectFit: "contain" }} />
@@ -229,8 +231,10 @@ export function MultiAccountTemplate({ product }: { product: CatalogProduct }) {
               return (
                 <div key={pl.cartId} className={"snap-plan" + (pl.cartId === planId ? " selected" : "")} onClick={() => setPlanId(pl.cartId)}>
                   <div className="sp-check">✓</div>
-                  {pl.tag && <div className="sp-tag">{pl.tag}</div>}
-                  {discount > 0 && <div className="sp-discount">{t("snap.save_pct")} {discount}%</div>}
+                  <div className="badge-stack" style={{ position: "absolute", top: 12, right: 12, left: 12, pointerEvents: "none" }}>
+                    {pl.tag && <div className="sp-tag" style={{ position: "static", transform: "none" }}>{pl.tag}</div>}
+                    {discount > 0 && <div className="sp-discount" style={{ position: "static", transform: "none" }}>{t("snap.save_pct")} {discount}%</div>}
+                  </div>
                   <div className="sp-icon">
                     {product.iconImage ? <img src={product.iconImage} alt="" style={{ width: 34, height: 34, objectFit: "contain" }} /> : product.icon}
                   </div>
