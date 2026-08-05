@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Trash2, Settings } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -34,8 +34,41 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
     pageTemplate: category?.page_template || "standard",
     icon: category?.icon || "💎",
     accent: category?.accent_color || "#00e5ff",
-    gradient: category?.theme_gradient || "linear-gradient(135deg,#00e5ff,#0091ff)"
+    gradient: category?.theme_gradient || "linear-gradient(135deg,#00e5ff,#0091ff)",
+    imageUrl: category?.icon_url || ""
   });
+
+  useEffect(() => {
+    if (open) {
+      setForm({
+        nameAr: category?.name_ar || category?.nameAr || "",
+        nameEn: category?.name_en || category?.nameEn || "",
+        descAr: category?.description_ar || category?.descriptionAr || "",
+        descEn: category?.description_en || category?.descriptionEn || "",
+        taglineAr: category?.tagline_ar || category?.taglineAr || "",
+        taglineEn: category?.tagline_en || category?.taglineEn || "",
+        pageTemplate: category?.page_template || category?.pageTemplate || "standard",
+        icon: category?.icon || "💎",
+        accent: category?.accent_color || category?.accentColor || "#00e5ff",
+        gradient: category?.theme_gradient || category?.themeGradient || "linear-gradient(135deg,#00e5ff,#0091ff)",
+        imageUrl: category?.icon_url || category?.iconImage || ""
+      });
+    } else if (!category) {
+      setForm({
+        nameAr: "",
+        nameEn: "",
+        descAr: "",
+        descEn: "",
+        taglineAr: "",
+        taglineEn: "",
+        pageTemplate: "standard",
+        icon: "💎",
+        accent: "#00e5ff",
+        gradient: "linear-gradient(135deg,#00e5ff,#0091ff)",
+        imageUrl: ""
+      });
+    }
+  }, [open, category]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -61,10 +94,11 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
         tagline_en: form.taglineEn,
         page_template: form.pageTemplate,
         icon: form.icon,
+        icon_url: form.imageUrl,
         accent_color: form.accent,
         theme_gradient: form.gradient,
         parent_id: parentId,
-        is_main: parentId === null && !category,
+        is_main: category ? !!category.is_main : (parentId === null),
         is_active: true,
       };
 
@@ -259,6 +293,21 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
                   />
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs opacity-60">{lang === "ar" ? "رابط الصورة (اختياري)" : "Image URL (Optional)"}</Label>
+              <Input 
+                value={form.imageUrl} 
+                onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
+                placeholder="https://..."
+                className="bg-white/5 border-white/10"
+              />
+              {form.imageUrl && (
+                <div className="mt-2 w-16 h-16 rounded-lg overflow-hidden border border-white/10 bg-black/20">
+                  <img src={form.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
             </div>
 
             <div className="pt-4 border-t border-white/5 flex justify-between gap-3">
