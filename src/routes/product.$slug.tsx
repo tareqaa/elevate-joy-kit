@@ -2,7 +2,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { getCatalogProduct } from "@/lib/gx/catalog.functions";
 import { ProductTemplate } from "@/components/gx/ProductTemplates";
-import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { getStoreHeadLinks } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/product/$slug")({
   loader: async ({ params }) => {
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/product/$slug")({
         { name: "twitter:card", content: "summary_large_image" },
         ...(p ? [] : [{ name: "robots", content: "noindex" }]),
       ],
-      links: STORE_HEAD_LINKS,
+      links: getStoreHeadLinks(["product"]),
     };
   },
   errorComponent: ({ error }) => (

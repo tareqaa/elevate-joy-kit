@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { getStoreHeadLinks } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { GameIcon } from "@/components/gx/games/GameIcon";
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/games/t/$id")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: STORE_HEAD_LINKS,
+    links: getStoreHeadLinks(["games"]),
   }),
   component: TournamentPage,
 });

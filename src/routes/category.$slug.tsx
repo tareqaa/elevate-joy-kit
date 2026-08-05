@@ -3,7 +3,7 @@ import { StoreShell } from "@/components/gx/StoreShell";
 import { getCatalogCategory } from "@/lib/gx/catalog.functions";
 import type { CatalogCategoryChild } from "@/lib/gx/catalog.functions";
 import { useLang } from "@/lib/gx/i18n";
-import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { getStoreHeadLinks } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/category/$slug")({
   loader: async ({ params }) => {
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/category/$slug")({
         { property: "og:type", content: "website" },
         { name: "twitter:card", content: "summary_large_image" },
       ],
-      links: STORE_HEAD_LINKS,
+      links: getStoreHeadLinks(["category"]),
     };
   },
   errorComponent: ({ error }) => (
