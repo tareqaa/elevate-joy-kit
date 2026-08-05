@@ -270,16 +270,12 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
     // However, we should filter for the UI if needed.
 
     const productsForThisCat: CatalogProduct[] = [];
-    const productsByChild = new Map<string, Record<string, any>>();
-    const hasAnyProduct = new Set<string>();
+    const productsByChild = new Map<string, any[]>();
 
     for (const p of (prods ?? []) as Record<string, any>[]) {
-      hasAnyProduct.add(p.category_id);
-      
+      if (!p.is_active) continue;
+
       if (p.category_id === c.id) {
-        // Map to CatalogProduct (simplified or full depending on need, but let's stick to full if possible)
-        // Note: For brevity in the catalog view, we might not need full variants/features here, 
-        // but the current type expects them. Let's provide empty arrays for now as they are fetched in getCatalogProduct.
         productsForThisCat.push({
           slug: p.slug,
           nameAr: p.name_ar,
@@ -301,7 +297,7 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
           deliveryMethodAr: p.delivery_method_ar,
           deliveryMethodEn: p.delivery_method_en,
           deliveryDetails: p.delivery_details,
-          pageTemplate: p.page_template,
+          page_template: p.page_template,
           deliveryType: p.delivery_type,
           basePriceJOD: p.base_price_jod,
           region: p.region,
@@ -312,11 +308,10 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
           variants: [],
           features: [],
           themeGradient: p.theme_gradient
-        });
-      }
-
-      if (p.is_active && p.category_id !== c.id && !productsByChild.has(p.category_id)) {
-        productsByChild.set(p.category_id, p);
+        } as any);
+      } else {
+        if (!productsByChild.has(p.category_id)) productsByChild.set(p.category_id, []);
+        productsByChild.get(p.category_id)!.push(p);
       }
     }
 
@@ -336,7 +331,10 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
       products: productsForThisCat,
       children: (kids ?? [])
         .map((k: Record<string, any>) => {
-        const prod = productsByChild.get(k.id);
+        const childProds = productsByChild.get(k.id) || [];
+        // If it has exactly one product, we can link directly to it.
+        // If it has multiple, we link to the sub-category page.
+        const firstProd = childProds.length === 1 ? childProds[0] : null;
         return {
           id: k.id,
           slug: k.slug,
@@ -346,11 +344,11 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
           taglineEn: k.tagline_en ?? null,
           descriptionAr: k.description_ar ?? null,
           descriptionEn: k.description_en ?? null,
-          icon: k.icon ?? prod?.icon ?? null,
-          iconImage: k.icon_url ?? prod?.icon_image_url ?? null,
-          bg: k.theme_gradient ?? prod?.thumb_bg ?? null,
+          icon: k.icon ?? firstProd?.icon ?? null,
+          iconImage: k.icon_url ?? firstProd?.icon_image_url ?? null,
+          bg: k.theme_gradient ?? firstProd?.thumb_bg ?? null,
           pageTemplate: k.page_template ?? "standard",
-          productSlug: prod?.slug ?? null,
+          productSlug: firstProd?.slug ?? null,
         };
       }),
     };
