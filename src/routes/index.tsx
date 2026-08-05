@@ -67,7 +67,7 @@ function Home() {
               dataAttrs={{ "data-section": s.type }}
             >
               <div style={{ maxWidth: maxW, margin: "0 auto", width: "100%" }}>
-                <Suspense fallback={<div className="section-loading-placeholder" style={{ height: 300, background: 'rgba(255,255,255,0.02)', borderRadius: 20 }} />}>
+                <Suspense fallback={<div className="section-loading-placeholder animate-pulse" style={{ height: 300, background: 'rgba(255,255,255,0.03)', borderRadius: 24, margin: '20px 0' }} />}>
                   <SectionComponent data={s.data} />
                 </Suspense>
               </div>
