@@ -23,7 +23,7 @@ export function BuyActions({ cartId }: { cartId: string }) {
       >
         {added ? t("buy.added") : t("buy.add")}
       </button>
-      <button className="buy-now-btn" type="button" onClick={() => { cart.buyNow(cartId); navigate({ to: "/cart" }); }}>
+      <button className="buy-now-btn buy-now-btn-instant" type="button" onClick={() => { cart.buyNow(cartId); navigate({ to: "/cart" }); }}>
         {t("buy.buy_now")}
       </button>
     </div>
