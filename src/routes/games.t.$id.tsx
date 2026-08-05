@@ -36,7 +36,7 @@ function TournamentPageLazy() {
   return <Comp />;
 }
 
-export function TournamentPage() {
+function TournamentPage() {
 
 type Row = {
   rank: number; user_id: string; username: string | null; full_name: string | null;
