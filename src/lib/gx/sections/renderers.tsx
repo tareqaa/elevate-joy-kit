@@ -601,6 +601,8 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
   }, [dir, items.length]);
 
   const cards = [...items, ...items];
+  const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
+
   return (
     <section className="section" style={{ background: "var(--bg2)" }}>
       <div className="wrap">
@@ -609,10 +611,12 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
           {cards.map((it, i) => {
             const original = lang === "en" ? it.quote_en : it.quote_ar;
             const trans = tr[it.id];
-            const q = trans?.text || original;
+            const key = `${it.id}-${i}`;
+            const orig = showOriginal[key] === true;
+            const q = (trans && !orig) ? trans.text : original;
             const stars = Math.max(1, Math.min(5, it.rating ?? 5));
             return (
-              <div key={`${it.id}-${i}`} className="testi-card">
+              <div key={key} className="testi-card">
                 <div className="testi-top">
                   <div className="testi-avatar" style={{ background: it.color }}>{it.initial}</div>
                   <div>
@@ -631,13 +635,26 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
                     {q}
                     {trans && (
                       <span style={{ display: "block", marginTop: 6, fontSize: 11, opacity: .6 }}>
-                        {lang === "en"
-                          ? `Translated from ${trans.from === "ar" ? "Arabic" : trans.from.toUpperCase()} · Google`
-                          : `مُترجم من ${trans.from === "en" ? "الإنجليزية" : trans.from.toUpperCase()} · Google`}
+                        {orig
+                          ? (lang === "en" ? "Original text" : "النص الأصلي")
+                          : (lang === "en"
+                            ? `Translated from ${trans.from === "ar" ? "Arabic" : trans.from.toUpperCase()} · Google`
+                            : `مُترجم من ${trans.from === "en" ? "الإنجليزية" : trans.from.toUpperCase()} · Google`)}
+                        {" · "}
+                        <button
+                          type="button"
+                          onClick={() => setShowOriginal((s) => ({ ...s, [key]: !orig }))}
+                          style={{ background: "none", border: 0, padding: 0, cursor: "pointer", color: "var(--acc, #00e5ff)", font: "inherit", textDecoration: "underline" }}
+                        >
+                          {orig
+                            ? (lang === "en" ? "Show translation" : "عرض الترجمة")
+                            : (lang === "en" ? "Show original" : "عرض الأصل")}
+                        </button>
                       </span>
                     )}
                   </div>
                 )}
+
               </div>
 
             );

@@ -528,19 +528,41 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
       if (savedId) {
         const { error } = await supabase.from("products").update(payload).eq("id", savedId);
         if (error) throw error;
+        toast.success("تم التحديث");
       } else {
         const { data, error } = await supabase.from("products").insert(payload).select("id").single();
         if (error) throw error;
-        setSavedId(data.id as string);
+        const newId = data.id as string;
+        setSavedId(newId);
+        // Single-price product → create a default variant so "اشترِ الآن" works instantly.
+        const price = basePrice.trim() === "" ? NaN : Number(basePrice);
+        if (Number.isFinite(price) && price > 0) {
+          await supabase.from("product_variants").insert({
+            product_id: newId,
+            label_ar: nameAr.trim(), label_en: nameEn.trim(),
+            price_jod: price, is_active: true, sort_order: 0,
+            cart_id: finalSlug,
+            delivery_type: deliveryType as Product["delivery_type"],
+            region: region.trim() || null,
+          } as never);
+          toast.success("تمت الإضافة — المنتج جاهز للشراء الآن");
+        } else {
+          toast.success("تمت الإضافة — أضف الخيارات والأسعار الآن");
+        }
       }
-      toast.success(savedId ? "تم التحديث" : "تمت الإضافة — أضف الخيارات والأسعار الآن");
       if (stay) { setTab("variants"); return; }
       onSaved();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "فشل الحفظ");
+      const msg = e instanceof Error ? e.message : "فشل الحفظ";
+      toast.error(
+        msg.includes("duplicate") && msg.includes("slug") ? "المعرّف (slug) مستخدم مسبقاً — غيّره"
+          : msg.includes("duplicate") && msg.includes("sku") ? "الـ SKU مستخدم مسبقاً"
+          : msg,
+      );
     } finally {
       setSaving(false);
     }
+
   }
 
   async function upload(file: File, setter: (u: string) => void) {
