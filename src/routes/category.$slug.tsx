@@ -6,7 +6,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useIsAdmin } from "@/lib/gx/admin-auth";
 import { QuickAddCategory } from "@/components/gx/QuickAddCategory";
-import { Plus, PackagePlus } from "lucide-react";
+import { Plus, PackagePlus, Settings } from "lucide-react";
 import { QuickAddProduct } from "@/components/gx/QuickAddProduct";
 
 import { RichHtml } from "@/lib/gx/sections/rich-text";
@@ -196,7 +196,8 @@ function CategoryPage() {
                     tagline_en: category.taglineEn,
                     page_template: category.pageTemplate,
                     icon: category.icon,
-                    // We don't have accent/gradient in CatalogCategory DTO but it will fall back to defaults or we could fetch them if critical
+                    accent_color: category.accentColor,
+                    theme_gradient: category.themeGradient,
                   }}
                   trigger={
                     <button className="subcat-card edit-parent-btn" style={{ border: "1px dashed rgba(0,229,255,0.3)", background: "rgba(0,229,255,0.05)" }}>

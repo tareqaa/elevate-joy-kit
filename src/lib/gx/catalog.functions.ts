@@ -73,6 +73,7 @@ export type CatalogProduct = {
   labelColor: string | null;
   variants: CatalogVariant[];
   features: CatalogFeature[];
+  themeGradient: string | null;
 };
 
 export type CatalogCategoryChild = {
@@ -98,6 +99,8 @@ export type CatalogCategory = {
   icon: string | null;
   pageTemplate: string;
   children: CatalogCategoryChild[];
+  accentColor: string | null;
+  themeGradient: string | null;
 };
 
 function publicClient() {
@@ -142,7 +145,7 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
     const { data: row } = await supabase
       .from("products")
       .select(
-        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, base_price_jod, region, is_active, is_featured, badge_ar, badge_en, label_color, categories:category_id (name_ar, name_en)",
+        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, theme_gradient, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, base_price_jod, region, is_active, is_featured, badge_ar, badge_en, label_color, categories:category_id (name_ar, name_en)",
       )
       .eq("slug", data.slug)
       .eq("is_active", true)
@@ -181,6 +184,7 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
       iconImage: p.icon_image_url ?? null,
       thumbBg: p.thumb_bg ?? null,
       accentColor: p.accent_color ?? null,
+      themeGradient: p.theme_gradient ?? null,
       cardGradient: p.card_gradient ?? null,
       categoryNameAr: cat?.name_ar ?? null,
       categoryNameEn: cat?.name_en ?? cat?.name_ar ?? null,
@@ -235,7 +239,7 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
     const supabase = publicClient();
     const { data: row } = await supabase
       .from("categories")
-      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, page_template, is_active")
+      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, page_template, is_active, accent_color, theme_gradient")
       .eq("slug", data.slug)
       .eq("is_active", true)
       .maybeSingle();
@@ -278,6 +282,8 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
       descriptionEn: c.description_en ?? null,
       icon: c.icon ?? null,
       pageTemplate: c.page_template ?? "standard",
+      accentColor: c.accent_color ?? null,
+      themeGradient: c.theme_gradient ?? null,
       children: (kids ?? [])
         .filter((k: Record<string, any>) => byCat.has(k.id) || !hasAnyProduct.has(k.id))
         .map((k: Record<string, any>) => {
