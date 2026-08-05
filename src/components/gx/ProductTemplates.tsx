@@ -520,6 +520,8 @@ export function ProductTemplate({ product }: { product: CatalogProduct }) {
           product={managingVariants}
           onClose={() => setManagingVariants(null)}
         />
+      )}
+
 
     </>
   );
