@@ -3,6 +3,7 @@
 
 export const CORE_CSS = [
   { rel: "stylesheet", href: "/app/assets/css/theme.css", "data-gx-store": "/app/assets/css/theme.css" },
+  { rel: "stylesheet", href: "/app/assets/css/gx-animations.css", "data-gx-store": "/app/assets/css/gx-animations.css" },
 ];
 
 export const PAGE_CSS = {

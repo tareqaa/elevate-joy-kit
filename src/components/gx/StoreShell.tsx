@@ -5,14 +5,15 @@ import { CartDrawer } from "./CartDrawer";
 import { AddedToCartModal } from "./AddedToCartModal";
 import { AdminFab } from "./AdminFab";
 import { InlineTextEditor } from "@/lib/gx/copy-overrides";
-import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { getStoreHeadLinks, CORE_CSS } from "@/lib/gx/store-head";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 
 // Inject store stylesheets ONCE at module load (synchronously, before first render)
 // so navigating between store routes never flashes unstyled content.
 function ensureStoreStyles() {
   if (typeof document === "undefined") return;
-  for (const l of STORE_HEAD_LINKS) {
+  const links = getStoreHeadLinks(); // Only CORE_CSS by default
+  for (const l of links) {
     if (document.head.querySelector(`link[data-gx-store="${l.href}"]`)) continue;
     const el = document.createElement("link");
     el.rel = l.rel;
