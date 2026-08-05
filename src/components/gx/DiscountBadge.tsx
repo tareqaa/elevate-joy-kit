@@ -7,14 +7,14 @@ export function DiscountBadge({ value }: { value: number }) {
   if (!value || value <= 0) return null;
   return (
     <span 
-      className="discount-badge inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-bold bg-[#FF2D78] text-white shadow-[0_2px_10px_rgba(255,45,120,0.4)] whitespace-nowrap min-w-fit leading-none" 
+      className="discount-badge inline-flex items-center justify-center gap-1 px-3 py-1 rounded-full text-[13px] font-bold bg-[#FF2D78] text-white shadow-[0_2px_10px_rgba(255,45,120,0.4)] whitespace-nowrap min-w-fit leading-none" 
       dir={lang === "ar" ? "rtl" : "ltr"}
-      style={{ isolation: 'isolate' }}
+      style={{ isolation: 'isolate', flexWrap: 'nowrap' }}
     >
       {lang === "ar" ? (
         <>
-          <span className="opacity-90 inline-block align-middle">خصم</span>
-          <span className="text-[1.1em] inline-block align-middle leading-none">{value}%</span>
+          <span className="opacity-90 inline-block align-middle" style={{ order: 2 }}>خصم</span>
+          <span className="text-[1.1em] inline-block align-middle leading-none" style={{ order: 1 }}>{value}%</span>
         </>
       ) : (
         <>
