@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { getStoreHeadLinks } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -42,7 +42,7 @@ export const Route = createFileRoute("/games/blast")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: STORE_HEAD_LINKS,
+    links: getStoreHeadLinks(["games"]),
   }),
   component: BlastPage,
 });
