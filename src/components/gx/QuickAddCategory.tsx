@@ -53,6 +53,23 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
         gradient: category?.theme_gradient || "linear-gradient(135deg,#00e5ff,#0091ff)",
         imageUrl: category?.icon_url || ""
       });
+    } else {
+      // Reset form when closing if not editing
+      if (!category) {
+        setForm({
+          nameAr: "",
+          nameEn: "",
+          descAr: "",
+          descEn: "",
+          taglineAr: "",
+          taglineEn: "",
+          pageTemplate: "standard",
+          icon: "💎",
+          accent: "#00e5ff",
+          gradient: "linear-gradient(135deg,#00e5ff,#0091ff)",
+          imageUrl: ""
+        });
+      }
     }
   }, [open, category]);
 
