@@ -169,8 +169,6 @@ export function ReviewModal({ open, onClose, userId, initialOrderId, onSuccess }
             {saving ? (lang === "ar" ? "جاري الإرسال..." : "Sending...") : (lang === "ar" ? "إرسال المراجعة" : "Submit Review")}
           </button>
           <button className="gx-rv-btn ghost" onClick={onClose}>{lang === "ar" ? "إلغاء" : "Cancel"}</button>
-            {saving ? (lang === "ar" ? "جاري الإرسال..." : "Sending...") : (lang === "ar" ? "إرسال المراجعة" : "Submit Review")}
-          </button>
         </div>
       </div>
     </div>
