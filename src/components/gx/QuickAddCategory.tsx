@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2, Settings } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,23 +17,24 @@ interface QuickAddCategoryProps {
   trigger?: React.ReactNode;
 }
 
-export function QuickAddCategory({ parentId = null, className, label }: QuickAddCategoryProps) {
+export function QuickAddCategory({ parentId = null, className, label, category, onClose, trigger }: QuickAddCategoryProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const queryClient = useQueryClient();
   const { lang } = useLang();
   
   const [form, setForm] = useState({
-    nameAr: "",
-    nameEn: "",
-    descAr: "",
-    descEn: "",
-    taglineAr: "",
-    taglineEn: "",
-    pageTemplate: "standard",
-    icon: "💎",
-    accent: "#00e5ff",
-    gradient: "linear-gradient(135deg,#00e5ff,#0091ff)"
+    nameAr: category?.name_ar || "",
+    nameEn: category?.name_en || "",
+    descAr: category?.description_ar || "",
+    descEn: category?.description_en || "",
+    taglineAr: category?.tagline_ar || "",
+    taglineEn: category?.tagline_en || "",
+    pageTemplate: category?.page_template || "standard",
+    icon: category?.icon || "💎",
+    accent: category?.accent_color || "#00e5ff",
+    gradient: category?.theme_gradient || "linear-gradient(135deg,#00e5ff,#0091ff)"
   });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -63,20 +64,20 @@ export function QuickAddCategory({ parentId = null, className, label }: QuickAdd
         accent_color: form.accent,
         theme_gradient: form.gradient,
         parent_id: parentId,
-        is_main: parentId === null && !category, // Don't force change on edit
+        is_main: parentId === null && !category,
         is_active: true,
       };
 
       let error;
       if (category?.id) {
-        const { error: err } = await supabase.from("categories").update(payload).eq("id", category.id);
+        const { error: err } = await supabase.from("categories").update(payload as any).eq("id", category.id);
         error = err;
       } else {
         const { error: err } = await supabase.from("categories").insert({
           ...payload,
           slug,
           sort_order: 999
-        });
+        } as any);
         error = err;
       }
 
@@ -85,21 +86,10 @@ export function QuickAddCategory({ parentId = null, className, label }: QuickAdd
       toast.success(lang === "ar" ? "تم الحفظ بنجاح" : "Saved successfully");
       setOpen(false);
       onClose?.();
-      setForm({
-        nameAr: "",
-        nameEn: "",
-        descAr: "",
-        descEn: "",
-        taglineAr: "",
-        taglineEn: "",
-        pageTemplate: "standard",
-        icon: "💎",
-        accent: "#00e5ff",
-        gradient: "linear-gradient(135deg,#00e5ff,#0091ff)"
-      });
       
       // Refresh both homepage and subcategory lists
       queryClient.invalidateQueries({ queryKey: ["storefront-root-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-categories-list"] });
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -254,8 +244,9 @@ export function QuickAddCategory({ parentId = null, className, label }: QuickAdd
                   type="button"
                   disabled={deleting}
                   onClick={handleDelete}
-                  className="px-4 py-2 text-sm text-red-400 hover:text-red-300 transition-colors"
+                  className="px-4 py-2 text-sm text-red-400 hover:text-red-300 transition-colors flex items-center gap-1"
                 >
+                  <Trash2 size={14} />
                   {deleting ? "..." : (lang === "ar" ? "حذف القسم" : "Delete")}
                 </button>
               )}

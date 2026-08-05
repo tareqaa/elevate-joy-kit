@@ -183,6 +183,28 @@ function CategoryPage() {
                   className="subcat-card add-product-btn"
                   label={lang === "ar" ? "إضافة منتج" : "Add Product"}
                 />
+
+                <QuickAddCategory
+                  category={{
+                    id: category.id,
+                    slug: category.slug,
+                    name_ar: category.nameAr,
+                    name_en: category.nameEn,
+                    description_ar: category.descriptionAr,
+                    description_en: category.descriptionEn,
+                    tagline_ar: category.taglineAr,
+                    tagline_en: category.taglineEn,
+                    page_template: category.pageTemplate,
+                    icon: category.icon,
+                    // We don't have accent/gradient in CatalogCategory DTO but it will fall back to defaults or we could fetch them if critical
+                  }}
+                  trigger={
+                    <button className="subcat-card edit-parent-btn" style={{ border: "1px dashed rgba(0,229,255,0.3)", background: "rgba(0,229,255,0.05)" }}>
+                      <Settings size={20} style={{ color: "#00e5ff", marginBottom: 8 }} />
+                      <div className="subcat-name" style={{ color: "#00e5ff" }}>{lang === "ar" ? "إعدادات القسم" : "Category Settings"}</div>
+                    </button>
+                  }
+                />
               </div>
             )}
 
