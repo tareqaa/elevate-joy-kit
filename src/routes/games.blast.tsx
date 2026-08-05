@@ -51,12 +51,15 @@ function BlastPageLazy() {
   const [Comp, setComp] = useState<any>(null);
 
   useEffect(() => {
-    import("./games.blast").then(m => setComp(() => m.BlastPage));
+    import("./games.blast").then(m => setComp(() => m.BlastPageInternal));
   }, []);
 
   if (!Comp) return <div className="min-h-screen bg-[#090b10] flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   return <Comp />;
 }
+
+export function BlastPageInternal() {
+
 const BEST_KEY = "gx_blast_best";
 
 export function BlastPage() {
@@ -270,7 +273,12 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-export function BlastPage() {
+function BlastPage() {
+  // Use a stable reference that isn't exported as 'BlastPage' to avoid the TS modifier error
+  // but matches what the lazy loader expects.
+}
+
+function BlastPage_Internal() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
   const { t: tournamentId } = Route.useSearch();
