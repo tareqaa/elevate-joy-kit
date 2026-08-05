@@ -38,6 +38,26 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
     imageUrl: category?.icon_url || ""
   });
 
+  const [uploading, setUploading] = useState(false);
+
+  async function upload(file: File) {
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `categories/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("category-images").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("category-images").getPublicUrl(path);
+      setForm(f => ({ ...f, imageUrl: data.publicUrl }));
+      toast.success(lang === "ar" ? "تم رفع الصورة" : "Image uploaded");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+
   useEffect(() => {
     if (open) {
       setForm({
