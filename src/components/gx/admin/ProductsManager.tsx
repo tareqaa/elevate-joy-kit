@@ -705,7 +705,7 @@ export function ProductDialog({ product, categories = [], defaultCategoryId, onC
               <div className="gx-fs-title"><ShoppingBag size={12} /> الصور والألوان</div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label>صورة المنتج</Label>
+                  <Label>صورة المنتج / الكتالوج</Label>
                   <div className="flex items-start gap-3 mt-1">
                     <div className="gx-prod-img" style={{ width: 82, height: 82 }}>
                       {imageUrl ? <img src={imageUrl} alt="" /> : <ShoppingBag size={26} className="text-cyan-400/40" />}

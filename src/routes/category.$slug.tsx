@@ -6,7 +6,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useIsAdmin } from "@/lib/gx/admin-auth";
 import { QuickAddCategory } from "@/components/gx/QuickAddCategory";
-import { Plus, PackagePlus } from "lucide-react";
+import { Plus, PackagePlus, Settings } from "lucide-react";
 import { QuickAddProduct } from "@/components/gx/QuickAddProduct";
 
 import { RichHtml } from "@/lib/gx/sections/rich-text";
@@ -117,13 +117,23 @@ function CategoryPage() {
     <StoreShell>
       <section className="category-hero">
         <div className="wrap">
-          <div className="category-hero-inner fade-in">
-            <div className="category-hero-icon">{category.icon}</div>
-            <div className="category-hero-text">
-              <h1>{pick(category.nameAr, category.nameEn)}</h1>
-              <p>{pick(category.taglineAr, category.taglineEn)}</p>
+            <div className="category-hero-inner fade-in" style={{ position: "relative" }}>
+              {isAdmin && (
+                <QuickAddCategory
+                  category={category}
+                  trigger={
+                    <button className="gx-btn outline" style={{ position: "absolute", top: 0, insetInlineEnd: 0, background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)" }}>
+                      <Plus size={14} style={{ transform: "rotate(45deg)" }} /> {lang === "ar" ? "تعديل القسم" : "Edit Category"}
+                    </button>
+                  }
+                />
+              )}
+              <div className="category-hero-icon">{category.icon}</div>
+              <div className="category-hero-text">
+                <h1>{pick(category.nameAr, category.nameEn)}</h1>
+                <p>{pick(category.taglineAr, category.taglineEn)}</p>
+              </div>
             </div>
-          </div>
         </div>
       </section>
 
@@ -172,6 +182,29 @@ function CategoryPage() {
                   categoryId={category.id}
                   className="subcat-card add-product-btn"
                   label={lang === "ar" ? "إضافة منتج" : "Add Product"}
+                />
+
+                <QuickAddCategory
+                  category={{
+                    id: category.id,
+                    slug: category.slug,
+                    name_ar: category.nameAr,
+                    name_en: category.nameEn,
+                    description_ar: category.descriptionAr,
+                    description_en: category.descriptionEn,
+                    tagline_ar: category.taglineAr,
+                    tagline_en: category.taglineEn,
+                    page_template: category.pageTemplate,
+                    icon: category.icon,
+                    accent_color: category.accentColor,
+                    theme_gradient: category.themeGradient,
+                  }}
+                  trigger={
+                    <button className="subcat-card edit-parent-btn" style={{ border: "1px dashed rgba(0,229,255,0.3)", background: "rgba(0,229,255,0.05)" }}>
+                      <Settings size={20} style={{ color: "#00e5ff", marginBottom: 8 }} />
+                      <div className="subcat-name" style={{ color: "#00e5ff" }}>{lang === "ar" ? "إعدادات القسم" : "Category Settings"}</div>
+                    </button>
+                  }
                 />
               </div>
             )}

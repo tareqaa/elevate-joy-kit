@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Trash2, Settings } from "lucide-react";
 import { ProductDialog, VariantsDialog } from "@/components/gx/admin/ProductsManager";
+import { QuickAddProduct } from "./QuickAddProduct";
 
 
 
@@ -498,13 +499,21 @@ export function ProductTemplate({ product }: { product: CatalogProduct }) {
 
   // We need to fetch the full product row for the editor since CatalogProduct is a transformed DTO
   async function triggerEdit() {
-    const { data } = await supabase.from("products").select("*").eq("slug", product.slug).single();
-    if (data) setEditing(data);
+    const { data, error } = await supabase.from("products").select("*").eq("slug", product.slug).single();
+    if (error) {
+      toast.error(error.message);
+    } else if (data) {
+      setEditing(data);
+    }
   }
 
   async function triggerVariants() {
-    const { data } = await supabase.from("products").select("*").eq("slug", product.slug).single();
-    if (data) setManagingVariants(data);
+    const { data, error } = await supabase.from("products").select("*").eq("slug", product.slug).single();
+    if (error) {
+      toast.error(error.message);
+    } else if (data) {
+      setManagingVariants(data);
+    }
   }
 
 
@@ -536,14 +545,11 @@ export function ProductTemplate({ product }: { product: CatalogProduct }) {
       )}
 
       {editing && (
-        <ProductDialog
+        <QuickAddProduct
+          categoryId={editing.category_id}
           product={editing}
-          categories={[]} // Will be fetched inside if needed, or we can fetch here
           onClose={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null);
-            window.location.reload(); // Refresh to see changes
-          }}
+          open={true}
         />
       )}
 

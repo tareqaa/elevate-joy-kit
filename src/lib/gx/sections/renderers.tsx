@@ -13,6 +13,7 @@ import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-lo
 import { useStorefrontCategories } from "@/lib/gx/category-visibility";
 import { useIsAdmin } from "@/lib/gx/admin-auth";
 import { QuickAddCategory } from "@/components/gx/QuickAddCategory";
+import { Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { initialOf, avatarColorFor } from "@/lib/gx/reviews";
 import { translateTexts } from "@/lib/gx/translate.functions";
@@ -311,30 +312,42 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
             const desc = c0._o_desc || (lang === "en" ? c0.descriptionEn || c0.descriptionAr : c0.descriptionAr || c0.descriptionEn);
             const accent = c0._o_accent || c0.accent;
             return (
-              <Link key={c0.slug} to={getCategoryLink(c0.slug) as never} className="cat-card-big" style={{ ["--accent" as string]: accent } as React.CSSProperties}>
-                <div className="ccb-top">
-                  {c0.iconImage ? (
-                    <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>
-                      <img src={c0.iconImage} alt="" style={{ width: "70%", height: "70%", objectFit: "contain" }} />
-                    </div>
-                  ) : c0.slug === "design" ? (
-                    <div className="app-icon-grid">
-                      <span style={{ background: "linear-gradient(135deg,#3b7bf6,#1e4fd1)" }}>Ps</span>
-                      <span style={{ background: "linear-gradient(135deg,#ff7a3d,#e0402a)" }}>Ai</span>
-                      <span style={{ background: "linear-gradient(135deg,#8b5cf6,#5b21b6)" }}>Pr</span>
-                      <span style={{ background: "linear-gradient(135deg,#22c1a8,#0e7a6a)" }}>Id</span>
-                    </div>
-                  ) : (
-                    <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>{c0.icon}</div>
-                  )}
-                  <div className="ccb-glow" style={{ background: accent }} />
-                </div>
-                <div>
-                  <div className="cname-modern">{name}</div>
-                  <div className="cdesc">{desc}</div>
-                </div>
-                <div className="carrow">{t("home.browse_category")} <span className="arrow-ic">‹</span></div>
-              </Link>
+              <div key={c0.slug} style={{ position: "relative" }}>
+                {isAdmin && (
+                  <QuickAddCategory
+                    category={c0}
+                    trigger={
+                      <button className="admin-cat-edit-btn" style={{ position: "absolute", top: 12, insetInlineEnd: 12, zIndex: 20, width: 32, height: 32, borderRadius: "50%", background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)", border: "1px solid rgba(0,229,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#00e5ff", cursor: "pointer" }}>
+                        <Settings size={14} />
+                      </button>
+                    }
+                  />
+                )}
+                <Link to={getCategoryLink(c0.slug) as never} className="cat-card-big" style={{ ["--accent" as string]: accent } as React.CSSProperties}>
+                  <div className="ccb-top">
+                    {c0.iconImage ? (
+                      <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>
+                        <img src={c0.iconImage} alt="" style={{ width: "70%", height: "70%", objectFit: "contain" }} />
+                      </div>
+                    ) : c0.slug === "design" ? (
+                      <div className="app-icon-grid">
+                        <span style={{ background: "linear-gradient(135deg,#3b7bf6,#1e4fd1)" }}>Ps</span>
+                        <span style={{ background: "linear-gradient(135deg,#ff7a3d,#e0402a)" }}>Ai</span>
+                        <span style={{ background: "linear-gradient(135deg,#8b5cf6,#5b21b6)" }}>Pr</span>
+                        <span style={{ background: "linear-gradient(135deg,#22c1a8,#0e7a6a)" }}>Id</span>
+                      </div>
+                    ) : (
+                      <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>{c0.icon}</div>
+                    )}
+                    <div className="ccb-glow" style={{ background: accent }} />
+                  </div>
+                  <div>
+                    <div className="cname-modern">{name}</div>
+                    <div className="cdesc">{desc}</div>
+                  </div>
+                  <div className="carrow">{t("home.browse_category")} <span className="arrow-ic">‹</span></div>
+                </Link>
+              </div>
             );
           })}
           {isAdmin && data.enable_quick_add !== false && (
