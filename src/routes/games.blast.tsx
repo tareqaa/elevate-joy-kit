@@ -44,10 +44,22 @@ export const Route = createFileRoute("/games/blast")({
     ],
     links: getStoreHeadLinks(["games"]),
   }),
-  component: BlastPage,
+  component: BlastPageLazy,
 });
 
-const BEST_KEY = "gx_blast_best";
+function BlastPageLazy() {
+  const [Comp, setComp] = useState<any>(null);
+
+  useEffect(() => {
+    import("./games.blast").then(m => setComp(() => m.BlastPage));
+  }, []);
+
+  if (!Comp) return <div className="min-h-screen bg-[#090b10] flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  return <Comp />;
+}
+
+export function BlastPage() {
+
 const MAX_POPUPS = 4;
 const BOARD_GAP_PX = 2;
 const BOARD_PADDING_PX = 6;

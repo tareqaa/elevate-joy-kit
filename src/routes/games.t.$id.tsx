@@ -22,10 +22,22 @@ export const Route = createFileRoute("/games/t/$id")({
     ],
     links: getStoreHeadLinks(["games"]),
   }),
-  component: TournamentPage,
+  component: TournamentPageLazy,
 });
 
-type Row = {
+function TournamentPageLazy() {
+  const [Comp, setComp] = useState<any>(null);
+
+  useEffect(() => {
+    import("./games.t.$id").then(m => setComp(() => m.TournamentPage));
+  }, []);
+
+  if (!Comp) return <div className="min-h-screen bg-[#090b10] flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  return <Comp />;
+}
+
+export function TournamentPage() {
+
   rank: number; user_id: string; username: string | null; full_name: string | null;
   avatar_url: string | null; score: number;
   level_code?: string | null; level_name_ar?: string | null; level_name_en?: string | null;
