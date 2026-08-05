@@ -55,14 +55,14 @@ function ProductHero({ p, l }: { p: CatalogProduct; l: ReturnType<typeof useLoca
         <div className="product-hero-inner fade-in">
           <div className="product-icon-badge">
             <div className="badge-stack">
-              {p.is_featured && (
+              {p.isFeatured && (
                 <div className="feat-badge">
-                  {lang === "ar" ? "مميّز" : "Featured"}
+                  {l.lang === "ar" ? "مميّز" : "Featured"}
                 </div>
               )}
-              {p.badge && (
-                <div className="custom-badge" style={{ backgroundColor: p.label_color || 'var(--primary)' }}>
-                  {pick(lang, p.badge_ar, p.badge_en)}
+              {p.badgeAr && (
+                <div className="custom-badge" style={{ backgroundColor: p.labelColor || 'var(--primary)' }}>
+                  {pick(l.lang, p.badgeAr, p.badgeEn)}
                 </div>
               )}
             </div>
@@ -452,14 +452,14 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
           <div className="giftcard-hero-inner fade-in">
             <div className="giftcard-mockup" style={{ background: product.cardGradient || product.thumbBg || undefined }}>
               <div className="badge-stack">
-                {product.is_featured && (
+                {product.isFeatured && (
                   <div className="feat-badge">
                     {lang === "ar" ? "مميّز" : "Featured"}
                   </div>
                 )}
-                {product.badge && (
-                  <div className="custom-badge" style={{ backgroundColor: product.label_color || 'var(--primary)' }}>
-                    {pick(lang, product.badge_ar, product.badge_en)}
+                {product.badgeAr && (
+                  <div className="custom-badge" style={{ backgroundColor: product.labelColor || 'var(--primary)' }}>
+                    {pick(lang, product.badgeAr, product.badgeEn)}
                   </div>
                 )}
               </div>
