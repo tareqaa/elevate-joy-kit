@@ -150,6 +150,37 @@ export function QuickAddCategory({ parentId = null, className, label }: QuickAdd
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs opacity-60">Tagline (بالعربي)</Label>
+                <Input 
+                  value={form.taglineAr} 
+                  onChange={e => setForm(f => ({ ...f, taglineAr: e.target.value }))}
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs opacity-60">Tagline (English)</Label>
+                <Input 
+                  value={form.taglineEn} 
+                  onChange={e => setForm(f => ({ ...f, taglineEn: e.target.value }))}
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs opacity-60">{lang === 'ar' ? 'قالب الصفحة' : 'Page Template'}</Label>
+              <select 
+                value={form.pageTemplate}
+                onChange={e => setForm(f => ({ ...f, pageTemplate: e.target.value }))}
+                className="w-full h-9 bg-white/5 border-white/10 rounded-md text-sm px-2 text-white focus:outline-none focus:ring-1 focus:ring-[#00e5ff]"
+              >
+                <option value="standard">{lang === 'ar' ? 'الافتراضي (شبكة منتجات)' : 'Standard (Product Grid)'}</option>
+                <option value="gift_card">{lang === 'ar' ? 'بطاقات هدايا (تصنيف حسب المنطقة)' : 'Gift Card (Region Grouped)'}</option>
+              </select>
+            </div>
+
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs opacity-60">{lang === "ar" ? "أيقونة" : "Icon"}</Label>
