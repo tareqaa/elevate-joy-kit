@@ -116,7 +116,7 @@ ul{list-style:none;}
 }
 .brand .mark img{width:100%; height:100%; object-fit:contain;}
 
-.brand-word{font-weight:900; font-size:19px; letter-spacing:0.3px; white-space:nowrap;}
+.brand-word{font-weight:900; font-size:19px; letter-spacing:0.3px; margin-inline-start:1px; white-space:nowrap;}
 .brand-word span{color:var(--cyan);}
 
 
@@ -152,7 +152,7 @@ html[dir="ltr"] .gx-search-item{ text-align:left; }
   background:rgba(255,255,255,.05); font-size:18px; flex-shrink:0;
 }
 .gx-search-txt{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
-.gx-search-txt b{ font-size:13px; font-weight:800; color:var(--white); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gx-search-txt b{ font-size:13px; font-weight:800; color:var(--white); margin-inline-start:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .gx-search-txt small{ font-size:11px; color:var(--gray); font-weight:700; }
 .gx-search-empty{ padding:14px; text-align:center; color:var(--gray); font-size:13px; font-weight:700; }
 
@@ -166,7 +166,7 @@ html[dir="ltr"] .gx-search-item{ text-align:left; }
 .icon-btn:hover{border-color:rgba(0,229,255,0.4);}
 .badge-count{
   position:absolute; top:-6px; left:-6px;
-  background:var(--pink); color:#fff; font-size:10.5px; font-weight:900;
+  background:var(--pink);box-shadow:none; color:#fff; font-size:10.5px; font-weight:900;
   width:19px; height:19px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
 }
@@ -289,14 +289,14 @@ html[dir="ltr"] .gx-search-item{ text-align:left; }
 }
 .discount-badge{
   position:absolute; top:12px; inset-inline-end:12px; z-index:2;
-  background:var(--pink); color:#fff; font-weight:900; font-size:12px;
-  padding:4px 10px; border-radius:999px; white-space:nowrap;
-  unicode-bidi:isolate;
+  background:var(--pink); border:none; outline:none; color:#fff; font-weight:900; font-size:12px;
+  padding:4px 10px; border-radius:999px; left:auto; margin-inline-start:1px; white-space:nowrap;
+  overflow:hidden;
 }
 .tag-badge{
   position:absolute; top:12px; left:12px; z-index:2;
   background:var(--lime); color:#05060a; font-weight:900; font-size:11px;
-  padding:4px 10px; border-radius:999px;
+  padding:4px 10px; border-radius:999px; left:auto;
 }
 .prod-body{padding:16px 18px 18px; display:flex; flex-direction:column; gap:10px; flex:1;}
 .prod-stars{color:var(--lime); font-size:12px; letter-spacing:1px;}
@@ -764,11 +764,11 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
 .acc-mini{ padding:10px 12px 8px; }
 .acc-mini__name{
   font-size:13px; font-weight:800; color:var(--white);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  margin-inline-start:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .acc-mini__handle{
   font-size:11.5px; color:var(--cyan); font-weight:700; margin-top:2px;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  margin-inline-start:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 
 /* Clickable profile header in the account dropdown */
@@ -793,13 +793,13 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
 .acc-hero__txt{ min-width:0; flex:1; display:block; }
 .acc-hero__name{
   display:block; font-size:13px; font-weight:900; color:var(--white);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  margin-inline-start:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .acc-hero__handle{
   display:block; font-size:11.5px; font-weight:700; margin-top:2px;
   background:linear-gradient(90deg, var(--cyan), #7c5cff);
   -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  margin-inline-start:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .acc-hero__lvl{
   flex:0 0 auto; font-size:10.5px; font-weight:900; color:#05060a;
