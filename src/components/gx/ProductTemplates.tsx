@@ -239,120 +239,6 @@ export function StandardTemplate({ product, onEdit, onManageVariants }: { produc
   );
 }
 
-/* ---------------------------------------------------------- snapchat */
-export function MultiAccountTemplate({ product, onEdit, onManageVariants }: { product: CatalogProduct; onEdit?: () => void; onManageVariants?: () => void }) {
-  const { t } = useLang();
-  const l = useLocalized(product);
-
-  return (
-    <>
-      <ProductHero p={product} l={l} onEdit={onEdit} />
-
-      <section className="section">
-        <div className="wrap">
-          <SectionHead eyebrow={t("sec.plans")} title={t("product.pick_plan")} />
-          <div className="plans-grid">
-            {l.variants.map((v) => <VariantCard key={v.cartId} p={product} v={v} onManageVariants={onManageVariants} />)}
-          </div>
-        </div>
-      </section>
-
-      {l.features.length > 0 && (
-        <section className="section">
-          <div className="wrap">
-            <SectionHead eyebrow={t("product.features_eyebrow")} title={t("snap.features_title")} />
-            <FeatureAccordion features={l.features} />
-          </div>
-        </section>
-      )}
-
-      {(l.deliveryMethod || l.identifierLabel) && (
-        <section className="section" style={{ background: "var(--bg2)" }}>
-          <div className="wrap">
-            <DeliveryBox method={l.deliveryMethod} identifierLabel={l.identifierLabel} />
-          </div>
-        </section>
-      )}
-    </>
-  );
-}
-
-/* ---------------------------------------------------------- fortnite */
-export function DualPlansTemplate({ product, onEdit, onManageVariants }: { product: CatalogProduct; onEdit?: () => void; onManageVariants?: () => void }) {
-  const { t } = useLang();
-  const l = useLocalized(product);
-
-  const vbucks = l.variants.filter((v) => v.planGroup === "vbucks");
-  const rest = l.variants.filter((v) => v.planGroup !== "vbucks");
-  const d = l.lang === "en" ? product.deliveryDetails?.en : product.deliveryDetails?.ar;
-
-  return (
-    <>
-      <ProductHero p={product} l={l} onEdit={onEdit} />
-
-
-      {vbucks.length > 0 && (
-        <section className="section">
-          <div className="wrap">
-            <SectionHead eyebrow={t("fn.vb_eyebrow")} title={t("fn.vb_title")} />
-            <div className="plans-grid">
-              {vbucks.map((v) => {
-                const tier = parseInt(v.cartId.replace(/\D+/g, ""), 10) || 0;
-                return <VariantCard key={v.cartId} p={product} v={v} icon={<VbucksIcon tier={tier} />} onManageVariants={onManageVariants} />;
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {rest.length > 0 && (
-        <section className="section">
-          <div className="wrap">
-            <SectionHead eyebrow={t("sec.plans")} title={t("product.pick_plan")} />
-            <div className="plans-grid">
-              {rest.map((v) => <VariantCard key={v.cartId} p={product} v={v} onManageVariants={onManageVariants} />)}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {l.features.length > 0 && (
-        <section className="section">
-          <div className="wrap">
-            <SectionHead eyebrow={t("product.features_eyebrow")} title={t("fn.features_title")} />
-            <FeatureAccordion features={l.features} />
-          </div>
-        </section>
-      )}
-
-      {d && (
-        <section className="section" style={{ background: "var(--bg2)" }}>
-          <div className="wrap">
-            <div className="delivery-box fade-in delivery-box-wide">
-              <div className="dic">🔒</div>
-              <div>
-                <h3>{t("fn.delivery_title")}</h3>
-                <p>{d.intro}</p>
-                <div className="delivery-cols">
-                  <div className="delivery-col">
-                    <div className="delivery-col-title">{t("fn.req_title")}</div>
-                    <ul className="delivery-list">{(d.requirements || []).map((r, i) => <li key={i}>{r}</li>)}</ul>
-                  </div>
-                  <div className="delivery-col">
-                    <div className="delivery-col-title">{t("fn.safety_title")}</div>
-                    <ul className="delivery-list">{(d.safety || []).map((s, i) => <li key={i}>{s}</li>)}</ul>
-                  </div>
-                </div>
-                <div className="delivery-col-title" style={{ marginTop: 18 }}>{t("fn.platform_title")}</div>
-                <ul className="delivery-list">{(d.platformNotes || []).map((n, i) => <li key={i}>{n}</li>)}</ul>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-    </>
-  );
-}
 
 /* -------------------------------------------------------- gift_card */
 export function GiftCardTemplate({ product, onEdit, onManageVariants }: { product: CatalogProduct; onEdit?: () => void; onManageVariants?: () => void }) {
@@ -534,11 +420,7 @@ export function ProductTemplate({ product }: { product: CatalogProduct }) {
 
   return (
     <>
-      {product.pageTemplate === "snapchat" ? (
-        <MultiAccountTemplate {...commonProps} />
-      ) : product.pageTemplate === "fortnite" ? (
-        <DualPlansTemplate {...commonProps} />
-      ) : product.pageTemplate === "gift_card" ? (
+      {product.pageTemplate === "gift_card" ? (
         <GiftCardTemplate {...commonProps} />
       ) : (
         <StandardTemplate {...commonProps} />

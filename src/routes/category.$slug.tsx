@@ -203,12 +203,6 @@ function CategoryPage() {
                     accent_color: category.accentColor,
                     theme_gradient: category.themeGradient,
                   }}
-                  trigger={
-                    <button className="subcat-card edit-parent-btn" style={{ border: "1px dashed rgba(0,229,255,0.3)", background: "rgba(0,229,255,0.05)" }}>
-                      <Settings size={20} style={{ color: "#00e5ff", marginBottom: 8 }} />
-                      <div className="subcat-name" style={{ color: "#00e5ff" }}>{lang === "ar" ? "إعدادات القسم" : "Category Settings"}</div>
-                    </button>
-                  }
                 />
               </div>
             )}
