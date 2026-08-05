@@ -84,7 +84,7 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
         accent_color: form.accent,
         theme_gradient: form.gradient,
         parent_id: parentId,
-        is_main: parentId === null && !category,
+        is_main: category ? !!category.is_main : (parentId === null),
         is_active: true,
       };
 
