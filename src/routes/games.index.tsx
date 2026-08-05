@@ -26,7 +26,7 @@ export const Route = createFileRoute("/games/")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: getStoreHeadLinks(["games"]),
+    links: getStoreHeadLinks(),
   }),
   loader: () => listTournaments(),
   errorComponent: ({ error }) => (

@@ -15,12 +15,6 @@ export const Route = createFileRoute("/product/$slug")({
     const title = p ? `${p.nameEn || p.nameAr} — GX Store` : "Product — GX Store";
     const desc = p?.descriptionEn || p?.descriptionAr || "GX Store digital product";
     
-    // Choose specific CSS based on template
-    const cssKeys: (keyof typeof PAGE_CSS)[] = ["product"];
-    if (p?.pageTemplate === "multi_account") cssKeys.push("snapchat");
-    else if (p?.pageTemplate === "gift_card") cssKeys.push("giftcard");
-    else if (p?.pageTemplate === "dual_plans") cssKeys.push("fortnite");
-
     return {
       meta: [
         { title },
@@ -31,8 +25,9 @@ export const Route = createFileRoute("/product/$slug")({
         { name: "twitter:card", content: "summary_large_image" },
         ...(p ? [] : [{ name: "robots", content: "noindex" }]),
       ],
-      links: getStoreHeadLinks(cssKeys),
+      links: getStoreHeadLinks(),
     };
+
   },
   errorComponent: ({ error }) => (
     <StoreShell>

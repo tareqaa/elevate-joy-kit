@@ -14,7 +14,7 @@ export const Route = createFileRoute("/leaderboard")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: getStoreHeadLinks(["home", "product"]),
+    links: getStoreHeadLinks(),
   }),
   component: () => (
     <StoreShell>

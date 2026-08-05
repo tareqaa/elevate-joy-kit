@@ -18,7 +18,7 @@ export const Route = createFileRoute("/cart")({
       { title: "Cart — GX Store" },
       { name: "description", content: "Review your order before checking out — GX Store." },
     ],
-    links: getStoreHeadLinks(["cart", "snapchat"]),
+    links: getStoreHeadLinks(),
   }),
   component: CartPage,
 });
