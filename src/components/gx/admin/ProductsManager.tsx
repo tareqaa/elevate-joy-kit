@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -544,8 +545,8 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
         if (basePrice.trim() !== "") {
           const { error: vErr } = await supabase.from("product_variants").insert({
             product_id: data.id,
-            name_ar: "أساسي",
-            name_en: "Standard",
+            label_ar: "أساسي",
+            label_en: "Standard",
             price_jod: Number(basePrice),
             cart_id: finalSlug,
             is_active: true,
