@@ -47,7 +47,7 @@ export const Route = createFileRoute("/games/blast")({
   component: BlastPageLazy,
 });
 
-export function BlastPageLazy() {
+export const BlastPage = Lazy() {
   const [Comp, setComp] = useState<any>(null);
 
   useEffect(() => {
@@ -273,7 +273,7 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-export function BlastPage() {
+export const BlastPage = () () => {
 
   const { lang, dir } = useLang();
   const ar = lang === "ar";
