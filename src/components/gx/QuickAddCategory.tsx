@@ -289,6 +289,11 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
                 placeholder="https://..."
                 className="bg-white/5 border-white/10"
               />
+              {form.imageUrl && (
+                <div className="mt-2 w-16 h-16 rounded-lg overflow-hidden border border-white/10 bg-black/20">
+                  <img src={form.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
             </div>
 
             <div className="pt-4 border-t border-white/5 flex justify-between gap-3">
