@@ -15,6 +15,7 @@ import { useIsAdmin } from "@/lib/gx/admin-auth";
 import { QuickAddCategory } from "@/components/gx/QuickAddCategory";
 import { Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { initialOf, avatarColorFor } from "@/lib/gx/reviews";
 import { translateTexts } from "@/lib/gx/translate.functions";
 import type {
@@ -290,6 +291,7 @@ export function CarouselRenderer({ data }: { data: CarouselData }) {
 export function CategoriesRenderer({ data }: { data: CategoriesData }) {
   const { t, lang } = useLang();
   const { isAdmin } = useIsAdmin();
+  const queryClient = useQueryClient();
   const overrides = data.overrides || {};
   const databaseCategories = useStorefrontCategories();
   const links = databaseCategories

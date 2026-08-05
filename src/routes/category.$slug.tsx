@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { getCatalogCategory } from "@/lib/gx/catalog.functions";
 import type { CatalogCategoryChild } from "@/lib/gx/catalog.functions";
@@ -47,6 +48,7 @@ function CategoryPage() {
   const { lang, t } = useLang();
   const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const pick = (ar: string | null, en: string | null) => (lang === "en" ? en || ar : ar || en) || "";
 
   if (category.pageTemplate === "gift_card") {
@@ -121,6 +123,7 @@ function CategoryPage() {
               {isAdmin && (
                 <QuickAddCategory
                   category={category}
+                  onClose={() => queryClient.invalidateQueries({ queryKey: ["storefront-root-categories"] })}
                   trigger={
                     <button className="gx-btn outline" style={{ position: "absolute", top: 0, insetInlineEnd: 0, background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)" }}>
                       <Plus size={14} style={{ transform: "rotate(45deg)" }} /> {lang === "ar" ? "تعديل القسم" : "Edit Category"}
@@ -185,6 +188,7 @@ function CategoryPage() {
                 />
 
                 <QuickAddCategory
+                  onClose={() => queryClient.invalidateQueries({ queryKey: ["storefront-root-categories"] })}
                   category={{
                     id: category.id,
                     slug: category.slug,
