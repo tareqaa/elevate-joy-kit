@@ -197,13 +197,13 @@ const BoardCell = memo(function BoardCell({
    ============================================================ */
 const MoveTimer = memo(function MoveTimer({
   limitMs,
-  moveKey,
+  trayKey,
   runKey,
   active,
   onExpire,
 }: {
   limitMs: number;
-  moveKey: number;
+  trayKey: number;
   runKey: string;
   active: boolean;
   onExpire: () => void;
@@ -218,7 +218,7 @@ const MoveTimer = memo(function MoveTimer({
   useEffect(() => {
     leftRef.current = limitMs;
     setRemain(limitMs);
-  }, [limitMs, moveKey, runKey]);
+  }, [limitMs, trayKey, runKey]);
 
   useEffect(() => {
     if (!active) return;
@@ -236,7 +236,6 @@ const MoveTimer = memo(function MoveTimer({
         boxRef.current.className = cls;
         lastCls = cls;
       }
-      // integer seconds normally, tenths only in the last 3 seconds
       const q = left <= 3000 ? Math.ceil(left / 100) : Math.ceil(left / 1000);
       if (q !== lastQ) {
         lastQ = q;
@@ -253,7 +252,7 @@ const MoveTimer = memo(function MoveTimer({
       cancelAnimationFrame(raf);
       leftRef.current = Math.max(0, start - (performance.now() - t0));
     };
-  }, [active, limitMs, moveKey, runKey]);
+  }, [active, limitMs, trayKey, runKey]);
 
   const secs = remain <= 3000 ? (remain / 1000).toFixed(1) : String(Math.ceil(remain / 1000));
   return (
@@ -511,11 +510,12 @@ const MoveTimer = memo(function MoveTimer({
   const onExpire = useCallback(() => setGame((g) => timeoutGame(g)), []);
 
   useEffect(() => {
-    // Only reset move timer when timer becomes active, a tray is refilled, or a move completes
+    // Only reset the move timer for the first piece in a new tray.
+    // Subsequent pieces in the same tray continue using the remaining time.
     if (timerActive) {
       moveStart.current = performance.now();
     }
-  }, [timerActive, trayGen, game.moves.length, game.moveLimitMs]);
+  }, [timerActive, trayGen, game.moveLimitMs]);
 
 
   const previewCells = useMemo(() => {
@@ -774,7 +774,7 @@ const MoveTimer = memo(function MoveTimer({
 
       <MoveTimer
         limitMs={game.moveLimitMs}
-        moveKey={game.moves.length}
+        trayKey={trayGen}
         runKey={game.seed}
         active={timerActive}
         onExpire={onExpire}
