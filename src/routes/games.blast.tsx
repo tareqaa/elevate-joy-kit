@@ -45,7 +45,7 @@ export const Route = createFileRoute("/games/blast")({
     ],
     links: getStoreHeadLinks(["games"]),
   }),
-  component: BlastPage_A,
+  component: BlastPage,
 });
 
 
