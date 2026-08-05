@@ -1,3 +1,4 @@
+export { BlastPage };
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
@@ -47,7 +48,7 @@ export const Route = createFileRoute("/games/blast")({
   component: BlastPageLazy,
 });
 
-function BlastPageLazy() {
+export function BlastPageLazy() {
   const [Comp, setComp] = useState<any>(null);
 
   useEffect(() => {
@@ -273,7 +274,7 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-export function BlastPage() {
+function BlastPage() {
 
   const { lang, dir } = useLang();
   const ar = lang === "ar";
