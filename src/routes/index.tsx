@@ -1,4 +1,4 @@
-/** Execute esta instrucao no projeto: Part 1 — The core interaction model (read this first, it drives everything)
+/** Execute esta instrucao no projeto: بطلع خطأ 404 **/
 
 Important correction: this "+" lives directly on the live homepage itself, inside the actual category grid customers see (the "وين بدك تبدأ؟" section) — not on a separate admin backend page. This is edit-in-place: the admin sees the exact same visual card grid the customer sees, plus one extra "+" card, matching the same size/style as the real category cards.
 
