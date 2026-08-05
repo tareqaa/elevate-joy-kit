@@ -118,8 +118,9 @@ export function Navbar() {
     return readCachedProfile(storedUser?.id) ?? profileFromUser(storedUser);
   });
   const [accountOpen, setAccountOpen] = useState(false);
-  const [canReview, setCanReview] = useState(false);
+  const [canReview, setCanReview] = useState(false); // Legacy - kept for safety if needed
   const [reviewOpen, setReviewOpen] = useState(false);
+
   const [wheelOpen, setWheelOpen] = useState(false);
   // Admin state lives in memory only — never in localStorage, which any user
   // could forge to reveal the admin entry. It is always (re)verified against
