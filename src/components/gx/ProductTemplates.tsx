@@ -239,117 +239,89 @@ export function StandardTemplate({ product, onEdit, onManageVariants }: { produc
   );
 }
 
-/* ---------------------------------------------------------- snapchat */
-export function MultiAccountTemplate({ product, onEdit, onManageVariants }: { product: CatalogProduct; onEdit?: () => void; onManageVariants?: () => void }) {
-  const { t } = useLang();
+/* ---------------------------------------------------------- gift_card */
+export function GiftCardTemplate({ product, onEdit, onManageVariants }: { product: CatalogProduct; onEdit?: () => void; onManageVariants?: () => void }) {
+  const { lang, t } = useLang();
   const l = useLocalized(product);
+  const { format } = useCurrency();
+  const { isAdmin } = useIsAdmin();
+  const navigate = useNavigate();
+
+  async function handleDelete() {
+    if (!window.confirm(lang === "ar" ? "هل أنت متأكد من حذف هذا المنتج؟" : "Are you sure you want to delete this product?")) return;
+    const { error } = await supabase.from("products").delete().eq("slug", product.slug);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(lang === "ar" ? "تم الحذف" : "Deleted successfully");
+      navigate({ to: "/" });
+    }
+  }
+
+  // Variants carry their region as "ar|en|flag" plus a plan_group country code.
+  const regions = useMemo(() => {
+    const map = new Map<string, { code: string; name: string; items: typeof l.variants }>();
+    for (const v of l.variants) {
+      const code = (v.planGroup || "xx").toLowerCase();
+      const [ar, en] = (v.region || "").split("|");
+      const name = (lang === "en" ? en || ar : ar || en) || code.toUpperCase();
+      if (!map.has(code)) map.set(code, { code, name, items: [] });
+      map.get(code)!.items.push(v);
+    }
+    return Array.from(map.values());
+  }, [l.variants, lang]);
+
+  const iconMarkup = product.iconImage ? (
+    <img src={product.iconImage} alt={l.name} style={{ width: 56, height: 56, objectFit: "contain", filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.35))" }} />
+  ) : (
+    <span style={{ fontSize: 44, lineHeight: 1 }}>{product.icon}</span>
+  );
 
   return (
     <>
-      <ProductHero p={product} l={l} onEdit={onEdit} />
-
-      <section className="section">
+      <section className="giftcard-hero">
         <div className="wrap">
-          <SectionHead eyebrow={t("sec.plans")} title={t("product.pick_plan")} />
-          <div className="plans-grid">
-            {l.variants.map((v) => <VariantCard key={v.cartId} p={product} v={v} onManageVariants={onManageVariants} />)}
+          <div className="giftcard-hero-inner fade-in">
+            {isAdmin && (
+              <div className="admin-product-actions" style={{ position: "absolute", top: 0, insetInlineEnd: 0, display: "flex", gap: 10, zIndex: 10 }}>
+                <button onClick={onEdit} className="gx-btn outline" style={{ background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)" }}>
+                  <Settings size={14} /> {lang === "ar" ? "تعديل المنتج" : "Edit Product"}
+                </button>
+                <button onClick={handleDelete} className="gx-btn danger" style={{ background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)" }}>
+                  <Trash2 size={14} /> {lang === "ar" ? "حذف" : "Delete"}
+                </button>
+              </div>
+            )}
+            <div className="giftcard-mockup" style={{ background: product.cardGradient || product.thumbBg || undefined }}>
+
+              <div className="badge-stack">
+                {product.isFeatured && (
+                  <div className="feat-badge">
+                    {lang === "ar" ? "مميّز" : "Featured"}
+                  </div>
+                )}
+                {product.badgeAr && (
+                  <div className="custom-badge" style={{ backgroundColor: product.labelColor || 'var(--primary)' }}>
+                    {pick(lang, product.badgeAr, product.badgeEn)}
+                  </div>
+                )}
+              </div>
+              <div className="gc-top">
+                <span className="gc-icon">{iconMarkup}</span>
+                <div className="gc-chip" />
+              </div>
+              <div>
+                <div className="gc-name">{l.name}</div>
+                <div className="gc-sub">{t("gc.digital_card")}</div>
+              </div>
+            </div>
+            <div className="giftcard-hero-text">
+              <h1>{l.name}</h1>
+              <p>{t("gc.pick_region")}</p>
+            </div>
           </div>
         </div>
       </section>
-
-      {l.features.length > 0 && (
-        <section className="section">
-          <div className="wrap">
-            <SectionHead eyebrow={t("product.features_eyebrow")} title={t("snap.features_title")} />
-            <FeatureAccordion features={l.features} />
-          </div>
-        </section>
-      )}
-
-      {(l.deliveryMethod || l.identifierLabel) && (
-        <section className="section" style={{ background: "var(--bg2)" }}>
-          <div className="wrap">
-            <DeliveryBox method={l.deliveryMethod} identifierLabel={l.identifierLabel} />
-          </div>
-        </section>
-      )}
-    </>
-  );
-}
-
-/* ---------------------------------------------------------- fortnite */
-export function DualPlansTemplate({ product, onEdit, onManageVariants }: { product: CatalogProduct; onEdit?: () => void; onManageVariants?: () => void }) {
-  const { t } = useLang();
-  const l = useLocalized(product);
-
-  const vbucks = l.variants.filter((v) => v.planGroup === "vbucks");
-  const rest = l.variants.filter((v) => v.planGroup !== "vbucks");
-  const d = l.lang === "en" ? product.deliveryDetails?.en : product.deliveryDetails?.ar;
-
-  return (
-    <>
-      <ProductHero p={product} l={l} onEdit={onEdit} />
-
-
-      {vbucks.length > 0 && (
-        <section className="section">
-          <div className="wrap">
-            <SectionHead eyebrow={t("fn.vb_eyebrow")} title={t("fn.vb_title")} />
-            <div className="plans-grid">
-              {vbucks.map((v) => {
-                const tier = parseInt(v.cartId.replace(/\D+/g, ""), 10) || 0;
-                return <VariantCard key={v.cartId} p={product} v={v} icon={<VbucksIcon tier={tier} />} onManageVariants={onManageVariants} />;
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {rest.length > 0 && (
-        <section className="section">
-          <div className="wrap">
-            <SectionHead eyebrow={t("sec.plans")} title={t("product.pick_plan")} />
-            <div className="plans-grid">
-              {rest.map((v) => <VariantCard key={v.cartId} p={product} v={v} onManageVariants={onManageVariants} />)}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {l.features.length > 0 && (
-        <section className="section">
-          <div className="wrap">
-            <SectionHead eyebrow={t("product.features_eyebrow")} title={t("fn.features_title")} />
-            <FeatureAccordion features={l.features} />
-          </div>
-        </section>
-      )}
-
-      {d && (
-        <section className="section" style={{ background: "var(--bg2)" }}>
-          <div className="wrap">
-            <div className="delivery-box fade-in delivery-box-wide">
-              <div className="dic">🔒</div>
-              <div>
-                <h3>{t("fn.delivery_title")}</h3>
-                <p>{d.intro}</p>
-                <div className="delivery-cols">
-                  <div className="delivery-col">
-                    <div className="delivery-col-title">{t("fn.req_title")}</div>
-                    <ul className="delivery-list">{(d.requirements || []).map((r, i) => <li key={i}>{r}</li>)}</ul>
-                  </div>
-                  <div className="delivery-col">
-                    <div className="delivery-col-title">{t("fn.safety_title")}</div>
-                    <ul className="delivery-list">{(d.safety || []).map((s, i) => <li key={i}>{s}</li>)}</ul>
-                  </div>
-                </div>
-                <div className="delivery-col-title" style={{ marginTop: 18 }}>{t("fn.platform_title")}</div>
-                <ul className="delivery-list">{(d.platformNotes || []).map((n, i) => <li key={i}>{n}</li>)}</ul>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
     </>
   );
 }

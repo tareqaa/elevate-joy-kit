@@ -125,13 +125,21 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
       {trigger || (
         <button 
           type="button"
-          className={className} 
+          className={className || "subcat-card edit-parent-btn"} 
+          style={!className ? { border: "1px dashed rgba(0,229,255,0.3)", background: "rgba(0,229,255,0.05)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", borderRadius: "16px", cursor: "pointer" } : undefined}
           onClick={() => setOpen(true)}
         >
-          <div className="add-cat-plus">
-            <Plus size={24} />
-          </div>
-          <div className="add-cat-label">{label || (lang === "ar" ? "إضافة قسم" : "Add Category")}</div>
+          {className === "cat-card-big add-category-card" ? (
+            <>
+              <div className="add-cat-plus"><Plus size={24} /></div>
+              <div className="add-cat-label">{label || (lang === "ar" ? "إضافة قسم" : "Add Category")}</div>
+            </>
+          ) : (
+            <>
+              <Settings size={20} style={{ color: "#00e5ff", marginBottom: 8 }} />
+              <div className="subcat-name" style={{ color: "#00e5ff" }}>{label || (lang === "ar" ? "إعدادات القسم" : "Category Settings")}</div>
+            </>
+          )}
         </button>
       )}
 
