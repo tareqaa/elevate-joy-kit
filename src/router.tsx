@@ -3,7 +3,7 @@ import { routeTree } from "./routeTree.gen";
 import { QueryClient } from "@tanstack/react-query";
 import { setupAuthListener } from "@/lib/gx/auth-listener";
 
-export function createRouter() {
+export const getRouter = () => {
   if (typeof window !== "undefined") setupAuthListener();
   
   const queryClient = new QueryClient();
@@ -20,10 +20,15 @@ export function createRouter() {
   });
 
   return router;
+};
+
+/** @deprecated Use getRouter instead */
+export function createRouter() {
+  return getRouter();
 }
 
 declare module "@tanstack/react-router" {
   interface Register {
-    router: ReturnType<typeof createRouter>;
+    router: ReturnType<typeof getRouter>;
   }
 }
