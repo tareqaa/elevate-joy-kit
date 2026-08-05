@@ -51,7 +51,7 @@ function BlastPageLazy() {
   const [Comp, setComp] = useState<any>(null);
 
   useEffect(() => {
-    import("./games.blast").then(m => setComp(() => m.BlastPage));
+    import("./games.blast").then(m => setComp(() => m.BlastPageInternal));
   }, []);
 
   if (!Comp) return <div className="min-h-screen bg-[#090b10] flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -273,7 +273,7 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-function BlastPage() {
+export function BlastPageInternal() {
 
   const { lang, dir } = useLang();
   const ar = lang === "ar";
