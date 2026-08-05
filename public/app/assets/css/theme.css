@@ -291,7 +291,7 @@ html[dir="ltr"] .gx-search-item{ text-align:left; }
   position:absolute; top:12px; inset-inline-end:12px; z-index:2;
   background:var(--pink); border:none; outline:none; color:#fff; font-weight:900; font-size:12px;
   padding:4px 10px; border-radius:999px; white-space:nowrap;
-  unicode-bidi:isolate;
+  overflow:hidden;
 }
 .tag-badge{
   position:absolute; top:12px; left:12px; z-index:2;
