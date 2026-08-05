@@ -12,9 +12,9 @@ export function DiscountBadge({ value }: { value: number }) {
       style={{ isolation: 'isolate', flexWrap: 'nowrap' }}
     >
       {lang === "ar" ? (
-        <div className="flex items-center gap-1" style={{ flexDirection: 'row-reverse' }}>
-          <span className="opacity-90 inline-block">خصم</span>
+        <div className="flex items-center gap-1" dir="ltr">
           <span className="text-[1.1em] inline-block leading-none">{value}%</span>
+          <span className="opacity-90 inline-block">خصم</span>
         </div>
       ) : (
         <>
