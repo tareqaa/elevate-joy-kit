@@ -37,13 +37,6 @@ function TournamentPageLazy() {
 }
 
 export function TournamentPage() {
-  const { id } = Route.useParams();
-  const navigate = useNavigate();
-  const { lang, dir } = useLang();
-  const ar = lang === "ar";
-
-  // ... Rest of the component code ...
-}
 
 type Row = {
   rank: number; user_id: string; username: string | null; full_name: string | null;
