@@ -12,6 +12,9 @@ interface QuickAddCategoryProps {
   parentId?: string | null;
   className?: string;
   label?: string;
+  category?: any; // If provided, we are in Edit mode
+  onClose?: () => void;
+  trigger?: React.ReactNode;
 }
 
 export function QuickAddCategory({ parentId = null, className, label }: QuickAddCategoryProps) {
@@ -42,14 +45,13 @@ export function QuickAddCategory({ parentId = null, className, label }: QuickAdd
 
     setLoading(true);
     try {
-      const slug = (form.nameEn || form.nameAr)
+      const slug = category?.slug || (form.nameEn || form.nameAr)
         .toLowerCase()
         .trim()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "") + "-" + Math.random().toString(36).slice(2, 6);
 
-      const { error } = await supabase.from("categories").insert({
-        slug,
+      const payload = {
         name_ar: form.nameAr || form.nameEn,
         name_en: form.nameEn || form.nameAr,
         description_ar: form.descAr,
@@ -61,15 +63,28 @@ export function QuickAddCategory({ parentId = null, className, label }: QuickAdd
         accent_color: form.accent,
         theme_gradient: form.gradient,
         parent_id: parentId,
-        is_main: parentId === null,
+        is_main: parentId === null && !category, // Don't force change on edit
         is_active: true,
-        sort_order: 999
-      });
+      };
+
+      let error;
+      if (category?.id) {
+        const { error: err } = await supabase.from("categories").update(payload).eq("id", category.id);
+        error = err;
+      } else {
+        const { error: err } = await supabase.from("categories").insert({
+          ...payload,
+          slug,
+          sort_order: 999
+        });
+        error = err;
+      }
 
       if (error) throw error;
 
-      toast.success(lang === "ar" ? "تمت الإضافة بنجاح" : "Added successfully");
+      toast.success(lang === "ar" ? "تم الحفظ بنجاح" : "Saved successfully");
       setOpen(false);
+      onClose?.();
       setForm({
         nameAr: "",
         nameEn: "",
@@ -92,23 +107,48 @@ export function QuickAddCategory({ parentId = null, className, label }: QuickAdd
     }
   }
 
+  async function handleDelete() {
+    if (!category?.id) return;
+    const confirmMsg = lang === "ar" 
+      ? "هل أنت متأكد من حذف هذا القسم؟ سيتم حذف جميع المنتجات والأقسام الفرعية المرتبطة به!" 
+      : "Are you sure you want to delete this category? All linked products and sub-categories will be deleted!";
+    
+    if (!window.confirm(confirmMsg)) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from("categories").delete().eq("id", category.id);
+      if (error) throw error;
+      toast.success(lang === "ar" ? "تم الحذف" : "Deleted");
+      setOpen(false);
+      onClose?.();
+      queryClient.invalidateQueries({ queryKey: ["storefront-root-categories"] });
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <>
-      <button 
-        type="button"
-        className={className} 
-        onClick={() => setOpen(true)}
-      >
-        <div className="add-cat-plus">
-          <Plus size={24} />
-        </div>
-        <div className="add-cat-label">{label || (lang === "ar" ? "إضافة قسم" : "Add Category")}</div>
-      </button>
+      {trigger || (
+        <button 
+          type="button"
+          className={className} 
+          onClick={() => setOpen(true)}
+        >
+          <div className="add-cat-plus">
+            <Plus size={24} />
+          </div>
+          <div className="add-cat-label">{label || (lang === "ar" ? "إضافة قسم" : "Add Category")}</div>
+        </button>
+      )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md bg-[#0b1220] border-white/10 text-white">
+      <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) onClose?.(); }}>
+        <DialogContent className="max-w-md bg-[#0b1220] border-white/10 text-white overflow-y-auto max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>{lang === "ar" ? "إضافة قسم جديد" : "Add New Category"}</DialogTitle>
+            <DialogTitle>{category ? (lang === "ar" ? "تعديل القسم" : "Edit Category") : (lang === "ar" ? "إضافة قسم جديد" : "Add New Category")}</DialogTitle>
           </DialogHeader>
           
           <form onSubmit={handleSubmit} className="space-y-4 mt-2">
@@ -208,21 +248,33 @@ export function QuickAddCategory({ parentId = null, className, label }: QuickAdd
               </div>
             </div>
 
-            <div className="pt-4 border-t border-white/5 flex justify-end gap-3">
-              <button 
-                type="button" 
-                className="px-4 py-2 text-sm opacity-60 hover:opacity-100 transition-opacity"
-                onClick={() => setOpen(false)}
-              >
-                {lang === "ar" ? "إلغاء" : "Cancel"}
-              </button>
-              <button 
-                type="submit" 
-                disabled={loading}
-                className="px-6 py-2 bg-[#00e5ff] text-black font-bold rounded-lg hover:shadow-[0_0_20px_rgba(0,229,255,0.4)] transition-all disabled:opacity-50"
-              >
-                {loading ? "..." : (lang === "ar" ? "حفظ" : "Save")}
-              </button>
+            <div className="pt-4 border-t border-white/5 flex justify-between gap-3">
+              {category && (
+                <button 
+                  type="button"
+                  disabled={deleting}
+                  onClick={handleDelete}
+                  className="px-4 py-2 text-sm text-red-400 hover:text-red-300 transition-colors"
+                >
+                  {deleting ? "..." : (lang === "ar" ? "حذف القسم" : "Delete")}
+                </button>
+              )}
+              <div className="flex gap-3 ms-auto">
+                <button 
+                  type="button" 
+                  className="px-4 py-2 text-sm opacity-60 hover:opacity-100 transition-opacity"
+                  onClick={() => setOpen(false)}
+                >
+                  {lang === "ar" ? "إلغاء" : "Cancel"}
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="px-6 py-2 bg-[#00e5ff] text-black font-bold rounded-lg hover:shadow-[0_0_20px_rgba(0,229,255,0.4)] transition-all disabled:opacity-50"
+                >
+                  {loading ? "..." : (lang === "ar" ? "حفظ" : "Save")}
+                </button>
+              </div>
             </div>
           </form>
         </DialogContent>

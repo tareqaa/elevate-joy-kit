@@ -117,13 +117,23 @@ function CategoryPage() {
     <StoreShell>
       <section className="category-hero">
         <div className="wrap">
-          <div className="category-hero-inner fade-in">
-            <div className="category-hero-icon">{category.icon}</div>
-            <div className="category-hero-text">
-              <h1>{pick(category.nameAr, category.nameEn)}</h1>
-              <p>{pick(category.taglineAr, category.taglineEn)}</p>
+            <div className="category-hero-inner fade-in" style={{ position: "relative" }}>
+              {isAdmin && (
+                <QuickAddCategory
+                  category={category}
+                  trigger={
+                    <button className="gx-btn outline" style={{ position: "absolute", top: 0, insetInlineEnd: 0, background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)" }}>
+                      <Plus size={14} style={{ transform: "rotate(45deg)" }} /> {lang === "ar" ? "تعديل القسم" : "Edit Category"}
+                    </button>
+                  }
+                />
+              )}
+              <div className="category-hero-icon">{category.icon}</div>
+              <div className="category-hero-text">
+                <h1>{pick(category.nameAr, category.nameEn)}</h1>
+                <p>{pick(category.taglineAr, category.taglineEn)}</p>
+              </div>
             </div>
-          </div>
         </div>
       </section>
 
