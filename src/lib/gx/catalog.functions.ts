@@ -105,6 +105,7 @@ export type CatalogCategory = {
   icon: string | null;
   pageTemplate: string;
   children: CatalogCategoryChild[];
+  products: CatalogProduct[];
   accentColor: string | null;
   themeGradient: string | null;
 };
@@ -257,21 +258,63 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
       .order("sort_order", { ascending: true });
 
     const kidIds = (kids ?? []).map((k: Record<string, any>) => k.id);
-    // Fetch products regardless of `is_active`: a sub-category whose product was
-    // switched off must disappear entirely, while a sub-category that never had
-    // a product yet keeps showing the "coming soon" tile.
-    const { data: prods } = kidIds.length
-      ? await supabase
-          .from("products")
-          .select("slug, category_id, icon, icon_image_url, thumb_bg, is_active")
-          .in("category_id", kidIds)
-      : { data: [] as Record<string, any>[] };
+    
+    // Fetch products for both children and the category itself
+    const allTargetIds = [c.id, ...kidIds];
+    const { data: prods } = await supabase
+      .from("products")
+      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, theme_gradient, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, base_price_jod, region, is_active, is_featured, badge_ar, badge_en, label_color, category_id")
+      .in("category_id", allTargetIds);
 
-    const byCat = new Map<string, Record<string, any>>();
+    const productsForThisCat: CatalogProduct[] = [];
+    const productsByChild = new Map<string, Record<string, any>>();
     const hasAnyProduct = new Set<string>();
+
     for (const p of (prods ?? []) as Record<string, any>[]) {
       hasAnyProduct.add(p.category_id);
-      if (p.is_active && !byCat.has(p.category_id)) byCat.set(p.category_id, p);
+      
+      if (p.category_id === c.id) {
+        // Map to CatalogProduct (simplified or full depending on need, but let's stick to full if possible)
+        // Note: For brevity in the catalog view, we might not need full variants/features here, 
+        // but the current type expects them. Let's provide empty arrays for now as they are fetched in getCatalogProduct.
+        productsForThisCat.push({
+          slug: p.slug,
+          nameAr: p.name_ar,
+          nameEn: p.name_en || p.name_ar,
+          taglineAr: p.tagline_ar,
+          taglineEn: p.tagline_en,
+          descriptionAr: p.description_ar,
+          descriptionEn: p.description_en,
+          icon: p.icon,
+          iconImage: p.icon_image_url,
+          thumbBg: p.thumb_bg,
+          accentColor: p.accent_color,
+          cardGradient: p.card_gradient,
+          categoryNameAr: c.name_ar,
+          categoryNameEn: c.name_en,
+          identifierLabelAr: p.identifier_label_ar,
+          identifierLabelEn: p.identifier_label_en,
+          identifierPlaceholder: p.identifier_placeholder,
+          deliveryMethodAr: p.delivery_method_ar,
+          deliveryMethodEn: p.delivery_method_en,
+          deliveryDetails: p.delivery_details,
+          pageTemplate: p.page_template,
+          deliveryType: p.delivery_type,
+          basePriceJOD: p.base_price_jod,
+          region: p.region,
+          isFeatured: p.is_featured,
+          badgeAr: p.badge_ar,
+          badgeEn: p.badge_en,
+          labelColor: p.label_color,
+          variants: [],
+          features: [],
+          themeGradient: p.theme_gradient
+        });
+      }
+
+      if (p.is_active && p.category_id !== c.id && !productsByChild.has(p.category_id)) {
+        productsByChild.set(p.category_id, p);
+      }
     }
 
     return {
@@ -287,9 +330,10 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
       pageTemplate: c.page_template ?? "standard",
       accentColor: c.accent_color ?? null,
       themeGradient: c.theme_gradient ?? null,
+      products: productsForThisCat,
       children: (kids ?? [])
         .map((k: Record<string, any>) => {
-        const prod = byCat.get(k.id);
+        const prod = productsByChild.get(k.id);
         return {
           id: k.id,
           slug: k.slug,
