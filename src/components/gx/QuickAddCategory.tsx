@@ -127,7 +127,11 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
           type="button"
           className={className || "subcat-card edit-parent-btn"} 
           style={!className ? { border: "1px dashed rgba(0,229,255,0.3)", background: "rgba(0,229,255,0.05)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", borderRadius: "16px", cursor: "pointer" } : undefined}
-          onClick={() => setOpen(true)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(true);
+          }}
         >
           {className === "cat-card-big add-category-card" ? (
             <>
