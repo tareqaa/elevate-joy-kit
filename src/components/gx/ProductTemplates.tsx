@@ -111,6 +111,10 @@ function VariantCard({
 export function StandardTemplate({ product }: { product: CatalogProduct }) {
   const { t } = useLang();
   const l = useLocalized(product);
+  
+  // If no variants exist (newly added simple product), show a single "Buy Now" box
+  const hasVariants = l.variants.length > 0;
+
   return (
     <>
       <ProductHero p={product} l={l} />
@@ -118,7 +122,30 @@ export function StandardTemplate({ product }: { product: CatalogProduct }) {
         <div className="wrap">
           <SectionHead eyebrow={t("sec.plans")} title={t("product.pick_plan")} />
           <div className="plans-grid">
-            {l.variants.map((v) => <VariantCard key={v.cartId} p={product} v={v} />)}
+            {hasVariants ? (
+              l.variants.map((v) => <VariantCard key={v.cartId} p={product} v={v} />)
+            ) : (
+              <div className="prod-card" style={{ maxWidth: 400, margin: "0 auto" }}>
+                <div className="prod-thumb" style={{ background: product.thumbBg || undefined }}>
+                  {product.iconImage ? (
+                    <img src={product.iconImage} alt="" style={{ width: 64, height: 64, objectFit: "contain" }} />
+                  ) : (
+                    <span style={{ fontSize: 44 }}>{product.icon}</span>
+                  )}
+                </div>
+                <div className="prod-body">
+                  <div className="prod-name" style={{ minHeight: "auto", fontSize: 18, fontWeight: 900 }}>{l.name}</div>
+                  {product.basePriceJOD !== null && (
+                    <div className="prod-prices">
+                      <span className="prod-new" style={{ fontSize: 24 }}>{useCurrency().format(product.basePriceJOD)}</span>
+                    </div>
+                  )}
+                  <div style={{ marginTop: 15 }}>
+                    <BuyActions cartId={product.slug} />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
