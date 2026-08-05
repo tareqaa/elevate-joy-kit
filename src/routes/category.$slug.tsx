@@ -180,7 +180,7 @@ function CategoryPage() {
                 <span>{s.icon}</span>
               );
               if (!s.productSlug) {
-                const targetLink = s.slug ? `/category/${s.slug}` : "#";
+                const targetLink = `/category/${s.slug}`;
                 return (
                   <div key={s.slug} className="subcat-card soon" style={{ position: "relative" }}>
                     {isAdmin && (
