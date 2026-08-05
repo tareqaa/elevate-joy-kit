@@ -161,11 +161,12 @@ export function Navbar() {
       try { localStorage.removeItem("gx_profile_cache"); } catch { /* noop */ }
       return;
     }
+    let alive = true;
     (async () => {
       try {
         // Fetch session once to avoid redundant calls
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (!active || !currentSession?.user) return;
+        if (!alive || !currentSession?.user) return;
 
         // Parallel data fetch
         const [profRes, adminRes, countRes] = await Promise.all([
@@ -182,7 +183,7 @@ export function Navbar() {
             .eq("status", "delivered"),
         ]);
 
-        if (active) {
+        if (alive) {
           if (profRes.data) {
             const next = { ...profRes.data, id: session.userId };
             setProfile(next);
@@ -201,6 +202,7 @@ export function Navbar() {
         console.error("[Navbar] Initial data fetch failed", e);
       }
     })();
+    return () => { alive = false; };
   }, [session]);
 
   useEffect(() => {
