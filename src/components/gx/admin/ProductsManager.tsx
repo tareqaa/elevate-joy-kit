@@ -538,7 +538,7 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
         if (pageTemplate === "standard" && payload.base_price_jod !== null) {
           const variantPayload = {
             product_id: newId,
-            cart_id: `${finalSlug}-default`,
+            cart_id: finalSlug, // Use the slug as the cart_id for the default variant
             label_ar: "تفعيل أساسي",
             label_en: "Standard Activation",
             price_jod: payload.base_price_jod,
@@ -549,7 +549,7 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
           await supabase.from("product_variants").insert(variantPayload as any);
         }
       }
-      toast.success(savedId ? "تم التحديث" : "تمت الإضافة — أضف الخيارات والأسعار الآن");
+      toast.success(savedId ? "تم التحديث" : "تمت الإضافة — المنتج جاهز للشراء الآن");
       if (stay) { setTab("variants"); return; }
       onSaved();
     } catch (e) {
