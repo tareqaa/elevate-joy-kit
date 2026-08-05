@@ -505,7 +505,7 @@ export function ProductDialog({ product, categories = [], defaultCategoryId, onC
     setAccentColor(p.accent_color);
     setThumbBg(p.thumb_bg);
     setIcon(p.icon);
-    if ("requires_player_id" in p) setRequiresPlayerId(p.requires_player_id);
+    if ("requires_player_id" in p) setRequiresPlayerId(!!p.requires_player_id);
     setTab("basic");
   };
 
