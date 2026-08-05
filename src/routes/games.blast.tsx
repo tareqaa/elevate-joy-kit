@@ -511,9 +511,7 @@ const MoveTimer = memo(function MoveTimer({
   const onExpire = useCallback(() => setGame((g) => timeoutGame(g)), []);
 
   useEffect(() => {
-    // Only start a new move timer when:
-    // 1. The timer is active (not paused/over)
-    // 2. AND we either have a fresh tray OR a move was just committed (game.moves.length changed)
+    // Only reset move timer when timer becomes active, a tray is refilled, or a move completes
     if (timerActive) {
       moveStart.current = performance.now();
     }
