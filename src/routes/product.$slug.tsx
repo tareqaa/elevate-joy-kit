@@ -2,7 +2,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { getCatalogProduct } from "@/lib/gx/catalog.functions";
 import { ProductTemplate } from "@/components/gx/ProductTemplates";
-import { getStoreHeadLinks } from "@/lib/gx/store-head";
+import { getStoreHeadLinks, PAGE_CSS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/product/$slug")({
   loader: async ({ params }) => {
@@ -14,6 +14,13 @@ export const Route = createFileRoute("/product/$slug")({
     const p = loaderData?.product;
     const title = p ? `${p.nameEn || p.nameAr} — GX Store` : "Product — GX Store";
     const desc = p?.descriptionEn || p?.descriptionAr || "GX Store digital product";
+    
+    // Choose specific CSS based on template
+    const cssKeys: (keyof typeof PAGE_CSS)[] = ["product"];
+    if (p?.pageTemplate === "multi_account") cssKeys.push("snapchat");
+    else if (p?.pageTemplate === "gift_card") cssKeys.push("giftcard");
+    else if (p?.pageTemplate === "dual_plans") cssKeys.push("fortnite");
+
     return {
       meta: [
         { title },
@@ -24,7 +31,7 @@ export const Route = createFileRoute("/product/$slug")({
         { name: "twitter:card", content: "summary_large_image" },
         ...(p ? [] : [{ name: "robots", content: "noindex" }]),
       ],
-      links: getStoreHeadLinks(["product"]),
+      links: getStoreHeadLinks(cssKeys),
     };
   },
   errorComponent: ({ error }) => (
