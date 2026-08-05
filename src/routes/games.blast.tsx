@@ -1,3 +1,4 @@
+export function BlastPageInternal() {
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
@@ -62,7 +63,7 @@ function BlastPageLazy() {
 
 const BEST_KEY = "gx_blast_best";
 
-export function BlastPage() {
+function BlastPage() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
   const { t: tournamentId } = Route.useSearch();
@@ -273,7 +274,7 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-export function BlastPageInternal() {
+function BlastPageInternal() {
 
   const { lang, dir } = useLang();
   const ar = lang === "ar";
@@ -1026,4 +1027,5 @@ export function BlastPageInternal() {
 }
 
 
+}
 }
