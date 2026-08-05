@@ -290,7 +290,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
    "cart.order_saved_note": "احفظ رقم الطلب — بتقدر تتواصل معنا على أي منصة (واتساب، تيليجرام، إنستغرام، فيسبوك، تيك توك) وبنكمل الطلب معك. أو أنشئ حساب وتابع حالة طلبك مباشرة من صفحة \"طلباتي\".",
    "cart.your_order_number": "رقم طلبك",
    "cart.copy_number": "نسخ الرقم",
-   "cart.continue_wa": "أكمل عبر واتساب",
+   "cart.continue_wa": "اكمل",
    "cart.track_order": "تتبع الطلب من حسابي",
 
   },
