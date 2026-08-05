@@ -180,6 +180,7 @@ function CategoryPage() {
                 <span>{s.icon}</span>
               );
               if (!s.productSlug) {
+                const targetLink = s.slug ? `/category/${s.slug}` : "#";
                 return (
                   <div key={s.slug} className="subcat-card soon" style={{ position: "relative" }}>
                     {isAdmin && (
@@ -222,6 +223,7 @@ function CategoryPage() {
                         />
                       </div>
                     )}
+                    <Link to={targetLink} className="absolute inset-0 z-10" />
                     <span className="soon-badge">{t("cat.coming_soon")}</span>
                     <div className="subcat-ic" style={{ background: s.bg || undefined }}>{iconInner}</div>
                     <div>
