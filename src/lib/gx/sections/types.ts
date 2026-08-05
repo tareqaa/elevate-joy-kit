@@ -115,11 +115,21 @@ export function activeCarouselSlides(items: CarouselSlide[] | undefined): Carous
   });
 }
 
-export type CategoryOverride = { name?: string; desc?: string; accent?: string; hidden?: boolean; sort?: number };
+export type CategoryOverride = { 
+  name?: string; 
+  desc?: string; 
+  accent?: string; 
+  hidden?: boolean; 
+  sort?: number;
+  tagline?: string;
+  page_template?: string;
+};
 export type CategoriesData = {
   title?: string;
   eyebrow?: string;
   overrides?: Record<string, CategoryOverride>;
+  /** If true, the admin '+' card is shown if the user is an admin. */
+  enable_quick_add?: boolean;
 };
 
 export type BestsellersData = {

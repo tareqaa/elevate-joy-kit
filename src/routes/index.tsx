@@ -1,4 +1,4 @@
-/** Execute esta instrucao no projeto: بطلع خطأ 404 **/
+/** The storefront homepage builder with in-place admin management. **/
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";

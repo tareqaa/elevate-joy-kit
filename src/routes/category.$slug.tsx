@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { getCatalogCategory } from "@/lib/gx/catalog.functions";
 import type { CatalogCategoryChild } from "@/lib/gx/catalog.functions";
@@ -44,6 +44,7 @@ function CategoryPage() {
   const { category } = Route.useLoaderData();
   const { lang, t } = useLang();
   const { isAdmin } = useIsAdmin();
+  const navigate = useNavigate();
   const pick = (ar: string | null, en: string | null) => (lang === "en" ? en || ar : ar || en) || "";
 
   if (category.pageTemplate === "gift_card") {
@@ -167,7 +168,10 @@ function CategoryPage() {
                 
                 <button 
                   className="subcat-card add-product-btn"
-                  onClick={() => window.location.href = `/admin/products?new=1&category_id=${category.id}`}
+                  onClick={() => {
+                    // Navigate to admin products tab and trigger new product flow
+                    window.location.href = `/admin/products?tab=products&new=1&category_id=${category.id}`;
+                  }}
                 >
                   <div className="subcat-ic admin-plus"><PackagePlus size={24} /></div>
                   <div>

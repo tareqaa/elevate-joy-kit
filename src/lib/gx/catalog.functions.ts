@@ -67,6 +67,10 @@ export type CatalogProduct = {
   deliveryType: string;
   basePriceJOD: number | null;
   region: string | null;
+  isFeatured: boolean;
+  badgeAr: string | null;
+  badgeEn: string | null;
+  labelColor: string | null;
   variants: CatalogVariant[];
   features: CatalogFeature[];
 };
@@ -138,7 +142,7 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
     const { data: row } = await supabase
       .from("products")
       .select(
-        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, base_price_jod, region, is_active, categories:category_id (name_ar, name_en)",
+        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, base_price_jod, region, is_active, is_featured, badge_ar, badge_en, label_color, categories:category_id (name_ar, name_en)",
       )
       .eq("slug", data.slug)
       .eq("is_active", true)
@@ -193,6 +197,10 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
       deliveryType: p.delivery_type ?? "manual",
       basePriceJOD: p.base_price_jod ? Number(p.base_price_jod) : null,
       region: p.region ?? null,
+      isFeatured: !!p.is_featured,
+      badgeAr: p.badge_ar ?? null,
+      badgeEn: p.badge_en ?? p.badge_ar ?? null,
+      labelColor: p.label_color ?? null,
       variants: (variants ?? []).map((v: Record<string, any>) => {
         const o = v.cart_id ? overrides[v.cart_id] : undefined;
         const price =

@@ -13,7 +13,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Sparkles, Coins, Search, Trophy, Save, Ticket, Wallet, Users, TrendingUp, History, RotateCcw } from "lucide-react";
+import { Sparkles, Coins, Search, Trophy, Save, Ticket, Wallet, Users, TrendingUp, History, RotateCcw, ClipboardList } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/loyalty")({
   head: () => ({ meta: [{ title: "نظام الولاء — لوحة التحكم" }] }),
@@ -90,18 +90,20 @@ function LoyaltyAdmin() {
       </div>
 
       <Tabs defaultValue="levels" dir="rtl">
-        <TabsList className="grid grid-cols-5 w-full max-w-3xl h-11">
+        <TabsList className="grid grid-cols-6 w-full max-w-4xl h-11">
           <TabsTrigger value="levels" className="gap-2"><Trophy className="w-4 h-4" />المستويات</TabsTrigger>
           <TabsTrigger value="customers" className="gap-2"><Coins className="w-4 h-4" />العملاء</TabsTrigger>
           <TabsTrigger value="credit" className="gap-2"><Wallet className="w-4 h-4" />الرصيد</TabsTrigger>
           <TabsTrigger value="coupons" className="gap-2"><Ticket className="w-4 h-4" />الكوبونات</TabsTrigger>
           <TabsTrigger value="ledger" className="gap-2"><History className="w-4 h-4" />الحركات</TabsTrigger>
+          <TabsTrigger value="rewards-log" className="gap-2"><ClipboardList className="w-4 h-4" />سجل الجوائز</TabsTrigger>
         </TabsList>
         <TabsContent value="levels" className="mt-4"><LevelsTab profiles={rows} /></TabsContent>
         <TabsContent value="customers" className="mt-4"><CustomersTab profiles={rows} loading={profilesQ.isLoading} /></TabsContent>
         <TabsContent value="credit" className="mt-4"><CreditTab profiles={rows} /></TabsContent>
         <TabsContent value="coupons" className="mt-4"><CouponsTab profiles={rows} /></TabsContent>
         <TabsContent value="ledger" className="mt-4"><LedgerTab profiles={rows} /></TabsContent>
+        <TabsContent value="rewards-log" className="mt-4"><RewardsLogTab /></TabsContent>
       </Tabs>
     </div>
   );
@@ -732,5 +734,71 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <Label className="text-[11px] text-muted-foreground">{label}</Label>
       {children}
     </div>
+  );
+}
+
+function RewardsLogTab() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-rewards-log"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reward_logs")
+        .select("*, profiles(full_name, username, email)")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">سجل الجوائز الممنوحة</CardTitle>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="text-muted-foreground border-b">
+            <tr className="text-right">
+              <th className="p-2 font-medium">الوقت</th>
+              <th className="p-2 font-medium">العميل</th>
+              <th className="p-2 font-medium">العملات</th>
+              <th className="p-2 font-medium">XP</th>
+              <th className="p-2 font-medium">الرصيد</th>
+              <th className="p-2 font-medium">المصدر</th>
+              <th className="p-2 font-medium">السبب</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading && Array.from({ length: 5 }).map((_, i) => (
+              <tr key={i}><td colSpan={7} className="p-2"><div className="h-9 rounded-lg bg-white/5 animate-pulse" /></td></tr>
+            ))}
+            {data?.map((r: any) => (
+              <tr key={r.id} className="border-b border-white/5 hover:bg-white/[0.03]">
+                <td className="p-2 text-[11px] text-muted-foreground whitespace-nowrap">
+                  {new Date(r.created_at).toLocaleString("ar-EG")}
+                </td>
+                <td className="p-2">
+                  <div className="flex flex-col">
+                    <span className="font-bold">{r.profiles?.full_name || r.profiles?.username || "لاعب"}</span>
+                    <span className="text-[10px] opacity-50">{r.profiles?.email}</span>
+                  </div>
+                </td>
+                <td className="p-2 text-amber-400 font-bold">{r.amount_coins > 0 ? `+${r.amount_coins}` : r.amount_coins || 0}</td>
+                <td className="p-2 text-emerald-400 font-bold">{r.amount_xp > 0 ? `+${r.amount_xp}` : r.amount_xp || 0}</td>
+                <td className="p-2 text-sky-400 font-bold">{r.amount_credit_jod > 0 ? `+${Number(r.amount_credit_jod).toFixed(2)}` : Number(r.amount_credit_jod || 0).toFixed(2)} د.أ</td>
+                <td className="p-2">
+                  <Badge variant="outline" className="text-[10px]">{r.source}</Badge>
+                </td>
+                <td className="p-2 text-xs opacity-80">{r.reason || "—"}</td>
+              </tr>
+            ))}
+            {!isLoading && data?.length === 0 && (
+              <tr><td colSpan={7} className="text-center p-8 text-muted-foreground">لا جوائز مسجلة بعد</td></tr>
+            )}
+          </tbody>
+        </table>
+      </CardContent>
+    </Card>
   );
 }

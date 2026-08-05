@@ -569,12 +569,12 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
     toast.success("تم رفع الصورة");
   }
 
-  const tabs = [
-    ["basic", "المعلومات"],
-    ["template", "القالب"],
-    ["design", "الشكل"],
-    ["delivery", "التسليم"],
-    ["variants", "الخيارات والأسعار"],
+  const steps = [
+    { id: "basic", label: "1. المعلومات", icon: <Pencil size={12} /> },
+    { id: "template", label: "2. القالب", icon: <Layers size={12} /> },
+    { id: "design", label: "3. التصميم", icon: <Globe size={12} /> },
+    { id: "delivery", label: "4. التسليم", icon: <Plus size={12} /> },
+    { id: "variants", label: "5. الأسعار والخيارات", icon: <ShoppingBag size={12} /> },
   ] as const;
 
   return (
@@ -587,9 +587,18 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-2 flex-wrap">
-          {tabs.map(([k, label]) => (
-            <button key={k} className={`gx-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{label}</button>
+        <div className="flex gap-2 flex-wrap bg-white/5 p-1 rounded-xl">
+          {steps.map((s, idx) => (
+            <button 
+              key={s.id} 
+              className={`gx-tab flex-1 min-w-[120px] transition-all duration-300 ${tab === s.id ? "on scale-105" : "opacity-60 hover:opacity-100"}`} 
+              onClick={() => setTab(s.id as any)}
+            >
+              <span className="flex items-center justify-center gap-2">
+                {s.icon}
+                {s.label}
+              </span>
+            </button>
           ))}
         </div>
 
