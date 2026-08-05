@@ -511,8 +511,13 @@ const MoveTimer = memo(function MoveTimer({
   const onExpire = useCallback(() => setGame((g) => timeoutGame(g)), []);
 
   useEffect(() => {
-    if (timerActive) moveStart.current = performance.now();
-  }, [timerActive, trayGen, game.moveLimitMs]);
+    // Only start a new move timer when:
+    // 1. The timer is active (not paused/over)
+    // 2. AND we either have a fresh tray OR a move was just committed (game.moves.length changed)
+    if (timerActive) {
+      moveStart.current = performance.now();
+    }
+  }, [timerActive, trayGen, game.moves.length, game.moveLimitMs]);
 
 
   const previewCells = useMemo(() => {
