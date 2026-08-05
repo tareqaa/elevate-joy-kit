@@ -54,6 +54,18 @@ function ProductHero({ p, l }: { p: CatalogProduct; l: ReturnType<typeof useLoca
       <div className="wrap">
         <div className="product-hero-inner fade-in">
           <div className="product-icon-badge">
+            <div className="badge-stack">
+              {p.is_featured && (
+                <div className="feat-badge">
+                  {lang === "ar" ? "مميّز" : "Featured"}
+                </div>
+              )}
+              {p.badge && (
+                <div className="custom-badge" style={{ backgroundColor: p.label_color || 'var(--primary)' }}>
+                  {pick(lang, p.badge_ar, p.badge_en)}
+                </div>
+              )}
+            </div>
             <div className="core">
               {p.iconImage ? (
                 <img src={p.iconImage} alt={l.name} style={{ width: 56, height: 56, objectFit: "contain" }} />
@@ -88,7 +100,7 @@ function VariantCard({
       <div className="prod-thumb" style={{ background: p.thumbBg || undefined }}>
         <div className="badge-stack">
           {v.tag && <span className="tag-badge">{v.tag}</span>}
-          <DiscountBadge value={discountOf(v)} />
+          <DiscountBadge discount={discountOf(v)} />
         </div>
         {icon ??
           (p.iconImage ? (
@@ -439,6 +451,18 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
         <div className="wrap">
           <div className="giftcard-hero-inner fade-in">
             <div className="giftcard-mockup" style={{ background: product.cardGradient || product.thumbBg || undefined }}>
+              <div className="badge-stack">
+                {product.is_featured && (
+                  <div className="feat-badge">
+                    {lang === "ar" ? "مميّز" : "Featured"}
+                  </div>
+                )}
+                {product.badge && (
+                  <div className="custom-badge" style={{ backgroundColor: product.label_color || 'var(--primary)' }}>
+                    {pick(lang, product.badge_ar, product.badge_en)}
+                  </div>
+                )}
+              </div>
               <div className="gc-top">
                 <span className="gc-icon">{iconMarkup}</span>
                 <div className="gc-chip" />
