@@ -22,7 +22,7 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const queryClient = useQueryClient();
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   
   const [form, setForm] = useState({
     nameAr: category?.name_ar || "",
