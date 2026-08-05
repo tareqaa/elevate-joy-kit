@@ -1,4 +1,4 @@
-export { BlastPage };
+
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
@@ -274,7 +274,7 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-function BlastPage() {
+export function BlastPage() {
 
   const { lang, dir } = useLang();
   const ar = lang === "ar";
