@@ -34,7 +34,8 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
     pageTemplate: category?.page_template || "standard",
     icon: category?.icon || "💎",
     accent: category?.accent_color || "#00e5ff",
-    gradient: category?.theme_gradient || "linear-gradient(135deg,#00e5ff,#0091ff)"
+    gradient: category?.theme_gradient || "linear-gradient(135deg,#00e5ff,#0091ff)",
+    imageUrl: category?.icon_url || ""
   });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -61,6 +62,7 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
         tagline_en: form.taglineEn,
         page_template: form.pageTemplate,
         icon: form.icon,
+        icon_url: form.imageUrl,
         accent_color: form.accent,
         theme_gradient: form.gradient,
         parent_id: parentId,
@@ -259,6 +261,16 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
                   />
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs opacity-60">{lang === "ar" ? "رابط الصورة (اختياري)" : "Image URL (Optional)"}</Label>
+              <Input 
+                value={form.imageUrl} 
+                onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
+                placeholder="https://..."
+                className="bg-white/5 border-white/10"
+              />
             </div>
 
             <div className="pt-4 border-t border-white/5 flex justify-between gap-3">
