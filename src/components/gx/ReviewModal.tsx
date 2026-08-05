@@ -13,7 +13,8 @@ type OrderLite = {
 
 const css = `
 .gx-rv-ov{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}
-.gx-rv{width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:20px;border:1px solid rgba(0,229,255,.22);background:linear-gradient(180deg,#0b1119,#070b11);box-shadow:0 30px 80px -30px rgba(0,229,255,.35)}
+.gx-rv{width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:20px;border:1px solid rgba(0,229,255,.22);background:linear-gradient(180deg,#0b1119,#070b11);box-shadow:0 30px 80px -30px rgba(0,229,255,.35);position:relative}
+.gx-rv-close-outer{position:absolute;top:12px;left:12px;z-index:10}
 .gx-rv-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.07)}
 .gx-rv-bd{padding:18px;display:grid;gap:14px}
 .gx-rv-lb{font-size:12px;font-weight:800;color:#8ba3b8;margin-bottom:6px;display:block}
@@ -95,12 +96,14 @@ export function ReviewModal({ open, onClose, userId, initialOrderId, onSuccess }
     <div className="gx-rv-ov" dir={dir} onClick={onClose}>
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <div className="gx-rv" onClick={(e) => e.stopPropagation()}>
-        <div className="gx-rv-hd">
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 900, color: "#e6f7ff" }}>{lang === "ar" ? "اكتب مراجعة" : "Write a review"}</div>
+        <div className="gx-rv-hd" style={{ justifyContent: "center", position: "relative" }}>
+          <div className="gx-rv-close-outer" dir="ltr">
+            <button className="gx-rv-btn ghost" style={{ padding: 8, borderRadius: "50%" }} onClick={onClose} aria-label={lang === "ar" ? "إغلاق" : "Close"}><X size={18} /></button>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 18, fontWeight: 900, color: "#e6f7ff" }}>{lang === "ar" ? "اكتب مراجعة" : "Write a review"}</div>
             <div className="gx-rv-hint">{lang === "ar" ? "قيّم تجربتك مع طلب مكتمل" : "Rate your experience with a completed order"}</div>
           </div>
-          <button className="gx-rv-btn ghost" style={{ padding: 8 }} onClick={onClose} aria-label={lang === "ar" ? "إغلاق" : "Close"}><X size={16} /></button>
         </div>
 
         <div className="gx-rv-bd">
@@ -135,12 +138,12 @@ export function ReviewModal({ open, onClose, userId, initialOrderId, onSuccess }
 
               <div>
                 <label className="gx-rv-lb">{lang === "ar" ? "التقييم" : "Rating"}</label>
-                <div style={{ display: "flex", gap: 4 }} onMouseLeave={() => setHover(0)}>
+                <div style={{ display: "flex", gap: 6, justifyContent: "center", padding: "8px 0" }} onMouseLeave={() => setHover(0)}>
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button key={n} type="button" className="gx-rv-star"
                       onMouseEnter={() => setHover(n)} onClick={() => setRating(n)} aria-label={lang === "ar" ? `${n} نجوم` : `${n} stars`}>
-                      <Star size={26} fill={(hover || rating) >= n ? "#ffd54f" : "transparent"}
-                        color={(hover || rating) >= n ? "#ffd54f" : "#3d4c5c"} />
+                      <Star size={32} fill={(hover || rating) >= n ? "#ffd54f" : "transparent"}
+                        color={(hover || rating) >= n ? "#ffd54f" : "#3d4c5c"} style={{ transition: "transform 0.1s ease" }} />
                     </button>
                   ))}
                 </div>
@@ -162,10 +165,10 @@ export function ReviewModal({ open, onClose, userId, initialOrderId, onSuccess }
         </div>
 
         <div className="gx-rv-ft">
-          <button className="gx-rv-btn ghost" onClick={onClose}>{lang === "ar" ? "إلغاء" : "Cancel"}</button>
-          <button className="gx-rv-btn primary" disabled={saving || loading || orders.length === 0} onClick={submit}>
+          <button className="gx-rv-btn primary" style={{ flex: 1 }} disabled={saving || loading || orders.length === 0} onClick={submit}>
             {saving ? (lang === "ar" ? "جاري الإرسال..." : "Sending...") : (lang === "ar" ? "إرسال المراجعة" : "Submit Review")}
           </button>
+          <button className="gx-rv-btn ghost" onClick={onClose}>{lang === "ar" ? "إلغاء" : "Cancel"}</button>
         </div>
       </div>
     </div>

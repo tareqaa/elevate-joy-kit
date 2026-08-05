@@ -7,7 +7,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
   ar: {
     // Common
     "common.currency": "العملة",
-    "common.language": "Please change the review system location. Instead of having reviews as a list, move the review option to the Orders section.\n\nWhen a customer completes an order, that order should appear in their Orders page with an option to leave a review there. The customer should only be able to rate and review products/orders that they have successfully completed.",
+    "common.language": "اللغة",
     "common.ok": "موافق",
     "common.cancel": "إلغاء",
     "common.close": "إغلاق",
