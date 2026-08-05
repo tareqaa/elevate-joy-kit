@@ -619,8 +619,11 @@ const MoveTimer = memo(function MoveTimer({
     if (!d || !t || !t.ok) return;
 
     const g = gameRef.current;
-    const durationMs = performance.now() - moveStart.current;
+    const now = performance.now();
+    const durationMs = now - moveStart.current;
+    moveStart.current = now; // update moveStart for the next move
     const res = placePiece(g, d.trayIndex, t.row, t.col, durationMs);
+
     if (!res.ok) return;
 
     const justPlaced = d.piece.cells.map(([dr, dc]) => idx(t.row + dr, t.col + dc));
