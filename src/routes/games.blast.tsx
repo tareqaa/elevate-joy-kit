@@ -59,6 +59,10 @@ function BlastPageLazy() {
 }
 
 export function BlastPage() {
+  const { lang, dir } = useLang();
+  const ar = lang === "ar";
+  const { t: tournamentId } = Route.useSearch();
+
 
 const MAX_POPUPS = 4;
 const BOARD_GAP_PX = 2;
@@ -1012,3 +1016,4 @@ function BlastPage() {
     </StoreShell>
   );
 }
+
