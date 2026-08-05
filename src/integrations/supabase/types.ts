@@ -248,13 +248,11 @@ export type Database = {
           is_main: boolean
           name_ar: string
           name_en: string
-          page_template: string | null
           parent_id: string | null
           slug: string
           sort_order: number
           tagline_ar: string | null
           tagline_en: string | null
-          template_config: Json | null
           theme_color: string | null
           theme_gradient: string | null
           updated_at: string
@@ -271,13 +269,11 @@ export type Database = {
           is_main?: boolean
           name_ar: string
           name_en: string
-          page_template?: string | null
           parent_id?: string | null
           slug: string
           sort_order?: number
           tagline_ar?: string | null
           tagline_en?: string | null
-          template_config?: Json | null
           theme_color?: string | null
           theme_gradient?: string | null
           updated_at?: string
@@ -294,13 +290,11 @@ export type Database = {
           is_main?: boolean
           name_ar?: string
           name_en?: string
-          page_template?: string | null
           parent_id?: string | null
           slug?: string
           sort_order?: number
           tagline_ar?: string | null
           tagline_en?: string | null
-          template_config?: Json | null
           theme_color?: string | null
           theme_gradient?: string | null
           updated_at?: string
@@ -1122,9 +1116,6 @@ export type Database = {
           is_active: boolean
           is_featured: boolean
           is_pinned_bestseller: boolean
-          label_color: string | null
-          label_text_ar: string | null
-          label_text_en: string | null
           name_ar: string
           name_en: string
           page_template: Database["public"]["Enums"]["product_page_template"]
@@ -1165,9 +1156,6 @@ export type Database = {
           is_active?: boolean
           is_featured?: boolean
           is_pinned_bestseller?: boolean
-          label_color?: string | null
-          label_text_ar?: string | null
-          label_text_en?: string | null
           name_ar: string
           name_en: string
           page_template?: Database["public"]["Enums"]["product_page_template"]
@@ -1208,9 +1196,6 @@ export type Database = {
           is_active?: boolean
           is_featured?: boolean
           is_pinned_bestseller?: boolean
-          label_color?: string | null
-          label_text_ar?: string | null
-          label_text_en?: string | null
           name_ar?: string
           name_en?: string
           page_template?: Database["public"]["Enums"]["product_page_template"]
@@ -1411,50 +1396,6 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      reward_logs: {
-        Row: {
-          amount_coins: number | null
-          amount_credit_jod: number | null
-          amount_xp: number | null
-          coupon_id: string | null
-          created_at: string | null
-          id: string
-          reason: string | null
-          source: string
-          user_id: string
-        }
-        Insert: {
-          amount_coins?: number | null
-          amount_credit_jod?: number | null
-          amount_xp?: number | null
-          coupon_id?: string | null
-          created_at?: string | null
-          id?: string
-          reason?: string | null
-          source: string
-          user_id: string
-        }
-        Update: {
-          amount_coins?: number | null
-          amount_credit_jod?: number | null
-          amount_xp?: number | null
-          coupon_id?: string | null
-          created_at?: string | null
-          id?: string
-          reason?: string | null
-          source?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reward_logs_coupon_id_fkey"
-            columns: ["coupon_id"]
-            isOneToOne: false
-            referencedRelation: "coupons"
             referencedColumns: ["id"]
           },
         ]
@@ -2058,18 +1999,6 @@ export type Database = {
         }[]
       }
       get_wheel_status: { Args: never; Returns: Json }
-      grant_user_reward: {
-        Args: {
-          _coins?: number
-          _coupon_id?: string
-          _credit_jod?: number
-          _reason?: string
-          _source?: string
-          _user_id: string
-          _xp?: number
-        }
-        Returns: Json
-      }
       guard_store_order_user: { Args: { _claimed: string }; Returns: string }
       has_role: {
         Args: {

@@ -65,49 +65,30 @@ export type CatalogProduct = {
   deliveryDetails: DeliveryDetails | null;
   pageTemplate: string;
   deliveryType: string;
-  basePriceJOD: number | null;
   region: string | null;
-  isFeatured: boolean;
-  badgeAr: string | null;
-  badgeEn: string | null;
-  labelColor: string | null;
   variants: CatalogVariant[];
   features: CatalogFeature[];
-  themeGradient: string | null;
 };
 
 export type CatalogCategoryChild = {
-  id: string;
   slug: string;
   nameAr: string;
   nameEn: string;
-  taglineAr: string | null;
-  taglineEn: string | null;
-  descriptionAr: string | null;
-  descriptionEn: string | null;
   icon: string | null;
   iconImage: string | null;
   bg: string | null;
-  pageTemplate: string;
   /** Product slug to link to, when this sub-category has a live product. */
   productSlug: string | null;
 };
 
 export type CatalogCategory = {
-  id: string;
   slug: string;
   nameAr: string;
   nameEn: string;
   taglineAr: string | null;
   taglineEn: string | null;
-  descriptionAr: string | null;
-  descriptionEn: string | null;
   icon: string | null;
-  pageTemplate: string;
   children: CatalogCategoryChild[];
-  products: CatalogProduct[];
-  accentColor: string | null;
-  themeGradient: string | null;
 };
 
 function publicClient() {
@@ -152,9 +133,10 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
     const { data: row } = await supabase
       .from("products")
       .select(
-        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, theme_gradient, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, base_price_jod, region, is_active, is_featured, badge_ar, badge_en, label_color, categories:category_id (name_ar, name_en)",
+        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, region, is_active, categories:category_id (name_ar, name_en)",
       )
       .eq("slug", data.slug)
+      .eq("is_active", true)
       .maybeSingle();
     if (!row) return null;
 
@@ -190,7 +172,6 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
       iconImage: p.icon_image_url ?? null,
       thumbBg: p.thumb_bg ?? null,
       accentColor: p.accent_color ?? null,
-      themeGradient: p.theme_gradient ?? null,
       cardGradient: p.card_gradient ?? null,
       categoryNameAr: cat?.name_ar ?? null,
       categoryNameEn: cat?.name_en ?? cat?.name_ar ?? null,
@@ -205,12 +186,7 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
           : null,
       pageTemplate: p.page_template ?? "standard",
       deliveryType: p.delivery_type ?? "manual",
-      basePriceJOD: p.base_price_jod ? Number(p.base_price_jod) : null,
       region: p.region ?? null,
-      isFeatured: !!p.is_featured,
-      badgeAr: p.badge_ar ?? null,
-      badgeEn: p.badge_en ?? p.badge_ar ?? null,
-      labelColor: p.label_color ?? null,
       variants: (variants ?? []).map((v: Record<string, any>) => {
         const o = v.cart_id ? overrides[v.cart_id] : undefined;
         const price =
@@ -245,160 +221,58 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
     const supabase = publicClient();
     const { data: row } = await supabase
       .from("categories")
-      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, page_template, is_active, accent_color, theme_gradient")
+      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, icon, is_active")
       .eq("slug", data.slug)
+      .eq("is_active", true)
       .maybeSingle();
     if (!row) return null;
     const c = row as Record<string, any>;
 
     const { data: kids } = await supabase
       .from("categories")
-      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_url, theme_gradient, page_template, sort_order")
+      .select("id, slug, name_ar, name_en, icon, icon_url, theme_gradient, sort_order")
       .eq("parent_id", c.id)
+      .eq("is_active", true)
       .order("sort_order", { ascending: true });
 
     const kidIds = (kids ?? []).map((k: Record<string, any>) => k.id);
-    
-    // Fetch products for both children and the category itself
-    const allTargetIds = [c.id, ...kidIds];
-    const { data: prods, error: prodError } = await supabase
-      .from("products")
-      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, theme_gradient, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, base_price_jod, region, is_active, is_featured, badge_ar, badge_en, label_color, category_id")
-      .in("category_id", allTargetIds);
-    
-    if (prodError) {
-      console.error("Error fetching products for category:", prodError);
-    }
-    // Note: We removed the is_active check here because the reveal system 
-    // and empty categories need to load metadata even if products are inactive.
-    // However, we should filter for the UI if needed.
+    // Fetch products regardless of `is_active`: a sub-category whose product was
+    // switched off must disappear entirely, while a sub-category that never had
+    // a product yet keeps showing the "coming soon" tile.
+    const { data: prods } = kidIds.length
+      ? await supabase
+          .from("products")
+          .select("slug, category_id, icon, icon_image_url, thumb_bg, is_active")
+          .in("category_id", kidIds)
+      : { data: [] as Record<string, any>[] };
 
-    const productsForThisCat: CatalogProduct[] = [];
-    const productsByChild = new Map<string, any[]>();
-
-    for (const p of (prods ?? []) as any[]) {
-      if (!p.is_active) continue;
-
-      if (p.category_id === c.id) {
-        productsForThisCat.push({
-          slug: p.slug,
-          nameAr: p.name_ar,
-          nameEn: p.name_en || p.name_ar,
-          taglineAr: p.tagline_ar,
-          taglineEn: p.tagline_en,
-          descriptionAr: p.description_ar,
-          descriptionEn: p.description_en,
-          icon: p.icon,
-          iconImage: p.icon_image_url,
-          thumbBg: p.thumb_bg,
-          accentColor: p.accent_color,
-          cardGradient: p.card_gradient,
-          categoryNameAr: c.name_ar,
-          categoryNameEn: c.name_en,
-          identifierLabelAr: p.identifier_label_ar,
-          identifierLabelEn: p.identifier_label_en,
-          identifierPlaceholder: p.identifier_placeholder,
-          deliveryMethodAr: p.delivery_method_ar,
-          deliveryMethodEn: p.delivery_method_en,
-          deliveryDetails: p.delivery_details,
-          pageTemplate: p.page_template || "standard",
-          deliveryType: p.delivery_type,
-          basePriceJOD: p.base_price_jod,
-          region: p.region,
-          isFeatured: p.is_featured,
-          badgeAr: p.badge_ar,
-          badgeEn: p.badge_en,
-          labelColor: p.label_color,
-          variants: [],
-          features: [],
-          themeGradient: p.theme_gradient
-        } as any);
-      } else {
-        if (!productsByChild.has(p.category_id)) productsByChild.set(p.category_id, []);
-        productsByChild.get(p.category_id)!.push(p);
-      }
+    const byCat = new Map<string, Record<string, any>>();
+    const hasAnyProduct = new Set<string>();
+    for (const p of (prods ?? []) as Record<string, any>[]) {
+      hasAnyProduct.add(p.category_id);
+      if (p.is_active && !byCat.has(p.category_id)) byCat.set(p.category_id, p);
     }
 
     return {
-      id: c.id,
       slug: c.slug,
       nameAr: c.name_ar,
       nameEn: c.name_en || c.name_ar,
       taglineAr: c.tagline_ar ?? null,
       taglineEn: c.tagline_en ?? null,
-      descriptionAr: c.description_ar ?? null,
-      descriptionEn: c.description_en ?? null,
       icon: c.icon ?? null,
-      pageTemplate: c.page_template ?? "standard",
-      accentColor: c.accent_color ?? null,
-      themeGradient: c.theme_gradient ?? null,
-      products: productsForThisCat,
       children: (kids ?? [])
+        .filter((k: Record<string, any>) => byCat.has(k.id) || !hasAnyProduct.has(k.id))
         .map((k: Record<string, any>) => {
-        const childProds = productsByChild.get(k.id) || [];
-        // If it has exactly one product, we can link directly to it.
-        // If it has multiple, we link to the sub-category page.
-        const firstProd = childProds.length === 1 ? childProds[0] : null;
+        const prod = byCat.get(k.id);
         return {
-          id: k.id,
           slug: k.slug,
           nameAr: k.name_ar,
           nameEn: k.name_en || k.name_ar,
-          taglineAr: k.tagline_ar ?? null,
-          taglineEn: k.tagline_en ?? null,
-          descriptionAr: k.description_ar ?? null,
-          descriptionEn: k.description_en ?? null,
-          icon: k.icon ?? firstProd?.icon ?? null,
-          iconImage: k.icon_url ?? firstProd?.icon_image_url ?? null,
-          bg: k.theme_gradient ?? firstProd?.thumb_bg ?? null,
-          pageTemplate: k.page_template ?? "standard",
-          productSlug: firstProd?.slug ?? null,
+          icon: k.icon ?? prod?.icon ?? null,
+          iconImage: k.icon_url ?? prod?.icon_image_url ?? null,
+          bg: k.theme_gradient ?? prod?.thumb_bg ?? null,
+          productSlug: prod?.slug ?? null,
         };
       }),
     };
-  });
-
-export const getFeaturedCatalogItems = createServerFn({ method: "GET" })
-  .handler(async (): Promise<CatalogProduct[]> => {
-    const supabase = publicClient();
-    const { data: prods } = await supabase
-      .from("products")
-      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, theme_gradient, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, base_price_jod, region, is_active, is_featured, badge_ar, badge_en, label_color, category_id, categories:category_id (name_ar, name_en)")
-      .eq("is_active", true)
-      .eq("is_featured", true)
-      .limit(20);
-    
-    return (prods ?? []).map((p: any) => ({
-      slug: p.slug,
-      nameAr: p.name_ar,
-      nameEn: p.name_en || p.name_ar,
-      taglineAr: p.tagline_ar,
-      taglineEn: p.tagline_en,
-      descriptionAr: p.description_ar,
-      descriptionEn: p.description_en,
-      icon: p.icon,
-      iconImage: p.icon_image_url,
-      thumbBg: p.thumb_bg,
-      accentColor: p.accent_color,
-      cardGradient: p.card_gradient,
-      categoryNameAr: p.categories?.name_ar,
-      categoryNameEn: p.categories?.name_en || p.categories?.name_ar,
-      identifierLabelAr: p.identifier_label_ar,
-      identifierLabelEn: p.identifier_label_en,
-      identifierPlaceholder: p.identifier_placeholder,
-      deliveryMethodAr: p.delivery_method_ar,
-      deliveryMethodEn: p.delivery_method_en,
-      deliveryDetails: p.delivery_details,
-      pageTemplate: p.page_template || "standard",
-      deliveryType: p.delivery_type || "manual",
-      basePriceJOD: p.base_price_jod,
-      region: p.region,
-      isFeatured: p.is_featured,
-      badgeAr: p.badge_ar,
-      badgeEn: p.badge_en,
-      labelColor: p.label_color,
-      variants: [],
-      features: [],
-      themeGradient: p.theme_gradient
-    }));
   });

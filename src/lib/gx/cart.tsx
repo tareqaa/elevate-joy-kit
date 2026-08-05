@@ -125,7 +125,7 @@ function resolve(items: CartItem[]): ResolvedItem[] {
           usernames,
         };
       }
-      const plan = findPlanByCartId(i.cartId) || findDbPlanByCartId(i.cartId);
+      const plan = findPlanByCartId(i.cartId);
       return plan ? { ...plan, qty: i.qty, usernames } : null;
     })
     .filter((x): x is ResolvedItem => x !== null);

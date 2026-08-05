@@ -10,9 +10,8 @@ import { toast } from "sonner";
 import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Star, Search, Layers, Globe, ArrowUp, ArrowDown, MoreHorizontal } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-export type Category = { id: string; name_ar: string; name_en: string };
-export type Product = {
-
+type Category = { id: string; name_ar: string; name_en: string };
+type Product = {
   id: string; category_id: string | null; slug: string; sku: string | null;
   name_ar: string; name_en: string;
   tagline_ar: string | null; tagline_en: string | null;
@@ -20,7 +19,7 @@ export type Product = {
   image_url: string | null; base_price_jod: number | null;
   badge: string | null; purchases_count: number;
   is_featured: boolean; is_active: boolean; sort_order: number;
-  page_template: "standard" | "gift_card";
+  page_template: "standard" | "multi_account" | "dual_plans" | "gift_card";
   icon: string | null; icon_image_url: string | null;
   thumb_bg: string | null; accent_color: string | null; card_gradient: string | null;
   delivery_type: "code" | "account" | "topup" | "manual";
@@ -102,8 +101,6 @@ function slugify(s: string) {
 }
 
 export function CategoryProducts({ categoryId, categoryName }: { categoryId: string; categoryName: string }) {
-
-
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
@@ -397,7 +394,7 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
         <ProductDialog
           product={editing}
           categories={catsQ.data ?? []}
-          defaultCategoryId={isAllProducts ? (categoryId === "all" ? undefined : categoryId) : categoryId}
+          defaultCategoryId={isAllProducts ? undefined : categoryId}
           onClose={() => { setEditing(null); setCreating(false); }}
           onSaved={() => { setEditing(null); setCreating(false); qc.invalidateQueries({ queryKey: ["admin-products"] }); }}
         />
@@ -413,54 +410,32 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
   );
 }
 
-// Product Presets (Simplified Add)
-const PRODUCT_PRESETS = [
-  {
-    id: "standard_sub",
-    label_ar: "اشتراك قياسي",
-    label_en: "Standard Subscription",
-    icon: "💎",
-    delivery_type: "account",
-    page_template: "standard",
-    accent_color: "#00e5ff",
-    thumb_bg: "linear-gradient(135deg,#0091ff,#00e5ff)",
-  },
-  {
-    id: "gift_card_key",
-    label_ar: "بطاقة / مفتاح رقمي",
-    label_en: "Digital Gift Card / Key",
-    icon: "🎁",
-    delivery_type: "code",
-    page_template: "gift_card",
-    accent_color: "#f59e0b",
-    thumb_bg: "linear-gradient(135deg,#f59e0b,#ef4444)",
-  },
-  {
-    id: "direct_topup",
-    label_ar: "شحن مباشر (ID)",
-    label_en: "Direct Top-up",
-    icon: "⚡",
-    delivery_type: "topup",
-    page_template: "standard",
-    accent_color: "#10b981",
-    thumb_bg: "linear-gradient(135deg,#10b981,#06b6d4)",
-    requires_player_id: true,
-  },
-];
-
-// Templates are now managed at the category level as requested by the user
 const TEMPLATES = [
   {
     id: "standard",
-    name: "قالب افتراضي",
-    hint: "عرض الخيارات كبطاقات (مناسب للبرامج والاشتراكات)",
+    name: "منتج عادي (خطط وأسعار)",
+    hint: "مثل قسم البرامج والتطبيقات — خطط بأسعار مختلفة + مزايا + طريقة التسليم",
     preview: "linear-gradient(135deg,#0091ff,#00e5ff)",
-    icon: "💎",
+    icon: "🧩",
+  },
+  {
+    id: "multi_account",
+    name: "حسابات متعددة (نمط سناب شات)",
+    hint: "الزبون يختار مدة ويضيف أكثر من اسم مستخدم بنفس الطلب",
+    preview: "linear-gradient(135deg,#fffc00,#ffb300)",
+    icon: "👥",
+  },
+  {
+    id: "dual_plans",
+    name: "مجموعتان من الخطط (نمط فورتنايت)",
+    hint: "مجموعتين منفصلتين (اشتراك + عملة داخل اللعبة) مع بلوك تسليم مفصّل",
+    preview: "linear-gradient(135deg,#7c3aed,#22d3ee)",
+    icon: "🎮",
   },
   {
     id: "gift_card",
-    name: "بطاقات هدايا",
-    hint: "قالب بطاقة رقمية مع تقسيم حسب الدولة (للبطاقات والمفاتيح)",
+    name: "بطاقات هدايا حسب الدولة",
+    hint: "فئات مقسومة على دول مع أعلام — كل خيار يحمل كود الدولة",
     preview: "linear-gradient(135deg,#f59e0b,#ef4444)",
     icon: "🎁",
   },
@@ -482,32 +457,9 @@ const THUMB_PRESETS = [
   "linear-gradient(135deg,#111827,#374151)",
 ];
 
-export function ProductDialog({ product, categories = [], defaultCategoryId, onClose, onSaved }: { product: Product | null; categories?: Category[]; defaultCategoryId?: string; onClose: () => void; onSaved: () => void }) {
-  const qc = useQueryClient();
-  const catsQ = useQuery({
-    queryKey: ["admin-categories-list"],
-    enabled: categories.length === 0,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("id,name_ar,name_en").order("sort_order");
-      if (error) throw error;
-      return (data ?? []) as Category[];
-    },
-  });
-
-  const finalCategories = categories.length > 0 ? categories : (catsQ.data ?? []);
-
-  const [tab, setTab] = useState<"preset" | "basic" | "template" | "design" | "delivery" | "variants">(product ? "basic" : "preset");
+function ProductDialog({ product, categories, defaultCategoryId, onClose, onSaved }: { product: Product | null; categories: Category[]; defaultCategoryId?: string; onClose: () => void; onSaved: () => void }) {
+  const [tab, setTab] = useState<"basic" | "template" | "design" | "delivery" | "variants">("basic");
   const [savedId, setSavedId] = useState<string | null>(product?.id ?? null);
-
-  const applyPreset = (p: typeof PRODUCT_PRESETS[number]) => {
-    setDeliveryType(p.delivery_type);
-    setPageTemplate(p.page_template);
-    setAccentColor(p.accent_color);
-    setThumbBg(p.thumb_bg);
-    setIcon(p.icon);
-    if ("requires_player_id" in p) setRequiresPlayerId(!!p.requires_player_id);
-    setTab("basic");
-  };
 
   const [nameAr, setNameAr] = useState(product?.name_ar ?? "");
   const [nameEn, setNameEn] = useState(product?.name_en ?? "");
@@ -577,27 +529,11 @@ export function ProductDialog({ product, categories = [], defaultCategoryId, onC
         const { error } = await supabase.from("products").update(payload).eq("id", savedId);
         if (error) throw error;
       } else {
-        const { data: newProd, error: prodErr } = await supabase.from("products").insert(payload).select("id").single();
-        if (prodErr) throw prodErr;
-        const newId = newProd.id as string;
-        setSavedId(newId);
-
-        // Auto-create a default variant so the product is immediately buyable if it's simple
-        if (pageTemplate === "standard" && payload.base_price_jod !== null) {
-          const variantPayload = {
-            product_id: newId,
-            cart_id: finalSlug, // Use the slug as the cart_id for the default variant
-            label_ar: "تفعيل أساسي",
-            label_en: "Standard Activation",
-            price_jod: payload.base_price_jod,
-            is_active: true,
-            sort_order: 0,
-            delivery_type: deliveryType
-          };
-          await supabase.from("product_variants").insert(variantPayload as any);
-        }
+        const { data, error } = await supabase.from("products").insert(payload).select("id").single();
+        if (error) throw error;
+        setSavedId(data.id as string);
       }
-      toast.success(savedId ? "تم التحديث" : "تمت الإضافة — المنتج جاهز للشراء الآن");
+      toast.success(savedId ? "تم التحديث" : "تمت الإضافة — أضف الخيارات والأسعار الآن");
       if (stay) { setTab("variants"); return; }
       onSaved();
     } catch (e) {
@@ -617,13 +553,12 @@ export function ProductDialog({ product, categories = [], defaultCategoryId, onC
     toast.success("تم رفع الصورة");
   }
 
-  const steps = [
-    ...(product ? [] : [{ id: "preset", label: "0. نوع المنتج", icon: <Star size={12} /> }]),
-    { id: "basic", label: "1. المعلومات", icon: <Pencil size={12} /> },
-    { id: "template", label: "2. القالب", icon: <Layers size={12} /> },
-    { id: "design", label: "3. التصميم", icon: <Globe size={12} /> },
-    { id: "delivery", label: "4. التسليم", icon: <Plus size={12} /> },
-    { id: "variants", label: "5. الأسعار والخيارات", icon: <ShoppingBag size={12} /> },
+  const tabs = [
+    ["basic", "المعلومات"],
+    ["template", "القالب"],
+    ["design", "الشكل"],
+    ["delivery", "التسليم"],
+    ["variants", "الخيارات والأسعار"],
   ] as const;
 
   return (
@@ -636,45 +571,13 @@ export function ProductDialog({ product, categories = [], defaultCategoryId, onC
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-2 flex-wrap bg-white/5 p-1 rounded-xl">
-          {steps.map((s, idx) => (
-            <button 
-              key={s.id} 
-              className={`gx-tab flex-1 min-w-[120px] transition-all duration-300 ${tab === s.id ? "on scale-105" : "opacity-60 hover:opacity-100"}`} 
-              onClick={() => setTab(s.id as any)}
-            >
-              <span className="flex items-center justify-center gap-2">
-                {s.icon}
-                {s.label}
-              </span>
-            </button>
+        <div className="flex gap-2 flex-wrap">
+          {tabs.map(([k, label]) => (
+            <button key={k} className={`gx-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{label}</button>
           ))}
         </div>
 
         <div className="space-y-3">
-          {tab === "preset" && !product && (
-            <div className="grid md:grid-cols-3 gap-4 py-4">
-              {PRODUCT_PRESETS.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => applyPreset(p)}
-                  className="gx-prod-card flex-col items-center text-center p-6 gap-3 group border-dashed"
-                >
-                  <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">{p.icon}</div>
-                  <div className="font-bold text-cyan-50">{p.label_ar}</div>
-                  <div className="text-[10px] text-cyan-100/40" dir="ltr">{p.label_en}</div>
-                </button>
-              ))}
-              <button
-                onClick={() => setTab("basic")}
-                className="gx-prod-card flex-col items-center text-center p-6 gap-3 group border-dashed opacity-70"
-              >
-                <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">⚙️</div>
-                <div className="font-bold text-cyan-50">تخصيص كامل</div>
-                <div className="text-[10px] text-cyan-100/40" dir="ltr">Full Customization</div>
-              </button>
-            </div>
-          )}
           {tab === "basic" && (
             <>
               <div className="gx-fieldset">
@@ -716,14 +619,6 @@ export function ProductDialog({ product, categories = [], defaultCategoryId, onC
                   <div><Label>سعر أساسي (د.أ)</Label><Input type="number" step="0.01" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="اختياري لو في خيارات" className="gx-adm-input" /></div>
                   <div><Label>شارة</Label><Input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="Premium / Hot / New" className="gx-adm-input" /></div>
                 </div>
-                {/* Template selection is now at the category level only */}
-                <div className="hidden">
-                   <Label>قالب المنتج</Label>
-                   <select value={pageTemplate} onChange={e => setPageTemplate(e.target.value as any)} className="gx-adm-input">
-                     <option value="standard">Standard</option>
-                     <option value="gift_card">Gift Card</option>
-                   </select>
-                </div>
                 <div className="flex gap-6 flex-wrap mt-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="accent-cyan-400 w-4 h-4" />
@@ -760,7 +655,7 @@ export function ProductDialog({ product, categories = [], defaultCategoryId, onC
                   </button>
                 ))}
               </div>
-              <p className="text-[11.5px] text-cyan-100/50 mt-3">القالب يحدد كيف تُعرض الخيارات والأسعار بصفحة المنتج — يمكنك اختيار القالب الافتراضي لمعظم المنتجات أو قالب بطاقات الهدايا للبطاقات الرقمية.</p>
+              <p className="text-[11.5px] text-cyan-100/50 mt-3">القالب يحدد كيف تُعرض الخيارات والأسعار بصفحة المنتج — نفس أشكال أقسام البرامج، سناب، فورتنايت، وبطاقات الهدايا.</p>
             </div>
           )}
 
@@ -769,7 +664,7 @@ export function ProductDialog({ product, categories = [], defaultCategoryId, onC
               <div className="gx-fs-title"><ShoppingBag size={12} /> الصور والألوان</div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label>صورة المنتج / الكتالوج</Label>
+                  <Label>صورة المنتج</Label>
                   <div className="flex items-start gap-3 mt-1">
                     <div className="gx-prod-img" style={{ width: 82, height: 82 }}>
                       {imageUrl ? <img src={imageUrl} alt="" /> : <ShoppingBag size={26} className="text-cyan-400/40" />}
@@ -949,7 +844,7 @@ function VariantsPanel({ productId, productSlug }: { productId: string; productS
 }
 
 
-export function VariantsDialog({ product, onClose }: { product: Product; onClose: () => void }) {
+function VariantsDialog({ product, onClose }: { product: Product; onClose: () => void }) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto" dir="rtl">

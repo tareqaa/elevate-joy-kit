@@ -2,7 +2,7 @@
 // renders the section for the public homepage. Reuses existing store CSS
 // classes so styling stays consistent with the rest of the site.
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CATEGORY_LINKS, getCategoryLink, getFeaturedItems, PRODUCTS_CATALOG, type FeaturedItem } from "@/data/products";
 import { useCurrency } from "@/lib/gx/currency";
@@ -11,11 +11,7 @@ import { BuyActions } from "@/components/gx/BuyActions";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-locale";
 import { useStorefrontCategories } from "@/lib/gx/category-visibility";
-import { useIsAdmin } from "@/lib/gx/admin-auth";
-import { QuickAddCategory } from "@/components/gx/QuickAddCategory";
-import { Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
 import { initialOf, avatarColorFor } from "@/lib/gx/reviews";
 import { translateTexts } from "@/lib/gx/translate.functions";
 import type {
@@ -290,8 +286,6 @@ export function CarouselRenderer({ data }: { data: CarouselData }) {
 /* ---------------- CATEGORIES ---------------- */
 export function CategoriesRenderer({ data }: { data: CategoriesData }) {
   const { t, lang } = useLang();
-  const { isAdmin } = useIsAdmin();
-  const queryClient = useQueryClient();
   const overrides = data.overrides || {};
   const databaseCategories = useStorefrontCategories();
   const links = databaseCategories
@@ -314,51 +308,32 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
             const desc = c0._o_desc || (lang === "en" ? c0.descriptionEn || c0.descriptionAr : c0.descriptionAr || c0.descriptionEn);
             const accent = c0._o_accent || c0.accent;
             return (
-              <div key={c0.slug} style={{ position: "relative" }}>
-                {isAdmin && (
-                      <QuickAddCategory
-                        category={c0}
-                        onClose={() => queryClient.invalidateQueries({ queryKey: ["storefront-root-categories"] })}
-                        trigger={
-                          <div className="admin-cat-edit-btn" style={{ position: "absolute", top: 12, insetInlineEnd: 12, zIndex: 20, width: 32, height: 32, borderRadius: "50%", background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)", border: "1px solid rgba(0,229,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#00e5ff", cursor: "pointer" }}>
-                            <Settings size={14} />
-                          </div>
-                        }
-                      />
-                )}
-                <Link to={getCategoryLink(c0.slug) as never} className="cat-card-big" style={{ ["--accent" as string]: accent } as React.CSSProperties}>
-                  <div className="ccb-top">
-                    {c0.iconImage ? (
-                      <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>
-                        <img src={c0.iconImage} alt="" style={{ width: "70%", height: "70%", objectFit: "contain" }} />
-                      </div>
-                    ) : c0.slug === "design" ? (
-                      <div className="app-icon-grid">
-                        <span style={{ background: "linear-gradient(135deg,#3b7bf6,#1e4fd1)" }}>Ps</span>
-                        <span style={{ background: "linear-gradient(135deg,#ff7a3d,#e0402a)" }}>Ai</span>
-                        <span style={{ background: "linear-gradient(135deg,#8b5cf6,#5b21b6)" }}>Pr</span>
-                        <span style={{ background: "linear-gradient(135deg,#22c1a8,#0e7a6a)" }}>Id</span>
-                      </div>
-                    ) : (
-                      <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>{c0.icon}</div>
-                    )}
-                    <div className="ccb-glow" style={{ background: accent }} />
-                  </div>
-                  <div>
-                    <div className="cname-modern">{name}</div>
-                    <div className="cdesc">{desc}</div>
-                  </div>
-                  <div className="carrow">{t("home.browse_category")} <span className="arrow-ic">‹</span></div>
-                </Link>
-              </div>
+              <Link key={c0.slug} to={getCategoryLink(c0.slug) as never} className="cat-card-big" style={{ ["--accent" as string]: accent } as React.CSSProperties}>
+                <div className="ccb-top">
+                  {c0.iconImage ? (
+                    <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>
+                      <img src={c0.iconImage} alt="" style={{ width: "70%", height: "70%", objectFit: "contain" }} />
+                    </div>
+                  ) : c0.slug === "design" ? (
+                    <div className="app-icon-grid">
+                      <span style={{ background: "linear-gradient(135deg,#3b7bf6,#1e4fd1)" }}>Ps</span>
+                      <span style={{ background: "linear-gradient(135deg,#ff7a3d,#e0402a)" }}>Ai</span>
+                      <span style={{ background: "linear-gradient(135deg,#8b5cf6,#5b21b6)" }}>Pr</span>
+                      <span style={{ background: "linear-gradient(135deg,#22c1a8,#0e7a6a)" }}>Id</span>
+                    </div>
+                  ) : (
+                    <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>{c0.icon}</div>
+                  )}
+                  <div className="ccb-glow" style={{ background: accent }} />
+                </div>
+                <div>
+                  <div className="cname-modern">{name}</div>
+                  <div className="cdesc">{desc}</div>
+                </div>
+                <div className="carrow">{t("home.browse_category")} <span className="arrow-ic">‹</span></div>
+              </Link>
             );
           })}
-          {isAdmin && data.enable_quick_add !== false && (
-            <QuickAddCategory 
-              className="cat-card-big add-category-card" 
-              label={lang === "ar" ? "إضافة قسم جديد" : "Add New Category"}
-            />
-          )}
         </div>
       </div>
     </section>
@@ -369,46 +344,12 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
 export function BestsellersRenderer({ data }: { data: BestsellersData }) {
   const { format } = useCurrency();
   const { t, lang } = useLang();
-  const [dbItems, setDbItems] = useState<any[]>([]);
   const order = data.order || [];
   const base = getFeaturedItems();
-
-  useEffect(() => {
-    import("@/lib/gx/catalog.functions").then(m => {
-      m.getFeaturedCatalogItems().then(items => {
-        if (items) setDbItems(items);
-      });
-    });
-  }, []);
-
-  const items = useMemo(() => {
-    // Merge DB items into the list. Prefer DB items if slug matches.
-    const merged = [...base];
-    dbItems.forEach(db => {
-      const idx = merged.findIndex(m => m.product === db.slug);
-      const mapped: FeaturedItem = {
-        cartId: db.slug, // Use slug as cartId for simple mapping
-        product: db.slug,
-        name: db.nameEn || db.nameAr,
-        icon: db.icon || "📦",
-        bg: db.thumbBg || "var(--surface-2)",
-        price: db.basePriceJOD || 0,
-        oldPrice: (db.basePriceJOD || 0) * 1.2, // Mock old price for UI
-        link: `/product/${db.slug}`
-      };
-      if (idx !== -1) merged[idx] = mapped;
-      else merged.push(mapped);
-    });
-
-    if (order.length > 0) {
-      return [
-        ...order.map((id) => merged.find((b) => b.cartId === id)).filter((x): x is FeaturedItem => !!x),
-        ...merged.filter((b) => !order.includes(b.cartId))
-      ];
-    }
-    return merged;
-  }, [dbItems, base, order]);
-
+  const items: FeaturedItem[] = order.length > 0
+    ? [...order.map((id) => base.find((b) => b.cartId === id)).filter((x): x is FeaturedItem => !!x),
+       ...base.filter((b) => !order.includes(b.cartId))]
+    : base;
   return (
     <section className="section" id="products" style={{ background: "var(--bg2)" }}>
       <div className="wrap">
@@ -416,7 +357,7 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
           <div><span className="k">{data.eyebrow || t("home.featured_eyebrow")}</span><h2>{data.title || t("home.featured_title")}</h2></div>
         </div>
         <CarouselRow className="featured-grid">
-          {items.map((p: any) => {
+          {items.map(p => {
             const discount = Math.round((1 - p.price / p.oldPrice) * 100);
             const product = PRODUCTS_CATALOG[p.product];
             let iconEl: React.ReactNode = <ProductIcon product={product} />;
@@ -668,8 +609,7 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
           {cards.map((it, i) => {
             const original = lang === "en" ? it.quote_en : it.quote_ar;
             const trans = tr[it.id];
-            const [showOriginal, setShowOriginal] = useState(false);
-            const q = (trans && !showOriginal) ? trans.text : original;
+            const q = trans?.text || original;
             const stars = Math.max(1, Math.min(5, it.rating ?? 5));
             return (
               <div key={`${it.id}-${i}`} className="testi-card">
@@ -690,30 +630,11 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
                   <div className="testi-quote testi-clamp">
                     {q}
                     {trans && (
-                      <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 11, opacity: .6 }}>
-                          {lang === "en"
-                            ? `Translated from ${trans.from === "ar" ? "Arabic" : trans.from.toUpperCase()} · Google`
-                            : `مُترجم من ${trans.from === "en" ? "الإنجليزية" : trans.from.toUpperCase()} · Google`}
-                        </span>
-                        <button
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowOriginal(!showOriginal); }}
-                          style={{
-                            background: "rgba(0,229,255,0.1)",
-                            border: "1px solid rgba(0,229,255,0.2)",
-                            borderRadius: 6,
-                            padding: "2px 6px",
-                            fontSize: 10,
-                            color: "#00e5ff",
-                            cursor: "pointer",
-                            fontWeight: 700
-                          }}
-                        >
-                          {showOriginal 
-                            ? (lang === "ar" ? "عرض الترجمة" : "Show Translation") 
-                            : (lang === "ar" ? "عرض الأصل" : "View Original")}
-                        </button>
-                      </div>
+                      <span style={{ display: "block", marginTop: 6, fontSize: 11, opacity: .6 }}>
+                        {lang === "en"
+                          ? `Translated from ${trans.from === "ar" ? "Arabic" : trans.from.toUpperCase()} · Google`
+                          : `مُترجم من ${trans.from === "en" ? "الإنجليزية" : trans.from.toUpperCase()} · Google`}
+                      </span>
                     )}
                   </div>
                 )}
