@@ -27,7 +27,7 @@ const css = `
 .gx-rv-hint{font-size:11.5px;color:#7d92a8;line-height:1.7}
 `;
 
-export function ReviewModal({ open, onClose, userId, initialOrderId }: { open: boolean; onClose: () => void; userId: string | null; initialOrderId?: string }) {
+export function ReviewModal({ open, onClose, userId, initialOrderId, onSuccess }: { open: boolean; onClose: () => void; userId: string | null; initialOrderId?: string; onSuccess?: () => void }) {
   const [orders, setOrders] = useState<OrderLite[]>([]);
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState(initialOrderId || "");
@@ -84,6 +84,7 @@ export function ReviewModal({ open, onClose, userId, initialOrderId }: { open: b
     }
     toast.success("شكراً على تقييمك! ❤️ وصلت مراجعتك وسيتم مراجعتها قبل النشر.");
     setComment(""); setRating(5);
+    if (onSuccess) onSuccess();
     onClose();
   }
 
