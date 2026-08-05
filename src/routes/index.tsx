@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { getStoreHeadLinks } from "@/lib/gx/store-head";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { SECTION_REGISTRY } from "@/lib/gx/sections/registry";
 import { containerMaxWidth, sectionWrapperStyle, themeToCssVars, type HomeLayout } from "@/lib/gx/sections/types";
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "GX Store" },
       { property: "og:description", content: "Your digital store for all subscriptions and game cards." },
     ],
-    links: STORE_HEAD_LINKS,
+    links: getStoreHeadLinks(["home"]),
   }),
   component: Home,
 });
