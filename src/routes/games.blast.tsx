@@ -647,8 +647,8 @@ const MoveTimer = memo(function MoveTimer({
           if (cur) map.set(i, { ...cur, color: d.piece.color });
         }
         setClearing(map);
-        setPaused(true);
-        setTimeout(() => { setClearing(new Map()); setPaused(false); }, 460);
+        // Purely visual clear effect. Do NOT setPaused(true) or block next moves.
+        setTimeout(() => setClearing(new Map()), 460);
       }
 
       if (res.lines > 1 || res.boardClearBonus > 0) {
