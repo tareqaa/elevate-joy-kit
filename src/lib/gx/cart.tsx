@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { findPlanByCartId, type ResolvedPlan } from "@/data/products";
 import { findDbPlanByCartId, loadDbVariants } from "./db-variants";
@@ -138,6 +138,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [coupon, setCouponState] = useState<AppliedCoupon | null>(null);
   const [coins, setCoinsState] = useState<AppliedCoins | null>(null);
   const [creditJOD, setCreditState] = useState(0);
+  const loadingRef = useRef(false);
 
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const { currency, format } = useCurrency();
@@ -160,6 +161,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     // Prefill from the signed-in user's profile when local contact is empty.
     (async () => {
+      if (loadingRef.current) return;
+      loadingRef.current = true;
       try {
         const { data: sess } = await supabase.auth.getSession();
         const uid = sess.session?.user?.id;
