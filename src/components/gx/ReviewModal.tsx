@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Star, X, Loader2 } from "lucide-react";
+import { useLang } from "@/lib/gx/i18n";
 
 type OrderLite = {
   id: string;
@@ -28,6 +29,7 @@ const css = `
 `;
 
 export function ReviewModal({ open, onClose, userId, initialOrderId, onSuccess }: { open: boolean; onClose: () => void; userId: string | null; initialOrderId?: string; onSuccess?: () => void }) {
+  const { t, lang, dir } = useLang();
   const [orders, setOrders] = useState<OrderLite[]>([]);
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState(initialOrderId || "");
@@ -67,7 +69,7 @@ export function ReviewModal({ open, onClose, userId, initialOrderId, onSuccess }
 
   async function submit() {
     if (!userId) return;
-    if (!orderId) { toast.error("اختر الطلب الذي تريد تقييمه"); return; }
+    if (!orderId) { toast.error(lang === "ar" ? "اختر الطلب الذي تريد تقييمه" : "Select the order you want to rate"); return; }
     setSaving(true);
     const { error } = await supabase.from("reviews").insert({
       user_id: userId,
@@ -79,10 +81,10 @@ export function ReviewModal({ open, onClose, userId, initialOrderId, onSuccess }
     });
     setSaving(false);
     if (error) {
-      toast.error(error.message.includes("duplicate") ? "قيّمت هذا الطلب مسبقاً" : error.message);
+      toast.error(error.message.includes("duplicate") ? (lang === "ar" ? "قيّمت هذا الطلب مسبقاً" : "You have already rated this order") : error.message);
       return;
     }
-    toast.success("شكراً على تقييمك! ❤️ وصلت مراجعتك وسيتم مراجعتها قبل النشر.");
+    toast.success(lang === "ar" ? "شكراً على تقييمك! ❤️ وصلت مراجعتك وسيتم مراجعتها قبل النشر." : "Thank you for your review! ❤️ Your review has been received and will be reviewed before publishing.");
     setComment(""); setRating(5);
     if (onSuccess) onSuccess();
     onClose();
@@ -90,15 +92,15 @@ export function ReviewModal({ open, onClose, userId, initialOrderId, onSuccess }
 
 
   return (
-    <div className="gx-rv-ov" dir="rtl" onClick={onClose}>
+    <div className="gx-rv-ov" dir={dir} onClick={onClose}>
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <div className="gx-rv" onClick={(e) => e.stopPropagation()}>
         <div className="gx-rv-hd">
           <div>
-            <div style={{ fontSize: 16, fontWeight: 900, color: "#e6f7ff" }}>اكتب مراجعة</div>
-            <div className="gx-rv-hint">قيّم تجربتك مع طلب مكتمل</div>
+            <div style={{ fontSize: 16, fontWeight: 900, color: "#e6f7ff" }}>{lang === "ar" ? "اكتب مراجعة" : "Write a review"}</div>
+            <div className="gx-rv-hint">{lang === "ar" ? "قيّم تجربتك مع طلب مكتمل" : "Rate your experience with a completed order"}</div>
           </div>
-          <button className="gx-rv-btn ghost" style={{ padding: 8 }} onClick={onClose} aria-label="إغلاق"><X size={16} /></button>
+          <button className="gx-rv-btn ghost" style={{ padding: 8 }} onClick={onClose} aria-label={lang === "ar" ? "إغلاق" : "Close"}><X size={16} /></button>
         </div>
 
         <div className="gx-rv-bd">
@@ -108,18 +110,18 @@ export function ReviewModal({ open, onClose, userId, initialOrderId, onSuccess }
             </div>
           ) : orders.length === 0 ? (
             <div className="gx-rv-hint" style={{ textAlign: "center", padding: 20 }}>
-              لا يوجد طلبات مكتملة بدون مراجعة حالياً. بعد استلام طلبك بتقدر تكتب مراجعتك من هنا.
+              {lang === "ar" ? "لا يوجد طلبات مكتملة بدون مراجعة حالياً." : "No completed orders without reviews at the moment."}
             </div>
           ) : (
             <>
               <div>
-                <label className="gx-rv-lb">الاسم الظاهر</label>
+                <label className="gx-rv-lb">{lang === "ar" ? "الاسم الظاهر" : "Display Name"}</label>
                 <input className="gx-rv-in" value={displayName} maxLength={60}
-                  onChange={(e) => setDisplayName(e.target.value)} placeholder="اسمك كما سيظهر" />
+                  onChange={(e) => setDisplayName(e.target.value)} placeholder={lang === "ar" ? "اسمك كما سيظهر" : "Your name as it will appear"} />
               </div>
 
               <div>
-                <label className="gx-rv-lb">رقم الطلب</label>
+                <label className="gx-rv-lb">{lang === "ar" ? "رقم الطلب" : "Order Number"}</label>
                 {orders.length > 1 ? (
                   <select className="gx-rv-in" value={orderId} onChange={(e) => setOrderId(e.target.value)}>
                     {orders.map((o) => (
@@ -132,11 +134,11 @@ export function ReviewModal({ open, onClose, userId, initialOrderId, onSuccess }
               </div>
 
               <div>
-                <label className="gx-rv-lb">التقييم</label>
+                <label className="gx-rv-lb">{lang === "ar" ? "التقييم" : "Rating"}</label>
                 <div style={{ display: "flex", gap: 4 }} onMouseLeave={() => setHover(0)}>
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button key={n} type="button" className="gx-rv-star"
-                      onMouseEnter={() => setHover(n)} onClick={() => setRating(n)} aria-label={`${n} نجوم`}>
+                      onMouseEnter={() => setHover(n)} onClick={() => setRating(n)} aria-label={lang === "ar" ? `${n} نجوم` : `${n} stars`}>
                       <Star size={26} fill={(hover || rating) >= n ? "#ffd54f" : "transparent"}
                         color={(hover || rating) >= n ? "#ffd54f" : "#3d4c5c"} />
                     </button>
@@ -145,14 +147,14 @@ export function ReviewModal({ open, onClose, userId, initialOrderId, onSuccess }
               </div>
 
               <div>
-                <label className="gx-rv-lb">مراجعتك (اختياري)</label>
+                <label className="gx-rv-lb">{lang === "ar" ? "مراجعتك (اختياري)" : "Your Review (Optional)"}</label>
                 <textarea className="gx-rv-in" rows={4} maxLength={180} value={comment}
                   onChange={(e) => setComment(e.target.value.slice(0, 180))}
-                  placeholder="شاركنا تجربتك مع GX Store (اختياري)" />
+                  placeholder={lang === "ar" ? "شاركنا تجربتك مع GX Store (اختياري)" : "Share your experience with GX Store (Optional)"} />
                 <div className="gx-rv-hint" style={{ textAlign: "left" }} dir="ltr">{comment.length}/180</div>
               </div>
 
-              <div className="gx-rv-hint">سيتم مراجعة تقييمك قبل ظهوره على الموقع.</div>
+              <div className="gx-rv-hint">{lang === "ar" ? "سيتم مراجعة تقييمك قبل ظهوره على الموقع." : "Your review will be checked before appearing on the site."}</div>
 
             </>
 
@@ -160,9 +162,9 @@ export function ReviewModal({ open, onClose, userId, initialOrderId, onSuccess }
         </div>
 
         <div className="gx-rv-ft">
-          <button className="gx-rv-btn ghost" onClick={onClose}>إلغاء</button>
+          <button className="gx-rv-btn ghost" onClick={onClose}>{lang === "ar" ? "إلغاء" : "Cancel"}</button>
           <button className="gx-rv-btn primary" disabled={saving || loading || orders.length === 0} onClick={submit}>
-            {saving ? "جاري الإرسال..." : "إرسال المراجعة"}
+            {saving ? (lang === "ar" ? "جاري الإرسال..." : "Sending...") : (lang === "ar" ? "إرسال المراجعة" : "Submit Review")}
           </button>
         </div>
       </div>
