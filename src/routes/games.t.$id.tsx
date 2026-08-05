@@ -75,7 +75,7 @@ function PrizeRow({ p, place, ar }: { p: Prize; place: number; ar: boolean }) {
 }
 
 
-function TournamentPage() {
+export function TournamentPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { lang, dir } = useLang();
