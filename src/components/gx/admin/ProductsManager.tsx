@@ -413,6 +413,7 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
   );
 }
 
+// Templates are now managed at the category level as requested by the user
 const TEMPLATES = [
   {
     id: "standard",
@@ -645,6 +646,14 @@ export function ProductDialog({ product, categories = [], defaultCategoryId, onC
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div><Label>سعر أساسي (د.أ)</Label><Input type="number" step="0.01" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="اختياري لو في خيارات" className="gx-adm-input" /></div>
                   <div><Label>شارة</Label><Input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="Premium / Hot / New" className="gx-adm-input" /></div>
+                </div>
+                {/* Template selection is now at the category level only */}
+                <div className="hidden">
+                   <Label>قالب المنتج</Label>
+                   <select value={pageTemplate} onChange={e => setPageTemplate(e.target.value as any)} className="gx-adm-input">
+                     <option value="standard">Standard</option>
+                     <option value="gift_card">Gift Card</option>
+                   </select>
                 </div>
                 <div className="flex gap-6 flex-wrap mt-3">
                   <label className="flex items-center gap-2 cursor-pointer">
