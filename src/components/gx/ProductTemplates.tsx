@@ -49,6 +49,7 @@ function useLocalized(p: CatalogProduct) {
 }
 
 function ProductHero({ p, l }: { p: CatalogProduct; l: ReturnType<typeof useLocalized> }) {
+  const { lang } = l;
   return (
     <section className="product-hero">
       <div className="wrap">
@@ -57,12 +58,12 @@ function ProductHero({ p, l }: { p: CatalogProduct; l: ReturnType<typeof useLoca
             <div className="badge-stack">
               {p.isFeatured && (
                 <div className="feat-badge">
-                  {l.lang === "ar" ? "مميّز" : "Featured"}
+                  {lang === "ar" ? "مميّز" : "Featured"}
                 </div>
               )}
               {p.badgeAr && (
                 <div className="custom-badge" style={{ backgroundColor: p.labelColor || 'var(--primary)' }}>
-                  {pick(l.lang, p.badgeAr, p.badgeEn)}
+                  {pick(lang, p.badgeAr, p.badgeEn)}
                 </div>
               )}
             </div>
@@ -115,7 +116,9 @@ function VariantCard({
           {v.oldPrice && <span className="prod-old">{format(v.oldPrice)}</span>}
           <span className="prod-new">{format(v.price)}</span>
         </div>
-        <BuyActions cartId={v.cartId} />
+        <div style={{ marginTop: 15 }}>
+          <BuyActions cartId={v.cartId} deliveryType={v.deliveryType || p.deliveryType} />
+        </div>
       </div>
     </div>
   );
@@ -165,150 +168,38 @@ export function StandardTemplate({ product }: { product: CatalogProduct }) {
       </section>
 
       {l.features.length > 0 && (
-        <section className="section" style={{ background: "var(--bg2)" }}>
+        <section className="section">
           <div className="wrap">
-            <SectionHead eyebrow={t("product.features_eyebrow")} title={t("product.features_title")} sub={t("product.features_sub")} />
+            <SectionHead eyebrow={t("product.features_eyebrow")} title={t("product.features_title")} />
             <FeatureAccordion features={l.features} />
           </div>
         </section>
       )}
 
-      <section className="section">
-        <div className="wrap">
-          <DeliveryBox method={l.deliveryMethod} identifierLabel={l.identifierLabel} />
-        </div>
-      </section>
+      {product.deliveryDetails && (
+        <section className="section" style={{ background: "var(--bg2)" }}>
+          <div className="wrap">
+            <DeliveryBox details={product.deliveryDetails} />
+          </div>
+        </section>
+      )}
     </>
   );
 }
 
-/* ---------------------------------------------------- multi_account */
+/* ---------------------------------------------------------- snapchat */
 export function MultiAccountTemplate({ product }: { product: CatalogProduct }) {
   const { t } = useLang();
   const l = useLocalized(product);
-  const { format } = useCurrency();
-  const cart = useCart();
-  const navigate = useNavigate();
-
-  const plans = l.variants;
-  const [planId, setPlanId] = useState(plans.find((p) => p.tag)?.cartId || plans[0]?.cartId || "");
-  const [usernames, setUsernames] = useState<string[]>([""]);
-  const [error, setError] = useState<string | null>(null);
-  const [addedFlash, setAddedFlash] = useState(false);
-  const plan = plans.find((p) => p.cartId === planId) || plans[0];
-
-  function updateUsername(i: number, v: string) {
-    const next = usernames.slice();
-    next[i] = v.trim();
-    setUsernames(next);
-    setError(null);
-  }
-  function inc() {
-    if (usernames.length >= 10) return;
-    if (usernames.findIndex((u) => !u.trim()) !== -1) { setError(t("snap.err_fill_current")); return; }
-    setUsernames([...usernames, ""]);
-  }
-  function dec() {
-    if (usernames.length <= 1) return;
-    setUsernames(usernames.slice(0, -1));
-  }
-  function validate() {
-    if (usernames.findIndex((u) => !u.trim()) !== -1) { setError(t("snap.err_fill_all")); return false; }
-    return true;
-  }
-  function addToCart() {
-    if (!plan || !validate()) return;
-    cart.addSnap(plan.cartId, usernames);
-    setAddedFlash(true);
-    setTimeout(() => setAddedFlash(false), 1600);
-  }
-  function buyNow() {
-    if (!plan || !validate()) return;
-    cart.buyNowSnap(plan.cartId, usernames);
-    navigate({ to: "/cart" });
-  }
-
-  if (!plan) return <ProductHero p={product} l={l} />;
 
   return (
     <>
       <ProductHero p={product} l={l} />
-
       <section className="section">
         <div className="wrap">
-          <SectionHead eyebrow={t("sec.plans")} title={t("snap.pick_plan")} />
-          <div className="snap-plan-grid">
-            {plans.map((pl) => {
-              const discount = discountOf(pl);
-              return (
-                <div key={pl.cartId} className={"snap-plan" + (pl.cartId === planId ? " selected" : "")} onClick={() => setPlanId(pl.cartId)}>
-                  <div className="sp-check">✓</div>
-                  <div className="badge-stack" style={{ position: "absolute", top: 12, right: 12, left: 12, pointerEvents: "none" }}>
-                    {pl.tag && <div className="sp-tag" style={{ position: "static", transform: "none" }}>{pl.tag}</div>}
-                    {discount > 0 && <div className="sp-discount" style={{ position: "static", transform: "none" }}>{t("snap.save_pct")} {discount}%</div>}
-                  </div>
-                  <div className="sp-icon">
-                    {product.iconImage ? <img src={product.iconImage} alt="" style={{ width: 34, height: 34, objectFit: "contain" }} /> : product.icon}
-                  </div>
-                  <div className="sp-label">{pl.label}</div>
-                  <div>
-                    {pl.oldPrice && <span className="sp-old">{format(pl.oldPrice)}</span>}
-                    <span className="sp-price">{format(pl.price)}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="section" style={{ background: "var(--bg2)", paddingTop: 0 }}>
-        <div className="wrap">
-          <SectionHead eyebrow={t("snap.order_eyebrow")} title={t("snap.order_title")} />
-          <div className="order-box">
-            <div>
-              <div className="order-field">
-                <label>{t("snap.accounts_count")}</label>
-                <div className="stepper-row">
-                  <button type="button" onClick={inc}>+</button>
-                  <div className="count">{usernames.length}</div>
-                  <button type="button" onClick={dec}>−</button>
-                </div>
-                <div className="stepper-hint">{t("snap.stepper_hint")}</div>
-              </div>
-              <div>
-                {usernames.map((val, i) => (
-                  <div key={i} className="username-field">
-                    <label>{usernames.length === 1 ? l.identifierLabel : `${l.identifierLabel} — ${t("snap.account_n")} ${i + 1}`}</label>
-                    <input
-                      type="text"
-                      className={"uname-input" + (error && !val.trim() ? " error" : "")}
-                      placeholder={product.identifierPlaceholder || ""}
-                      value={val}
-                      onChange={(e) => updateUsername(i, e.target.value)}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="order-summary">
-              <h3>{t("cart.summary")}</h3>
-              <div className="os-row"><span>{t("snap.duration")}</span><span>{plan.label}</span></div>
-              <div className="os-row"><span>{t("snap.plan_price")}</span><span>{format(plan.price)}</span></div>
-              <div className="os-row"><span>{t("snap.accounts_count")}</span><span>{usernames.length}</span></div>
-              <div className="os-total">
-                <span className="lbl">{t("cart.total")}</span>
-                <span className="val">{format(plan.price * usernames.length)}</span>
-              </div>
-              {error && <div className="order-error" style={{ display: "block" }}>{error}</div>}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <button className={"btn btn-primary btn-block" + (addedFlash ? " added" : "")} type="button" onClick={addToCart}>
-                  {addedFlash ? t("snap.added_ok") : t("snap.add_cart")}
-                </button>
-                <button className="btn btn-ghost btn-block" type="button" onClick={buyNow}>{t("buy.buy_now")}</button>
-              </div>
-            </div>
+          <SectionHead eyebrow={t("sec.plans")} title={t("product.pick_plan")} />
+          <div className="plans-grid">
+            {l.variants.map((v) => <VariantCard key={v.cartId} p={product} v={v} />)}
           </div>
         </div>
       </section>
@@ -316,49 +207,38 @@ export function MultiAccountTemplate({ product }: { product: CatalogProduct }) {
       {l.features.length > 0 && (
         <section className="section">
           <div className="wrap">
-            <SectionHead eyebrow={t("product.features_eyebrow")} title={t("product.features_title")} sub={t("product.features_sub")} />
+            <SectionHead eyebrow={t("product.features_eyebrow")} title={t("snap.features_title")} />
             <FeatureAccordion features={l.features} />
           </div>
         </section>
       )}
 
-      <section className="section" style={{ background: "var(--bg2)" }}>
-        <div className="wrap">
-          <DeliveryBox method={l.deliveryMethod} identifierLabel={l.identifierLabel} />
-        </div>
-      </section>
+      {product.deliveryDetails && (
+        <section className="section" style={{ background: "var(--bg2)" }}>
+          <div className="wrap">
+            <DeliveryBox details={product.deliveryDetails} />
+          </div>
+        </section>
+      )}
     </>
   );
 }
 
-/* ------------------------------------------------------- dual_plans */
+/* ---------------------------------------------------------- fortnite */
 export function DualPlansTemplate({ product }: { product: CatalogProduct }) {
-  const { lang, t } = useLang();
+  const { t } = useLang();
   const l = useLocalized(product);
-  const crew = l.variants.filter((v) => v.planGroup === "crew");
+
   const vbucks = l.variants.filter((v) => v.planGroup === "vbucks");
-  const rest = l.variants.filter((v) => v.planGroup !== "crew" && v.planGroup !== "vbucks");
-  const d = (product.deliveryDetails?.[lang === "en" ? "en" : "ar"] ??
-    product.deliveryDetails?.ar ??
-    null) as { intro?: string; requirements?: string[]; safety?: string[]; platformNotes?: string[] } | null;
+  const rest = l.variants.filter((v) => v.planGroup !== "vbucks");
+  const d = l.lang === "en" ? product.deliveryDetails?.en : product.deliveryDetails?.ar;
 
   return (
     <>
       <ProductHero p={product} l={l} />
 
-      {crew.length > 0 && (
-        <section className="section">
-          <div className="wrap">
-            <SectionHead eyebrow={t("fn.crew_eyebrow")} title={t("fn.crew_title")} />
-            <div className="plans-grid">
-              {crew.map((v) => <VariantCard key={v.cartId} p={product} v={v} icon={<CrewIcon />} />)}
-            </div>
-          </div>
-        </section>
-      )}
-
       {vbucks.length > 0 && (
-        <section className="section" style={{ background: "var(--bg2)" }}>
+        <section className="section">
           <div className="wrap">
             <SectionHead eyebrow={t("fn.vb_eyebrow")} title={t("fn.vb_title")} />
             <div className="plans-grid">
@@ -480,50 +360,40 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
         </div>
       </section>
 
-      <section className="section">
-        <div className="wrap">
-          {regions.length === 0 ? (
-            <div className="giftcard-empty fade-in">
-              <div className="ge-icon">🕓</div>
-              <h3>{t("gc.empty_title")}</h3>
-              <p>{t("gc.empty_desc_a")} {l.name} {t("gc.empty_desc_b")}</p>
+      {regions.map((reg) => (
+        <section key={reg.code} className="section">
+          <div className="wrap">
+            <div className="region-head">
+              <img src={`https://flagcdn.com/w40/${reg.code}.png`} alt="" className="region-flag" />
+              <h2>{reg.name}</h2>
             </div>
-          ) : (
-            regions.map((region) => (
-              <div key={region.code} className="region-section">
-                <div className="region-head">
-                  <div className="region-flag">
-                    <img src={`https://flagcdn.com/w160/${region.code}.png`} srcSet={`https://flagcdn.com/w320/${region.code}.png 2x`} alt={region.name} />
-                  </div>
-                  <div className="region-name">{region.name}</div>
-                </div>
-                <div className="denom-grid" style={{ ["--gc-accent" as string]: product.accentColor || "var(--accent)" } as React.CSSProperties}>
-                  {region.items.map((d) => (
-                    <div key={d.cartId} className="denom-card">
-                      <div className="dc-value">{d.label}</div>
-                      <div className="dc-price"><span>{format(d.price)}</span></div>
-                      <BuyActions cartId={d.cartId} />
+            <div className="plans-grid">
+              {reg.items.map((v) => (
+                <Link key={v.cartId} to={`/checkout?variant=${v.cartId}`} className="prod-card gc-item-card">
+                  <div className="gc-item-body">
+                    <div className="gc-item-val">{v.label}</div>
+                    <div className="gc-item-prices">
+                      {v.oldPrice && <span className="prod-old">{format(v.oldPrice)}</span>}
+                      <span className="prod-new">{format(v.price)}</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
+                  </div>
+                  <div className="gc-item-action">{t("product.buy")}</div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      ))}
+
+      {l.description && (
+        <section className="section" style={{ background: "var(--bg2)" }}>
+          <div className="wrap">
+            <div className="category-rich-desc" dangerouslySetInnerHTML={{ __html: l.description }} />
+          </div>
+        </section>
+      )}
     </>
   );
 }
 
-export function ProductTemplate({ product }: { product: CatalogProduct }) {
-  switch (product.pageTemplate) {
-    case "multi_account":
-      return <MultiAccountTemplate product={product} />;
-    case "dual_plans":
-      return <DualPlansTemplate product={product} />;
-    case "gift_card":
-      return <GiftCardTemplate product={product} />;
-    default:
-      return <StandardTemplate product={product} />;
-  }
-}
+import { Link } from "@tanstack/react-router";
