@@ -512,7 +512,8 @@ const MoveTimer = memo(function MoveTimer({
 
   useEffect(() => {
     if (timerActive) moveStart.current = performance.now();
-  }, [timerActive, game.moves.length, game.moveLimitMs]);
+  }, [timerActive, trayGen, game.moveLimitMs]);
+
 
   const previewCells = useMemo(() => {
     const map = new Map<number, boolean>();
