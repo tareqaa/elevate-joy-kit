@@ -77,12 +77,18 @@ export type CatalogProduct = {
 };
 
 export type CatalogCategoryChild = {
+  id: string;
   slug: string;
   nameAr: string;
   nameEn: string;
+  taglineAr: string | null;
+  taglineEn: string | null;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
   icon: string | null;
   iconImage: string | null;
   bg: string | null;
+  pageTemplate: string;
   /** Product slug to link to, when this sub-category has a live product. */
   productSlug: string | null;
 };
@@ -248,7 +254,7 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
 
     const { data: kids } = await supabase
       .from("categories")
-      .select("id, slug, name_ar, name_en, icon, icon_url, theme_gradient, sort_order")
+      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_url, theme_gradient, page_template, sort_order")
       .eq("parent_id", c.id)
       .eq("is_active", true)
       .order("sort_order", { ascending: true });
@@ -289,12 +295,18 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
         .map((k: Record<string, any>) => {
         const prod = byCat.get(k.id);
         return {
+          id: k.id,
           slug: k.slug,
           nameAr: k.name_ar,
           nameEn: k.name_en || k.name_ar,
+          taglineAr: k.tagline_ar ?? null,
+          taglineEn: k.tagline_en ?? null,
+          descriptionAr: k.description_ar ?? null,
+          descriptionEn: k.description_en ?? null,
           icon: k.icon ?? prod?.icon ?? null,
           iconImage: k.icon_url ?? prod?.icon_image_url ?? null,
           bg: k.theme_gradient ?? prod?.thumb_bg ?? null,
+          pageTemplate: k.page_template ?? "standard",
           productSlug: prod?.slug ?? null,
         };
       }),
