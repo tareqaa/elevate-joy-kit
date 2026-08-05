@@ -48,16 +48,6 @@ export const Route = createFileRoute("/games/blast")({
   component: BlastPageLazy,
 });
 
-export function BlastPageLazy() {
-  const [Comp, setComp] = useState<any>(null);
-
-  useEffect(() => {
-    import("./games.blast").then(m => setComp(() => m.BlastPage));
-  }, []);
-
-  if (!Comp) return <div className="min-h-screen bg-[#090b10] flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
-  return <Comp />;
-}
 
 
 
@@ -274,7 +264,7 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-export function BlastPage() {
+function BlastPage() {
 
   const { lang, dir } = useLang();
   const ar = lang === "ar";
