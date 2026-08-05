@@ -11,6 +11,8 @@ import { BuyActions } from "@/components/gx/BuyActions";
 import { useLang } from "@/lib/gx/i18n";
 import { localizedCategoryLink, localizeResolvedName } from "@/lib/gx/product-locale";
 import { useStorefrontCategories } from "@/lib/gx/category-visibility";
+import { useIsAdmin } from "@/lib/gx/admin-auth";
+import { QuickAddCategory } from "@/components/gx/QuickAddCategory";
 import { supabase } from "@/integrations/supabase/client";
 import { initialOf, avatarColorFor } from "@/lib/gx/reviews";
 import { translateTexts } from "@/lib/gx/translate.functions";
@@ -286,6 +288,7 @@ export function CarouselRenderer({ data }: { data: CarouselData }) {
 /* ---------------- CATEGORIES ---------------- */
 export function CategoriesRenderer({ data }: { data: CategoriesData }) {
   const { t, lang } = useLang();
+  const { isAdmin } = useIsAdmin();
   const overrides = data.overrides || {};
   const databaseCategories = useStorefrontCategories();
   const links = databaseCategories
@@ -334,6 +337,12 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
               </Link>
             );
           })}
+          {isAdmin && (
+            <QuickAddCategory 
+              className="cat-card-big add-category-card" 
+              label={lang === "ar" ? "إضافة قسم جديد" : "Add New Category"}
+            />
+          )}
         </div>
       </div>
     </section>

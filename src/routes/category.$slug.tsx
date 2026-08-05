@@ -4,6 +4,9 @@ import { getCatalogCategory } from "@/lib/gx/catalog.functions";
 import type { CatalogCategoryChild } from "@/lib/gx/catalog.functions";
 import { useLang } from "@/lib/gx/i18n";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { useIsAdmin } from "@/lib/gx/admin-auth";
+import { QuickAddCategory } from "@/components/gx/QuickAddCategory";
+import { Plus, PackagePlus } from "lucide-react";
 
 export const Route = createFileRoute("/category/$slug")({
   loader: async ({ params }) => {
@@ -39,6 +42,7 @@ export const Route = createFileRoute("/category/$slug")({
 function CategoryPage() {
   const { category } = Route.useLoaderData();
   const { lang, t } = useLang();
+  const { isAdmin } = useIsAdmin();
   const pick = (ar: string | null, en: string | null) => (lang === "en" ? en || ar : ar || en) || "";
 
   return (
@@ -87,6 +91,27 @@ function CategoryPage() {
                 </Link>
               );
             })}
+            
+            {isAdmin && (
+              <div className="subcat-admin-tools">
+                <QuickAddCategory 
+                  parentId={category.id} 
+                  className="subcat-card add-subcat-btn"
+                  label={lang === "ar" ? "إضافة قسم فرعي" : "Add Sub-category"}
+                />
+                
+                <button 
+                  className="subcat-card add-product-btn"
+                  onClick={() => window.location.href = `/admin/products?new=1&category_id=${category.id}`}
+                >
+                  <div className="subcat-ic admin-plus"><PackagePlus size={24} /></div>
+                  <div>
+                    <div className="subcat-name">{lang === "ar" ? "إضافة منتج" : "Add Product"}</div>
+                    <div className="subcat-status">{lang === "ar" ? "افتح معالج الإضافة" : "Open product wizard"}</div>
+                  </div>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </section>

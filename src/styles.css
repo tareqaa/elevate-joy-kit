@@ -220,3 +220,63 @@ input[type="number"] {
   position: static !important;
   transform: none !important;
 }
+
+/* ============= Quick Add Components ============= */
+.add-category-card {
+  border: 2px dashed rgba(0, 229, 255, 0.2) !important;
+  background: rgba(0, 229, 255, 0.03) !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 180px;
+}
+
+.add-category-card:hover {
+  background: rgba(0, 229, 255, 0.08) !important;
+  border-color: rgba(0, 229, 255, 0.4) !important;
+  transform: translateY(-4px);
+}
+
+.add-cat-plus {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(0, 229, 255, 0.1);
+  color: #00e5ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 229, 255, 0.2);
+}
+
+.add-cat-label {
+  font-weight: 800;
+  color: #00e5ff;
+  font-size: 15px;
+}
+
+.subcat-admin-tools {
+  display: contents;
+}
+
+.add-subcat-btn, .add-product-btn {
+  border: 1px dashed rgba(0, 229, 255, 0.25) !important;
+  background: rgba(0, 229, 255, 0.05) !important;
+  cursor: pointer;
+}
+
+.add-subcat-btn:hover, .add-product-btn:hover {
+  background: rgba(0, 229, 255, 0.1) !important;
+  border-color: rgba(0, 229, 255, 0.4) !important;
+}
+
+.admin-plus {
+  color: #00e5ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
