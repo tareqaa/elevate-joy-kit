@@ -448,7 +448,6 @@ export function getProductLink(slug: string): string {
 }
 
 export function getCategoryLink(slug: string): string {
-  if (slug === "snapchat") return "/product/snapchat";
   return `/category/${slug}`;
 }
 

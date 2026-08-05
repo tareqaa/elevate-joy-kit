@@ -261,22 +261,25 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
     
     // Fetch products for both children and the category itself
     const allTargetIds = [c.id, ...kidIds];
-    const { data: prods } = await supabase
+    const { data: prods, error: prodError } = await supabase
       .from("products")
       .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, theme_gradient, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, base_price_jod, region, is_active, is_featured, badge_ar, badge_en, label_color, category_id")
       .in("category_id", allTargetIds);
+    
+    if (prodError) {
+      console.error("Error fetching products for category:", prodError);
+    }
+    // Note: We removed the is_active check here because the reveal system 
+    // and empty categories need to load metadata even if products are inactive.
+    // However, we should filter for the UI if needed.
 
     const productsForThisCat: CatalogProduct[] = [];
-    const productsByChild = new Map<string, Record<string, any>>();
-    const hasAnyProduct = new Set<string>();
+    const productsByChild = new Map<string, any[]>();
 
-    for (const p of (prods ?? []) as Record<string, any>[]) {
-      hasAnyProduct.add(p.category_id);
-      
+    for (const p of (prods ?? []) as any[]) {
+      if (!p.is_active) continue;
+
       if (p.category_id === c.id) {
-        // Map to CatalogProduct (simplified or full depending on need, but let's stick to full if possible)
-        // Note: For brevity in the catalog view, we might not need full variants/features here, 
-        // but the current type expects them. Let's provide empty arrays for now as they are fetched in getCatalogProduct.
         productsForThisCat.push({
           slug: p.slug,
           nameAr: p.name_ar,
@@ -298,7 +301,7 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
           deliveryMethodAr: p.delivery_method_ar,
           deliveryMethodEn: p.delivery_method_en,
           deliveryDetails: p.delivery_details,
-          pageTemplate: p.page_template,
+          pageTemplate: p.page_template || "standard",
           deliveryType: p.delivery_type,
           basePriceJOD: p.base_price_jod,
           region: p.region,
@@ -309,11 +312,10 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
           variants: [],
           features: [],
           themeGradient: p.theme_gradient
-        });
-      }
-
-      if (p.is_active && p.category_id !== c.id && !productsByChild.has(p.category_id)) {
-        productsByChild.set(p.category_id, p);
+        } as any);
+      } else {
+        if (!productsByChild.has(p.category_id)) productsByChild.set(p.category_id, []);
+        productsByChild.get(p.category_id)!.push(p);
       }
     }
 
@@ -333,7 +335,10 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
       products: productsForThisCat,
       children: (kids ?? [])
         .map((k: Record<string, any>) => {
-        const prod = productsByChild.get(k.id);
+        const childProds = productsByChild.get(k.id) || [];
+        // If it has exactly one product, we can link directly to it.
+        // If it has multiple, we link to the sub-category page.
+        const firstProd = childProds.length === 1 ? childProds[0] : null;
         return {
           id: k.id,
           slug: k.slug,
@@ -343,12 +348,57 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
           taglineEn: k.tagline_en ?? null,
           descriptionAr: k.description_ar ?? null,
           descriptionEn: k.description_en ?? null,
-          icon: k.icon ?? prod?.icon ?? null,
-          iconImage: k.icon_url ?? prod?.icon_image_url ?? null,
-          bg: k.theme_gradient ?? prod?.thumb_bg ?? null,
+          icon: k.icon ?? firstProd?.icon ?? null,
+          iconImage: k.icon_url ?? firstProd?.icon_image_url ?? null,
+          bg: k.theme_gradient ?? firstProd?.thumb_bg ?? null,
           pageTemplate: k.page_template ?? "standard",
-          productSlug: prod?.slug ?? null,
+          productSlug: firstProd?.slug ?? null,
         };
       }),
     };
+  });
+
+export const getFeaturedCatalogItems = createServerFn({ method: "GET" })
+  .handler(async (): Promise<CatalogProduct[]> => {
+    const supabase = publicClient();
+    const { data: prods } = await supabase
+      .from("products")
+      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, theme_gradient, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, base_price_jod, region, is_active, is_featured, badge_ar, badge_en, label_color, category_id, categories:category_id (name_ar, name_en)")
+      .eq("is_active", true)
+      .eq("is_featured", true)
+      .limit(20);
+    
+    return (prods ?? []).map((p: any) => ({
+      slug: p.slug,
+      nameAr: p.name_ar,
+      nameEn: p.name_en || p.name_ar,
+      taglineAr: p.tagline_ar,
+      taglineEn: p.tagline_en,
+      descriptionAr: p.description_ar,
+      descriptionEn: p.description_en,
+      icon: p.icon,
+      iconImage: p.icon_image_url,
+      thumbBg: p.thumb_bg,
+      accentColor: p.accent_color,
+      cardGradient: p.card_gradient,
+      categoryNameAr: p.categories?.name_ar,
+      categoryNameEn: p.categories?.name_en || p.categories?.name_ar,
+      identifierLabelAr: p.identifier_label_ar,
+      identifierLabelEn: p.identifier_label_en,
+      identifierPlaceholder: p.identifier_placeholder,
+      deliveryMethodAr: p.delivery_method_ar,
+      deliveryMethodEn: p.delivery_method_en,
+      deliveryDetails: p.delivery_details,
+      pageTemplate: p.page_template || "standard",
+      deliveryType: p.delivery_type || "manual",
+      basePriceJOD: p.base_price_jod,
+      region: p.region,
+      isFeatured: p.is_featured,
+      badgeAr: p.badge_ar,
+      badgeEn: p.badge_en,
+      labelColor: p.label_color,
+      variants: [],
+      features: [],
+      themeGradient: p.theme_gradient
+    }));
   });
