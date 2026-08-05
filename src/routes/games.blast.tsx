@@ -58,7 +58,6 @@ function BlastPageLazy() {
   return <Comp />;
 }
 
-export function BlastPage() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
   const { t: tournamentId } = Route.useSearch();
@@ -268,10 +267,11 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-function BlastPage() {
+export function BlastPage() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
   const { t: tournamentId } = Route.useSearch();
+
 
 
 
@@ -1015,5 +1015,4 @@ function BlastPage() {
       </main>
     </StoreShell>
   );
-}
 
