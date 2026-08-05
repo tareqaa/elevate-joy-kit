@@ -380,3 +380,28 @@ input[type="number"] {
 .prod-hero-thumb-wrap {
   position: relative;
 }
+
+.admin-variant-edit {
+  position: absolute;
+  top: 15px;
+  inset-inline-end: 15px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(10, 15, 22, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  transition: all 0.2s;
+}
+
+.admin-variant-edit:hover {
+  transform: scale(1.1);
+  background: var(--primary);
+  color: black;
+}

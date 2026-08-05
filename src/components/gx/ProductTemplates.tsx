@@ -4,8 +4,8 @@
    render from the database DTO returned by catalog.functions.ts.
    ============================================================ */
 
-import { useMemo } from "react";
-import { Link } from "@tanstack/react-router";
+import { useMemo, useState, useEffect } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import type { CatalogProduct, CatalogVariant } from "@/lib/gx/catalog.functions";
 import { useCurrency } from "@/lib/gx/currency";
 import { useCart } from "@/lib/gx/cart";
@@ -15,6 +15,13 @@ import { BuyActions } from "@/components/gx/BuyActions";
 import { DiscountBadge } from "@/components/gx/DiscountBadge";
 import { FeatureAccordion, DeliveryBox, SectionHead } from "@/components/gx/Primitives";
 import { CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
+import { useIsAdmin } from "@/lib/gx/admin-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Trash2, Settings } from "lucide-react";
+import { ProductDialog, VariantsDialog } from "@/components/gx/admin/ProductsManager";
+
+
 
 const pick = (lang: Lang, ar: string | null | undefined, en: string | null | undefined) =>
   (lang === "en" ? en || ar : ar || en) || "";
@@ -48,12 +55,36 @@ function useLocalized(p: CatalogProduct) {
   );
 }
 
-function ProductHero({ p, l }: { p: CatalogProduct; l: ReturnType<typeof useLocalized> }) {
+function ProductHero({ p, l, onEdit }: { p: CatalogProduct; l: ReturnType<typeof useLocalized>; onEdit?: () => void }) {
   const { lang } = l;
+  const { isAdmin } = useIsAdmin();
+  const navigate = useNavigate();
+
+  async function handleDelete() {
+    if (!window.confirm(lang === "ar" ? "هل أنت متأكد من حذف هذا المنتج؟" : "Are you sure you want to delete this product?")) return;
+    const { error } = await supabase.from("products").delete().eq("slug", p.slug);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(lang === "ar" ? "تم الحذف" : "Deleted successfully");
+      navigate({ to: "/" });
+    }
+  }
+
   return (
     <section className="product-hero">
       <div className="wrap">
-        <div className="product-hero-inner fade-in">
+        <div className="product-hero-inner fade-in" style={{ position: "relative" }}>
+          {isAdmin && (
+            <div className="admin-product-actions" style={{ position: "absolute", top: 0, insetInlineEnd: 0, display: "flex", gap: 10, zIndex: 10 }}>
+              <button onClick={onEdit} className="gx-btn outline" style={{ background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)" }}>
+                <Settings size={14} /> {lang === "ar" ? "تعديل المنتج" : "Edit Product"}
+              </button>
+              <button onClick={handleDelete} className="gx-btn danger" style={{ background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)" }}>
+                <Trash2 size={14} /> {lang === "ar" ? "حذف" : "Delete"}
+              </button>
+            </div>
+          )}
           <div className="product-icon-badge">
             <div className="badge-stack">
               {p.isFeatured && (
@@ -86,19 +117,35 @@ function ProductHero({ p, l }: { p: CatalogProduct; l: ReturnType<typeof useLoca
   );
 }
 
+
 function VariantCard({
   p,
   v,
   icon,
+  onManageVariants,
 }: {
   p: CatalogProduct;
   v: CatalogVariant & { label: string; tag: string | null };
   icon?: React.ReactNode;
+  onManageVariants?: () => void;
 }) {
   const { format } = useCurrency();
+  const { lang } = useLang();
+  const { isAdmin } = useIsAdmin();
+
   return (
     <div className="prod-card">
-      <div className="prod-thumb" style={{ background: p.thumbBg || undefined }}>
+      <div className="prod-thumb" style={{ background: p.thumbBg || undefined, position: 'relative' }}>
+        {isAdmin && (
+          <button 
+            onClick={(e) => { e.preventDefault(); onManageVariants?.(); }}
+            className="admin-variant-edit"
+            title={lang === "ar" ? "تعديل الخيارات" : "Edit Variants"}
+          >
+            <Settings size={14} />
+          </button>
+        )}
+
         <div className="badge-stack">
           {v.tag && <span className="tag-badge">{v.tag}</span>}
           <DiscountBadge discount={discountOf(v)} />
@@ -125,7 +172,8 @@ function VariantCard({
 }
 
 /* ---------------------------------------------------------- standard */
-export function StandardTemplate({ product }: { product: CatalogProduct }) {
+export function StandardTemplate({ product, onEdit, onManageVariants }: { product: CatalogProduct; onEdit?: () => void; onManageVariants?: () => void }) {
+
   const { t } = useLang();
   const l = useLocalized(product);
   const { format } = useCurrency();
@@ -135,13 +183,15 @@ export function StandardTemplate({ product }: { product: CatalogProduct }) {
 
   return (
     <>
-      <ProductHero p={product} l={l} />
+      <ProductHero p={product} l={l} onEdit={onEdit} />
+
       <section className="section">
         <div className="wrap">
           <SectionHead eyebrow={t("sec.plans")} title={t("product.pick_plan")} />
           <div className="plans-grid">
             {hasVariants ? (
-              l.variants.map((v) => <VariantCard key={v.cartId} p={product} v={v} />)
+              l.variants.map((v) => <VariantCard key={v.cartId} p={product} v={v} onManageVariants={onManageVariants} />)
+
             ) : (
               <div className="prod-card" style={{ maxWidth: 400, margin: "0 auto" }}>
                 <div className="prod-thumb" style={{ background: product.thumbBg || undefined }}>
@@ -189,18 +239,19 @@ export function StandardTemplate({ product }: { product: CatalogProduct }) {
 }
 
 /* ---------------------------------------------------------- snapchat */
-export function MultiAccountTemplate({ product }: { product: CatalogProduct }) {
+export function MultiAccountTemplate({ product, onEdit, onManageVariants }: { product: CatalogProduct; onEdit?: () => void; onManageVariants?: () => void }) {
   const { t } = useLang();
   const l = useLocalized(product);
 
   return (
     <>
-      <ProductHero p={product} l={l} />
+      <ProductHero p={product} l={l} onEdit={onEdit} />
+
       <section className="section">
         <div className="wrap">
           <SectionHead eyebrow={t("sec.plans")} title={t("product.pick_plan")} />
           <div className="plans-grid">
-            {l.variants.map((v) => <VariantCard key={v.cartId} p={product} v={v} />)}
+            {l.variants.map((v) => <VariantCard key={v.cartId} p={product} v={v} onManageVariants={onManageVariants} />)}
           </div>
         </div>
       </section>
@@ -226,7 +277,7 @@ export function MultiAccountTemplate({ product }: { product: CatalogProduct }) {
 }
 
 /* ---------------------------------------------------------- fortnite */
-export function DualPlansTemplate({ product }: { product: CatalogProduct }) {
+export function DualPlansTemplate({ product, onEdit, onManageVariants }: { product: CatalogProduct; onEdit?: () => void; onManageVariants?: () => void }) {
   const { t } = useLang();
   const l = useLocalized(product);
 
@@ -236,7 +287,8 @@ export function DualPlansTemplate({ product }: { product: CatalogProduct }) {
 
   return (
     <>
-      <ProductHero p={product} l={l} />
+      <ProductHero p={product} l={l} onEdit={onEdit} />
+
 
       {vbucks.length > 0 && (
         <section className="section">
@@ -245,7 +297,7 @@ export function DualPlansTemplate({ product }: { product: CatalogProduct }) {
             <div className="plans-grid">
               {vbucks.map((v) => {
                 const tier = parseInt(v.cartId.replace(/\D+/g, ""), 10) || 0;
-                return <VariantCard key={v.cartId} p={product} v={v} icon={<VbucksIcon tier={tier} />} />;
+                return <VariantCard key={v.cartId} p={product} v={v} icon={<VbucksIcon tier={tier} />} onManageVariants={onManageVariants} />;
               })}
             </div>
           </div>
@@ -257,7 +309,7 @@ export function DualPlansTemplate({ product }: { product: CatalogProduct }) {
           <div className="wrap">
             <SectionHead eyebrow={t("sec.plans")} title={t("product.pick_plan")} />
             <div className="plans-grid">
-              {rest.map((v) => <VariantCard key={v.cartId} p={product} v={v} />)}
+              {rest.map((v) => <VariantCard key={v.cartId} p={product} v={v} onManageVariants={onManageVariants} />)}
             </div>
           </div>
         </section>
@@ -302,10 +354,23 @@ export function DualPlansTemplate({ product }: { product: CatalogProduct }) {
 }
 
 /* -------------------------------------------------------- gift_card */
-export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
+export function GiftCardTemplate({ product, onEdit, onManageVariants }: { product: CatalogProduct; onEdit?: () => void; onManageVariants?: () => void }) {
   const { lang, t } = useLang();
   const l = useLocalized(product);
   const { format } = useCurrency();
+  const { isAdmin } = useIsAdmin();
+  const navigate = useNavigate();
+
+  async function handleDelete() {
+    if (!window.confirm(lang === "ar" ? "هل أنت متأكد من حذف هذا المنتج؟" : "Are you sure you want to delete this product?")) return;
+    const { error } = await supabase.from("products").delete().eq("slug", product.slug);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(lang === "ar" ? "تم الحذف" : "Deleted successfully");
+      navigate({ to: "/" });
+    }
+  }
 
   // Variants carry their region as "ar|en|flag" plus a plan_group country code.
   const regions = useMemo(() => {
@@ -331,7 +396,18 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
       <section className="giftcard-hero">
         <div className="wrap">
           <div className="giftcard-hero-inner fade-in">
+            {isAdmin && (
+              <div className="admin-product-actions" style={{ position: "absolute", top: 0, insetInlineEnd: 0, display: "flex", gap: 10, zIndex: 10 }}>
+                <button onClick={onEdit} className="gx-btn outline" style={{ background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)" }}>
+                  <Settings size={14} /> {lang === "ar" ? "تعديل المنتج" : "Edit Product"}
+                </button>
+                <button onClick={handleDelete} className="gx-btn danger" style={{ background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)" }}>
+                  <Trash2 size={14} /> {lang === "ar" ? "حذف" : "Delete"}
+                </button>
+              </div>
+            )}
             <div className="giftcard-mockup" style={{ background: product.cardGradient || product.thumbBg || undefined }}>
+
               <div className="badge-stack">
                 {product.isFeatured && (
                   <div className="feat-badge">
@@ -375,7 +451,19 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
                   to="/cart" 
                   search={{ variant: v.cartId }} 
                   className="prod-card gc-item-card"
+                  style={{ position: 'relative' }}
                 >
+                  {isAdmin && (
+                    <button 
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onManageVariants?.(); }}
+                      className="admin-variant-edit"
+                      style={{ top: 10, insetInlineEnd: 10 }}
+                      title={lang === "ar" ? "تعديل الخيارات" : "Edit Variants"}
+                    >
+                      <Settings size={14} />
+                    </button>
+                  )}
+
                   <div className="gc-item-body">
                     <div className="gc-item-val">{v.label}</div>
                     <div className="gc-item-prices">
@@ -402,11 +490,72 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
   );
 }
 
+
 export function ProductTemplate({ product }: { product: CatalogProduct }) {
-  switch (product.pageTemplate) {
-    case "snapchat": return <MultiAccountTemplate product={product} />;
-    case "fortnite": return <DualPlansTemplate product={product} />;
-    case "gift_card": return <GiftCardTemplate product={product} />;
-    default: return <StandardTemplate product={product} />;
+  const [editing, setEditing] = useState<any>(null);
+  const [managingVariants, setManagingVariants] = useState<any>(null);
+  const { lang } = useLang();
+
+  // We need to fetch the full product row for the editor since CatalogProduct is a transformed DTO
+  async function triggerEdit() {
+    const { data } = await supabase.from("products").select("*").eq("slug", product.slug).single();
+    if (data) setEditing(data);
   }
+
+  async function triggerVariants() {
+    const { data } = await supabase.from("products").select("*").eq("slug", product.slug).single();
+    if (data) setManagingVariants(data);
+  }
+
+
+  // Effect to handle trigger variants after product is loaded
+  useEffect(() => {
+    if (editing && !managingVariants && window.location.hash === "#variants") {
+      setManagingVariants(editing);
+      setEditing(null);
+    }
+  }, [editing, managingVariants]);
+
+  const commonProps = { 
+    product, 
+    onEdit: triggerEdit,
+    onManageVariants: triggerVariants
+  };
+
+
+  return (
+    <>
+      {product.pageTemplate === "snapchat" ? (
+        <MultiAccountTemplate {...commonProps} />
+      ) : product.pageTemplate === "fortnite" ? (
+        <DualPlansTemplate {...commonProps} />
+      ) : product.pageTemplate === "gift_card" ? (
+        <GiftCardTemplate {...commonProps} />
+      ) : (
+        <StandardTemplate {...commonProps} />
+      )}
+
+      {editing && (
+        <ProductDialog
+          product={editing}
+          categories={[]} // Will be fetched inside if needed, or we can fetch here
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            window.location.reload(); // Refresh to see changes
+          }}
+        />
+      )}
+
+      {managingVariants && (
+        <VariantsDialog
+          product={managingVariants}
+          onClose={() => setManagingVariants(null)}
+        />
+      )}
+
+
+    </>
+  );
 }
+

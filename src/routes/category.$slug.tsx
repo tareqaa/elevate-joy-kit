@@ -7,6 +7,8 @@ import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useIsAdmin } from "@/lib/gx/admin-auth";
 import { QuickAddCategory } from "@/components/gx/QuickAddCategory";
 import { Plus, PackagePlus } from "lucide-react";
+import { QuickAddProduct } from "@/components/gx/QuickAddProduct";
+
 import { RichHtml } from "@/lib/gx/sections/rich-text";
 
 export const Route = createFileRoute("/category/$slug")({
@@ -166,21 +168,14 @@ function CategoryPage() {
                   label={lang === "ar" ? "إضافة قسم فرعي" : "Add Sub-category"}
                 />
                 
-                <button 
+                <QuickAddProduct
+                  categoryId={category.id}
                   className="subcat-card add-product-btn"
-                  onClick={() => {
-                    // Navigate to admin products tab and trigger new product flow
-                    window.location.href = `/admin/products?tab=products&new=1&category_id=${category.id}`;
-                  }}
-                >
-                  <div className="subcat-ic admin-plus"><PackagePlus size={24} /></div>
-                  <div>
-                    <div className="subcat-name">{lang === "ar" ? "إضافة منتج" : "Add Product"}</div>
-                    <div className="subcat-status">{lang === "ar" ? "افتح معالج الإضافة" : "Open product wizard"}</div>
-                  </div>
-                </button>
+                  label={lang === "ar" ? "إضافة منتج" : "Add Product"}
+                />
               </div>
             )}
+
           </div>
         </div>
       </section>

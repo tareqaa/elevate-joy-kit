@@ -10,8 +10,9 @@ import { toast } from "sonner";
 import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Star, Search, Layers, Globe, ArrowUp, ArrowDown, MoreHorizontal } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-type Category = { id: string; name_ar: string; name_en: string };
-type Product = {
+export type Category = { id: string; name_ar: string; name_en: string };
+export type Product = {
+
   id: string; category_id: string | null; slug: string; sku: string | null;
   name_ar: string; name_en: string;
   tagline_ar: string | null; tagline_en: string | null;
@@ -101,6 +102,8 @@ function slugify(s: string) {
 }
 
 export function CategoryProducts({ categoryId, categoryName }: { categoryId: string; categoryName: string }) {
+
+
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
@@ -457,7 +460,20 @@ const THUMB_PRESETS = [
   "linear-gradient(135deg,#111827,#374151)",
 ];
 
-function ProductDialog({ product, categories, defaultCategoryId, onClose, onSaved }: { product: Product | null; categories: Category[]; defaultCategoryId?: string; onClose: () => void; onSaved: () => void }) {
+export function ProductDialog({ product, categories = [], defaultCategoryId, onClose, onSaved }: { product: Product | null; categories?: Category[]; defaultCategoryId?: string; onClose: () => void; onSaved: () => void }) {
+  const qc = useQueryClient();
+  const catsQ = useQuery({
+    queryKey: ["admin-categories-list"],
+    enabled: categories.length === 0,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("id,name_ar,name_en").order("sort_order");
+      if (error) throw error;
+      return (data ?? []) as Category[];
+    },
+  });
+
+  const finalCategories = categories.length > 0 ? categories : (catsQ.data ?? []);
+
   const [tab, setTab] = useState<"basic" | "template" | "design" | "delivery" | "variants">("basic");
   const [savedId, setSavedId] = useState<string | null>(product?.id ?? null);
 
@@ -869,7 +885,7 @@ function VariantsPanel({ productId, productSlug }: { productId: string; productS
 }
 
 
-function VariantsDialog({ product, onClose }: { product: Product; onClose: () => void }) {
+export function VariantsDialog({ product, onClose }: { product: Product; onClose: () => void }) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto" dir="rtl">
