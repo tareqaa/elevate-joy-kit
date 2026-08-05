@@ -135,7 +135,7 @@ export function StandardTemplate({ product }: { product: CatalogProduct }) {
                 </div>
                 <div className="prod-body">
                   <div className="prod-name" style={{ minHeight: "auto", fontSize: 18, fontWeight: 900 }}>{l.name}</div>
-                  {product.basePriceJOD && (
+                  {product.basePriceJOD !== null && (
                     <div className="prod-prices">
                       <span className="prod-new" style={{ fontSize: 24 }}>{useCurrency().format(product.basePriceJOD)}</span>
                     </div>
