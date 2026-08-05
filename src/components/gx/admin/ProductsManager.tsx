@@ -397,7 +397,7 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
         <ProductDialog
           product={editing}
           categories={catsQ.data ?? []}
-          defaultCategoryId={isAllProducts ? undefined : categoryId}
+          defaultCategoryId={isAllProducts ? (categoryId === "all" ? undefined : categoryId) : categoryId}
           onClose={() => { setEditing(null); setCreating(false); }}
           onSaved={() => { setEditing(null); setCreating(false); qc.invalidateQueries({ queryKey: ["admin-products"] }); }}
         />
@@ -412,6 +412,41 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
     </div>
   );
 }
+
+// Product Presets (Simplified Add)
+const PRODUCT_PRESETS = [
+  {
+    id: "standard_sub",
+    label_ar: "اشتراك قياسي",
+    label_en: "Standard Subscription",
+    icon: "💎",
+    delivery_type: "account",
+    page_template: "standard",
+    accent_color: "#00e5ff",
+    thumb_bg: "linear-gradient(135deg,#0091ff,#00e5ff)",
+  },
+  {
+    id: "gift_card_key",
+    label_ar: "بطاقة / مفتاح رقمي",
+    label_en: "Digital Gift Card / Key",
+    icon: "🎁",
+    delivery_type: "code",
+    page_template: "gift_card",
+    accent_color: "#f59e0b",
+    thumb_bg: "linear-gradient(135deg,#f59e0b,#ef4444)",
+  },
+  {
+    id: "direct_topup",
+    label_ar: "شحن مباشر (ID)",
+    label_en: "Direct Top-up",
+    icon: "⚡",
+    delivery_type: "topup",
+    page_template: "standard",
+    accent_color: "#10b981",
+    thumb_bg: "linear-gradient(135deg,#10b981,#06b6d4)",
+    requires_player_id: true,
+  },
+];
 
 // Templates are now managed at the category level as requested by the user
 const TEMPLATES = [
@@ -461,8 +496,18 @@ export function ProductDialog({ product, categories = [], defaultCategoryId, onC
 
   const finalCategories = categories.length > 0 ? categories : (catsQ.data ?? []);
 
-  const [tab, setTab] = useState<"basic" | "template" | "design" | "delivery" | "variants">("basic");
+  const [tab, setTab] = useState<"preset" | "basic" | "template" | "design" | "delivery" | "variants">(product ? "basic" : "preset");
   const [savedId, setSavedId] = useState<string | null>(product?.id ?? null);
+
+  const applyPreset = (p: typeof PRODUCT_PRESETS[number]) => {
+    setDeliveryType(p.delivery_type);
+    setPageTemplate(p.page_template);
+    setAccentColor(p.accent_color);
+    setThumbBg(p.thumb_bg);
+    setIcon(p.icon);
+    if ("requires_player_id" in p) setRequiresPlayerId(p.requires_player_id);
+    setTab("basic");
+  };
 
   const [nameAr, setNameAr] = useState(product?.name_ar ?? "");
   const [nameEn, setNameEn] = useState(product?.name_en ?? "");
@@ -573,6 +618,7 @@ export function ProductDialog({ product, categories = [], defaultCategoryId, onC
   }
 
   const steps = [
+    ...(product ? [] : [{ id: "preset", label: "0. نوع المنتج", icon: <Star size={12} /> }]),
     { id: "basic", label: "1. المعلومات", icon: <Pencil size={12} /> },
     { id: "template", label: "2. القالب", icon: <Layers size={12} /> },
     { id: "design", label: "3. التصميم", icon: <Globe size={12} /> },
@@ -606,6 +652,29 @@ export function ProductDialog({ product, categories = [], defaultCategoryId, onC
         </div>
 
         <div className="space-y-3">
+          {tab === "preset" && !product && (
+            <div className="grid md:grid-cols-3 gap-4 py-4">
+              {PRODUCT_PRESETS.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => applyPreset(p)}
+                  className="gx-prod-card flex-col items-center text-center p-6 gap-3 group border-dashed"
+                >
+                  <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">{p.icon}</div>
+                  <div className="font-bold text-cyan-50">{p.label_ar}</div>
+                  <div className="text-[10px] text-cyan-100/40" dir="ltr">{p.label_en}</div>
+                </button>
+              ))}
+              <button
+                onClick={() => setTab("basic")}
+                className="gx-prod-card flex-col items-center text-center p-6 gap-3 group border-dashed opacity-70"
+              >
+                <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">⚙️</div>
+                <div className="font-bold text-cyan-50">تخصيص كامل</div>
+                <div className="text-[10px] text-cyan-100/40" dir="ltr">Full Customization</div>
+              </button>
+            </div>
+          )}
           {tab === "basic" && (
             <>
               <div className="gx-fieldset">
