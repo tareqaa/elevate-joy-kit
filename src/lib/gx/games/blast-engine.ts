@@ -854,7 +854,7 @@ export function verifyRun(input: VerifyInput): VerifyResult {
     if (!res.ok) {
       return { valid: false, score: state.score, endReason: state.endReason, reason: "illegal-placement", moveIndex: i };
     }
-    const refilled = state.tray.every((p, idx) => idx === m.trayIndex ? true : p === null);
+    const refilled = state.tray.filter(Boolean).length === 1; // if only 1 piece was left, this move (m.trayIndex) refilled it
     if (refilled) trayAccumMs = 0;
     state = res.state;
   }
