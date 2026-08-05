@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -156,14 +157,21 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
       if (statusFilter === "hidden" && p.is_active) return false;
       if (statusFilter === "featured" && !p.is_featured) return false;
       if (!s) return true;
-      return p.name_ar.toLowerCase().includes(s) || p.name_en.toLowerCase().includes(s) || p.slug.toLowerCase().includes(s) || (p.sku || "").toLowerCase().includes(s);
+      return (
+        p.name_ar.toLowerCase().includes(s) ||
+        p.name_en.toLowerCase().includes(s) ||
+        p.slug.toLowerCase().includes(s) ||
+        (p.sku || "").toLowerCase().includes(s) ||
+        (catsQ.data?.find(c => c.id === p.category_id)?.name_ar || "").toLowerCase().includes(s) ||
+        (catsQ.data?.find(c => c.id === p.category_id)?.name_en || "").toLowerCase().includes(s)
+      );
     });
     const sorted = [...list];
     if (sortBy === "name") sorted.sort((a, b) => a.name_ar.localeCompare(b.name_ar, "ar"));
     else if (sortBy === "price") sorted.sort((a, b) => (Number(b.base_price_jod) || 0) - (Number(a.base_price_jod) || 0));
     else if (sortBy === "sales") sorted.sort((a, b) => (b.purchases_count || 0) - (a.purchases_count || 0));
     return sorted;
-  }, [prodsQ.data, categoryFilter, isAllProducts, search, statusFilter, sortBy]);
+  }, [prodsQ.data, categoryFilter, isAllProducts, search, statusFilter, sortBy, catsQ.data]);
 
 
   const deleteMut = useMutation({
@@ -532,6 +540,20 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
         const { data, error } = await supabase.from("products").insert(payload).select("id").single();
         if (error) throw error;
         setSavedId(data.id as string);
+        
+        // Auto-create a default variant if this is a new product with a base price
+        if (basePrice.trim() !== "") {
+          const { error: vErr } = await supabase.from("product_variants").insert({
+            product_id: data.id,
+            label_ar: "أساسي",
+            label_en: "Standard",
+            price_jod: Number(basePrice),
+            cart_id: finalSlug,
+            is_active: true,
+            sort_order: 0
+          });
+          if (vErr) console.warn("[GX] Auto-variant creation failed", vErr);
+        }
       }
       toast.success(savedId ? "تم التحديث" : "تمت الإضافة — أضف الخيارات والأسعار الآن");
       if (stay) { setTab("variants"); return; }
@@ -585,11 +607,22 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
                 <div className="grid md:grid-cols-2 gap-3">
                   <div><Label>الاسم (عربي)</Label><Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} className="gx-adm-input" /></div>
                   <div><Label>الاسم (English)</Label><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} className="gx-adm-input" dir="ltr" /></div>
-                  <div>
-                    <Label>المعرّف (slug)</Label>
-                    <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={slugify(nameEn)} className="gx-adm-input" dir="ltr" />
-                    <p className="text-[11px] text-cyan-100/45 mt-1">يُستخدم بالرابط وبالكوبونات</p>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <Label>المعرّف (slug)</Label>
+                      <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={slugify(nameEn)} className="gx-adm-input" dir="ltr" />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      onClick={() => setSlug(slugify(nameEn))}
+                    >
+                      توليد
+                    </Button>
                   </div>
+                  <p className="text-[11px] text-cyan-100/45 mt-1">يُستخدم بالرابط وبالكوبونات</p>
                   <div>
                     <Label>رقم المنتج (SKU)</Label>
                     <Input value={sku} onChange={(e) => setSku(e.target.value.toUpperCase())} placeholder="مثال: S-3 أو FN-1000" className="gx-adm-input" dir="ltr" />
