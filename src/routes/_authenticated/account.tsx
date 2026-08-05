@@ -20,7 +20,10 @@ import { Pager, usePager } from "@/components/gx/Pager";
 type AccountTab = "profile" | "orders" | "wheel" | "security";
 
 export const Route = createFileRoute("/_authenticated/account")({
-  head: () => ({ meta: [{ title: "حسابي — GX Store" }] }),
+  head: () => ({
+    meta: [{ title: "حسابي — GX Store" }],
+    links: getStoreHeadLinks(["home", "product", "cart", "snapchat"]),
+  }),
   validateSearch: (s: Record<string, unknown>): { tab?: AccountTab } => ({
     tab: (typeof s.tab === "string" ? s.tab : "profile") as AccountTab,
   }),
