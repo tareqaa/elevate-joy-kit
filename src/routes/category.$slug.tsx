@@ -72,6 +72,27 @@ function CategoryPage() {
               <RichHtml html={pick(category.descriptionAr, category.descriptionEn)} />
             </div>
             
+            {/* Direct Products Grid (Optional for Gift Card Layout) */}
+            {category.products.length > 0 && (
+              <div className="category-products-grid mb-12">
+                {category.products.map((p: any) => (
+                  <Link key={p.slug} to="/product/$slug" params={{ slug: p.slug }} className="subcat-card clickable">
+                    <div className="subcat-ic" style={{ background: p.thumbBg || undefined }}>
+                      {p.iconImage ? (
+                        <img src={p.iconImage} alt={p.nameEn} style={{ width: 44, height: 44, objectFit: "contain" }} />
+                      ) : (
+                        <span>{p.icon}</span>
+                      )}
+                    </div>
+                    <div>
+                      <div className="subcat-name">{pick(p.nameAr, p.nameEn)}</div>
+                      <div className="subcat-status">{t("cat.browse_products")}</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
             <div className="gift-card-grouped-grid">
               {/* Note: In gift_card layout, sub-categories are treated as Regions */}
               {category.children.map((s: CatalogCategoryChild) => (
@@ -171,6 +192,27 @@ function CategoryPage() {
 
       <section className="section">
         <div className="wrap">
+          {/* Direct Products Grid (Standard Layout) */}
+          {category.products.length > 0 && (
+            <div className="category-products-grid mb-12">
+              {category.products.map((p: any) => (
+                <Link key={p.slug} to="/product/$slug" params={{ slug: p.slug }} className="subcat-card clickable">
+                  <div className="subcat-ic" style={{ background: p.thumbBg || undefined }}>
+                    {p.iconImage ? (
+                      <img src={p.iconImage} alt={p.nameEn} style={{ width: 44, height: 44, objectFit: "contain" }} />
+                    ) : (
+                      <span>{p.icon}</span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="subcat-name">{pick(p.nameAr, p.nameEn)}</div>
+                    <div className="subcat-status">{t("cat.browse_products")}</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+
           <div className="subcat-grid">
             {category.children.map((s: CatalogCategoryChild) => {
               const name = pick(s.nameAr, s.nameEn);
