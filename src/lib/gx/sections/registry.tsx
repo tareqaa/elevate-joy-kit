@@ -2,7 +2,7 @@
 // to its label, icon, default data, renderer, and editor. Add a new
 // section by adding one entry here.
 
-import type { ComponentType } from "react";
+import { type ComponentType, lazy } from "react";
 import {
   Sparkles, Megaphone, GalleryHorizontal, LayoutGrid,
   Star, ShoppingBag, ShieldCheck, MessageSquare, HelpCircle, Mail,
