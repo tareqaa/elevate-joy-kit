@@ -10,8 +10,9 @@ import { toast } from "sonner";
 import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Star, Search, Layers, Globe, ArrowUp, ArrowDown, MoreHorizontal } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-type Category = { id: string; name_ar: string; name_en: string };
-type Product = {
+export type Category = { id: string; name_ar: string; name_en: string };
+export type Product = {
+
   id: string; category_id: string | null; slug: string; sku: string | null;
   name_ar: string; name_en: string;
   tagline_ar: string | null; tagline_en: string | null;
