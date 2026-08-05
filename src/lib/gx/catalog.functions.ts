@@ -83,12 +83,16 @@ export type CatalogCategoryChild = {
 };
 
 export type CatalogCategory = {
+  id: string;
   slug: string;
   nameAr: string;
   nameEn: string;
   taglineAr: string | null;
   taglineEn: string | null;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
   icon: string | null;
+  pageTemplate: string;
   children: CatalogCategoryChild[];
 };
 
@@ -223,7 +227,7 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
     const supabase = publicClient();
     const { data: row } = await supabase
       .from("categories")
-      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, icon, is_active")
+      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, page_template, is_active")
       .eq("slug", data.slug)
       .eq("is_active", true)
       .maybeSingle();
@@ -256,12 +260,16 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
     }
 
     return {
+      id: c.id,
       slug: c.slug,
       nameAr: c.name_ar,
       nameEn: c.name_en || c.name_ar,
       taglineAr: c.tagline_ar ?? null,
       taglineEn: c.tagline_en ?? null,
+      descriptionAr: c.description_ar ?? null,
+      descriptionEn: c.description_en ?? null,
       icon: c.icon ?? null,
+      pageTemplate: c.page_template ?? "standard",
       children: (kids ?? [])
         .filter((k: Record<string, any>) => byCat.has(k.id) || !hasAnyProduct.has(k.id))
         .map((k: Record<string, any>) => {
