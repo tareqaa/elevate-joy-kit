@@ -26,9 +26,9 @@ export function BuyActions({ cartId }: { cartId: string }) {
       <button
         className="buy-now-btn"
         type="button"
-        onClick={async () => {
-          const success = await cart.buyNow(cartId);
-          if (success) navigate({ to: "/cart" });
+        onClick={() => {
+          cart.buyNow(cartId);
+          navigate({ to: "/cart" });
         }}
       >
         {t("buy.buy_now")}
