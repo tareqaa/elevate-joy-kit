@@ -7,6 +7,7 @@ import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useIsAdmin } from "@/lib/gx/admin-auth";
 import { QuickAddCategory } from "@/components/gx/QuickAddCategory";
 import { Plus, PackagePlus } from "lucide-react";
+import { RichHtml } from "@/lib/gx/sections/rich-text";
 
 export const Route = createFileRoute("/category/$slug")({
   loader: async ({ params }) => {
@@ -45,6 +46,70 @@ function CategoryPage() {
   const { isAdmin } = useIsAdmin();
   const pick = (ar: string | null, en: string | null) => (lang === "en" ? en || ar : ar || en) || "";
 
+  if (category.pageTemplate === "gift_card") {
+    return (
+      <StoreShell>
+        <section className="category-hero">
+          <div className="wrap">
+            <div className="category-hero-inner fade-in">
+              <div className="category-hero-icon">{category.icon}</div>
+              <div className="category-hero-text">
+                <h1>{pick(category.nameAr, category.nameEn)}</h1>
+                <p>{pick(category.taglineAr, category.taglineEn)}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="section">
+          <div className="wrap">
+            <div className="category-rich-desc">
+              <RichHtml html={pick(category.descriptionAr, category.descriptionEn)} />
+            </div>
+            
+            <div className="gift-card-grouped-grid">
+              {/* Note: In gift_card layout, sub-categories are treated as Regions */}
+              {category.children.map((s: CatalogCategoryChild) => (
+                <div key={s.slug} className="gift-card-region-group">
+                  <h2 className="region-title">
+                    {s.icon && <span className="region-flag">{s.icon}</span>}
+                    {pick(s.nameAr, s.nameEn)}
+                  </h2>
+                  <div className="denomination-grid">
+                    {/* Real products would be fetched here or passed in children. 
+                        Reusing the existing gift-card denim pattern if applicable. */}
+                    {s.productSlug ? (
+                      <Link to="/product/$slug" params={{ slug: s.productSlug }} className="denom-card">
+                        <div className="denom-val">{pick(s.nameAr, s.nameEn)}</div>
+                        <div className="denom-browse">{t("cat.browse_products")}</div>
+                      </Link>
+                    ) : (
+                      <div className="denom-card soon">
+                        <div className="denom-val">{pick(s.nameAr, s.nameEn)}</div>
+                        <div className="denom-browse">{t("cat.coming_soon")}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {isAdmin && (
+                <div className="subcat-admin-tools" style={{ marginTop: 40 }}>
+                  <QuickAddCategory 
+                    parentId={category.id} 
+                    className="subcat-card add-subcat-btn"
+                    label={lang === "ar" ? "إضافة منطقة / نوع" : "Add Region / Type"}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      </StoreShell>
+    );
+  }
+
+  // Layout A — Standard Catalog
   return (
     <StoreShell>
       <section className="category-hero">
