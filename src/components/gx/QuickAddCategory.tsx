@@ -41,21 +41,19 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
   useEffect(() => {
     if (open) {
       setForm({
-        nameAr: category?.name_ar || "",
-        nameEn: category?.name_en || "",
-        descAr: category?.description_ar || "",
-        descEn: category?.description_en || "",
-        taglineAr: category?.tagline_ar || "",
-        taglineEn: category?.tagline_en || "",
-        pageTemplate: category?.page_template || "standard",
+        nameAr: category?.name_ar || category?.nameAr || "",
+        nameEn: category?.name_en || category?.nameEn || "",
+        descAr: category?.description_ar || category?.descriptionAr || "",
+        descEn: category?.description_en || category?.descriptionEn || "",
+        taglineAr: category?.tagline_ar || category?.taglineAr || "",
+        taglineEn: category?.tagline_en || category?.taglineEn || "",
+        pageTemplate: category?.page_template || category?.pageTemplate || "standard",
         icon: category?.icon || "💎",
-        accent: category?.accent_color || "#00e5ff",
-        gradient: category?.theme_gradient || "linear-gradient(135deg,#00e5ff,#0091ff)",
-        imageUrl: category?.icon_url || ""
+        accent: category?.accent_color || category?.accentColor || "#00e5ff",
+        gradient: category?.theme_gradient || category?.themeGradient || "linear-gradient(135deg,#00e5ff,#0091ff)",
+        imageUrl: category?.icon_url || category?.iconImage || ""
       });
-    } else {
-      // Reset form when closing if not editing
-      if (!category) {
+    } else if (!category) {
         setForm({
           nameAr: "",
           nameEn: "",
