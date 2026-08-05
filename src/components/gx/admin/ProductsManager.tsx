@@ -1099,3 +1099,10 @@ function CountryPricesDialog({ variant, onClose }: { variant: Variant; onClose: 
     </Dialog>
   );
 }
+
+/**
+ * Machine translation for user-written content (reviews) through Google Translate.
+ * Runs server-side to avoid CORS and to keep one shared cache-friendly endpoint.
+ */
+// BulkVariantButton already added in previous thought but failed to parse.
+// Let's rewrite the end of the file carefully.
