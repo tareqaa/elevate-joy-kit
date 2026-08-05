@@ -323,6 +323,32 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
                 placeholder="https://..."
                 className="bg-white/5 border-white/10"
               />
+              <div className="flex items-center gap-2 mt-2">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
+                  className="hidden" 
+                  id="cat-image-upload"
+                  disabled={uploading}
+                />
+                <label 
+                  htmlFor="cat-image-upload" 
+                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded text-xs cursor-pointer transition-colors flex items-center gap-1"
+                >
+                  <Plus size={12} />
+                  {uploading ? "..." : (lang === "ar" ? "رفع صورة" : "Upload Image")}
+                </label>
+                {form.imageUrl && (
+                  <button 
+                    type="button" 
+                    onClick={() => setForm(f => ({ ...f, imageUrl: "" }))}
+                    className="text-[10px] text-red-400 opacity-60 hover:opacity-100"
+                  >
+                    {lang === "ar" ? "حذف" : "Remove"}
+                  </button>
+                )}
+              </div>
               {form.imageUrl && (
                 <div className="mt-2 w-16 h-16 rounded-lg overflow-hidden border border-white/10 bg-black/20">
                   <img src={form.imageUrl} alt="Preview" className="w-full h-full object-cover" />
