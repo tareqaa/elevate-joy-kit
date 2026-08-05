@@ -799,7 +799,10 @@ function VariantsPanel({ productId, productSlug }: { productId: string; productS
   return (
     <div className="gx-fieldset space-y-3">
       <div className="gx-fs-title"><Layers size={12} /> الخيارات والأسعار (مدد / فئات / باقات)</div>
-      <button className="gx-btn primary" onClick={() => setAdding(true)}><Plus size={12} /> خيار جديد</button>
+      <div className="flex gap-2">
+        <button className="gx-btn primary" onClick={() => setAdding(true)}><Plus size={12} /> خيار جديد</button>
+        <BulkVariantButton productId={productId} />
+      </div>
 
       {q.isLoading ? (
         <div className="text-center py-6 text-cyan-100/60">جاري التحميل...</div>

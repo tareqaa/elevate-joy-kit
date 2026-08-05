@@ -302,3 +302,15 @@ export const bulkCreateVariants = createServerFn({ method: "POST" })
     if (error) throw error;
     return { count: variants.length };
   });
+
+export const getRandomActiveAvatar = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const supabase = publicClient();
+    const { data, error } = await supabase
+      .from("avatars")
+      .select("id")
+      .eq("is_active", true);
+    if (error || !data?.length) return null;
+    const random = data[Math.floor(Math.random() * data.length)];
+    return random.id;
+  });
