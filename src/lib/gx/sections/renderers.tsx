@@ -2,7 +2,7 @@
 // renders the section for the public homepage. Reuses existing store CSS
 // classes so styling stays consistent with the rest of the site.
 
-import { useEffect, useRef, useState, useMemo } from "react"; from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import { CATEGORY_LINKS, getCategoryLink, getFeaturedItems, PRODUCTS_CATALOG, type FeaturedItem } from "@/data/products";
 import { useCurrency } from "@/lib/gx/currency";
