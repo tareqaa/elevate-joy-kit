@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, useTransition } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { findPlanByCartId, type ResolvedPlan } from "@/data/products";
 import { findDbPlanByCartId, loadDbVariants } from "./db-variants";
@@ -132,14 +132,12 @@ function resolve(items: CartItem[]): ResolvedItem[] {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [isPending, startTransition] = useTransition();
   const [rawItems, setRawItems] = useState<CartItem[]>([]);
   const [notes, setNotesState] = useState("");
   const [contact, setContactState] = useState<ContactInfo>(DEFAULT_CONTACT);
   const [coupon, setCouponState] = useState<AppliedCoupon | null>(null);
   const [coins, setCoinsState] = useState<AppliedCoins | null>(null);
   const [creditJOD, setCreditState] = useState(0);
-  const loadingRef = useRef<string | null>(null);
 
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const { currency, format } = useCurrency();
@@ -165,8 +163,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       try {
         const { data: sess } = await supabase.auth.getSession();
         const uid = sess.session?.user?.id;
-        if (!uid || loadingRef.current === uid) return;
-        loadingRef.current = uid;
+        if (!uid) return;
         const { data: prof } = await supabase
           .from("profiles")
           .select("full_name, whatsapp")

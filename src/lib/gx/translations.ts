@@ -61,7 +61,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     // Buy actions
     "buy.add": "🛒 أضف للسلة",
     "buy.added": "✓ أضيفت",
-    "buy.buy_now": "⚡ شراء سريع",
+    "buy.buy_now": "⚡ اشتري الآن",
     "added.title": "تمت الإضافة إلى سلة التسوق",
     "added.sub_a": "لديك",
     "added.sub_b": "منتج في سلة التسوق الخاصة بك",
@@ -290,7 +290,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
    "cart.order_saved_note": "احفظ رقم الطلب — بتقدر تتواصل معنا على أي منصة (واتساب، تيليجرام، إنستغرام، فيسبوك، تيك توك) وبنكمل الطلب معك. أو أنشئ حساب وتابع حالة طلبك مباشرة من صفحة \"طلباتي\".",
    "cart.your_order_number": "رقم طلبك",
    "cart.copy_number": "نسخ الرقم",
-   "cart.continue_wa": "اكمل",
+   "cart.continue_wa": "أكمل عبر واتساب",
    "cart.track_order": "تتبع الطلب من حسابي",
 
   },
@@ -347,7 +347,7 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
     "home.testi_title": "Our customer reviews",
     "buy.add": "🛒 Add to cart",
     "buy.added": "✓ Added",
-    "buy.buy_now": "⚡ Buy Now",
+    "buy.buy_now": "⚡ Buy now",
     "added.title": "Added to your cart",
     "added.sub_a": "You have",
     "added.sub_b": "item(s) in your shopping cart",

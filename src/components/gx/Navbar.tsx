@@ -114,11 +114,8 @@ export function Navbar() {
   const [authOpen, setAuthOpen] = useState(false);
   const [session, setSession] = useState<{ userId: string; email?: string } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(() => {
-    if (typeof window === "undefined") return null;
     const storedUser = readStoredAuthUser();
-    const cached = readCachedProfile(storedUser?.id);
-    if (cached) return cached;
-    return profileFromUser(storedUser);
+    return readCachedProfile(storedUser?.id) ?? profileFromUser(storedUser);
   });
   const [accountOpen, setAccountOpen] = useState(false);
   const [canReview, setCanReview] = useState(false);
@@ -166,37 +163,25 @@ export function Navbar() {
     }
     (async () => {
       try {
-        // Use a flag on window to avoid multiple concurrent profile fetches
-        if ((window as any).__gx_fetching_profile === session.userId) return;
-        (window as any).__gx_fetching_profile = session.userId;
-
         const { data: prof } = await supabase.from("profiles").select("username, full_name, avatar_url, level, email, gx_coins, store_credit_jod").eq("id", session.userId).maybeSingle();
         const next = prof ? { ...prof, id: session.userId } : { id: session.userId, email: session.email };
-        
         setProfile(next);
         try {
           localStorage.setItem(`gx:profile:${session.userId}`, JSON.stringify(next));
           localStorage.setItem("gx_profile_cache", JSON.stringify(next));
         } catch { /* noop */ }
+      } catch { setProfile((p) => p ?? { email: session.email }); }
+      try {
+        const { data: adminData } = await supabase.rpc("has_role", { _user_id: session.userId, _role: "admin" });
+        setIsAdmin(!!adminData);
+      } catch { setIsAdmin(false); }
 
-        // Fetch other data in parallel
-        await Promise.allSettled([
-          (async () => {
-            const { data: adminData } = await supabase.rpc("has_role", { _user_id: session.userId, _role: "admin" });
-            setIsAdmin(!!adminData);
-          })(),
-          (async () => {
-            const { count } = await supabase.from("orders")
-              .select("id", { count: "exact", head: true })
-              .eq("user_id", session.userId).eq("status", "delivered");
-            setCanReview((count ?? 0) > 0);
-          })()
-        ]);
-      } catch (err) { 
-        setProfile((p) => p ?? { email: session.email }); 
-      } finally {
-        delete (window as any).__gx_fetching_profile;
-      }
+      try {
+        const { count } = await supabase.from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", session.userId).eq("status", "delivered");
+        setCanReview((count ?? 0) > 0);
+      } catch { /* noop */ }
     })();
   }, [session]);
 

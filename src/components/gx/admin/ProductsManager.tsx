@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -459,9 +458,6 @@ const THUMB_PRESETS = [
 ];
 
 function ProductDialog({ product, categories, defaultCategoryId, onClose, onSaved }: { product: Product | null; categories: Category[]; defaultCategoryId?: string; onClose: () => void; onSaved: () => void }) {
-  // Check if we have a product ID to show bulk upload
-  const canBulk = !!product?.id;
-
   const [tab, setTab] = useState<"basic" | "template" | "design" | "delivery" | "variants">("basic");
   const [savedId, setSavedId] = useState<string | null>(product?.id ?? null);
 
@@ -803,10 +799,7 @@ function VariantsPanel({ productId, productSlug }: { productId: string; productS
   return (
     <div className="gx-fieldset space-y-3">
       <div className="gx-fs-title"><Layers size={12} /> الخيارات والأسعار (مدد / فئات / باقات)</div>
-      <div className="flex gap-2">
-        <button className="gx-btn primary" onClick={() => setAdding(true)}><Plus size={12} /> خيار جديد</button>
-        <BulkVariantButton productId={productId} />
-      </div>
+      <button className="gx-btn primary" onClick={() => setAdding(true)}><Plus size={12} /> خيار جديد</button>
 
       {q.isLoading ? (
         <div className="text-center py-6 text-cyan-100/60">جاري التحميل...</div>
@@ -1101,70 +1094,5 @@ function CountryPricesDialog({ variant, onClose }: { variant: Variant; onClose: 
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-/**
- * Machine translation for user-written content (reviews) through Google Translate.
- * Runs server-side to avoid CORS and to keep one shared cache-friendly endpoint.
- */
-
-import { bulkCreateVariants } from "@/lib/gx/catalog.functions";
-
-function BulkVariantButton({ productId }: { productId: string }) {
-  const [open, setOpen] = useState(false);
-  const [text, setText] = useState("");
-  const [saving, setSaving] = useState(false);
-  const qc = useQueryClient();
-  const bulkCreateRpc = useServerFn(bulkCreateVariants);
-
-  async function handleBulk() {
-    if (!text.trim()) return;
-    setSaving(true);
-    try {
-      await bulkCreateRpc({ data: { productId, rows: text.trim() } });
-      toast.success("تم إضافة الخيارات بنجاح");
-      qc.invalidateQueries({ queryKey: ["admin-variants", productId] });
-      setOpen(false);
-      setText("");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "فشل الإضافة الجماعية");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <>
-      <button className="gx-btn outline" onClick={() => setOpen(true)}>
-        <Plus size={12} /> إضافة جماعية
-      </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>إضافة جماعية للخيارات</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-xs text-cyan-100/60 leading-relaxed">
-              أدخل الخيارات سطر بسطر بالتنسيق التالي:<br />
-              <code className="text-cyan-400">الاسم بالعربي, الاسم بالإنجليزي, السعر, السعر القديم(اختياري), معرف السلة(اختياري)</code>
-            </p>
-            <Textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="شهر, 1 Month, 5.00, 7.00, month-1\n3 شهور, 3 Months, 12.00, 15.00, month-3"
-              rows={8}
-              className="gx-adm-input min-h-[200px]"
-            />
-            <div className="flex justify-end gap-2">
-              <button className="gx-btn outline" onClick={() => setOpen(false)}>إلغاء</button>
-              <button className="gx-btn primary" onClick={handleBulk} disabled={saving}>
-                {saving ? "جاري الإضافة..." : "إضافة الكل"}
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
   );
 }

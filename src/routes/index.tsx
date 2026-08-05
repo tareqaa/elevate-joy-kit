@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useSiteSettings } from "@/lib/gx/site-settings";
+import { SECTION_REGISTRY } from "@/lib/gx/sections/registry";
 import { containerMaxWidth, sectionWrapperStyle, themeToCssVars, type HomeLayout } from "@/lib/gx/sections/types";
 import { AnimatedSection } from "@/components/gx/AnimatedSection";
-import { SECTION_REGISTRY } from "@/lib/gx/sections/registry";
 
 
 export const Route = createFileRoute("/")({
@@ -52,9 +52,7 @@ function Home() {
         {sections.map((s) => {
           const def = SECTION_REGISTRY[s.type];
           if (!def) return null;
-          
-          const SectionComponent = def.Renderer;
-
+          const { Renderer } = def;
           const wrapStyle = sectionWrapperStyle(s.style);
           const maxW = containerMaxWidth(s.style?.container);
           return (
@@ -67,9 +65,7 @@ function Home() {
               dataAttrs={{ "data-section": s.type }}
             >
               <div style={{ maxWidth: maxW, margin: "0 auto", width: "100%" }}>
-                <Suspense fallback={<div className="section-loading-placeholder animate-pulse" style={{ height: 300, background: 'rgba(255,255,255,0.03)', borderRadius: 24, margin: '20px 0' }} />}>
-                  <SectionComponent data={s.data} />
-                </Suspense>
+                <Renderer data={s.data} />
               </div>
             </AnimatedSection>
           );
