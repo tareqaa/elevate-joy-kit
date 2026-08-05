@@ -17,7 +17,13 @@ export const STORE_HEAD_LINKS = [
 
 export const CORE_CSS = STORE_HEAD_LINKS;
 export const PAGE_CSS = {} as any;
+
+/**
+ * Helper to generate head links.
+ * Reverted to return the full list unconditionally.
+ */
 export function getStoreHeadLinks(_keys?: any) {
   return STORE_HEAD_LINKS;
 }
+
 
