@@ -17,9 +17,7 @@ import { CurrencyProvider } from "@/lib/gx/currency";
 import { CartProvider } from "@/lib/gx/cart";
 import { LanguageProvider } from "@/lib/gx/i18n";
 import { SiteSettingsProvider } from "@/lib/gx/site-settings";
-import { CORE_CSS } from "@/lib/gx/store-head";
-import { StoreSkeleton } from "@/components/gx/StoreSkeleton";
-import { useHydrated } from "@/hooks/use-hydrated"; // We'll need to check if this exists or create it
+import { useHydrated } from "@/hooks/use-hydrated";
 
 
 
@@ -148,7 +146,7 @@ function RootComponent() {
   }, [router, queryClient]);
 
   if (!hydrated) {
-    return <StoreSkeleton />;
+    return null;
   }
 
   return (

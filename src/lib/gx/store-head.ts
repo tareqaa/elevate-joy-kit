@@ -26,9 +26,3 @@ export function getStoreHeadLinks(keys: (keyof typeof PAGE_CSS)[] = []) {
   const specific = keys.map(k => PAGE_CSS[k]);
   return [...CORE_CSS, ...specific];
 }
-
-// Legacy export for compatibility during migration (deprecated)
-export const STORE_HEAD_LINKS = [
-  ...CORE_CSS,
-  ...Object.values(PAGE_CSS)
-];

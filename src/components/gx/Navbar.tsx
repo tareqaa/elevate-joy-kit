@@ -163,7 +163,11 @@ export function Navbar() {
     }
     (async () => {
       try {
-        // Fetch profile, admin role, and order count in parallel
+        // Fetch session once to avoid redundant calls
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (!active || !currentSession?.user) return;
+
+        // Parallel data fetch
         const [profRes, adminRes, countRes] = await Promise.all([
           supabase
             .from("profiles")
@@ -178,19 +182,21 @@ export function Navbar() {
             .eq("status", "delivered"),
         ]);
 
-        if (profRes.data) {
-          const next = { ...profRes.data, id: session.userId };
-          setProfile(next);
-          try {
-            localStorage.setItem(`gx:profile:${session.userId}`, JSON.stringify(next));
-            localStorage.setItem("gx_profile_cache", JSON.stringify(next));
-          } catch { /* noop */ }
-        } else {
-          setProfile((p) => p ?? { email: session.email });
-        }
+        if (active) {
+          if (profRes.data) {
+            const next = { ...profRes.data, id: session.userId };
+            setProfile(next);
+            try {
+              localStorage.setItem(`gx:profile:${session.userId}`, JSON.stringify(next));
+              localStorage.setItem("gx_profile_cache", JSON.stringify(next));
+            } catch { /* noop */ }
+          } else {
+            setProfile((p) => p ?? { email: session.email });
+          }
 
-        setIsAdmin(!!adminRes.data);
-        setCanReview((countRes.count ?? 0) > 0);
+          setIsAdmin(!!adminRes.data);
+          setCanReview((countRes.count ?? 0) > 0);
+        }
       } catch (e) {
         console.error("[Navbar] Initial data fetch failed", e);
       }
