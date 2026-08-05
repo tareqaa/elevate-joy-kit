@@ -551,6 +551,8 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
 
   // Auto-translate customer reviews into the page language (Google Translate).
   const [tr, setTr] = useState<Record<string, { text: string; from: string }>>({});
+  const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
     const sources = items
       .map((it) => ({ id: it.id, text: (lang === "en" ? it.quote_en : it.quote_ar) || "" }))
@@ -626,15 +628,36 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
                     <div className="testi-stars">{"★".repeat(stars)}<span style={{ opacity: .25 }}>{"★".repeat(5 - stars)}</span></div>
                   </div>
                 </div>
-                {q && (
+                {original && (
                   <div className="testi-quote testi-clamp">
-                    {q}
+                    {trans && !showOriginal[it.id] ? trans.text : original}
                     {trans && (
-                      <span style={{ display: "block", marginTop: 6, fontSize: 11, opacity: .6 }}>
-                        {lang === "en"
-                          ? `Translated from ${trans.from === "ar" ? "Arabic" : trans.from.toUpperCase()} · Google`
-                          : `مُترجم من ${trans.from === "en" ? "الإنجليزية" : trans.from.toUpperCase()} · Google`}
-                      </span>
+                      <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11, opacity: .6 }}>
+                          {showOriginal[it.id]
+                            ? (lang === "en" ? "Original text" : "النص الأصلي")
+                            : (lang === "en"
+                                ? `Translated from ${trans.from === "ar" ? "Arabic" : trans.from.toUpperCase()} · Google`
+                                : `مُترجم من ${trans.from === "en" ? "الإنجليزية" : trans.from.toUpperCase()} · Google`)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setShowOriginal(prev => ({ ...prev, [it.id]: !prev[it.id] }));
+                          }}
+                          style={{
+                            background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)",
+                            borderRadius: 6, padding: "2px 8px", fontSize: 10, color: "var(--gx-primary)",
+                            cursor: "pointer", fontWeight: 700
+                          }}
+                        >
+                          {showOriginal[it.id]
+                            ? (lang === "en" ? "View Translation" : "عرض الترجمة")
+                            : (lang === "en" ? "Show Original" : "مشاهدة الأصل")}
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}

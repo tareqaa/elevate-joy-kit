@@ -35,9 +35,20 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
         setTimeout(() => { onClose(); window.location.reload(); }, 500);
       } else {
         if (!/^[a-zA-Z0-9_]{3,20}$/.test(username.trim())) return setMsg({ text: t("auth.username_pattern_err") });
+        const { data: avatars } = await supabase.from("avatars").select("image_url");
+        const randomAvatar = avatars && avatars.length > 0
+          ? avatars[Math.floor(Math.random() * avatars.length)].image_url
+          : null;
+
         const { error } = await supabase.auth.signUp({
           email: email.trim(), password: pass,
-          options: { emailRedirectTo: window.location.origin + "/", data: { username: username.trim() } },
+          options: {
+            emailRedirectTo: window.location.origin + "/",
+            data: {
+              username: username.trim(),
+              avatar_url: randomAvatar
+            }
+          },
         });
         if (error) return setMsg({ text: error.message });
         setMsg({ text: t("auth.signup_ok"), ok: true });

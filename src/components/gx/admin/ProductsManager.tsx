@@ -156,14 +156,21 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
       if (statusFilter === "hidden" && p.is_active) return false;
       if (statusFilter === "featured" && !p.is_featured) return false;
       if (!s) return true;
-      return p.name_ar.toLowerCase().includes(s) || p.name_en.toLowerCase().includes(s) || p.slug.toLowerCase().includes(s) || (p.sku || "").toLowerCase().includes(s);
+      return (
+        p.name_ar.toLowerCase().includes(s) ||
+        p.name_en.toLowerCase().includes(s) ||
+        p.slug.toLowerCase().includes(s) ||
+        (p.sku || "").toLowerCase().includes(s) ||
+        (catsQ.data?.find(c => c.id === p.category_id)?.name_ar || "").toLowerCase().includes(s) ||
+        (catsQ.data?.find(c => c.id === p.category_id)?.name_en || "").toLowerCase().includes(s)
+      );
     });
     const sorted = [...list];
     if (sortBy === "name") sorted.sort((a, b) => a.name_ar.localeCompare(b.name_ar, "ar"));
     else if (sortBy === "price") sorted.sort((a, b) => (Number(b.base_price_jod) || 0) - (Number(a.base_price_jod) || 0));
     else if (sortBy === "sales") sorted.sort((a, b) => (b.purchases_count || 0) - (a.purchases_count || 0));
     return sorted;
-  }, [prodsQ.data, categoryFilter, isAllProducts, search, statusFilter, sortBy]);
+  }, [prodsQ.data, categoryFilter, isAllProducts, search, statusFilter, sortBy, catsQ.data]);
 
 
   const deleteMut = useMutation({
