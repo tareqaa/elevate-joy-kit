@@ -439,15 +439,6 @@ export function Navbar() {
                     <Link to="/account" search={{ tab: "security" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">⚙️</span><span>{t("nav.settings")}</span>
                     </Link>
-                    {canReview && (
-                      <button
-                        type="button"
-                        className="acc-link"
-                        onClick={() => { setAccountOpen(false); setReviewOpen(true); }}
-                      >
-                        <span className="ai">⭐</span><span>{lang === "en" ? "Leave a Review" : "اكتب مراجعة"}</span>
-                      </button>
-                    )}
                     {isAdmin && (
                       <Link to="/admin" className="acc-link acc-admin" onClick={() => setAccountOpen(false)}>
                         <span className="ai">🛡️</span><span>{t("nav.admin_panel")}</span>
