@@ -20,7 +20,7 @@ export type Product = {
   image_url: string | null; base_price_jod: number | null;
   badge: string | null; purchases_count: number;
   is_featured: boolean; is_active: boolean; sort_order: number;
-  page_template: "standard" | "multi_account" | "dual_plans" | "gift_card";
+  page_template: "standard" | "gift_card";
   icon: string | null; icon_image_url: string | null;
   thumb_bg: string | null; accent_color: string | null; card_gradient: string | null;
   delivery_type: "code" | "account" | "topup" | "manual";
@@ -682,7 +682,7 @@ export function ProductDialog({ product, categories = [], defaultCategoryId, onC
                   </button>
                 ))}
               </div>
-              <p className="text-[11.5px] text-cyan-100/50 mt-3">القالب يحدد كيف تُعرض الخيارات والأسعار بصفحة المنتج — نفس أشكال أقسام البرامج، سناب، فورتنايت، وبطاقات الهدايا.</p>
+              <p className="text-[11.5px] text-cyan-100/50 mt-3">القالب يحدد كيف تُعرض الخيارات والأسعار بصفحة المنتج — يمكنك اختيار القالب الافتراضي لمعظم المنتجات أو قالب بطاقات الهدايا للبطاقات الرقمية.</p>
             </div>
           )}
 

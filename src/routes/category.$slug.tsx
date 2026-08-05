@@ -125,16 +125,12 @@ function CategoryPage() {
                   category={category}
                   onClose={() => queryClient.invalidateQueries({ queryKey: ["storefront-root-categories"] })}
                   trigger={
-                    <button 
+                    <div 
                       className="gx-btn outline" 
-                      style={{ position: "absolute", top: 0, insetInlineEnd: 0, background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)", zIndex: 10 }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
+                      style={{ position: "absolute", top: 0, insetInlineEnd: 0, background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)", zIndex: 10, cursor: "pointer" }}
                     >
                       <Settings size={14} /> {lang === "ar" ? "تعديل القسم" : "Edit Category"}
-                    </button>
+                    </div>
                   }
                 />
               )}
