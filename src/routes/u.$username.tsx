@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { getStoreHeadLinks } from "@/lib/gx/store-head";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { GxProfile } from "@/components/gx/GxProfile";
 
 export const Route = createFileRoute("/u/$username")({
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/u/$username")({
       { property: "og:type", content: "profile" },
       { name: "twitter:card", content: "summary" },
     ],
-    links: getStoreHeadLinks(),
+    links: STORE_HEAD_LINKS,
   }),
   component: () => {
     const { username } = Route.useParams();

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { getStoreHeadLinks } from "@/lib/gx/store-head";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { GameIcon } from "@/components/gx/games/GameIcon";
@@ -20,22 +20,10 @@ export const Route = createFileRoute("/games/t/$id")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: getStoreHeadLinks(),
+    links: STORE_HEAD_LINKS,
   }),
-  component: TournamentPageLazy,
+  component: TournamentPage,
 });
-
-function TournamentPageLazy() {
-  const [Comp, setComp] = useState<any>(null);
-
-  useEffect(() => {
-    import("./games.t.$id").then(m => setComp(() => m.TournamentPage));
-  }, []);
-
-  if (!Comp) return <div className="min-h-screen bg-[#090b10] flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
-  return <Comp />;
-}
-
 
 type Row = {
   rank: number; user_id: string; username: string | null; full_name: string | null;
@@ -75,7 +63,7 @@ function PrizeRow({ p, place, ar }: { p: Prize; place: number; ar: boolean }) {
 }
 
 
-export function TournamentPage() {
+function TournamentPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { lang, dir } = useLang();

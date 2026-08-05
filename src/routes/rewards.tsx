@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { getStoreHeadLinks } from "@/lib/gx/store-head";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { GxProfile } from "@/components/gx/GxProfile";
 
 export const Route = createFileRoute("/rewards")({
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/rewards")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: getStoreHeadLinks(),
+    links: STORE_HEAD_LINKS,
   }),
   component: () => (
     <StoreShell>

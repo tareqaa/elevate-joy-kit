@@ -12,6 +12,7 @@ export const getRouter = () => {
     defaultPreload: "intent",
     defaultPreloadDelay: 20,
     defaultPreloadStaleTime: 0,
+    // Keep the current page visible a bit longer instead of flashing spinners
     defaultPendingMs: 400,
     defaultPendingMinMs: 200,
   });

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { useLang } from "@/lib/gx/i18n";
 import { POLICY_EN } from "@/lib/gx/product-locale";
-import { getStoreHeadLinks } from "@/lib/gx/store-head";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import type { ReactNode } from "react";
 
 export const Route = createFileRoute("/policy")({
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/policy")({
       { title: "Warranty & Refunds — GX Store" },
       { name: "description", content: "GX Store warranty and refund policy details." },
     ],
-    links: getStoreHeadLinks(),
+    links: STORE_HEAD_LINKS,
   }),
   component: PolicyPage,
 });

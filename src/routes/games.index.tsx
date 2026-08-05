@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { getStoreHeadLinks } from "@/lib/gx/store-head";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { GxIcon } from "@/components/gx/GxIcon";
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/games/")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: getStoreHeadLinks(),
+    links: STORE_HEAD_LINKS,
   }),
   loader: () => listTournaments(),
   errorComponent: ({ error }) => (

@@ -15,16 +15,12 @@ import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 import { GxProfile } from "@/components/gx/GxProfile";
 import { SpinWheel } from "@/components/gx/SpinWheel";
-import { getStoreHeadLinks } from "@/lib/gx/store-head";
 import { Pager, usePager } from "@/components/gx/Pager";
 
 type AccountTab = "profile" | "orders" | "wheel" | "security";
 
 export const Route = createFileRoute("/_authenticated/account")({
-  head: () => ({
-    meta: [{ title: "حسابي — GX Store" }],
-    links: getStoreHeadLinks(),
-  }),
+  head: () => ({ meta: [{ title: "حسابي — GX Store" }] }),
   validateSearch: (s: Record<string, unknown>): { tab?: AccountTab } => ({
     tab: (typeof s.tab === "string" ? s.tab : "profile") as AccountTab,
   }),

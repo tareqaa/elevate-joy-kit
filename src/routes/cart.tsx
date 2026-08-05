@@ -6,7 +6,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { GxIcon } from "@/components/gx/GxIcon";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { useSiteSettings } from "@/lib/gx/site-settings";
-import { getStoreHeadLinks } from "@/lib/gx/store-head";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { OrderConfirmedModal } from "@/components/gx/OrderConfirmedModal";
 import { coinsToJod, jodToCoins, MAX_COINS_DISCOUNT_RATIO } from "@/lib/gx/loyalty";
 import { useLoyaltyCopy, bidi } from "@/lib/gx/loyalty-copy";
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/cart")({
       { title: "Cart — GX Store" },
       { name: "description", content: "Review your order before checking out — GX Store." },
     ],
-    links: getStoreHeadLinks(),
+    links: STORE_HEAD_LINKS,
   }),
   component: CartPage,
 });

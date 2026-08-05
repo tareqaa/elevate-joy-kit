@@ -215,8 +215,8 @@ html[dir="ltr"] .featured-grid{
   .featured-grid .prod-prices{gap:6px; flex-wrap:wrap;}
   .featured-grid .add-cart-btn{padding:8px; font-size:11.5px; gap:5px; border-radius:9px;}
   .featured-grid .add-cart-btn svg{width:14px; height:14px;}
-  .featured-grid .discount-badge{top:7px; inset-inline-end:7px; font-size:10px; padding:3px 7px; z-index:3;}
-  .featured-grid .tag-badge{top:7px; inset-inline-start:7px; font-size:9.5px; padding:3px 7px; z-index:3;}
+  .featured-grid .discount-badge{top:7px; inset-inline-end:7px; font-size:10px; padding:3px 7px;}
+  .featured-grid .tag-badge{top:7px; left:7px; font-size:9.5px; padding:3px 7px;}
 }
 
 
@@ -323,7 +323,7 @@ html[dir="ltr"] .featured-grid{
 }
 .hg-text{position:relative; z-index:2;}
 .hg-badge{background:rgba(255,45,120,.12); color:var(--pink);}
-.hg-badge .dot{background:var(--pink);box-shadow:none;}
+.hg-badge .dot{background:var(--pink);}
 .hg-title{font-size:38px; font-weight:900; line-height:1.3; margin-bottom:14px;}
 .hg-title span{
   background:linear-gradient(90deg,var(--pink),var(--cyan));
@@ -378,7 +378,7 @@ html[dir="ltr"] .featured-grid{
 .hg-tet::after{content:""; position:absolute; width:18px; height:18px; border-radius:4px; background:inherit; box-shadow:inset 0 0 0 2px rgba(255,255,255,.25);}
 .hg-tet.t1{left:8%;  background:var(--cyan);  animation-duration:9s;  animation-delay:0s;}
 .hg-tet.t1::after{top:18px;}
-.hg-tet.t2{left:26%; background:var(--pink);box-shadow:none;  animation-duration:12s; animation-delay:1.6s;}
+.hg-tet.t2{left:26%; background:var(--pink);  animation-duration:12s; animation-delay:1.6s;}
 .hg-tet.t2::after{left:18px;}
 .hg-tet.t3{left:52%; background:var(--lime);  animation-duration:10.5s; animation-delay:3.2s;}
 .hg-tet.t3::after{top:18px; left:18px;}
@@ -405,7 +405,7 @@ html[dir="ltr"] .featured-grid{
 }
 @keyframes hg-flap{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-7px) rotate(5deg)}}
 .hg-pix{position:absolute; width:6px; height:6px; border-radius:2px; background:var(--cyan); opacity:.6; animation:hgfloat 5s ease-in-out infinite;}
-.hg-pix.p1{top:20%; left:40%; background:var(--pink);box-shadow:none;}
+.hg-pix.p1{top:20%; left:40%; background:var(--pink);}
 .hg-pix.p2{top:70%; left:18%; background:var(--lime); animation-delay:1.2s;}
 .hg-pix.p3{top:32%; left:82%; animation-delay:2.1s;}
 .hg-chip-3{top:52%; inset-inline-end:-6px; color:var(--pink); border-color:rgba(255,45,120,.4); animation-delay:.7s;}

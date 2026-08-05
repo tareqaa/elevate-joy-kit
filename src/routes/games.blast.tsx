@@ -1,8 +1,7 @@
-
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { getStoreHeadLinks } from "@/lib/gx/store-head";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -43,23 +42,12 @@ export const Route = createFileRoute("/games/blast")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: getStoreHeadLinks(),
+    links: STORE_HEAD_LINKS,
   }),
   component: BlastPage,
 });
 
-
-
-
 const BEST_KEY = "gx_blast_best";
-
-export function BlastPage() {
-  const { lang, dir } = useLang();
-  const ar = lang === "ar";
-  const { t: tournamentId } = Route.useSearch();
-
-
-
 const MAX_POPUPS = 4;
 const BOARD_GAP_PX = 2;
 const BOARD_PADDING_PX = 6;
@@ -197,13 +185,13 @@ const BoardCell = memo(function BoardCell({
    ============================================================ */
 const MoveTimer = memo(function MoveTimer({
   limitMs,
-  trayKey,
+  moveKey,
   runKey,
   active,
   onExpire,
 }: {
   limitMs: number;
-  trayKey: number;
+  moveKey: number;
   runKey: string;
   active: boolean;
   onExpire: () => void;
@@ -218,7 +206,7 @@ const MoveTimer = memo(function MoveTimer({
   useEffect(() => {
     leftRef.current = limitMs;
     setRemain(limitMs);
-  }, [limitMs, trayKey, runKey]);
+  }, [limitMs, moveKey, runKey]);
 
   useEffect(() => {
     if (!active) return;
@@ -236,6 +224,7 @@ const MoveTimer = memo(function MoveTimer({
         boxRef.current.className = cls;
         lastCls = cls;
       }
+      // integer seconds normally, tenths only in the last 3 seconds
       const q = left <= 3000 ? Math.ceil(left / 100) : Math.ceil(left / 1000);
       if (q !== lastQ) {
         lastQ = q;
@@ -252,7 +241,7 @@ const MoveTimer = memo(function MoveTimer({
       cancelAnimationFrame(raf);
       leftRef.current = Math.max(0, start - (performance.now() - t0));
     };
-  }, [active, limitMs, trayKey, runKey]);
+  }, [active, limitMs, moveKey, runKey]);
 
   const secs = remain <= 3000 ? (remain / 1000).toFixed(1) : String(Math.ceil(remain / 1000));
   return (
@@ -262,6 +251,13 @@ const MoveTimer = memo(function MoveTimer({
     </div>
   );
 });
+
+function BlastPage() {
+  const { lang, dir } = useLang();
+  const ar = lang === "ar";
+  const { t: tournamentId } = Route.useSearch();
+
+
 
   const [game, setGame] = useState<GameState>(() => createGame(makeSeed()));
   const [dragInfo, setDragInfo] = useState<{ trayIndex: number; piece: PieceDef } | null>(null);
@@ -510,13 +506,8 @@ const MoveTimer = memo(function MoveTimer({
   const onExpire = useCallback(() => setGame((g) => timeoutGame(g)), []);
 
   useEffect(() => {
-    // Only reset the move timer for the first piece in a new tray.
-    // Subsequent pieces in the same tray continue using the remaining time.
-    if (timerActive) {
-      moveStart.current = performance.now();
-    }
-  }, [timerActive, trayGen, game.moveLimitMs]);
-
+    if (timerActive) moveStart.current = performance.now();
+  }, [timerActive, game.moves.length, game.moveLimitMs]);
 
   const previewCells = useMemo(() => {
     const map = new Map<number, boolean>();
@@ -622,11 +613,8 @@ const MoveTimer = memo(function MoveTimer({
     if (!d || !t || !t.ok) return;
 
     const g = gameRef.current;
-    const now = performance.now();
-    const durationMs = now - moveStart.current;
-    moveStart.current = now; // update moveStart for the next move
+    const durationMs = performance.now() - moveStart.current;
     const res = placePiece(g, d.trayIndex, t.row, t.col, durationMs);
-
     if (!res.ok) return;
 
     const justPlaced = d.piece.cells.map(([dr, dc]) => idx(t.row + dr, t.col + dc));
@@ -774,7 +762,7 @@ const MoveTimer = memo(function MoveTimer({
 
       <MoveTimer
         limitMs={game.moveLimitMs}
-        trayKey={trayGen}
+        moveKey={game.moves.length}
         runKey={game.seed}
         active={timerActive}
         onExpire={onExpire}
@@ -1011,5 +999,4 @@ const MoveTimer = memo(function MoveTimer({
       </main>
     </StoreShell>
   );
-
 }

@@ -4,7 +4,7 @@ import { FeatureAccordion } from "@/components/gx/Primitives";
 import { useLang } from "@/lib/gx/i18n";
 import { FAQ_EN } from "@/lib/gx/product-locale";
 import { useLoyaltyCopy } from "@/lib/gx/loyalty-copy";
-import { getStoreHeadLinks } from "@/lib/gx/store-head";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/faq")({
   head: () => ({
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/faq")({
       { title: "FAQ — GX Store" },
       { name: "description", content: "Answers to the most common questions about ordering, delivery, and payment at GX Store." },
     ],
-    links: getStoreHeadLinks(),
+    links: STORE_HEAD_LINKS,
   }),
   component: FaqPage,
 });

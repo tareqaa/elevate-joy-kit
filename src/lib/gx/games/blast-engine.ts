@@ -829,7 +829,6 @@ export type VerifyResult = {
 export function verifyRun(input: VerifyInput): VerifyResult {
   let state = createGame(input.seed);
   let elapsed = 0;
-  let trayAccumMs = 0;
 
   for (let i = 0; i < input.moves.length; i++) {
     const m = input.moves[i];
@@ -839,12 +838,10 @@ export function verifyRun(input: VerifyInput): VerifyResult {
     // time limit is re-derived from the accumulated score, never trusted from the client
     const limit = moveLimitMs(state.score);
     const dur = Math.max(0, Math.round(m.durationMs ?? 0));
-    trayAccumMs += dur;
-    if (trayAccumMs > limit) {
+    if (dur > limit) {
       return { valid: false, score: state.score, endReason: "timeout", reason: "move-timeout", moveIndex: i };
     }
     elapsed += dur;
-
 
     const piece = state.tray[m.trayIndex];
     if (!piece || piece.id !== m.pieceId) {
@@ -854,11 +851,8 @@ export function verifyRun(input: VerifyInput): VerifyResult {
     if (!res.ok) {
       return { valid: false, score: state.score, endReason: state.endReason, reason: "illegal-placement", moveIndex: i };
     }
-    const refilled = state.tray.filter(Boolean).length === 1; // if only 1 piece was left, this move (m.trayIndex) refilled it
-    if (refilled) trayAccumMs = 0;
     state = res.state;
   }
-
 
   if (state.score !== input.claimedScore) {
     return { valid: false, score: state.score, endReason: state.endReason, reason: "score-mismatch" };

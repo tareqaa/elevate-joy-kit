@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { useLang } from "@/lib/gx/i18n";
 import { useSiteSettings } from "@/lib/gx/site-settings";
-import { getStoreHeadLinks } from "@/lib/gx/store-head";
+import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/privacy-policy")({
   head: () => ({
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/privacy-policy")({
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: getStoreHeadLinks(),
+    links: STORE_HEAD_LINKS,
   }),
   component: PrivacyPolicyPage,
 });

@@ -161,48 +161,28 @@ export function Navbar() {
       try { localStorage.removeItem("gx_profile_cache"); } catch { /* noop */ }
       return;
     }
-    let alive = true;
     (async () => {
       try {
-        // Fetch session once to avoid redundant calls
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (!alive || !currentSession?.user) return;
+        const { data: prof } = await supabase.from("profiles").select("username, full_name, avatar_url, level, email, gx_coins, store_credit_jod").eq("id", session.userId).maybeSingle();
+        const next = prof ? { ...prof, id: session.userId } : { id: session.userId, email: session.email };
+        setProfile(next);
+        try {
+          localStorage.setItem(`gx:profile:${session.userId}`, JSON.stringify(next));
+          localStorage.setItem("gx_profile_cache", JSON.stringify(next));
+        } catch { /* noop */ }
+      } catch { setProfile((p) => p ?? { email: session.email }); }
+      try {
+        const { data: adminData } = await supabase.rpc("has_role", { _user_id: session.userId, _role: "admin" });
+        setIsAdmin(!!adminData);
+      } catch { setIsAdmin(false); }
 
-        // Parallel data fetch
-        const [profRes, adminRes, countRes] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("username, full_name, avatar_url, level, email, gx_coins, store_credit_jod")
-            .eq("id", session.userId)
-            .maybeSingle(),
-          supabase.rpc("has_role", { _user_id: session.userId, _role: "admin" }),
-          supabase
-            .from("orders")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", session.userId)
-            .eq("status", "delivered"),
-        ]);
-
-        if (alive) {
-          if (profRes.data) {
-            const next = { ...profRes.data, id: session.userId };
-            setProfile(next);
-            try {
-              localStorage.setItem(`gx:profile:${session.userId}`, JSON.stringify(next));
-              localStorage.setItem("gx_profile_cache", JSON.stringify(next));
-            } catch { /* noop */ }
-          } else {
-            setProfile((p) => p ?? { email: session.email });
-          }
-
-          setIsAdmin(!!adminRes.data);
-          setCanReview((countRes.count ?? 0) > 0);
-        }
-      } catch (e) {
-        console.error("[Navbar] Initial data fetch failed", e);
-      }
+      try {
+        const { count } = await supabase.from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", session.userId).eq("status", "delivered");
+        setCanReview((count ?? 0) > 0);
+      } catch { /* noop */ }
     })();
-    return () => { alive = false; };
   }, [session]);
 
   useEffect(() => {
@@ -491,7 +471,7 @@ export function Navbar() {
                 <span>{currency}</span>
               </button>
               <span className="cl-sep">|</span>
-              <button type="button" className="cl-part cl-lang" onClick={() => setLang(lang === "en" ? "ar" : "en")} title="Language Selector" aria-label={t("common.language")}>
+              <button type="button" className="cl-part cl-lang" onClick={() => setCurrencyOpen(true)} title={t("common.language")} aria-label={t("common.language")}>
                 <span>{lang === "ar" ? "AR" : "EN"}</span>
               </button>
             </div>
