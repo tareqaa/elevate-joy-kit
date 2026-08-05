@@ -280,3 +280,91 @@ input[type="number"] {
   align-items: center;
   justify-content: center;
 }
+
+.badge-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: absolute;
+  top: 12px;
+  inset-inline-start: 12px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.category-rich-desc {
+  margin-bottom: 40px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 800px;
+}
+.category-rich-desc h2 {
+  color: #fff;
+  margin-bottom: 12px;
+  font-size: 24px;
+}
+.category-rich-desc ul {
+  padding-inline-start: 20px;
+  margin: 12px 0;
+}
+.category-rich-desc li {
+  margin-bottom: 6px;
+}
+
+.gift-card-grouped-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+.region-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  color: var(--gx-primary);
+}
+.region-flag {
+  font-size: 24px;
+}
+.denomination-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+.denom-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 20px;
+  text-decoration: none;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.denom-card:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: var(--gx-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+.denom-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.denom-browse {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.denom-card.soon {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
