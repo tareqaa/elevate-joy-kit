@@ -652,7 +652,7 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
 export function FaqRenderer({ data }: { data: FaqData }) {
   const items = data.items || [];
   const [open, setOpen] = useState<string | null>(null);
-  if (items.length === 0) return null;
+  if (!data || items.length === 0) return null;
   return (
     <section className="section">
       <div className="wrap">
