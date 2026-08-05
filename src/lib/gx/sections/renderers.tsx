@@ -601,6 +601,8 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
   }, [dir, items.length]);
 
   const cards = [...items, ...items];
+  const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
+
   return (
     <section className="section" style={{ background: "var(--bg2)" }}>
       <div className="wrap">
