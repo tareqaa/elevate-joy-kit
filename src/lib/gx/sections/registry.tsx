@@ -2,15 +2,15 @@
 // to its label, icon, default data, renderer, and editor. Add a new
 // section by adding one entry here.
 
-import type { ComponentType } from "react";
+import { type ComponentType, lazy } from "react";
 import {
   Sparkles, Megaphone, GalleryHorizontal, LayoutGrid,
   Star, ShoppingBag, ShieldCheck, MessageSquare, HelpCircle, Mail,
 } from "lucide-react";
 import type { SectionType } from "./types";
 import {
-  HeroRenderer, AnnouncementRenderer, CarouselRenderer, CategoriesRenderer,
-  BestsellersRenderer, ProductsRenderer, TrustRenderer, ReviewsRenderer, FaqRenderer, NewsletterRenderer,
+  AnnouncementRenderer, CategoriesRenderer,
+  BestsellersRenderer, ProductsRenderer, FaqRenderer, NewsletterRenderer,
 } from "./renderers";
 import {
   HeroEditor, AnnouncementEditor, CarouselEditor, CategoriesEditor,
@@ -35,6 +35,12 @@ type AnyRenderer = ComponentType<{ data: Record<string, unknown> }>;
 type AnyEditor = ComponentType<{ data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }>;
 const asRenderer = <P,>(C: ComponentType<P>) => C as unknown as AnyRenderer;
 const asEditor = <P,>(C: ComponentType<P>) => C as unknown as AnyEditor;
+
+// Heavy renderers are lazy-loaded to speed up hydration
+const HeroRenderer = lazy(() => import("./renderers").then(m => ({ default: m.HeroRenderer })));
+const CarouselRenderer = lazy(() => import("./renderers").then(m => ({ default: m.CarouselRenderer })));
+const TrustRenderer = lazy(() => import("./renderers").then(m => ({ default: m.TrustRenderer })));
+const ReviewsRenderer = lazy(() => import("./renderers").then(m => ({ default: m.ReviewsRenderer })));
 
 export const SECTION_REGISTRY: Record<SectionType, SectionDef> = {
   hero: {

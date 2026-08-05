@@ -114,6 +114,7 @@ export function Navbar() {
   const [authOpen, setAuthOpen] = useState(false);
   const [session, setSession] = useState<{ userId: string; email?: string } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(() => {
+    if (typeof window === "undefined") return null;
     const storedUser = readStoredAuthUser();
     return readCachedProfile(storedUser?.id) ?? profileFromUser(storedUser);
   });
