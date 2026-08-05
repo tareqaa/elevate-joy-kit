@@ -273,7 +273,7 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-export function BlastPageInternal() {
+export function BlastPage() {
 
   const { lang, dir } = useLang();
   const ar = lang === "ar";
