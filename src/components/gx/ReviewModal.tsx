@@ -13,7 +13,7 @@ type OrderLite = {
 
 const css = `
 .gx-rv-ov{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}
-.gx-rv{width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:20px;border:1px solid rgba(0,229,255,.22);background:linear-gradient(180deg,#0b1119,#070b11);box-shadow:0 30px 80px -30px rgba(0,229,255,.35);position:relative}
+.gx-rv{width:100%;max-width:520px;max-height:92vh;overflow-y:auto;overflow-x:hidden;border-radius:20px;border:1px solid rgba(0,229,255,.22);background:linear-gradient(180deg,#0b1119,#070b11);box-shadow:0 30px 80px -30px rgba(0,229,255,.35);position:relative;box-sizing:border-box}
 .gx-rv-close-outer{position:absolute;top:12px;left:12px;z-index:10}
 .gx-rv-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.07);box-sizing:border-box}
 .gx-rv-bd{padding:18px;display:grid;gap:14px}
