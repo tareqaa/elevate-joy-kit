@@ -155,7 +155,33 @@ function CategoryPage() {
               );
               if (!s.productSlug) {
                 return (
-                  <div key={s.slug} className="subcat-card soon">
+                  <div key={s.slug} className="subcat-card soon" style={{ position: "relative" }}>
+                    {isAdmin && (
+                      <QuickAddCategory
+                        category={{
+                          id: s.id,
+                          slug: s.slug,
+                          name_ar: s.nameAr,
+                          name_en: s.nameEn,
+                          description_ar: s.descriptionAr,
+                          description_en: s.descriptionEn,
+                          tagline_ar: s.taglineAr,
+                          tagline_en: s.taglineEn,
+                          page_template: s.pageTemplate,
+                          icon: s.icon,
+                          icon_url: s.iconImage,
+                        }}
+                        onClose={() => queryClient.invalidateQueries({ queryKey: ["storefront-root-categories"] })}
+                        trigger={
+                          <div 
+                            className="admin-cat-edit-btn" 
+                            style={{ position: "absolute", top: 8, insetInlineEnd: 8, zIndex: 20, width: 28, height: 28, borderRadius: "50%", background: "rgba(10,15,22,0.8)", backdropFilter: "blur(8px)", border: "1px solid rgba(0,229,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#00e5ff", cursor: "pointer" }}
+                          >
+                            <Settings size={12} />
+                          </div>
+                        }
+                      />
+                    )}
                     <span className="soon-badge">{t("cat.coming_soon")}</span>
                     <div className="subcat-ic" style={{ background: s.bg || undefined }}>{iconInner}</div>
                     <div>
