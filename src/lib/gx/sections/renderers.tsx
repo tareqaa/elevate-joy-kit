@@ -337,7 +337,7 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
               </Link>
             );
           })}
-          {isAdmin && (
+          {isAdmin && data.enable_quick_add !== false && (
             <QuickAddCategory 
               className="cat-card-big add-category-card" 
               label={lang === "ar" ? "إضافة قسم جديد" : "Add New Category"}

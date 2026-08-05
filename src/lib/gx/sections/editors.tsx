@@ -193,6 +193,10 @@ export function CategoriesEditor({ data, onChange }: { data: CategoriesData; onC
       <div className="grid grid-cols-2 gap-2">
         <TextField label="العنوان" value={data.title ?? null} onChange={(v) => onChange({ ...data, title: v ?? undefined })} />
         <TextField label="النص العلوي" value={data.eyebrow ?? null} onChange={(v) => onChange({ ...data, eyebrow: v ?? undefined })} />
+        <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/40 p-2 col-span-2">
+          <Label className="text-slate-100 text-xs">تفعيل الإضافة السريعة (+)</Label>
+          <Switch checked={data.enable_quick_add ?? true} onCheckedChange={(v) => onChange({ ...data, enable_quick_add: v })} />
+        </div>
       </div>
       <div className="space-y-2">
         {CATEGORY_LINKS.map((c) => {
