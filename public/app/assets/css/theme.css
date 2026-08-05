@@ -288,15 +288,15 @@ html[dir="ltr"] .gx-search-item{ text-align:left; }
   background:radial-gradient(circle at 30% 20%, rgba(255,255,255,0.14), transparent 60%);
 }
 .discount-badge{
-  position:absolute; top:12px; inset-inline-end:12px; z-index:2;
+  position:absolute; top:12px; inset-inline-end:12px; z-index:3;
   background:var(--pink); border:none; outline:none; color:#fff; font-weight:900; font-size:12px;
-  padding:4px 10px; border-radius:999px; left:auto; margin-inline-start:1px; white-space:nowrap;
-  overflow:hidden;
+  padding:4px 10px; border-radius:999px; white-space:nowrap;
+  overflow:hidden; box-shadow: 0 0 0 2px var(--card);
 }
 .tag-badge{
-  position:absolute; top:12px; left:12px; z-index:2;
+  position:absolute; top:12px; inset-inline-start:12px; z-index:3;
   background:var(--lime); color:#05060a; font-weight:900; font-size:11px;
-  padding:4px 10px; border-radius:999px; left:auto;
+  padding:4px 10px; border-radius:999px; box-shadow: 0 0 0 2px var(--card);
 }
 .prod-body{padding:16px 18px 18px; display:flex; flex-direction:column; gap:10px; flex:1;}
 .prod-stars{color:var(--lime); font-size:12px; letter-spacing:1px;}
