@@ -369,12 +369,46 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
 export function BestsellersRenderer({ data }: { data: BestsellersData }) {
   const { format } = useCurrency();
   const { t, lang } = useLang();
+  const [dbItems, setDbItems] = useState<any[]>([]);
   const order = data.order || [];
   const base = getFeaturedItems();
-  const items: FeaturedItem[] = order.length > 0
-    ? [...order.map((id) => base.find((b) => b.cartId === id)).filter((x): x is FeaturedItem => !!x),
-       ...base.filter((b) => !order.includes(b.cartId))]
-    : base;
+
+  useEffect(() => {
+    import("@/lib/gx/catalog.functions").then(m => {
+      m.getFeaturedCatalogItems().then(items => {
+        if (items) setDbItems(items);
+      });
+    });
+  }, []);
+
+  const items = useMemo(() => {
+    // Merge DB items into the list. Prefer DB items if slug matches.
+    const merged = [...base];
+    dbItems.forEach(db => {
+      const idx = merged.findIndex(m => m.product === db.slug);
+      const mapped: FeaturedItem = {
+        cartId: db.slug, // Use slug as cartId for simple mapping
+        product: db.slug,
+        name: db.nameEn || db.nameAr,
+        icon: db.icon || "📦",
+        bg: db.thumbBg || "var(--surface-2)",
+        price: db.basePriceJOD || 0,
+        oldPrice: (db.basePriceJOD || 0) * 1.2, // Mock old price for UI
+        link: `/product/${db.slug}`
+      };
+      if (idx !== -1) merged[idx] = mapped;
+      else merged.push(mapped);
+    });
+
+    if (order.length > 0) {
+      return [
+        ...order.map((id) => merged.find((b) => b.cartId === id)).filter((x): x is FeaturedItem => !!x),
+        ...merged.filter((b) => !order.includes(b.cartId))
+      ];
+    }
+    return merged;
+  }, [dbItems, base, order]);
+
   return (
     <section className="section" id="products" style={{ background: "var(--bg2)" }}>
       <div className="wrap">
