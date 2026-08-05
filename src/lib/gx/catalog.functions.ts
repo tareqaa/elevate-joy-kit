@@ -297,7 +297,7 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
           deliveryMethodAr: p.delivery_method_ar,
           deliveryMethodEn: p.delivery_method_en,
           deliveryDetails: p.delivery_details,
-          page_template: p.page_template,
+          pageTemplate: p.page_template || "standard",
           deliveryType: p.delivery_type,
           basePriceJOD: p.base_price_jod,
           region: p.region,
