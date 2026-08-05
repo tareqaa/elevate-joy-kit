@@ -456,12 +456,6 @@ export function GiftCardTemplate({ product, onEdit }: { product: CatalogProduct;
           </div>
         </section>
       )}
-      {managingVariants && (
-        <VariantsDialog
-          product={managingVariants}
-          onClose={() => setManagingVariants(null)}
-        />
-      )}
     </>
   );
 }
@@ -470,6 +464,7 @@ export function GiftCardTemplate({ product, onEdit }: { product: CatalogProduct;
 export function ProductTemplate({ product }: { product: CatalogProduct }) {
   const [editing, setEditing] = useState<any>(null);
   const [managingVariants, setManagingVariants] = useState<any>(null);
+  const { lang } = useLang();
 
   // We need to fetch the full product row for the editor since CatalogProduct is a transformed DTO
   async function triggerEdit() {
@@ -477,10 +472,24 @@ export function ProductTemplate({ product }: { product: CatalogProduct }) {
     if (data) setEditing(data);
   }
 
+  function triggerVariants() {
+    triggerEdit(); // We still need the full product row
+  }
+
+  // Effect to handle trigger variants after product is loaded
+  useEffect(() => {
+    if (editing && !managingVariants && window.location.hash === "#variants") {
+      setManagingVariants(editing);
+      setEditing(null);
+    }
+  }, [editing, managingVariants]);
+
   const commonProps = { 
     product, 
-    onEdit: triggerEdit 
+    onEdit: triggerEdit,
+    onManageVariants: triggerVariants
   };
+
 
   return (
     <>
@@ -505,6 +514,13 @@ export function ProductTemplate({ product }: { product: CatalogProduct }) {
           }}
         />
       )}
+
+      {managingVariants && (
+        <VariantsDialog
+          product={managingVariants}
+          onClose={() => setManagingVariants(null)}
+        />
+
     </>
   );
 }
