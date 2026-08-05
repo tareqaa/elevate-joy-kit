@@ -20,7 +20,7 @@ export type Product = {
   image_url: string | null; base_price_jod: number | null;
   badge: string | null; purchases_count: number;
   is_featured: boolean; is_active: boolean; sort_order: number;
-  page_template: "standard" | "multi_account" | "dual_plans" | "gift_card";
+  page_template: "standard" | "gift_card";
   icon: string | null; icon_image_url: string | null;
   thumb_bg: string | null; accent_color: string | null; card_gradient: string | null;
   delivery_type: "code" | "account" | "topup" | "manual";
