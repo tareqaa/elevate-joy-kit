@@ -24,7 +24,7 @@ export const Route = createFileRoute("/category/$slug")({
         { property: "og:type", content: "website" },
         { name: "twitter:card", content: "summary_large_image" },
       ],
-      links: getStoreHeadLinks(["category"]),
+      links: getStoreHeadLinks(),
     };
   },
   errorComponent: ({ error }) => (

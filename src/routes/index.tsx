@@ -17,7 +17,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "GX Store" },
       { property: "og:description", content: "Your digital store for all subscriptions and game cards." },
     ],
-    links: getStoreHeadLinks(["home"]),
+    links: getStoreHeadLinks(),
   }),
   component: Home,
 });

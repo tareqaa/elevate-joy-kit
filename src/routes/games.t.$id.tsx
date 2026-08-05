@@ -20,7 +20,7 @@ export const Route = createFileRoute("/games/t/$id")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: getStoreHeadLinks(["games"]),
+    links: getStoreHeadLinks(),
   }),
   component: TournamentPageLazy,
 });

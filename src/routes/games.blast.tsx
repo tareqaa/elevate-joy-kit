@@ -43,7 +43,7 @@ export const Route = createFileRoute("/games/blast")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: getStoreHeadLinks(["games"]),
+    links: getStoreHeadLinks(),
   }),
   component: BlastPage,
 });
@@ -512,7 +512,8 @@ const MoveTimer = memo(function MoveTimer({
 
   useEffect(() => {
     if (timerActive) moveStart.current = performance.now();
-  }, [timerActive, game.moves.length, game.moveLimitMs]);
+  }, [timerActive, trayGen, game.moveLimitMs]);
+
 
   const previewCells = useMemo(() => {
     const map = new Map<number, boolean>();
@@ -618,8 +619,11 @@ const MoveTimer = memo(function MoveTimer({
     if (!d || !t || !t.ok) return;
 
     const g = gameRef.current;
-    const durationMs = performance.now() - moveStart.current;
+    const now = performance.now();
+    const durationMs = now - moveStart.current;
+    moveStart.current = now; // update moveStart for the next move
     const res = placePiece(g, d.trayIndex, t.row, t.col, durationMs);
+
     if (!res.ok) return;
 
     const justPlaced = d.piece.cells.map(([dr, dc]) => idx(t.row + dr, t.col + dc));

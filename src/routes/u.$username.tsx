@@ -14,7 +14,7 @@ export const Route = createFileRoute("/u/$username")({
       { property: "og:type", content: "profile" },
       { name: "twitter:card", content: "summary" },
     ],
-    links: getStoreHeadLinks(["home", "product"]),
+    links: getStoreHeadLinks(),
   }),
   component: () => {
     const { username } = Route.useParams();

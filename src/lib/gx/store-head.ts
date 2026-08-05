@@ -1,29 +1,29 @@
 // Shared <link> tags for the legacy store CSS bundle.
-// Now optimized to split core styles from page-specific ones.
-
-export const CORE_CSS = [
+export const STORE_HEAD_LINKS = [
   { rel: "stylesheet", href: "/app/assets/css/theme.css", "data-gx-store": "/app/assets/css/theme.css" },
+  { rel: "stylesheet", href: "/app/assets/css/home.css", "data-gx-store": "/app/assets/css/home.css" },
+  { rel: "stylesheet", href: "/app/assets/css/cart.css", "data-gx-store": "/app/assets/css/cart.css" },
+  { rel: "stylesheet", href: "/app/assets/css/faq.css", "data-gx-store": "/app/assets/css/faq.css" },
+  { rel: "stylesheet", href: "/app/assets/css/policy.css", "data-gx-store": "/app/assets/css/policy.css" },
+  { rel: "stylesheet", href: "/app/assets/css/product.css", "data-gx-store": "/app/assets/css/product.css" },
+  { rel: "stylesheet", href: "/app/assets/css/category.css", "data-gx-store": "/app/assets/css/category.css" },
+  { rel: "stylesheet", href: "/app/assets/css/snapchat.css", "data-gx-store": "/app/assets/css/snapchat.css" },
+  { rel: "stylesheet", href: "/app/assets/css/fortnite.css", "data-gx-store": "/app/assets/css/fortnite.css" },
+  { rel: "stylesheet", href: "/app/assets/css/giftcard.css", "data-gx-store": "/app/assets/css/giftcard.css" },
+  { rel: "stylesheet", href: "/app/assets/css/coming-soon.css", "data-gx-store": "/app/assets/css/coming-soon.css" },
   { rel: "stylesheet", href: "/app/assets/css/gx-animations.css", "data-gx-store": "/app/assets/css/gx-animations.css" },
+  { rel: "stylesheet", href: "/app/assets/css/games.css", "data-gx-store": "/app/assets/css/games.css" },
 ];
 
-export const PAGE_CSS = {
-  home: { rel: "stylesheet", href: "/app/assets/css/home.css", "data-gx-store": "/app/assets/css/home.css" },
-  cart: { rel: "stylesheet", href: "/app/assets/css/cart.css", "data-gx-store": "/app/assets/css/cart.css" },
-  faq: { rel: "stylesheet", href: "/app/assets/css/faq.css", "data-gx-store": "/app/assets/css/faq.css" },
-  policy: { rel: "stylesheet", href: "/app/assets/css/policy.css", "data-gx-store": "/app/assets/css/policy.css" },
-  product: { rel: "stylesheet", href: "/app/assets/css/product.css", "data-gx-store": "/app/assets/css/product.css" },
-  category: { rel: "stylesheet", href: "/app/assets/css/category.css", "data-gx-store": "/app/assets/css/category.css" },
-  snapchat: { rel: "stylesheet", href: "/app/assets/css/snapchat.css", "data-gx-store": "/app/assets/css/snapchat.css" },
-  fortnite: { rel: "stylesheet", href: "/app/assets/css/fortnite.css", "data-gx-store": "/app/assets/css/fortnite.css" },
-  giftcard: { rel: "stylesheet", href: "/app/assets/css/giftcard.css", "data-gx-store": "/app/assets/css/giftcard.css" },
-  coming_soon: { rel: "stylesheet", href: "/app/assets/css/coming-soon.css", "data-gx-store": "/app/assets/css/coming-soon.css" },
-  games: { rel: "stylesheet", href: "/app/assets/css/games.css", "data-gx-store": "/app/assets/css/games.css" },
-} as const;
+export const CORE_CSS = STORE_HEAD_LINKS;
+export const PAGE_CSS = {} as any;
 
 /**
- * Helper to generate head links with core CSS + specific pages
+ * Helper to generate head links.
+ * Reverted to return the full list unconditionally.
  */
-export function getStoreHeadLinks(keys: (keyof typeof PAGE_CSS)[] = []) {
-  const specific = keys.map(k => PAGE_CSS[k]);
-  return [...CORE_CSS, ...specific];
+export function getStoreHeadLinks(_keys?: any) {
+  return STORE_HEAD_LINKS;
 }
+
+

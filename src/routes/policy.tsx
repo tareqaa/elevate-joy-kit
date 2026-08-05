@@ -11,7 +11,7 @@ export const Route = createFileRoute("/policy")({
       { title: "Warranty & Refunds — GX Store" },
       { name: "description", content: "GX Store warranty and refund policy details." },
     ],
-    links: getStoreHeadLinks(["policy"]),
+    links: getStoreHeadLinks(),
   }),
   component: PolicyPage,
 });

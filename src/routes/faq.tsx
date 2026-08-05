@@ -12,7 +12,7 @@ export const Route = createFileRoute("/faq")({
       { title: "FAQ — GX Store" },
       { name: "description", content: "Answers to the most common questions about ordering, delivery, and payment at GX Store." },
     ],
-    links: getStoreHeadLinks(["faq"]),
+    links: getStoreHeadLinks(),
   }),
   component: FaqPage,
 });
