@@ -10,9 +10,10 @@ interface QuickAddProductProps {
   product?: any;
   open?: boolean;
   onClose?: () => void;
+  trigger?: React.ReactNode;
 }
 
-export function QuickAddProduct({ categoryId, className, label, product, open: controlledOpen, onClose }: QuickAddProductProps) {
+export function QuickAddProduct({ categoryId, className, label, product, open: controlledOpen, onClose, trigger }: QuickAddProductProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   
@@ -26,7 +27,7 @@ export function QuickAddProduct({ categoryId, className, label, product, open: c
   
   const { lang } = useLang();
 
-  const trigger = (
+  const defaultTrigger = (
     <button 
       type="button"
       className={className} 
@@ -44,7 +45,13 @@ export function QuickAddProduct({ categoryId, className, label, product, open: c
 
   return (
     <>
-      {controlledOpen === undefined && trigger}
+      {controlledOpen === undefined && (
+        trigger ? (
+          <div onClick={() => setOpen(true)} className="inline-block cursor-pointer">
+            {trigger}
+          </div>
+        ) : defaultTrigger
+      )}
 
       {open && (
         <ProductDialog
