@@ -1,4 +1,3 @@
-export function BlastPageInternal() {
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
@@ -48,7 +47,7 @@ export const Route = createFileRoute("/games/blast")({
   component: BlastPageLazy,
 });
 
-function BlastPageLazy() {
+export function BlastPageLazy() {
   const [Comp, setComp] = useState<any>(null);
 
   useEffect(() => {
@@ -63,7 +62,7 @@ function BlastPageLazy() {
 
 const BEST_KEY = "gx_blast_best";
 
-function BlastPage() {
+export function BlastPage() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
   const { t: tournamentId } = Route.useSearch();
@@ -78,7 +77,7 @@ const BOARD_RESIZE_DEBOUNCE_MS = 160;
 
 type BoardLayout = { boardPx: number; cellPx: number };
 
-function calculateBoardLayout(availableWidth: number, playHeight: number, hudHeight: number): BoardLayout {
+export function calculateBoardLayout(availableWidth: number, playHeight: number, hudHeight: number): BoardLayout {
   const availablePx = Math.floor(availableWidth);
   const fixedPx = BOARD_GAP_PX * (BOARD_SIZE - 1) + BOARD_PADDING_PX * 2 + BOARD_BORDER_PX * 2;
   let cellPx = Math.max(1, Math.floor((availablePx - fixedPx) / BOARD_SIZE));
@@ -100,7 +99,7 @@ function calculateBoardLayout(availableWidth: number, playHeight: number, hudHei
 }
 
 /** bevel band thickness ~14% of the cube side, always an integer number of px */
-function bevelPx(cell: number): number {
+export function bevelPx(cell: number): number {
   return Math.max(2, Math.floor(cell * 0.14));
 }
 
@@ -117,7 +116,7 @@ const VIVID: Record<number, string> = {
   9: "#F08A22", // برتقالي
 };
 
-function mixHex(hex: string, target: number, amount: number): string {
+export function mixHex(hex: string, target: number, amount: number): string {
   const n = parseInt(hex.slice(1), 16);
   const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) =>
     Math.round(v + (target - v) * amount),
@@ -148,7 +147,7 @@ const FACES: Record<number, React.CSSProperties> = Object.fromEntries(
 
 
 
-function face(colorId: number): React.CSSProperties | undefined {
+export function face(colorId: number): React.CSSProperties | undefined {
   return FACES[colorId];
 }
 
@@ -169,7 +168,7 @@ type ClearCell = { order: number; color: number };
  * Row/col come STRICTLY from hit-testing the DOM: no board width, no cell size,
  * no gap math. Works with any layout, direction or zoom level.
  */
-function cellUnderPoint(x: number, y: number): { row: number; col: number } | null {
+export function cellUnderPoint(x: number, y: number): { row: number; col: number } | null {
   if (typeof document === "undefined") return null;
   const el = document.elementFromPoint(x, y) as HTMLElement | null;
   const hit = el?.closest?.("[data-row][data-col]") as HTMLElement | null;
@@ -274,7 +273,7 @@ const MoveTimer = memo(function MoveTimer({
   );
 });
 
-function BlastPageInternal() {
+export function BlastPageInternal() {
 
   const { lang, dir } = useLang();
   const ar = lang === "ar";
@@ -1027,5 +1026,4 @@ function BlastPageInternal() {
 }
 
 
-}
 }
