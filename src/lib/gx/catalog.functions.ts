@@ -154,7 +154,6 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
         "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, theme_gradient, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, base_price_jod, region, is_active, is_featured, badge_ar, badge_en, label_color, categories:category_id (name_ar, name_en)",
       )
       .eq("slug", data.slug)
-      .eq("is_active", true)
       .maybeSingle();
     if (!row) return null;
 
@@ -247,7 +246,6 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
       .from("categories")
       .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, page_template, is_active, accent_color, theme_gradient")
       .eq("slug", data.slug)
-      .eq("is_active", true)
       .maybeSingle();
     if (!row) return null;
     const c = row as Record<string, any>;
@@ -256,7 +254,6 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
       .from("categories")
       .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_url, theme_gradient, page_template, sort_order")
       .eq("parent_id", c.id)
-      .eq("is_active", true)
       .order("sort_order", { ascending: true });
 
     const kidIds = (kids ?? []).map((k: Record<string, any>) => k.id);
