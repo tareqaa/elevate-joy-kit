@@ -233,3 +233,39 @@ input[type="number"] {
   font-weight: 800;
   color: var(--gx-primary, #00e5ff);
 }
+
+/* GX Store Global Overrides */
+.prod-thumb {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+.discount-badge {
+  position: absolute !important;
+  top: 10px !important;
+  inset-inline-end: 10px !important;
+  z-index: 20 !important;
+  transform: translateZ(0); /* force GPU layer */
+}
+
+/* Fix text rendering for Arabic numbers mixed with text in Safari/Chrome */
+[dir="ltr"] {
+  unicode-bidi: plaintext;
+}
+
+/* Ensure smooth hydration transitions */
+.gx-home-root {
+  min-height: 100vh;
+}
+
+.section-loading-placeholder {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}

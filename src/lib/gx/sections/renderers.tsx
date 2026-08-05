@@ -370,7 +370,9 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
               <div key={p.cartId} className="prod-card">
                 <Link to={p.link as never} style={{ display: "contents" }}>
                   <div className="prod-thumb" style={{ background: p.bg }}>
-                    <DiscountBadge value={discount} />
+                    <div className="absolute top-2.5 right-2.5 z-10">
+                      <DiscountBadge value={discount} />
+                    </div>
                     {iconEl}
                   </div>
                 </Link>
