@@ -352,4 +352,48 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
         };
       }),
     };
+
+export const getFeaturedCatalogItems = createServerFn({ method: "GET" })
+  .handler(async (): Promise<CatalogProduct[]> => {
+    const supabase = publicClient();
+    const { data: prods } = await supabase
+      .from("products")
+      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, theme_gradient, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, base_price_jod, region, is_active, is_featured, badge_ar, badge_en, label_color, category_id, categories:category_id (name_ar, name_en)")
+      .eq("is_active", true)
+      .eq("is_featured", true)
+      .limit(20);
+    
+    return (prods ?? []).map((p: any) => ({
+      slug: p.slug,
+      nameAr: p.name_ar,
+      nameEn: p.name_en || p.name_ar,
+      taglineAr: p.tagline_ar,
+      taglineEn: p.tagline_en,
+      descriptionAr: p.description_ar,
+      descriptionEn: p.description_en,
+      icon: p.icon,
+      iconImage: p.icon_image_url,
+      thumbBg: p.thumb_bg,
+      accentColor: p.accent_color,
+      cardGradient: p.card_gradient,
+      categoryNameAr: p.categories?.name_ar,
+      categoryNameEn: p.categories?.name_en || p.categories?.name_ar,
+      identifierLabelAr: p.identifier_label_ar,
+      identifierLabelEn: p.identifier_label_en,
+      identifierPlaceholder: p.identifier_placeholder,
+      deliveryMethodAr: p.delivery_method_ar,
+      deliveryMethodEn: p.delivery_method_en,
+      deliveryDetails: p.delivery_details,
+      pageTemplate: p.page_template || "standard",
+      deliveryType: p.delivery_type || "manual",
+      basePriceJOD: p.base_price_jod,
+      region: p.region,
+      isFeatured: p.is_featured,
+      badgeAr: p.badge_ar,
+      badgeEn: p.badge_en,
+      labelColor: p.label_color,
+      variants: [],
+      features: [],
+      themeGradient: p.theme_gradient
+    }));
   });
