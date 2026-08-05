@@ -5,7 +5,8 @@ export function setupAuthListener() {
   if (typeof window === "undefined") return;
   
   supabase.auth.onAuthStateChange(async (event, session) => {
-    // Check for "INITIAL_SESSION" or "SIGNED_IN" logic
+    // Both INITIAL_SESSION (app start) and SIGNED_IN (user login) are relevant
+    // In standard Supabase, SIGNED_UP also triggers a SIGNED_IN event usually.
     if ((event === "INITIAL_SESSION" || event === "SIGNED_IN") && session?.user) {
       const user = session.user;
       
