@@ -38,6 +38,24 @@ export function QuickAddCategory({ parentId = null, className, label, category, 
     imageUrl: category?.icon_url || ""
   });
 
+  useEffect(() => {
+    if (open) {
+      setForm({
+        nameAr: category?.name_ar || "",
+        nameEn: category?.name_en || "",
+        descAr: category?.description_ar || "",
+        descEn: category?.description_en || "",
+        taglineAr: category?.tagline_ar || "",
+        taglineEn: category?.tagline_en || "",
+        pageTemplate: category?.page_template || "standard",
+        icon: category?.icon || "💎",
+        accent: category?.accent_color || "#00e5ff",
+        gradient: category?.theme_gradient || "linear-gradient(135deg,#00e5ff,#0091ff)",
+        imageUrl: category?.icon_url || ""
+      });
+    }
+  }, [open, category]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.nameAr && !form.nameEn) {
