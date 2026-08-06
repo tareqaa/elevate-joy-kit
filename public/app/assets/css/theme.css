@@ -294,10 +294,11 @@ html[dir="ltr"] .gx-search-item{ text-align:left; }
   unicode-bidi:isolate;
 }
 .tag-badge{
-  position:absolute; top:12px; left:12px; z-index:2;
+  position:absolute; top:12px; inset-inline-start:12px; z-index:2;
   background:var(--lime); color:#05060a; font-weight:900; font-size:11px;
   padding:4px 10px; border-radius:999px;
 }
+
 .prod-body{padding:16px 18px 18px; display:flex; flex-direction:column; gap:10px; flex:1;}
 .prod-stars{color:var(--lime); font-size:12px; letter-spacing:1px;}
 .prod-name{
