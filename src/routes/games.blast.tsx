@@ -456,6 +456,25 @@ function BlastPage() {
     return () => { alive = false; };
   }, [tournamentId]);
 
+  /* ----- tournament: open a server-issued play session for this run -----
+     Scores are only accepted together with the run id the server hands out,
+     so a fabricated score can no longer be posted straight to the RPC. */
+  const runRef = useRef<{ key: string; id: string | null }>({ key: "", id: null });
+  useEffect(() => {
+    if (!activeTid || game.over) return;
+    const key = `${activeTid}:${game.seed}`;
+    if (runRef.current.key === key) return;
+    runRef.current = { key, id: null };
+    let alive = true;
+    void (async () => {
+      const { data } = await supabase.rpc("start_tournament_run", { _tournament_id: activeTid });
+      const res = data as { ok?: boolean; run_id?: string } | null;
+      if (!alive || !res?.ok || !res.run_id) return;
+      if (runRef.current.key === key) runRef.current = { key, id: res.run_id };
+    })();
+    return () => { alive = false; };
+  }, [activeTid, game.seed, game.over]);
+
   /* ----- tournament: submit the finished run once, then keep the rank live ----- */
   const submitted = useRef<string>("");
   const [arenaRank, setArenaRank] = useState<{ rank: number | null; total: number | null; delta: number | null } | null>(null);
