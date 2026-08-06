@@ -1586,6 +1586,44 @@ export type Database = {
           },
         ]
       }
+      tournament_runs: {
+        Row: {
+          created_at: string
+          id: string
+          score: number | null
+          started_at: string
+          submitted_at: string | null
+          tournament_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          score?: number | null
+          started_at?: string
+          submitted_at?: string | null
+          tournament_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          score?: number | null
+          started_at?: string
+          submitted_at?: string | null
+          tournament_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_runs_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "game_tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tournament_winners: {
         Row: {
           awarded: boolean
@@ -2179,8 +2217,9 @@ export type Database = {
         Returns: Json
       }
       spin_wheel: { Args: never; Returns: Json }
+      start_tournament_run: { Args: { _tournament_id: string }; Returns: Json }
       submit_tournament_score: {
-        Args: { _score: number; _tournament_id: string }
+        Args: { _run_id?: string; _score: number; _tournament_id: string }
         Returns: Json
       }
       sync_user_level: { Args: { _user_id: string }; Returns: undefined }
