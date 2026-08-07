@@ -6,7 +6,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { GameIcon } from "@/components/gx/games/GameIcon";
 import { ArenaFx } from "@/components/gx/games/ArenaFx";
-import { formatCountdownFull, formatDateTime } from "@/lib/gx/games/time";
+import { formatCountdownFull, formatDateTime, gameLabel } from "@/lib/gx/games/time";
 
 
 export const Route = createFileRoute("/games/t/$id")({
@@ -211,7 +211,7 @@ function TournamentPage() {
         <header className={`arena-hero`} style={{ marginBottom: 18 }}>
           <ArenaFx />
           <div className="ar-in">
-            <span className="ar-kicker">GX BLAST ARENA</span>
+            <span className="ar-kicker">{gameLabel(t.game_slug).toUpperCase()} ARENA</span>
             <div className="arc-head">
               <div className="arc-ic" aria-hidden><GameIcon slug={t.game_slug} size={40} /></div>
               <h1 className="ar-title" style={{ fontSize: "clamp(24px,4.6vw,40px)" }}>{ar ? t.title_ar : t.title_en}</h1>

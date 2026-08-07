@@ -325,13 +325,23 @@ function TournamentsAdmin() {
                   <label className="text-xs text-muted-foreground">الاسم بالإنجليزية</label>
                   <Input value={edit.title_en ?? ""} onChange={(e) => setEdit({ ...edit, title_en: e.target.value })} />
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">معرّف اللعبة</label>
-                  <Input value={edit.game_slug ?? ""} onChange={(e) => setEdit({ ...edit, game_slug: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">مسار اللعبة</label>
-                  <Input value={edit.game_path ?? ""} onChange={(e) => setEdit({ ...edit, game_path: e.target.value })} />
+                <div className="col-span-2">
+                  <label className="text-xs text-muted-foreground">اللعبة</label>
+                  <select
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    value={edit.game_slug ?? "gx-blast"}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "gx-blast") {
+                        setEdit({ ...edit, game_slug: "gx-blast", game_path: "/games/blast", game_icon: "🧩" });
+                      } else if (v === "gx-flippy") {
+                        setEdit({ ...edit, game_slug: "gx-flippy", game_path: "/games/flippy", game_icon: "🦅" });
+                      }
+                    }}
+                  >
+                    <option value="gx-blast">🧩 GX Blast</option>
+                    <option value="gx-flippy">🦅 GX Flippy Bird</option>
+                  </select>
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">تبدأ في</label>

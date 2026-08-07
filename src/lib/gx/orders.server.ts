@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { loadCatalogPriceOverrides, priceCartItems, isAdminUser, loadDbBasePrices } from "./pricing.server";
+import { supabaseFetch } from "@/lib/gx/supabase-request";
 
 
 type CreateOrderInput = {
@@ -36,26 +37,6 @@ type CreateOrderInput = {
 };
 
 
-function isNewSupabaseApiKey(value: string): boolean {
-  return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
-}
-
-function createSupabaseFetch(supabaseKey: string): typeof fetch {
-  return (input, init) => {
-    const headers = new Headers(
-      typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
-    );
-    if (init?.headers) {
-      new Headers(init.headers).forEach((value, key) => headers.set(key, value));
-    }
-    if (isNewSupabaseApiKey(supabaseKey) && headers.get("Authorization") === `Bearer ${supabaseKey}`) {
-      headers.delete("Authorization");
-    }
-    headers.set("apikey", supabaseKey);
-    return fetch(input, { ...init, headers });
-  };
-}
-
 /**
  * Server-side Supabase client used to place the order.
  * Prefers the service-role key. When it is not configured, it falls back to
@@ -81,7 +62,7 @@ function getOrderClient(accessToken?: string | null) {
   const useUserToken = !serviceKey && !!accessToken;
   return createClient<Database>(url, key, {
     global: {
-      fetch: createSupabaseFetch(key),
+      fetch: supabaseFetch(key),
       ...(useUserToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {}),
     },
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },

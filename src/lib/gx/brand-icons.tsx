@@ -26,8 +26,47 @@ const VBUCKS_TIER_GRADIENTS: Record<number, string> = {
   12500: "linear-gradient(135deg,#ffcf47,#c76a0a)",
 };
 
+const VBUCKS_TIER_SIZES: Record<number, number> = {
+  800: 38,
+  2400: 44,
+  4500: 50,
+  12500: 56,
+};
+
 export function VbucksIcon({ tier }: { tier: number }) {
-  return tileImg("/app/assets/img/vbucks.png", "V-Bucks", VBUCKS_TIER_GRADIENTS[tier] || "linear-gradient(135deg,#12c2c2,#0a6e8c)");
+  const size = VBUCKS_TIER_SIZES[tier] || 42;
+  const gradient = VBUCKS_TIER_GRADIENTS[tier] || "linear-gradient(135deg,#12c2c2,#0a6e8c)";
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 60,
+        height: 60,
+        borderRadius: 16,
+        background: gradient,
+        border: "1.5px solid rgba(255,255,255,0.3)",
+        boxShadow: "0 8px 20px -6px rgba(0,0,0,0.6)",
+        position: "relative",
+      }}
+    >
+      <img
+        src="/app/assets/img/vbucks.png"
+        alt="V-Bucks"
+        width={size}
+        height={size}
+        style={{
+          display: "block",
+          width: size,
+          height: size,
+          objectFit: "contain",
+          filter: "drop-shadow(0 3px 6px rgba(0,0,0,0.4))",
+          transition: "transform 0.25s ease",
+        }}
+      />
+    </span>
+  );
 }
 
 export function CrewIcon() {
@@ -35,13 +74,10 @@ export function CrewIcon() {
 }
 
 export function AdobeIcon() {
-  return (
-    <img
-      src="/app/assets/img/adobe-cc.webp"
-      alt="Adobe Creative Cloud"
-      width={52} height={52}
-      style={{ display: "block", borderRadius: 14, background: "#fff", padding: 4, boxShadow: "0 4px 14px -6px rgba(0,0,0,0.35)" }}
-    />
+  return tileImg(
+    "/app/assets/img/adobe-cc.webp",
+    "Adobe Creative Cloud",
+    "linear-gradient(135deg,#ff2a2a,#990000)"
   );
 }
 

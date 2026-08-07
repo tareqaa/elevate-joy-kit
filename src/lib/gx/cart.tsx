@@ -125,8 +125,21 @@ function resolve(items: CartItem[]): ResolvedItem[] {
           usernames,
         };
       }
-      const plan = findPlanByCartId(i.cartId);
-      return plan ? { ...plan, qty: i.qty, usernames } : null;
+      const plan = findPlanByCartId(i.cartId) || findDbPlanByCartId(i.cartId);
+      if (plan) return { ...plan, qty: i.qty, usernames };
+      if (i.cartId) {
+        return {
+          cartId: i.cartId,
+          product: i.cartId,
+          name: i.cartId,
+          icon: "🎮",
+          bg: "linear-gradient(145deg,#1a1e2a,#0a0c12)",
+          price: 0,
+          qty: i.qty,
+          usernames,
+        };
+      }
+      return null;
     })
     .filter((x): x is ResolvedItem => x !== null);
 }
@@ -198,12 +211,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setRawItems(next);
   }, []);
 
-  // Catalog prices are edited live from the admin panel; re-resolve when they change.
+  // Catalog prices and database variants are edited live; re-resolve when they change.
   const [priceVersion, setPriceVersion] = useState(0);
   useEffect(() => {
     const on = () => setPriceVersion((v) => v + 1);
     window.addEventListener("gx:prices-updated", on);
-    return () => window.removeEventListener("gx:prices-updated", on);
+    window.addEventListener("gx:db-variants-updated", on);
+    void loadDbVariants(true);
+    return () => {
+      window.removeEventListener("gx:prices-updated", on);
+      window.removeEventListener("gx:db-variants-updated", on);
+    };
   }, []);
   const items = useMemo(() => resolve(rawItems), [rawItems, priceVersion]);
   const count = items.reduce((s, i) => s + i.qty, 0);
@@ -371,6 +389,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const add = useCallback(
     (cartId: string, qty = 1) => {
+      void loadDbVariants(true);
       const next = [...rawItems];
       const ex = next.find((i) => i.cartId === cartId && !i.custom);
       if (ex) ex.qty += qty;
@@ -382,6 +401,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addSnap = useCallback(
     (cartId: string, usernames: string[]) => {
+      void loadDbVariants(true);
       const clean = usernames.map((u) => (u || "").trim()).filter(Boolean);
       if (!clean.length) return;
       const next = [...rawItems];
@@ -400,6 +420,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const buyNow = useCallback(
     (cartId: string, qty = 1) => {
+      void loadDbVariants(true);
       const next = [...rawItems];
       const ex = next.find((i) => i.cartId === cartId && !i.custom);
       if (ex) ex.qty = Math.max(qty, ex.qty);

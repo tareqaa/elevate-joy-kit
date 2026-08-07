@@ -28,7 +28,9 @@ import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as GamesIndexRouteImport } from './routes/games.index'
+import { Route as GamesSlugRouteImport } from './routes/games.$slug'
 import { Route as GamesBlastRouteImport } from './routes/games.blast'
+import { Route as GamesFlippyRouteImport } from './routes/games.flippy'
 import { Route as GiftCardsSlugRouteImport } from './routes/gift-cards.$slug'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -42,6 +44,7 @@ import { Route as AuthenticatedAdminCouponsRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminHomeRouteImport } from './routes/_authenticated/admin/home'
 import { Route as AuthenticatedAdminLeaderboardRouteImport } from './routes/_authenticated/admin/leaderboard'
 import { Route as AuthenticatedAdminLoyaltyRouteImport } from './routes/_authenticated/admin/loyalty'
+import { Route as AuthenticatedAdminMiniGamesRouteImport } from './routes/_authenticated/admin/mini-games'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
 import { Route as AuthenticatedAdminReviewsRouteImport } from './routes/_authenticated/admin/reviews'
@@ -147,9 +150,19 @@ const GamesIndexRoute = GamesIndexRouteImport.update({
   path: '/games/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GamesSlugRoute = GamesSlugRouteImport.update({
+  id: '/games/$slug',
+  path: '/games/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GamesBlastRoute = GamesBlastRouteImport.update({
   id: '/games/blast',
   path: '/games/blast',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesFlippyRoute = GamesFlippyRouteImport.update({
+  id: '/games/flippy',
+  path: '/games/flippy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GiftCardsSlugRoute = GiftCardsSlugRouteImport.update({
@@ -225,6 +238,12 @@ const AuthenticatedAdminLoyaltyRoute =
     path: '/loyalty',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminMiniGamesRoute =
+  AuthenticatedAdminMiniGamesRouteImport.update({
+    id: '/mini-games',
+    path: '/mini-games',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminOrdersRoute =
   AuthenticatedAdminOrdersRouteImport.update({
     id: '/orders',
@@ -289,7 +308,9 @@ export interface FileRoutesByFullPath {
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/category/$slug': typeof CategorySlugRoute
+  '/games/$slug': typeof GamesSlugRoute
   '/games/blast': typeof GamesBlastRoute
+  '/games/flippy': typeof GamesFlippyRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -303,6 +324,7 @@ export interface FileRoutesByFullPath {
   '/admin/home': typeof AuthenticatedAdminHomeRoute
   '/admin/leaderboard': typeof AuthenticatedAdminLeaderboardRoute
   '/admin/loyalty': typeof AuthenticatedAdminLoyaltyRoute
+  '/admin/mini-games': typeof AuthenticatedAdminMiniGamesRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/reviews': typeof AuthenticatedAdminReviewsRoute
@@ -330,7 +352,9 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/account': typeof AuthenticatedAccountRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/games/$slug': typeof GamesSlugRoute
   '/games/blast': typeof GamesBlastRoute
+  '/games/flippy': typeof GamesFlippyRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -344,6 +368,7 @@ export interface FileRoutesByTo {
   '/admin/home': typeof AuthenticatedAdminHomeRoute
   '/admin/leaderboard': typeof AuthenticatedAdminLeaderboardRoute
   '/admin/loyalty': typeof AuthenticatedAdminLoyaltyRoute
+  '/admin/mini-games': typeof AuthenticatedAdminMiniGamesRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/reviews': typeof AuthenticatedAdminReviewsRoute
@@ -374,7 +399,9 @@ export interface FileRoutesById {
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/category/$slug': typeof CategorySlugRoute
+  '/games/$slug': typeof GamesSlugRoute
   '/games/blast': typeof GamesBlastRoute
+  '/games/flippy': typeof GamesFlippyRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -388,6 +415,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/home': typeof AuthenticatedAdminHomeRoute
   '/_authenticated/admin/leaderboard': typeof AuthenticatedAdminLeaderboardRoute
   '/_authenticated/admin/loyalty': typeof AuthenticatedAdminLoyaltyRoute
+  '/_authenticated/admin/mini-games': typeof AuthenticatedAdminMiniGamesRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
   '/_authenticated/admin/reviews': typeof AuthenticatedAdminReviewsRoute
@@ -418,7 +446,9 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/category/$slug'
+    | '/games/$slug'
     | '/games/blast'
+    | '/games/flippy'
     | '/gift-cards/$slug'
     | '/product/$slug'
     | '/u/$username'
@@ -432,6 +462,7 @@ export interface FileRouteTypes {
     | '/admin/home'
     | '/admin/leaderboard'
     | '/admin/loyalty'
+    | '/admin/mini-games'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/reviews'
@@ -459,7 +490,9 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/account'
     | '/category/$slug'
+    | '/games/$slug'
     | '/games/blast'
+    | '/games/flippy'
     | '/gift-cards/$slug'
     | '/product/$slug'
     | '/u/$username'
@@ -473,6 +506,7 @@ export interface FileRouteTypes {
     | '/admin/home'
     | '/admin/leaderboard'
     | '/admin/loyalty'
+    | '/admin/mini-games'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/reviews'
@@ -502,7 +536,9 @@ export interface FileRouteTypes {
     | '/_authenticated/account'
     | '/_authenticated/admin'
     | '/category/$slug'
+    | '/games/$slug'
     | '/games/blast'
+    | '/games/flippy'
     | '/gift-cards/$slug'
     | '/product/$slug'
     | '/u/$username'
@@ -516,6 +552,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/home'
     | '/_authenticated/admin/leaderboard'
     | '/_authenticated/admin/loyalty'
+    | '/_authenticated/admin/mini-games'
     | '/_authenticated/admin/orders'
     | '/_authenticated/admin/products'
     | '/_authenticated/admin/reviews'
@@ -544,7 +581,9 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  GamesSlugRoute: typeof GamesSlugRoute
   GamesBlastRoute: typeof GamesBlastRoute
+  GamesFlippyRoute: typeof GamesFlippyRoute
   GiftCardsSlugRoute: typeof GiftCardsSlugRoute
   ProductSlugRoute: typeof ProductSlugRoute
   UUsernameRoute: typeof UUsernameRoute
@@ -688,11 +727,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/games/$slug': {
+      id: '/games/$slug'
+      path: '/games/$slug'
+      fullPath: '/games/$slug'
+      preLoaderRoute: typeof GamesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/games/blast': {
       id: '/games/blast'
       path: '/games/blast'
       fullPath: '/games/blast'
       preLoaderRoute: typeof GamesBlastRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/flippy': {
+      id: '/games/flippy'
+      path: '/games/flippy'
+      fullPath: '/games/flippy'
+      preLoaderRoute: typeof GamesFlippyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gift-cards/$slug': {
@@ -786,6 +839,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLoyaltyRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/mini-games': {
+      id: '/_authenticated/admin/mini-games'
+      path: '/mini-games'
+      fullPath: '/admin/mini-games'
+      preLoaderRoute: typeof AuthenticatedAdminMiniGamesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/orders': {
       id: '/_authenticated/admin/orders'
       path: '/orders'
@@ -854,6 +914,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminHomeRoute: typeof AuthenticatedAdminHomeRoute
   AuthenticatedAdminLeaderboardRoute: typeof AuthenticatedAdminLeaderboardRoute
   AuthenticatedAdminLoyaltyRoute: typeof AuthenticatedAdminLoyaltyRoute
+  AuthenticatedAdminMiniGamesRoute: typeof AuthenticatedAdminMiniGamesRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
   AuthenticatedAdminReviewsRoute: typeof AuthenticatedAdminReviewsRoute
@@ -873,6 +934,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminHomeRoute: AuthenticatedAdminHomeRoute,
   AuthenticatedAdminLeaderboardRoute: AuthenticatedAdminLeaderboardRoute,
   AuthenticatedAdminLoyaltyRoute: AuthenticatedAdminLoyaltyRoute,
+  AuthenticatedAdminMiniGamesRoute: AuthenticatedAdminMiniGamesRoute,
   AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
   AuthenticatedAdminProductsRoute: AuthenticatedAdminProductsRoute,
   AuthenticatedAdminReviewsRoute: AuthenticatedAdminReviewsRoute,
@@ -917,7 +979,9 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   CategorySlugRoute: CategorySlugRoute,
+  GamesSlugRoute: GamesSlugRoute,
   GamesBlastRoute: GamesBlastRoute,
+  GamesFlippyRoute: GamesFlippyRoute,
   GiftCardsSlugRoute: GiftCardsSlugRoute,
   ProductSlugRoute: ProductSlugRoute,
   UUsernameRoute: UUsernameRoute,

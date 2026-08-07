@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Star, Search, Layers, Globe, ArrowUp, ArrowDown, MoreHorizontal } from "lucide-react";
+import { ShoppingBag, Plus, Pencil, Trash2, Eye, EyeOff, Star, Search, Layers, Globe, ArrowUp, ArrowDown, MoreHorizontal, Link2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type Category = { id: string; name_ar: string; name_en: string };
@@ -93,8 +93,24 @@ const css = `
 
 
 
-const CURRENCIES = ["JOD", "USD", "EUR", "SAR", "AED", "TRY", "EGP", "KWD", "QAR", "OMR", "BHD"];
-const COUNTRIES = ["US", "SA", "AE", "TR", "EG", "KW", "QA", "OM", "BH", "JO"];
+const CURRENCIES = ["JOD", "USD", "EUR", "GBP", "SAR", "AED", "TRY", "EGP", "KWD", "QAR", "OMR", "BHD", "CAD", "AUD"];
+const COUNTRIES = [
+  { code: "GB", label: "🇬🇧 بريطانيا (UK / GB)" },
+  { code: "US", label: "🇺🇸 أمريكا (US)" },
+  { code: "SA", label: "🇸🇦 السعودية (SA)" },
+  { code: "AE", label: "🇦🇪 الإمارات (AE)" },
+  { code: "TR", label: "🇹🇷 تركيا (TR)" },
+  { code: "DE", label: "🇩🇪 ألمانيا (DE)" },
+  { code: "FR", label: "🇫🇷 فرنسا (FR)" },
+  { code: "EU", label: "🇪🇺 أوروبا (EU)" },
+  { code: "EG", label: "🇪🇬 مصر (EG)" },
+  { code: "KW", label: "🇰🇼 الكويت (KW)" },
+  { code: "QA", label: "🇶🇦 قطر (QA)" },
+  { code: "OM", label: "🇴🇲 عُمان (OM)" },
+  { code: "BH", label: "🇧🇭 البحرين (BH)" },
+  { code: "JO", label: "🇯🇴 الأردن (JO)" },
+  { code: "CA", label: "🇨🇦 كندا (CA)" },
+];
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
@@ -104,6 +120,7 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
+  const [linkingProduct, setLinkingProduct] = useState(false);
   const [managingVariants, setManagingVariants] = useState<Product | null>(null);
   const [search, setSearch] = useState("");
   const categoryFilter = categoryId;
@@ -246,9 +263,14 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
           <ShoppingBag size={16} className="text-cyan-400" /> منتجات: {categoryName}
           <span className="text-xs text-cyan-100/50 font-normal">({stats.total})</span>
         </div>
-        <button className="gx-btn primary" onClick={() => setCreating(true)}>
-          <Plus size={14} /> {isAllProducts ? "إضافة منتج جديد" : "منتج جديد في هذا القسم"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="gx-btn outline" onClick={() => setLinkingProduct(true)} title="ربط منتج موجود بالمعرّف Slug/SKU">
+            <Link2 size={14} /> ربط منتج موجود بالمعرّف
+          </button>
+          <button className="gx-btn primary" onClick={() => setCreating(true)}>
+            <Plus size={14} /> {isAllProducts ? "إضافة منتج جديد" : "منتج جديد في هذا القسم"}
+          </button>
+        </div>
       </div>
 
       <div className="gx-panel p-4 space-y-4">
@@ -321,7 +343,7 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
                 <div className="gx-prod-name">
                   {p.name_ar}
                   {p.is_featured && <span className="gx-badge-featured"><Star size={9} className="inline" /> مميّز</span>}
-                  {p.badge && <span className="gx-badge-custom">{p.badge}</span>}
+                  {p.badge && p.badge.toLowerCase() !== "none" && p.badge.toLowerCase() !== "off" && p.badge !== "بدون شارة" && <span className="gx-badge-custom">{p.badge}</span>}
                   {!p.is_active && <span className="gx-badge-off">مخفي</span>}
                 </div>
                 <div className="gx-prod-en" dir="ltr" style={{ textAlign: "right" }}>{p.name_en}</div>
@@ -397,6 +419,15 @@ export function CategoryProducts({ categoryId, categoryName }: { categoryId: str
           defaultCategoryId={isAllProducts ? undefined : categoryId}
           onClose={() => { setEditing(null); setCreating(false); }}
           onSaved={() => { setEditing(null); setCreating(false); qc.invalidateQueries({ queryKey: ["admin-products"] }); }}
+        />
+      )}
+
+      {linkingProduct && (
+        <LinkExistingProductDialog
+          categoryId={categoryId}
+          categoryName={categoryName}
+          onClose={() => setLinkingProduct(false)}
+          onLinked={() => qc.invalidateQueries({ queryKey: ["admin-products"] })}
         />
       )}
 
@@ -953,9 +984,19 @@ function VariantForm({ variant, productId, productSlug, onClose, onSaved }: { va
             <div><Label>السعر (د.أ)</Label><Input type="number" step="0.01" value={priceJod} onChange={(e) => setPriceJod(e.target.value)} className="gx-adm-input" /></div>
             <div><Label>السعر قبل الخصم</Label><Input type="number" step="0.01" value={oldPrice} onChange={(e) => setOldPrice(e.target.value)} className="gx-adm-input" placeholder="اختياري" /></div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>شارة الخيار (عربي)</Label><Input value={tagAr} onChange={(e) => setTagAr(e.target.value)} className="gx-adm-input" placeholder="الأكثر طلباً" /></div>
-            <div><Label>Tag (English)</Label><Input value={tagEn} onChange={(e) => setTagEn(e.target.value)} className="gx-adm-input" dir="ltr" /></div>
+          <div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>شارة الخيار (عربي)</Label><Input value={tagAr} onChange={(e) => setTagAr(e.target.value)} className="gx-adm-input" placeholder="الأكثر طلباً أو none" /></div>
+              <div><Label>Tag (English)</Label><Input value={tagEn} onChange={(e) => setTagEn(e.target.value)} className="gx-adm-input" dir="ltr" placeholder="Most Popular or none" /></div>
+            </div>
+            <div className="flex gap-1.5 flex-wrap mt-1 text-[11px]">
+              <button type="button" className="gx-chip py-0.5 px-2 bg-red-500/20 text-red-300 border-red-500/40" onClick={() => { setTagAr("none"); setTagEn("none"); }}>🚫 بدون شارة (إخفاء الشارة)</button>
+              <button type="button" className="gx-chip py-0.5 px-2" onClick={() => { setTagAr("🔥 الأكثر طلباً"); setTagEn("Most Popular"); }}>🔥 الأكثر طلباً</button>
+              <button type="button" className="gx-chip py-0.5 px-2" onClick={() => { setTagAr("💎 أفضل قيمة"); setTagEn("Best Value"); }}>💎 أفضل قيمة</button>
+              <button type="button" className="gx-chip py-0.5 px-2" onClick={() => { setTagAr("⚡ عرض خاص"); setTagEn("Special Offer"); }}>⚡ عرض خاص</button>
+              <button type="button" className="gx-chip py-0.5 px-2 opacity-60" onClick={() => { setTagAr(""); setTagEn(""); }}>🔄 تفريغ (افتراضي)</button>
+            </div>
+            <p className="text-[11px] text-cyan-100/50 mt-1">اختر (🚫 بدون شارة) لإزالة الشارات عن فورتنايت أو أي خيار محدد.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>القيمة الاسمية</Label><Input type="number" step="0.01" value={faceValue} onChange={(e) => setFaceValue(e.target.value)} className="gx-adm-input" placeholder="25" /></div>
@@ -976,8 +1017,14 @@ function VariantForm({ variant, productId, productSlug, onClose, onSaved }: { va
               <p className="text-[11px] text-cyan-100/45 mt-1">لقالب المجموعتين، أو كود الدولة لبطاقات الهدايا</p>
             </div>
             <div>
-              <Label>المنطقة</Label>
-              <Input value={region} onChange={(e) => setRegion(e.target.value)} className="gx-adm-input" dir="ltr" placeholder="أمريكا|USA|🇺🇸" />
+              <Label>المنطقة / الدولة (مثال: بريطانيا / UK)</Label>
+              <Input value={region} onChange={(e) => setRegion(e.target.value)} className="gx-adm-input" dir="ltr" placeholder="بريطانيا|UK|🇬🇧" />
+              <div className="flex gap-1 flex-wrap mt-1 text-[11px]">
+                <button type="button" className="gx-chip py-0.5 px-2" onClick={() => setRegion("بريطانيا|UK|🇬🇧")}>🇬🇧 UK</button>
+                <button type="button" className="gx-chip py-0.5 px-2" onClick={() => setRegion("أمريكا|US|🇺🇸")}>🇺🇸 US</button>
+                <button type="button" className="gx-chip py-0.5 px-2" onClick={() => setRegion("السعودية|SA|🇸🇦")}>🇸🇦 SA</button>
+                <button type="button" className="gx-chip py-0.5 px-2" onClick={() => setRegion("أوروبا|EU|🇪🇺")}>🇪🇺 EU</button>
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -1076,7 +1123,7 @@ function CountryPricesDialog({ variant, onClose }: { variant: Variant; onClose: 
                 <Label className="text-xs">الدولة</Label>
                 <Select value={country} onValueChange={setCountry}>
                   <SelectTrigger className="gx-adm-input h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>{COUNTRIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  <SelectContent>{COUNTRIES.map((c) => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
@@ -1113,6 +1160,147 @@ function CountryPricesDialog({ variant, onClose }: { variant: Variant; onClose: 
               ))}
             </div>
           )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function LinkExistingProductDialog({
+  categoryId,
+  categoryName,
+  onClose,
+  onLinked,
+}: {
+  categoryId: string;
+  categoryName: string;
+  onClose: () => void;
+  onLinked: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [linking, setLinking] = useState(false);
+
+  const searchQ = useQuery({
+    queryKey: ["search_products_to_link", query],
+    queryFn: async () => {
+      const q = query.trim();
+      if (!q) return [];
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .or(`name_ar.ilike.%${q}%,name_en.ilike.%${q}%,slug.ilike.%${q}%,sku.ilike.%${q}%`)
+        .limit(10);
+      if (error) throw error;
+      return (data ?? []) as Product[];
+    },
+    enabled: query.trim().length > 0,
+  });
+
+  async function handleLink() {
+    if (!selectedProduct) {
+      toast.error("اختر منتجاً لربطه");
+      return;
+    }
+    setLinking(true);
+    try {
+      const targetCat = categoryId === "all" ? null : categoryId;
+      const { error } = await supabase
+        .from("products")
+        .update({ category_id: targetCat })
+        .eq("id", selectedProduct.id);
+      if (error) throw error;
+
+      toast.success(`تم ربط المنتج "${selectedProduct.name_ar}" بـ ${categoryName} بنجاح ✓`);
+      onLinked();
+      onClose();
+    } catch (e: any) {
+      toast.error(e.message || "فشل ربط المنتج");
+    } finally {
+      setLinking(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-md" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-cyan-200">
+            <Link2 size={18} className="text-cyan-400" />
+            <span>ربط منتج موجود بالمعرّف (Slug / SKU)</span>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            ابحث عن أي منتج مضاف مسبقاً في الداتابيز بالاسم أو بالمعرّف (Slug مثل <code>#v-bucks</code>) أو الـ SKU لربطه مباشرة بهذا القسم دون تعديل أسعاره الآمنة.
+          </p>
+
+          <div>
+            <Label>ابحث بالمعرّف (Slug) أو اسم المنتج أو الـ SKU</Label>
+            <Input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setSelectedProduct(null);
+              }}
+              placeholder="مثال: fn-1000 أو v-bucks أو فورتنايت"
+              className="gx-adm-input"
+              autoFocus
+            />
+          </div>
+
+          {searchQ.isLoading && (
+            <div className="text-xs text-muted-foreground text-center py-2">جاري البحث في الداتابيز...</div>
+          )}
+
+          {searchQ.data && searchQ.data.length > 0 && (
+            <div className="space-y-1.5 max-h-48 overflow-y-auto border border-white/10 rounded-xl p-2 bg-black/30">
+              {searchQ.data.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setSelectedProduct(p)}
+                  className={`w-full text-right p-2 rounded-lg border text-xs flex items-center justify-between transition ${
+                    selectedProduct?.id === p.id
+                      ? "bg-cyan-500/20 border-cyan-400 text-cyan-200 font-bold"
+                      : "bg-black/40 border-white/5 text-muted-foreground hover:text-white"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold truncate text-white">{p.name_ar}</div>
+                    <div className="font-mono text-[10px] text-cyan-400" dir="ltr">#{p.slug}</div>
+                  </div>
+                  {p.base_price_jod && (
+                    <div className="font-mono text-cyan-300 font-bold ms-2">{p.base_price_jod} JOD</div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {selectedProduct && (
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs space-y-1">
+              <div className="font-bold text-emerald-300 flex items-center gap-1">
+                <span>✓ جاهز للربط: {selectedProduct.name_ar}</span>
+              </div>
+              <p className="text-muted-foreground">
+                سيتم ربطه بقواعد البيانات مباشرة لحفظ تسعير السيرفر ومنع أي تلاعب بالأسعار.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-white/10 pt-3">
+          <button type="button" className="gx-btn outline" onClick={onClose}>إلغاء</button>
+          <button
+            type="button"
+            className="gx-btn primary"
+            disabled={!selectedProduct || linking}
+            onClick={handleLink}
+          >
+            {linking ? "جاري الربط..." : "ربط المنتج بالداتابيز ✓"}
+          </button>
         </div>
       </DialogContent>
     </Dialog>

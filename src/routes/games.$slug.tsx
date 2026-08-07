@@ -7,16 +7,19 @@ import { useCurrency } from "@/lib/gx/currency";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { BuyActions } from "@/components/gx/BuyActions";
 
-export const Route = createFileRoute("/category/$slug")({
+export const Route = createFileRoute("/games/$slug")({
   loader: async ({ params }) => {
-    const category = await getCatalogCategory({ data: { slug: params.slug } });
+    let category = await getCatalogCategory({ data: { slug: params.slug } });
+    if (!category && !params.slug.startsWith("gc-")) {
+      category = await getCatalogCategory({ data: { slug: `gc-${params.slug}` } });
+    }
     if (!category) throw notFound();
     return { category };
   },
   head: ({ loaderData }) => {
     const c = loaderData?.category;
-    const title = c ? `${c.nameEn || c.nameAr} — GX Store` : "Category — GX Store";
-    const desc = c?.taglineEn || c?.taglineAr || "Browse products at GX Store";
+    const title = c ? `${c.nameEn || c.nameAr} — GX Store` : "Games — GX Store";
+    const desc = c?.taglineEn || c?.taglineAr || "Browse game products at GX Store";
     return {
       meta: [
         { title },
@@ -30,21 +33,34 @@ export const Route = createFileRoute("/category/$slug")({
     };
   },
   errorComponent: ({ error }) => (
-    <StoreShell><section className="section"><div className="wrap"><h1>{error.message}</h1></div></section></StoreShell>
+    <StoreShell>
+      <section className="section">
+        <div className="wrap">
+          <h1>{error.message}</h1>
+        </div>
+      </section>
+    </StoreShell>
   ),
   notFoundComponent: () => (
-    <StoreShell><section className="section"><div className="wrap"><h1>404</h1></div></section></StoreShell>
+    <StoreShell>
+      <section className="section">
+        <div className="wrap">
+          <h1>404 — القسم غير موجود</h1>
+        </div>
+      </section>
+    </StoreShell>
   ),
-  component: CategoryPage,
+  component: GameCategoryPage,
 });
 
-function CategoryPage() {
+function GameCategoryPage() {
   const { category } = Route.useLoaderData();
   const { lang, t } = useLang();
   const { format } = useCurrency();
   const pick = (ar?: string | null, en?: string | null) => (lang === "en" ? en || ar : ar || en) || "";
 
   const catName = pick(category.nameAr, category.nameEn);
+  const catTagline = pick(category.taglineAr, category.taglineEn);
   const hasChildren = (category.children ?? []).length > 0;
   const hasProducts = (category.products ?? []).length > 0;
 
@@ -56,18 +72,20 @@ function CategoryPage() {
             <div className="product-icon-badge">
               <div className="core">
                 {category.iconImage ? (
-                  <img src={category.iconImage} alt={catName} style={{ width: 56, height: 56, objectFit: "contain", borderRadius: 14 }} />
+                  <img
+                    src={category.iconImage}
+                    alt={catName}
+                    style={{ width: 56, height: 56, objectFit: "contain", borderRadius: 14 }}
+                  />
                 ) : (
-                  <span style={{ fontSize: 36 }}>{category.icon || "📁"}</span>
+                  <span style={{ fontSize: 36 }}>{category.icon || "🎮"}</span>
                 )}
               </div>
             </div>
             <div className="product-hero-text">
               <span className="cat-tag">{catName}</span>
               <h1>{catName}</h1>
-              {pick(category.taglineAr, category.taglineEn) && (
-                <p>{pick(category.taglineAr, category.taglineEn)}</p>
-              )}
+              {catTagline && <p>{catTagline}</p>}
             </div>
           </div>
         </div>
@@ -82,18 +100,18 @@ function CategoryPage() {
                 const iconInner = s.iconImage ? (
                   <img src={s.iconImage} alt={name} className="prod-thumb-img" />
                 ) : (
-                  <span>{s.icon || "📂"}</span>
+                  <span>{s.icon || "🎮"}</span>
                 );
-                const isProd = Boolean(s.productSlug) && s.slug !== "pc-games";
-                const isPcGames = s.slug === "pc-games";
                 return (
                   <Link
                     key={s.slug}
-                    to={isProd ? "/product/$slug" : isPcGames ? "/games/$slug" : "/category/$slug"}
-                    params={{ slug: isProd ? s.productSlug! : s.slug }}
+                    to="/games/$slug"
+                    params={{ slug: s.slug }}
                     className="subcat-card clickable"
                   >
-                    <div className="subcat-ic" style={{ background: s.bg || undefined }}>{iconInner}</div>
+                    <div className="subcat-ic" style={{ background: s.bg || undefined }}>
+                      {iconInner}
+                    </div>
                     <div>
                       <div className="subcat-name">{name}</div>
                       <div className="subcat-status">{t("cat.browse_products")}</div>
@@ -112,7 +130,7 @@ function CategoryPage() {
             <div className="section-head">
               <div>
                 <span className="k">{t("home.browse_products")}</span>
-                <h2>{pick(category.nameAr, category.nameEn)}</h2>
+                <h2>{catName}</h2>
               </div>
             </div>
 
@@ -130,13 +148,16 @@ function CategoryPage() {
                       {imgSrc ? (
                         <img src={imgSrc} alt={name} className="prod-thumb-img prod-card-img" />
                       ) : (
-                        <span style={{ fontSize: 44 }}>{p.icon}</span>
+                        <span style={{ fontSize: 44 }}>{p.icon || "🎮"}</span>
                       )}
                     </div>
                     <div className="prod-body">
                       <div className="prod-name">{name}</div>
                       {tagline && (
-                        <p className="text-xs text-cyan-100/60 line-clamp-2 mt-1 mb-2" style={{ fontSize: 12, opacity: 0.75 }}>
+                        <p
+                          className="text-xs text-cyan-100/60 line-clamp-2 mt-1 mb-2"
+                          style={{ fontSize: 12, opacity: 0.75 }}
+                        >
                           {tagline}
                         </p>
                       )}
@@ -159,7 +180,7 @@ function CategoryPage() {
         <section className="section">
           <div className="wrap">
             <div className="text-center py-12 text-cyan-100/60">
-              <div className="text-4xl mb-2">📁</div>
+              <div className="text-4xl mb-2">🎮</div>
               <p>لا توجد منتجات في هذا القسم حالياً.</p>
             </div>
           </div>

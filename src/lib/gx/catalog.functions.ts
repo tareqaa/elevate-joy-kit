@@ -8,8 +8,7 @@
    ============================================================ */
 
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import { getPublicClient } from "@/lib/gx/supabase-request";
 
 export type CatalogVariant = {
   cartId: string;
@@ -52,6 +51,7 @@ export type CatalogProduct = {
   descriptionEn: string | null;
   icon: string | null;
   iconImage: string | null;
+  imageUrl: string | null;
   thumbBg: string | null;
   accentColor: string | null;
   cardGradient: string | null;
@@ -81,6 +81,22 @@ export type CatalogCategoryChild = {
   productSlug: string | null;
 };
 
+export type CatalogCategoryProductItem = {
+  id: string;
+  slug: string;
+  cartId?: string;
+  nameAr: string;
+  nameEn: string;
+  taglineAr?: string | null;
+  taglineEn?: string | null;
+  imageUrl: string | null;
+  icon: string | null;
+  iconImage: string | null;
+  thumbBg: string | null;
+  basePriceJod: number | null;
+  badge: string | null;
+};
+
 export type CatalogCategory = {
   slug: string;
   nameAr: string;
@@ -88,52 +104,35 @@ export type CatalogCategory = {
   taglineAr: string | null;
   taglineEn: string | null;
   icon: string | null;
+  iconImage: string | null;
   children: CatalogCategoryChild[];
+  products: CatalogCategoryProductItem[];
 };
-
-function publicClient() {
-  const url = process.env["SUPABASE_URL"] || process.env["VITE_SUPABASE_URL"]!;
-  const key =
-    process.env["SUPABASE_PUBLISHABLE_KEY"] || process.env["VITE_SUPABASE_PUBLISHABLE_KEY"]!;
-  return createClient<Database>(url, key, {
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    global: {
-      fetch: (input, init) => {
-        const h = new Headers(init?.headers);
-        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) {
-          h.delete("Authorization");
-        }
-        h.set("apikey", key);
-        return fetch(input, { ...init, headers: h });
-      },
-    },
-  });
-}
 
 type Overrides = Record<string, { price?: number; oldPrice?: number | null }>;
 
-async function loadOverrides(supabase: ReturnType<typeof publicClient>): Promise<Overrides> {
-  try {
-    const { data } = await supabase
-      .from("site_settings")
-      .select("value")
-      .eq("key", "catalog_prices")
-      .maybeSingle();
-    const v = (data as { value?: unknown } | null)?.value;
-    return v && typeof v === "object" && !Array.isArray(v) ? (v as Overrides) : {};
-  } catch {
+async function loadOverrides(supabase: ReturnType<typeof getPublicClient>): Promise<Overrides> {
+  const { data, error } = await supabase
+    .from("site_settings")
+    .select("value")
+    .eq("key", "catalog_prices")
+    .maybeSingle();
+  if (error) {
+    console.error("loadOverrides: failed to read catalog_prices", error);
     return {};
   }
+  const v = (data as { value?: unknown } | null)?.value;
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Overrides) : {};
 }
 
 export const getCatalogProduct = createServerFn({ method: "GET" })
   .inputValidator((data: { slug: string }) => ({ slug: String(data.slug) }))
   .handler(async ({ data }): Promise<CatalogProduct | null> => {
-    const supabase = publicClient();
+    const supabase = getPublicClient();
     const { data: row } = await supabase
       .from("products")
       .select(
-        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, icon, icon_image_url, thumb_bg, accent_color, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, region, is_active, categories:category_id (name_ar, name_en)",
+        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, image_url, icon, icon_image_url, thumb_bg, accent_color, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, region, is_active, categories:category_id (name_ar, name_en)",
       )
       .eq("slug", data.slug)
       .eq("is_active", true)
@@ -169,7 +168,8 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
       descriptionAr: p.description_ar ?? null,
       descriptionEn: p.description_en ?? null,
       icon: p.icon ?? null,
-      iconImage: p.icon_image_url ?? null,
+      iconImage: p.icon_image_url ?? p.image_url ?? null,
+      imageUrl: p.image_url ?? p.icon_image_url ?? null,
       thumbBg: p.thumb_bg ?? null,
       accentColor: p.accent_color ?? null,
       cardGradient: p.card_gradient ?? null,
@@ -218,39 +218,43 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
 export const getCatalogCategory = createServerFn({ method: "GET" })
   .inputValidator((data: { slug: string }) => ({ slug: String(data.slug) }))
   .handler(async ({ data }): Promise<CatalogCategory | null> => {
-    const supabase = publicClient();
+    const supabase = getPublicClient();
     const { data: row } = await supabase
       .from("categories")
-      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, icon, is_active")
+      .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, icon, icon_url, is_active")
       .eq("slug", data.slug)
       .eq("is_active", true)
       .maybeSingle();
     if (!row) return null;
     const c = row as Record<string, any>;
 
-    const { data: kids } = await supabase
-      .from("categories")
-      .select("id, slug, name_ar, name_en, icon, icon_url, theme_gradient, sort_order")
-      .eq("parent_id", c.id)
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true });
+    const [{ data: kids }, { data: prods }] = await Promise.all([
+      supabase
+        .from("categories")
+        .select("id, slug, name_ar, name_en, icon, icon_url, theme_gradient, sort_order")
+        .eq("parent_id", c.id)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true }),
+      supabase
+        .from("products")
+        .select("id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, image_url, icon, icon_image_url, thumb_bg, base_price_jod, badge, is_active, sort_order")
+        .eq("category_id", c.id)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true }),
+    ]);
 
     const kidIds = (kids ?? []).map((k: Record<string, any>) => k.id);
-    // Fetch products regardless of `is_active`: a sub-category whose product was
-    // switched off must disappear entirely, while a sub-category that never had
-    // a product yet keeps showing the "coming soon" tile.
-    const { data: prods } = kidIds.length
+    const { data: subProds } = kidIds.length
       ? await supabase
           .from("products")
           .select("slug, category_id, icon, icon_image_url, thumb_bg, is_active")
           .in("category_id", kidIds)
+          .eq("is_active", true)
       : { data: [] as Record<string, any>[] };
 
     const byCat = new Map<string, Record<string, any>>();
-    const hasAnyProduct = new Set<string>();
-    for (const p of (prods ?? []) as Record<string, any>[]) {
-      hasAnyProduct.add(p.category_id);
-      if (p.is_active && !byCat.has(p.category_id)) byCat.set(p.category_id, p);
+    for (const p of (subProds ?? []) as Record<string, any>[]) {
+      if (!byCat.has(p.category_id)) byCat.set(p.category_id, p);
     }
 
     return {
@@ -260,9 +264,8 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
       taglineAr: c.tagline_ar ?? null,
       taglineEn: c.tagline_en ?? null,
       icon: c.icon ?? null,
-      children: (kids ?? [])
-        .filter((k: Record<string, any>) => byCat.has(k.id) || !hasAnyProduct.has(k.id))
-        .map((k: Record<string, any>) => {
+      iconImage: c.icon_url ?? null,
+      children: (kids ?? []).map((k: Record<string, any>) => {
         const prod = byCat.get(k.id);
         return {
           slug: k.slug,
@@ -274,5 +277,20 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
           productSlug: prod?.slug ?? null,
         };
       }),
+      products: (prods ?? []).map((p: Record<string, any>) => ({
+        id: p.id,
+        slug: p.slug,
+        cartId: p.slug,
+        nameAr: p.name_ar,
+        nameEn: p.name_en || p.name_ar,
+        taglineAr: p.tagline_ar ?? p.description_ar ?? null,
+        taglineEn: p.tagline_en ?? p.description_en ?? null,
+        imageUrl: p.image_url ?? p.icon_image_url ?? null,
+        icon: p.icon ?? "🎮",
+        iconImage: p.icon_image_url ?? p.image_url ?? null,
+        thumbBg: p.thumb_bg ?? null,
+        basePriceJod: Number(p.base_price_jod) || null,
+        badge: p.badge ?? null,
+      })),
     };
   });

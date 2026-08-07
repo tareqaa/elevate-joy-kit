@@ -670,12 +670,26 @@ function CategoryDialog({
           {/* Descriptions */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>وصف (عربي) — اختياري</Label>
-              <Textarea value={descAr} onChange={(e) => setDescAr(e.target.value)} rows={2} className="gx-adm-input" style={{ height: "auto" }} />
+              <div className="flex items-center justify-between mb-1">
+                <Label>وصف (عربي) — اختياري</Label>
+                {descAr && (
+                  <button type="button" className="gx-btn danger" style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => setDescAr("")}>
+                    <Trash2 size={10} /> مسح
+                  </button>
+                )}
+              </div>
+              <Textarea value={descAr} onChange={(e) => setDescAr(e.target.value)} rows={2} className="gx-adm-input" style={{ height: "auto" }} placeholder="وصف القسم الذي يظهر تحت الاسم..." />
             </div>
             <div>
-              <Label>وصف (English) — optional</Label>
-              <Textarea value={descEn} onChange={(e) => setDescEn(e.target.value)} rows={2} dir="ltr" className="gx-adm-input" style={{ height: "auto" }} />
+              <div className="flex items-center justify-between mb-1">
+                <Label>وصف (English) — optional</Label>
+                {descEn && (
+                  <button type="button" className="gx-btn danger" style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => setDescEn("")}>
+                    <Trash2 size={10} /> Clear
+                  </button>
+                )}
+              </div>
+              <Textarea value={descEn} onChange={(e) => setDescEn(e.target.value)} rows={2} dir="ltr" className="gx-adm-input" style={{ height: "auto" }} placeholder="Category description shown below the name..." />
             </div>
           </div>
 

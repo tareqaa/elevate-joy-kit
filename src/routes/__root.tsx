@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -17,38 +17,45 @@ import { CurrencyProvider } from "@/lib/gx/currency";
 import { CartProvider } from "@/lib/gx/cart";
 import { LanguageProvider } from "@/lib/gx/i18n";
 import { SiteSettingsProvider } from "@/lib/gx/site-settings";
-import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { ensureStoreStyles } from "@/lib/gx/store-head";
 
 // Ensure legacy store stylesheets are present regardless of entry route.
 // Without this, refreshing on /account or /admin loads the app without the
 // store CSS, and navigating back to the storefront renders unstyled until
 // the browser fetches the sheets.
-if (typeof document !== "undefined") {
-  for (const l of STORE_HEAD_LINKS) {
-    if (document.head.querySelector(`link[data-gx-store="${l.href}"]`)) continue;
-    const el = document.createElement("link");
-    el.rel = l.rel;
-    el.href = l.href;
-    el.setAttribute("data-gx-store", l.href);
-    document.head.appendChild(el);
+ensureStoreStyles();
+
+// Error/404 boundaries must not depend on LanguageProvider's context — if
+// something upstream is broken badly enough to land here, the provider tree
+// may not be reliable either. Read the saved preference directly instead.
+function boundaryLang(): "ar" | "en" {
+  if (typeof window === "undefined") return "ar";
+  try {
+    const s = localStorage.getItem("gx_lang");
+    return s === "en" ? "en" : "ar";
+  } catch {
+    return "ar";
   }
 }
 
 function NotFoundComponent() {
+  const en = boundaryLang() === "en";
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">الصفحة غير موجودة</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">
+          {en ? "Page not found" : "الصفحة غير موجودة"}
+        </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          الرابط اللي دخلته مش موجود أو اتنقل.
+          {en ? "That link doesn't exist or has moved." : "الرابط اللي دخلته مش موجود أو اتنقل."}
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            العودة للرئيسية
+            {en ? "Back to home" : "العودة للرئيسية"}
           </Link>
         </div>
       </div>
@@ -59,6 +66,7 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const en = boundaryLang() === "en";
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
@@ -67,17 +75,17 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          صار خطأ بتحميل الصفحة
+          {en ? "Something went wrong loading this page" : "صار خطأ بتحميل الصفحة"}
         </h1>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => { router.invalidate(); reset(); }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            حاول مرة ثانية
+            {en ? "Try again" : "حاول مرة ثانية"}
           </button>
           <Link to="/" className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium">
-            الرئيسية
+            {en ? "Home" : "الرئيسية"}
           </Link>
         </div>
       </div>
@@ -147,8 +155,14 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
+    // Wait for the auth session to be known before revealing the app.
+    supabase.auth.getSession().then(() => {
+      setAppReady(true);
+    });
+
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
@@ -163,7 +177,49 @@ function RootComponent() {
         <LanguageProvider>
           <CurrencyProvider>
             <CartProvider>
-              <Outlet />
+              {!appReady && (
+                <div style={{
+                  position: "fixed",
+                  top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: "#090b10",
+                  zIndex: 99999,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "column",
+                  transition: "opacity 0.4s ease, visibility 0.4s",
+                }}>
+                  <div className="relative flex items-center justify-center">
+                    <img src="/app/assets/img/gx-logo.png" alt="Elevate Joy" style={{ width: 80, height: 80, objectFit: "contain", zIndex: 2, position: "relative" }} />
+                    <div style={{
+                      position: "absolute",
+                      width: 120, height: 120,
+                      border: "3px solid transparent",
+                      borderTopColor: "var(--cyan)",
+                      borderRightColor: "var(--cyan)",
+                      borderRadius: "50%",
+                      animation: "spin 1s linear infinite",
+                      opacity: 0.5
+                    }} />
+                    <div style={{
+                      position: "absolute",
+                      width: 140, height: 140,
+                      border: "2px solid transparent",
+                      borderBottomColor: "#3b82f6",
+                      borderLeftColor: "#3b82f6",
+                      borderRadius: "50%",
+                      animation: "spin 1.5s linear infinite reverse",
+                      opacity: 0.3
+                    }} />
+                  </div>
+                  <style>{`
+                    @keyframes spin { 100% { transform: rotate(360deg); } }
+                  `}</style>
+                </div>
+              )}
+              <div style={{ opacity: appReady ? 1 : 0, transition: "opacity 0.5s ease", minHeight: "100vh" }}>
+                <Outlet />
+              </div>
               <Toaster richColors position="top-center" />
             </CartProvider>
           </CurrencyProvider>

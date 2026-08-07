@@ -15,3 +15,20 @@ export const STORE_HEAD_LINKS = [
   { rel: "stylesheet", href: "/app/assets/css/coming-soon.css" },
   { rel: "stylesheet", href: "/app/assets/css/games.css" },
 ];
+
+/**
+ * Injects STORE_HEAD_LINKS into <head> if they aren't already there.
+ * Safe to call repeatedly (e.g. once at module load and again on mount) —
+ * each link is tagged so duplicates are skipped.
+ */
+export function ensureStoreStyles(): void {
+  if (typeof document === "undefined") return;
+  for (const l of STORE_HEAD_LINKS) {
+    if (document.head.querySelector(`link[data-gx-store="${l.href}"]`)) continue;
+    const el = document.createElement("link");
+    el.rel = l.rel;
+    el.href = l.href;
+    el.setAttribute("data-gx-store", l.href);
+    document.head.appendChild(el);
+  }
+}

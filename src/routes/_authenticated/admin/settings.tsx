@@ -154,6 +154,22 @@ function SettingsPage() {
               </Field>
             </CardContent>
           </Card>
+
+          <Card className="border-cyan-500/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base"><SettingsIcon size={16} className="text-cyan-400" /> الشارات وعرض المنتجات</CardTitle>
+              <CardDescription>التحكم بالشارات التلقائية لباقات فورتنايت والألعاب</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/20">
+                <div>
+                  <div className="font-medium text-sm">إخفاء الشارات التلقائية في فورتنايت</div>
+                  <div className="text-xs text-muted-foreground">إلغاء الشارات التلقائية (مثل: فئة برونزية، الأكثر طلباً) عن كافة باقات فورتنايت</div>
+                </div>
+                <Switch checked={Boolean(s("hide_fortnite_badges"))} onCheckedChange={(v) => set("hide_fortnite_badges", v)} />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

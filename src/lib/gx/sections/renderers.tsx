@@ -23,6 +23,7 @@ import { RichHtml } from "./rich-text";
 import { DiscountBadge } from "@/components/gx/DiscountBadge";
 import { formatTitle } from "@/lib/gx/text";
 import { CarouselRow } from "@/components/gx/CarouselRow";
+import { useSiteSettings } from "../site-settings";
 
 /* ---------------- HERO ---------------- */
 
@@ -328,7 +329,7 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
                 </div>
                 <div>
                   <div className="cname-modern">{name}</div>
-                  <div className="cdesc">{desc}</div>
+                  {desc && <div className="cdesc">{desc}</div>}
                 </div>
                 <div className="carrow">{t("home.browse_category")} <span className="arrow-ic">‹</span></div>
               </Link>
@@ -340,46 +341,191 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
   );
 }
 
+import { VBUCKS_TIER_THEMES, CREW_TIER_THEMES } from "@/components/gx/ProductTemplates";
+
 /* ---------------- BESTSELLERS ---------------- */
 export function BestsellersRenderer({ data }: { data: BestsellersData }) {
   const { format } = useCurrency();
   const { t, lang } = useLang();
-  const order = data.order || [];
+  const siteSettings = useSiteSettings();
+
+  const [dbVariants, setDbVariants] = useState<
+    Record<
+      string,
+      {
+        price: number;
+        oldPrice: number | null;
+        tagAr: string | null;
+        tagEn: string | null;
+        labelAr: string | null;
+        labelEn: string | null;
+        productSlug: string | null;
+        productNameAr: string | null;
+        productNameEn: string | null;
+        icon: string | null;
+        thumbBg: string | null;
+        imageUrl: string | null;
+      }
+    >
+  >({});
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data: rows } = await supabase
+          .from("product_variants")
+          .select("product_id, cart_id, label_ar, label_en, price_jod, old_price_jod, tag_ar, tag_en");
+        const { data: prods } = await supabase
+          .from("products")
+          .select("id, slug, name_ar, name_en, icon, thumb_bg, image_url");
+
+        if (alive && rows) {
+          const map: typeof dbVariants = {};
+          const prodMap = new Map((prods ?? []).map((p) => [p.id, p]));
+
+          for (const v of rows) {
+            if (v.cart_id) {
+              const p = v.product_id ? prodMap.get(v.product_id) : null;
+              map[v.cart_id] = {
+                price: Number(v.price_jod) || 0,
+                oldPrice: v.old_price_jod ? Number(v.old_price_jod) : null,
+                tagAr: v.tag_ar,
+                tagEn: v.tag_en,
+                labelAr: v.label_ar,
+                labelEn: v.label_en,
+                productSlug: p?.slug || null,
+                productNameAr: p?.name_ar || null,
+                productNameEn: p?.name_en || null,
+                icon: p?.icon || null,
+                thumbBg: p?.thumb_bg || null,
+                imageUrl: p?.image_url || null,
+              };
+            }
+          }
+          setDbVariants(map);
+        }
+      } catch {
+        /* fallback to base */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const rawSettingsOrder = siteSettings.home_bestseller_order;
+  const sanitizedSettingsOrder: string[] = Array.isArray(rawSettingsOrder)
+    ? rawSettingsOrder
+        .map((x) => {
+          if (typeof x === "string") return x;
+          if (x && typeof x === "object") {
+            const obj = x as Record<string, unknown>;
+            if ("cartId" in obj && typeof obj.cartId === "string") return obj.cartId;
+            if ("id" in obj && typeof obj.id === "string") return obj.id;
+          }
+          return "";
+        })
+        .filter(Boolean)
+    : [];
+
+  const order = sanitizedSettingsOrder.length > 0
+    ? sanitizedSettingsOrder
+    : (data.order && data.order.length > 0 ? data.order : getFeaturedItems().map((f) => f.cartId));
+
   const base = getFeaturedItems();
-  const items: FeaturedItem[] = order.length > 0
-    ? [...order.map((id) => base.find((b) => b.cartId === id)).filter((x): x is FeaturedItem => !!x),
-       ...base.filter((b) => !order.includes(b.cartId))]
-    : base;
+  const items: FeaturedItem[] = order.map((cartId) => {
+    const foundInBase = base.find((b) => b.cartId === cartId);
+    if (foundInBase) return foundInBase;
+    const dbV = dbVariants[cartId];
+    return {
+      cartId,
+      product: dbV?.productSlug || "product",
+      name: dbV?.productNameAr ? `${dbV.productNameAr} — ${dbV.labelAr || ""}` : (dbV?.labelAr || cartId),
+      icon: dbV?.icon || "🎮",
+      bg: dbV?.thumbBg || "rgba(0, 229, 255, 0.05)",
+      price: dbV?.price || 0,
+      oldPrice: dbV?.oldPrice || 0,
+      link: `/product/${dbV?.productSlug || cartId}`,
+    };
+  });
+
   return (
     <section className="section" id="products" style={{ background: "var(--bg2)" }}>
       <div className="wrap">
         <div className="section-head">
-          <div><span className="k">{data.eyebrow || t("home.featured_eyebrow")}</span><h2>{data.title || t("home.featured_title")}</h2></div>
+          <div>
+            <span className="k">{data.eyebrow || t("home.featured_eyebrow")}</span>
+            <h2>{data.title || t("home.featured_title")}</h2>
+          </div>
         </div>
         <CarouselRow className="featured-grid">
-          {items.map(p => {
-            const discount = Math.round((1 - p.price / p.oldPrice) * 100);
+          {items.map((p) => {
+            const dbV = dbVariants[p.cartId];
+            const price = dbV?.price ?? p.price;
+            const oldPrice = dbV?.oldPrice ?? p.oldPrice;
+            const dbTag = lang === "en" ? dbV?.tagEn || dbV?.tagAr : dbV?.tagAr || dbV?.tagEn;
+            const discount = oldPrice && oldPrice > price ? Math.round((1 - price / oldPrice) * 100) : 0;
+
             const product = PRODUCTS_CATALOG[p.product];
             let iconEl: React.ReactNode = <ProductIcon product={product} />;
-            if (p.product === "fortnite" && p.cartId.startsWith("fn-crew")) iconEl = <CrewIcon />;
-            else if (p.product === "fortnite" && p.cartId.startsWith("fn-vb")) {
-              const tier = parseInt(p.cartId.replace("fn-vb-", ""), 10);
-              iconEl = <VbucksIcon tier={tier} />;
+
+            const tier = parseInt(p.cartId.replace(/\D+/g, ""), 10) || 0;
+            const isVbucks = p.product === "fortnite" && p.cartId.startsWith("fn-vb");
+            const isCrew = p.product === "fortnite" && p.cartId.startsWith("fn-crew");
+
+            if (isCrew) iconEl = <CrewIcon />;
+            else if (isVbucks) iconEl = <VbucksIcon tier={tier} />;
+
+            const vbucksTheme = isVbucks ? VBUCKS_TIER_THEMES[tier] : null;
+            const crewTheme = isCrew
+              ? CREW_TIER_THEMES[p.cartId] || {
+                  bg: "linear-gradient(145deg, rgba(31,169,255,0.25), rgba(10,35,70,0.95))",
+                  border: "rgba(31,169,255,0.5)",
+                  accent: "#1fa9ff",
+                  badgeAr: "⭐ Fortnite Crew",
+                  badgeEn: "Fortnite Crew",
+                }
+              : null;
+
+            const theme = vbucksTheme || crewTheme;
+            const isTagDisabled =
+              !dbTag ||
+              dbTag.toLowerCase() === "none" ||
+              dbTag.toLowerCase() === "no-badge" ||
+              dbTag.toLowerCase() === "off" ||
+              dbTag === "بدون شارة" ||
+              dbTag === "إخفاء" ||
+              dbTag === "لا شيء";
+
+            // Bestsellers section: only display custom badge if explicitly set by admin, otherwise remove tier badges
+            const badgeText = isTagDisabled ? null : dbTag;
+
+            const prodName = product?.name || (lang === "en" ? dbV?.productNameEn || dbV?.productNameAr : dbV?.productNameAr || dbV?.productNameEn) || "";
+            const vLabel = lang === "en" ? dbV?.labelEn || dbV?.labelAr : dbV?.labelAr || dbV?.labelEn;
+            let displayName = p.name;
+            if (vLabel) {
+              if (prodName && !vLabel.toLowerCase().includes(prodName.toLowerCase())) {
+                displayName = `${prodName} — ${vLabel}`;
+              } else {
+                displayName = vLabel;
+              }
             }
+
             return (
               <div key={p.cartId} className="prod-card">
-                <Link to={p.link as never} style={{ display: "contents" }}>
-                  <div className="prod-thumb" style={{ background: p.bg }}>
-                    <DiscountBadge value={discount} />
-                    {iconEl}
-                  </div>
-                </Link>
+                <div className="prod-thumb" style={{ background: theme?.bg || p.bg || "rgba(0, 229, 255, 0.05)" }}>
+                  <DiscountBadge value={discount} />
+                  {iconEl}
+                </div>
                 <div className="prod-body">
                   <div className="prod-stars">★★★★★</div>
-                  <div className="prod-name">{formatTitle(localizeResolvedName(p.name, lang))}</div>
+                  <div className="prod-name">{formatTitle(localizeResolvedName(displayName, lang))}</div>
                   <div className="prod-prices">
-                    <span className="prod-old">{format(p.oldPrice)}</span>
-                    <span className="prod-new">{format(p.price)}</span>
+                    {oldPrice && oldPrice > 0 ? <span className="prod-old">{format(oldPrice)}</span> : null}
+                    <span className="prod-new">
+                      {format(price)}
+                    </span>
                   </div>
                   <BuyActions cartId={p.cartId} />
                 </div>

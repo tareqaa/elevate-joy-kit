@@ -3,8 +3,8 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { resolveActiveTournamentId, startTournamentRun, readTournamentStanding } from "@/lib/gx/games/use-tournament-run";
 import {
   BOARD_SIZE,
   canPlace,
@@ -31,8 +31,15 @@ const BG_BITS = Array.from({ length: 16 }, (_, i) => ({
 
 export const Route = createFileRoute("/games/blast")({
   ssr: false,
-  validateSearch: (s: Record<string, unknown>): { t?: string } =>
-    typeof s.t === "string" && s.t ? { t: s.t } : {},
+  validateSearch: (s: Record<string, unknown>): { t?: string; practice?: boolean } => {
+    const out: { t?: string; practice?: boolean } = {};
+    if (typeof s.t === "string" && s.t) out.t = s.t;
+    // Casual/practice mode: guaranteed no tournament attachment, regardless
+    // of whether a tournament happens to be live. Separate from the ?t=
+    // tournament flow, which is left completely untouched.
+    if (s.practice === "1" || s.practice === true || s.practice === "true") out.practice = true;
+    return out;
+  },
   head: () => ({
     meta: [
       { title: "GX Blast — لعبة البلوكات داخل GX Store" },
@@ -255,7 +262,7 @@ const MoveTimer = memo(function MoveTimer({
 function BlastPage() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
-  const { t: tournamentId } = Route.useSearch();
+  const { t: tournamentId, practice } = Route.useSearch();
 
 
 
@@ -274,6 +281,7 @@ function BlastPage() {
   const [banner, setBanner] = useState<{ id: number; text: string; size?: number; clean?: boolean; streak?: string } | null>(null);
   const [shownScore, setShownScore] = useState(0);
   const [best, setBest] = useState(0);
+  const [tournamentBest, setTournamentBest] = useState(0);
   const [bestAtStart, setBestAtStart] = useState(0);
   const [streakBreak, setStreakBreak] = useState(0);
   const [trayGen, setTrayGen] = useState(0);
@@ -442,19 +450,33 @@ function BlastPage() {
   }, [game.over, game.score]);
 
 
-  /* ----- tournament: resolve the live tournament even without ?t= ----- */
-  const [activeTid, setActiveTid] = useState<string | null>(tournamentId ?? null);
+  /* ----- tournament: resolve the live tournament even without ?t= -----
+     Skipped entirely in practice mode (?practice=1) — activeTid stays null
+     no matter what's live, so no tournament RPC is ever reachable below. */
+  const [activeTid, setActiveTid] = useState<string | null>(practice ? null : (tournamentId ?? null));
   useEffect(() => {
-    if (tournamentId) { setActiveTid(tournamentId); return; }
+    if (practice) { setActiveTid(null); return; }
     let alive = true;
     void (async () => {
-      const { data } = await supabase.rpc("list_tournaments");
-      if (!alive) return;
-      const live = ((data ?? []) as { id: string; live_status: string }[]).find((t) => t.live_status === "live");
-      setActiveTid(live?.id ?? null);
+      const tid = await resolveActiveTournamentId(tournamentId ?? null);
+      if (alive) setActiveTid(tid);
     })();
     return () => { alive = false; };
-  }, [tournamentId]);
+  }, [tournamentId, practice]);
+
+  useEffect(() => {
+    if (!activeTid) return;
+    let alive = true;
+    void (async () => {
+      const tData = await readTournamentStanding(activeTid);
+      if (!alive) return;
+      if (tData?.score) {
+        setTournamentBest(tData.score);
+        setBestAtStart((prev) => Math.max(prev, tData.score as number));
+      }
+    })();
+    return () => { alive = false; };
+  }, [activeTid]);
 
   /* ----- tournament: open a server-issued play session for this run -----
      Scores are only accepted together with the run id the server hands out,
@@ -465,14 +487,17 @@ function BlastPage() {
     const key = `${activeTid}:${game.seed}`;
     if (runRef.current.key === key) return;
     runRef.current = { key, id: null };
-    let alive = true;
+    // Writing to a ref is always safe, even after Strict Mode's dev-only
+    // mount->cleanup->remount cycle "unmounts" this effect instance — unlike
+    // setState there's no unmounted-component warning to guard against, and
+    // gating this write on a per-invocation `alive` flag actively discarded
+    // a perfectly valid run_id under Strict Mode, permanently leaving
+    // runRef.current.id null and silently dropping every score submission.
     void (async () => {
-      const { data } = await supabase.rpc("start_tournament_run", { _tournament_id: activeTid });
-      const res = data as { ok?: boolean; run_id?: string } | null;
-      if (!alive || !res?.ok || !res.run_id) return;
-      if (runRef.current.key === key) runRef.current = { key, id: res.run_id };
+      const runId = await startTournamentRun(activeTid);
+      if (!runId) return;
+      if (runRef.current.key === key) runRef.current = { key, id: runId };
     })();
-    return () => { alive = false; };
   }, [activeTid, game.seed, game.over]);
 
   /* ----- tournament: submit the finished run once, then keep the rank live ----- */
@@ -483,24 +508,46 @@ function BlastPage() {
     const key = `${activeTid}:${game.seed}`;
     let alive = true;
 
-    const readStanding = async () => {
-      const { data } = await supabase.rpc("my_tournament_standing", { _tournament_id: activeTid });
-      return (data as { played?: boolean; rank?: number; total?: number } | null) ?? null;
-    };
+    const readStanding = () => readTournamentStanding(activeTid);
 
     void (async () => {
       let prevRank: number | null = null;
       if (submitted.current !== key) {
         submitted.current = key;
         prevRank = (await readStanding())?.rank ?? null;
-        const { data: subRes } = await supabase.rpc("submit_tournament_score", { _tournament_id: activeTid, _score: game.score });
-        const sub = subRes as { ok?: boolean; error?: string } | null;
-        if (sub && sub.ok === false && sub.error === "tournament_full") {
-          toast.error(ar ? "اكتمل عدد اللاعبين في هذه البطولة" : "This tournament is full");
+        
+        if (runRef.current.id) {
+          // The server replays the full move log through the exact same
+          // engine that drove this game and only ever forwards the score it
+          // recomputes itself — a raw claimed score is never trusted.
+          try {
+            const { submitBlastRun } = await import("@/lib/gx/games/blast.server");
+            const res = await submitBlastRun({
+              data: {
+                tournamentId: activeTid,
+                runId: runRef.current.id,
+                seed: game.seed,
+                moves: game.moves,
+                claimedScore: game.score,
+              },
+            });
+            if (!res.ok) {
+              if (res.error === "tournament_full") {
+                toast.error(ar ? "اكتمل عدد اللاعبين في هذه البطولة" : "This tournament is full");
+              } else if (res.error !== "run_too_short") {
+                console.error("Blast score submission failed:", res.error);
+              }
+            }
+          } catch (e) {
+            console.error("Blast score submission failed:", e);
+          }
         }
+        // No server-issued run id means there is no verified play session to
+        // submit against — nothing legitimate can be checked, so we don't try.
       }
       const after = await readStanding();
       if (!alive) return;
+      if (after?.score) setTournamentBest(after.score);
       setArenaRank({
         rank: after?.rank ?? null,
         total: after?.total ?? null,
@@ -753,12 +800,14 @@ function BlastPage() {
   const trayCellFor = (w: number, h: number) =>
     Math.max(6, Math.min(trayCell, Math.floor(trayBoxPx / Math.max(w, h))));
 
+  const displayBest = activeTid ? Math.max(tournamentBest, game.score) : best;
+
   const hud = (
     <>
       <div className="blast-hud">
         <div className="hud-side">
-          <span>{ar ? "الأفضل" : "Best"}</span>
-          <b>{best.toLocaleString("en-US")}</b>
+          <span style={{ fontSize: activeTid ? "11px" : undefined }}>{activeTid ? (ar ? "أفضل بطولة" : "T. Best") : (ar ? "الأفضل" : "Best")}</span>
+          <b>{displayBest.toLocaleString("en-US")}</b>
         </div>
 
         <div className="hud-main">
@@ -927,7 +976,13 @@ function BlastPage() {
                       <button type="button" className="btn btn-primary bo-btn" onClick={restart}>
                         {ar ? "العب مرة أخرى" : "Play again"}
                       </button>
-                      <Link to="/games" className="bo-link">{ar ? "رجوع لساحة اللعب" : "Back to Play Arena"}</Link>
+                      {activeTid ? (
+                        <Link to="/games/t/$id" params={{ id: activeTid }} className="bo-link">
+                          {ar ? "العودة للبطولة" : "Back to Tournament"}
+                        </Link>
+                      ) : (
+                        <Link to="/games" className="bo-link">{ar ? "رجوع لساحة اللعب" : "Back to Play Arena"}</Link>
+                      )}
                     </div>
                   </div>
                 )}

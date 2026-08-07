@@ -418,6 +418,8 @@ export type ResolvedPlan = {
   product: string;
   name: string;
   icon: string;
+  iconImage?: string | null;
+  imageUrl?: string | null;
   bg: string;
   price: number;
 };
@@ -449,6 +451,8 @@ export function getProductLink(slug: string): string {
 
 export function getCategoryLink(slug: string): string {
   if (slug === "snapchat") return "/product/snapchat";
+  if (slug === "fortnite") return "/product/fortnite";
+  if (["pc-games", "steam", "xbox-games", "sony"].includes(slug)) return `/games/${slug}`;
   return `/category/${slug}`;
 }
 

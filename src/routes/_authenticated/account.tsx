@@ -16,6 +16,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { GxProfile } from "@/components/gx/GxProfile";
 import { SpinWheel } from "@/components/gx/SpinWheel";
 import { Pager, usePager } from "@/components/gx/Pager";
+import { OrderReviewInline } from "@/components/gx/OrderReviewInline";
 
 type AccountTab = "profile" | "orders" | "wheel" | "security";
 
@@ -195,7 +196,7 @@ function AccountPage() {
 
 
         <TabsContent value="orders" className="mt-4">
-          <OrdersTab loading={ordersQ.isLoading} orders={ordersQ.data ?? []} />
+          <OrdersTab loading={ordersQ.isLoading} orders={ordersQ.data ?? []} userId={user.id} />
         </TabsContent>
 
         <TabsContent value="wheel" className="mt-4">
@@ -218,7 +219,7 @@ type OrderRow = {
   codes_revealed_at?: string | null; codes_reveal_count?: number | null;
 };
 
-function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }) {
+function OrdersTab({ loading, orders, userId }: { loading: boolean; orders: OrderRow[]; userId: string }) {
   const { t, dir, lang } = useLang();
   const STATUS_TABS: Array<{ key: string; label: string; match: (s: string) => boolean }> = [
     { key: "pending", label: t("acc.status_pending"), match: (s) => s === "pending" },
@@ -278,7 +279,7 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
         </CardContent></Card>
       ) : (
         <>
-          {pager.slice.map((o) => <OrderCard key={o.id} order={o} />)}
+          {pager.slice.map((o) => <OrderCard key={o.id} order={o} userId={userId} />)}
           <Pager page={pager.page} pageCount={pager.pageCount} total={pager.total} size={pager.size}
             onPage={pager.setPage} onSize={pager.setSize} sizes={[5, 10, 20]} lang={lang === "ar" ? "ar" : "en"} />
         </>
@@ -288,7 +289,7 @@ function OrdersTab({ loading, orders }: { loading: boolean; orders: OrderRow[] }
 }
 
 
-function OrderCard({ order: o }: { order: OrderRow }) {
+function OrderCard({ order: o, userId }: { order: OrderRow; userId: string }) {
   const { t, lang } = useLang();
   const ar = lang === "ar";
   const [open, setOpen] = useState(false);
@@ -429,6 +430,11 @@ function OrderCard({ order: o }: { order: OrderRow }) {
               </p>
             )}
           </div>
+        )}
+
+        {/* Inline Review for delivered orders */}
+        {o.status === "delivered" && (
+          <OrderReviewInline orderId={o.id} orderNumber={o.order_number} userId={userId} />
         )}
 
       </CardContent>

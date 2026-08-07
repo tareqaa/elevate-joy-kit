@@ -52,15 +52,24 @@ export async function loadDbVariants(force = false): Promise<void> {
   if (loaded && !force) return;
   loading = (async () => {
     try {
-      const { data } = await supabase
-        .from("product_variants")
-        .select(
-          "cart_id, label_ar, label_en, price_jod, is_active, products:product_id (slug, name_ar, name_en, icon, thumb_bg, is_active)",
-        )
-        .eq("is_active", true)
-        .limit(2000);
+      const [{ data: variants }, { data: products }] = await Promise.all([
+        supabase
+          .from("product_variants")
+          .select(
+            "cart_id, label_ar, label_en, price_jod, is_active, products:product_id (slug, name_ar, name_en, image_url, icon, icon_image_url, thumb_bg, is_active)",
+          )
+          .eq("is_active", true)
+          .limit(2000),
+        supabase
+          .from("products")
+          .select("id, slug, name_ar, name_en, base_price_jod, image_url, icon, icon_image_url, thumb_bg, is_active")
+          .eq("is_active", true)
+          .limit(2000),
+      ]);
+
       const next: Record<string, Entry> = {};
-      for (const row of (data ?? []) as Record<string, any>[]) {
+
+      for (const row of (variants ?? []) as Record<string, any>[]) {
         const p = row.products as Record<string, any> | null;
         if (!row.cart_id || !p || p.is_active === false) continue;
         next[row.cart_id] = {
@@ -68,10 +77,29 @@ export async function loadDbVariants(force = false): Promise<void> {
           product: p.slug,
           name: `${p.name_ar || p.name_en} — ${row.label_ar || row.label_en}`,
           icon: p.icon || "🎮",
+          iconImage: p.icon_image_url || null,
+          imageUrl: p.image_url || p.icon_image_url || null,
           bg: p.thumb_bg || "linear-gradient(145deg,#1a1e2a,#0a0c12)",
           price: Number(row.price_jod) || 0,
         };
       }
+
+      for (const p of (products ?? []) as Record<string, any>[]) {
+        if (!p.slug) continue;
+        if (!next[p.slug]) {
+          next[p.slug] = {
+            cartId: p.slug,
+            product: p.slug,
+            name: p.name_ar || p.name_en || p.slug,
+            icon: p.icon || "🎮",
+            iconImage: p.icon_image_url || null,
+            imageUrl: p.image_url || p.icon_image_url || null,
+            bg: p.thumb_bg || "linear-gradient(145deg,#1a1e2a,#0a0c12)",
+            price: Number(p.base_price_jod) || 0,
+          };
+        }
+      }
+
       map = next;
       loaded = true;
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(next)); } catch { /* noop */ }

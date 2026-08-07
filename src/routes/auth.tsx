@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLang } from "@/lib/gx/i18n";
+import { useAuthActions } from "@/lib/gx/use-auth-actions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { t } = useLang();
   const navigate = useNavigate();
+  const { signIn, signUp, resetPassword, signInWithGoogle } = useAuthActions();
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
 
@@ -35,54 +37,37 @@ function AuthPage() {
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: siEmail.trim(), password: siPass });
+    const res = await signIn(siEmail, siPass);
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (!res.ok) return toast.error(res.error);
     toast.success(t("auth.hello"));
     navigate({ to: "/account" });
   }
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
-    const uname = suUsername.trim();
-    if (!/^[a-zA-Z0-9_]{3,20}$/.test(uname)) {
-      return toast.error(t("auth.username_pattern_err"));
-    }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: suEmail.trim(),
-      password: suPass,
-      options: {
-        emailRedirectTo: `${window.location.origin}/account`,
-        data: { username: uname },
-      },
-    });
+    const res = await signUp(suEmail, suPass, suUsername, "/account");
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (!res.ok) {
+      return toast.error(res.error === "invalid_username" ? t("auth.username_pattern_err") : res.error);
+    }
     toast.success(t("auth.signup_ok"));
   }
 
   async function handleReset(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(siEmail.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    const res = await resetPassword(siEmail);
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (!res.ok) return toast.error(res.error);
     toast.success(t("auth.reset_sent"));
   }
 
   async function handleGoogle() {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/account`,
-        queryParams: { prompt: "select_account" },
-      },
-    });
-    if (error) { setLoading(false); toast.error(error.message); }
+    const res = await signInWithGoogle("/account");
+    if (!res.ok) { setLoading(false); toast.error(res.error); }
   }
 
 

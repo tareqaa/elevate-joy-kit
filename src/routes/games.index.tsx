@@ -11,6 +11,7 @@ import { CarouselRow } from "@/components/gx/CarouselRow";
 import { supabase } from "@/integrations/supabase/client";
 import { listTournaments, type TournamentRow, type TournamentPrize } from "@/lib/gx/tournaments.functions";
 import { prizeRewards, type Prize as PrizeModel } from "@/lib/gx/tournament-prizes";
+import { listMiniGames, type MiniGameRow } from "@/lib/gx/mini-games.functions";
 
 
 export const Route = createFileRoute("/games/")({
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/games/")({
     ],
     links: STORE_HEAD_LINKS,
   }),
-  loader: () => listTournaments(),
+  loader: () => Promise.all([listTournaments(), listMiniGames()]),
   errorComponent: ({ error }) => (
     <StoreShell>
       <main className="wrap" style={{ padding: "60px 0" }} role="alert">
@@ -101,11 +102,10 @@ function Countdown({ ms, ar }: { ms: number; ar: boolean }) {
 }
 
 function GamesPage() {
-  const { serverNow, tournaments, carouselCount } = Route.useLoaderData() as {
-    serverNow: string;
-    tournaments: TournamentRow[];
-    carouselCount: number;
-  };
+  const [{ serverNow, tournaments, carouselCount }, miniGames] = Route.useLoaderData() as [
+    { serverNow: string; tournaments: TournamentRow[]; carouselCount: number },
+    MiniGameRow[],
+  ];
 
   const { lang, dir } = useLang();
   const ar = lang === "ar";
@@ -166,6 +166,38 @@ function GamesPage() {
           </div>
         </section>
 
+
+        {miniGames.length > 0 && (
+          <section className="wrap mb-12">
+            <h2 className="ar-sec-title">{ar ? "الألعاب المصغرة" : "Mini Games"}</h2>
+            <p className="text-sm text-slate-400 -mt-2 mb-3">
+              {ar
+                ? "لعب حر بدون ارتباط بالبطولات — متاح دائمًا حتى بدون بطولة نشطة."
+                : "Casual play, no tournament connection — always available, even with no live tournament."}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {miniGames.map((g) => (
+                // Plain <a>, not <Link>: TanStack Router's structured `search`
+                // prop JSON-serializes string values (?practice=%221%22),
+                // which validateSearch wouldn't recognize. A real href keeps
+                // the query string exactly ?practice=1, unambiguously.
+                <a
+                  key={g.id}
+                  href={`${g.path}?practice=1`}
+                  className="flex items-center gap-6 p-6 rounded-2xl bg-slate-800/50 border border-slate-700/50 hover:border-primary/50 hover:bg-slate-800 transition-all group"
+                >
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-4xl shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
+                    {g.icon}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-1">{ar ? g.nameAr : g.nameEn}</h3>
+                    <p className="text-slate-400 text-sm">{ar ? g.descAr : g.descEn}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="wrap">
           <h2 className="ar-sec-title">{ar ? "البطولات" : "Tournaments"}</h2>

@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
+import { getPublicClient } from "@/lib/gx/supabase-request";
 
 export type TournamentPrize = { place: number; label_ar: string; label_en: string };
 
@@ -28,22 +28,7 @@ export type TournamentsPayload = {
 
 export const listTournaments = createServerFn({ method: "GET" }).handler(
   async (): Promise<TournamentsPayload> => {
-    const url = (process.env["SUPABASE_URL"] || process.env["VITE_SUPABASE_URL"])!;
-    const key = (process.env["SUPABASE_PUBLISHABLE_KEY"] ||
-      process.env["VITE_SUPABASE_PUBLISHABLE_KEY"])!;
-    const client = createClient(url, key, {
-      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-      global: {
-        fetch: (input, init) => {
-          const h = new Headers(init?.headers);
-          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) {
-            h.delete("Authorization");
-          }
-          h.set("apikey", key);
-          return fetch(input, { ...init, headers: h });
-        },
-      },
-    });
+    const client = getPublicClient();
 
     const [{ data, error }, settingRes] = await Promise.all([
       client.rpc("list_tournaments"),

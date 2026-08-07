@@ -11,6 +11,7 @@ import { useCurrency } from "@/lib/gx/currency";
 import { useCart } from "@/lib/gx/cart";
 import { useLang } from "@/lib/gx/i18n";
 import type { Lang } from "@/lib/gx/i18n";
+import { useSiteSettings } from "@/lib/gx/site-settings";
 import { BuyActions } from "@/components/gx/BuyActions";
 import { DiscountBadge } from "@/components/gx/DiscountBadge";
 import { FeatureAccordion, DeliveryBox, SectionHead } from "@/components/gx/Primitives";
@@ -49,14 +50,15 @@ function useLocalized(p: CatalogProduct) {
 }
 
 function ProductHero({ p, l }: { p: CatalogProduct; l: ReturnType<typeof useLocalized> }) {
+  const imgSrc = p.imageUrl || p.iconImage;
   return (
     <section className="product-hero">
       <div className="wrap">
         <div className="product-hero-inner fade-in">
           <div className="product-icon-badge">
             <div className="core">
-              {p.iconImage ? (
-                <img src={p.iconImage} alt={l.name} style={{ width: 56, height: 56, objectFit: "contain" }} />
+              {imgSrc ? (
+                <img src={imgSrc} alt={l.name} style={{ width: 56, height: 56, objectFit: "contain" }} />
               ) : (
                 <span>{p.icon}</span>
               )}
@@ -64,14 +66,81 @@ function ProductHero({ p, l }: { p: CatalogProduct; l: ReturnType<typeof useLoca
           </div>
           <div className="product-hero-text">
             {l.category && <span className="cat-tag">{l.category}</span>}
-            <h1>{l.tagline}</h1>
-            <p>{l.description}</p>
+            <h1>{l.name}</h1>
+            {l.tagline && l.tagline !== l.name && <p className="hero-sub">{l.tagline}</p>}
+            {l.description && <p>{l.description}</p>}
           </div>
         </div>
       </div>
     </section>
   );
 }
+
+export const VBUCKS_TIER_THEMES: Record<
+  number,
+  {
+    bg: string;
+    border: string;
+    accent: string;
+    badgeAr: string;
+    badgeEn: string;
+  }
+> = {
+  800: {
+    bg: "linear-gradient(145deg, rgba(75,217,75,0.22), rgba(10,25,10,0.95))",
+    border: "rgba(75,217,75,0.45)",
+    accent: "#4bd94b",
+    badgeAr: "🌱 فئة برونزية",
+    badgeEn: "Starter Pack",
+  },
+  2400: {
+    bg: "linear-gradient(145deg, rgba(59,169,255,0.25), rgba(10,25,50,0.95))",
+    border: "rgba(59,169,255,0.5)",
+    accent: "#3ba9ff",
+    badgeAr: "🔥 الأكثر طلبًا",
+    badgeEn: "Most Popular",
+  },
+  4500: {
+    bg: "linear-gradient(145deg, rgba(178,107,255,0.28), rgba(30,12,60,0.95))",
+    border: "rgba(178,107,255,0.55)",
+    accent: "#b26bff",
+    badgeAr: "💎 قيمة ممتازة",
+    badgeEn: "Best Value",
+  },
+  12500: {
+    bg: "linear-gradient(145deg, rgba(255,207,71,0.32), rgba(50,30,5,0.95))",
+    border: "rgba(255,207,71,0.65)",
+    accent: "#ffcf47",
+    badgeAr: "👑 الباقة الكبرى",
+    badgeEn: "Ultimate Pack",
+  },
+};
+
+export const CREW_TIER_THEMES: Record<
+  string,
+  {
+    bg: string;
+    border: string;
+    accent: string;
+    badgeAr: string;
+    badgeEn: string;
+  }
+> = {
+  "fn-crew": {
+    bg: "linear-gradient(145deg, rgba(31,169,255,0.28), rgba(10,35,80,0.95))",
+    border: "rgba(31,169,255,0.55)",
+    accent: "#1fa9ff",
+    badgeAr: "⭐ اشتراك شهر",
+    badgeEn: "Monthly Pass",
+  },
+  "fn-crew-3": {
+    bg: "linear-gradient(145deg, rgba(255,180,50,0.32), rgba(60,30,5,0.95))",
+    border: "rgba(255,180,50,0.65)",
+    accent: "#ffb432",
+    badgeAr: "👑 3 أشهر - أفضل توفير",
+    badgeEn: "3 Months - Max Savings",
+  },
+};
 
 function VariantCard({
   p,
@@ -83,23 +152,66 @@ function VariantCard({
   icon?: React.ReactNode;
 }) {
   const { format } = useCurrency();
+  const { lang } = useLang();
+  const siteSettings = useSiteSettings();
+  const imgSrc = p.imageUrl || p.iconImage;
+  const tier = parseInt(v.cartId.replace(/\D+/g, ""), 10) || 0;
+  const vbucksTheme = v.planGroup === "vbucks" ? VBUCKS_TIER_THEMES[tier] : null;
+  const crewTheme = v.planGroup === "crew" ? (CREW_TIER_THEMES[v.cartId] || {
+    bg: "linear-gradient(145deg, rgba(31,169,255,0.25), rgba(10,35,70,0.95))",
+    border: "rgba(31,169,255,0.5)",
+    accent: "#1fa9ff",
+    badgeAr: "⭐ Fortnite Crew",
+    badgeEn: "Fortnite Crew",
+  }) : null;
+  const theme = vbucksTheme || crewTheme;
+
+  const isTagDisabled =
+    v.tag?.toLowerCase() === "none" ||
+    v.tag?.toLowerCase() === "no-badge" ||
+    v.tag?.toLowerCase() === "off" ||
+    v.tag === "بدون شارة" ||
+    v.tag === "إخفاء" ||
+    v.tag === "لا شيء";
+
+  let badgeText: string | null = null;
+  if (v.tag && !isTagDisabled) {
+    badgeText = v.tag;
+  } else if (!isTagDisabled && !siteSettings.hide_fortnite_badges && theme) {
+    badgeText = lang === "en" ? theme.badgeEn : theme.badgeAr;
+  }
+
   return (
-    <div className="prod-card">
-      <div className="prod-thumb" style={{ background: p.thumbBg || undefined }}>
-        {v.tag && <span className="tag-badge">{v.tag}</span>}
+    <div
+      className="prod-card"
+      style={theme ? { borderColor: theme.border, boxShadow: `0 8px 24px -6px ${theme.border}` } : undefined}
+    >
+      <div className="prod-thumb" style={{ background: theme?.bg || p.thumbBg || undefined }}>
+        {badgeText && (
+          <span
+            className="tag-badge"
+            style={theme ? { background: theme.accent, color: "#001018", fontWeight: 800 } : undefined}
+          >
+            {badgeText}
+          </span>
+        )}
         <DiscountBadge value={discountOf(v)} />
         {icon ??
-          (p.iconImage ? (
-            <img src={p.iconImage} alt="" style={{ width: 64, height: 64, objectFit: "contain" }} />
+          (imgSrc ? (
+            <img src={imgSrc} alt="" style={{ width: 64, height: 64, objectFit: "contain" }} />
           ) : (
             <span style={{ fontSize: 44 }}>{p.icon}</span>
           ))}
       </div>
       <div className="prod-body">
-        <div className="prod-name" style={{ minHeight: "auto", fontSize: 16 }}>{v.label}</div>
+        <div className="prod-name" style={{ minHeight: "auto", fontSize: 16 }}>
+          {v.label}
+        </div>
         <div className="prod-prices">
           {v.oldPrice && <span className="prod-old">{format(v.oldPrice)}</span>}
-          <span className="prod-new">{format(v.price)}</span>
+          <span className="prod-new" style={theme ? { color: theme.accent } : undefined}>
+            {format(v.price)}
+          </span>
         </div>
         <BuyActions cartId={v.cartId} />
       </div>
@@ -202,7 +314,6 @@ export function MultiAccountTemplate({ product }: { product: CatalogProduct }) {
               return (
                 <div key={pl.cartId} className={"snap-plan" + (pl.cartId === planId ? " selected" : "")} onClick={() => setPlanId(pl.cartId)}>
                   <div className="sp-check">✓</div>
-                  {pl.tag && <div className="sp-tag">{pl.tag}</div>}
                   {discount > 0 && <div className="sp-discount">{t("snap.save_pct")} {discount}%</div>}
                   <div className="sp-icon">
                     {product.iconImage ? <img src={product.iconImage} alt="" style={{ width: 34, height: 34, objectFit: "contain" }} /> : product.icon}
@@ -431,28 +542,39 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
             <div className="giftcard-empty fade-in">
               <div className="ge-icon">🕓</div>
               <h3>{t("gc.empty_title")}</h3>
-              <p>{t("gc.empty_desc_a")} {l.name} {t("gc.empty_desc_b")}</p>
             </div>
           ) : (
-            regions.map((region) => (
-              <div key={region.code} className="region-section">
-                <div className="region-head">
-                  <div className="region-flag">
-                    <img src={`https://flagcdn.com/w160/${region.code}.png`} srcSet={`https://flagcdn.com/w320/${region.code}.png 2x`} alt={region.name} />
-                  </div>
-                  <div className="region-name">{region.name}</div>
-                </div>
-                <div className="denom-grid" style={{ ["--gc-accent" as string]: product.accentColor || "var(--accent)" } as React.CSSProperties}>
-                  {region.items.map((d) => (
-                    <div key={d.cartId} className="denom-card">
-                      <div className="dc-value">{d.label}</div>
-                      <div className="dc-price"><span>{format(d.price)}</span></div>
-                      <BuyActions cartId={d.cartId} />
+            regions.map((region) => {
+              const codeClean = region.code.toLowerCase().trim();
+              const flagSrc = codeClean.startsWith("http") || codeClean.startsWith("data:")
+                ? codeClean
+                : `https://flagcdn.com/w160/${codeClean === "uk" ? "gb" : codeClean}.png`;
+              return (
+                <div key={region.code} className="region-section">
+                  <div className="region-head">
+                    <div className="region-flag">
+                      <img
+                        src={flagSrc}
+                        alt={region.name}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "https://flagcdn.com/w160/gb.png";
+                        }}
+                      />
                     </div>
-                  ))}
+                    <div className="region-name">{region.name}</div>
+                  </div>
+                  <div className="denom-grid" style={{ ["--gc-accent" as string]: product.accentColor || "var(--accent)" } as React.CSSProperties}>
+                    {region.items.map((d) => (
+                      <div key={d.cartId} className="denom-card">
+                        <div className="dc-value">{d.label}</div>
+                        <div className="dc-price"><span>{format(d.price)}</span></div>
+                        <BuyActions cartId={d.cartId} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </section>

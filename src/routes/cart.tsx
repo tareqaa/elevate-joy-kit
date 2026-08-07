@@ -107,7 +107,13 @@ function CartList() {
         const isSnap = it.cartId.startsWith("snap-");
         return (
           <div key={it.cartId} className="cart-row">
-            <div className="cr-thumb" style={{ background: it.bg }}>{it.icon}</div>
+            <div className="cr-thumb" style={{ background: it.bg }}>
+              {it.imageUrl || it.iconImage ? (
+                <img src={it.imageUrl || it.iconImage || undefined} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 8 }} />
+              ) : (
+                it.icon
+              )}
+            </div>
             <div className="cr-info">
               <div className="cr-name">{localizeResolvedName(it.name, lang)}</div>
               <div className="cr-unit">{t("cart.unit_price")}: <span>{format(it.price)}</span></div>

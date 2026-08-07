@@ -9,6 +9,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { CATEGORY_LINKS } from "@/data/products";
 
 export type StorefrontCategory = {
   slug: string;
@@ -23,11 +24,41 @@ export type StorefrontCategory = {
   sortOrder: number;
 };
 
+const INITIAL_STOREFRONT_CATEGORIES: StorefrontCategory[] = CATEGORY_LINKS.map((c, i) => ({
+  slug: c.slug,
+  nameAr: c.name,
+  nameEn: c.name,
+  descriptionAr: c.desc,
+  descriptionEn: c.desc,
+  icon: c.icon,
+  iconImage: null,
+  accent: c.accent,
+  background: c.bg,
+  sortOrder: i + 1,
+}));
+
+const CATS_CACHE_KEY = "gx_storefront_root_cats_v4";
+
+const DEFAULT_BY_SLUG = new Map(CATEGORY_LINKS.map((c) => [c.slug, { accent: c.accent, bg: c.bg }]));
+
+function readCachedCategories(): StorefrontCategory[] {
+  if (typeof window === "undefined") return INITIAL_STOREFRONT_CATEGORIES;
+  try {
+    const raw = localStorage.getItem(CATS_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {}
+  return INITIAL_STOREFRONT_CATEGORIES;
+}
+
 /** Active root categories used by the homepage. New admin categories appear here automatically. */
 export function useStorefrontCategories(): StorefrontCategory[] {
   const queryClient = useQueryClient();
   const { data } = useQuery({
     queryKey: ["storefront-root-categories"],
+    initialData: readCachedCategories(),
     staleTime: 30_000,
     queryFn: async () => {
       const { data: rows, error } = await supabase
@@ -38,18 +69,33 @@ export function useStorefrontCategories(): StorefrontCategory[] {
         .eq("is_active", true)
         .order("sort_order");
       if (error) throw error;
-      return (rows ?? []).map((row) => ({
-        slug: row.slug,
-        nameAr: row.name_ar,
-        nameEn: row.name_en,
-        descriptionAr: row.description_ar ?? "",
-        descriptionEn: row.description_en ?? "",
-        icon: row.icon ?? "◈",
-        iconImage: row.icon_url,
-        accent: row.accent_color ?? "var(--cyan)",
-        background: row.theme_gradient ?? "var(--surface-2)",
-        sortOrder: row.sort_order,
-      })) as StorefrontCategory[];
+      const mapped = (rows ?? []).map((row) => {
+        const def = DEFAULT_BY_SLUG.get(row.slug);
+        const accent = (row.accent_color && row.accent_color.trim() !== "" && row.accent_color !== "var(--cyan)")
+          ? row.accent_color
+          : (def?.accent || "#00E5FF");
+
+        const background = (row.theme_gradient && row.theme_gradient.trim() !== "" && row.theme_gradient !== "var(--surface-2)")
+          ? row.theme_gradient
+          : (def?.bg || `linear-gradient(145deg, ${accent}28, ${accent}0a)`);
+
+        return {
+          slug: row.slug,
+          nameAr: row.name_ar,
+          nameEn: row.name_en,
+          descriptionAr: row.description_ar ?? "",
+          descriptionEn: row.description_en ?? "",
+          icon: row.icon || "◈",
+          iconImage: row.icon_url,
+          accent,
+          background,
+          sortOrder: row.sort_order,
+        };
+      }) as StorefrontCategory[];
+      if (typeof window !== "undefined") {
+        localStorage.setItem(CATS_CACHE_KEY, JSON.stringify(mapped));
+      }
+      return mapped;
     },
   });
 

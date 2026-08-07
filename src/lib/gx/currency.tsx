@@ -50,15 +50,16 @@ function readCachedRates(): { at: number; rates: Record<string, number> } | null
   } catch { return null; }
 }
 
-/** Live market rates (base JOD). Falls back silently to the built-in table. */
+/** Live market rates (base JOD), via our own server proxy — never the third
+ *  party directly from the browser. Falls back silently to the built-in table. */
 async function fetchLiveRates(): Promise<Record<string, number> | null> {
   try {
-    const res = await fetch("https://open.er-api.com/v6/latest/JOD");
-    const data = await res.json();
-    if (data?.result !== "success" || !data?.rates) return null;
+    const { getFxRatesServer } = await import("./currency.server");
+    const rates = await getFxRatesServer();
+    if (!rates) return null;
     const out: Record<string, number> = {};
     for (const code of Object.keys(CURRENCIES)) {
-      const r = Number(data.rates[code]);
+      const r = Number(rates[code]);
       if (Number.isFinite(r) && r > 0) out[code] = r;
     }
     out.JOD = 1;
@@ -91,16 +92,20 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       return;
     }
     // Auto-detect via IP
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 1500);
     (async () => {
       try {
-        const res = await fetch("https://ipwho.is/");
+        const res = await fetch("https://ipwho.is/", { signal: ctrl.signal });
         const data = await res.json();
         if (data?.success && data.country_code) {
           const cur = COUNTRY_TO_CURRENCY[data.country_code];
           if (cur && CURRENCIES[cur]) setCurrencyState(cur);
         }
       } catch { /* silent */ }
+      finally { clearTimeout(timer); }
     })();
+    return () => { clearTimeout(timer); ctrl.abort(); };
   }, []);
 
   const setCurrency = useCallback((code: string) => {

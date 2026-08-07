@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/gx/i18n";
+import { useAuthActions } from "@/lib/gx/use-auth-actions";
 
 export function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useLang();
+  const { signIn, signUp, resetPassword, signInWithGoogle } = useAuthActions();
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -20,47 +21,31 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setMsg({ text: "..." });
-    try {
-      if (mode === "reset") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: window.location.origin + "/reset-password",
-        });
-        if (error) return setMsg({ text: error.message });
-        return setMsg({ text: t("auth.reset_sent"), ok: true });
+    if (mode === "reset") {
+      const res = await resetPassword(email);
+      if (!res.ok) return setMsg({ text: res.error ?? "" });
+      return setMsg({ text: t("auth.reset_sent"), ok: true });
+    }
+    if (mode === "signin") {
+      const res = await signIn(email, pass);
+      if (!res.ok) return setMsg({ text: res.error ?? "" });
+      setMsg({ text: t("auth.signed_in_ok"), ok: true });
+      // The root layout's onAuthStateChange listener already invalidates the
+      // router and query cache on SIGNED_IN, so we just close the modal.
+      setTimeout(onClose, 500);
+    } else {
+      const res = await signUp(email, pass, username, "/");
+      if (!res.ok) {
+        return setMsg({ text: res.error === "invalid_username" ? t("auth.username_pattern_err") : (res.error ?? "") });
       }
-      if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pass });
-        if (error) return setMsg({ text: error.message });
-        setMsg({ text: t("auth.signed_in_ok"), ok: true });
-        setTimeout(() => { onClose(); window.location.reload(); }, 500);
-      } else {
-        if (!/^[a-zA-Z0-9_]{3,20}$/.test(username.trim())) return setMsg({ text: t("auth.username_pattern_err") });
-        const { error } = await supabase.auth.signUp({
-          email: email.trim(), password: pass,
-          options: { emailRedirectTo: window.location.origin + "/", data: { username: username.trim() } },
-        });
-        if (error) return setMsg({ text: error.message });
-        setMsg({ text: t("auth.signup_ok"), ok: true });
-      }
-    } catch (err) {
-      setMsg({ text: (err as Error).message || "Unexpected error" });
+      setMsg({ text: t("auth.signup_ok"), ok: true });
     }
   }
 
   async function google() {
     setMsg({ text: "..." });
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: window.location.origin + "/",
-          queryParams: { prompt: "select_account" },
-        },
-      });
-      if (error) setMsg({ text: error.message || "Google sign-in failed" });
-    } catch (err) {
-      setMsg({ text: (err as Error).message || "Google sign-in failed" });
-    }
+    const res = await signInWithGoogle("/");
+    if (!res.ok) setMsg({ text: res.error ?? "Google sign-in failed" });
   }
 
 

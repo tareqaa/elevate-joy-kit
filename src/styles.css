@@ -195,3 +195,110 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* ============= Product Cards & Media Image Fitting (Anti-Stretching) ============= */
+.subcat-ic {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(0, 229, 255, 0.08);
+}
+
+.subcat-ic img,
+.product-icon-badge img {
+  max-width: 85% !important;
+  max-height: 85% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+  transition: transform 0.3s ease;
+}
+
+.prod-thumb {
+  height: 160px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: linear-gradient(180deg, rgba(16, 24, 32, 0.9), rgba(10, 15, 22, 0.95));
+}
+
+.prod-thumb img {
+  max-width: 85%;
+  max-height: 85%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.4));
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.prod-thumb img.cover-img,
+.prod-thumb-cover img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
+
+.prod-card:hover .prod-thumb img {
+  transform: scale(1.08);
+}
+
+.region-flag img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* Smart Image Auto-Cropping & Uniform Display Across Product Cards */
+.prod-card .prod-thumb {
+  height: 180px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radius-lg, 14px) var(--radius-lg, 14px) 0 0;
+  background: linear-gradient(180deg, rgba(16, 24, 32, 0.95), rgba(10, 15, 22, 0.98));
+}
+
+.prod-card .prod-thumb-img,
+.prod-card .prod-thumb img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  display: block !important;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.prod-card:hover .prod-thumb-img,
+.prod-card:hover .prod-thumb img {
+  transform: scale(1.06);
+}
+
+.prod-thumb img[src*="gemini-logo"],
+.product-icon-badge img[src*="gemini-logo"],
+.subcat-ic img[src*="gemini-logo"] {
+  max-width: 90% !important;
+  max-height: 85% !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 4px 12px rgba(79, 135, 237, 0.45));
+}
+
+
+

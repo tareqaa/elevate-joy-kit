@@ -62,6 +62,7 @@ export type SiteSettings = {
   home_bestseller_order: string[];
   home_layout: HomeLayout;
   catalog_prices: CatalogPrices;
+  hide_fortnite_badges: boolean;
 };
 
 const DEFAULT_HERO: HomeHero = {
@@ -89,6 +90,7 @@ const DEFAULTS: SiteSettings = {
   home_bestseller_order: [],
   home_layout: DEFAULT_HOME_LAYOUT,
   catalog_prices: {},
+  hide_fortnite_badges: false,
 };
 
 const CACHE_KEY = "gx_site_settings_v2";
