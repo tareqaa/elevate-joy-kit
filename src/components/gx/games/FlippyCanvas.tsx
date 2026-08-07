@@ -81,15 +81,23 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
     let animId = 0;
     let lastStatus = "idle";
     let lastScore = 0;
+    // Real elapsed time drives the sim (normalized to "units of one 60fps
+    // frame") instead of raw RAF-call count — otherwise the whole game runs
+    // faster on higher-refresh-rate displays (120/144Hz), since more calls
+    // land per real second. Clamped so resuming a backgrounded tab (RAF
+    // pauses while hidden) doesn't apply one huge catch-up step.
+    let lastTime = performance.now();
 
-    const loop = () => {
+    const loop = (now: number) => {
       const state = stateRef.current;
       const w = canvasRef.current?.width || 400;
       const h = canvasRef.current?.height || 600;
+      const dt = Math.min(3, Math.max(0, (now - lastTime) / (1000 / 60)));
+      lastTime = now;
 
-      updateEngine(state, w, h);
-      rendererRef.current?.render(state);
-      
+      updateEngine(state, w, h, dt);
+      rendererRef.current?.render(state, dt);
+
       if (state.score !== lastScore) {
         lastScore = state.score;
         setScore(state.score);
@@ -117,6 +125,7 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       animId = requestAnimationFrame(loop);
     };
 
+    lastTime = performance.now();
     animId = requestAnimationFrame(loop);
 
     return () => {

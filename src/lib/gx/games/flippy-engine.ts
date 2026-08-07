@@ -90,24 +90,35 @@ export function jump(state: FlippyState) {
   }
 }
 
-export function updateEngine(state: FlippyState, width: number, height: number) {
+/**
+ * `dt` is elapsed real time since the last call, normalized so 1.0 == one
+ * frame at 60fps (the rate every constant below was tuned against). Pass
+ * `(now - lastNow) / (1000/60)` from the caller's requestAnimationFrame
+ * loop. Without this, every increment here was applied once per *frame*
+ * rather than once per unit of *time* — on a 120/144Hz display the whole
+ * simulation ran proportionally faster, which is exactly the "game feels
+ * too fast" bug this parameter fixes. Defaults to 1 so any other caller
+ * (e.g. a test) keeps the original fixed-frame behavior.
+ */
+export function updateEngine(state: FlippyState, width: number, height: number, dt: number = 1) {
   if (state.status !== "playing") return;
 
-  state.frames++;
+  const framesBefore = state.frames;
+  state.frames += dt;
 
   if (state.transitionProgress < 1.0) {
-    state.transitionProgress += 0.01; // Takes about 1.6 seconds to fully blend
+    state.transitionProgress += 0.01 * dt; // Takes about 1.6 seconds to fully blend
     if (state.transitionProgress > 1.0) state.transitionProgress = 1.0;
   }
 
   // Apply world modifiers
   const gravity = CONSTANTS.GRAVITY * state.currentWorld.gravityModifier;
-  
+
   // Bird physics
-  state.bird.vel.y += gravity;
-  state.bird.vel.y += state.currentWorld.wind.y;
-  
-  state.bird.pos.y += state.bird.vel.y;
+  state.bird.vel.y += gravity * dt;
+  state.bird.vel.y += state.currentWorld.wind.y * dt;
+
+  state.bird.pos.y += state.bird.vel.y * dt;
   
   // FIXED CAMERA: Bird stays perfectly at 35% of the screen horizontally
   state.bird.pos.x = width * 0.35;
@@ -164,11 +175,17 @@ export function updateEngine(state: FlippyState, width: number, height: number) 
 
   // Dynamic Event Triggering
   if (state.eventTimer > 0) {
-    state.eventTimer--;
-    if (state.eventTimer === 0) {
+    state.eventTimer -= dt;
+    if (state.eventTimer <= 0) {
+      state.eventTimer = 0;
       state.activeEvent = null;
     }
-  } else if (state.score > 0 && state.score % 50 === 0 && !state.activeEvent && state.frames % 300 === 0) {
+  } else if (
+    state.score > 0 && state.score % 50 === 0 && !state.activeEvent &&
+    // Boundary-crossing check instead of `frames % 300 === 0` — with a
+    // fractional dt the counter can step straight over an exact multiple.
+    Math.floor(framesBefore / 300) !== Math.floor(state.frames / 300)
+  ) {
     // Simple 50 points random event
     const events = ["rain", "wind", "fog", "thunder"];
     state.activeEvent = events[Math.floor(Math.random() * events.length)];
@@ -178,13 +195,13 @@ export function updateEngine(state: FlippyState, width: number, height: number) 
   // Update Pipes & Collisions
   for (let i = state.pipes.length - 1; i >= 0; i--) {
     const p = state.pipes[i];
-    
+
     // Wind affects scrolling speed instead of bird position
-    p.x -= (state.speed - state.currentWorld.wind.x);
+    p.x -= (state.speed - state.currentWorld.wind.x) * dt;
 
     // Dynamic pipe movement (Cyber world)
     if (state.currentWorld.dynamicPipes) {
-      p.offsetY = (p.offsetY || 0) + (p.dirY || 1) * 0.5;
+      p.offsetY = (p.offsetY || 0) + (p.dirY || 1) * 0.5 * dt;
       if (Math.abs(p.offsetY) > 30) p.dirY = (p.dirY || 1) * -1;
     }
 

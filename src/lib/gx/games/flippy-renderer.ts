@@ -70,11 +70,15 @@ export class FlippyRenderer {
   private get bgMidX() { return this.getScrollOffset(0.5); }
   private get bgNearX() { return this.getScrollOffset(0.8); }
 
-  public render(state: FlippyState) {
+  /** `dt`: same normalized-to-60fps unit updateEngine takes, so background
+   *  scroll and bird animation speed track real time instead of raw frame
+   *  count — otherwise they'd drift out of sync with the (now dt-correct)
+   *  pipe/physics speed on any display that isn't exactly 60Hz. */
+  public render(state: FlippyState, dt: number = 1) {
     const { ctx, width, height } = this;
     ctx.clearRect(0, 0, width, height);
 
-    this.renderTick++;
+    this.renderTick += dt;
     if (state.status === "gameover") {
       if (this.deathStartTick === null) this.deathStartTick = this.renderTick;
     } else if (this.lastStatus === "gameover") {
@@ -84,8 +88,8 @@ export class FlippyRenderer {
     this.lastStatus = state.status;
 
     // Accumulate scroll
-    this.scrollX += state.speed;
-    this.fgX -= state.speed;
+    this.scrollX += state.speed * dt;
+    this.fgX -= state.speed * dt;
     if (this.fgX <= -60) this.fgX += 60;
 
     this.drawBackground(state);
