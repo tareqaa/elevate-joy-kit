@@ -1,4 +1,4 @@
-import { FlippyState, Pipe } from "./flippy-engine";
+import { FlippyState, Pipe, FlippyEventType } from "./flippy-engine";
 import type { WorldConfig } from "./flippy-worlds";
 
 interface Particle {
@@ -35,6 +35,14 @@ export class FlippyRenderer {
   private renderTick = 0;
   private lastStatus: FlippyState["status"] | null = null;
   private deathStartTick: number | null = null;
+
+  // ─── Event presentation (renderer-local, purely visual — mirrors the
+  //     deathStartTick pattern above so a hard state change, e.g.
+  //     activeEvent flipping to null, doesn't cut its effects off abruptly) ───
+  private lastActiveEvent: FlippyEventType | null = null;
+  private eventStartTick = 0;
+  private eventEndTick = -Infinity;
+  private fadingEventType: FlippyEventType | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext("2d")!;
@@ -87,9 +95,22 @@ export class FlippyRenderer {
     }
     this.lastStatus = state.status;
 
-    // Accumulate scroll
-    this.scrollX += state.speed * dt;
-    this.fgX -= state.speed * dt;
+    if (state.activeEvent !== this.lastActiveEvent) {
+      if (state.activeEvent) {
+        this.eventStartTick = this.renderTick;
+        this.fadingEventType = null;
+      } else if (this.lastActiveEvent) {
+        this.fadingEventType = this.lastActiveEvent;
+        this.eventEndTick = this.renderTick;
+      }
+      this.lastActiveEvent = state.activeEvent;
+    }
+
+    // Accumulate scroll — reads effectiveSpeed (state.speed with SPEED UP's
+    // temporary boost folded in, if active) so the parallax matches how
+    // fast pipes are actually moving.
+    this.scrollX += state.effectiveSpeed * dt;
+    this.fgX -= state.effectiveSpeed * dt;
     if (this.fgX <= -60) this.fgX += 60;
 
     this.drawBackground(state);
@@ -99,6 +120,52 @@ export class FlippyRenderer {
     this.drawBird(state);
     this.drawFogOver(state); // fog drawn over everything for atmosphere
     this.drawDynamicEvent(state);
+    this.drawVignette(); // cinematic edge-darkening, uniform across every world
+  }
+
+  /** Subtle radial edge-darkening applied on top of every world — a cheap,
+   *  world-agnostic pass that reads as "premium game" instead of flat vector
+   *  art without needing bespoke work in each world's drawing code. */
+  private drawVignette() {
+    const { ctx, width, height } = this;
+    ctx.save();
+    const vg = ctx.createRadialGradient(
+      width / 2, height * 0.42, height * 0.2,
+      width / 2, height * 0.5, height * 0.9
+    );
+    vg.addColorStop(0, "rgba(0,0,0,0)");
+    vg.addColorStop(0.75, "rgba(0,0,0,0.05)");
+    vg.addColorStop(1, "rgba(0,0,0,0.32)");
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+
+  /** Rich, hand-tuned multi-stop sky gradients per world — replaces the flat
+   *  2-color bgTop/bgBottom wash with a believable lit sky. Falls back to
+   *  the WorldConfig's 2-stop colors for any id not listed here. */
+  private skyStops(world: WorldConfig): [number, string][] {
+    switch (world.id) {
+      case "forest": return [[0, "#7dd3fc"], [0.35, "#38bdf8"], [0.7, "#5fd48a"], [1, "#14532d"]];
+      case "snow": return [[0, "#f0f9ff"], [0.4, "#dff3ff"], [0.72, "#7dd3fc"], [1, "#0284c7"]];
+      case "volcano": return [[0, "#1e1b4b"], [0.38, "#3b0f0f"], [0.72, "#7f1d1d"], [1, "#3f0d0d"]];
+      case "ocean": return [[0, "#0ea5e9"], [0.4, "#0284c7"], [0.75, "#075985"], [1, "#082f49"]];
+      case "space": return [[0, "#1e1b4b"], [0.5, "#0f172a"], [1, "#000000"]];
+      case "dark": return [[0, "#2a2a30"], [0.5, "#18181b"], [1, "#000000"]];
+      case "cyber": return [[0, "#4c1d95"], [0.45, "#2e1065"], [0.8, "#1a0a30"], [1, "#09090b"]];
+      case "sky": return [[0, "#141210"], [0.35, "#2b2118"], [0.65, "#4a331f"], [0.85, "#7a5228"], [1, "#a97634"]];
+      case "desert": return [[0, "#fed7aa"], [0.4, "#fdba74"], [0.75, "#f59e0b"], [1, "#b45309"]];
+      case "sakura": return [[0, "#2e2a55"], [0.35, "#453a63"], [0.7, "#7c5b73"], [1, "#3d2a3a"]];
+      default: return [[0, world.bgTop], [1, world.bgBottom]];
+    }
+  }
+
+  private drawSky(world: WorldConfig, height: number) {
+    const { ctx, width } = this;
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    for (const [offset, color] of this.skyStops(world)) grad.addColorStop(offset, color);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
   }
 
   // ──────────────────────────────────────────────────────
@@ -123,15 +190,11 @@ export class FlippyRenderer {
   }
 
   private drawWorldLayers(world: WorldConfig, state: FlippyState) {
-    const { ctx, width, height } = this;
+    const { height } = this;
     const gY = state.groundY;
 
     // === SKY GRADIENT ===
-    const grad = ctx.createLinearGradient(0, 0, 0, height);
-    grad.addColorStop(0, world.bgTop);
-    grad.addColorStop(1, world.bgBottom);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, width, height);
+    this.drawSky(world, height);
 
     // Dispatch to world-specific drawing
     switch (world.id) {
@@ -142,23 +205,73 @@ export class FlippyRenderer {
       case "space":  this.drawSpaceWorld(state, gY); break;
       case "dark":   this.drawDarkWorld(state, gY); break;
       case "cyber":  this.drawCyberWorld(state, gY); break;
-      case "sky":    this.drawSkyWorld(state, gY); break;
+      case "sky":    this.drawClockworkWorld(state, gY); break;
       case "desert": this.drawDesertWorld(state, gY); break;
       case "sakura": this.drawSakuraWorld(state, gY); break;
     }
   }
 
-  // ─── WORLD 1: FOREST ───
+  // ─── WORLD 1: FOREST — a real forest again: sunlit hills, a varied
+  //     living treeline, and drifting birds, now that the obstacle is back
+  //     to a wood trunk (a city skyline behind a tree didn't fit) ───
   private drawForestWorld(state: FlippyState, gY: number) {
     const { ctx, width } = this;
     const t = state.frames;
 
-    // FAR: Mountains (2 depth layers)
+    // Sun glow
     ctx.save();
-    ctx.globalAlpha = 0.6;
+    const sunGrad = ctx.createRadialGradient(width * 0.8, 60, 10, width * 0.8, 60, 170);
+    sunGrad.addColorStop(0, "rgba(255, 244, 190, 0.7)");
+    sunGrad.addColorStop(0.5, "rgba(253, 224, 71, 0.18)");
+    sunGrad.addColorStop(1, "rgba(253, 224, 71, 0)");
+    ctx.fillStyle = sunGrad;
+    ctx.fillRect(0, 0, width, gY);
+    ctx.restore();
+
+    // Soft distant clouds
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    const cloudOff = this.getScrollOffset(0.1);
+    for (let i = -1; i < 3; i++) {
+      const ox = cloudOff + i * width;
+      for (let cx = 0; cx < width; cx += 180) {
+        const cy = gY * 0.16 + Math.sin(cx * 0.02) * 10;
+        ctx.beginPath();
+        ctx.arc(ox + cx, cy, 16, 0, Math.PI * 2);
+        ctx.arc(ox + cx + 16, cy - 5, 13, 0, Math.PI * 2);
+        ctx.arc(ox + cx + 30, cy, 15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+
+    // Distant birds gliding across the sky
+    ctx.save();
+    ctx.strokeStyle = "rgba(20, 60, 40, 0.4)";
+    ctx.lineWidth = 1.6;
+    for (let b = 0; b < 4; b++) {
+      const bx = ((t * 0.5 + b * 160) % (width + 100)) - 50;
+      const by = gY * 0.14 + b * 22 + Math.sin(t * 0.02 + b) * 6;
+      const wingUp = Math.sin(t * 0.14 + b * 2) * 4;
+      ctx.beginPath();
+      ctx.moveTo(bx - 6, by + wingUp);
+      ctx.lineTo(bx, by);
+      ctx.lineTo(bx + 6, by + wingUp);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // FAR: Rolling hills — volumetric gradient (sunlit ridge → shaded base)
+    ctx.save();
     for (let layer = 0; layer < 2; layer++) {
-      ctx.fillStyle = layer === 0 ? "#4ade80" : "#22c55e";
       const speed = 0.15 * (1 + layer * 0.5);
+      const top = layer === 0 ? "#86efac" : "#4ade80";
+      const bottom = layer === 0 ? "#22c55e" : "#15803d";
+      const hillGrad = ctx.createLinearGradient(0, gY - 160, 0, gY);
+      hillGrad.addColorStop(0, top);
+      hillGrad.addColorStop(1, bottom);
+      ctx.fillStyle = hillGrad;
+      ctx.globalAlpha = 0.75 + layer * 0.15;
       ctx.beginPath();
       ctx.moveTo(0, gY);
       const maxSx = Math.ceil(width / 40) * 40;
@@ -169,72 +282,141 @@ export class FlippyRenderer {
       }
       ctx.lineTo(maxSx, gY);
       ctx.fill();
+      ctx.strokeStyle = "rgba(255, 250, 210, 0.25)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
     }
     ctx.restore();
 
-    // MID: Trees
+    // MID: Trees — each canopy built from 3-4 irregular overlapping lobes
+    // of varying size instead of two uniform circles, so the treeline
+    // stops reading as a stamped repeat. Positioned on a single continuous
+    // grid (own natural period = spacing) rather than duplicated width-size
+    // tiles — the canvas width is never an exact multiple of the tree
+    // spacing, so tiling by width left a misaligned seam every screen
+    // where two trees could land almost on top of each other.
     ctx.save();
-    const midOff = this.getScrollOffset(0.4);
-    for (let i = -1; i < 3; i++) {
-      const ox = midOff + i * width;
-      for (let tx = 0; tx < width; tx += 140) {
-        const treeH = 80 + Math.sin(tx * 7.3) * 30;
-        const treeX = ox + tx + 70;
-        ctx.fillStyle = "#78350f";
-        ctx.fillRect(treeX - 8, gY - treeH, 16, treeH);
-        const sway = Math.sin(t * 0.02 + tx) * 3;
-        // 2 canopy layers (reduced from 3 for perf)
-        ctx.fillStyle = "#166534";
-        ctx.globalAlpha = 0.8;
-        ctx.beginPath();
-        ctx.arc(treeX + sway * 0.3, gY - treeH + 10, 28, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#22c55e";
-        ctx.globalAlpha = 0.7;
-        ctx.beginPath();
-        ctx.arc(treeX + sway * 0.6, gY - treeH - 8, 22, 0, Math.PI * 2);
-        ctx.fill();
+    {
+      const treeSpeed = 0.4;
+      const spacing = 140;
+      const raw = this.scrollX * treeSpeed;
+      const baseSlot = Math.floor(raw / spacing);
+      const off = -(raw - baseSlot * spacing);
+      const count = Math.ceil(width / spacing) + 2;
+      for (let n = -1; n <= count; n++) {
+        const slot = baseSlot + n;
+        const treeX = off + n * spacing + spacing * 0.5;
+        const seed = this.seedOf(`tree-${slot}`);
+        const treeH = 70 + seed * 45;
+        const sway = Math.sin(t * 0.02 + seed * 8) * 3;
+        const scale = 0.85 + seed * 0.4;
+
+        ctx.fillStyle = "#5c2e0d";
+        ctx.fillRect(treeX - 7 * scale, gY - treeH, 14 * scale, treeH);
+        ctx.fillStyle = "#8a4a17";
+        ctx.fillRect(treeX - 7 * scale, gY - treeH, 5 * scale, treeH);
+
+        const lobes: [number, number, number][] = [
+          [-14 * scale, 8, 20 * scale], [10 * scale, 2, 18 * scale],
+          [-2 * scale, -14, 22 * scale], [16 * scale, -8, 15 * scale],
+        ];
+        for (const [lx, ly, lr] of lobes) {
+          const cx0 = treeX + lx + sway * 0.5, cy0 = gY - treeH + ly;
+          const canopyGrad = ctx.createRadialGradient(cx0 - lr * 0.3, cy0 - lr * 0.3, 2, cx0, cy0, lr);
+          canopyGrad.addColorStop(0, "#6ee89a");
+          canopyGrad.addColorStop(0.6, "#22c55e");
+          canopyGrad.addColorStop(1, "#0f5132");
+          ctx.fillStyle = canopyGrad;
+          ctx.globalAlpha = 0.9;
+          ctx.beginPath();
+          ctx.arc(cx0, cy0, lr, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     }
     ctx.globalAlpha = 1;
     ctx.restore();
 
-    // NEAR: Bushes
+    // Bushes at the base — rebuilt after feedback: the single perfect
+    // semicircle repeated every 100px read as a flat, static stamp. Each
+    // bush is now a cluster of 3 uneven lobes (varied per-bush via seed)
+    // and gently sways in a breeze instead of sitting frozen. Same single-
+    // continuous-grid positioning as the trees above, for the same reason.
     ctx.save();
-    const nearOff = this.getScrollOffset(0.7);
-    for (let i = -1; i < 3; i++) {
-      const ox = nearOff + i * width;
-      for (let bx = 0; bx < width; bx += 100) {
-        ctx.fillStyle = "#16a34a";
-        ctx.globalAlpha = 0.7;
-        ctx.beginPath();
-        ctx.arc(ox + bx + 50, gY - 5, 18, Math.PI, 0);
-        ctx.fill();
+    {
+      const bushSpeed = 0.7;
+      const spacing = 92;
+      const raw = this.scrollX * bushSpeed;
+      const baseSlot = Math.floor(raw / spacing);
+      const off = -(raw - baseSlot * spacing);
+      const count = Math.ceil(width / spacing) + 2;
+      for (let n = -1; n <= count; n++) {
+        const slot = baseSlot + n;
+        const cx0 = off + n * spacing + spacing * 0.5;
+        const seed = this.seedOf(`bush-${slot}`);
+        const sway = Math.sin(t * 0.02 + seed * 10) * 2.5;
+        const scale = 0.8 + seed * 0.5;
+
+        const bushGrad = ctx.createRadialGradient(cx0 - 6, gY - 14 * scale, 2, cx0, gY - 6, 22 * scale);
+        bushGrad.addColorStop(0, "#6ee89a");
+        bushGrad.addColorStop(0.55, "#3fae5e");
+        bushGrad.addColorStop(1, "#14532d");
+        ctx.fillStyle = bushGrad;
+
+        // Three uneven lobes instead of one uniform dome
+        for (const [lx, ly, lr] of [
+          [-13 * scale, -3 * scale, 13 * scale],
+          [3 * scale, -8 * scale, 15 * scale],
+          [16 * scale, -2 * scale, 11 * scale],
+        ] as const) {
+          ctx.beginPath();
+          ctx.arc(cx0 + lx + sway, gY - 4 + ly, lr, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     }
     ctx.globalAlpha = 1;
     ctx.restore();
 
-    // Sun glow
+    // Ground mist hugging the floor for atmospheric depth
     ctx.save();
-    const sunGrad = ctx.createRadialGradient(width * 0.8, 60, 10, width * 0.8, 60, 150);
-    sunGrad.addColorStop(0, "rgba(253, 224, 71, 0.6)");
-    sunGrad.addColorStop(0.5, "rgba(253, 224, 71, 0.15)");
-    sunGrad.addColorStop(1, "rgba(253, 224, 71, 0)");
-    ctx.fillStyle = sunGrad;
-    ctx.fillRect(0, 0, width, gY);
+    const mistGrad = ctx.createLinearGradient(0, gY - 40, 0, gY);
+    mistGrad.addColorStop(0, "rgba(240, 253, 244, 0)");
+    mistGrad.addColorStop(1, "rgba(240, 253, 244, 0.18)");
+    ctx.fillStyle = mistGrad;
+    ctx.fillRect(0, gY - 40, width, 40);
     ctx.restore();
   }
 
-  // ─── WORLD 2: SNOW ───
+  // ─── WORLD 2: SNOW — frozen peaks, aurora sky, drifting haze ───
   private drawSnowWorld(state: FlippyState, gY: number) {
     const { ctx, width } = this;
     const t = state.frames;
 
-    // FAR: Snow mountains
+    // Aurora — the signature flourish for this world: soft ribbons of
+    // color drifting near the top of the sky, unique to the arctic theme.
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    const auroraColors = ["#5eead4", "#a78bfa", "#7dd3fc"];
+    for (let a = 0; a < 3; a++) {
+      ctx.strokeStyle = auroraColors[a];
+      ctx.lineWidth = 14 - a * 3;
+      ctx.beginPath();
+      for (let x = 0; x <= width; x += 20) {
+        const y = gY * 0.12 + a * 16 + Math.sin(x * 0.02 + t * 0.015 + a * 2) * 22;
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // FAR: Snow mountains — gradient rock face + snow cap
     ctx.save();
     for (let layer = 0; layer < 2; layer++) {
-      ctx.fillStyle = layer === 0 ? "#cbd5e1" : "#e2e8f0";
+      const rockGrad = ctx.createLinearGradient(0, gY - 180, 0, gY);
+      rockGrad.addColorStop(0, layer === 0 ? "#e2e8f0" : "#f1f5f9");
+      rockGrad.addColorStop(1, layer === 0 ? "#94a3b8" : "#cbd5e1");
+      ctx.fillStyle = rockGrad;
       ctx.globalAlpha = 0.7 + layer * 0.15;
       for (let i = -1; i < 3; i++) {
         const ox = this.bgFarX + i * width;
@@ -248,8 +430,11 @@ export class FlippyRenderer {
         ctx.lineTo(ox + width, gY);
         ctx.fill();
       }
-      // Snow caps
-      ctx.fillStyle = "#ffffff";
+      // Snow caps with a cool blue-white gradient for icy volume
+      const capGrad = ctx.createLinearGradient(0, gY - 180, 0, gY - 130);
+      capGrad.addColorStop(0, "#ffffff");
+      capGrad.addColorStop(1, "#dbeafe");
+      ctx.fillStyle = capGrad;
       for (let i = -1; i < 3; i++) {
         const ox = this.bgFarX + i * width;
         ctx.beginPath();
@@ -269,7 +454,7 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // MID: Pine trees
+    // MID: Pine trees — gradient needles + snow highlight
     ctx.save();
     for (let i = -1; i < 3; i++) {
       const ox = this.bgMidX + i * width;
@@ -277,21 +462,24 @@ export class FlippyRenderer {
         const treeH = 60 + Math.sin(tx * 3.7) * 20;
         const treeX = ox + tx + 50;
         // Trunk
-        ctx.fillStyle = "#78350f";
+        ctx.fillStyle = "#4a2410";
         ctx.fillRect(treeX - 4, gY - 20, 8, 20);
         // Pine layers
         for (let py = 0; py < 4; py++) {
-          ctx.fillStyle = "#166534";
-          ctx.globalAlpha = 0.9;
-          ctx.beginPath();
           const layerW = 25 - py * 4;
+          const pineGrad = ctx.createLinearGradient(treeX, gY - 20 - py * 14 - 18, treeX, gY - 20 - py * 14);
+          pineGrad.addColorStop(0, "#166534");
+          pineGrad.addColorStop(1, "#0b3b22");
+          ctx.fillStyle = pineGrad;
+          ctx.globalAlpha = 0.92;
+          ctx.beginPath();
           ctx.moveTo(treeX - layerW, gY - 20 - py * 14);
           ctx.lineTo(treeX, gY - 20 - py * 14 - 18);
           ctx.lineTo(treeX + layerW, gY - 20 - py * 14);
           ctx.fill();
           // Snow on branches
-          ctx.fillStyle = "#ffffff";
-          ctx.globalAlpha = 0.8;
+          ctx.fillStyle = "#f8fafc";
+          ctx.globalAlpha = 0.85;
           ctx.beginPath();
           ctx.moveTo(treeX - layerW + 3, gY - 20 - py * 14);
           ctx.lineTo(treeX, gY - 20 - py * 14 - 5);
@@ -303,6 +491,16 @@ export class FlippyRenderer {
     ctx.globalAlpha = 1;
     ctx.restore();
 
+    // Low drifting snow haze near the ground
+    ctx.save();
+    ctx.globalAlpha = 0.22 + Math.sin(t * 0.01) * 0.05;
+    const hazeGrad = ctx.createLinearGradient(0, gY - 60, 0, gY);
+    hazeGrad.addColorStop(0, "rgba(255,255,255,0)");
+    hazeGrad.addColorStop(1, "rgba(226, 240, 255, 0.55)");
+    ctx.fillStyle = hazeGrad;
+    ctx.fillRect(0, gY - 60, width, 60);
+    ctx.restore();
+
     // Cold blue atmosphere
     ctx.save();
     ctx.fillStyle = "rgba(147, 197, 253, 0.1)";
@@ -310,17 +508,22 @@ export class FlippyRenderer {
     ctx.restore();
   }
 
-  // ─── WORLD 3: VOLCANO ───
+  // ─── WORLD 3: VOLCANO — glowing lava river, ash-lit peaks ───
   private drawVolcanoWorld(state: FlippyState, gY: number) {
     const { ctx, width } = this;
     const t = state.frames;
 
-    // FAR: Volcano cones
+    // FAR: Volcano cones — heat-lit gradient rock instead of flat black
     ctx.save();
     for (let i = -1; i < 3; i++) {
       const ox = this.bgFarX + i * width;
-      // Dark mountain
-      ctx.fillStyle = "#1c1917";
+      // Dark mountain, gradient from ash-grey top to near-black base with a
+      // faint red undertone from the lava glow below
+      const rockGrad = ctx.createLinearGradient(0, gY - 200, 0, gY);
+      rockGrad.addColorStop(0, "#3f3a38");
+      rockGrad.addColorStop(0.6, "#1c1917");
+      rockGrad.addColorStop(1, "#2a0f0d");
+      ctx.fillStyle = rockGrad;
       ctx.globalAlpha = 0.95;
       ctx.beginPath();
       ctx.moveTo(ox, gY);
@@ -348,20 +551,54 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // MID: Smoke columns
+    // MID: Smoke columns — gradient plumes instead of flat grey blobs
     ctx.save();
-    ctx.globalAlpha = 0.3;
+    ctx.globalAlpha = 0.32;
     const midOff = this.getScrollOffset(0.4);
     for (let s = 0; s < 3; s++) {
       const sx = (width * 0.25 * (s + 1)) + midOff * 0.5;
       for (let c = 0; c < 5; c++) {
-        ctx.fillStyle = "#78716c";
-        ctx.beginPath();
         const yOff = Math.sin(t * 0.01 + s + c) * 10;
-        ctx.arc(sx + Math.sin(t * 0.015 + c * 2) * 8, gY - 160 - c * 30 + yOff, 20 + c * 8, 0, Math.PI * 2);
+        const py = gY - 160 - c * 30 + yOff;
+        const px = sx + Math.sin(t * 0.015 + c * 2) * 8;
+        const r = 20 + c * 8;
+        const smokeGrad = ctx.createRadialGradient(px, py, 2, px, py, r);
+        smokeGrad.addColorStop(0, "#a8a29e");
+        smokeGrad.addColorStop(1, "#57534e");
+        ctx.fillStyle = smokeGrad;
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
         ctx.fill();
       }
     }
+    ctx.restore();
+
+    // Glowing lava river — a wavy, pulsing band of molten rock along the
+    // horizon, the signature feature that sells "volcano" beyond flat color
+    ctx.save();
+    const riverY = gY - 46;
+    ctx.globalAlpha = 0.85;
+    const riverGrad = ctx.createLinearGradient(0, riverY - 8, 0, riverY + 10);
+    riverGrad.addColorStop(0, "#fde047");
+    riverGrad.addColorStop(0.5, "#f97316");
+    riverGrad.addColorStop(1, "#7f1d1d");
+    ctx.fillStyle = riverGrad;
+    ctx.shadowColor = "#f97316";
+    ctx.shadowBlur = 18 + Math.sin(t * 0.06) * 8;
+    ctx.beginPath();
+    ctx.moveTo(0, riverY + 12);
+    for (let x = 0; x <= width; x += 24) {
+      const wave = Math.sin((x + this.scrollX * 0.6) * 0.02 + t * 0.04) * 5;
+      ctx.lineTo(x, riverY + wave);
+    }
+    ctx.lineTo(width, riverY + 14);
+    for (let x = width; x >= 0; x -= 24) {
+      const wave = Math.sin((x + this.scrollX * 0.6) * 0.02 + t * 0.04) * 5;
+      ctx.lineTo(x, riverY + 10 + wave);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
     ctx.restore();
 
     // NEAR: Cracked lava ground glow
@@ -397,17 +634,20 @@ export class FlippyRenderer {
     ctx.restore();
   }
 
-  // ─── WORLD 4: OCEAN ───
+  // ─── WORLD 4: OCEAN — sunlit depths, gradient coral, distant whale ───
   private drawOceanWorld(state: FlippyState, gY: number) {
     const { ctx, width, height } = this;
     const t = state.frames;
 
-    // Water light rays
+    // Water light rays (God rays piercing down from the surface)
     ctx.save();
-    ctx.globalAlpha = 0.08;
+    ctx.globalAlpha = 0.1;
     for (let r = 0; r < 5; r++) {
       const rx = (width * 0.15 * (r + 1) + t * 0.3) % (width + 100) - 50;
-      ctx.fillStyle = "#bae6fd";
+      const rayGrad = ctx.createLinearGradient(rx, 0, rx, gY);
+      rayGrad.addColorStop(0, "rgba(224, 250, 255, 0.9)");
+      rayGrad.addColorStop(1, "rgba(224, 250, 255, 0)");
+      ctx.fillStyle = rayGrad;
       ctx.beginPath();
       ctx.moveTo(rx, 0);
       ctx.lineTo(rx + 30, 0);
@@ -417,15 +657,33 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // MID: Coral reefs
+    // Distant whale silhouette drifting across the deep background
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    const wx = ((t * 0.25 + 100) % (width + 300)) - 150;
+    const wy = gY * 0.22;
+    ctx.fillStyle = "#0c4a6e";
+    ctx.beginPath();
+    ctx.ellipse(wx, wy, 55, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(wx - 50, wy);
+    ctx.quadraticCurveTo(wx - 75, wy - 18, wx - 85, wy - 4);
+    ctx.quadraticCurveTo(wx - 70, wy + 2, wx - 50, wy + 6);
+    ctx.fill();
+    ctx.restore();
+
+    // MID: Coral reefs — volumetric gradient heads instead of flat pink
     ctx.save();
     for (let i = -1; i < 3; i++) {
       const ox = this.bgMidX + i * width;
       for (let cx = 0; cx < width; cx += 90) {
         const coralH = 30 + Math.sin(cx * 5.1) * 20;
-        // Coral branches
-        ctx.fillStyle = "#fb7185";
-        ctx.globalAlpha = 0.6;
+        const coralGrad = ctx.createLinearGradient(0, gY - coralH - 20, 0, gY);
+        coralGrad.addColorStop(0, "#fda4af");
+        coralGrad.addColorStop(1, "#9f1239");
+        ctx.fillStyle = coralGrad;
+        ctx.globalAlpha = 0.75;
         ctx.beginPath();
         ctx.moveTo(ox + cx + 45, gY);
         ctx.bezierCurveTo(ox + cx + 30, gY - coralH, ox + cx + 60, gY - coralH - 10, ox + cx + 45, gY - coralH - 20);
@@ -433,9 +691,12 @@ export class FlippyRenderer {
         ctx.fill();
         // Seaweed
         if (cx % 180 === 0) {
-          ctx.strokeStyle = "#22c55e";
+          const weedGrad = ctx.createLinearGradient(0, gY - 80, 0, gY);
+          weedGrad.addColorStop(0, "#4ade80");
+          weedGrad.addColorStop(1, "#166534");
+          ctx.strokeStyle = weedGrad;
           ctx.lineWidth = 3;
-          ctx.globalAlpha = 0.5;
+          ctx.globalAlpha = 0.6;
           ctx.beginPath();
           const swayX = Math.sin(t * 0.03 + cx) * 8;
           ctx.moveTo(ox + cx + 20, gY);
@@ -447,13 +708,17 @@ export class FlippyRenderer {
     ctx.globalAlpha = 1;
     ctx.restore();
 
-    // Fish silhouettes
+    // Fish silhouettes with a subtle gradient body for shimmer
     ctx.save();
-    ctx.globalAlpha = 0.3;
+    ctx.globalAlpha = 0.35;
     for (let f = 0; f < 3; f++) {
       const fx = ((t * (1 + f * 0.3) + f * 200) % (width + 100)) - 50;
       const fy = gY * 0.3 + f * gY * 0.2;
-      ctx.fillStyle = f === 0 ? "#38bdf8" : f === 1 ? "#fb923c" : "#a78bfa";
+      const base = f === 0 ? "#38bdf8" : f === 1 ? "#fb923c" : "#a78bfa";
+      const fishGrad = ctx.createRadialGradient(fx + 2, fy - 2, 1, fx, fy, 12);
+      fishGrad.addColorStop(0, this.shade(base, 0.3));
+      fishGrad.addColorStop(1, base);
+      ctx.fillStyle = fishGrad;
       ctx.beginPath();
       ctx.ellipse(fx, fy, 12, 6, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -483,7 +748,7 @@ export class FlippyRenderer {
     ctx.restore();
   }
 
-  // ─── WORLD 5: SPACE ───
+  // ─── WORLD 5: SPACE — layered nebula, shooting stars, ringed planet ───
   private drawSpaceWorld(state: FlippyState, gY: number) {
     const { ctx, width, height } = this;
     const t = state.frames;
@@ -502,14 +767,42 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // Nebula cloud
+    // Occasional shooting star streak — the signature flourish for space
+    ctx.save();
+    const shootCycle = 220;
+    const shootPhase = Math.floor(t) % shootCycle;
+    if (shootPhase < 26) {
+      const progress = shootPhase / 26;
+      const sx = width * (0.15 + progress * 0.7);
+      const sy = gY * (0.1 + progress * 0.35);
+      ctx.globalAlpha = 1 - progress;
+      const trail = ctx.createLinearGradient(sx, sy, sx - 60, sy - 24);
+      trail.addColorStop(0, "#ffffff");
+      trail.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.strokeStyle = trail;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(sx - 60, sy - 24);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Nebula cloud — two overlapping color washes for a richer deep-space glow
     ctx.save();
     const nebX = (width * 0.6 + this.bgFarX) % width;
-    const nebGrad = ctx.createRadialGradient(nebX, gY * 0.4, 20, nebX, gY * 0.4, 150);
-    nebGrad.addColorStop(0, "rgba(168, 85, 247, 0.2)");
-    nebGrad.addColorStop(0.5, "rgba(59, 130, 246, 0.1)");
+    const nebGrad = ctx.createRadialGradient(nebX, gY * 0.4, 20, nebX, gY * 0.4, 160);
+    nebGrad.addColorStop(0, "rgba(168, 85, 247, 0.22)");
+    nebGrad.addColorStop(0.5, "rgba(59, 130, 246, 0.12)");
     nebGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = nebGrad;
+    ctx.fillRect(0, 0, width, gY);
+
+    const nebX2 = (width * 0.25 + this.bgFarX * 0.7) % width;
+    const nebGrad2 = ctx.createRadialGradient(nebX2, gY * 0.6, 10, nebX2, gY * 0.6, 130);
+    nebGrad2.addColorStop(0, "rgba(236, 72, 153, 0.14)");
+    nebGrad2.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = nebGrad2;
     ctx.fillRect(0, 0, width, gY);
     ctx.restore();
 
@@ -533,21 +826,100 @@ export class FlippyRenderer {
     ctx.stroke();
     ctx.restore();
 
-    // Asteroids
+    // Asteroids — cratered, not flat grey circles
     ctx.save();
-    ctx.fillStyle = "#57534e";
-    ctx.globalAlpha = 0.5;
+    ctx.globalAlpha = 0.55;
     for (let a = 0; a < 4; a++) {
       const ax = ((a * 200 + this.bgNearX + 500) % width + width) % width;
       const ay = gY * 0.2 + a * gY * 0.15;
+      const r = 6 + a * 3;
+      const astGrad = ctx.createRadialGradient(ax - r * 0.3, ay - r * 0.3, 1, ax, ay, r);
+      astGrad.addColorStop(0, "#78716c");
+      astGrad.addColorStop(1, "#3f3b38");
+      ctx.fillStyle = astGrad;
       ctx.beginPath();
-      ctx.arc(ax, ay, 6 + a * 3, 0, Math.PI * 2);
+      ctx.arc(ax, ay, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.beginPath();
+      ctx.arc(ax + r * 0.3, ay + r * 0.2, r * 0.35, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
+
+    // A derelict station hull — one large, clearly hand-composed set-piece
+    // drifting in the mid-ground, so this world has an ownable landmark
+    // instead of only the generic stars/nebula/planet kit
+    ctx.save();
+    const hullX = ((width * 0.32 + this.bgMidX) % (width + 260) + width + 260) % (width + 260) - 130;
+    const hullY = gY * 0.62;
+    ctx.globalAlpha = 0.5;
+    const hullGrad = ctx.createLinearGradient(hullX - 90, hullY - 20, hullX + 90, hullY + 20);
+    hullGrad.addColorStop(0, "#334155");
+    hullGrad.addColorStop(1, "#0f172a");
+    ctx.fillStyle = hullGrad;
+    ctx.beginPath();
+    ctx.moveTo(hullX - 95, hullY);
+    ctx.lineTo(hullX - 60, hullY - 22);
+    ctx.lineTo(hullX + 20, hullY - 26);
+    ctx.lineTo(hullX + 70, hullY - 8);
+    ctx.lineTo(hullX + 60, hullY + 16);
+    ctx.lineTo(hullX - 30, hullY + 24);
+    ctx.lineTo(hullX - 80, hullY + 14);
+    ctx.closePath();
+    ctx.fill();
+    // Broken/jagged edge where the hull sheared off
+    ctx.fillStyle = "#0a0f1a";
+    ctx.beginPath();
+    ctx.moveTo(hullX + 20, hullY - 26);
+    ctx.lineTo(hullX + 36, hullY - 34);
+    ctx.lineTo(hullX + 30, hullY - 14);
+    ctx.lineTo(hullX + 48, hullY - 16);
+    ctx.lineTo(hullX + 44, hullY + 2);
+    ctx.lineTo(hullX + 70, hullY - 8);
+    ctx.lineTo(hullX + 20, hullY - 26);
+    ctx.fill();
+    // A few dim, dead lights, pulsing smoothly rather than snapping on/off
+    ctx.fillStyle = "#1e293b";
+    ctx.beginPath();
+    ctx.arc(hullX - 20, hullY - 4, 2, 0, Math.PI * 2);
+    ctx.arc(hullX + 5, hullY + 6, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = Math.max(0, Math.sin(t * 0.05)) * 0.9;
+    ctx.fillStyle = "#22d3ee";
+    ctx.beginPath();
+    ctx.arc(hullX - 20, hullY - 4, 2, 0, Math.PI * 2);
+    ctx.arc(hullX + 5, hullY + 6, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
-  // ─── WORLD 6: DARK REALM ───
+  /** A ruined skyline in one silhouette: a crumbled stub, a tall jagged
+   *  tower, a slender spire, and a broken low wing — asymmetric and
+   *  fractured rather than four clean rectangles. */
+  private traceRuinedCastle(cx: number, base: number) {
+    const ctx = this.ctx;
+    const pt = (dx: number, dy: number): [number, number] => [cx + dx, base - dy];
+    const pts: [number, number][] = [
+      pt(-40, 0), pt(-40, 25),
+      pt(-34, 38), pt(-28, 30), pt(-24, 42), pt(-18, 28),
+      pt(-12, 28), pt(-12, 95),
+      pt(-8, 84), pt(-4, 98), pt(0, 88), pt(4, 100),
+      pt(8, 60),
+      pt(14, 60), pt(14, 90),
+      pt(18, 125), pt(22, 90),
+      pt(28, 90), pt(28, 45),
+      pt(34, 45), pt(34, 55), pt(38, 50), pt(38, 58), pt(42, 45),
+      pt(42, 0),
+    ];
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.closePath();
+  }
+
+  // ─── WORLD 6: DARK REALM — haunted highland, gnarled trees, a fractured
+  //     ruin, and lightning with an actual bolt rather than a flat tint ───
   private drawDarkWorld(state: FlippyState, gY: number) {
     const { ctx, width } = this;
     const t = state.frames;
@@ -577,9 +949,47 @@ export class FlippyRenderer {
     ctx.fill();
     ctx.restore();
 
-    // FAR: Dark mountains with jagged edges
+    // Lightning: a real jagged bolt on the primary strike, then a dimmer
+    // afterglow tint with no bolt — a specific event, not a screen filter.
+    const flashCycle = 260;
+    const strikeIndex = Math.floor(t / flashCycle);
+    const flashPhase = Math.floor(t) % flashCycle;
+    const isBoltFrame = flashPhase < 3;
+    const isAfterglow = flashPhase > 8 && flashPhase < 10;
+    const flashing = isBoltFrame || isAfterglow;
+    if (isBoltFrame) {
+      const boltSeed = this.seedOf(String(strikeIndex));
+      const boltX = width * (0.2 + boltSeed * 0.6);
+      ctx.save();
+      ctx.strokeStyle = "rgba(240,240,255,0.9)";
+      ctx.lineWidth = 2;
+      ctx.shadowColor = "#c7d2fe";
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      let bx = boltX, by = 0;
+      ctx.moveTo(bx, by);
+      while (by < gY * 0.55) {
+        bx += (boltSeed * 40 - 20) + Math.sin(by * 0.08 + boltSeed * 10) * 18;
+        by += 22;
+        ctx.lineTo(bx, by);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (flashing) {
+      ctx.save();
+      ctx.globalAlpha = isBoltFrame ? 0.2 : 0.1;
+      ctx.fillStyle = "#e4e4f7";
+      ctx.fillRect(0, 0, width, gY);
+      ctx.restore();
+    }
+
+    // FAR: Dark mountains — gradient with a cold rim-light from the moon
     ctx.save();
-    ctx.fillStyle = "#18181b";
+    const mtnGrad = ctx.createLinearGradient(0, gY - 160, 0, gY);
+    mtnGrad.addColorStop(0, flashing ? "#3f3f4a" : "#242429");
+    mtnGrad.addColorStop(1, "#0a0a0c");
+    ctx.fillStyle = mtnGrad;
     ctx.globalAlpha = 0.9;
     for (let i = -1; i < 3; i++) {
       const ox = this.bgFarX + i * width;
@@ -594,48 +1004,64 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // MID: Dead trees
+    // MID: Gnarled dead trees — bent trunks, forked broken tops, irregular
+    // branch angles instead of a handful of straight lineTo sticks
     ctx.save();
     for (let i = -1; i < 3; i++) {
       const ox = this.bgMidX + i * width;
       for (let tx = 0; tx < width; tx += 150) {
+        const base = ox + tx + 75;
+        const seed = this.seedOf(`${i}-${tx}`);
+        const bend = (seed - 0.5) * 24;
         ctx.strokeStyle = "#27272a";
         ctx.lineWidth = 4;
         ctx.globalAlpha = 0.8;
-        const base = ox + tx + 75;
-        // Trunk
+        // Bent trunk — two segments, not one straight line
         ctx.beginPath();
         ctx.moveTo(base, gY);
-        ctx.lineTo(base - 3, gY - 70);
+        ctx.lineTo(base + bend * 0.4, gY - 35);
+        ctx.lineTo(base + bend, gY - 68);
         ctx.stroke();
-        // Branches
+        // Forked broken top
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(base + bend, gY - 68);
+        ctx.lineTo(base + bend - 10, gY - 84);
+        ctx.moveTo(base + bend, gY - 68);
+        ctx.lineTo(base + bend + 8, gY - 88);
+        ctx.stroke();
+        // Irregular side branches, angled off the bend
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(base - 3, gY - 50);
-        ctx.lineTo(base - 25, gY - 75);
-        ctx.moveTo(base - 3, gY - 60);
-        ctx.lineTo(base + 20, gY - 85);
-        ctx.moveTo(base - 3, gY - 40);
-        ctx.lineTo(base + 15, gY - 55);
+        ctx.moveTo(base + bend * 0.4, gY - 35);
+        ctx.lineTo(base + bend * 0.4 - 22 - seed * 10, gY - 50 - seed * 15);
+        ctx.moveTo(base + bend * 0.7, gY - 52);
+        ctx.lineTo(base + bend * 0.7 + 18 + seed * 12, gY - 40 - seed * 10);
         ctx.stroke();
       }
     }
     ctx.globalAlpha = 1;
     ctx.restore();
 
-    // Dark castle silhouette
+    // The ruined castle — one fractured silhouette with flickering window
+    // glow, instead of four clean rectangles
     ctx.save();
-    const castleX = ((width * 0.5 + this.bgMidX) % width + width) % width;
-    ctx.fillStyle = "#09090b";
-    ctx.globalAlpha = 0.6;
-    // Main tower
-    ctx.fillRect(castleX, gY - 120, 30, 120);
-    ctx.fillRect(castleX + 50, gY - 100, 25, 100);
-    ctx.fillRect(castleX + 10, gY - 80, 50, 80);
-    // Battlements
-    for (let b = 0; b < 4; b++) {
-      ctx.fillRect(castleX + 10 + b * 14, gY - 90, 8, 10);
-    }
+    const castleX = ((width * 0.52 + this.bgMidX) % width + width) % width;
+    this.traceRuinedCastle(castleX, gY);
+    const ruinGrad = ctx.createLinearGradient(castleX - 40, gY - 125, castleX + 42, gY);
+    ruinGrad.addColorStop(0, flashing ? "#2a2a30" : "#151517");
+    ruinGrad.addColorStop(1, "#050506");
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = ruinGrad;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(148,163,184,0.15)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Flickering amber window lights
+    ctx.globalAlpha = 0.5 + Math.sin(t * 0.15) * 0.25;
+    ctx.fillStyle = "#f59e0b";
+    ctx.fillRect(castleX - 8, gY - 60, 4, 6);
+    ctx.fillRect(castleX + 18, gY - 75, 4, 6);
     ctx.restore();
   }
 
@@ -662,30 +1088,65 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // FAR: Skyscrapers
+    // FAR: Skyscrapers — irregular width/height and occasional rooftop
+    // greebles instead of one repeating block spacing, so the skyline
+    // stops reading as a barcode
     ctx.save();
     for (let i = -1; i < 3; i++) {
       const ox = this.bgFarX + i * width;
-      for (let bx = 0; bx < width; bx += 70) {
+      let bx = 0;
+      let bi = 0;
+      while (bx < width) {
+        const seed = this.seedOf(`${i}-${bi}`);
+        const bw = 36 + Math.floor(seed * 34); // 36-70
         const bh = 60 + Math.abs(Math.sin(bx * 4.3)) * 120;
-        const bw = 50;
-        ctx.fillStyle = "#0f172a";
-        ctx.globalAlpha = 0.9;
+        const bldGrad = ctx.createLinearGradient(0, gY - bh, 0, gY);
+        bldGrad.addColorStop(0, "#1e293b");
+        bldGrad.addColorStop(1, "#020617");
+        ctx.fillStyle = bldGrad;
+        ctx.globalAlpha = 0.92;
         ctx.fillRect(ox + bx, gY - bh, bw, bh);
-        // Neon window stripes (optimized for performance)
+        // Neon window stripes — smooth continuous glow instead of a hard
+        // on/off swap, so lit windows don't visibly pop every couple seconds
         ctx.fillStyle = neonColors[(i + bx) % neonColors.length];
-        ctx.globalAlpha = Math.sin(t * 0.02 + bx * 0.1) > 0 ? 0.6 : 0.1;
+        ctx.globalAlpha = 0.1 + (Math.sin(t * 0.02 + bx * 0.1) * 0.5 + 0.5) * 0.5;
         ctx.fillRect(ox + bx + 10, gY - bh + 10, 8, bh - 20);
-        ctx.fillStyle = neonColors[(i + bx + 1) % neonColors.length];
-        ctx.globalAlpha = Math.sin(t * 0.03 + bx * 0.2) > 0 ? 0.6 : 0.1;
-        ctx.fillRect(ox + bx + 30, gY - bh + 10, 8, bh - 20);
-        
+        if (bw > 50) {
+          ctx.fillStyle = neonColors[(i + bx + 1) % neonColors.length];
+          ctx.globalAlpha = 0.1 + (Math.sin(t * 0.03 + bx * 0.2) * 0.5 + 0.5) * 0.5;
+          ctx.fillRect(ox + bx + 30, gY - bh + 10, 8, bh - 20);
+        }
         // Horizontal bands
         ctx.fillStyle = "#0f172a";
         ctx.globalAlpha = 1;
         for (let wy = gY - bh + 30; wy < gY; wy += 30) {
           ctx.fillRect(ox + bx, wy, bw, 8);
         }
+        // Rooftop greeble on roughly one in four buildings — antenna,
+        // vent, or a blinking beacon, so rooflines stop reading as flat
+        if (bi % 4 === 0) {
+          ctx.strokeStyle = "#475569";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(ox + bx + bw * 0.5, gY - bh);
+          ctx.lineTo(ox + bx + bw * 0.5, gY - bh - 14);
+          ctx.stroke();
+          ctx.fillStyle = "#1e293b";
+          ctx.beginPath();
+          ctx.arc(ox + bx + bw * 0.5, gY - bh - 14, 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = Math.max(0, Math.sin(t * 0.1 + bi));
+          ctx.fillStyle = "#f43f5e";
+          ctx.beginPath();
+          ctx.arc(ox + bx + bw * 0.5, gY - bh - 14, 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        } else if (bi % 4 === 2) {
+          ctx.fillStyle = "#334155";
+          ctx.fillRect(ox + bx + bw * 0.2, gY - bh - 8, bw * 0.3, 8);
+        }
+        bx += bw + 6;
+        bi++;
       }
     }
     ctx.restore();
@@ -710,185 +1171,308 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // Neon glow bottom
+    // Cyber rain streaks — thin diagonal lines catching the neon light
     ctx.save();
-    const neonGlow = ctx.createLinearGradient(0, gY - 40, 0, gY);
-    neonGlow.addColorStop(0, "rgba(34, 211, 238, 0)");
-    neonGlow.addColorStop(1, "rgba(34, 211, 238, 0.15)");
-    ctx.fillStyle = neonGlow;
-    ctx.fillRect(0, gY - 40, width, 40);
-    ctx.restore();
-  }
-
-  // ─── WORLD 8: SKY KINGDOM ───
-  private drawSkyWorld(state: FlippyState, gY: number) {
-    const { ctx, width } = this;
-    const t = state.frames;
-
-    // FAR: Layered cloud banks
-    ctx.save();
-    for (let layer = 0; layer < 2; layer++) {
-      ctx.fillStyle = layer === 0 ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.45)";
-      for (let i = -1; i < 3; i++) {
-        const ox = this.bgFarX + i * width;
-        for (let cx = 0; cx < width; cx += 160 - layer * 30) {
-          const cy = gY * (0.6 + layer * 0.15) + Math.sin(cx * 0.015 + layer) * 20;
-          ctx.beginPath();
-          ctx.arc(ox + cx, cy, 35 - layer * 5, 0, Math.PI * 2);
-          ctx.arc(ox + cx + 30, cy - 8, 28 - layer * 3, 0, Math.PI * 2);
-          ctx.arc(ox + cx + 55, cy - 3, 32 - layer * 4, 0, Math.PI * 2);
-          ctx.arc(ox + cx + 80, cy + 2, 25 - layer * 3, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    }
-    ctx.restore();
-
-    // MID: Grand floating castle / towers
-    ctx.save();
-    for (let i = -1; i < 3; i++) {
-      const ox = this.bgMidX + i * width;
-
-      // === LARGE CASTLE (centered) ===
-      const castleX = ox + width * 0.5;
-      const castleBase = gY * 0.42 + Math.sin(t * 0.008) * 6;
-      ctx.globalAlpha = 0.85;
-
-      // Cloud platform under castle
-      ctx.fillStyle = "#e0f2fe";
+    ctx.strokeStyle = "rgba(148, 200, 230, 0.22)";
+    ctx.lineWidth = 1;
+    for (let r = 0; r < 26; r++) {
+      const rx = ((r * 47 + this.fgX * 1.4) % (width + 60)) - 30;
+      const ry = ((r * 83 + t * 6) % (gY + 40)) - 20;
       ctx.beginPath();
-      ctx.ellipse(castleX, castleBase + 15, 80, 18, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#bae6fd";
-      ctx.beginPath();
-      ctx.ellipse(castleX, castleBase + 22, 65, 10, 0, 0, Math.PI);
-      ctx.fill();
-
-      // Castle walls
-      ctx.fillStyle = "#fef3c7";
-      ctx.fillRect(castleX - 35, castleBase - 50, 70, 65);
-      // Wall shading
-      ctx.fillStyle = "#fde68a";
-      ctx.fillRect(castleX - 35, castleBase - 50, 15, 65);
-
-      // Center tower (tallest)
-      ctx.fillStyle = "#fef9c3";
-      ctx.fillRect(castleX - 12, castleBase - 90, 24, 40);
-      // Tower top (pointed)
-      ctx.fillStyle = "#3b82f6";
-      ctx.beginPath();
-      ctx.moveTo(castleX - 16, castleBase - 90);
-      ctx.lineTo(castleX, castleBase - 115);
-      ctx.lineTo(castleX + 16, castleBase - 90);
-      ctx.fill();
-      // Flag
-      ctx.fillStyle = "#ef4444";
-      ctx.fillRect(castleX - 1, castleBase - 125, 2, 12);
-      ctx.beginPath();
-      ctx.moveTo(castleX + 1, castleBase - 125);
-      ctx.lineTo(castleX + 12, castleBase - 121);
-      ctx.lineTo(castleX + 1, castleBase - 117);
-      ctx.fill();
-
-      // Side towers
-      for (const side of [-1, 1]) {
-        const tx = castleX + side * 30;
-        ctx.fillStyle = "#fef9c3";
-        ctx.fillRect(tx - 8, castleBase - 65, 16, 30);
-        ctx.fillStyle = "#60a5fa";
-        ctx.beginPath();
-        ctx.moveTo(tx - 10, castleBase - 65);
-        ctx.lineTo(tx, castleBase - 80);
-        ctx.lineTo(tx + 10, castleBase - 65);
-        ctx.fill();
-      }
-
-      // Windows
-      ctx.fillStyle = "#7dd3fc";
-      ctx.globalAlpha = 0.7;
-      for (let wy = 0; wy < 3; wy++) {
-        for (let wx = 0; wx < 3; wx++) {
-          ctx.beginPath();
-          ctx.arc(castleX - 15 + wx * 15, castleBase - 40 + wy * 16, 3, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-      // Arched doorway
-      ctx.fillStyle = "#1e3a5f";
-      ctx.globalAlpha = 0.8;
-      ctx.beginPath();
-      ctx.arc(castleX, castleBase + 5, 8, Math.PI, 0);
-      ctx.fillRect(castleX - 8, castleBase + 5, 16, 10);
-      ctx.fill();
-
-      // === SMALL TOWER (left side) ===
-      const towerX = ox + width * 0.15;
-      const towerBase = gY * 0.55 + Math.sin(t * 0.012 + 2) * 5;
-      ctx.globalAlpha = 0.7;
-      // Cloud
-      ctx.fillStyle = "#e0f2fe";
-      ctx.beginPath();
-      ctx.ellipse(towerX, towerBase + 8, 30, 10, 0, 0, Math.PI * 2);
-      ctx.fill();
-      // Tower
-      ctx.fillStyle = "#fef3c7";
-      ctx.fillRect(towerX - 8, towerBase - 40, 16, 48);
-      ctx.fillStyle = "#3b82f6";
-      ctx.beginPath();
-      ctx.moveTo(towerX - 10, towerBase - 40);
-      ctx.lineTo(towerX, towerBase - 55);
-      ctx.lineTo(towerX + 10, towerBase - 40);
-      ctx.fill();
-
-      // === WATCHTOWER (right side) ===
-      const wt2X = ox + width * 0.82;
-      const wt2Base = gY * 0.48 + Math.sin(t * 0.01 + 4) * 7;
-      ctx.globalAlpha = 0.75;
-      // Cloud
-      ctx.fillStyle = "#e0f2fe";
-      ctx.beginPath();
-      ctx.ellipse(wt2X, wt2Base + 10, 35, 12, 0, 0, Math.PI * 2);
-      ctx.fill();
-      // Tower body
-      ctx.fillStyle = "#fde68a";
-      ctx.fillRect(wt2X - 10, wt2Base - 35, 20, 45);
-      ctx.fillStyle = "#60a5fa";
-      ctx.beginPath();
-      ctx.moveTo(wt2X - 13, wt2Base - 35);
-      ctx.lineTo(wt2X, wt2Base - 50);
-      ctx.lineTo(wt2X + 13, wt2Base - 35);
-      ctx.fill();
-      // Window
-      ctx.fillStyle = "#7dd3fc";
-      ctx.beginPath();
-      ctx.arc(wt2X, wt2Base - 20, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    ctx.restore();
-
-    // Rainbow bridge (subtle)
-    ctx.save();
-    ctx.globalAlpha = 0.12;
-    ctx.lineWidth = 6;
-    const rainbowColors = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"];
-    for (let r = 0; r < rainbowColors.length; r++) {
-      ctx.strokeStyle = rainbowColors[r];
-      ctx.beginPath();
-      ctx.arc(width * 0.5, gY * 0.8, gY * 0.5 + r * 6, Math.PI * 1.1, Math.PI * -0.1);
+      ctx.moveTo(rx, ry);
+      ctx.lineTo(rx - 4, ry + 16);
       ctx.stroke();
     }
     ctx.restore();
 
-    // Small birds
+    // Faint horizontal scanlines for a cyberpunk-screen feel
     ctx.save();
-    ctx.strokeStyle = "#475569";
+    ctx.globalAlpha = 0.05;
+    ctx.fillStyle = "#22d3ee";
+    for (let sy = 0; sy < gY; sy += 4) {
+      ctx.fillRect(0, sy, width, 1);
+    }
+    ctx.restore();
+
+    // Neon glow bottom
+    ctx.save();
+    const neonGlow = ctx.createLinearGradient(0, gY - 40, 0, gY);
+    neonGlow.addColorStop(0, "rgba(34, 211, 238, 0)");
+    neonGlow.addColorStop(1, "rgba(34, 211, 238, 0.18)");
+    ctx.fillStyle = neonGlow;
+    ctx.fillRect(0, gY - 40, width, 40);
+    ctx.restore();
+
+    // Wet-street reflection — faint vertical neon streaks bleeding up from
+    // the ground line, the cheap high-impact addition the review called for
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    for (let r = 0; r < 10; r++) {
+      const rx = ((r * 97 + this.bgFarX * 0.3) % width + width) % width;
+      ctx.fillStyle = neonColors[r % neonColors.length];
+      ctx.fillRect(rx, gY - 28, 3, 28);
+    }
+    ctx.restore();
+  }
+
+  // ─── WORLD 8: CLOCKWORK WORLD — THE MECHANICAL CITY — flying through the
+  //     inside of a gigantic living machine: clock towers, slow-turning
+  //     gears, riveted gantries, pistons, and vented steam. Replaces Petra
+  //     (formerly Sky Kingdom) on the same world slot. ───
+
+  /** A clock tower: a tapered riveted shaft topped with a large round clock
+   *  face (real moving hands, driven by `t`) and a small domed cap with a
+   *  finial spike — the world's signature recurring landmark. */
+  private drawClockTower(cx: number, base: number, scale: number, alpha: number, t: number) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const s = scale;
+
+    const shaftW = 46 * s, shaftH = 140 * s;
+    const shaftGrad = ctx.createLinearGradient(cx - shaftW / 2, base - shaftH, cx + shaftW / 2, base);
+    shaftGrad.addColorStop(0, "#4a3f2e");
+    shaftGrad.addColorStop(0.5, "#2b241a");
+    shaftGrad.addColorStop(1, "#171310");
+    ctx.fillStyle = shaftGrad;
+    ctx.fillRect(cx - shaftW / 2, base - shaftH, shaftW, shaftH);
+    // Riveted seams — one path for every line instead of a stroke() per
+    // iteration. Each tower could rack up 4 clock towers x ~6 separate
+    // stroke calls just for this; batching into one path + one stroke is
+    // the same pixels for a fraction of the draw-call overhead, which is
+    // what was making this world noticeably heavier to render than others.
+    ctx.strokeStyle = "rgba(201,138,63,0.25)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let ry = base - shaftH + 10; ry < base; ry += 22) {
+      ctx.moveTo(cx - shaftW / 2, ry);
+      ctx.lineTo(cx + shaftW / 2, ry);
+    }
+    ctx.stroke();
+
+    // Clock face
+    const faceY = base - shaftH - 4 * s;
+    const faceR = 30 * s;
+    const faceGrad = ctx.createRadialGradient(cx - faceR * 0.3, faceY - faceR * 0.3, 2, cx, faceY, faceR);
+    faceGrad.addColorStop(0, "#e8dcc0");
+    faceGrad.addColorStop(1, "#b8a878");
+    ctx.fillStyle = faceGrad;
+    ctx.beginPath();
+    ctx.arc(cx, faceY, faceR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#8a5a2a";
+    ctx.lineWidth = 3 * s;
+    ctx.stroke();
+    // Tick marks — batched into one path/stroke instead of 12 per tower
+    ctx.strokeStyle = "#3d332a";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      ctx.moveTo(cx + Math.cos(a) * faceR * 0.8, faceY + Math.sin(a) * faceR * 0.8);
+      ctx.lineTo(cx + Math.cos(a) * faceR * 0.92, faceY + Math.sin(a) * faceR * 0.92);
+    }
+    ctx.stroke();
+    // Moving hands — slow, continuous, never binary
+    const minuteA = t * 0.006, hourA = t * 0.0005;
+    ctx.strokeStyle = "#241c12";
+    ctx.lineWidth = 2 * s;
+    ctx.beginPath();
+    ctx.moveTo(cx, faceY);
+    ctx.lineTo(cx + Math.cos(minuteA) * faceR * 0.78, faceY + Math.sin(minuteA) * faceR * 0.78);
+    ctx.stroke();
+    ctx.lineWidth = 2.6 * s;
+    ctx.beginPath();
+    ctx.moveTo(cx, faceY);
+    ctx.lineTo(cx + Math.cos(hourA) * faceR * 0.5, faceY + Math.sin(hourA) * faceR * 0.5);
+    ctx.stroke();
+    ctx.fillStyle = "#c98a3f";
+    ctx.beginPath();
+    ctx.arc(cx, faceY, 2 * s, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Domed cap and finial
+    ctx.fillStyle = "#2b241a";
+    ctx.beginPath();
+    ctx.moveTo(cx - faceR - 4 * s, faceY - faceR);
+    ctx.quadraticCurveTo(cx, faceY - faceR - 26 * s, cx + faceR + 4 * s, faceY - faceR);
+    ctx.fill();
+    ctx.strokeStyle = "#c98a3f";
+    ctx.lineWidth = 1.6 * s;
+    ctx.beginPath();
+    ctx.moveTo(cx, faceY - faceR - 22 * s);
+    ctx.lineTo(cx, faceY - faceR - 34 * s);
+    ctx.stroke();
+    ctx.fillStyle = "#c98a3f";
+    ctx.beginPath();
+    ctx.arc(cx, faceY - faceR - 34 * s, 2 * s, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /** One near-ground mechanical gantry — a riveted steel support tower with
+   *  diagonal cross-bracing, an embedded rotating gear, a sliding piston,
+   *  and a vent that periodically breathes steam. The braced-truss
+   *  silhouette itself reads as an industrial structure, not bare rock or
+   *  a smooth column. */
+  private drawMachineGantry(baseX: number, gY: number, side: -1 | 1, seed: number, t: number) {
+    const ctx = this.ctx;
+    const w = 110;
+    const towerH = 200 + seed * 90;
+    const x = side === -1 ? baseX : baseX - w;
+
+    const towerGrad = ctx.createLinearGradient(x, gY - towerH, x + w, gY);
+    towerGrad.addColorStop(0, "#4a4038");
+    towerGrad.addColorStop(0.5, "#2b2620");
+    towerGrad.addColorStop(1, "#171310");
+    ctx.fillStyle = towerGrad;
+    ctx.fillRect(x, gY - towerH, w, towerH);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, gY - towerH, w, towerH);
+    ctx.clip();
+    // Diagonal cross-bracing — the truss pattern that sells "gantry".
+    // Batched into one path/stroke: with up to ~7 gantries on screen at
+    // once, one stroke() per brace instead of one per row was a big share
+    // of this world's per-frame draw-call count.
+    ctx.strokeStyle = "rgba(201,138,63,0.3)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let by = gY - towerH; by < gY; by += 70) {
+      ctx.moveTo(x, by);
+      ctx.lineTo(x + w, by + 70);
+      ctx.moveTo(x + w, by);
+      ctx.lineTo(x, by + 70);
+    }
+    ctx.stroke();
+    // Rivets along the outer edges — batched the same way (was one fill()
+    // per row, ~18 rows per gantry).
+    ctx.fillStyle = "rgba(20,15,10,0.6)";
+    ctx.beginPath();
+    for (let ry = gY - towerH + 8; ry < gY; ry += 16) {
+      ctx.moveTo(x + 5 + 1.6, ry);
+      ctx.arc(x + 5, ry, 1.6, 0, Math.PI * 2);
+      ctx.moveTo(x + w - 5 + 1.6, ry);
+      ctx.arc(x + w - 5, ry, 1.6, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    ctx.restore();
+
+    // An embedded gear, slowly turning
+    const gearY = gY - towerH * (0.3 + seed * 0.3);
+    const gearR = 20;
+    const gearGrad = ctx.createRadialGradient(x + w / 2 - 3, gearY - 3, 1, x + w / 2, gearY, gearR);
+    gearGrad.addColorStop(0, "#e8c98a");
+    gearGrad.addColorStop(1, "#8a5a2a");
+    this.traceGear(x + w / 2, gearY, gearR, gearR * 0.7, 8, t * 0.006 + seed * 6);
+    ctx.fillStyle = gearGrad;
+    ctx.fill();
+    ctx.fillStyle = "#2b2620";
+    ctx.beginPath();
+    ctx.arc(x + w / 2, gearY, gearR * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // A piston sliding within a housing lower on the tower
+    const pistonY = gY - towerH * (0.62 + seed * 0.15);
+    const extend = (Math.sin(t * 0.03 + seed * 10) * 0.5 + 0.5) * 16;
+    ctx.fillStyle = "#171310";
+    ctx.fillRect(x + w * 0.3, pistonY - 6, w * 0.4, 12);
+    ctx.fillStyle = "#c9a35a";
+    ctx.fillRect(x + w * 0.3, pistonY - 2.5, w * 0.4 + extend, 5);
+    ctx.beginPath();
+    ctx.arc(x + w * 0.3 + w * 0.4 + extend, pistonY, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // A steam vent that breathes on its own slow cycle — smooth scale/alpha,
+    // no hard on/off pop
+    const ventCycle = 240;
+    const ventPhase = (Math.floor(t) + seed * ventCycle) % ventCycle;
+    if (ventPhase < 60) {
+      const ventProgress = ventPhase / 60;
+      const ventX = x + w * 0.75, ventY = gY - towerH * 0.15;
+      ctx.globalAlpha = Math.sin(ventProgress * Math.PI) * 0.4;
+      ctx.fillStyle = "#e8e2d8";
+      ctx.beginPath();
+      ctx.arc(ventX, ventY - ventProgress * 30, 6 + ventProgress * 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  private drawClockworkWorld(state: FlippyState, gY: number) {
+    const { ctx, width } = this;
+    const t = state.frames;
+
+    // Distant atmospheric haze + muted industrial skyline (single
+    // continuous grid — see the forest-tree fix note above for why this
+    // matters: tiling by canvas width instead left visible seams).
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    {
+      const speed = 0.12, spacing = 90;
+      const raw = this.scrollX * speed;
+      const baseSlot = Math.floor(raw / spacing);
+      const off = -(raw - baseSlot * spacing);
+      const count = Math.ceil(width / spacing) + 2;
+      for (let n = -1; n <= count; n++) {
+        const slot = baseSlot + n;
+        const bx = off + n * spacing;
+        const seed = this.seedOf(`bldg-${slot}`);
+        const bh = 50 + seed * 90;
+        ctx.fillStyle = "#3a3128";
+        ctx.fillRect(bx, gY - bh, spacing - 6, bh);
+        if (seed > 0.6) {
+          ctx.fillStyle = "#2b241c";
+          ctx.fillRect(bx + spacing * 0.35, gY - bh - 22, spacing * 0.3, 22);
+        }
+      }
+    }
+    ctx.restore();
+
+    // Two huge background gears, barely rotating, peeking from behind the
+    // haze for scale. Positioned on the same kind of continuous grid as the
+    // far skyline above — NOT getScrollOffset() + a custom spacing, which
+    // wraps on canvas *width* while the spacing has its own period, so the
+    // two periods drift apart and every gear jumps at once when they
+    // desync. That mismatch was the actual cause of the reported "buildings
+    // popping in and out."
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    {
+      const speed = 0.08, spacing = 480;
+      const raw = this.scrollX * speed;
+      const baseSlot = Math.floor(raw / spacing);
+      const off = -(raw - baseSlot * spacing);
+      const count = Math.ceil(width / spacing) + 2;
+      for (let n = -1; n <= count; n++) {
+        const slot = baseSlot + n;
+        const gx = off + n * spacing + spacing / 2;
+        this.traceGear(gx, gY - 40, 130, 108, 14, t * 0.0015 + slot);
+        ctx.fillStyle = "#c98a3f";
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+
+    // Warm boiler-glow low on the horizon — this world's light source
+    ctx.save();
+    const glow = ctx.createRadialGradient(width * 0.5, gY * 1.05, 10, width * 0.5, gY * 1.05, width * 0.6);
+    glow.addColorStop(0, "rgba(255, 180, 90, 0.35)");
+    glow.addColorStop(0.5, "rgba(255, 150, 70, 0.1)");
+    glow.addColorStop(1, "rgba(255, 150, 70, 0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, width, gY);
+    ctx.restore();
+
+    // Far birds — small mechanical silhouettes drifting past
+    ctx.save();
+    ctx.strokeStyle = "rgba(40, 30, 20, 0.4)";
     ctx.lineWidth = 1.5;
-    ctx.globalAlpha = 0.35;
-    for (let b = 0; b < 5; b++) {
-      const bx = ((t * 0.6 + b * 130) % (width + 100)) - 50;
-      const by = gY * 0.12 + b * 25;
-      const wingUp = Math.sin(t * 0.15 + b * 2.5) * 4;
+    for (let b = 0; b < 3; b++) {
+      const bx = ((t * 0.5 + b * 180) % (width + 100)) - 50;
+      const by = gY * 0.12 + b * 20;
+      const wingUp = Math.sin(t * 0.14 + b * 2) * 4;
       ctx.beginPath();
       ctx.moveTo(bx - 5, by + wingUp);
       ctx.lineTo(bx, by);
@@ -897,13 +1481,87 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // Golden sunlight from top
+    // MID: the Clock Tower, recurring as the world's signature landmark —
+    // continuous grid (own period = spacing), same fix as the far skyline
     ctx.save();
-    const skyGlow = ctx.createRadialGradient(width * 0.5, -30, 20, width * 0.5, -30, width * 0.7);
-    skyGlow.addColorStop(0, "rgba(253, 224, 71, 0.2)");
-    skyGlow.addColorStop(0.5, "rgba(253, 224, 71, 0.06)");
-    skyGlow.addColorStop(1, "rgba(253, 224, 71, 0)");
-    ctx.fillStyle = skyGlow;
+    {
+      const speed = 0.35, spacing = 420;
+      const raw = this.scrollX * speed;
+      const baseSlot = Math.floor(raw / spacing);
+      const off = -(raw - baseSlot * spacing);
+      const count = Math.ceil(width / spacing) + 2;
+      for (let n = -1; n <= count; n++) {
+        const towerX = off + n * spacing + spacing / 2;
+        this.drawClockTower(towerX, gY - 2, 0.85, 0.85, t);
+      }
+    }
+    ctx.restore();
+
+    // MID: a riveted mechanical bridge truss spanning between towers
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    const bridgeSpacing = 50;
+    const bridgeRaw = this.scrollX * 0.3;
+    const bridgeOffLocal = -(bridgeRaw - Math.floor(bridgeRaw / bridgeSpacing) * bridgeSpacing);
+    const bridgeY = gY * 0.55;
+    ctx.strokeStyle = "#3d332a";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(0, bridgeY);
+    ctx.lineTo(width, bridgeY);
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(201,138,63,0.4)";
+    // Batched into one path/stroke instead of one stroke() per brace
+    // (up to ~20 on a wide canvas).
+    ctx.beginPath();
+    for (let bx = bridgeOffLocal - bridgeSpacing; bx < width; bx += bridgeSpacing) {
+      ctx.moveTo(bx, bridgeY - 16);
+      ctx.lineTo(bx + 25, bridgeY);
+      ctx.lineTo(bx, bridgeY + 16);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // NEAR: massive riveted gantries framing the passage — fastest layer,
+    // sells the feeling of flying through the inside of a machine. This is
+    // the layer most likely to have been read as "buildings popping in and
+    // out" — it's the largest, closest structure, and getScrollOffset()
+    // wraps on canvas width while the 260 spacing doesn't share that
+    // period, so the whole row used to jump in sync whenever the two
+    // periods drifted apart. Continuous grid fixes it the same way as the
+    // trees/bushes/far-skyline above.
+    ctx.save();
+    {
+      const speed = 0.85, spacing = 260;
+      const raw = this.scrollX * speed;
+      const baseSlot = Math.floor(raw / spacing);
+      const off = -(raw - baseSlot * spacing);
+      const count = Math.ceil(width / spacing) + 2;
+      for (let n = -1; n <= count; n++) {
+        const slot = baseSlot + n;
+        const ox = off + n * spacing;
+        const seed = this.seedOf(`gantry-${slot}`);
+        this.drawMachineGantry(ox, gY, seed > 0.5 ? 1 : -1, seed, t);
+      }
+    }
+    ctx.restore();
+
+    // Warm haze near the ground, and a faint drifting smoke layer
+    ctx.save();
+    ctx.globalAlpha = 0.06;
+    ctx.fillStyle = "#e8a259";
+    const hazeY = gY - 20 + Math.sin(t * 0.05) * 5;
+    ctx.fillRect(0, hazeY, width, 20);
+    ctx.restore();
+
+    // Golden rim light — the single light source every structure above
+    // respects
+    ctx.save();
+    const rimGlow = ctx.createRadialGradient(width * 0.5, gY * 0.4, 20, width * 0.5, gY * 0.4, width * 0.8);
+    rimGlow.addColorStop(0, "rgba(255, 190, 110, 0.14)");
+    rimGlow.addColorStop(1, "rgba(255, 190, 110, 0)");
+    ctx.fillStyle = rimGlow;
     ctx.fillRect(0, 0, width, gY);
     ctx.restore();
   }
@@ -923,11 +1581,14 @@ export class FlippyRenderer {
     ctx.fillRect(0, 0, width, gY);
     ctx.restore();
 
-    // FAR: Sand dunes
+    // FAR: Sand dunes — sculpted with a sunlit-ridge gradient
     ctx.save();
     for (let layer = 0; layer < 2; layer++) {
-      ctx.fillStyle = layer === 0 ? "#d97706" : "#f59e0b";
-      ctx.globalAlpha = 0.6 + layer * 0.2;
+      const duneGrad = ctx.createLinearGradient(0, gY - 110, 0, gY);
+      duneGrad.addColorStop(0, layer === 0 ? "#fbbf24" : "#fcd34d");
+      duneGrad.addColorStop(1, layer === 0 ? "#b45309" : "#d97706");
+      ctx.fillStyle = duneGrad;
+      ctx.globalAlpha = 0.7 + layer * 0.15;
       for (let i = -1; i < 3; i++) {
         const ox = this.bgFarX + i * width;
         ctx.beginPath();
@@ -975,10 +1636,13 @@ export class FlippyRenderer {
           ctx.fill();
         }
       }
-      // Ancient ruins / Pyramids
-      if (i === 0) {
+      // Ancient ruins / Pyramids — drawn in every parallax tile now (was
+      // gated to a single tile, so it scrolled off-screen and then had to
+      // wait a full cycle before snapping back into view — the "pyramids
+      // disappear then suddenly pop up" bug).
+      {
         const pyX = ox + width * 0.4;
-        
+
         // Large Pyramid
         ctx.fillStyle = "#b45309"; // shadow side
         ctx.globalAlpha = 0.8;
@@ -1021,17 +1685,59 @@ export class FlippyRenderer {
     const hazeY = gY - 20 + Math.sin(t * 0.05) * 5;
     ctx.fillRect(0, hazeY, width, 20);
     ctx.restore();
+
+    // Low sandstorm haze drifting along the ground
+    ctx.save();
+    ctx.globalAlpha = 0.16 + Math.sin(t * 0.02) * 0.04;
+    const sandHaze = ctx.createLinearGradient(0, gY - 50, 0, gY);
+    sandHaze.addColorStop(0, "rgba(217, 119, 6, 0)");
+    sandHaze.addColorStop(1, "rgba(217, 119, 6, 0.5)");
+    ctx.fillStyle = sandHaze;
+    ctx.fillRect(0, gY - 50, width, 50);
+    ctx.restore();
   }
 
-  // ─── WORLD 10: SAKURA ───
+  // ─── WORLD 10: SAKURA — restrained indigo dusk garden; pink is the
+  //     accent, not the base. The old full-frame pink overlay is gone. ───
   private drawSakuraWorld(state: FlippyState, gY: number) {
     const { ctx, width } = this;
     const t = state.frames;
 
-    // FAR: Japanese mountains
+    // A low, warm moon — the world's one light source, everything below
+    // takes its rim-light from this
     ctx.save();
-    ctx.fillStyle = "#f9a8d4";
-    ctx.globalAlpha = 0.4;
+    const moonX = width * 0.78, moonY = gY * 0.16;
+    const moonGlow = ctx.createRadialGradient(moonX, moonY, 10, moonX, moonY, 90);
+    moonGlow.addColorStop(0, "rgba(255, 237, 213, 0.35)");
+    moonGlow.addColorStop(1, "rgba(255, 237, 213, 0)");
+    ctx.fillStyle = moonGlow;
+    ctx.fillRect(0, 0, width, gY);
+    ctx.fillStyle = "#fff7ed";
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Distant torii gate silhouette
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    const toriiX = ((width * 0.72 + this.bgFarX * 0.6) % (width + 200) + width) % (width + 200) - 100;
+    ctx.fillStyle = "#2b1620";
+    ctx.fillRect(toriiX + 8, gY - 90, 6, 90);
+    ctx.fillRect(toriiX + 46, gY - 90, 6, 90);
+    ctx.fillRect(toriiX, gY - 92, 60, 8);
+    ctx.fillRect(toriiX + 6, gY - 78, 48, 5);
+    ctx.restore();
+
+    // FAR: Mountains — cool blue-grey (real distant peaks desaturate
+    // toward blue regardless of foreground season), not pink-on-pink
+    ctx.save();
+    const mtnGrad = ctx.createLinearGradient(0, gY - 170, 0, gY);
+    mtnGrad.addColorStop(0, "#6b7394");
+    mtnGrad.addColorStop(1, "#33324a");
+    ctx.fillStyle = mtnGrad;
+    ctx.globalAlpha = 0.55;
     for (let i = -1; i < 3; i++) {
       const ox = this.bgFarX + i * width;
       ctx.beginPath();
@@ -1043,38 +1749,33 @@ export class FlippyRenderer {
       ctx.lineTo(ox + width, gY);
       ctx.fill();
     }
-    // Snow caps
-    ctx.fillStyle = "#ffffff";
-    ctx.globalAlpha = 0.3;
+    // Faint warm rim catching the moonlight along the ridge
+    ctx.strokeStyle = "rgba(255, 219, 172, 0.2)";
+    ctx.lineWidth = 2;
     for (let i = -1; i < 3; i++) {
-      const ox = this.getScrollOffset(0.15) + i * width;
+      const ox = this.bgFarX + i * width;
       ctx.beginPath();
-      ctx.moveTo(ox, gY);
       for (let x = 0; x <= width; x += 40) {
         const h = Math.sin(x * 0.007) * 70 + 100;
-        ctx.lineTo(ox + x, gY - h);
+        if (x === 0) ctx.moveTo(ox + x, gY - h); else ctx.lineTo(ox + x, gY - h);
       }
-      for (let x = width; x >= 0; x -= 40) {
-        const h = Math.sin(x * 0.007) * 70 + 100;
-        ctx.lineTo(ox + x, gY - h + 12);
-      }
-      ctx.fill();
+      ctx.stroke();
     }
     ctx.restore();
 
-    // MID: Sakura trees
+    // MID: Sakura trees — warm neutral wood, clustered irregular blossom
+    // canopies with a shaded underside and lit top instead of uniform
+    // repeated circles, so pink reads as volume, not a decal pattern
     ctx.save();
     const midOff = this.getScrollOffset(0.4);
     for (let i = 0; i < 2; i++) {
       const ox = midOff + i * width;
       for (let tx = 0; tx < width; tx += 130) {
         const treeX = ox + tx + 65;
-        // Trunk
-        ctx.fillStyle = "#78350f";
-        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = "#3d2b1f";
+        ctx.globalAlpha = 0.92;
         ctx.fillRect(treeX - 5, gY - 50, 10, 50);
-        // Branch curve
-        ctx.strokeStyle = "#78350f";
+        ctx.strokeStyle = "#3d2b1f";
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(treeX, gY - 40);
@@ -1084,24 +1785,69 @@ export class FlippyRenderer {
         ctx.moveTo(treeX, gY - 35);
         ctx.bezierCurveTo(treeX + 25, gY - 55, treeX + 35, gY - 65, treeX + 30, gY - 75);
         ctx.stroke();
-        // Cherry blossoms (clusters)
-        const blossomPositions = [
-          [treeX - 35, gY - 80], [treeX + 30, gY - 75],
-          [treeX - 20, gY - 65], [treeX + 15, gY - 60],
-          [treeX, gY - 55],
+
+        // Clustered canopy masses (2-3 overlapping blobs each) instead of
+        // five identical dots — each cluster gets a shaded underside and a
+        // lit top so it reads as a flowering mass with real volume
+        const clusters: [number, number, number][] = [
+          [treeX - 35, gY - 80, 17], [treeX + 30, gY - 75, 16],
+          [treeX - 15, gY - 62, 14],
         ];
-        for (const [bx, by] of blossomPositions) {
-          ctx.fillStyle = "#fbcfe8";
-          ctx.globalAlpha = 0.85;
+        for (const [cx0, cy0, r] of clusters) {
+          ctx.fillStyle = "#7a2e46";
+          ctx.globalAlpha = 0.5;
           ctx.beginPath();
-          ctx.arc(bx, by, 15, 0, Math.PI * 2);
+          ctx.arc(cx0 + 2, cy0 + 3, r * 0.85, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = "#f9a8d4";
+          const blossomGrad = ctx.createRadialGradient(cx0 - r * 0.3, cy0 - r * 0.3, 1, cx0, cy0, r);
+          blossomGrad.addColorStop(0, "#ffe4f2");
+          blossomGrad.addColorStop(0.55, "#f9a8d4");
+          blossomGrad.addColorStop(1, "#db5d92");
+          ctx.fillStyle = blossomGrad;
+          ctx.globalAlpha = 0.95;
           ctx.beginPath();
-          ctx.arc(bx - 3, by - 3, 8, 0, Math.PI * 2);
+          ctx.arc(cx0, cy0, r, 0, Math.PI * 2);
+          ctx.arc(cx0 + r * 0.7, cy0 - r * 0.15, r * 0.6, 0, Math.PI * 2);
+          ctx.arc(cx0 - r * 0.5, cy0 + r * 0.25, r * 0.55, 0, Math.PI * 2);
           ctx.fill();
         }
       }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // Floating paper lanterns — visible ribs and a warm core vs. soft
+    // paper-diffuse edge, so they read as lanterns rather than glowing bars
+    ctx.save();
+    for (let l = 0; l < 4; l++) {
+      const lx = ((l * 210 + t * 0.4) % (width + 100)) - 50;
+      const ly = gY - ((t * 0.6 + l * 140) % (gY * 0.8)) - 20;
+      const bob = Math.sin(t * 0.03 + l) * 4;
+      const ry = ly + bob;
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = "#fde047";
+      ctx.beginPath();
+      ctx.arc(lx, ry, 15, 0, Math.PI * 2);
+      ctx.fill();
+      const paperGrad = ctx.createRadialGradient(lx, ry, 1, lx, ry, 9);
+      paperGrad.addColorStop(0, "#fff4d6");
+      paperGrad.addColorStop(1, "#f97316");
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = paperGrad;
+      ctx.beginPath();
+      ctx.roundRect(lx - 6, ry - 9, 12, 18, 5);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(120,53,15,0.4)";
+      ctx.lineWidth = 0.8;
+      for (const ribY of [-5, 0, 5]) {
+        ctx.beginPath();
+        ctx.moveTo(lx - 6, ry + ribY);
+        ctx.lineTo(lx + 6, ry + ribY);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "#78350f";
+      ctx.fillRect(lx - 1, ry - 12, 2, 3);
+      ctx.fillRect(lx - 1, ry + 9, 2, 3);
     }
     ctx.globalAlpha = 1;
     ctx.restore();
@@ -1110,22 +1856,15 @@ export class FlippyRenderer {
     ctx.save();
     const nearOff = this.getScrollOffset(0.7);
     const bridgeX = ((width * 0.4 + nearOff * 0.5) % (width + 300) + width) % (width + 300) - 150;
-    ctx.fillStyle = "#7f1d1d";
-    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = "#2b1620";
+    ctx.globalAlpha = 0.4;
     ctx.beginPath();
     ctx.moveTo(bridgeX, gY);
     ctx.bezierCurveTo(bridgeX + 30, gY - 25, bridgeX + 70, gY - 25, bridgeX + 100, gY);
     ctx.fill();
-    // Railing posts
     ctx.fillRect(bridgeX + 10, gY - 30, 3, 15);
     ctx.fillRect(bridgeX + 45, gY - 32, 3, 15);
     ctx.fillRect(bridgeX + 85, gY - 30, 3, 15);
-    ctx.restore();
-
-    // Soft pink glow
-    ctx.save();
-    ctx.fillStyle = "rgba(252, 231, 243, 0.1)";
-    ctx.fillRect(0, 0, width, gY);
     ctx.restore();
   }
 
@@ -1133,40 +1872,104 @@ export class FlippyRenderer {
   //  FLOOR
   // ──────────────────────────────────────────────────────
 
+  /** Forest gets its own ground: a bright grass band over solid tan dirt
+   *  with sparse texture flecks — the classic-game look the player asked
+   *  for, instead of the shared vertical-stripe pattern every other world
+   *  uses (which read as too mechanical/blocky for this world). */
+  private drawForestFloor(state: FlippyState) {
+    const { ctx, width, height } = this;
+    const gY = state.groundY;
+
+    const dirtGrad = ctx.createLinearGradient(0, gY, 0, height);
+    dirtGrad.addColorStop(0, "#e4cf8e");
+    dirtGrad.addColorStop(1, "#c9a35a");
+    ctx.fillStyle = dirtGrad;
+    ctx.fillRect(0, gY, width, height - gY);
+
+    // Sparse dirt texture flecks — small and scattered, not uniform stripes
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = "#a9834a";
+    for (let i = -40; i < width + 40; i += 22) {
+      const fx = i + this.fgX;
+      const fy = gY + 10 + ((i * 37) % (height - gY - 14));
+      ctx.fillRect(fx, fy, 2, 5);
+    }
+    ctx.restore();
+
+    // Grass band on top
+    const grassH = 16;
+    const grassGrad = ctx.createLinearGradient(0, gY, 0, gY + grassH);
+    grassGrad.addColorStop(0, "#8fe06a");
+    grassGrad.addColorStop(1, "#5fb745");
+    ctx.fillStyle = grassGrad;
+    ctx.fillRect(0, gY, width, grassH);
+    // Small grass blade ticks along the bottom edge of the band
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = "#4c9938";
+    for (let i = -40; i < width + 40; i += 14) {
+      const fx = i + this.fgX * 1.2;
+      ctx.fillRect(fx, gY + grassH - 4, 2, 6);
+    }
+    ctx.restore();
+  }
+
   private drawFloor(state: FlippyState) {
     const { ctx, width, height } = this;
     const world = state.currentWorld;
+
+    if (world.id === "forest") {
+      this.drawForestFloor(state);
+      return;
+    }
 
     let floorColor = "#1e293b";
     let stripeColor = "#334155";
     let topColor = "";
 
     switch (world.id) {
-      case "forest":  floorColor = "#14532d"; stripeColor = "#166534"; topColor = "#22c55e"; break;
       case "snow":    floorColor = "#e2e8f0"; stripeColor = "#f1f5f9"; topColor = "#ffffff"; break;
       case "volcano": floorColor = "#1c1917"; stripeColor = "#292524"; topColor = "#7f1d1d"; break;
       case "ocean":   floorColor = "#164e63"; stripeColor = "#0e7490"; topColor = "#67e8f9"; break;
       case "space":   floorColor = "#020617"; stripeColor = "#0f172a"; topColor = "#334155"; break;
       case "dark":    floorColor = "#09090b"; stripeColor = "#18181b"; topColor = "#27272a"; break;
       case "cyber":   floorColor = "#020617"; stripeColor = "#0f172a"; topColor = "#22d3ee"; break;
-      case "sky":     floorColor = "#fef3c7"; stripeColor = "#fde68a"; topColor = "#22c55e"; break;
+      case "sky":     floorColor = "#2b2622"; stripeColor = "#3d3630"; topColor = "#c98a3f"; break;
       case "desert":  floorColor = "#92400e"; stripeColor = "#b45309"; topColor = "#d97706"; break;
-      case "sakura":  floorColor = "#831843"; stripeColor = "#9d174d"; topColor = "#f472b6"; break;
+      case "sakura":  floorColor = "#332a3d"; stripeColor = "#463a52"; topColor = "#f472b6"; break;
     }
 
-    ctx.fillStyle = floorColor;
+    // Gradient floor body — lit near the top edge, deepening with distance
+    // from the player instead of one flat slab of color.
+    const floorGrad = ctx.createLinearGradient(0, state.groundY, 0, height);
+    floorGrad.addColorStop(0, this.shade(floorColor, 0.14));
+    floorGrad.addColorStop(1, this.shade(floorColor, -0.2));
+    ctx.fillStyle = floorGrad;
     ctx.fillRect(0, state.groundY, width, height - state.groundY);
 
     // Scrolling stripes
+    ctx.save();
+    ctx.globalAlpha = 0.75;
     ctx.fillStyle = stripeColor;
     for (let i = -60; i < width + 60; i += 60) {
       ctx.fillRect(i + this.fgX, state.groundY + 4, 30, height - state.groundY);
     }
+    ctx.restore();
 
-    // Top edge highlight
+    // Top edge highlight — bright rim + soft glow catching the light source
     if (topColor) {
+      ctx.save();
+      const rimGlow = ctx.createLinearGradient(0, state.groundY - 8, 0, state.groundY + 6);
+      rimGlow.addColorStop(0, "rgba(0,0,0,0)");
+      rimGlow.addColorStop(1, topColor);
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = rimGlow;
+      ctx.fillRect(0, state.groundY - 8, width, 14);
+      ctx.globalAlpha = 1;
       ctx.fillStyle = topColor;
       ctx.fillRect(0, state.groundY, width, 4);
+      ctx.restore();
     }
   }
 
@@ -1220,7 +2023,9 @@ export class FlippyRenderer {
     if (world.particleType === "petals" || world.particleType === "leaves") spawnRate = 0.5;
     if (world.particleType === "bubbles" || world.particleType === "sparkles") spawnRate = 0.4;
 
-    if (state.status === "playing" && Math.random() < spawnRate) {
+    // Forest dropped the falling-leaves particle entirely per feedback — the
+    // classic-game look this world is going for doesn't have any particles.
+    if (world.id !== "forest" && state.status === "playing" && Math.random() < spawnRate) {
       let vx = -state.speed * 0.5;
       let vy = 0;
       let x = width + 10;
@@ -1294,6 +2099,20 @@ export class FlippyRenderer {
           x = Math.random() * width;
           y = -10;
           size = Math.random() * 4 + 3;
+          break;
+        case "dust":
+          vy = (Math.random() - 0.5) * 0.25;
+          vx = -Math.random() * 0.6 - 0.2;
+          x = Math.random() * width;
+          y = Math.random() * gY;
+          size = Math.random() * 2.5 + 1;
+          break;
+        case "steam":
+          vy = -Math.random() * 0.8 - 0.4;
+          vx = -Math.random() * 0.4 - state.speed * 0.3;
+          x = Math.random() * width;
+          y = gY - Math.random() * 40;
+          size = Math.random() * 3 + 2;
           break;
       }
 
@@ -1471,6 +2290,26 @@ export class FlippyRenderer {
           ctx.bezierCurveTo(-p.size, p.size, -p.size, -p.size, 0, -p.size);
           ctx.fill();
           break;
+
+        case "dust":
+          // Soft, low-contrast motes drifting through the canyon air —
+          // deliberately faint so they read as atmosphere, not confetti
+          ctx.globalAlpha *= 0.35;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case "steam":
+          // A soft puff that widens as it rises and disperses, like real
+          // vented steam — grows with age instead of a fixed-size dot
+          ctx.globalAlpha *= 0.3;
+          ctx.fillStyle = "#e8e2d8";
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * (1 + (1 - p.life / p.maxLife) * 2.2), 0, Math.PI * 2);
+          ctx.fill();
+          break;
       }
 
       ctx.restore();
@@ -1487,6 +2326,7 @@ export class FlippyRenderer {
 
     state.pipes.forEach(p => {
       const pY = p.y + (p.offsetY || 0);
+      const seed = this.seedOf(p.id);
 
       ctx.save();
 
@@ -1497,39 +2337,45 @@ export class FlippyRenderer {
 
       const drawSeg = (yStart: number, pHeight: number, isTop: boolean) => {
         if (pHeight <= 0) return;
-        const style = (p.isPortal && p.nextWorldObj) ? p.nextWorldObj.obstacleStyle : world.obstacleStyle;
+        // Portal pipes render in the CURRENT world's style, not the next
+        // world's — otherwise the pipe telegraphs the upcoming world before
+        // the bird passes through it, ruining the surprise swap.
+        const style = world.obstacleStyle;
         const w = p.width;
 
         switch (style) {
           case "wood":
-            this.drawWoodPipe(p.x, yStart, w, pHeight, isTop);
+            this.drawWoodPipe(p.x, yStart, w, pHeight, isTop, state.frames, seed);
             break;
           case "ice":
-            this.drawIcePipe(p.x, yStart, w, pHeight, isTop, state.frames);
+            this.drawIcePipe(p.x, yStart, w, pHeight, isTop, state.frames, seed);
             break;
           case "lava":
-            this.drawLavaPipe(p.x, yStart, w, pHeight, isTop, state.frames);
+            this.drawLavaPipe(p.x, yStart, w, pHeight, isTop, state.frames, seed);
             break;
           case "coral":
-            this.drawCoralPipe(p.x, yStart, w, pHeight, isTop, state.frames);
+            this.drawCoralPipe(p.x, yStart, w, pHeight, isTop, state.frames, seed);
             break;
           case "space":
-            this.drawSpacePipe(p.x, yStart, w, pHeight, isTop, state.frames);
+            this.drawSpacePipe(p.x, yStart, w, pHeight, isTop, state.frames, seed);
             break;
           case "dark":
-            this.drawDarkPipe(p.x, yStart, w, pHeight, isTop);
+            this.drawDarkPipe(p.x, yStart, w, pHeight, isTop, seed);
             break;
           case "neon":
-            this.drawNeonPipe(p.x, yStart, w, pHeight, isTop, state.frames);
+            this.drawNeonPipe(p.x, yStart, w, pHeight, isTop, state.frames, seed);
             break;
           case "cloud":
-            this.drawCloudPipe(p.x, yStart, w, pHeight, isTop);
+            this.drawCloudPipe(p.x, yStart, w, pHeight, isTop, state.frames, seed);
             break;
           case "sandstone":
-            this.drawSandstonePipe(p.x, yStart, w, pHeight, isTop);
+            this.drawSandstonePipe(p.x, yStart, w, pHeight, isTop, seed);
             break;
           case "sakura":
-            this.drawSakuraPipe(p.x, yStart, w, pHeight, isTop);
+            this.drawSakuraPipe(p.x, yStart, w, pHeight, isTop, seed);
+            break;
+          case "clockwork":
+            this.drawClockworkPipe(p.x, yStart, w, pHeight, isTop, state.frames, seed);
             break;
         }
       };
@@ -1539,66 +2385,269 @@ export class FlippyRenderer {
       // Bottom obstacle
       drawSeg(pY + p.gap / 2, state.groundY - (pY + p.gap / 2), false);
 
+      // PORTAL event: every pipe is a portal, so give each one a pulsing
+      // energy glow along its gap edges — special and distinct, but only
+      // framing the gap rather than covering the pipe's own texture, so it
+      // stays readable. Only drawn during the event itself; the normal
+      // single 10-point portal pipe is untouched.
+      if (state.activeEvent === "portal" && p.isPortal) {
+        const pulse = 0.5 + 0.5 * Math.sin(state.frames * 0.12 + seed * 10);
+        ctx.save();
+        ctx.globalAlpha = 0.55 + 0.25 * pulse;
+        ctx.strokeStyle = "#c084fc";
+        ctx.shadowColor = "#c084fc";
+        ctx.shadowBlur = 14 + pulse * 10;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(p.x - 2, pY - p.gap / 2);
+        ctx.lineTo(p.x + p.width + 2, pY - p.gap / 2);
+        ctx.moveTo(p.x - 2, pY + p.gap / 2);
+        ctx.lineTo(p.x + p.width + 2, pY + p.gap / 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
       ctx.restore();
     });
   }
 
-  // ─── Individual pipe style methods ───
+  // ─── Silhouette construction helpers ───
+  // These exist because the review's #1 finding was that every obstacle was
+  // a straight rectangular column with a re-textured surface — same
+  // silhouette everywhere. The helpers below build an actual irregular
+  // outline (organic taper/wobble for natural materials, stepped greebles
+  // for built/tech materials) so each world's obstacle reads as a different
+  // *shape*, not just a different color. The nominal hitbox (p.x..p.x+w) is
+  // never touched — only how far the visual silhouette bulges past it, the
+  // same "cap overdraws the hitbox" pattern the original pipe caps already
+  // used, so collision fairness stays essentially the same as before.
 
-  private drawWoodPipe(x: number, y: number, w: number, h: number, isTop: boolean) {
-    const ctx = this.ctx;
-    // Bark body
-    ctx.fillStyle = "#78350f";
-    ctx.fillRect(x, y, w, h);
-    // Bark texture
-    ctx.fillStyle = "#92400e";
-    ctx.fillRect(x + 4, y, 6, h);
-    ctx.fillRect(x + 18, y, 4, h);
-    ctx.fillRect(x + 34, y, 8, h);
-    // Dark bark lines
-    ctx.fillStyle = "rgba(0,0,0,0.15)";
-    ctx.fillRect(x + 12, y, 2, h);
-    ctx.fillRect(x + 28, y, 2, h);
-    ctx.fillRect(x + 44, y, 2, h);
-    // Moss cap
-    const capH = 18;
-    const capY = isTop ? y + h - capH : y;
-    ctx.fillStyle = "#16a34a";
-    ctx.beginPath();
-    ctx.roundRect(x - 6, capY, w + 12, capH, 6);
-    ctx.fill();
-    // Moss texture
-    ctx.fillStyle = "#15803d";
-    ctx.beginPath();
-    ctx.arc(x + 5, isTop ? capY + capH : capY, 5, 0, Math.PI * 2);
-    ctx.arc(x + w - 5, isTop ? capY + capH : capY, 4, 0, Math.PI * 2);
-    ctx.fill();
-    // Small mushrooms
-    if (!isTop) {
-      ctx.fillStyle = "#dc2626";
-      ctx.beginPath();
-      ctx.arc(x - 2, y + 5, 5, Math.PI, 0);
-      ctx.fill();
-      ctx.fillStyle = "#78350f";
-      ctx.fillRect(x - 1, y + 5, 3, 5);
-      // Dots on mushroom
-      ctx.fillStyle = "#ffffff";
-      ctx.beginPath();
-      ctx.arc(x - 3, y + 2, 1, 0, Math.PI * 2);
-      ctx.arc(x + 1, y + 1, 1, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  /** Deterministic 0..1 value from a pipe's id, so an organic silhouette
+   *  stays fixed for that pipe's lifetime instead of re-rolling every frame. */
+  private seedOf(id: string): number {
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+    return (h % 1000) / 1000;
   }
 
-  private drawIcePipe(x: number, y: number, w: number, h: number, isTop: boolean, t: number) {
+  /** Traces an organic, tapered, wobble-edged column path (does not fill/stroke —
+   *  caller sets fillStyle and calls ctx.fill()). Wide at the "anchored" end
+   *  (away from the gap — the ground for a bottom pipe, the unseen ceiling
+   *  canopy for a top pipe), narrower toward the gap, with noisy left/right
+   *  edges. Low `samples` + high `wobble` reads as jagged/faceted (ice, rock,
+   *  obsidian); high `samples` + low `wobble` reads as a smooth organic taper
+   *  (wood, coral). Returns the sampled edge points so callers can anchor
+   *  decorations (knots, icicles, chips) to the actual silhouette edge. */
+  private traceOrganicColumn(
+    x: number, y: number, w: number, h: number, isTop: boolean, seed: number,
+    opts: { taper?: number; flare?: number; wobble?: number; freq?: number; samples?: number } = {}
+  ): { left: [number, number][]; right: [number, number][]; cx: number } {
+    const { taper = 0.35, flare = 0.18, wobble = 4, freq = 2.2, samples = 9 } = opts;
     const ctx = this.ctx;
-    // Main ice body
-    ctx.fillStyle = "rgba(186, 230, 253, 0.65)";
-    ctx.fillRect(x, y, w, h);
-    // Inner highlight
-    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-    ctx.fillRect(x + 2, y, w * 0.25, h);
-    // Refraction lines
+    const cx = x + w / 2;
+    const left: [number, number][] = [];
+    const right: [number, number][] = [];
+
+    for (let i = 0; i <= samples; i++) {
+      const f = i / samples; // 0 at y, 1 at y+h
+      const ty = y + f * h;
+      const distFromAnchor = isTop ? f : 1 - f; // 0 at anchored end, 1 at gap end
+      const halfW = (w / 2) * (1 + flare * (1 - distFromAnchor) - taper * distFromAnchor);
+      const wobL = Math.sin(f * freq * Math.PI * 2 + seed * 12) * wobble;
+      const wobR = Math.sin(f * freq * Math.PI * 2 + seed * 12 + 1.7) * wobble;
+      left.push([cx - halfW + wobL, ty]);
+      right.push([cx + halfW + wobR, ty]);
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(left[0][0], left[0][1]);
+    for (let i = 1; i < left.length; i++) ctx.lineTo(left[i][0], left[i][1]);
+    for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i][0], right[i][1]);
+    ctx.closePath();
+
+    return { left, right, cx };
+  }
+
+  /** Traces a stepped/greebled rectilinear column — for built or tech
+   *  materials (space, cyber) that should read as engineered, not organic.
+   *  Alternates between the nominal width and a slightly recessed width in
+   *  bands, giving a panelled/notched edge instead of one clean rectangle. */
+  private traceGreebledColumn(
+    x: number, y: number, w: number, h: number, isTop: boolean, seed: number,
+    opts: { inset?: number; bandCount?: number } = {}
+  ): void {
+    const { inset = 5, bandCount = 5 } = opts;
+    const ctx = this.ctx;
+    const bandH = h / bandCount;
+    const insetBand = (i: number) => (Math.floor(seed * 7 + i * 2.3) % 3 === 0);
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    for (let i = 0; i < bandCount; i++) {
+      const by0 = y + i * bandH;
+      const by1 = y + (i + 1) * bandH;
+      const rx = insetBand(i) ? x + inset : x;
+      ctx.lineTo(rx, by0);
+      ctx.lineTo(rx, by1);
+    }
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x + w, y + h);
+    for (let i = bandCount - 1; i >= 0; i--) {
+      const by0 = y + (i + 1) * bandH;
+      const by1 = y + i * bandH;
+      const rx = insetBand(bandCount - 1 - i) ? x + w - inset : x + w;
+      ctx.lineTo(rx, by0);
+      ctx.lineTo(rx, by1);
+    }
+    ctx.lineTo(x + w, y);
+    ctx.closePath();
+  }
+
+  // ─── Individual pipe style methods ───
+
+  /** A twisted, tapered, root-flared trunk — not a rectangular pipe with bark
+   *  glued on. Silhouette-first: strip the fill to solid black and this
+   *  should still read as a tree, which the old straight log never did. */
+  /** Forest pipe, revised after live feedback: the twisted-trunk silhouette
+   *  read as messy rather than "forest." Back to a clean, instantly
+   *  readable pipe — straight-edged, classic-Flappy-Bird proportions and
+   *  flared rim — just recolored a woody green so it still belongs to this
+   *  world instead of being a literal generic grey pipe. */
+  /** Forest pipe, third pass: back to an organic tapered trunk so it shares
+   *  the same construction language as the other 9 worlds (per explicit
+   *  request), but calmer than the first attempt — gentler taper/wobble and
+   *  fewer competing decorations, so it reads as a clean trunk rather than a
+   *  busy, crooked shape. */
+  private drawWoodPipe(x: number, y: number, w: number, h: number, isTop: boolean, t: number = 0, seed: number = 0) {
+    const ctx = this.ctx;
+    const { left, right, cx } = this.traceOrganicColumn(x, y, w, h, isTop, seed, {
+      taper: 0.28, flare: 0.18, wobble: 3, freq: 1.5, samples: 8,
+    });
+
+    const barkGrad = ctx.createLinearGradient(x, y, x + w, y);
+    barkGrad.addColorStop(0, "#8a5321");
+    barkGrad.addColorStop(0.18, "#a1620f");
+    barkGrad.addColorStop(0.5, "#78350f");
+    barkGrad.addColorStop(1, "#4a2008");
+    ctx.fillStyle = barkGrad;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.25)";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Bark grain following the trunk's own contour, and a light sweep for
+    // subtle motion — clipped to the traced silhouette
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(left[0][0], left[0][1]);
+    for (let i = 1; i < left.length; i++) ctx.lineTo(left[i][0], left[i][1]);
+    for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i][0], right[i][1]);
+    ctx.closePath();
+    ctx.clip();
+
+    ctx.strokeStyle = "rgba(0,0,0,0.16)";
+    ctx.lineWidth = 2;
+    for (const frac of [0.3, 0.7]) {
+      ctx.beginPath();
+      for (let i = 0; i < left.length; i++) {
+        const lx = left[i][0] + (right[i][0] - left[i][0]) * frac;
+        const ly = left[i][1];
+        if (i === 0) ctx.moveTo(lx, ly); else ctx.lineTo(lx, ly);
+      }
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // One knot — subtle, doesn't touch the silhouette
+    const knotIdx = Math.floor(2 + seed * (left.length - 5));
+    const knotSide = seed > 0.5 ? left : right;
+    const knotEdge = knotSide[knotIdx];
+    ctx.fillStyle = "rgba(20, 10, 3, 0.4)";
+    ctx.beginPath();
+    ctx.ellipse(knotEdge[0] + (knotSide === left ? 5 : -5), knotEdge[1], 3.5, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // A couple of light branch offshoots along the trunk — short, thin
+    // twigs, not the earlier long angled stub, just enough to read as a
+    // living tree rather than a bare pole
+    for (const [frac, side] of [[0.35, seed > 0.5 ? 1 : -1], [0.62, seed > 0.5 ? -1 : 1]] as const) {
+      const idx = Math.round(frac * (left.length - 1));
+      const edge = side === 1 ? right[idx] : left[idx];
+      const twigLen = 7 + seed * 3;
+      ctx.strokeStyle = "#5c3410";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(edge[0], edge[1]);
+      ctx.lineTo(edge[0] + side * twigLen, edge[1] - 2);
+      ctx.stroke();
+      ctx.fillStyle = "#4ade80";
+      ctx.beginPath();
+      ctx.ellipse(edge[0] + side * twigLen, edge[1] - 2, 3, 1.8, side * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Moss patch + a small swaying leaf sprig only at the end that's
+    // actually anchored on screen (ground for a bottom pipe)
+    if (!isTop) {
+      const baseL = left[left.length - 1], baseR = right[right.length - 1];
+      ctx.fillStyle = "#16a34a";
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      ctx.ellipse((baseL[0] + cx) / 2, baseL[1] - 2, 7, 4, 0.3, 0, Math.PI * 2);
+      ctx.ellipse((baseR[0] + cx) / 2, baseR[1] - 3, 6, 3.5, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // A small leaf sprig at the gap-facing tip, swaying gently — the bit of
+    // living motion the other worlds all have (ice shimmer, lava glow,
+    // neon scan line), without disturbing the trunk's silhouette
+    const tipSide = seed > 0.5 ? right : left;
+    const tipDir = tipSide === right ? 1 : -1;
+    const tip = isTop ? tipSide[tipSide.length - 1] : tipSide[0];
+    const sway = Math.sin(t * 0.03 + seed * 6) * 5;
+    ctx.strokeStyle = "#166534";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(tip[0], tip[1]);
+    ctx.quadraticCurveTo(tip[0] + tipDir * 8 + sway * 0.4, tip[1] - 4, tip[0] + tipDir * 13 + sway, tip[1] + 2);
+    ctx.stroke();
+    ctx.fillStyle = "#4ade80";
+    ctx.beginPath();
+    ctx.ellipse(tip[0] + tipDir * 13 + sway, tip[1] + 1, 4, 2.2, tipDir * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /** A faceted, broken ice spire — angular straight-edged facets (few
+   *  samples, high wobble) instead of a smooth rectangle, so the silhouette
+   *  itself reads as shattered crystal rather than an ice-textured column. */
+  private drawIcePipe(x: number, y: number, w: number, h: number, isTop: boolean, t: number, seed: number = 0) {
+    const ctx = this.ctx;
+    const { left, right } = this.traceOrganicColumn(x, y, w, h, isTop, seed, {
+      taper: 0.3, flare: 0.22, wobble: 6, freq: 1.1, samples: 5,
+    });
+
+    const iceGrad = ctx.createLinearGradient(x, y, x + w, y);
+    iceGrad.addColorStop(0, "rgba(240, 253, 255, 0.85)");
+    iceGrad.addColorStop(0.5, "rgba(186, 230, 253, 0.7)");
+    iceGrad.addColorStop(1, "rgba(125, 211, 252, 0.6)");
+    ctx.fillStyle = iceGrad;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.5)";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.clip();
+    // Facet highlight along the lit edge
+    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.beginPath();
+    ctx.moveTo(left[0][0] + 2, left[0][1]);
+    for (const [lx, ly] of left) ctx.lineTo(lx + w * 0.22, ly);
+    for (let i = left.length - 1; i >= 0; i--) ctx.lineTo(left[i][0] + 2, left[i][1]);
+    ctx.fill();
+    // Refraction lines crossing the facets
     ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
     ctx.lineWidth = 1;
     for (let ly = y + 20; ly < y + h; ly += 40) {
@@ -1607,7 +2656,10 @@ export class FlippyRenderer {
       ctx.lineTo(x + w - 5, ly + 15);
       ctx.stroke();
     }
-    // Icicles
+    ctx.restore();
+
+    // Icicle teeth right at the gap edge — kept, this is the strongest
+    // material cue the original had and it's genuinely ice-specific
     const icicleY = isTop ? y + h : y;
     ctx.fillStyle = "rgba(224, 242, 254, 0.85)";
     for (let ix = 0; ix < w; ix += 10) {
@@ -1620,33 +2672,55 @@ export class FlippyRenderer {
     }
   }
 
-  private drawLavaPipe(x: number, y: number, w: number, h: number, isTop: boolean, t: number) {
+  /** Jagged broken-rock column — angular chunks (few samples, high wobble)
+   *  instead of a clean rectangle, with the glowing crack network now
+   *  running the full length so rock and lava-cap read as one material. */
+  private drawLavaPipe(x: number, y: number, w: number, h: number, isTop: boolean, t: number, seed: number = 0) {
     const ctx = this.ctx;
-    // Dark rock body
-    ctx.fillStyle = "#1c1917";
-    ctx.fillRect(x, y, w, h);
-    // Rock texture
+    const { left, right } = this.traceOrganicColumn(x, y, w, h, isTop, seed, {
+      taper: 0.25, flare: 0.2, wobble: 6.5, freq: 1.0, samples: 6,
+    });
+
+    const rockGrad = ctx.createLinearGradient(x, y, x + w, y);
+    rockGrad.addColorStop(0, "#292420");
+    rockGrad.addColorStop(0.5, "#1c1917");
+    rockGrad.addColorStop(1, "#120f0d");
+    ctx.fillStyle = rockGrad;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.4)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.clip();
+    // Rock strata bands
     ctx.fillStyle = "#292524";
     for (let ry = y; ry < y + h; ry += 25) {
-      ctx.fillRect(x, ry, w, 3);
+      ctx.fillRect(x - 8, ry, w + 16, 3);
     }
-    // Lava cracks (animated glow)
+    // Lava cracks — now traced along the jagged edge itself so the glow
+    // reaches the true silhouette boundary, not a fixed inset rectangle
     ctx.strokeStyle = "#f97316";
     ctx.lineWidth = 2;
     ctx.globalAlpha = 0.6 + Math.sin(t * 0.08) * 0.3;
     ctx.beginPath();
-    ctx.moveTo(x + 8, y + 15);
-    ctx.lineTo(x + 15, y + h * 0.3);
-    ctx.lineTo(x + 8, y + h * 0.5);
-    ctx.lineTo(x + 20, y + h * 0.7);
+    for (let i = 0; i < left.length; i++) {
+      const [lx, ly] = left[i];
+      const jx = lx + (i % 2 === 0 ? 6 : -2);
+      if (i === 0) ctx.moveTo(jx, ly); else ctx.lineTo(jx, ly);
+    }
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(x + 30, y + 10);
-    ctx.lineTo(x + 38, y + h * 0.4);
-    ctx.lineTo(x + 30, y + h * 0.8);
+    for (let i = 0; i < right.length; i++) {
+      const [rx, ry2] = right[i];
+      const jx = rx + (i % 2 === 0 ? -6 : 2);
+      if (i === 0) ctx.moveTo(jx, ry2); else ctx.lineTo(jx, ry2);
+    }
     ctx.stroke();
     ctx.globalAlpha = 1;
-    // Glowing edge
+    ctx.restore();
+
+    // Glowing molten edge at the gap
     const capY = isTop ? y + h : y;
     ctx.fillStyle = "#ef4444";
     ctx.shadowColor = "#f97316";
@@ -1655,38 +2729,71 @@ export class FlippyRenderer {
     ctx.shadowBlur = 0;
   }
 
-  private drawCoralPipe(x: number, y: number, w: number, h: number, isTop: boolean, t: number) {
+  /** A bulging reef-rock column — the body itself undulates like a real
+   *  coral formation instead of a flat rectangle wearing coral growths. */
+  private drawCoralPipe(x: number, y: number, w: number, h: number, isTop: boolean, t: number, seed: number = 0) {
     const ctx = this.ctx;
-    // Coral body
-    ctx.fillStyle = "#0e7490";
-    ctx.fillRect(x, y, w, h);
-    // Organic texture
+    const { left, right } = this.traceOrganicColumn(x, y, w, h, isTop, seed, {
+      taper: 0.15, flare: 0.3, wobble: 6, freq: 2.6, samples: 10,
+    });
+
+    const coralGrad = ctx.createLinearGradient(x, y, x + w, y);
+    coralGrad.addColorStop(0, "#22a5c2");
+    coralGrad.addColorStop(0.5, "#0e7490");
+    coralGrad.addColorStop(1, "#0b5566");
+    ctx.fillStyle = coralGrad;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(6,182,212,0.4)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.clip();
     ctx.fillStyle = "#155e75";
     for (let cy = y; cy < y + h; cy += 20) {
       ctx.beginPath();
       ctx.arc(x + w * 0.3, cy, 8, 0, Math.PI * 2);
       ctx.fill();
     }
-    // Coral growth on edges
-    const capY = isTop ? y + h : y;
+    ctx.restore();
+
+    // Coral polyp growth clustered along the bulging edges themselves
     ctx.fillStyle = "#fb7185";
-    for (let cx = 0; cx < w; cx += 12) {
+    for (let i = 0; i < left.length; i += 2) {
+      const blobH = 5 + Math.sin(i * 3 + t * 0.02) * 2;
       ctx.beginPath();
-      const blobH = 8 + Math.sin(cx * 3 + t * 0.02) * 3;
-      ctx.arc(x + cx + 6, isTop ? capY + blobH * 0.3 : capY - blobH * 0.3, blobH, 0, Math.PI * 2);
+      ctx.arc(left[i][0], left[i][1], blobH, 0, Math.PI * 2);
+      ctx.arc(right[i][0], right[i][1], blobH * 0.8, 0, Math.PI * 2);
       ctx.fill();
     }
-    // Cap
+    // Growth cap at the gap edge
+    const capY = isTop ? y + h : y;
     ctx.fillStyle = "#06b6d4";
-    ctx.fillRect(x - 5, capY - (isTop ? 8 : 0), w + 10, 8);
+    ctx.beginPath();
+    ctx.roundRect(x - 5, capY - (isTop ? 8 : 0), w + 10, 8, 4);
+    ctx.fill();
   }
 
-  private drawSpacePipe(x: number, y: number, w: number, h: number, isTop: boolean, t: number) {
+  /** A greebled station module — stepped/notched panel edges (built, not
+   *  organic) so it reads as engineered hardware rather than a picture
+   *  frame with lights on it. */
+  private drawSpacePipe(x: number, y: number, w: number, h: number, isTop: boolean, t: number, seed: number = 0) {
     const ctx = this.ctx;
-    // Metal body
-    ctx.fillStyle = "#1e293b";
-    ctx.fillRect(x, y, w, h);
-    // Metal panels
+    this.traceGreebledColumn(x, y, w, h, isTop, seed, { inset: 6, bandCount: 6 });
+
+    const metalGrad = ctx.createLinearGradient(x, y, x + w, y);
+    metalGrad.addColorStop(0, "#3a4a63");
+    metalGrad.addColorStop(0.5, "#1e293b");
+    metalGrad.addColorStop(1, "#0f1729");
+    ctx.fillStyle = metalGrad;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(148,163,184,0.35)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.clip();
+    // Panel seams
     ctx.fillStyle = "#334155";
     ctx.fillRect(x + 2, y, 3, h);
     ctx.fillRect(x + w - 5, y, 3, h);
@@ -1694,14 +2801,36 @@ export class FlippyRenderer {
     const stripColor = `hsl(${(t * 2) % 360}, 80%, 60%)`;
     ctx.fillStyle = stripColor;
     ctx.fillRect(x + w / 2 - 2, y, 4, h);
-    // Blinking lights
+    // Blinking lights — smooth pulse instead of a hard on/off swap
     for (let ly = y + 15; ly < y + h - 15; ly += 30) {
-      ctx.fillStyle = Math.sin(t * 0.1 + ly) > 0 ? "#22d3ee" : "#0f172a";
+      ctx.fillStyle = "#0f172a";
       ctx.beginPath();
       ctx.arc(x + 10, ly, 3, 0, Math.PI * 2);
       ctx.fill();
+      ctx.globalAlpha = Math.max(0, Math.sin(t * 0.1 + ly));
+      ctx.fillStyle = "#22d3ee";
+      ctx.beginPath();
+      ctx.arc(x + 10, ly, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
     }
-    // Station cap
+    ctx.restore();
+
+    // Antenna/vent greeble poking off the anchored end
+    const antennaY = isTop ? y + 4 : y + h - 4;
+    const antennaDir = isTop ? -1 : 1;
+    ctx.strokeStyle = "#94a3b8";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.7, antennaY);
+    ctx.lineTo(x + w * 0.7, antennaY + antennaDir * 10);
+    ctx.stroke();
+    ctx.fillStyle = "#22d3ee";
+    ctx.beginPath();
+    ctx.arc(x + w * 0.7, antennaY + antennaDir * 10, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Station docking cap at the gap edge
     const capY = isTop ? y + h : y;
     ctx.fillStyle = "#64748b";
     ctx.fillRect(x - 8, capY - (isTop ? 12 : 0), w + 16, 12);
@@ -1709,46 +2838,81 @@ export class FlippyRenderer {
     ctx.fillRect(x - 8, capY - (isTop ? 12 : 0), w + 16, 3);
   }
 
-  private drawDarkPipe(x: number, y: number, w: number, h: number, isTop: boolean) {
+  /** A jagged obsidian spire — the whole silhouette is broken/angular, not
+   *  just the cap spikes, and the spike crown itself is now irregular
+   *  instead of a perfectly even fence. */
+  private drawDarkPipe(x: number, y: number, w: number, h: number, isTop: boolean, seed: number = 0) {
     const ctx = this.ctx;
-    // Obsidian body
-    ctx.fillStyle = "#18181b";
-    ctx.fillRect(x, y, w, h);
-    // Stone texture
+    const { left, right } = this.traceOrganicColumn(x, y, w, h, isTop, seed, {
+      taper: 0.32, flare: 0.24, wobble: 7, freq: 1.3, samples: 6,
+    });
+
+    const obsidianGrad = ctx.createLinearGradient(x, y, x + w, y);
+    obsidianGrad.addColorStop(0, "#2b2530");
+    obsidianGrad.addColorStop(0.5, "#18181b");
+    obsidianGrad.addColorStop(1, "#0a0a0c");
+    ctx.fillStyle = obsidianGrad;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(63,63,70,0.6)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.clip();
     ctx.fillStyle = "#27272a";
-    ctx.fillRect(x, y, w * 0.15, h);
+    ctx.fillRect(x - 8, y, w * 0.15 + 8, h);
     ctx.fillStyle = "#3f3f46";
     for (let sy = y; sy < y + h; sy += 20) {
-      ctx.fillRect(x, sy, w, 1);
+      ctx.fillRect(x - 8, sy, w + 16, 1);
     }
-    // Spikes
+    ctx.restore();
+
+    // Irregular spike crown — heights/spacing vary instead of an even fence
     const capY = isTop ? y + h : y;
     ctx.fillStyle = "#3f3f46";
-    for (let sx = 0; sx < w; sx += 12) {
+    let sx = 0;
+    let si = 0;
+    while (sx < w) {
+      const spikeW = 9 + ((si + Math.floor(seed * 5)) % 3) * 3;
+      const spikeH = 10 + ((si * 7 + Math.floor(seed * 13)) % 4) * 3;
       ctx.beginPath();
       ctx.moveTo(x + sx, capY);
-      ctx.lineTo(x + sx + 6, isTop ? capY + 15 : capY - 15);
-      ctx.lineTo(x + sx + 12, capY);
+      ctx.lineTo(x + sx + spikeW / 2, isTop ? capY + spikeH : capY - spikeH);
+      ctx.lineTo(x + sx + spikeW, capY);
       ctx.fill();
+      sx += spikeW;
+      si++;
     }
-    // Glowing rune
-    ctx.fillStyle = "#ef4444";
-    ctx.globalAlpha = 0.3;
+    // Glowing rune — radial gradient so it actually reads as light
+    const runeGrad = ctx.createRadialGradient(x + w / 2, y + h / 2, 1, x + w / 2, y + h / 2, 10);
+    runeGrad.addColorStop(0, "rgba(248, 113, 113, 0.7)");
+    runeGrad.addColorStop(1, "rgba(239, 68, 68, 0)");
+    ctx.fillStyle = runeGrad;
     ctx.beginPath();
-    ctx.arc(x + w / 2, y + h / 2, 8, 0, Math.PI * 2);
+    ctx.arc(x + w / 2, y + h / 2, 10, 0, Math.PI * 2);
     ctx.fill();
-    ctx.globalAlpha = 1;
   }
 
-  private drawNeonPipe(x: number, y: number, w: number, h: number, isTop: boolean, t: number) {
+  /** A stepped industrial pylon — notched/vented edges (built, not organic)
+   *  instead of a clean bordered rectangle, so it reads as a tech structure
+   *  rather than "picture frame with neon on it." */
+  private drawNeonPipe(x: number, y: number, w: number, h: number, isTop: boolean, t: number, seed: number = 0) {
     const ctx = this.ctx;
-    // Dark body
-    ctx.fillStyle = "#0f172a";
-    ctx.fillRect(x, y, w, h);
-    // Neon border
+    this.traceGreebledColumn(x, y, w, h, isTop, seed, { inset: 7, bandCount: 5 });
+
+    const neonBodyGrad = ctx.createLinearGradient(x, y, x + w, y);
+    neonBodyGrad.addColorStop(0, "#1e1b3a");
+    neonBodyGrad.addColorStop(0.5, "#0f172a");
+    neonBodyGrad.addColorStop(1, "#050a16");
+    ctx.fillStyle = neonBodyGrad;
+    ctx.fill();
+    // Neon border traces the actual stepped silhouette now
     ctx.strokeStyle = "#22d3ee";
     ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, w, h);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.clip();
     // Inner neon lines
     ctx.strokeStyle = "#c026d3";
     ctx.lineWidth = 1;
@@ -1758,10 +2922,21 @@ export class FlippyRenderer {
     ctx.moveTo(x + w - 5, y + 5);
     ctx.lineTo(x + w - 5, y + h - 5);
     ctx.stroke();
+    // Vent slats in the recessed bands
+    ctx.strokeStyle = "rgba(34,211,238,0.4)";
+    ctx.lineWidth = 1;
+    for (let vy = y + 8; vy < y + h - 8; vy += 14) {
+      ctx.beginPath();
+      ctx.moveTo(x + 2, vy);
+      ctx.lineTo(x + w - 2, vy);
+      ctx.stroke();
+    }
     // Scanning line
     const scanY = y + ((t * 2) % h);
     ctx.fillStyle = "rgba(34, 211, 238, 0.3)";
-    ctx.fillRect(x, scanY, w, 3);
+    ctx.fillRect(x - 4, scanY, w + 8, 3);
+    ctx.restore();
+
     // Cap
     const capY = isTop ? y + h : y;
     ctx.fillStyle = "#c026d3";
@@ -1771,76 +2946,345 @@ export class FlippyRenderer {
     ctx.shadowBlur = 0;
   }
 
-  private drawCloudPipe(x: number, y: number, w: number, h: number, isTop: boolean) {
+  /** An ornate carved-stone pillar with a flared capital/base and fluted
+   *  shaft — a fragment of the floating kingdom's own architecture, not a
+   *  cloud-textured rectangle. Cloud wisps drift around the flares so it
+   *  still reads as belonging to the sky, just as built stone rather than
+   *  condensed vapor. */
+  private drawCloudPipe(x: number, y: number, w: number, h: number, isTop: boolean, t: number = 0, seed: number = 0) {
     const ctx = this.ctx;
-    // Main cloud column
-    ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 15);
+    // Fluted shaft: many thin, low-amplitude ripples read as carved grooves
+    // rather than an organic wobble — deliberately restrained, not jagged.
+    const { left, right } = this.traceOrganicColumn(x, y, w, h, isTop, seed, {
+      taper: 0.06, flare: 0.16, wobble: 1.6, freq: 4.5, samples: 14,
+    });
+
+    const stoneGrad = ctx.createLinearGradient(x, y, x + w, y);
+    stoneGrad.addColorStop(0, "#fefce8");
+    stoneGrad.addColorStop(0.55, "#fde9b8");
+    stoneGrad.addColorStop(1, "#d9b877");
+    ctx.fillStyle = stoneGrad;
     ctx.fill();
-    // Cloud shadow
-    ctx.fillStyle = "rgba(148, 163, 184, 0.3)";
-    ctx.fillRect(x + w * 0.7, y, w * 0.3, h);
-    // Cloud puffs at edges
-    const puffY = isTop ? y + h : y;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+    ctx.strokeStyle = "rgba(146,64,14,0.25)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.clip();
+    // Flute shadow lines
+    ctx.strokeStyle = "rgba(146,64,14,0.15)";
+    ctx.lineWidth = 1;
+    for (const frac of [0.25, 0.5, 0.75]) {
+      ctx.beginPath();
+      for (let i = 0; i < left.length; i++) {
+        const lx = left[i][0] + (right[i][0] - left[i][0]) * frac;
+        const ly = left[i][1];
+        if (i === 0) ctx.moveTo(lx, ly); else ctx.lineTo(lx, ly);
+      }
+      ctx.stroke();
+    }
+    // Gold inlay band at mid-shaft
+    ctx.fillStyle = "rgba(251, 191, 36, 0.55)";
+    const midIdx = Math.floor(left.length / 2);
+    ctx.fillRect(left[midIdx][0] - 2, left[midIdx][1] - 3, right[midIdx][0] - left[midIdx][0] + 4, 6);
+    ctx.restore();
+
+    // Carved capital/base flare at the anchored end (away from the gap)
+    const anchorPt = isTop ? { l: left[0], r: right[0] } : { l: left[left.length - 1], r: right[right.length - 1] };
+    const flareY = anchorPt.l[1];
+    ctx.fillStyle = "#fde9b8";
     ctx.beginPath();
-    ctx.arc(x + 10, puffY, 12, 0, Math.PI * 2);
-    ctx.arc(x + w / 2, isTop ? puffY + 5 : puffY - 5, 15, 0, Math.PI * 2);
-    ctx.arc(x + w - 10, puffY, 12, 0, Math.PI * 2);
+    ctx.roundRect(x - 8, flareY - (isTop ? 0 : 10), w + 16, 10, 3);
     ctx.fill();
-    // Golden rim
-    ctx.fillStyle = "rgba(253, 224, 71, 0.4)";
-    ctx.fillRect(x - 2, puffY - (isTop ? 4 : 0), w + 4, 4);
+    ctx.strokeStyle = "rgba(146,64,14,0.3)";
+    ctx.stroke();
+
+    // Soft cloud wisps drifting around the flare — keeps it tied to the sky
+    const wispY = flareY + (isTop ? -6 : 6) + Math.sin(t * 0.02 + seed * 6) * 3;
+    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    ctx.beginPath();
+    ctx.arc(x - 4, wispY, 7, 0, Math.PI * 2);
+    ctx.arc(x + w + 6, wispY + 3, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Gap-facing edge: a simple carved lip instead of the old cloud puffs
+    const capY = isTop ? y + h : y;
+    ctx.fillStyle = "rgba(253, 224, 71, 0.35)";
+    ctx.fillRect(x - 2, capY - (isTop ? 3 : 0), w + 4, 3);
   }
 
-  private drawSandstonePipe(x: number, y: number, w: number, h: number, isTop: boolean) {
+  /** A Nabataean carved-stone column: an entasis shaft (bulging toward the
+   *  middle, tapering at both ends — real classical-column proportions,
+   *  not a monotonic taper) topped with a corbelled crow-step capital and
+   *  set on a flared plinth at the ground. The silhouette itself — bulge
+   *  plus stepped cornice — is what makes this read as Petra even in solid
+   *  black, not a rectangle with a sandstone texture. */
+  /** Traces a gear silhouette — alternating outer/inner radius around the
+   *  circumference. Does not fill/stroke; caller sets style. Reused by the
+   *  Clockwork obstacle's cap and by the background's rotating gears. */
+  private traceGear(cx: number, cy: number, outerR: number, innerR: number, teeth: number, rotation: number) {
     const ctx = this.ctx;
-    // Sandstone body
-    ctx.fillStyle = "#d97706";
-    ctx.fillRect(x, y, w, h);
-    // Brick pattern
+    ctx.beginPath();
+    const steps = teeth * 4;
+    for (let i = 0; i <= steps; i++) {
+      const toothPhase = (i % 4) / 4;
+      const r = toothPhase < 0.5 ? outerR : innerR;
+      const angle = (i / steps) * Math.PI * 2 + rotation;
+      const px = cx + Math.cos(angle) * r;
+      const py = cy + Math.sin(angle) * r;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+
+  /** Clockwork obstacle: a stepped steel piston housing capped with an
+   *  actual rotating gear collar — the gear-tooth silhouette at the gap
+   *  edge is what makes this read as clockwork machinery even as a solid
+   *  silhouette, not a rectangle wearing bronze paint and bolts. */
+  private drawClockworkPipe(x: number, y: number, w: number, h: number, isTop: boolean, t: number = 0, seed: number = 0) {
+    const ctx = this.ctx;
+    this.traceGreebledColumn(x, y, w, h, isTop, seed, { inset: 7, bandCount: 6 });
+
+    const bodyGrad = ctx.createLinearGradient(x, y, x + w, y);
+    bodyGrad.addColorStop(0, "#544738");
+    bodyGrad.addColorStop(0.5, "#2e2820");
+    bodyGrad.addColorStop(1, "#171310");
+    ctx.fillStyle = bodyGrad;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.5)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.clip();
+    // Bronze trim bands marking each housing segment
+    ctx.fillStyle = "rgba(201,138,63,0.35)";
+    for (let by = y; by < y + h; by += h / 6) {
+      ctx.fillRect(x - 8, by, w + 16, 3);
+    }
+    // Rivets along both edges
+    ctx.fillStyle = "rgba(20,15,10,0.6)";
+    for (let ry = y + 8; ry < y + h - 4; ry += 14) {
+      ctx.beginPath();
+      ctx.arc(x + 4, ry, 1.6, 0, Math.PI * 2);
+      ctx.arc(x + w - 4, ry, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // A small piston rod sliding in and out of a port on the shaft —
+    // genuine mechanical motion, not just a color pulse
+    const portY = y + h * 0.4;
+    const rodExtend = (Math.sin(t * 0.04 + seed * 8) * 0.5 + 0.5) * 10;
+    ctx.fillStyle = "#1c1a16";
+    ctx.fillRect(x - 4, portY - 5, 8, 10);
+    ctx.fillStyle = "#c9a35a";
+    ctx.fillRect(x - 4 - rodExtend, portY - 2, rodExtend + 4, 4);
+    ctx.beginPath();
+    ctx.arc(x - 4 - rodExtend, portY, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // The gear collar — the signature silhouette element, slowly rotating
+    const capY = isTop ? y + h : y;
+    const gearR = w * 0.62;
+    const rotation = t * 0.01 + seed * 6;
+    const gearGrad = ctx.createRadialGradient(x + w / 2 - 4, capY - 4, 2, x + w / 2, capY, gearR);
+    gearGrad.addColorStop(0, "#e8c98a");
+    gearGrad.addColorStop(0.6, "#c98a3f");
+    gearGrad.addColorStop(1, "#6e4a22");
+    this.traceGear(x + w / 2, capY, gearR, gearR * 0.72, 10, rotation);
+    ctx.fillStyle = gearGrad;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(35,22,8,0.55)";
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.fillStyle = "#3d332a";
+    ctx.beginPath();
+    ctx.arc(x + w / 2, capY, gearR * 0.32, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#8a5a2a";
+    ctx.beginPath();
+    ctx.arc(x + w / 2, capY, gearR * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Riveted mounting flange at the ground — only where visible
+    if (!isTop) {
+      const baseY = y + h;
+      ctx.fillStyle = "#211d18";
+      ctx.fillRect(x - 10, baseY - 8, w + 20, 8);
+      ctx.strokeStyle = "rgba(201,138,63,0.3)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x - 10, baseY - 8, w + 20, 8);
+      ctx.fillStyle = "rgba(20,15,10,0.7)";
+      for (const fx of [x - 6, x + w / 2, x + w + 6]) {
+        ctx.beginPath();
+        ctx.arc(fx, baseY - 4, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // A smooth warm glint (never a hard on/off pop) catching the brass trim
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    const sweepPos = y + (((t * 0.7 + seed * h) % (h + 60)) - 30);
+    const sweepGrad = ctx.createLinearGradient(0, sweepPos - 16, 0, sweepPos + 16);
+    sweepGrad.addColorStop(0, "rgba(255,214,150,0)");
+    sweepGrad.addColorStop(0.5, "rgba(255,214,150,0.22)");
+    sweepGrad.addColorStop(1, "rgba(255,214,150,0)");
+    ctx.fillStyle = sweepGrad;
+    ctx.fillRect(x - 6, sweepPos - 16, w + 12, 32);
+    ctx.restore();
+  }
+
+  /** A broken, weathered obelisk — chipped/eroded silhouette matching the
+   *  ruin language the pyramids already established, not a clean brick
+   *  tower. */
+  private drawSandstonePipe(x: number, y: number, w: number, h: number, isTop: boolean, seed: number = 0) {
+    const ctx = this.ctx;
+    // Erosion: fewer samples than a smooth organic wobble reads as chipped
+    // stone chunks rather than a curved surface.
+    const { left, right } = this.traceOrganicColumn(x, y, w, h, isTop, seed, {
+      taper: 0.1, flare: 0.08, wobble: 4.5, freq: 1.6, samples: 7,
+    });
+
+    const stoneGrad = ctx.createLinearGradient(x, y, x + w, y);
+    stoneGrad.addColorStop(0, "#f2a72e");
+    stoneGrad.addColorStop(0.5, "#d97706");
+    stoneGrad.addColorStop(1, "#92400e");
+    ctx.fillStyle = stoneGrad;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(69,26,3,0.35)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.clip();
+    // Coursed stone joints
     ctx.fillStyle = "#b45309";
     for (let by = y; by < y + h; by += 18) {
-      ctx.fillRect(x, by, w, 2);
+      ctx.fillRect(x - 8, by, w + 16, 2);
       const offset = Math.floor(by / 18) % 2 === 0 ? 0 : w / 2;
       ctx.fillRect(x + offset, by, 2, 18);
     }
-    // Hieroglyph-style marks
+    // Carved relief bands — real bands, not faint marks
+    ctx.fillStyle = "#78350f";
+    ctx.globalAlpha = 0.5;
+    ctx.fillRect(x + 8, y + h * 0.22, w - 16, 6);
+    ctx.fillRect(x + 8, y + h * 0.5, w - 16, 6);
     ctx.fillStyle = "#92400e";
     ctx.globalAlpha = 0.4;
-    ctx.fillRect(x + 15, y + h * 0.3, 8, 12);
-    ctx.fillRect(x + 28, y + h * 0.5, 6, 10);
+    ctx.fillRect(x + 15, y + h * 0.32, 8, 10);
+    ctx.fillRect(x + 28, y + h * 0.62, 6, 8);
     ctx.globalAlpha = 1;
-    // Cap
+    ctx.restore();
+
+    // Chipped chunk missing from one edge — the clearest "ruin" cue
+    const chipIdx = Math.floor(2 + seed * (left.length - 4));
+    const chipSide = seed > 0.5 ? left : right;
+    const chipDir = chipSide === left ? 1 : -1;
+    ctx.save();
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(chipSide[chipIdx][0] + chipDir * 4, chipSide[chipIdx][1], 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Weathered, unevenly chipped edge at the gap instead of a clean stepped
+    // cap — jagged peaks reaching into the body read as a broken ruin top.
     const capY = isTop ? y + h : y;
+    const dir = isTop ? -1 : 1;
+    const heights = [2, 12, 4, 13, 6, 11, 1].map(v => v + seed * 3);
     ctx.fillStyle = "#f59e0b";
-    ctx.fillRect(x - 5, capY - (isTop ? 12 : 0), w + 10, 12);
-    // Stepped cap
-    ctx.fillRect(x - 2, capY - (isTop ? 16 : -4), w + 4, 4);
+    ctx.beginPath();
+    ctx.moveTo(x - 5, capY);
+    for (let i = 0; i < heights.length; i++) {
+      const px = x - 5 + ((w + 10) * i) / (heights.length - 1);
+      ctx.lineTo(px, capY + dir * heights[i]);
+    }
+    ctx.lineTo(x + w + 5, capY);
+    ctx.closePath();
+    ctx.fill();
   }
 
-  private drawSakuraPipe(x: number, y: number, w: number, h: number, isTop: boolean) {
+  /** A weathered wood post with a real torii silhouette at the cap — two
+   *  angled crossbeams, not a flat rectangle bar — plus a single blossom
+   *  branch growing off the post instead of two identical cap dots. */
+  private drawSakuraPipe(x: number, y: number, w: number, h: number, isTop: boolean, seed: number = 0) {
     const ctx = this.ctx;
-    // Dark wood body
-    ctx.fillStyle = "#451a03";
-    ctx.fillRect(x, y, w, h);
-    // Wood grain
-    ctx.fillStyle = "#78350f";
-    ctx.fillRect(x + 5, y, 4, h);
-    ctx.fillRect(x + 20, y, 3, h);
-    ctx.fillRect(x + 38, y, 5, h);
-    // Cap: Torii gate style
-    const capY = isTop ? y + h : y;
-    ctx.fillStyle = "#dc2626";
-    ctx.fillRect(x - 8, capY - (isTop ? 10 : 0), w + 16, 10);
-    ctx.fillRect(x - 10, capY - (isTop ? 14 : -4), w + 20, 4);
-    // Small pink blossoms on cap
-    ctx.fillStyle = "#f9a8d4";
-    ctx.beginPath();
-    ctx.arc(x - 4, isTop ? capY + 4 : capY - 4, 5, 0, Math.PI * 2);
-    ctx.arc(x + w + 4, isTop ? capY + 4 : capY - 4, 5, 0, Math.PI * 2);
+    const { left, right } = this.traceOrganicColumn(x, y, w, h, isTop, seed, {
+      taper: 0.2, flare: 0.14, wobble: 3, freq: 1.4, samples: 8,
+    });
+
+    const woodGrad = ctx.createLinearGradient(x, y, x + w, y);
+    woodGrad.addColorStop(0, "#6b2c0f");
+    woodGrad.addColorStop(0.5, "#451a03");
+    woodGrad.addColorStop(1, "#2b0f02");
+    ctx.fillStyle = woodGrad;
     ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.3)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.clip();
+    ctx.fillStyle = "#78350f";
+    for (const frac of [0.14, 0.5, 0.86]) {
+      ctx.beginPath();
+      for (let i = 0; i < left.length; i++) {
+        const lx = left[i][0] + (right[i][0] - left[i][0]) * frac;
+        const ly = left[i][1];
+        if (i === 0) ctx.moveTo(lx - 1.5, ly); else ctx.lineTo(lx - 1.5, ly);
+      }
+      for (let i = left.length - 1; i >= 0; i--) {
+        const lx = left[i][0] + (right[i][0] - left[i][0]) * frac;
+        ctx.lineTo(lx + 1.5, left[i][1]);
+      }
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Torii crossbeams — the actual gate silhouette, angled beams
+    // extending past the post rather than a flat rectangle bar
+    const capY = isTop ? y + h : y;
+    const beamDir = isTop ? -1 : 1;
+    ctx.fillStyle = "#b91c1c";
+    ctx.save();
+    ctx.translate(x + w / 2, capY);
+    // Upper (kasagi) beam — wider, gently upswept ends
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.9, beamDir * 6);
+    ctx.lineTo(-w * 0.95, beamDir * 2);
+    ctx.lineTo(w * 0.95, beamDir * 2);
+    ctx.lineTo(w * 0.9, beamDir * 6);
+    ctx.lineTo(-w * 0.9, beamDir * 6);
+    ctx.fill();
+    // Lower (nuki) beam — narrower, straight through-tie
+    ctx.fillStyle = "#dc2626";
+    ctx.fillRect(-w * 0.75, beamDir * 9, w * 1.5, beamDir * 4);
+    ctx.restore();
+
+    // A single blossom branch growing off the post, not two identical dots
+    const branchSide = seed > 0.5 ? right : left;
+    const branchIdx = Math.floor(1 + (1 - seed) * (branchSide.length - 3));
+    const [bx, by] = branchSide[branchIdx];
+    const dir = branchSide === right ? 1 : -1;
+    ctx.strokeStyle = "#451a03";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    ctx.quadraticCurveTo(bx + dir * 10, by - 6, bx + dir * 18, by - 4);
+    ctx.stroke();
+    for (const [ox, oy] of [[dir * 18, -4], [dir * 12, -8], [dir * 22, -2]] as const) {
+      const bGrad = ctx.createRadialGradient(bx + ox - 2, by + oy - 2, 1, bx + ox, by + oy, 6);
+      bGrad.addColorStop(0, "#ffe4f2");
+      bGrad.addColorStop(1, "#f472b6");
+      ctx.fillStyle = bGrad;
+      ctx.beginPath();
+      ctx.arc(bx + ox, by + oy, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   // ──────────────────────────────────────────────────────
@@ -1891,6 +3335,7 @@ export class FlippyRenderer {
       case "sakura": bodyColor = "#fbcfe8"; wingColor = "#fce7f3"; beakColor = "#f43f5e"; break;
       case "angel": bodyColor = "#f8fafc"; wingColor = "#ffffff"; eyeColor = "#38bdf8"; beakColor = "#fbbf24"; break;
       case "explorer": bodyColor = "#d4d4d8"; wingColor = "#a1a1aa"; break;
+      case "clockwork": bodyColor = "#b5773a"; wingColor = "#d99a4e"; eyeColor = "#2b1608"; beakColor = "#8a5a2a"; break;
       case "diver": bodyColor = "#0284c7"; wingColor = "#38bdf8"; break;
     }
 
@@ -2089,6 +3534,36 @@ export class FlippyRenderer {
       ctx.beginPath();
       ctx.ellipse(0, -14, 6, 2, 0, 0, Math.PI * 2);
       ctx.stroke();
+    } else if (world.birdSkin === "clockwork") {
+      // A small brass monocle over the eye
+      ctx.strokeStyle = "#e8c98a";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(9.5, -8, 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(14.8, -4.5);
+      ctx.lineTo(16, 0);
+      ctx.stroke();
+      // A tiny cog pinned to the chest
+      ctx.fillStyle = "#c98a3f";
+      ctx.save();
+      ctx.translate(-2, 8);
+      ctx.rotate(tick * 0.02);
+      for (let tooth = 0; tooth < 6; tooth++) {
+        ctx.save();
+        ctx.rotate((tooth / 6) * Math.PI * 2);
+        ctx.fillRect(-1, -4, 2, 2);
+        ctx.restore();
+      }
+      ctx.beginPath();
+      ctx.arc(0, 0, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#7a4f22";
+      ctx.beginPath();
+      ctx.arc(0, 0, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
 
     ctx.restore();
@@ -2099,32 +3574,238 @@ export class FlippyRenderer {
   // ──────────────────────────────────────────────────────
 
   private drawDynamicEvent(state: FlippyState) {
-    if (!state.activeEvent) return;
+    // Even after activeEvent clears, keep drawing the event that just ended
+    // for a short fade-out window — a clean disappearance instead of the
+    // effect vanishing on the exact frame the world slot ends.
+    const FADE_OUT_TICKS = 26;
+    let type: FlippyEventType | null = state.activeEvent;
+    let alpha = 1;
 
-    const { ctx, width, height } = this;
-    ctx.save();
-
-    if (state.activeEvent === "fog") {
-      ctx.fillStyle = "rgba(200, 200, 200, 0.4)";
-      ctx.fillRect(0, 0, width, height);
-    } else if (state.activeEvent === "rain") {
-      ctx.strokeStyle = "rgba(200, 200, 255, 0.6)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let i = 0; i < 100; i++) {
-        const rx = (Math.random() * width + state.frames * 2) % width;
-        const ry = (Math.random() * height + state.frames * 15) % height;
-        ctx.moveTo(rx, ry);
-        ctx.lineTo(rx - 2, ry + 15);
-      }
-      ctx.stroke();
-    } else if (state.activeEvent === "thunder") {
-      if (Math.random() < 0.05) {
-        ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-        ctx.fillRect(0, 0, width, height);
+    if (!type && this.fadingEventType) {
+      const elapsed = this.renderTick - this.eventEndTick;
+      if (elapsed < FADE_OUT_TICKS) {
+        type = this.fadingEventType;
+        alpha = 1 - elapsed / FADE_OUT_TICKS;
+      } else {
+        this.fadingEventType = null;
       }
     }
+    if (!type) return;
 
+    // Only meaningful right after a genuine start (fading effects reuse the
+    // stale startTick from long ago, which just means their "intro burst"
+    // window has long since closed — exactly what we want).
+    const introElapsed = this.renderTick - this.eventStartTick;
+    alpha = Math.max(0, Math.min(1, alpha));
+
+    switch (type) {
+      case "storm": this.drawStormEvent(state, alpha); break;
+      case "speedup": this.drawSpeedUpEvent(state, alpha, introElapsed); break;
+      case "turbulence": this.drawTurbulenceEvent(state, alpha); break;
+      case "portal": this.drawPortalEvent(state, alpha, introElapsed); break;
+    }
+  }
+
+  /** STORM: cool-toned atmospheric wash (not a flat gray rectangle) + rain
+   *  streaks + occasional lightning, tuned low-alpha throughout so the gap
+   *  between pipes always stays readable. */
+  private drawStormEvent(state: FlippyState, alpha: number) {
+    const { ctx, width, height } = this;
+
+    // Atmospheric tint — heavier near the top/bottom edges, lighter through
+    // the middle band where the bird actually flies.
+    ctx.save();
+    ctx.globalAlpha = 0.9 * alpha;
+    const tint = ctx.createLinearGradient(0, 0, 0, height);
+    tint.addColorStop(0, "rgba(30,32,58,0.30)");
+    tint.addColorStop(0.35, "rgba(30,32,58,0.08)");
+    tint.addColorStop(0.65, "rgba(30,32,58,0.08)");
+    tint.addColorStop(1, "rgba(15,16,30,0.28)");
+    ctx.fillStyle = tint;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+
+    // Rain streaks, wind-angled
+    ctx.save();
+    ctx.globalAlpha = 0.5 * alpha;
+    ctx.strokeStyle = "rgba(196, 208, 255, 0.7)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < 70; i++) {
+      const rx = (i * 53.7 + state.frames * 3.2) % (width + 40) - 20;
+      const ry = (i * 91.3 + state.frames * 16) % (height + 40) - 20;
+      ctx.moveTo(rx, ry);
+      ctx.lineTo(rx - 6, ry + 18);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Subtle wind streaks drifting past — thin, sparse, horizontal
+    ctx.save();
+    ctx.globalAlpha = 0.12 * alpha;
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 5; i++) {
+      const wy = ((i * 137 + state.frames * 1.5) % (height + 60)) - 30;
+      const wx = ((i * 251 - state.frames * 5) % (width + 160)) - 80;
+      ctx.beginPath();
+      ctx.moveTo(wx, wy);
+      ctx.lineTo(wx + 50, wy);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Lightning: rare full-canvas flash, occasionally paired with a bolt
+    if (Math.random() < 0.028) {
+      ctx.save();
+      ctx.globalAlpha = 0.22 * alpha;
+      ctx.fillStyle = "#f5f3ff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.restore();
+
+      if (Math.random() < 0.4) {
+        ctx.save();
+        ctx.globalAlpha = 0.55 * alpha;
+        ctx.strokeStyle = "#e9e4ff";
+        ctx.lineWidth = 2;
+        ctx.shadowColor = "#c4b5fd";
+        ctx.shadowBlur = 10;
+        let bx = width * (0.15 + Math.random() * 0.7);
+        let by = 0;
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        while (by < height * 0.55) {
+          bx += (Math.random() - 0.5) * 40;
+          by += 20 + Math.random() * 20;
+          ctx.lineTo(bx, by);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
+  /** SPEED UP: a directional whoosh — horizontal streak lines, an outward
+   *  burst right as it begins, and a faint speed-tinted edge glow while
+   *  active. Never touches the pipes' own rendering. */
+  private drawSpeedUpEvent(state: FlippyState, alpha: number, introElapsed: number) {
+    const { ctx, width, height } = this;
+    const burstT = Math.max(0, Math.min(1, introElapsed / 22));
+
+    // Continuous subtle motion streaks
+    ctx.save();
+    ctx.globalAlpha = 0.28 * alpha;
+    ctx.strokeStyle = "#7dd3fc";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 10; i++) {
+      const sy = (i * 71 + (state.frames * 3) % 90) % height;
+      const len = 30 + (i % 4) * 12;
+      const sx = width - ((state.frames * 9 + i * 130) % (width + 200));
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(sx + len, sy);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // One-shot radiating burst on start
+    if (burstT < 1) {
+      ctx.save();
+      ctx.globalAlpha = (1 - burstT) * 0.5 * alpha;
+      ctx.strokeStyle = "#bae6fd";
+      ctx.lineWidth = 2;
+      const cx = width * 0.42;
+      const cy = height * 0.4;
+      const radius = 20 + burstT * 140;
+      for (let i = 0; i < 14; i++) {
+        const ang = (i / 14) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(ang) * radius * 0.5, cy + Math.sin(ang) * radius * 0.5);
+        ctx.lineTo(cx + Math.cos(ang) * radius, cy + Math.sin(ang) * radius);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Faint edge glow so the HUD reads "fast" even where streaks are sparse
+    ctx.save();
+    ctx.globalAlpha = 0.1 * alpha;
+    const glow = ctx.createLinearGradient(0, 0, width, 0);
+    glow.addColorStop(0, "rgba(56,189,248,0.5)");
+    glow.addColorStop(0.15, "rgba(56,189,248,0)");
+    glow.addColorStop(0.85, "rgba(56,189,248,0)");
+    glow.addColorStop(1, "rgba(56,189,248,0.5)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+
+  /** TURBULENCE: small air-flow streaks confined to the area around the
+   *  bird, drifting in sync with the engine's own turbulence phase so the
+   *  visual matches the actual push the bird is feeling. */
+  private drawTurbulenceEvent(state: FlippyState, alpha: number) {
+    const { ctx } = this;
+    const bx = state.bird.pos.x;
+    const by = state.bird.pos.y;
+    const wobble = Math.sin(state.eventTurbulencePhase);
+
+    ctx.save();
+    ctx.globalAlpha = 0.4 * alpha;
+    ctx.strokeStyle = "rgba(226, 240, 255, 0.8)";
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 7; i++) {
+      const ang = (i / 7) * Math.PI * 2 + state.frames * 0.02;
+      const dist = 26 + (i % 3) * 10;
+      const px = bx + Math.cos(ang) * dist - 20;
+      const py = by + Math.sin(ang) * dist * 0.6 + wobble * 6;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + 12, py + wobble * 3);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /** PORTAL: a strong ripple burst on start plus soft drifting energy motes
+   *  while active. The pipes' own portal aura is drawn in drawPipes. */
+  private drawPortalEvent(state: FlippyState, alpha: number, introElapsed: number) {
+    const { ctx, width, height } = this;
+    const cx = width * 0.5;
+    const cy = height * 0.42;
+
+    // Expanding ripple rings on activation
+    const RING_TICKS = 34;
+    if (introElapsed < RING_TICKS) {
+      const t = introElapsed / RING_TICKS;
+      ctx.save();
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 3; i++) {
+        const ringT = Math.max(0, Math.min(1, t - i * 0.15));
+        if (ringT <= 0) continue;
+        ctx.globalAlpha = (1 - ringT) * 0.5 * alpha;
+        ctx.strokeStyle = i % 2 === 0 ? "#c084fc" : "#67e8f9";
+        ctx.beginPath();
+        ctx.arc(cx, cy, 20 + ringT * 220, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Ambient drifting energy motes
+    ctx.save();
+    ctx.globalAlpha = 0.5 * alpha;
+    for (let i = 0; i < 16; i++) {
+      const seed = i * 137.5;
+      const px = (seed + state.frames * 1.1) % width;
+      const py = (Math.sin(state.frames * 0.01 + seed) * 0.5 + 0.5) * height;
+      const r = 1.2 + (i % 3);
+      ctx.fillStyle = i % 2 === 0 ? "#e9d5ff" : "#a5f3fc";
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(px, py, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 }

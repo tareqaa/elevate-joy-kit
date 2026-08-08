@@ -1,9 +1,63 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { createInitialState, updateEngine, jump, type FlippyState } from "@/lib/gx/games/flippy-engine";
+import { createInitialState, updateEngine, jump, type FlippyState, type FlippyEventType } from "@/lib/gx/games/flippy-engine";
 import { FlippyRenderer } from "@/lib/gx/games/flippy-renderer";
 import { flippyAudio } from "@/lib/gx/games/flippy-audio";
 import { useNavigate } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
+
+// Visual identity for each event — used for both the pop-in announcement
+// and the small persistent HUD chip while the event is active.
+const EVENT_META: Record<FlippyEventType, {
+  icon: string;
+  label: string;
+  labelAr: string;
+  chipLabel: string;
+  chipLabelAr: string;
+  gradient: string;
+  ring: string;
+  glow: string;
+}> = {
+  storm: {
+    icon: "⚡",
+    label: "STORM",
+    labelAr: "عاصفة",
+    chipLabel: "Storm",
+    chipLabelAr: "عاصفة",
+    gradient: "from-slate-700 via-indigo-800 to-slate-900",
+    ring: "border-indigo-400/50",
+    glow: "shadow-[0_0_24px_rgba(129,140,248,0.45)]",
+  },
+  speedup: {
+    icon: "🚀",
+    label: "SPEED UP",
+    labelAr: "تسارع",
+    chipLabel: "Speed Up",
+    chipLabelAr: "تسارع",
+    gradient: "from-sky-500 via-cyan-500 to-blue-600",
+    ring: "border-cyan-300/60",
+    glow: "shadow-[0_0_24px_rgba(56,189,248,0.5)]",
+  },
+  turbulence: {
+    icon: "🌀",
+    label: "TURBULENCE",
+    labelAr: "اضطراب",
+    chipLabel: "Turbulence",
+    chipLabelAr: "اضطراب",
+    gradient: "from-slate-500 via-slate-600 to-slate-700",
+    ring: "border-slate-300/50",
+    glow: "shadow-[0_0_20px_rgba(203,213,225,0.4)]",
+  },
+  portal: {
+    icon: "🌌",
+    label: "PORTAL",
+    labelAr: "بوابة",
+    chipLabel: "Portal",
+    chipLabelAr: "بوابة",
+    gradient: "from-fuchsia-600 via-purple-600 to-cyan-500",
+    ring: "border-fuchsia-300/60",
+    glow: "shadow-[0_0_28px_rgba(217,70,239,0.55)]",
+  },
+};
 
 interface FlippyCanvasProps {
   onGameOver: (score: number) => void;
@@ -23,11 +77,18 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
   
   const [score, setScore] = useState(0);
   const [status, setStatus] = useState<FlippyState["status"]>("idle");
-  const [eventMsg, setEventMsg] = useState<string | null>(null);
-  // Mirrors eventMsg for the game loop below, so the active-event transition
-  // can be read without putting eventMsg in the loop effect's dependencies
-  // (that used to tear down and restart the whole RAF loop on every event).
-  const eventMsgRef = useRef<string | null>(null);
+
+  // Mirrors state.activeEvent — drives the small persistent HUD chip.
+  const [activeEvent, setActiveEvent] = useState<FlippyEventType | null>(null);
+  const activeEventRef = useRef<FlippyEventType | null>(null);
+  // Which event the pop-in announcement is currently showing/animating, and
+  // which phase it's in ("in" while popping in and holding, "out" while
+  // fading away). Separate from activeEvent so the announcement can finish
+  // its own short lifetime independently of how long the event itself runs.
+  const [announcedEvent, setAnnouncedEvent] = useState<FlippyEventType | null>(null);
+  const [announcePhase, setAnnouncePhase] = useState<"in" | "out">("in");
+  const lastEventSeqRef = useRef(0);
+  const announceTimersRef = useRef<{ out?: ReturnType<typeof setTimeout>; hide?: ReturnType<typeof setTimeout> }>({});
   const [isMuted, setIsMuted] = useState(() => flippyAudio.isMuted());
   // The Game Over card mounts a beat after death so the fall/spin on the
   // canvas underneath has room to play out first (see the status-watching
@@ -114,12 +175,25 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
         }
       }
 
-      if (state.activeEvent && !eventMsgRef.current) {
-        eventMsgRef.current = `EVENT: ${state.activeEvent.toUpperCase()}`;
-        setEventMsg(eventMsgRef.current);
-      } else if (!state.activeEvent && eventMsgRef.current) {
-        eventMsgRef.current = null;
-        setEventMsg(null);
+      if (state.activeEvent !== activeEventRef.current) {
+        activeEventRef.current = state.activeEvent;
+        setActiveEvent(state.activeEvent);
+      }
+
+      // eventSeq only bumps when a genuinely NEW event is chosen (even a
+      // repeat of the same type), so this reliably re-fires the
+      // announcement every time instead of only on activeEvent identity
+      // changes.
+      if (state.eventSeq !== lastEventSeqRef.current) {
+        lastEventSeqRef.current = state.eventSeq;
+        if (state.activeEvent) {
+          clearTimeout(announceTimersRef.current.out);
+          clearTimeout(announceTimersRef.current.hide);
+          setAnnouncedEvent(state.activeEvent);
+          setAnnouncePhase("in");
+          announceTimersRef.current.out = setTimeout(() => setAnnouncePhase("out"), 1500);
+          announceTimersRef.current.hide = setTimeout(() => setAnnouncedEvent(null), 1500 + 320);
+        }
       }
 
       animId = requestAnimationFrame(loop);
@@ -131,6 +205,8 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", updateSize);
+      clearTimeout(announceTimersRef.current.out);
+      clearTimeout(announceTimersRef.current.hide);
     };
   }, []);
 
@@ -145,7 +221,12 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       stateRef.current = createInitialState(h);
       setScore(0);
       setStatus("idle");
-      setEventMsg(null);
+      activeEventRef.current = null;
+      setActiveEvent(null);
+      lastEventSeqRef.current = 0;
+      clearTimeout(announceTimersRef.current.out);
+      clearTimeout(announceTimersRef.current.hide);
+      setAnnouncedEvent(null);
       return;
     }
     
@@ -181,8 +262,11 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       {status !== "playing" && (
         <div className="absolute top-3 left-3 right-3 flex justify-between items-center pointer-events-auto z-20">
           {/* Sound button */}
-          <div className="flex items-center bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 shadow-lg text-white">
-            <button 
+          <div
+            className="flex items-center bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 shadow-lg text-white"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <button
               onClick={toggleSound}
               className="hover:scale-110 active:scale-95 transition-transform text-lg"
               title={isMuted ? "Unmute Sound" : "Mute Sound"}
@@ -217,12 +301,42 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
         </div>
       )}
 
-      {/* ─── EVENT MSG ─── */}
-      {eventMsg && (
-        <div className="absolute top-28 w-full flex justify-center pointer-events-none animate-pulse z-10">
-          <span className="px-4 py-1.5 bg-red-600/90 rounded-full text-white font-bold tracking-wider text-sm shadow-lg border border-red-400">
-            {eventMsg}
-          </span>
+      {/* ─── EVENT ANNOUNCEMENT (phase 1) ───
+          Pops in with icon + label when a new event starts, holds briefly,
+          then fades out on its own — never blocks input (pointer-events-none)
+          and sits below the score so it never covers the pipes. */}
+      {announcedEvent && status === "playing" && (
+        <div className="absolute top-36 w-full flex justify-center pointer-events-none z-20">
+          <div
+            key={lastEventSeqRef.current}
+            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-2xl border backdrop-blur-md bg-gradient-to-r ${EVENT_META[announcedEvent].gradient} ${EVENT_META[announcedEvent].ring} ${EVENT_META[announcedEvent].glow} ${
+              announcePhase === "in"
+                ? "animate-in fade-in zoom-in-75 slide-in-from-top-3 duration-300"
+                : "animate-out fade-out zoom-out-90 slide-out-to-top-3 duration-300"
+            }`}
+          >
+            <span className="text-2xl leading-none drop-shadow" aria-hidden>
+              {EVENT_META[announcedEvent].icon}
+            </span>
+            <span className="text-white font-black tracking-widest text-base drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">
+              {lang === "ar" ? EVENT_META[announcedEvent].labelAr : EVENT_META[announcedEvent].label}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ─── EVENT INDICATOR (phase 2) ───
+          Small persistent chip while the event is active — integrated into
+          the same corner language as the idle-state HUD chips, but visible
+          during play instead. */}
+      {activeEvent && status === "playing" && (
+        <div className="absolute top-3 right-3 z-10 pointer-events-none">
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md bg-black/50 shadow-lg ${EVENT_META[activeEvent].ring}`}>
+            <span className="text-sm leading-none" aria-hidden>{EVENT_META[activeEvent].icon}</span>
+            <span className="text-[10px] font-extrabold text-white tracking-wide uppercase">
+              {lang === "ar" ? EVENT_META[activeEvent].chipLabelAr : EVENT_META[activeEvent].chipLabel}
+            </span>
+          </div>
         </div>
       )}
 

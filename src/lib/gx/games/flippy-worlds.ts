@@ -6,9 +6,11 @@ export type ObstacleStyle =
   | "space" // Space
   | "dark" // Dark Realm
   | "neon" // Cyber
-  | "cloud" // Sky
+  | "cloud" // (retired, kept for type stability)
   | "sandstone" // Desert
-  | "sakura"; // Sakura
+  | "sakura" // Sakura
+  | "petra" // (retired, kept for type stability)
+  | "clockwork"; // Clockwork World
 
 export type BirdSkin =
   | "classic"
@@ -20,7 +22,8 @@ export type BirdSkin =
   | "cyber"
   | "angel"
   | "explorer"
-  | "sakura";
+  | "sakura"
+  | "clockwork";
 
 export type ParticleType =
   | "leaves"
@@ -32,7 +35,9 @@ export type ParticleType =
   | "digital"
   | "sparkles"
   | "sand"
-  | "petals";
+  | "petals"
+  | "dust"
+  | "steam";
 
 export interface WorldConfig {
   id: string;
@@ -151,19 +156,22 @@ export const FLIPPY_WORLDS: WorldConfig[] = [
     dynamicPipes: true, // Some obstacles move horizontally/vertically (handled in engine)
   },
   {
+    // Same slot/id as the original "Sky Kingdom" (then briefly "Petra") so
+    // tournament/engine code that references world identity by index/id
+    // stays untouched — only the visual theme changed again.
     id: "sky",
-    name: "Sky Kingdom",
-    bgTop: "#7dd3fc", // vivid sky blue
-    bgBottom: "#dbeafe", // soft light blue
-    obstacleStyle: "cloud",
-    birdSkin: "angel",
-    particleType: "sparkles",
-    particleColor: "#fde047",
+    name: "Clockwork World", // subtitle: "The Mechanical City"
+    bgTop: "#1a1712", // deep charcoal (fallback; renderer uses a richer gradient)
+    bgBottom: "#8a5a2a", // warm bronze haze near the horizon
+    obstacleStyle: "clockwork",
+    birdSkin: "clockwork",
+    particleType: "steam",
+    particleColor: "#d8cdb8",
     gravityModifier: 1.0,
     pipeGapModifier: 1.0,
     wind: { x: 0, y: 0 },
     dynamicPipes: false,
-    fogColor: "rgba(255, 255, 255, 0.2)", // soft cloud fog
+    fogColor: "rgba(90, 65, 35, 0.2)", // warm industrial haze
   },
   {
     id: "desert",
@@ -182,8 +190,8 @@ export const FLIPPY_WORLDS: WorldConfig[] = [
   {
     id: "sakura",
     name: "Sakura Garden",
-    bgTop: "#fdf2f8", // light pink
-    bgBottom: "#be185d", // deep pink/red
+    bgTop: "#2e2a55", // indigo dusk sky (fallback; renderer uses a richer gradient)
+    bgBottom: "#3d2a3a", // muted violet dusk
     obstacleStyle: "sakura",
     birdSkin: "sakura",
     particleType: "petals",
@@ -192,6 +200,6 @@ export const FLIPPY_WORLDS: WorldConfig[] = [
     pipeGapModifier: 1.0,
     wind: { x: 0, y: 0 },
     dynamicPipes: false,
-    fogColor: "rgba(252, 231, 243, 0.2)", // soft pink fog
+    fogColor: "rgba(60, 50, 80, 0.25)", // cool indigo dusk haze, not pink
   },
 ];
