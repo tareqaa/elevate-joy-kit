@@ -44,10 +44,11 @@ export class FlippyRenderer {
   private eventEndTick = -Infinity;
   private fadingEventType: FlippyEventType | null = null;
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, width: number, height: number) {
     this.ctx = canvas.getContext("2d")!;
-    this.width = canvas.width;
-    this.height = canvas.height;
+    this.width = width;
+    this.height = height;
+    this.applyDpr(width, height);
     this.initStars();
   }
 
@@ -72,6 +73,25 @@ export class FlippyRenderer {
   public resize(width: number, height: number) {
     this.width = width;
     this.height = height;
+    this.applyDpr(width, height);
+  }
+
+  /** Sizes the canvas's backing bitmap for the display's actual pixel
+   *  density instead of 1 device pixel per CSS pixel, then compensates with
+   *  a persistent transform so every existing draw call keeps working in
+   *  CSS-pixel space unchanged. Without this the whole scene is rendered at
+   *  a lower resolution than the screen and gets upscaled to fit — soft on
+   *  any HiDPI display, and reported as especially blurry on iOS, where
+   *  Safari's canvas upscaling makes the shortfall more visible than
+   *  Chrome does with the same undersized bitmap. */
+  private applyDpr(width: number, height: number) {
+    const canvas = this.ctx.canvas;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   private get bgFarX() { return this.getScrollOffset(0.2); }

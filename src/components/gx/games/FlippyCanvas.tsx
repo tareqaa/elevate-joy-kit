@@ -96,6 +96,8 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
   const [showOverCard, setShowOverCard] = useState(false);
 
   const stateRef = useRef<FlippyState>(createInitialState(600));
+  // Logical (CSS-pixel) canvas size — see the comment in updateSize().
+  const sizeRef = useRef({ width: 400, height: 600 });
 
   const onGameOverRef = useRef(onGameOver);
   const onGameStartRef = useRef(onGameStart);
@@ -124,11 +126,14 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       const height = Math.floor(rect.height);
       if (width <= 0 || height <= 0) return;
 
-      canvasRef.current.width = width;
-      canvasRef.current.height = height;
+      // Logical (CSS-pixel) game-space size, tracked separately from the
+      // canvas element's own width/height attributes — the renderer now
+      // sizes those to the display's devicePixelRatio for a sharp image,
+      // so they no longer match the coordinate space physics/drawing use.
+      sizeRef.current = { width, height };
 
       if (!rendererRef.current) {
-        rendererRef.current = new FlippyRenderer(canvasRef.current);
+        rendererRef.current = new FlippyRenderer(canvasRef.current, width, height);
         stateRef.current = createInitialState(height);
       } else {
         rendererRef.current.resize(width, height);
@@ -151,8 +156,8 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
 
     const loop = (now: number) => {
       const state = stateRef.current;
-      const w = canvasRef.current?.width || 400;
-      const h = canvasRef.current?.height || 600;
+      const w = sizeRef.current.width;
+      const h = sizeRef.current.height;
       const dt = Math.min(3, Math.max(0, (now - lastTime) / (1000 / 60)));
       lastTime = now;
 
@@ -217,8 +222,7 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
     }
     
     if (stateRef.current.status === "gameover") {
-      const h = canvasRef.current?.height || 600;
-      stateRef.current = createInitialState(h);
+      stateRef.current = createInitialState(sizeRef.current.height);
       setScore(0);
       setStatus("idle");
       activeEventRef.current = null;
@@ -292,9 +296,20 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       {/* ─── PLAYING SCORE HUD ─── */}
       {status === "playing" && (
         <div className="absolute top-16 w-full flex justify-center pointer-events-none z-10">
-          <span 
-            className="text-6xl font-black text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] tracking-wider" 
-            style={{ WebkitTextStroke: "2px black" }}
+          <span
+            className="text-6xl font-black text-white tracking-wider"
+            style={{
+              // A faux stroke + drop shadow built entirely from text-shadow,
+              // not `-webkit-text-stroke` + `filter: drop-shadow(...)`.
+              // Safari renders that combination as a solid black box behind
+              // the digits instead of an outline — most visible right after
+              // a tab-visibility change forces a repaint — because the
+              // stroke and the filter fight over the same compositing
+              // layer. text-shadow alone doesn't trigger it and looks the
+              // same everywhere.
+              textShadow:
+                "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.8)",
+            }}
           >
             {score}
           </span>
