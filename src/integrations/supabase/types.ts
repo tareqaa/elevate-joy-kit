@@ -712,6 +712,54 @@ export type Database = {
         }
         Relationships: []
       }
+      mini_games: {
+        Row: {
+          created_at: string
+          desc_ar: string
+          desc_en: string
+          game_slug: string
+          icon: string
+          id: string
+          is_active: boolean
+          name_ar: string
+          name_en: string
+          path: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          desc_ar?: string
+          desc_en?: string
+          game_slug: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          name_en: string
+          path: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          desc_ar?: string
+          desc_en?: string
+          game_slug?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          name_en?: string
+          path?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
