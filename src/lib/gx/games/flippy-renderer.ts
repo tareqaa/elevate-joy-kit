@@ -44,12 +44,34 @@ export class FlippyRenderer {
   private eventEndTick = -Infinity;
   private fadingEventType: FlippyEventType | null = null;
 
+  // Render-quality cap on top of the device's own pixel ratio. TEMP: forced
+  // to 1x for all devices to test smoothness-first, since this scene is
+  // 100% vector paths/arcs/gradients (no drawImage/sprites anywhere), so
+  // even 1x stays anti-aliased and clean rather than pixelated — it's just
+  // not retina-crisp on fine detail. downgradeQuality() below is a no-op
+  // while this is already at the floor.
+  private dprCap = 1;
+
   constructor(canvas: HTMLCanvasElement, width: number, height: number) {
     this.ctx = canvas.getContext("2d")!;
     this.width = width;
     this.height = height;
     this.applyDpr(width, height);
     this.initStars();
+  }
+
+  /** Called by FlippyCanvas after it measures sustained slow frames on this
+   *  device. A fixed DPR cap can't be both sharp everywhere and smooth
+   *  everywhere — weaker devices simply can't push as many pixels — so
+   *  instead of picking one tradeoff for all devices, we start crisp (2x)
+   *  and quietly drop to cheaper rendering only on the devices that
+   *  actually need it, once, for the rest of the session. Returns false if
+   *  already at the floor (nothing left to downgrade). */
+  public downgradeQuality(): boolean {
+    if (this.dprCap <= 1) return false;
+    this.dprCap = 1;
+    this.applyDpr(this.width, this.height);
+    return true;
   }
 
   private initStars() {
@@ -95,7 +117,7 @@ export class FlippyRenderer {
    *  iPhone after the uncapped version shipped. */
   private applyDpr(width: number, height: number) {
     const canvas = this.ctx.canvas;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
     canvas.style.width = `${width}px`;

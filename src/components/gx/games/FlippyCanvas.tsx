@@ -153,6 +153,14 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
     // land per real second. Clamped so resuming a backgrounded tab (RAF
     // pauses while hidden) doesn't apply one huge catch-up step.
     let lastTime = performance.now();
+    // Adaptive render quality: a fixed DPR cap can't be both sharp and
+    // smooth on every device — weaker ones just can't push as many pixels.
+    // So sample real frame cost during actual play, once per session, and
+    // if it's sustained-slow, drop the renderer to cheaper 1x rendering for
+    // the rest of the session instead of leaving it stuck soft-locked at a
+    // resolution the device can't keep smooth.
+    let qualityChecked = false;
+    const frameMsSamples: number[] = [];
 
     const loop = (now: number) => {
       const state = stateRef.current;
@@ -163,6 +171,15 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
 
       updateEngine(state, w, h, dt);
       rendererRef.current?.render(state, dt);
+
+      if (!qualityChecked && state.status === "playing") {
+        frameMsSamples.push(dt * (1000 / 60));
+        if (frameMsSamples.length >= 90) {
+          qualityChecked = true;
+          const avgMs = frameMsSamples.reduce((a, b) => a + b, 0) / frameMsSamples.length;
+          if (avgMs > 20) rendererRef.current?.downgradeQuality(); // sustained under ~50fps
+        }
+      }
 
       if (state.score !== lastScore) {
         lastScore = state.score;
