@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { FlippyCanvas } from "@/components/gx/games/FlippyCanvas";
@@ -39,14 +39,14 @@ function FlippyPage() {
   const queryClient = useQueryClient();
   const { t: tournamentId, practice } = Route.useSearch();
   const [isMuted, setIsMuted] = useState(() => flippyAudio.isMuted());
-  const [bestScore, setBestScore] = useState(() => {
-    if (typeof window === "undefined") return 0;
+  const [bestScore, setBestScore] = useState(0);
+  useEffect(() => {
     try {
-      return Number(localStorage.getItem(BEST_KEY)) || 0;
+      setBestScore(Number(localStorage.getItem(BEST_KEY)) || 0);
     } catch {
-      return 0;
+      /* ignore */
     }
-  });
+  }, []);
   const [arenaRank, setArenaRank] = useState<{ rank: number | null; total: number | null; delta: number | null } | null>(null);
   const { dir, lang } = useLang();
   
