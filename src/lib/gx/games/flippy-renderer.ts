@@ -83,10 +83,19 @@ export class FlippyRenderer {
    *  a lower resolution than the screen and gets upscaled to fit — soft on
    *  any HiDPI display, and reported as especially blurry on iOS, where
    *  Safari's canvas upscaling makes the shortfall more visible than
-   *  Chrome does with the same undersized bitmap. */
+   *  Chrome does with the same undersized bitmap.
+   *
+   *  Capped at 2x rather than the raw ratio — every current iPhone reports
+   *  devicePixelRatio 3, which would push canvas pixel area (and every
+   *  gradient/shadow fill cost this scene pays per frame) to 9x instead of
+   *  4x. That's the standard tradeoff point web games cap at: the jump from
+   *  1x to 2x is the visually obvious fix (the original blurry-sprites
+   *  bug), while 2x to 3x costs proportionally more GPU/CPU than it buys in
+   *  perceptible sharpness — reported as a real frame-rate regression on
+   *  iPhone after the uncapped version shipped. */
   private applyDpr(width: number, height: number) {
     const canvas = this.ctx.canvas;
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
     canvas.style.width = `${width}px`;
