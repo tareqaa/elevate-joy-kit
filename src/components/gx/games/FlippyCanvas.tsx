@@ -1,63 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { createInitialState, updateEngine, jump, type FlippyState, type FlippyEventType } from "@/lib/gx/games/flippy-engine";
+import { createInitialState, updateEngine, jump, type FlippyState } from "@/lib/gx/games/flippy-engine";
 import { FlippyRenderer } from "@/lib/gx/games/flippy-renderer";
 import { flippyAudio } from "@/lib/gx/games/flippy-audio";
 import { useNavigate } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
-
-// Visual identity for each event — used for both the pop-in announcement
-// and the small persistent HUD chip while the event is active.
-const EVENT_META: Record<FlippyEventType, {
-  icon: string;
-  label: string;
-  labelAr: string;
-  chipLabel: string;
-  chipLabelAr: string;
-  gradient: string;
-  ring: string;
-  glow: string;
-}> = {
-  storm: {
-    icon: "⚡",
-    label: "STORM",
-    labelAr: "عاصفة",
-    chipLabel: "Storm",
-    chipLabelAr: "عاصفة",
-    gradient: "from-slate-700 via-indigo-800 to-slate-900",
-    ring: "border-indigo-400/50",
-    glow: "shadow-[0_0_24px_rgba(129,140,248,0.45)]",
-  },
-  speedup: {
-    icon: "🚀",
-    label: "SPEED UP",
-    labelAr: "تسارع",
-    chipLabel: "Speed Up",
-    chipLabelAr: "تسارع",
-    gradient: "from-sky-500 via-cyan-500 to-blue-600",
-    ring: "border-cyan-300/60",
-    glow: "shadow-[0_0_24px_rgba(56,189,248,0.5)]",
-  },
-  turbulence: {
-    icon: "🌀",
-    label: "TURBULENCE",
-    labelAr: "اضطراب",
-    chipLabel: "Turbulence",
-    chipLabelAr: "اضطراب",
-    gradient: "from-slate-500 via-slate-600 to-slate-700",
-    ring: "border-slate-300/50",
-    glow: "shadow-[0_0_20px_rgba(203,213,225,0.4)]",
-  },
-  portal: {
-    icon: "🌌",
-    label: "PORTAL",
-    labelAr: "بوابة",
-    chipLabel: "Portal",
-    chipLabelAr: "بوابة",
-    gradient: "from-fuchsia-600 via-purple-600 to-cyan-500",
-    ring: "border-fuchsia-300/60",
-    glow: "shadow-[0_0_28px_rgba(217,70,239,0.55)]",
-  },
-};
 
 interface FlippyCanvasProps {
   onGameOver: (score: number) => void;
@@ -77,18 +23,6 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
   
   const [score, setScore] = useState(0);
   const [status, setStatus] = useState<FlippyState["status"]>("idle");
-
-  // Mirrors state.activeEvent — drives the small persistent HUD chip.
-  const [activeEvent, setActiveEvent] = useState<FlippyEventType | null>(null);
-  const activeEventRef = useRef<FlippyEventType | null>(null);
-  // Which event the pop-in announcement is currently showing/animating, and
-  // which phase it's in ("in" while popping in and holding, "out" while
-  // fading away). Separate from activeEvent so the announcement can finish
-  // its own short lifetime independently of how long the event itself runs.
-  const [announcedEvent, setAnnouncedEvent] = useState<FlippyEventType | null>(null);
-  const [announcePhase, setAnnouncePhase] = useState<"in" | "out">("in");
-  const lastEventSeqRef = useRef(0);
-  const announceTimersRef = useRef<{ out?: ReturnType<typeof setTimeout>; hide?: ReturnType<typeof setTimeout> }>({});
   const [isMuted, setIsMuted] = useState(() => flippyAudio.isMuted());
   // The Game Over card mounts a beat after death so the fall/spin on the
   // canvas underneath has room to play out first (see the status-watching
@@ -153,6 +87,21 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
     // land per real second. Clamped so resuming a backgrounded tab (RAF
     // pauses while hidden) doesn't apply one huge catch-up step.
     let lastTime = performance.now();
+    // Render-rate cap: the canvas draw is CPU work (dozens of gradient
+    // allocations and shadowBlur calls per frame — canvas 2D isn't
+    // GPU-accelerated the way WebGL/real games are), and requestAnimationFrame
+    // fires once per display refresh with no built-in cap. On a 60Hz screen
+    // that's already ~60 redraws/sec; on a 120/144/240Hz gaming monitor
+    // (exactly what tends to pair with a strong GPU) it's 2-4x that many
+    // redraws per second for a scene that looks identical either way — pure
+    // wasted CPU work that reads as lag regardless of GPU strength. Capping
+    // the redraw itself to ~60fps is a no-op on any normal 60Hz display
+    // (frames never arrive faster than the target interval to begin with)
+    // and only skips the redundant extra redraws on faster screens; physics
+    // (dt) stays exactly as accurate since skipped frames' elapsed time
+    // just carries over into the next actual update.
+    const TARGET_FRAME_MS = 1000 / 60;
+    let lastRenderTime = performance.now();
     // Adaptive render quality: a fixed DPR cap can't be both sharp and
     // smooth on every device — weaker ones just can't push as many pixels.
     // So sample real frame cost during actual play, once per session, and
@@ -163,6 +112,17 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
     const frameMsSamples: number[] = [];
 
     const loop = (now: number) => {
+      // 90% tolerance avoids a naive-throttle trap: on a native 60Hz screen
+      // rAF intervals jitter slightly below the exact 16.667ms target, and
+      // a strict >= check would drop every other frame (effectively 30fps)
+      // chasing timer precision that doesn't exist. This still comfortably
+      // skips extra frames on 120Hz+ displays.
+      if (now - lastRenderTime < TARGET_FRAME_MS * 0.9) {
+        animId = requestAnimationFrame(loop);
+        return;
+      }
+      lastRenderTime = now;
+
       const state = stateRef.current;
       const w = sizeRef.current.width;
       const h = sizeRef.current.height;
@@ -197,27 +157,6 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
         }
       }
 
-      if (state.activeEvent !== activeEventRef.current) {
-        activeEventRef.current = state.activeEvent;
-        setActiveEvent(state.activeEvent);
-      }
-
-      // eventSeq only bumps when a genuinely NEW event is chosen (even a
-      // repeat of the same type), so this reliably re-fires the
-      // announcement every time instead of only on activeEvent identity
-      // changes.
-      if (state.eventSeq !== lastEventSeqRef.current) {
-        lastEventSeqRef.current = state.eventSeq;
-        if (state.activeEvent) {
-          clearTimeout(announceTimersRef.current.out);
-          clearTimeout(announceTimersRef.current.hide);
-          setAnnouncedEvent(state.activeEvent);
-          setAnnouncePhase("in");
-          announceTimersRef.current.out = setTimeout(() => setAnnouncePhase("out"), 1500);
-          announceTimersRef.current.hide = setTimeout(() => setAnnouncedEvent(null), 1500 + 320);
-        }
-      }
-
       animId = requestAnimationFrame(loop);
     };
 
@@ -227,8 +166,6 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", updateSize);
-      clearTimeout(announceTimersRef.current.out);
-      clearTimeout(announceTimersRef.current.hide);
     };
   }, []);
 
@@ -242,12 +179,6 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       stateRef.current = createInitialState(sizeRef.current.height);
       setScore(0);
       setStatus("idle");
-      activeEventRef.current = null;
-      setActiveEvent(null);
-      lastEventSeqRef.current = 0;
-      clearTimeout(announceTimersRef.current.out);
-      clearTimeout(announceTimersRef.current.hide);
-      setAnnouncedEvent(null);
       return;
     }
     
@@ -330,45 +261,6 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
           >
             {score}
           </span>
-        </div>
-      )}
-
-      {/* ─── EVENT ANNOUNCEMENT (phase 1) ───
-          Pops in with icon + label when a new event starts, holds briefly,
-          then fades out on its own — never blocks input (pointer-events-none)
-          and sits below the score so it never covers the pipes. */}
-      {announcedEvent && status === "playing" && (
-        <div className="absolute top-36 w-full flex justify-center pointer-events-none z-20">
-          <div
-            key={lastEventSeqRef.current}
-            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-2xl border backdrop-blur-md bg-gradient-to-r ${EVENT_META[announcedEvent].gradient} ${EVENT_META[announcedEvent].ring} ${EVENT_META[announcedEvent].glow} ${
-              announcePhase === "in"
-                ? "animate-in fade-in zoom-in-75 slide-in-from-top-3 duration-300"
-                : "animate-out fade-out zoom-out-90 slide-out-to-top-3 duration-300"
-            }`}
-          >
-            <span className="text-2xl leading-none drop-shadow" aria-hidden>
-              {EVENT_META[announcedEvent].icon}
-            </span>
-            <span className="text-white font-black tracking-widest text-base drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">
-              {lang === "ar" ? EVENT_META[announcedEvent].labelAr : EVENT_META[announcedEvent].label}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* ─── EVENT INDICATOR (phase 2) ───
-          Small persistent chip while the event is active — integrated into
-          the same corner language as the idle-state HUD chips, but visible
-          during play instead. */}
-      {activeEvent && status === "playing" && (
-        <div className="absolute top-3 right-3 z-10 pointer-events-none">
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md bg-black/50 shadow-lg ${EVENT_META[activeEvent].ring}`}>
-            <span className="text-sm leading-none" aria-hidden>{EVENT_META[activeEvent].icon}</span>
-            <span className="text-[10px] font-extrabold text-white tracking-wide uppercase">
-              {lang === "ar" ? EVENT_META[activeEvent].chipLabelAr : EVENT_META[activeEvent].chipLabel}
-            </span>
-          </div>
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import { FlippyState, Pipe, FlippyEventType } from "./flippy-engine";
+import { FlippyState, Pipe } from "./flippy-engine";
 import type { WorldConfig } from "./flippy-worlds";
 
 interface Particle {
@@ -35,14 +35,6 @@ export class FlippyRenderer {
   private renderTick = 0;
   private lastStatus: FlippyState["status"] | null = null;
   private deathStartTick: number | null = null;
-
-  // ─── Event presentation (renderer-local, purely visual — mirrors the
-  //     deathStartTick pattern above so a hard state change, e.g.
-  //     activeEvent flipping to null, doesn't cut its effects off abruptly) ───
-  private lastActiveEvent: FlippyEventType | null = null;
-  private eventStartTick = 0;
-  private eventEndTick = -Infinity;
-  private fadingEventType: FlippyEventType | null = null;
 
   // Render-quality cap on top of the device's own pixel ratio. TEMP: forced
   // to 1x for all devices to test smoothness-first, since this scene is
@@ -146,22 +138,9 @@ export class FlippyRenderer {
     }
     this.lastStatus = state.status;
 
-    if (state.activeEvent !== this.lastActiveEvent) {
-      if (state.activeEvent) {
-        this.eventStartTick = this.renderTick;
-        this.fadingEventType = null;
-      } else if (this.lastActiveEvent) {
-        this.fadingEventType = this.lastActiveEvent;
-        this.eventEndTick = this.renderTick;
-      }
-      this.lastActiveEvent = state.activeEvent;
-    }
-
-    // Accumulate scroll — reads effectiveSpeed (state.speed with SPEED UP's
-    // temporary boost folded in, if active) so the parallax matches how
-    // fast pipes are actually moving.
-    this.scrollX += state.effectiveSpeed * dt;
-    this.fgX -= state.effectiveSpeed * dt;
+    // Accumulate scroll
+    this.scrollX += state.speed * dt;
+    this.fgX -= state.speed * dt;
     if (this.fgX <= -60) this.fgX += 60;
 
     this.drawBackground(state);
@@ -170,7 +149,6 @@ export class FlippyRenderer {
     this.drawPipes(state);
     this.drawBird(state);
     this.drawFogOver(state); // fog drawn over everything for atmosphere
-    this.drawDynamicEvent(state);
     this.drawVignette(); // cinematic edge-darkening, uniform across every world
   }
 
@@ -2436,28 +2414,6 @@ export class FlippyRenderer {
       // Bottom obstacle
       drawSeg(pY + p.gap / 2, state.groundY - (pY + p.gap / 2), false);
 
-      // PORTAL event: every pipe is a portal, so give each one a pulsing
-      // energy glow along its gap edges — special and distinct, but only
-      // framing the gap rather than covering the pipe's own texture, so it
-      // stays readable. Only drawn during the event itself; the normal
-      // single 10-point portal pipe is untouched.
-      if (state.activeEvent === "portal" && p.isPortal) {
-        const pulse = 0.5 + 0.5 * Math.sin(state.frames * 0.12 + seed * 10);
-        ctx.save();
-        ctx.globalAlpha = 0.55 + 0.25 * pulse;
-        ctx.strokeStyle = "#c084fc";
-        ctx.shadowColor = "#c084fc";
-        ctx.shadowBlur = 14 + pulse * 10;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(p.x - 2, pY - p.gap / 2);
-        ctx.lineTo(p.x + p.width + 2, pY - p.gap / 2);
-        ctx.moveTo(p.x - 2, pY + p.gap / 2);
-        ctx.lineTo(p.x + p.width + 2, pY + p.gap / 2);
-        ctx.stroke();
-        ctx.restore();
-      }
-
       ctx.restore();
     });
   }
@@ -3620,243 +3576,4 @@ export class FlippyRenderer {
     ctx.restore();
   }
 
-  // ──────────────────────────────────────────────────────
-  //  EVENTS
-  // ──────────────────────────────────────────────────────
-
-  private drawDynamicEvent(state: FlippyState) {
-    // Even after activeEvent clears, keep drawing the event that just ended
-    // for a short fade-out window — a clean disappearance instead of the
-    // effect vanishing on the exact frame the world slot ends.
-    const FADE_OUT_TICKS = 26;
-    let type: FlippyEventType | null = state.activeEvent;
-    let alpha = 1;
-
-    if (!type && this.fadingEventType) {
-      const elapsed = this.renderTick - this.eventEndTick;
-      if (elapsed < FADE_OUT_TICKS) {
-        type = this.fadingEventType;
-        alpha = 1 - elapsed / FADE_OUT_TICKS;
-      } else {
-        this.fadingEventType = null;
-      }
-    }
-    if (!type) return;
-
-    // Only meaningful right after a genuine start (fading effects reuse the
-    // stale startTick from long ago, which just means their "intro burst"
-    // window has long since closed — exactly what we want).
-    const introElapsed = this.renderTick - this.eventStartTick;
-    alpha = Math.max(0, Math.min(1, alpha));
-
-    switch (type) {
-      case "storm": this.drawStormEvent(state, alpha); break;
-      case "speedup": this.drawSpeedUpEvent(state, alpha, introElapsed); break;
-      case "turbulence": this.drawTurbulenceEvent(state, alpha); break;
-      case "portal": this.drawPortalEvent(state, alpha, introElapsed); break;
-    }
-  }
-
-  /** STORM: cool-toned atmospheric wash (not a flat gray rectangle) + rain
-   *  streaks + occasional lightning, tuned low-alpha throughout so the gap
-   *  between pipes always stays readable. */
-  private drawStormEvent(state: FlippyState, alpha: number) {
-    const { ctx, width, height } = this;
-
-    // Atmospheric tint — heavier near the top/bottom edges, lighter through
-    // the middle band where the bird actually flies.
-    ctx.save();
-    ctx.globalAlpha = 0.9 * alpha;
-    const tint = ctx.createLinearGradient(0, 0, 0, height);
-    tint.addColorStop(0, "rgba(30,32,58,0.30)");
-    tint.addColorStop(0.35, "rgba(30,32,58,0.08)");
-    tint.addColorStop(0.65, "rgba(30,32,58,0.08)");
-    tint.addColorStop(1, "rgba(15,16,30,0.28)");
-    ctx.fillStyle = tint;
-    ctx.fillRect(0, 0, width, height);
-    ctx.restore();
-
-    // Rain streaks, wind-angled
-    ctx.save();
-    ctx.globalAlpha = 0.5 * alpha;
-    ctx.strokeStyle = "rgba(196, 208, 255, 0.7)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let i = 0; i < 70; i++) {
-      const rx = (i * 53.7 + state.frames * 3.2) % (width + 40) - 20;
-      const ry = (i * 91.3 + state.frames * 16) % (height + 40) - 20;
-      ctx.moveTo(rx, ry);
-      ctx.lineTo(rx - 6, ry + 18);
-    }
-    ctx.stroke();
-    ctx.restore();
-
-    // Subtle wind streaks drifting past — thin, sparse, horizontal
-    ctx.save();
-    ctx.globalAlpha = 0.12 * alpha;
-    ctx.strokeStyle = "#e2e8f0";
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 5; i++) {
-      const wy = ((i * 137 + state.frames * 1.5) % (height + 60)) - 30;
-      const wx = ((i * 251 - state.frames * 5) % (width + 160)) - 80;
-      ctx.beginPath();
-      ctx.moveTo(wx, wy);
-      ctx.lineTo(wx + 50, wy);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    // Lightning: rare full-canvas flash, occasionally paired with a bolt
-    if (Math.random() < 0.028) {
-      ctx.save();
-      ctx.globalAlpha = 0.22 * alpha;
-      ctx.fillStyle = "#f5f3ff";
-      ctx.fillRect(0, 0, width, height);
-      ctx.restore();
-
-      if (Math.random() < 0.4) {
-        ctx.save();
-        ctx.globalAlpha = 0.55 * alpha;
-        ctx.strokeStyle = "#e9e4ff";
-        ctx.lineWidth = 2;
-        ctx.shadowColor = "#c4b5fd";
-        ctx.shadowBlur = 10;
-        let bx = width * (0.15 + Math.random() * 0.7);
-        let by = 0;
-        ctx.beginPath();
-        ctx.moveTo(bx, by);
-        while (by < height * 0.55) {
-          bx += (Math.random() - 0.5) * 40;
-          by += 20 + Math.random() * 20;
-          ctx.lineTo(bx, by);
-        }
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
-  }
-
-  /** SPEED UP: a directional whoosh — horizontal streak lines, an outward
-   *  burst right as it begins, and a faint speed-tinted edge glow while
-   *  active. Never touches the pipes' own rendering. */
-  private drawSpeedUpEvent(state: FlippyState, alpha: number, introElapsed: number) {
-    const { ctx, width, height } = this;
-    const burstT = Math.max(0, Math.min(1, introElapsed / 22));
-
-    // Continuous subtle motion streaks
-    ctx.save();
-    ctx.globalAlpha = 0.28 * alpha;
-    ctx.strokeStyle = "#7dd3fc";
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 10; i++) {
-      const sy = (i * 71 + (state.frames * 3) % 90) % height;
-      const len = 30 + (i % 4) * 12;
-      const sx = width - ((state.frames * 9 + i * 130) % (width + 200));
-      ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.lineTo(sx + len, sy);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    // One-shot radiating burst on start
-    if (burstT < 1) {
-      ctx.save();
-      ctx.globalAlpha = (1 - burstT) * 0.5 * alpha;
-      ctx.strokeStyle = "#bae6fd";
-      ctx.lineWidth = 2;
-      const cx = width * 0.42;
-      const cy = height * 0.4;
-      const radius = 20 + burstT * 140;
-      for (let i = 0; i < 14; i++) {
-        const ang = (i / 14) * Math.PI * 2;
-        ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(ang) * radius * 0.5, cy + Math.sin(ang) * radius * 0.5);
-        ctx.lineTo(cx + Math.cos(ang) * radius, cy + Math.sin(ang) * radius);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    // Faint edge glow so the HUD reads "fast" even where streaks are sparse
-    ctx.save();
-    ctx.globalAlpha = 0.1 * alpha;
-    const glow = ctx.createLinearGradient(0, 0, width, 0);
-    glow.addColorStop(0, "rgba(56,189,248,0.5)");
-    glow.addColorStop(0.15, "rgba(56,189,248,0)");
-    glow.addColorStop(0.85, "rgba(56,189,248,0)");
-    glow.addColorStop(1, "rgba(56,189,248,0.5)");
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, width, height);
-    ctx.restore();
-  }
-
-  /** TURBULENCE: small air-flow streaks confined to the area around the
-   *  bird, drifting in sync with the engine's own turbulence phase so the
-   *  visual matches the actual push the bird is feeling. */
-  private drawTurbulenceEvent(state: FlippyState, alpha: number) {
-    const { ctx } = this;
-    const bx = state.bird.pos.x;
-    const by = state.bird.pos.y;
-    const wobble = Math.sin(state.eventTurbulencePhase);
-
-    ctx.save();
-    ctx.globalAlpha = 0.4 * alpha;
-    ctx.strokeStyle = "rgba(226, 240, 255, 0.8)";
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 7; i++) {
-      const ang = (i / 7) * Math.PI * 2 + state.frames * 0.02;
-      const dist = 26 + (i % 3) * 10;
-      const px = bx + Math.cos(ang) * dist - 20;
-      const py = by + Math.sin(ang) * dist * 0.6 + wobble * 6;
-      ctx.beginPath();
-      ctx.moveTo(px, py);
-      ctx.lineTo(px + 12, py + wobble * 3);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  /** PORTAL: a strong ripple burst on start plus soft drifting energy motes
-   *  while active. The pipes' own portal aura is drawn in drawPipes. */
-  private drawPortalEvent(state: FlippyState, alpha: number, introElapsed: number) {
-    const { ctx, width, height } = this;
-    const cx = width * 0.5;
-    const cy = height * 0.42;
-
-    // Expanding ripple rings on activation
-    const RING_TICKS = 34;
-    if (introElapsed < RING_TICKS) {
-      const t = introElapsed / RING_TICKS;
-      ctx.save();
-      ctx.lineWidth = 3;
-      for (let i = 0; i < 3; i++) {
-        const ringT = Math.max(0, Math.min(1, t - i * 0.15));
-        if (ringT <= 0) continue;
-        ctx.globalAlpha = (1 - ringT) * 0.5 * alpha;
-        ctx.strokeStyle = i % 2 === 0 ? "#c084fc" : "#67e8f9";
-        ctx.beginPath();
-        ctx.arc(cx, cy, 20 + ringT * 220, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    // Ambient drifting energy motes
-    ctx.save();
-    ctx.globalAlpha = 0.5 * alpha;
-    for (let i = 0; i < 16; i++) {
-      const seed = i * 137.5;
-      const px = (seed + state.frames * 1.1) % width;
-      const py = (Math.sin(state.frames * 0.01 + seed) * 0.5 + 0.5) * height;
-      const r = 1.2 + (i % 3);
-      ctx.fillStyle = i % 2 === 0 ? "#e9d5ff" : "#a5f3fc";
-      ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = 6;
-      ctx.beginPath();
-      ctx.arc(px, py, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
-  }
 }
