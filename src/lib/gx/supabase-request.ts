@@ -32,9 +32,17 @@ export function supabaseFetch(key: string): typeof fetch {
 }
 
 function supabaseEnv() {
-  const url = process.env["SUPABASE_URL"] || process.env["VITE_SUPABASE_URL"];
+  // In the dev/worker runtime only VITE_* vars are injected into import.meta.env,
+  // while deployed servers expose the unprefixed ones on process.env. Check both.
+  const env = import.meta.env as Record<string, string | undefined>;
+  const url =
+    process.env["SUPABASE_URL"] ||
+    process.env["VITE_SUPABASE_URL"] ||
+    env["VITE_SUPABASE_URL"];
   const key =
-    process.env["SUPABASE_PUBLISHABLE_KEY"] || process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+    process.env["SUPABASE_PUBLISHABLE_KEY"] ||
+    process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
+    env["VITE_SUPABASE_PUBLISHABLE_KEY"];
   if (!url || !key) {
     throw new Error(
       "Backend is not configured: missing SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY in the server environment.",
@@ -42,6 +50,7 @@ function supabaseEnv() {
   }
   return { url, key };
 }
+
 
 /** Anon-key client for public, unauthenticated reads. No identity, no RLS bypass. */
 export function getPublicClient() {
