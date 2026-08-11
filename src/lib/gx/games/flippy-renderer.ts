@@ -36,13 +36,12 @@ export class FlippyRenderer {
   private lastStatus: FlippyState["status"] | null = null;
   private deathStartTick: number | null = null;
 
-  // Render-quality cap on top of the device's own pixel ratio. TEMP: forced
-  // to 1x for all devices to test smoothness-first, since this scene is
-  // 100% vector paths/arcs/gradients (no drawImage/sprites anywhere), so
-  // even 1x stays anti-aliased and clean rather than pixelated — it's just
-  // not retina-crisp on fine detail. downgradeQuality() below is a no-op
-  // while this is already at the floor.
-  private dprCap = 1;
+  // Render-quality cap on top of the device's own pixel ratio. Starts at 2x
+  // (crisp); FlippyCanvas's start-screen Performance/Quality picker calls
+  // setQualityMode() below for an explicit choice, and downgradeQuality()
+  // is a separate automatic safety net for a device that turns out to
+  // struggle regardless of what was picked.
+  private dprCap = 2;
 
   constructor(canvas: HTMLCanvasElement, width: number, height: number) {
     this.ctx = canvas.getContext("2d")!;
@@ -52,13 +51,22 @@ export class FlippyRenderer {
     this.initStars();
   }
 
+  /** Explicit choice from the start-screen Performance/Quality picker.
+   *  "performance" pins to 1x — still anti-aliased and clean since this
+   *  scene is 100% vector paths/gradients with no drawImage/sprites
+   *  anywhere (never pixelated, just not retina-crisp on fine detail) —
+   *  and "quality" restores the normal 2x cap. Takes effect immediately,
+   *  whether called before or during a round. */
+  public setQualityMode(mode: "performance" | "quality") {
+    this.dprCap = mode === "performance" ? 1 : 2;
+    this.applyDpr(this.width, this.height);
+  }
+
   /** Called by FlippyCanvas after it measures sustained slow frames on this
-   *  device. A fixed DPR cap can't be both sharp everywhere and smooth
-   *  everywhere — weaker devices simply can't push as many pixels — so
-   *  instead of picking one tradeoff for all devices, we start crisp (2x)
-   *  and quietly drop to cheaper rendering only on the devices that
-   *  actually need it, once, for the rest of the session. Returns false if
-   *  already at the floor (nothing left to downgrade). */
+   *  device — a safety net for a device that struggles even after picking
+   *  Quality, since a fixed cap can't be both sharp and smooth on every
+   *  device. Returns false if already at the floor (nothing left to
+   *  downgrade, e.g. Performance mode was already picked). */
   public downgradeQuality(): boolean {
     if (this.dprCap <= 1) return false;
     this.dprCap = 1;
@@ -204,8 +212,13 @@ export class FlippyRenderer {
   private drawBackground(state: FlippyState) {
     const { ctx, width, height } = this;
 
-    // Smooth transition: draw previous world, then overlay current
-    if (state.previousWorld && state.transitionProgress < 1.0) {
+    // Smooth transition: draw previous world, then overlay current. Skipped
+    // in Performance mode — it doubles full background rendering cost (sky
+    // gradient + every per-world layer, drawn twice) for the whole ~0.5s
+    // transition window, which is exactly the kind of hitch on world
+    // changes Performance mode exists to avoid. Quality mode keeps the
+    // smooth blend since that's the whole point of picking it.
+    if (state.previousWorld && state.transitionProgress < 1.0 && this.dprCap > 1) {
       ctx.globalAlpha = 1.0;
       this.drawWorldLayers(state.previousWorld, state);
       ctx.globalAlpha = state.transitionProgress;
