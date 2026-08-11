@@ -324,7 +324,15 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
         )}
 
         {status === "playing" ? (
-          /* Pause button — replaces the best-score badge while playing */
+          /* Pause button — replaces the best-score badge while playing.
+             Deliberately the one HUD chip WITHOUT backdrop-blur: it is the
+             only one on screen while the canvas is repainting every frame,
+             and a backdrop-filter over continuously-changing content forces
+             the compositor to re-blur that region every single frame. On
+             phones that cost showed up as a constant loss of smoothness
+             that no amount of canvas-side optimization could recover. The
+             other chips (idle/game-over only) sit over a still canvas, so
+             they keep the blur. A more opaque solid fill reads the same. */
           <button
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
@@ -332,7 +340,7 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
               flippyAudio.playClick();
               pauseGame();
             }}
-            className="flex items-center justify-center w-9 h-9 rounded-xl bg-black/50 backdrop-blur-md border border-white/10 shadow-lg text-white hover:bg-white/10 active:scale-90 transition-all"
+            className="flex items-center justify-center w-9 h-9 rounded-xl bg-slate-950/75 border border-white/10 shadow-lg text-white hover:bg-white/10 active:scale-90 transition-all"
             title={lang === "ar" ? "إيقاف مؤقت" : "Pause"}
           >
             <Pause size={17} fill="currentColor" />

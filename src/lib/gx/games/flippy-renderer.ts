@@ -93,6 +93,25 @@ export class FlippyRenderer {
   private tileCache = new Map<string, HTMLCanvasElement>();
   private spriteCache = new Map<string, HTMLCanvasElement>();
 
+  // ── Full-screen static washes (sky, vignette, the big per-world glows) ──
+  // These were the most expensive per-pixel work left in the frame. A
+  // radial-gradient fill evaluates a distance and a colour interpolation for
+  // *every pixel on screen*, and most worlds do two or three of them per
+  // frame (sky + a sun/moon/boiler glow + the vignette) — on a 400x700 phone
+  // that's ~840k gradient-pixel evaluations per frame at 1x, four times that
+  // in Quality mode. All of it is static. Cached here as bitmaps so a frame
+  // costs a blit instead.
+  //
+  // Kept in their own map, deliberately NOT subject to the tile build budget
+  // or the LRU: skipping a tree layer for a frame is invisible, but skipping
+  // the sky is a visibly broken frame. They're cheap to build and bounded by
+  // the world count, so neither guard is needed.
+  private overlayCache = new Map<string, HTMLCanvasElement>();
+
+  // Soft washes are cached at half resolution and stretched back up —
+  // visually identical for a smooth gradient, at a quarter of the memory.
+  private static readonly OVERLAY_SCALE = 0.5;
+
   // ── Frame budget + LRU (the fix for the periodic freeze) ──────────────
   // Painting a cached layer is cheap, but *creating* one is not: a world
   // like Cyber builds four full-screen offscreen canvases the first time it
@@ -199,6 +218,7 @@ export class FlippyRenderer {
   private invalidateCaches() {
     this.tileCache.clear();
     this.spriteCache.clear();
+    this.overlayCache.clear();
   }
 
   private initStars() {
@@ -296,22 +316,40 @@ export class FlippyRenderer {
     this.drawVignette(); // cinematic edge-darkening, uniform across every world
   }
 
+  /** Paints a full-screen static wash once into a half-resolution bitmap and
+   *  blits it stretched on every later frame. `drawFn` receives a context
+   *  already scaled so it can work in ordinary CSS-pixel coordinates. */
+  private drawOverlay(key: string, drawFn: (octx: CanvasRenderingContext2D, w: number, h: number) => void) {
+    const { ctx, width, height } = this;
+    let overlay = this.overlayCache.get(key);
+    if (!overlay) {
+      const s = FlippyRenderer.OVERLAY_SCALE;
+      overlay = document.createElement("canvas");
+      overlay.width = Math.max(1, Math.round(width * s));
+      overlay.height = Math.max(1, Math.round(height * s));
+      const octx = overlay.getContext("2d")!;
+      octx.setTransform(s, 0, 0, s, 0, 0);
+      drawFn(octx, width, height);
+      this.overlayCache.set(key, overlay);
+    }
+    ctx.drawImage(overlay, 0, 0, width, height);
+  }
+
   /** Subtle radial edge-darkening applied on top of every world — a cheap,
    *  world-agnostic pass that reads as "premium game" instead of flat vector
    *  art without needing bespoke work in each world's drawing code. */
   private drawVignette() {
-    const { ctx, width, height } = this;
-    ctx.save();
-    const vg = ctx.createRadialGradient(
-      width / 2, height * 0.42, height * 0.2,
-      width / 2, height * 0.5, height * 0.9
-    );
-    vg.addColorStop(0, "rgba(0,0,0,0)");
-    vg.addColorStop(0.75, "rgba(0,0,0,0.05)");
-    vg.addColorStop(1, "rgba(0,0,0,0.32)");
-    ctx.fillStyle = vg;
-    ctx.fillRect(0, 0, width, height);
-    ctx.restore();
+    this.drawOverlay("vignette", (octx, w, h) => {
+      const vg = octx.createRadialGradient(
+        w / 2, h * 0.42, h * 0.2,
+        w / 2, h * 0.5, h * 0.9
+      );
+      vg.addColorStop(0, "rgba(0,0,0,0)");
+      vg.addColorStop(0.75, "rgba(0,0,0,0.05)");
+      vg.addColorStop(1, "rgba(0,0,0,0.32)");
+      octx.fillStyle = vg;
+      octx.fillRect(0, 0, w, h);
+    });
   }
 
   /** Rich, hand-tuned multi-stop sky gradients per world — replaces the flat
@@ -333,12 +371,30 @@ export class FlippyRenderer {
     }
   }
 
+  /** The sky is a pure *vertical* gradient — every column is identical — so
+   *  it caches exactly, with no resolution loss at all, as a one-pixel-wide
+   *  strip stretched across the canvas. A few KB per world, and it turns a
+   *  multi-stop gradient evaluated over every pixel on screen into a stretch
+   *  blit. Kept at full device resolution vertically so the banding-free
+   *  gradient is preserved. */
   private drawSky(world: WorldConfig, height: number) {
     const { ctx, width } = this;
-    const grad = ctx.createLinearGradient(0, 0, 0, height);
-    for (const [offset, color] of this.skyStops(world)) grad.addColorStop(offset, color);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, width, height);
+    const key = `sky-${world.id}`;
+    let strip = this.overlayCache.get(key);
+    if (!strip) {
+      const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
+      strip = document.createElement("canvas");
+      strip.width = 1;
+      strip.height = Math.max(1, Math.round(height * dpr));
+      const sctx = strip.getContext("2d")!;
+      sctx.setTransform(1, 0, 0, dpr, 0, 0);
+      const grad = sctx.createLinearGradient(0, 0, 0, height);
+      for (const [offset, color] of this.skyStops(world)) grad.addColorStop(offset, color);
+      sctx.fillStyle = grad;
+      sctx.fillRect(0, 0, 1, height);
+      this.overlayCache.set(key, strip);
+    }
+    ctx.drawImage(strip, 0, 0, width, height);
   }
 
   // ──────────────────────────────────────────────────────
@@ -396,15 +452,15 @@ export class FlippyRenderer {
     const { ctx, width } = this;
     const t = state.frames;
 
-    // Sun glow
-    ctx.save();
-    const sunGrad = ctx.createRadialGradient(width * 0.8, 60, 10, width * 0.8, 60, 170);
-    sunGrad.addColorStop(0, "rgba(255, 244, 190, 0.7)");
-    sunGrad.addColorStop(0.5, "rgba(253, 224, 71, 0.18)");
-    sunGrad.addColorStop(1, "rgba(253, 224, 71, 0)");
-    ctx.fillStyle = sunGrad;
-    ctx.fillRect(0, 0, width, gY);
-    ctx.restore();
+    // Sun glow — static full-screen radial wash, cached (see drawOverlay)
+    this.drawOverlay(`forest-sun-${gY}`, (octx, w) => {
+      const sunGrad = octx.createRadialGradient(w * 0.8, 60, 10, w * 0.8, 60, 170);
+      sunGrad.addColorStop(0, "rgba(255, 244, 190, 0.7)");
+      sunGrad.addColorStop(0.5, "rgba(253, 224, 71, 0.18)");
+      sunGrad.addColorStop(1, "rgba(253, 224, 71, 0)");
+      octx.fillStyle = sunGrad;
+      octx.fillRect(0, 0, w, gY);
+    });
 
     // Soft distant clouds
     ctx.save();
@@ -748,6 +804,11 @@ export class FlippyRenderer {
       }
       for (let i = -1; i < 3; i++) {
         const ox = this.bgFarX + i * width;
+        // bgFarX is always in (-width, 0], so the i=-1 and i=2 copies sit
+        // entirely off-screen — and these peaks are the one thing here drawn
+        // with a shadowBlur, the most expensive operation in the renderer.
+        // Skipping the invisible copies halves that cost for free.
+        if (ox + width <= 0 || ox >= width) continue;
         ctx.fillStyle = "#ef4444";
         ctx.shadowColor = "#f97316";
         ctx.shadowBlur = 20 + Math.sin(t * 0.05) * 10;
@@ -766,7 +827,12 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // MID: Smoke columns — gradient plumes instead of flat grey blobs
+    // MID: Smoke columns — gradient plumes instead of flat grey blobs. The
+    // puffs drift (position depends on t) but each one is a radially
+    // symmetric blob whose appearance depends only on its radius, and there
+    // are just five distinct radii — so the blob is cached once per radius
+    // and blitted at the live position, instead of building 15 radial
+    // gradients every frame.
     ctx.save();
     ctx.globalAlpha = 0.32;
     const midOff = this.getScrollOffset(0.4);
@@ -777,13 +843,16 @@ export class FlippyRenderer {
         const py = gY - 160 - c * 30 + yOff;
         const px = sx + Math.sin(t * 0.015 + c * 2) * 8;
         const r = 20 + c * 8;
-        const smokeGrad = ctx.createRadialGradient(px, py, 2, px, py, r);
-        smokeGrad.addColorStop(0, "#a8a29e");
-        smokeGrad.addColorStop(1, "#57534e");
-        ctx.fillStyle = smokeGrad;
-        ctx.beginPath();
-        ctx.arc(px, py, r, 0, Math.PI * 2);
-        ctx.fill();
+        const puff = this.getSprite(`volcano-smoke-${r}`, r * 2, r * 2, (tctx) => {
+          const smokeGrad = tctx.createRadialGradient(r, r, 2, r, r, r);
+          smokeGrad.addColorStop(0, "#a8a29e");
+          smokeGrad.addColorStop(1, "#57534e");
+          tctx.fillStyle = smokeGrad;
+          tctx.beginPath();
+          tctx.arc(r, r, r, 0, Math.PI * 2);
+          tctx.fill();
+        });
+        ctx.drawImage(puff, px - r, py - r, r * 2, r * 2);
       }
     }
     ctx.restore();
@@ -839,14 +908,14 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // Orange glow atmosphere
-    ctx.save();
-    const volcGlow = ctx.createRadialGradient(width / 2, gY, 50, width / 2, gY, width);
-    volcGlow.addColorStop(0, "rgba(249, 115, 22, 0.2)");
-    volcGlow.addColorStop(1, "rgba(249, 115, 22, 0)");
-    ctx.fillStyle = volcGlow;
-    ctx.fillRect(0, 0, width, gY);
-    ctx.restore();
+    // Orange glow atmosphere — static full-screen radial wash, cached
+    this.drawOverlay(`volcano-glow-${gY}`, (octx, w) => {
+      const volcGlow = octx.createRadialGradient(w / 2, gY, 50, w / 2, gY, w);
+      volcGlow.addColorStop(0, "rgba(249, 115, 22, 0.2)");
+      volcGlow.addColorStop(1, "rgba(249, 115, 22, 0)");
+      octx.fillStyle = volcGlow;
+      octx.fillRect(0, 0, w, gY);
+    });
   }
 
   // ─── WORLD 4: OCEAN — sunlit depths, gradient coral, distant whale ───
@@ -855,20 +924,31 @@ export class FlippyRenderer {
     const t = state.frames;
 
     // Water light rays (God rays piercing down from the surface)
+    // All five rays are the same shape with the same vertical gradient, just
+    // at different x — and each one is a full-height quad, so filling them
+    // live was costing well over a screenful of gradient evaluation every
+    // frame (measured: the single most expensive thing in any world). Cached
+    // once as a sprite and blitted at each ray's live position instead.
     ctx.save();
     ctx.globalAlpha = 0.1;
-    for (let r = 0; r < 5; r++) {
-      const rx = (width * 0.15 * (r + 1) + t * 0.3) % (width + 100) - 50;
-      const rayGrad = ctx.createLinearGradient(rx, 0, rx, gY);
-      rayGrad.addColorStop(0, "rgba(224, 250, 255, 0.9)");
-      rayGrad.addColorStop(1, "rgba(224, 250, 255, 0)");
-      ctx.fillStyle = rayGrad;
-      ctx.beginPath();
-      ctx.moveTo(rx, 0);
-      ctx.lineTo(rx + 30, 0);
-      ctx.lineTo(rx + 80, gY);
-      ctx.lineTo(rx - 20, gY);
-      ctx.fill();
+    {
+      const RW = 100; // ray spans rx-20 .. rx+80
+      const ray = this.getSprite(`ocean-ray-${gY}`, RW, gY, (tctx) => {
+        const rayGrad = tctx.createLinearGradient(0, 0, 0, gY);
+        rayGrad.addColorStop(0, "rgba(224, 250, 255, 0.9)");
+        rayGrad.addColorStop(1, "rgba(224, 250, 255, 0)");
+        tctx.fillStyle = rayGrad;
+        tctx.beginPath();
+        tctx.moveTo(20, 0);
+        tctx.lineTo(50, 0);
+        tctx.lineTo(100, gY);
+        tctx.lineTo(0, gY);
+        tctx.fill();
+      });
+      for (let r = 0; r < 5; r++) {
+        const rx = (width * 0.15 * (r + 1) + t * 0.3) % (width + 100) - 50;
+        ctx.drawImage(ray, rx - 20, 0, RW, gY);
+      }
     }
     ctx.restore();
 
@@ -914,14 +994,16 @@ export class FlippyRenderer {
       }
       ctx.globalAlpha = 0.6;
       ctx.lineWidth = 3;
+      // Loop-invariant (its axis doesn't depend on the weed's position), so
+      // it's built once per frame rather than once per weed.
+      const weedGrad = ctx.createLinearGradient(0, gY - 80, 0, gY);
+      weedGrad.addColorStop(0, "#4ade80");
+      weedGrad.addColorStop(1, "#166534");
+      ctx.strokeStyle = weedGrad;
       for (let i = -1; i < 3; i++) {
         const ox = this.bgMidX + i * width;
         for (let cx = 0; cx < width; cx += 90) {
           if (cx % 180 !== 0) continue;
-          const weedGrad = ctx.createLinearGradient(0, gY - 80, 0, gY);
-          weedGrad.addColorStop(0, "#4ade80");
-          weedGrad.addColorStop(1, "#166534");
-          ctx.strokeStyle = weedGrad;
           ctx.beginPath();
           const swayX = Math.sin(t * 0.03 + cx) * 8;
           ctx.moveTo(ox + cx + 20, gY);
@@ -1013,22 +1095,28 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // Nebula cloud — two overlapping color washes for a richer deep-space glow
+    // Nebula cloud — two overlapping color washes for a richer deep-space
+    // glow. Each gradient's outermost stop is fully transparent, so every
+    // pixel outside its radius was being evaluated only to composite
+    // nothing: the fills are clamped to each gradient's bounding box, which
+    // is pixel-identical and a fraction of the work on a tall phone screen.
     ctx.save();
     const nebX = (width * 0.6 + this.bgFarX) % width;
-    const nebGrad = ctx.createRadialGradient(nebX, gY * 0.4, 20, nebX, gY * 0.4, 160);
+    const nebY = gY * 0.4, nebR = 160;
+    const nebGrad = ctx.createRadialGradient(nebX, nebY, 20, nebX, nebY, nebR);
     nebGrad.addColorStop(0, "rgba(168, 85, 247, 0.22)");
     nebGrad.addColorStop(0.5, "rgba(59, 130, 246, 0.12)");
     nebGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = nebGrad;
-    ctx.fillRect(0, 0, width, gY);
+    ctx.fillRect(nebX - nebR, nebY - nebR, nebR * 2, nebR * 2);
 
     const nebX2 = (width * 0.25 + this.bgFarX * 0.7) % width;
-    const nebGrad2 = ctx.createRadialGradient(nebX2, gY * 0.6, 10, nebX2, gY * 0.6, 130);
+    const nebY2 = gY * 0.6, nebR2 = 130;
+    const nebGrad2 = ctx.createRadialGradient(nebX2, nebY2, 10, nebX2, nebY2, nebR2);
     nebGrad2.addColorStop(0, "rgba(236, 72, 153, 0.14)");
     nebGrad2.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = nebGrad2;
-    ctx.fillRect(0, 0, width, gY);
+    ctx.fillRect(nebX2 - nebR2, nebY2 - nebR2, nebR2 * 2, nebR2 * 2);
     ctx.restore();
 
     // Planet
@@ -1150,15 +1238,19 @@ export class FlippyRenderer {
     const t = state.frames;
 
     // Red moon
-    ctx.save();
     const moonX = width * 0.75;
     const moonY = gY * 0.2;
-    const moonGrad = ctx.createRadialGradient(moonX, moonY, 20, moonX, moonY, 80);
-    moonGrad.addColorStop(0, "rgba(239, 68, 68, 0.8)");
-    moonGrad.addColorStop(0.5, "rgba(239, 68, 68, 0.2)");
-    moonGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
-    ctx.fillStyle = moonGrad;
-    ctx.fillRect(0, 0, width, gY);
+    // Static full-screen radial wash, cached; the disc and craters below are
+    // cheap solid arcs and stay live.
+    this.drawOverlay(`dark-moonglow-${gY}`, (octx, w) => {
+      const moonGrad = octx.createRadialGradient(moonX, moonY, 20, moonX, moonY, 80);
+      moonGrad.addColorStop(0, "rgba(239, 68, 68, 0.8)");
+      moonGrad.addColorStop(0.5, "rgba(239, 68, 68, 0.2)");
+      moonGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+      octx.fillStyle = moonGrad;
+      octx.fillRect(0, 0, w, gY);
+    });
+    ctx.save();
     ctx.fillStyle = "#dc2626";
     ctx.globalAlpha = 0.9;
     ctx.beginPath();
@@ -1295,23 +1387,25 @@ export class FlippyRenderer {
     const { ctx, width } = this;
     const t = state.frames;
 
-    // Grid lines on background
-    ctx.save();
-    ctx.strokeStyle = "rgba(34, 211, 238, 0.08)";
-    ctx.lineWidth = 1;
-    for (let gx = 0; gx < width; gx += 40) {
-      ctx.beginPath();
-      ctx.moveTo(gx, 0);
-      ctx.lineTo(gx, gY);
-      ctx.stroke();
-    }
-    for (let gy = 0; gy < gY; gy += 40) {
-      ctx.beginPath();
-      ctx.moveTo(0, gy);
-      ctx.lineTo(width, gy);
-      ctx.stroke();
-    }
-    ctx.restore();
+    // Grid lines on background — screen-fixed and static, so the ~28 strokes
+    // it used to issue every frame are baked into a cached layer too.
+    ctx.drawImage(
+      this.getTile(`cyber-grid-${gY}`, width, this.height, (tctx) => {
+        tctx.strokeStyle = "rgba(34, 211, 238, 0.08)";
+        tctx.lineWidth = 1;
+        tctx.beginPath();
+        for (let gx = 0; gx < width; gx += 40) {
+          tctx.moveTo(gx, 0);
+          tctx.lineTo(gx, gY);
+        }
+        for (let gy = 0; gy < gY; gy += 40) {
+          tctx.moveTo(0, gy);
+          tctx.lineTo(width, gy);
+        }
+        tctx.stroke();
+      }),
+      0, 0, width, this.height
+    );
 
     // FAR: Skyscrapers — irregular width/height and occasional rooftop
     // greebles instead of one repeating block spacing, so the skyline
@@ -1427,14 +1521,20 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // Faint horizontal scanlines for a cyberpunk-screen feel
-    ctx.save();
-    ctx.globalAlpha = 0.05;
-    ctx.fillStyle = "#22d3ee";
-    for (let sy = 0; sy < gY; sy += 4) {
-      ctx.fillRect(0, sy, width, 1);
-    }
-    ctx.restore();
+    // Faint horizontal scanlines for a cyberpunk-screen feel. Fixed to the
+    // screen and never animated, but it was ~170 separate fillRect calls
+    // every frame — the single largest source of draw calls in any world.
+    // Cached at full device resolution so the 1px lines stay crisp.
+    ctx.drawImage(
+      this.getTile(`cyber-scanlines-${gY}`, width, this.height, (tctx) => {
+        tctx.globalAlpha = 0.05;
+        tctx.fillStyle = "#22d3ee";
+        for (let sy = 0; sy < gY; sy += 4) {
+          tctx.fillRect(0, sy, width, 1);
+        }
+      }),
+      0, 0, width, this.height
+    );
 
     // Neon glow bottom
     ctx.save();
@@ -1697,15 +1797,16 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // Warm boiler-glow low on the horizon — this world's light source
-    ctx.save();
-    const glow = ctx.createRadialGradient(width * 0.5, gY * 1.05, 10, width * 0.5, gY * 1.05, width * 0.6);
-    glow.addColorStop(0, "rgba(255, 180, 90, 0.35)");
-    glow.addColorStop(0.5, "rgba(255, 150, 70, 0.1)");
-    glow.addColorStop(1, "rgba(255, 150, 70, 0)");
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, width, gY);
-    ctx.restore();
+    // Warm boiler-glow low on the horizon — this world's light source.
+    // Static full-screen radial wash, cached.
+    this.drawOverlay(`clockwork-boiler-${gY}`, (octx, w) => {
+      const glow = octx.createRadialGradient(w * 0.5, gY * 1.05, 10, w * 0.5, gY * 1.05, w * 0.6);
+      glow.addColorStop(0, "rgba(255, 180, 90, 0.35)");
+      glow.addColorStop(0.5, "rgba(255, 150, 70, 0.1)");
+      glow.addColorStop(1, "rgba(255, 150, 70, 0)");
+      octx.fillStyle = glow;
+      octx.fillRect(0, 0, w, gY);
+    });
 
     // Far birds — small mechanical silhouettes drifting past
     ctx.save();
@@ -1798,14 +1899,14 @@ export class FlippyRenderer {
     ctx.restore();
 
     // Golden rim light — the single light source every structure above
-    // respects
-    ctx.save();
-    const rimGlow = ctx.createRadialGradient(width * 0.5, gY * 0.4, 20, width * 0.5, gY * 0.4, width * 0.8);
-    rimGlow.addColorStop(0, "rgba(255, 190, 110, 0.14)");
-    rimGlow.addColorStop(1, "rgba(255, 190, 110, 0)");
-    ctx.fillStyle = rimGlow;
-    ctx.fillRect(0, 0, width, gY);
-    ctx.restore();
+    // respects. Static full-screen radial wash, cached.
+    this.drawOverlay(`clockwork-rim-${gY}`, (octx, w) => {
+      const rimGlow = octx.createRadialGradient(w * 0.5, gY * 0.4, 20, w * 0.5, gY * 0.4, w * 0.8);
+      rimGlow.addColorStop(0, "rgba(255, 190, 110, 0.14)");
+      rimGlow.addColorStop(1, "rgba(255, 190, 110, 0)");
+      octx.fillStyle = rimGlow;
+      octx.fillRect(0, 0, w, gY);
+    });
   }
 
   // ─── WORLD 9: DESERT ───
@@ -1813,15 +1914,15 @@ export class FlippyRenderer {
     const { ctx, width } = this;
     const t = state.frames;
 
-    // Strong sun
-    ctx.save();
-    const sunGrad = ctx.createRadialGradient(width * 0.8, 50, 15, width * 0.8, 50, 200);
-    sunGrad.addColorStop(0, "rgba(251, 191, 36, 0.9)");
-    sunGrad.addColorStop(0.3, "rgba(251, 191, 36, 0.3)");
-    sunGrad.addColorStop(1, "rgba(251, 191, 36, 0)");
-    ctx.fillStyle = sunGrad;
-    ctx.fillRect(0, 0, width, gY);
-    ctx.restore();
+    // Strong sun — static full-screen radial wash, cached
+    this.drawOverlay(`desert-sun-${gY}`, (octx, w) => {
+      const sunGrad = octx.createRadialGradient(w * 0.8, 50, 15, w * 0.8, 50, 200);
+      sunGrad.addColorStop(0, "rgba(251, 191, 36, 0.9)");
+      sunGrad.addColorStop(0.3, "rgba(251, 191, 36, 0.3)");
+      sunGrad.addColorStop(1, "rgba(251, 191, 36, 0)");
+      octx.fillStyle = sunGrad;
+      octx.fillRect(0, 0, w, gY);
+    });
 
     // FAR: Sand dunes — sculpted with a sunlit-ridge gradient
     ctx.save();
@@ -1947,13 +2048,17 @@ export class FlippyRenderer {
 
     // A low, warm moon — the world's one light source, everything below
     // takes its rim-light from this
-    ctx.save();
     const moonX = width * 0.78, moonY = gY * 0.16;
-    const moonGlow = ctx.createRadialGradient(moonX, moonY, 10, moonX, moonY, 90);
-    moonGlow.addColorStop(0, "rgba(255, 237, 213, 0.35)");
-    moonGlow.addColorStop(1, "rgba(255, 237, 213, 0)");
-    ctx.fillStyle = moonGlow;
-    ctx.fillRect(0, 0, width, gY);
+    // Static full-screen radial wash, cached; the moon disc itself is drawn
+    // live below (it's a single cheap arc, not a per-pixel gradient).
+    this.drawOverlay(`sakura-moonglow-${gY}`, (octx, w) => {
+      const moonGlow = octx.createRadialGradient(moonX, moonY, 10, moonX, moonY, 90);
+      moonGlow.addColorStop(0, "rgba(255, 237, 213, 0.35)");
+      moonGlow.addColorStop(1, "rgba(255, 237, 213, 0)");
+      octx.fillStyle = moonGlow;
+      octx.fillRect(0, 0, w, gY);
+    });
+    ctx.save();
     ctx.fillStyle = "#fff7ed";
     ctx.globalAlpha = 0.85;
     ctx.beginPath();
@@ -2576,10 +2681,13 @@ export class FlippyRenderer {
 
       ctx.save();
 
-      if (world.obstacleStyle === "neon") {
-        ctx.shadowColor = "#22d3ee";
-        ctx.shadowBlur = 8;
-      }
+      // NOTE: this used to switch shadowBlur on for the whole neon pipe,
+      // which silently applied a Gaussian blur to *every* draw inside it —
+      // body, inner lines, and all ~15 vent slats — measured at ~55 blurred
+      // fills per frame, by far the most expensive thing in any world.
+      // drawNeonPipe now puts the glow only on the two elements that
+      // actually read as neon (the outline and the cap), so the look is kept
+      // and the per-frame blur count drops by roughly 4x.
 
       const drawSeg = (yStart: number, pHeight: number, isTop: boolean) => {
         if (pHeight <= 0) return;
@@ -3130,10 +3238,16 @@ export class FlippyRenderer {
     neonBodyGrad.addColorStop(1, "#050a16");
     ctx.fillStyle = neonBodyGrad;
     ctx.fill();
-    // Neon border traces the actual stepped silhouette now
+    // Neon border traces the actual stepped silhouette now. The glow lives
+    // here (and on the cap below) rather than being switched on for the whole
+    // pipe — this outline is what actually reads as neon, and confining the
+    // blur to it keeps the look at a fraction of the cost.
     ctx.strokeStyle = "#22d3ee";
     ctx.lineWidth = 2;
+    ctx.shadowColor = "#22d3ee";
+    ctx.shadowBlur = 8;
     ctx.stroke();
+    ctx.shadowBlur = 0;
 
     ctx.save();
     ctx.clip();
@@ -3552,7 +3666,12 @@ export class FlippyRenderer {
 
     switch (world.birdSkin) {
       case "dark": bodyColor = "#27272a"; wingColor = "#3f3f46"; eyeColor = "#ef4444"; beakColor = "#52525b"; break;
-      case "cyber": bodyColor = "#0f172a"; wingColor = "#c026d3"; eyeColor = "#22d3ee"; ctx.shadowColor = "#22d3ee"; ctx.shadowBlur = 10; break;
+      // Cyber's glow is applied around the body silhouette below rather than
+      // here: set at this point it stayed on for every remaining part of the
+      // bird (tail, wing, beak, eye...), so a dozen shapes each paid for a
+      // full Gaussian blur every frame to produce a halo only the body
+      // outline actually shows.
+      case "cyber": bodyColor = "#0f172a"; wingColor = "#c026d3"; eyeColor = "#22d3ee"; break;
       case "winter": bodyColor = "#facc15"; wingColor = "#bae6fd"; break;
       case "burnt": bodyColor = "#450a0a"; wingColor = "#7f1d1d"; eyeColor = "#fde047"; beakColor = "#b91c1c"; break;
       case "astronaut": bodyColor = "#ffffff"; wingColor = "#cbd5e1"; break;
@@ -3586,11 +3705,16 @@ export class FlippyRenderer {
     bodyGrad.addColorStop(0.55, bodyColor);
     bodyGrad.addColorStop(1, this.shade(bodyColor, -0.22));
     ctx.fillStyle = bodyGrad;
+    if (world.birdSkin === "cyber") {
+      ctx.shadowColor = "#22d3ee";
+      ctx.shadowBlur = 10;
+    }
     ctx.beginPath();
     ctx.moveTo(-12, 0);
     ctx.bezierCurveTo(-13, -17, 13, -19, 17, -3);
     ctx.bezierCurveTo(19, 13, -5, 19, -12, 0);
     ctx.fill();
+    ctx.shadowBlur = 0;
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = this.shade(bodyColor, -0.4);
     ctx.stroke();

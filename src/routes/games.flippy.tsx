@@ -172,8 +172,17 @@ function FlippyPage() {
     <StoreShell bare>
       <main dir={dir} className="h-[100dvh] w-full bg-[#050608] relative flex flex-col justify-between overflow-hidden p-0 items-center">
         
-        {/* Glow ambient background effect */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[800px] bg-purple-600/10 blur-[120px] rounded-full pointer-events-none" />
+        {/* Glow ambient background effect — painted as a radial-gradient
+            rather than a solid disc behind a `blur-[120px]` filter. A blur
+            that large forces the browser to allocate a big offscreen buffer
+            and run a multi-pass blur for it, which is real memory and raster
+            cost on a phone, for a glow that the opaque game canvas covers
+            almost entirely anyway. The gradient is visually equivalent and
+            free. */}
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[800px] rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(closest-side, rgba(147,51,234,0.10), rgba(147,51,234,0))" }}
+        />
         
         {/* Main Canvas Container */}
         <div className="relative z-10 w-full h-full max-w-[600px] flex flex-col items-center justify-center p-0 mx-auto">
