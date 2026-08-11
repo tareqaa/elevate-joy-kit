@@ -60,6 +60,7 @@ export class FlippyRenderer {
   public setQualityMode(mode: "performance" | "quality") {
     this.dprCap = mode === "performance" ? 1 : 2;
     this.applyDpr(this.width, this.height);
+    this.invalidateCaches();
   }
 
   /** Called by FlippyCanvas after it measures sustained slow frames on this
@@ -71,7 +72,84 @@ export class FlippyRenderer {
     if (this.dprCap <= 1) return false;
     this.dprCap = 1;
     this.applyDpr(this.width, this.height);
+    this.invalidateCaches();
     return true;
+  }
+
+  // ──────────────────────────────────────────────────────
+  //  OFFSCREEN CACHING — the actual fix for the per-frame cost of this
+  //  scene. Canvas 2D gradients/shadows are CPU work with no hardware
+  //  acceleration, and most of the background art (hills, trees, buildings,
+  //  rocks, coral, dunes...) is static *shape* that only ever scrolls —
+  //  none of that needs its gradients rebuilt 60x/sec. Each world's draw
+  //  function below is split into a "static" part (painted once into an
+  //  offscreen tile/sprite, then just blitted with drawImage + a live
+  //  scroll offset every frame) and an "animated" part (things that
+  //  genuinely change frame to frame — sway, twinkle, flicker, flashes,
+  //  birds — which still run their original per-frame drawing code, on top
+  //  of the blitted layers). Gameplay-facing elements (bird, pipes,
+  //  particles, fog, vignette) are untouched by any of this.
+  // ──────────────────────────────────────────────────────
+  private tileCache = new Map<string, HTMLCanvasElement>();
+  private spriteCache = new Map<string, HTMLCanvasElement>();
+
+  /** Cache for a full background layer whose art never changes on its own
+   *  — only its on-screen position does (scroll). `drawFn` runs once per
+   *  `key` (as if scroll offset were 0); callers keep doing the live
+   *  per-frame offset math themselves and just `ctx.drawImage(tile, x, y,
+   *  w, h)` instead of re-running the original drawing code. `key` should
+   *  include the world id so different worlds' art never collides and a
+   *  previously-visited world's cache is simply reused if the player loops
+   *  back around. Always draw the returned canvas with an explicit
+   *  destination `w`/`h` (CSS pixels) — its backing bitmap is DPR-scaled,
+   *  same as the main canvas, so the 2-arg drawImage form would draw it
+   *  oversized. */
+  private getTile(key: string, w: number, h: number, drawFn: (tctx: CanvasRenderingContext2D) => void): HTMLCanvasElement {
+    let tile = this.tileCache.get(key);
+    if (!tile) {
+      tile = document.createElement("canvas");
+      const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
+      tile.width = Math.max(1, Math.round(w * dpr));
+      tile.height = Math.max(1, Math.round(h * dpr));
+      const tctx = tile.getContext("2d")!;
+      tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawFn(tctx);
+      this.tileCache.set(key, tile);
+    }
+    return tile;
+  }
+
+  /** Same idea as getTile(), for one small repeated shape (a tree, a bush,
+   *  a building...) instead of a full scrolling layer — for elements
+   *  positioned on an unbounded procedural grid (never exactly tiles, so a
+   *  single scrolling layer can't be cached) but whose per-instance shape
+   *  only depends on a seed value. Callers bucket/round their continuous
+   *  seed into a coarse `key` themselves so the cache stays a small, fixed
+   *  set of variants instead of growing forever as new seeded shapes
+   *  scroll into view over a long session. */
+  private getSprite(key: string, w: number, h: number, drawFn: (tctx: CanvasRenderingContext2D) => void): HTMLCanvasElement {
+    let sprite = this.spriteCache.get(key);
+    if (!sprite) {
+      sprite = document.createElement("canvas");
+      const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
+      sprite.width = Math.max(1, Math.round(w * dpr));
+      sprite.height = Math.max(1, Math.round(h * dpr));
+      const tctx = sprite.getContext("2d")!;
+      tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawFn(tctx);
+      this.spriteCache.set(key, sprite);
+    }
+    return sprite;
+  }
+
+  /** Every cached bitmap is tied to the canvas's current CSS size and DPR
+   *  transform, so anything that changes either (resize, quality-mode
+   *  toggle, the automatic downgrade) must drop the whole cache — the next
+   *  frame just repaints tiles/sprites at the new size on demand, same as
+   *  the very first frame does today. */
+  private invalidateCaches() {
+    this.tileCache.clear();
+    this.spriteCache.clear();
   }
 
   private initStars() {
@@ -96,6 +174,7 @@ export class FlippyRenderer {
     this.width = width;
     this.height = height;
     this.applyDpr(width, height);
+    this.invalidateCaches();
   }
 
   /** Sizes the canvas's backing bitmap for the display's actual pixel
@@ -345,6 +424,10 @@ export class FlippyRenderer {
       const baseSlot = Math.floor(raw / spacing);
       const off = -(raw - baseSlot * spacing);
       const count = Math.ceil(width / spacing) + 2;
+      // Canopy anchor within its own sprite — chosen generously so every
+      // lobe (at any scale bucket) fits with margin to spare; see
+      // getTreeCanopySprite() below.
+      const SP = 120, ANCHOR_X = 60, ANCHOR_Y = 78;
       for (let n = -1; n <= count; n++) {
         const slot = baseSlot + n;
         const treeX = off + n * spacing + spacing * 0.5;
@@ -358,22 +441,32 @@ export class FlippyRenderer {
         ctx.fillStyle = "#8a4a17";
         ctx.fillRect(treeX - 7 * scale, gY - treeH, 5 * scale, treeH);
 
-        const lobes: [number, number, number][] = [
-          [-14 * scale, 8, 20 * scale], [10 * scale, 2, 18 * scale],
-          [-2 * scale, -14, 22 * scale], [16 * scale, -8, 15 * scale],
-        ];
-        for (const [lx, ly, lr] of lobes) {
-          const cx0 = treeX + lx + sway * 0.5, cy0 = gY - treeH + ly;
-          const canopyGrad = ctx.createRadialGradient(cx0 - lr * 0.3, cy0 - lr * 0.3, 2, cx0, cy0, lr);
-          canopyGrad.addColorStop(0, "#6ee89a");
-          canopyGrad.addColorStop(0.6, "#22c55e");
-          canopyGrad.addColorStop(1, "#0f5132");
-          ctx.fillStyle = canopyGrad;
-          ctx.globalAlpha = 0.9;
-          ctx.beginPath();
-          ctx.arc(cx0, cy0, lr, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        // The canopy (4 gradient-filled lobes) is the expensive part and
+        // its shape only depends on `scale` — cache it once per bucketed
+        // scale value, then just blit it at the tree's live (swaying)
+        // position every frame instead of rebuilding 4 radial gradients
+        // per tree per frame.
+        const bucket = Math.round(scale * 25) / 25;
+        const sprite = this.getSprite(`forest-canopy-${bucket}`, SP, SP, (tctx) => {
+          const lobes: [number, number, number][] = [
+            [-14 * bucket, 8, 20 * bucket], [10 * bucket, 2, 18 * bucket],
+            [-2 * bucket, -14, 22 * bucket], [16 * bucket, -8, 15 * bucket],
+          ];
+          tctx.globalAlpha = 0.9;
+          for (const [lx, ly, lr] of lobes) {
+            const cx0 = ANCHOR_X + lx, cy0 = ANCHOR_Y + ly;
+            const canopyGrad = tctx.createRadialGradient(cx0 - lr * 0.3, cy0 - lr * 0.3, 2, cx0, cy0, lr);
+            canopyGrad.addColorStop(0, "#6ee89a");
+            canopyGrad.addColorStop(0.6, "#22c55e");
+            canopyGrad.addColorStop(1, "#0f5132");
+            tctx.fillStyle = canopyGrad;
+            tctx.beginPath();
+            tctx.arc(cx0, cy0, lr, 0, Math.PI * 2);
+            tctx.fill();
+          }
+        });
+        ctx.globalAlpha = 0.9;
+        ctx.drawImage(sprite, treeX + sway * 0.5 - ANCHOR_X, gY - treeH - ANCHOR_Y, SP, SP);
       }
     }
     ctx.globalAlpha = 1;
@@ -392,6 +485,7 @@ export class FlippyRenderer {
       const baseSlot = Math.floor(raw / spacing);
       const off = -(raw - baseSlot * spacing);
       const count = Math.ceil(width / spacing) + 2;
+      const SP = 90, ANCHOR_X = 40, ANCHOR_Y = 45;
       for (let n = -1; n <= count; n++) {
         const slot = baseSlot + n;
         const cx0 = off + n * spacing + spacing * 0.5;
@@ -399,22 +493,27 @@ export class FlippyRenderer {
         const sway = Math.sin(t * 0.02 + seed * 10) * 2.5;
         const scale = 0.8 + seed * 0.5;
 
-        const bushGrad = ctx.createRadialGradient(cx0 - 6, gY - 14 * scale, 2, cx0, gY - 6, 22 * scale);
-        bushGrad.addColorStop(0, "#6ee89a");
-        bushGrad.addColorStop(0.55, "#3fae5e");
-        bushGrad.addColorStop(1, "#14532d");
-        ctx.fillStyle = bushGrad;
-
-        // Three uneven lobes instead of one uniform dome
-        for (const [lx, ly, lr] of [
-          [-13 * scale, -3 * scale, 13 * scale],
-          [3 * scale, -8 * scale, 15 * scale],
-          [16 * scale, -2 * scale, 11 * scale],
-        ] as const) {
-          ctx.beginPath();
-          ctx.arc(cx0 + lx + sway, gY - 4 + ly, lr, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        // Same idea as the tree canopy above: the gradient + 3 lobes only
+        // depend on `scale`, so cache the shape once per bucketed scale
+        // and blit it at the bush's live swaying position.
+        const bucket = Math.round(scale * 25) / 25;
+        const sprite = this.getSprite(`forest-bush-${bucket}`, SP, SP, (tctx) => {
+          const bushGrad = tctx.createRadialGradient(ANCHOR_X - 6, ANCHOR_Y - 14 * bucket, 2, ANCHOR_X, ANCHOR_Y - 6, 22 * bucket);
+          bushGrad.addColorStop(0, "#6ee89a");
+          bushGrad.addColorStop(0.55, "#3fae5e");
+          bushGrad.addColorStop(1, "#14532d");
+          tctx.fillStyle = bushGrad;
+          for (const [lx, ly, lr] of [
+            [-13 * bucket, -3 * bucket, 13 * bucket],
+            [3 * bucket, -8 * bucket, 15 * bucket],
+            [16 * bucket, -2 * bucket, 11 * bucket],
+          ] as const) {
+            tctx.beginPath();
+            tctx.arc(ANCHOR_X + lx, ANCHOR_Y - 4 + ly, lr, 0, Math.PI * 2);
+            tctx.fill();
+          }
+        });
+        ctx.drawImage(sprite, cx0 + sway - ANCHOR_X, gY - ANCHOR_Y, SP, SP);
       }
     }
     ctx.globalAlpha = 1;
@@ -452,85 +551,96 @@ export class FlippyRenderer {
     }
     ctx.restore();
 
-    // FAR: Snow mountains — gradient rock face + snow cap
+    // FAR: Snow mountains — gradient rock face + snow cap. Purely
+    // scroll-driven (no time term) and already period-`width` by
+    // construction (the i-loop redraws the identical x=0..width pattern at
+    // each copy) — cache one width-tall tile of the pattern once, then
+    // just blit it at the live scroll offset instead of rebuilding 4
+    // gradients + walking the terrain path every frame.
     ctx.save();
-    for (let layer = 0; layer < 2; layer++) {
-      const rockGrad = ctx.createLinearGradient(0, gY - 180, 0, gY);
-      rockGrad.addColorStop(0, layer === 0 ? "#e2e8f0" : "#f1f5f9");
-      rockGrad.addColorStop(1, layer === 0 ? "#94a3b8" : "#cbd5e1");
-      ctx.fillStyle = rockGrad;
-      ctx.globalAlpha = 0.7 + layer * 0.15;
+    {
+      const mountainTile = this.getTile(`snow-mountains-${gY}`, width, this.height, (tctx) => {
+        for (let layer = 0; layer < 2; layer++) {
+          const rockGrad = tctx.createLinearGradient(0, gY - 180, 0, gY);
+          rockGrad.addColorStop(0, layer === 0 ? "#e2e8f0" : "#f1f5f9");
+          rockGrad.addColorStop(1, layer === 0 ? "#94a3b8" : "#cbd5e1");
+          tctx.fillStyle = rockGrad;
+          tctx.globalAlpha = 0.7 + layer * 0.15;
+          tctx.beginPath();
+          tctx.moveTo(0, gY);
+          for (let x = 0; x <= width; x += 25) {
+            const h = Math.sin((x + layer * 300) * 0.006) * 80 + 100 + layer * 30;
+            const jagged = Math.sin(x * 0.08) * 15;
+            tctx.lineTo(x, gY - h - jagged);
+          }
+          tctx.lineTo(width, gY);
+          tctx.fill();
+
+          const capGrad = tctx.createLinearGradient(0, gY - 180, 0, gY - 130);
+          capGrad.addColorStop(0, "#ffffff");
+          capGrad.addColorStop(1, "#dbeafe");
+          tctx.fillStyle = capGrad;
+          tctx.beginPath();
+          tctx.moveTo(0, gY);
+          for (let x = 0; x <= width; x += 25) {
+            const h = Math.sin((x + layer * 300) * 0.006) * 80 + 100 + layer * 30;
+            const jagged = Math.sin(x * 0.08) * 15;
+            tctx.lineTo(x, gY - h - jagged);
+          }
+          for (let x = width; x >= 0; x -= 25) {
+            const h = Math.sin((x + layer * 300) * 0.006) * 80 + 100 + layer * 30;
+            const jagged = Math.sin(x * 0.08) * 15;
+            tctx.lineTo(x, gY - h - jagged + 15);
+          }
+          tctx.fill();
+        }
+        tctx.globalAlpha = 1;
+      });
       for (let i = -1; i < 3; i++) {
-        const ox = this.bgFarX + i * width;
-        ctx.beginPath();
-        ctx.moveTo(ox, gY);
-        for (let x = 0; x <= width; x += 25) {
-          const h = Math.sin((x + layer * 300) * 0.006) * 80 + 100 + layer * 30;
-          const jagged = Math.sin(x * 0.08) * 15;
-          ctx.lineTo(ox + x, gY - h - jagged);
-        }
-        ctx.lineTo(ox + width, gY);
-        ctx.fill();
-      }
-      // Snow caps with a cool blue-white gradient for icy volume
-      const capGrad = ctx.createLinearGradient(0, gY - 180, 0, gY - 130);
-      capGrad.addColorStop(0, "#ffffff");
-      capGrad.addColorStop(1, "#dbeafe");
-      ctx.fillStyle = capGrad;
-      for (let i = -1; i < 3; i++) {
-        const ox = this.bgFarX + i * width;
-        ctx.beginPath();
-        ctx.moveTo(ox, gY);
-        for (let x = 0; x <= width; x += 25) {
-          const h = Math.sin((x + layer * 300) * 0.006) * 80 + 100 + layer * 30;
-          const jagged = Math.sin(x * 0.08) * 15;
-          ctx.lineTo(ox + x, gY - h - jagged);
-        }
-        for (let x = width; x >= 0; x -= 25) {
-          const h = Math.sin((x + layer * 300) * 0.006) * 80 + 100 + layer * 30;
-          const jagged = Math.sin(x * 0.08) * 15;
-          ctx.lineTo(ox + x, gY - h - jagged + 15);
-        }
-        ctx.fill();
+        ctx.drawImage(mountainTile, this.bgFarX + i * width, 0, width, this.height);
       }
     }
     ctx.restore();
 
-    // MID: Pine trees — gradient needles + snow highlight
+    // MID: Pine trees — also purely scroll-driven and width-periodic
+    // (treeH only depends on `tx`, reset every tile) — same tile-cache
+    // treatment, replacing up to ~72 gradient allocations/frame with one
+    // cached paint plus 3 cheap drawImage blits.
     ctx.save();
-    for (let i = -1; i < 3; i++) {
-      const ox = this.bgMidX + i * width;
-      for (let tx = 0; tx < width; tx += 100) {
-        const treeH = 60 + Math.sin(tx * 3.7) * 20;
-        const treeX = ox + tx + 50;
-        // Trunk
-        ctx.fillStyle = "#4a2410";
-        ctx.fillRect(treeX - 4, gY - 20, 8, 20);
-        // Pine layers
-        for (let py = 0; py < 4; py++) {
-          const layerW = 25 - py * 4;
-          const pineGrad = ctx.createLinearGradient(treeX, gY - 20 - py * 14 - 18, treeX, gY - 20 - py * 14);
-          pineGrad.addColorStop(0, "#166534");
-          pineGrad.addColorStop(1, "#0b3b22");
-          ctx.fillStyle = pineGrad;
-          ctx.globalAlpha = 0.92;
-          ctx.beginPath();
-          ctx.moveTo(treeX - layerW, gY - 20 - py * 14);
-          ctx.lineTo(treeX, gY - 20 - py * 14 - 18);
-          ctx.lineTo(treeX + layerW, gY - 20 - py * 14);
-          ctx.fill();
-          // Snow on branches
-          ctx.fillStyle = "#f8fafc";
-          ctx.globalAlpha = 0.85;
-          ctx.beginPath();
-          ctx.moveTo(treeX - layerW + 3, gY - 20 - py * 14);
-          ctx.lineTo(treeX, gY - 20 - py * 14 - 5);
-          ctx.lineTo(treeX + layerW - 3, gY - 20 - py * 14);
-          ctx.fill();
+    {
+      const pineTile = this.getTile(`snow-pines-${gY}`, width, this.height, (tctx) => {
+        for (let tx = 0; tx < width; tx += 100) {
+          const treeH = 60 + Math.sin(tx * 3.7) * 20;
+          const treeX = tx + 50;
+          tctx.fillStyle = "#4a2410";
+          tctx.fillRect(treeX - 4, gY - 20, 8, 20);
+          for (let py = 0; py < 4; py++) {
+            const layerW = 25 - py * 4;
+            const pineGrad = tctx.createLinearGradient(treeX, gY - 20 - py * 14 - 18, treeX, gY - 20 - py * 14);
+            pineGrad.addColorStop(0, "#166534");
+            pineGrad.addColorStop(1, "#0b3b22");
+            tctx.fillStyle = pineGrad;
+            tctx.globalAlpha = 0.92;
+            tctx.beginPath();
+            tctx.moveTo(treeX - layerW, gY - 20 - py * 14);
+            tctx.lineTo(treeX, gY - 20 - py * 14 - 18);
+            tctx.lineTo(treeX + layerW, gY - 20 - py * 14);
+            tctx.fill();
+            tctx.fillStyle = "#f8fafc";
+            tctx.globalAlpha = 0.85;
+            tctx.beginPath();
+            tctx.moveTo(treeX - layerW + 3, gY - 20 - py * 14);
+            tctx.lineTo(treeX, gY - 20 - py * 14 - 5);
+            tctx.lineTo(treeX + layerW - 3, gY - 20 - py * 14);
+            tctx.fill();
+          }
         }
+        tctx.globalAlpha = 1;
+      });
+      for (let i = -1; i < 3; i++) {
+        ctx.drawImage(pineTile, this.bgMidX + i * width, 0, width, this.height);
       }
     }
-    ctx.globalAlpha = 1;
     ctx.restore();
 
     // Low drifting snow haze near the ground
@@ -555,41 +665,47 @@ export class FlippyRenderer {
     const { ctx, width } = this;
     const t = state.frames;
 
-    // FAR: Volcano cones — heat-lit gradient rock instead of flat black
+    // FAR: Volcano cones — heat-lit gradient rock instead of flat black.
+    // The rock silhouette itself never changes shape, only scrolls — cache
+    // it as a tile. The lava glow at the peaks pulses via shadowBlur(t), so
+    // that part stays live, drawn on top of the blitted rock each frame.
     ctx.save();
-    for (let i = -1; i < 3; i++) {
-      const ox = this.bgFarX + i * width;
-      // Dark mountain, gradient from ash-grey top to near-black base with a
-      // faint red undertone from the lava glow below
-      const rockGrad = ctx.createLinearGradient(0, gY - 200, 0, gY);
-      rockGrad.addColorStop(0, "#3f3a38");
-      rockGrad.addColorStop(0.6, "#1c1917");
-      rockGrad.addColorStop(1, "#2a0f0d");
-      ctx.fillStyle = rockGrad;
-      ctx.globalAlpha = 0.95;
-      ctx.beginPath();
-      ctx.moveTo(ox, gY);
-      ctx.lineTo(ox + width * 0.3, gY - 180);
-      ctx.lineTo(ox + width * 0.5, gY - 120);
-      ctx.lineTo(ox + width * 0.75, gY - 200);
-      ctx.lineTo(ox + width, gY);
-      ctx.fill();
-
-      // Lava glow at peaks
-      ctx.fillStyle = "#ef4444";
-      ctx.shadowColor = "#f97316";
-      ctx.shadowBlur = 20 + Math.sin(t * 0.05) * 10;
-      ctx.beginPath();
-      ctx.moveTo(ox + width * 0.3 - 12, gY - 160);
-      ctx.lineTo(ox + width * 0.3, gY - 180);
-      ctx.lineTo(ox + width * 0.3 + 12, gY - 160);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(ox + width * 0.75 - 15, gY - 175);
-      ctx.lineTo(ox + width * 0.75, gY - 200);
-      ctx.lineTo(ox + width * 0.75 + 15, gY - 175);
-      ctx.fill();
-      ctx.shadowBlur = 0;
+    {
+      const rockTile = this.getTile(`volcano-rock-${gY}`, width, this.height, (tctx) => {
+        const rockGrad = tctx.createLinearGradient(0, gY - 200, 0, gY);
+        rockGrad.addColorStop(0, "#3f3a38");
+        rockGrad.addColorStop(0.6, "#1c1917");
+        rockGrad.addColorStop(1, "#2a0f0d");
+        tctx.fillStyle = rockGrad;
+        tctx.globalAlpha = 0.95;
+        tctx.beginPath();
+        tctx.moveTo(0, gY);
+        tctx.lineTo(width * 0.3, gY - 180);
+        tctx.lineTo(width * 0.5, gY - 120);
+        tctx.lineTo(width * 0.75, gY - 200);
+        tctx.lineTo(width, gY);
+        tctx.fill();
+      });
+      for (let i = -1; i < 3; i++) {
+        ctx.drawImage(rockTile, this.bgFarX + i * width, 0, width, this.height);
+      }
+      for (let i = -1; i < 3; i++) {
+        const ox = this.bgFarX + i * width;
+        ctx.fillStyle = "#ef4444";
+        ctx.shadowColor = "#f97316";
+        ctx.shadowBlur = 20 + Math.sin(t * 0.05) * 10;
+        ctx.beginPath();
+        ctx.moveTo(ox + width * 0.3 - 12, gY - 160);
+        ctx.lineTo(ox + width * 0.3, gY - 180);
+        ctx.lineTo(ox + width * 0.3 + 12, gY - 160);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(ox + width * 0.75 - 15, gY - 175);
+        ctx.lineTo(ox + width * 0.75, gY - 200);
+        ctx.lineTo(ox + width * 0.75 + 15, gY - 175);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
     }
     ctx.restore();
 
@@ -715,30 +831,40 @@ export class FlippyRenderer {
     ctx.fill();
     ctx.restore();
 
-    // MID: Coral reefs — volumetric gradient heads instead of flat pink
+    // MID: Coral reefs — volumetric gradient heads instead of flat pink.
+    // The heads are purely scroll-driven (coralH depends only on `cx`) and
+    // already period-`width` — cache them as a tile. Seaweed sways with
+    // time (swayX uses t), so it stays live, drawn on top every frame.
     ctx.save();
-    for (let i = -1; i < 3; i++) {
-      const ox = this.bgMidX + i * width;
-      for (let cx = 0; cx < width; cx += 90) {
-        const coralH = 30 + Math.sin(cx * 5.1) * 20;
-        const coralGrad = ctx.createLinearGradient(0, gY - coralH - 20, 0, gY);
-        coralGrad.addColorStop(0, "#fda4af");
-        coralGrad.addColorStop(1, "#9f1239");
-        ctx.fillStyle = coralGrad;
-        ctx.globalAlpha = 0.75;
-        ctx.beginPath();
-        ctx.moveTo(ox + cx + 45, gY);
-        ctx.bezierCurveTo(ox + cx + 30, gY - coralH, ox + cx + 60, gY - coralH - 10, ox + cx + 45, gY - coralH - 20);
-        ctx.bezierCurveTo(ox + cx + 50, gY - coralH, ox + cx + 70, gY - coralH + 10, ox + cx + 55, gY);
-        ctx.fill();
-        // Seaweed
-        if (cx % 180 === 0) {
+    {
+      const coralTile = this.getTile(`ocean-coral-${gY}`, width, this.height, (tctx) => {
+        for (let cx = 0; cx < width; cx += 90) {
+          const coralH = 30 + Math.sin(cx * 5.1) * 20;
+          const coralGrad = tctx.createLinearGradient(0, gY - coralH - 20, 0, gY);
+          coralGrad.addColorStop(0, "#fda4af");
+          coralGrad.addColorStop(1, "#9f1239");
+          tctx.fillStyle = coralGrad;
+          tctx.globalAlpha = 0.75;
+          tctx.beginPath();
+          tctx.moveTo(cx + 45, gY);
+          tctx.bezierCurveTo(cx + 30, gY - coralH, cx + 60, gY - coralH - 10, cx + 45, gY - coralH - 20);
+          tctx.bezierCurveTo(cx + 50, gY - coralH, cx + 70, gY - coralH + 10, cx + 55, gY);
+          tctx.fill();
+        }
+      });
+      for (let i = -1; i < 3; i++) {
+        ctx.drawImage(coralTile, this.bgMidX + i * width, 0, width, this.height);
+      }
+      ctx.globalAlpha = 0.6;
+      ctx.lineWidth = 3;
+      for (let i = -1; i < 3; i++) {
+        const ox = this.bgMidX + i * width;
+        for (let cx = 0; cx < width; cx += 90) {
+          if (cx % 180 !== 0) continue;
           const weedGrad = ctx.createLinearGradient(0, gY - 80, 0, gY);
           weedGrad.addColorStop(0, "#4ade80");
           weedGrad.addColorStop(1, "#166534");
           ctx.strokeStyle = weedGrad;
-          ctx.lineWidth = 3;
-          ctx.globalAlpha = 0.6;
           ctx.beginPath();
           const swayX = Math.sin(t * 0.03 + cx) * 8;
           ctx.moveTo(ox + cx + 20, gY);
@@ -1132,24 +1258,62 @@ export class FlippyRenderer {
 
     // FAR: Skyscrapers — irregular width/height and occasional rooftop
     // greebles instead of one repeating block spacing, so the skyline
-    // stops reading as a barcode
+    // stops reading as a barcode. Seeded by `${i}-${bi}` (not just `bi`),
+    // so unlike the other worlds' i-loops this ISN'T the same pattern
+    // repeated 3x — but `i` only ever takes 4 values (bgFarX wraps within
+    // one screen width), so there are only 4 distinct strips total, ever.
+    // Cache each of those 4 strips once (body gradient, bands, and the
+    // non-blinking greeble bits) and keep just the actually-animated bits
+    // — window glow and the beacon blink, both driven by `t` — live on top.
     ctx.save();
     for (let i = -1; i < 3; i++) {
       const ox = this.bgFarX + i * width;
-      let bx = 0;
-      let bi = 0;
+      const buildingTile = this.getTile(`cyber-buildings-${i}-${gY}`, width, this.height, (tctx) => {
+        let bx = 0, bi = 0;
+        while (bx < width) {
+          const seed = this.seedOf(`${i}-${bi}`);
+          const bw = 36 + Math.floor(seed * 34);
+          const bh = 60 + Math.abs(Math.sin(bx * 4.3)) * 120;
+          const bldGrad = tctx.createLinearGradient(0, gY - bh, 0, gY);
+          bldGrad.addColorStop(0, "#1e293b");
+          bldGrad.addColorStop(1, "#020617");
+          tctx.fillStyle = bldGrad;
+          tctx.globalAlpha = 0.92;
+          tctx.fillRect(bx, gY - bh, bw, bh);
+          tctx.fillStyle = "#0f172a";
+          tctx.globalAlpha = 1;
+          for (let wy = gY - bh + 30; wy < gY; wy += 30) {
+            tctx.fillRect(bx, wy, bw, 8);
+          }
+          if (bi % 4 === 0) {
+            tctx.strokeStyle = "#475569";
+            tctx.lineWidth = 2;
+            tctx.beginPath();
+            tctx.moveTo(bx + bw * 0.5, gY - bh);
+            tctx.lineTo(bx + bw * 0.5, gY - bh - 14);
+            tctx.stroke();
+            tctx.fillStyle = "#1e293b";
+            tctx.beginPath();
+            tctx.arc(bx + bw * 0.5, gY - bh - 14, 2, 0, Math.PI * 2);
+            tctx.fill();
+          } else if (bi % 4 === 2) {
+            tctx.fillStyle = "#334155";
+            tctx.fillRect(bx + bw * 0.2, gY - bh - 8, bw * 0.3, 8);
+          }
+          bx += bw + 6;
+          bi++;
+        }
+      });
+      ctx.globalAlpha = 1;
+      ctx.drawImage(buildingTile, ox, 0, width, this.height);
+
+      // Live overlay: window glow + beacon blink only (everything else for
+      // this strip is already in buildingTile above).
+      let bx = 0, bi = 0;
       while (bx < width) {
         const seed = this.seedOf(`${i}-${bi}`);
-        const bw = 36 + Math.floor(seed * 34); // 36-70
+        const bw = 36 + Math.floor(seed * 34);
         const bh = 60 + Math.abs(Math.sin(bx * 4.3)) * 120;
-        const bldGrad = ctx.createLinearGradient(0, gY - bh, 0, gY);
-        bldGrad.addColorStop(0, "#1e293b");
-        bldGrad.addColorStop(1, "#020617");
-        ctx.fillStyle = bldGrad;
-        ctx.globalAlpha = 0.92;
-        ctx.fillRect(ox + bx, gY - bh, bw, bh);
-        // Neon window stripes — smooth continuous glow instead of a hard
-        // on/off swap, so lit windows don't visibly pop every couple seconds
         ctx.fillStyle = neonColors[(i + bx) % neonColors.length];
         ctx.globalAlpha = 0.1 + (Math.sin(t * 0.02 + bx * 0.1) * 0.5 + 0.5) * 0.5;
         ctx.fillRect(ox + bx + 10, gY - bh + 10, 8, bh - 20);
@@ -1158,38 +1322,17 @@ export class FlippyRenderer {
           ctx.globalAlpha = 0.1 + (Math.sin(t * 0.03 + bx * 0.2) * 0.5 + 0.5) * 0.5;
           ctx.fillRect(ox + bx + 30, gY - bh + 10, 8, bh - 20);
         }
-        // Horizontal bands
-        ctx.fillStyle = "#0f172a";
-        ctx.globalAlpha = 1;
-        for (let wy = gY - bh + 30; wy < gY; wy += 30) {
-          ctx.fillRect(ox + bx, wy, bw, 8);
-        }
-        // Rooftop greeble on roughly one in four buildings — antenna,
-        // vent, or a blinking beacon, so rooflines stop reading as flat
         if (bi % 4 === 0) {
-          ctx.strokeStyle = "#475569";
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(ox + bx + bw * 0.5, gY - bh);
-          ctx.lineTo(ox + bx + bw * 0.5, gY - bh - 14);
-          ctx.stroke();
-          ctx.fillStyle = "#1e293b";
-          ctx.beginPath();
-          ctx.arc(ox + bx + bw * 0.5, gY - bh - 14, 2, 0, Math.PI * 2);
-          ctx.fill();
           ctx.globalAlpha = Math.max(0, Math.sin(t * 0.1 + bi));
           ctx.fillStyle = "#f43f5e";
           ctx.beginPath();
           ctx.arc(ox + bx + bw * 0.5, gY - bh - 14, 2, 0, Math.PI * 2);
           ctx.fill();
-          ctx.globalAlpha = 1;
-        } else if (bi % 4 === 2) {
-          ctx.fillStyle = "#334155";
-          ctx.fillRect(ox + bx + bw * 0.2, gY - bh - 8, bw * 0.3, 8);
         }
         bx += bw + 6;
         bi++;
       }
+      ctx.globalAlpha = 1;
     }
     ctx.restore();
 
@@ -1807,52 +1950,56 @@ export class FlippyRenderer {
 
     // MID: Sakura trees — warm neutral wood, clustered irregular blossom
     // canopies with a shaded underside and lit top instead of uniform
-    // repeated circles, so pink reads as volume, not a decal pattern
+    // repeated circles, so pink reads as volume, not a decal pattern. Fully
+    // static (no time term anywhere in trunk/branches/blossoms) and
+    // already period-`width` — cache as a tile instead of rebuilding ~30
+    // gradients (2 copies x ~5 trees x 3 blossom clusters) every frame.
     ctx.save();
-    const midOff = this.getScrollOffset(0.4);
-    for (let i = 0; i < 2; i++) {
-      const ox = midOff + i * width;
-      for (let tx = 0; tx < width; tx += 130) {
-        const treeX = ox + tx + 65;
-        ctx.fillStyle = "#3d2b1f";
-        ctx.globalAlpha = 0.92;
-        ctx.fillRect(treeX - 5, gY - 50, 10, 50);
-        ctx.strokeStyle = "#3d2b1f";
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(treeX, gY - 40);
-        ctx.bezierCurveTo(treeX - 30, gY - 60, treeX - 40, gY - 70, treeX - 35, gY - 80);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(treeX, gY - 35);
-        ctx.bezierCurveTo(treeX + 25, gY - 55, treeX + 35, gY - 65, treeX + 30, gY - 75);
-        ctx.stroke();
+    {
+      const midOff = this.getScrollOffset(0.4);
+      const treeTile = this.getTile(`sakura-trees-${gY}`, width, this.height, (tctx) => {
+        for (let tx = 0; tx < width; tx += 130) {
+          const treeX = tx + 65;
+          tctx.fillStyle = "#3d2b1f";
+          tctx.globalAlpha = 0.92;
+          tctx.fillRect(treeX - 5, gY - 50, 10, 50);
+          tctx.strokeStyle = "#3d2b1f";
+          tctx.lineWidth = 4;
+          tctx.beginPath();
+          tctx.moveTo(treeX, gY - 40);
+          tctx.bezierCurveTo(treeX - 30, gY - 60, treeX - 40, gY - 70, treeX - 35, gY - 80);
+          tctx.stroke();
+          tctx.beginPath();
+          tctx.moveTo(treeX, gY - 35);
+          tctx.bezierCurveTo(treeX + 25, gY - 55, treeX + 35, gY - 65, treeX + 30, gY - 75);
+          tctx.stroke();
 
-        // Clustered canopy masses (2-3 overlapping blobs each) instead of
-        // five identical dots — each cluster gets a shaded underside and a
-        // lit top so it reads as a flowering mass with real volume
-        const clusters: [number, number, number][] = [
-          [treeX - 35, gY - 80, 17], [treeX + 30, gY - 75, 16],
-          [treeX - 15, gY - 62, 14],
-        ];
-        for (const [cx0, cy0, r] of clusters) {
-          ctx.fillStyle = "#7a2e46";
-          ctx.globalAlpha = 0.5;
-          ctx.beginPath();
-          ctx.arc(cx0 + 2, cy0 + 3, r * 0.85, 0, Math.PI * 2);
-          ctx.fill();
-          const blossomGrad = ctx.createRadialGradient(cx0 - r * 0.3, cy0 - r * 0.3, 1, cx0, cy0, r);
-          blossomGrad.addColorStop(0, "#ffe4f2");
-          blossomGrad.addColorStop(0.55, "#f9a8d4");
-          blossomGrad.addColorStop(1, "#db5d92");
-          ctx.fillStyle = blossomGrad;
-          ctx.globalAlpha = 0.95;
-          ctx.beginPath();
-          ctx.arc(cx0, cy0, r, 0, Math.PI * 2);
-          ctx.arc(cx0 + r * 0.7, cy0 - r * 0.15, r * 0.6, 0, Math.PI * 2);
-          ctx.arc(cx0 - r * 0.5, cy0 + r * 0.25, r * 0.55, 0, Math.PI * 2);
-          ctx.fill();
+          const clusters: [number, number, number][] = [
+            [treeX - 35, gY - 80, 17], [treeX + 30, gY - 75, 16],
+            [treeX - 15, gY - 62, 14],
+          ];
+          for (const [cx0, cy0, r] of clusters) {
+            tctx.fillStyle = "#7a2e46";
+            tctx.globalAlpha = 0.5;
+            tctx.beginPath();
+            tctx.arc(cx0 + 2, cy0 + 3, r * 0.85, 0, Math.PI * 2);
+            tctx.fill();
+            const blossomGrad = tctx.createRadialGradient(cx0 - r * 0.3, cy0 - r * 0.3, 1, cx0, cy0, r);
+            blossomGrad.addColorStop(0, "#ffe4f2");
+            blossomGrad.addColorStop(0.55, "#f9a8d4");
+            blossomGrad.addColorStop(1, "#db5d92");
+            tctx.fillStyle = blossomGrad;
+            tctx.globalAlpha = 0.95;
+            tctx.beginPath();
+            tctx.arc(cx0, cy0, r, 0, Math.PI * 2);
+            tctx.arc(cx0 + r * 0.7, cy0 - r * 0.15, r * 0.6, 0, Math.PI * 2);
+            tctx.arc(cx0 - r * 0.5, cy0 + r * 0.25, r * 0.55, 0, Math.PI * 2);
+            tctx.fill();
+          }
         }
+      });
+      for (let i = 0; i < 2; i++) {
+        ctx.drawImage(treeTile, midOff + i * width, 0, width, this.height);
       }
     }
     ctx.globalAlpha = 1;
