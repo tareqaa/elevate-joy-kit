@@ -263,7 +263,15 @@ export class FlippyRenderer {
    *  pipe/physics speed on any display that isn't exactly 60Hz. */
   public render(state: FlippyState, dt: number = 1) {
     const { ctx, width, height } = this;
+    // Refill the per-frame bitmap-creation allowance (see getTile). While
+    // the game isn't actually running (idle screen / game over) there's no
+    // motion to stutter, so let the whole scene warm up at once instead of
+    // trickling in over several frames.
+    const warmingUp = state.status !== "playing";
+    this.tileBudget = warmingUp ? 99 : FlippyRenderer.TILE_BUDGET_PER_FRAME;
+    this.spriteBudget = warmingUp ? 99 : FlippyRenderer.SPRITE_BUDGET_PER_FRAME;
     ctx.clearRect(0, 0, width, height);
+
 
     this.renderTick += dt;
     if (state.status === "gameover") {
