@@ -93,6 +93,47 @@ export class FlippyRenderer {
   private tileCache = new Map<string, HTMLCanvasElement>();
   private spriteCache = new Map<string, HTMLCanvasElement>();
 
+  // ── Frame budget + LRU (the fix for the periodic freeze) ──────────────
+  // Painting a cached layer is cheap, but *creating* one is not: a world
+  // like Cyber builds four full-screen offscreen canvases the first time it
+  // is drawn, which used to all happen inside a single frame — measured at
+  // ~200ms on a throttled mobile CPU. That is exactly the "the game freezes
+  // every once in a while" report: it lands right when a portal switches
+  // worlds. So each frame may only build a couple of new bitmaps; anything
+  // over budget is skipped (that layer simply isn't drawn for that frame,
+  // invisible in practice) and gets built on one of the next frames.
+  private static readonly TILE_BUDGET_PER_FRAME = 1;
+  private static readonly SPRITE_BUDGET_PER_FRAME = 3;
+  // Long runs cycle through all ten worlds; without a cap the caches keep
+  // every full-screen bitmap of every visited world alive (tens of MB of
+  // canvas memory on a phone), which shows up as escalating GC stutter.
+  private static readonly TILE_CACHE_MAX = 16;
+  private static readonly SPRITE_CACHE_MAX = 64;
+  private tileBudget = 0;
+  private spriteBudget = 0;
+  private blankTile: HTMLCanvasElement | null = null;
+
+  private getBlankTile(): HTMLCanvasElement {
+    if (!this.blankTile) {
+      this.blankTile = document.createElement("canvas");
+      this.blankTile.width = 1;
+      this.blankTile.height = 1;
+    }
+    return this.blankTile;
+  }
+
+  /** Re-insert on hit so Map iteration order is least-recently-used first,
+   *  then trim the oldest entries past the cap. */
+  private touchAndTrim(cache: Map<string, HTMLCanvasElement>, key: string, value: HTMLCanvasElement, max: number) {
+    cache.delete(key);
+    cache.set(key, value);
+    while (cache.size > max) {
+      const oldest = cache.keys().next().value as string | undefined;
+      if (oldest === undefined) break;
+      cache.delete(oldest);
+    }
+  }
+
   /** Cache for a full background layer whose art never changes on its own
    *  — only its on-screen position does (scroll). `drawFn` runs once per
    *  `key` (as if scroll offset were 0); callers keep doing the live
@@ -105,17 +146,21 @@ export class FlippyRenderer {
    *  same as the main canvas, so the 2-arg drawImage form would draw it
    *  oversized. */
   private getTile(key: string, w: number, h: number, drawFn: (tctx: CanvasRenderingContext2D) => void): HTMLCanvasElement {
-    let tile = this.tileCache.get(key);
-    if (!tile) {
-      tile = document.createElement("canvas");
-      const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
-      tile.width = Math.max(1, Math.round(w * dpr));
-      tile.height = Math.max(1, Math.round(h * dpr));
-      const tctx = tile.getContext("2d")!;
-      tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      drawFn(tctx);
-      this.tileCache.set(key, tile);
+    const cached = this.tileCache.get(key);
+    if (cached) {
+      this.touchAndTrim(this.tileCache, key, cached, FlippyRenderer.TILE_CACHE_MAX);
+      return cached;
     }
+    if (this.tileBudget <= 0) return this.getBlankTile();
+    this.tileBudget--;
+    const tile = document.createElement("canvas");
+    const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
+    tile.width = Math.max(1, Math.round(w * dpr));
+    tile.height = Math.max(1, Math.round(h * dpr));
+    const tctx = tile.getContext("2d")!;
+    tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawFn(tctx);
+    this.touchAndTrim(this.tileCache, key, tile, FlippyRenderer.TILE_CACHE_MAX);
     return tile;
   }
 
@@ -128,17 +173,21 @@ export class FlippyRenderer {
    *  set of variants instead of growing forever as new seeded shapes
    *  scroll into view over a long session. */
   private getSprite(key: string, w: number, h: number, drawFn: (tctx: CanvasRenderingContext2D) => void): HTMLCanvasElement {
-    let sprite = this.spriteCache.get(key);
-    if (!sprite) {
-      sprite = document.createElement("canvas");
-      const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
-      sprite.width = Math.max(1, Math.round(w * dpr));
-      sprite.height = Math.max(1, Math.round(h * dpr));
-      const tctx = sprite.getContext("2d")!;
-      tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      drawFn(tctx);
-      this.spriteCache.set(key, sprite);
+    const cached = this.spriteCache.get(key);
+    if (cached) {
+      this.touchAndTrim(this.spriteCache, key, cached, FlippyRenderer.SPRITE_CACHE_MAX);
+      return cached;
     }
+    if (this.spriteBudget <= 0) return this.getBlankTile();
+    this.spriteBudget--;
+    const sprite = document.createElement("canvas");
+    const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
+    sprite.width = Math.max(1, Math.round(w * dpr));
+    sprite.height = Math.max(1, Math.round(h * dpr));
+    const tctx = sprite.getContext("2d")!;
+    tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawFn(tctx);
+    this.touchAndTrim(this.spriteCache, key, sprite, FlippyRenderer.SPRITE_CACHE_MAX);
     return sprite;
   }
 
@@ -214,7 +263,15 @@ export class FlippyRenderer {
    *  pipe/physics speed on any display that isn't exactly 60Hz. */
   public render(state: FlippyState, dt: number = 1) {
     const { ctx, width, height } = this;
+    // Refill the per-frame bitmap-creation allowance (see getTile). While
+    // the game isn't actually running (idle screen / game over) there's no
+    // motion to stutter, so let the whole scene warm up at once instead of
+    // trickling in over several frames.
+    const warmingUp = state.status !== "playing";
+    this.tileBudget = warmingUp ? 99 : FlippyRenderer.TILE_BUDGET_PER_FRAME;
+    this.spriteBudget = warmingUp ? 99 : FlippyRenderer.SPRITE_BUDGET_PER_FRAME;
     ctx.clearRect(0, 0, width, height);
+
 
     this.renderTick += dt;
     if (state.status === "gameover") {
