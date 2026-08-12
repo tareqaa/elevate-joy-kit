@@ -168,6 +168,16 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
     let qualityChecked = false;
     const workMsSamples: number[] = [];
 
+    // Rolling one-second windows feeding the diagnostic overlay. Kept as
+    // plain arrays that are refilled (not reallocated per frame) so the
+    // measurement itself costs essentially nothing when the overlay is off.
+    const perfGaps: number[] = [];
+    const perfWork: number[] = [];
+    let perfWindowStart = performance.now();
+    const pct = (arr: number[], q: number) => {
+      const sorted = [...arr].sort((a, b) => a - b);
+      return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))] ?? 0;
+    };
 
     const loop = (now: number) => {
       // Paused: skip physics and drawing entirely (the last rendered frame
@@ -177,6 +187,9 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       if (isPausedRef.current) {
         lastTime = now;
         lastRenderTime = now;
+        perfWindowStart = now;
+        perfGaps.length = 0;
+        perfWork.length = 0;
         animId = requestAnimationFrame(loop);
         return;
       }
@@ -190,6 +203,7 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
         animId = requestAnimationFrame(loop);
         return;
       }
+      const frameGap = now - lastRenderTime;
       lastRenderTime = now;
 
       const state = stateRef.current;
@@ -201,9 +215,10 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       const workStart = performance.now();
       updateEngine(state, w, h, dt);
       rendererRef.current?.render(state, dt);
+      const workMs = performance.now() - workStart;
 
       if (!qualityChecked && state.status === "playing") {
-        workMsSamples.push(performance.now() - workStart);
+        workMsSamples.push(workMs);
         if (workMsSamples.length >= 60) {
           qualityChecked = true;
           const sorted = [...workMsSamples].sort((a, b) => a - b);
@@ -212,6 +227,24 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
           if (median > 11) rendererRef.current?.downgradeQuality();
         }
       }
+
+      if (showPerfRef.current) {
+        perfGaps.push(frameGap);
+        perfWork.push(workMs);
+        const elapsed = now - perfWindowStart;
+        if (elapsed >= 500 && perfGaps.length > 0) {
+          setPerfStats({
+            fps: Math.round((perfGaps.length * 1000) / elapsed),
+            p95: Math.round(pct(perfGaps, 0.95) * 10) / 10,
+            work: Math.round(pct(perfWork, 0.95) * 10) / 10,
+            worst: Math.round(Math.max(...perfGaps) * 10) / 10,
+          });
+          perfGaps.length = 0;
+          perfWork.length = 0;
+          perfWindowStart = now;
+        }
+      }
+
 
 
       if (state.score !== lastScore) {
