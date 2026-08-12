@@ -166,17 +166,21 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       const dt = Math.min(3, Math.max(0, (now - lastTime) / (1000 / 60)));
       lastTime = now;
 
+      const workStart = performance.now();
       updateEngine(state, w, h, dt);
       rendererRef.current?.render(state, dt);
 
       if (!qualityChecked && state.status === "playing") {
-        frameMsSamples.push(dt * (1000 / 60));
-        if (frameMsSamples.length >= 90) {
+        workMsSamples.push(performance.now() - workStart);
+        if (workMsSamples.length >= 60) {
           qualityChecked = true;
-          const avgMs = frameMsSamples.reduce((a, b) => a + b, 0) / frameMsSamples.length;
-          if (avgMs > 20) rendererRef.current?.downgradeQuality(); // sustained under ~50fps
+          const sorted = [...workMsSamples].sort((a, b) => a - b);
+          const median = sorted[Math.floor(sorted.length / 2)];
+          // >11ms of the 16.7ms budget spent drawing = no slack left.
+          if (median > 11) rendererRef.current?.downgradeQuality();
         }
       }
+
 
       if (state.score !== lastScore) {
         lastScore = state.score;
