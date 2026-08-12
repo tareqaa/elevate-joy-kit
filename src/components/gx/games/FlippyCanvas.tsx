@@ -125,12 +125,17 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
     let lastRenderTime = performance.now();
     // Adaptive render quality: a fixed DPR cap can't be both sharp and
     // smooth on every device — weaker ones just can't push as many pixels.
-    // So sample real frame cost during actual play, once per session, and
-    // if it's sustained-slow, drop the renderer to cheaper 1x rendering for
-    // the rest of the session instead of leaving it stuck soft-locked at a
-    // resolution the device can't keep smooth.
+    // Sampling *dt* (the gap between frames) was the wrong signal: rAF is
+    // capped by the display, so dt reads ~16.7ms on a device that is only
+    // barely keeping up as well as on one with tons of headroom, and the
+    // check almost never tripped — which is why phones still felt heavy.
+    // Instead, measure how long the update+draw itself actually takes. A
+    // frame has ~16.7ms of budget; if the draw alone routinely eats most of
+    // it, the device has no slack for the browser's own compositing and the
+    // result reads as stutter, so drop to the cheap render path.
     let qualityChecked = false;
-    const frameMsSamples: number[] = [];
+    const workMsSamples: number[] = [];
+
 
     const loop = (now: number) => {
       // Paused: skip physics and drawing entirely (the last rendered frame
@@ -161,17 +166,21 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       const dt = Math.min(3, Math.max(0, (now - lastTime) / (1000 / 60)));
       lastTime = now;
 
+      const workStart = performance.now();
       updateEngine(state, w, h, dt);
       rendererRef.current?.render(state, dt);
 
       if (!qualityChecked && state.status === "playing") {
-        frameMsSamples.push(dt * (1000 / 60));
-        if (frameMsSamples.length >= 90) {
+        workMsSamples.push(performance.now() - workStart);
+        if (workMsSamples.length >= 60) {
           qualityChecked = true;
-          const avgMs = frameMsSamples.reduce((a, b) => a + b, 0) / frameMsSamples.length;
-          if (avgMs > 20) rendererRef.current?.downgradeQuality(); // sustained under ~50fps
+          const sorted = [...workMsSamples].sort((a, b) => a - b);
+          const median = sorted[Math.floor(sorted.length / 2)];
+          // >11ms of the 16.7ms budget spent drawing = no slack left.
+          if (median > 11) rendererRef.current?.downgradeQuality();
         }
       }
+
 
       if (state.score !== lastScore) {
         lastScore = state.score;
