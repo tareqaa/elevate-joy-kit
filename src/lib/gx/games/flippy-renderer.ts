@@ -108,9 +108,12 @@ export class FlippyRenderer {
   // the world count, so neither guard is needed.
   private overlayCache = new Map<string, HTMLCanvasElement>();
 
-  // Soft washes are cached at half resolution and stretched back up —
-  // visually identical for a smooth gradient, at a quarter of the memory.
-  private static readonly OVERLAY_SCALE = 0.5;
+  // Washes are cached at full device resolution (so the blit is 1:1 — see
+  // drawOverlay), which makes each one canvas-sized. At most two or three
+  // are in play at once, so only the most recent few are kept.
+  // Room for the current world's sky + glow(s) and the previous world's
+  // during a crossfade, without evicting one that's still on screen.
+  private static readonly OVERLAY_CACHE_MAX = 6;
 
   // ── Frame budget + LRU (the fix for the periodic freeze) ──────────────
   // Painting a cached layer is cheap, but *creating* one is not: a world
@@ -316,21 +319,39 @@ export class FlippyRenderer {
     this.drawVignette(); // cinematic edge-darkening, uniform across every world
   }
 
-  /** Paints a full-screen static wash once into a half-resolution bitmap and
-   *  blits it stretched on every later frame. `drawFn` receives a context
-   *  already scaled so it can work in ordinary CSS-pixel coordinates. */
+  /** Paints a full-screen static wash once, then blits it on every later
+   *  frame. `drawFn` works in ordinary CSS-pixel coordinates.
+   *
+   *  Cached at the canvas's *own* device resolution so the blit is exactly
+   *  1:1 — no scaling. An earlier version cached these at half resolution
+   *  and let drawImage upscale them, which is free on Skia but lands on
+   *  WebKit's CPU resampling path, so it cost iPhone users a rescale of two
+   *  or three full-screen layers every frame. Matching resolutions makes it
+   *  a straight copy on both engines. */
   private drawOverlay(key: string, drawFn: (octx: CanvasRenderingContext2D, w: number, h: number) => void) {
     const { ctx, width, height } = this;
     let overlay = this.overlayCache.get(key);
-    if (!overlay) {
-      const s = FlippyRenderer.OVERLAY_SCALE;
+    if (overlay) {
+      // Re-insert so Map order stays least-recently-used first (see below).
+      this.overlayCache.delete(key);
+      this.overlayCache.set(key, overlay);
+    } else {
+      const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
       overlay = document.createElement("canvas");
-      overlay.width = Math.max(1, Math.round(width * s));
-      overlay.height = Math.max(1, Math.round(height * s));
+      overlay.width = Math.max(1, Math.round(width * dpr));
+      overlay.height = Math.max(1, Math.round(height * dpr));
       const octx = overlay.getContext("2d")!;
-      octx.setTransform(s, 0, 0, s, 0, 0);
+      octx.setTransform(dpr, 0, 0, dpr, 0, 0);
       drawFn(octx, width, height);
       this.overlayCache.set(key, overlay);
+      // Full-resolution washes are much larger than the half-res ones were,
+      // and only the current world's are ever drawn, so keep the cache to a
+      // few most-recent entries rather than every world ever visited.
+      while (this.overlayCache.size > FlippyRenderer.OVERLAY_CACHE_MAX) {
+        const oldest = this.overlayCache.keys().next().value as string | undefined;
+        if (oldest === undefined) break;
+        this.overlayCache.delete(oldest);
+      }
     }
     ctx.drawImage(overlay, 0, 0, width, height);
   }
@@ -371,30 +392,25 @@ export class FlippyRenderer {
     }
   }
 
-  /** The sky is a pure *vertical* gradient — every column is identical — so
-   *  it caches exactly, with no resolution loss at all, as a one-pixel-wide
-   *  strip stretched across the canvas. A few KB per world, and it turns a
-   *  multi-stop gradient evaluated over every pixel on screen into a stretch
-   *  blit. Kept at full device resolution vertically so the banding-free
-   *  gradient is preserved. */
-  private drawSky(world: WorldConfig, height: number) {
-    const { ctx, width } = this;
-    const key = `sky-${world.id}`;
-    let strip = this.overlayCache.get(key);
-    if (!strip) {
-      const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
-      strip = document.createElement("canvas");
-      strip.width = 1;
-      strip.height = Math.max(1, Math.round(height * dpr));
-      const sctx = strip.getContext("2d")!;
-      sctx.setTransform(1, 0, 0, dpr, 0, 0);
-      const grad = sctx.createLinearGradient(0, 0, 0, height);
+  /** Cached like the other full-screen washes — at full device resolution,
+   *  so the per-frame draw is a 1:1 copy.
+   *
+   *  This was briefly cached as a one-pixel-wide column stretched across the
+   *  canvas instead. That's exact, uses almost no memory, and is very fast on
+   *  Skia (Chrome/Android) — but it was a bad trade on iOS, where WebKit
+   *  doesn't GPU-back small offscreen canvases and resamples scaled
+   *  canvas-to-canvas draws on the CPU. Stretching a 1px source across the
+   *  full width is the pathological case of that, every frame, in every
+   *  world, and it made the game stutter on iPhone (where every browser is
+   *  WebKit) even as it sped Android up. Caching wasn't the mistake — the
+   *  rescale was. Same size in and out is fast on both engines. */
+  private drawSky(world: WorldConfig, _height: number) {
+    this.drawOverlay(`sky-${world.id}`, (octx, w, h) => {
+      const grad = octx.createLinearGradient(0, 0, 0, h);
       for (const [offset, color] of this.skyStops(world)) grad.addColorStop(offset, color);
-      sctx.fillStyle = grad;
-      sctx.fillRect(0, 0, 1, height);
-      this.overlayCache.set(key, strip);
-    }
-    ctx.drawImage(strip, 0, 0, width, height);
+      octx.fillStyle = grad;
+      octx.fillRect(0, 0, w, h);
+    });
   }
 
   // ──────────────────────────────────────────────────────
