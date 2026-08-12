@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Volume2, VolumeX, Pause, Play, Zap, Sparkles, Info, LogOut, MousePointerClick } from "lucide-react";
+import { Volume2, VolumeX, Pause, Play, Zap, Sparkles, Info, LogOut, MousePointerClick, Activity } from "lucide-react";
 import { createInitialState, updateEngine, jump, type FlippyState } from "@/lib/gx/games/flippy-engine";
 import { FlippyRenderer } from "@/lib/gx/games/flippy-renderer";
 import { flippyAudio } from "@/lib/gx/games/flippy-audio";
