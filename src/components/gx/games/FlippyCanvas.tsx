@@ -49,6 +49,38 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
   // effect below) — purely a presentation delay, doesn't touch onGameOver.
   const [showOverCard, setShowOverCard] = useState(false);
 
+  // ─── Diagnostic FPS overlay ───────────────────────────────────────────
+  // Off by default; toggled from the HUD (or forced on with ?perf=1) so a
+  // real device can be measured where it actually lags instead of guessing
+  // from a desktop emulation. `fps` is frames actually presented in the last
+  // window; `p95` is the 95th-percentile gap between presented frames (the
+  // number that captures the occasional hitch a plain average hides); `work`
+  // is the 95th-percentile time spent inside updateEngine + render, i.e. how
+  // much of the ~16.7ms budget this game itself is responsible for. A low
+  // fps with low `work` means something outside the canvas (compositing, GC,
+  // another element repainting) is the cost, not the drawing code.
+  const [perfStats, setPerfStats] = useState<{ fps: number; p95: number; work: number; worst: number } | null>(null);
+  const [showPerf, setShowPerf] = useState(false);
+  const showPerfRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const forced = new URLSearchParams(window.location.search).get("perf") === "1";
+    let saved = false;
+    try { saved = localStorage.getItem("gx_flippy_perf") === "1"; } catch { /* ignore */ }
+    if (forced || saved) {
+      showPerfRef.current = true;
+      setShowPerf(true);
+    }
+  }, []);
+  const togglePerf = () => {
+    const next = !showPerfRef.current;
+    showPerfRef.current = next;
+    setShowPerf(next);
+    if (!next) setPerfStats(null);
+    try { localStorage.setItem("gx_flippy_perf", next ? "1" : "0"); } catch { /* ignore */ }
+  };
+
+
   const stateRef = useRef<FlippyState>(createInitialState(600));
   // Logical (CSS-pixel) canvas size — see the comment in updateSize().
   const sizeRef = useRef({ width: 400, height: 600 });
