@@ -394,7 +394,18 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
             >
               {qualityMode === "performance" ? <Zap size={16} /> : <Sparkles size={16} />}
             </button>
+            <div className="w-px h-5 bg-white/15" aria-hidden />
+            <button
+              onClick={togglePerf}
+              className={`flex items-center justify-center w-8 h-8 rounded-lg active:scale-90 transition-all hover:bg-white/10 ${
+                showPerf ? "text-emerald-300" : "text-slate-400"
+              }`}
+              title={lang === "ar" ? "عدّاد الإطارات (FPS)" : "FPS counter"}
+            >
+              <Activity size={16} />
+            </button>
           </div>
+
         )}
 
         {status === "playing" ? (
