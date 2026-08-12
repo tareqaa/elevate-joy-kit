@@ -42,9 +42,22 @@ export class FlippyRenderer {
   // is a separate automatic safety net for a device that turns out to
   // struggle regardless of what was picked.
   private dprCap = 2;
+  /** Skips the expensive soft-glow pass (canvas `shadowBlur` re-rasterizes
+   *  every glowing shape through a blur kernel on the CPU — by far the
+   *  costliest per-frame operation in this scene, and disproportionately so
+   *  in Safari/iOS). Enabled together with Performance mode and whenever the
+   *  automatic slow-frame safety net trips. Everything still draws; it just
+   *  draws with hard edges instead of a halo. */
+  private lowFx = true;
 
   constructor(canvas: HTMLCanvasElement, width: number, height: number) {
-    this.ctx = canvas.getContext("2d")!;
+    // alpha:false lets the compositor skip per-pixel blending of the whole
+    // canvas against the page (a measurable win in Safari/iOS, where canvas
+    // 2D compositing is the bottleneck) — safe because the background layer
+    // repaints every frame edge to edge. desynchronized lets the browser
+    // present frames without waiting in lockstep with the DOM, which is what
+    // removes the "input feels behind the finger" lag while flapping.
+    this.ctx = canvas.getContext("2d", { alpha: false, desynchronized: true })!;
     this.width = width;
     this.height = height;
     this.applyDpr(width, height);
@@ -59,6 +72,7 @@ export class FlippyRenderer {
    *  whether called before or during a round. */
   public setQualityMode(mode: "performance" | "quality") {
     this.dprCap = mode === "performance" ? 1 : 2;
+    this.lowFx = mode === "performance";
     this.applyDpr(this.width, this.height);
     this.invalidateCaches();
   }
@@ -69,6 +83,7 @@ export class FlippyRenderer {
    *  device. Returns false if already at the floor (nothing left to
    *  downgrade, e.g. Performance mode was already picked). */
   public downgradeQuality(): boolean {
+    this.lowFx = true;
     if (this.dprCap <= 1) return false;
     this.dprCap = 1;
     this.applyDpr(this.width, this.height);
@@ -222,6 +237,11 @@ export class FlippyRenderer {
     this.tileCache.clear();
     this.spriteCache.clear();
     this.overlayCache.clear();
+  }
+
+  /** Glow radius, or 0 when the soft-glow pass is disabled (see lowFx). */
+  private fx(blur: number): number {
+    return this.lowFx ? 0 : blur;
   }
 
   private initStars() {
@@ -827,7 +847,7 @@ export class FlippyRenderer {
         if (ox + width <= 0 || ox >= width) continue;
         ctx.fillStyle = "#ef4444";
         ctx.shadowColor = "#f97316";
-        ctx.shadowBlur = 20 + Math.sin(t * 0.05) * 10;
+        ctx.shadowBlur = this.fx(20 + Math.sin(t * 0.05) * 10);
         ctx.beginPath();
         ctx.moveTo(ox + width * 0.3 - 12, gY - 160);
         ctx.lineTo(ox + width * 0.3, gY - 180);
@@ -884,7 +904,7 @@ export class FlippyRenderer {
     riverGrad.addColorStop(1, "#7f1d1d");
     ctx.fillStyle = riverGrad;
     ctx.shadowColor = "#f97316";
-    ctx.shadowBlur = 18 + Math.sin(t * 0.06) * 8;
+    ctx.shadowBlur = this.fx(18 + Math.sin(t * 0.06) * 8);
     ctx.beginPath();
     ctx.moveTo(0, riverY + 12);
     for (let x = 0; x <= width; x += 24) {
@@ -1297,7 +1317,7 @@ export class FlippyRenderer {
       ctx.strokeStyle = "rgba(240,240,255,0.9)";
       ctx.lineWidth = 2;
       ctx.shadowColor = "#c7d2fe";
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = this.fx(12);
       ctx.beginPath();
       let bx = boltX, by = 0;
       ctx.moveTo(bx, by);
@@ -2496,8 +2516,9 @@ export class FlippyRenderer {
     }
 
     // Cap particles for performance
-    if (this.particles.length > 120) {
-      this.particles.splice(0, this.particles.length - 120);
+    const particleCap = this.lowFx ? 60 : 120;
+    if (this.particles.length > particleCap) {
+      this.particles.splice(0, this.particles.length - particleCap);
     }
 
     // Update & Draw
@@ -2624,7 +2645,7 @@ export class FlippyRenderer {
 
         case "sparkles":
           ctx.shadowColor = p.color;
-          ctx.shadowBlur = 6;
+          ctx.shadowBlur = this.fx(6);
           ctx.fillStyle = "#fde047";
           ctx.beginPath();
           // 4-pointed star shape
@@ -3072,7 +3093,7 @@ export class FlippyRenderer {
     const capY = isTop ? y + h : y;
     ctx.fillStyle = "#ef4444";
     ctx.shadowColor = "#f97316";
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = this.fx(12);
     ctx.fillRect(x - 3, capY - (isTop ? 6 : 0), w + 6, 6);
     ctx.shadowBlur = 0;
   }
@@ -3261,7 +3282,7 @@ export class FlippyRenderer {
     ctx.strokeStyle = "#22d3ee";
     ctx.lineWidth = 2;
     ctx.shadowColor = "#22d3ee";
-    ctx.shadowBlur = 8;
+    ctx.shadowBlur = this.fx(8);
     ctx.stroke();
     ctx.shadowBlur = 0;
 
@@ -3295,7 +3316,7 @@ export class FlippyRenderer {
     const capY = isTop ? y + h : y;
     ctx.fillStyle = "#c026d3";
     ctx.shadowColor = "#c026d3";
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = this.fx(10);
     ctx.fillRect(x - 5, capY - (isTop ? 8 : 0), w + 10, 8);
     ctx.shadowBlur = 0;
   }
@@ -3723,7 +3744,7 @@ export class FlippyRenderer {
     ctx.fillStyle = bodyGrad;
     if (world.birdSkin === "cyber") {
       ctx.shadowColor = "#22d3ee";
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = this.fx(10);
     }
     ctx.beginPath();
     ctx.moveTo(-12, 0);
