@@ -445,6 +445,36 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
         )}
       </div>
 
+      {/* ─── Diagnostic perf overlay ───────────────────────────────────
+          Stays visible while playing (that's the whole point — the lag is
+          reported during flight/dive), so it is deliberately built without
+          backdrop-blur and without any animation: a blurred or animated
+          chip over a canvas that repaints every frame would itself cost
+          frames and corrupt the very measurement it displays. */}
+      {showPerf && (
+        <div
+          dir="ltr"
+          className="absolute bottom-3 left-3 z-30 pointer-events-none rounded-lg bg-slate-950/85 border border-emerald-400/25 px-2.5 py-1.5 font-mono text-[10px] leading-tight text-emerald-200 shadow-lg"
+        >
+          <div className="flex items-baseline gap-1.5">
+            <span
+              className={`text-[15px] font-bold ${
+                !perfStats ? "text-slate-400" : perfStats.fps >= 55 ? "text-emerald-300" : perfStats.fps >= 40 ? "text-amber-300" : "text-rose-400"
+              }`}
+            >
+              {perfStats ? perfStats.fps : "--"}
+            </span>
+            <span className="text-slate-400">FPS</span>
+          </div>
+          <div className="text-slate-300">p95 {perfStats ? `${perfStats.p95}ms` : "--"}</div>
+          <div className="text-slate-300">draw {perfStats ? `${perfStats.work}ms` : "--"}</div>
+          <div className="text-slate-400">worst {perfStats ? `${perfStats.worst}ms` : "--"}</div>
+          <div className="text-slate-500">{qualityMode === "performance" ? "perf" : "quality"}</div>
+        </div>
+      )}
+
+
+
       {/* ─── Quality-switch warning — brief, dismissible, auto-hides ─── */}
       {showQualityWarning && (
         <div className="absolute top-16 left-3 right-3 flex justify-center pointer-events-none z-20 animate-in fade-in slide-in-from-top-2 duration-300">
