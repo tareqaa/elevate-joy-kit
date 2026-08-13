@@ -52,12 +52,11 @@ export class FlippyRenderer {
 
   constructor(canvas: HTMLCanvasElement, width: number, height: number) {
     // alpha:false lets the compositor skip per-pixel blending of the whole
-    // canvas against the page (a measurable win in Safari/iOS, where canvas
-    // 2D compositing is the bottleneck) — safe because the background layer
-    // repaints every frame edge to edge. desynchronized lets the browser
-    // present frames without waiting in lockstep with the DOM, which is what
-    // removes the "input feels behind the finger" lag while flapping.
-    this.ctx = canvas.getContext("2d", { alpha: false, desynchronized: true })!;
+    // canvas against the page (a measurable win across mobile browsers)
+    // safe because the background layer repaints every frame edge to edge.
+    // Standard synchronized presentation prevents tile-cache ghosting and
+    // scanline tearing artifacts on Android Mali/Adreno GPUs.
+    this.ctx = canvas.getContext("2d", { alpha: false })!;
     this.width = width;
     this.height = height;
     this.applyDpr(width, height);
