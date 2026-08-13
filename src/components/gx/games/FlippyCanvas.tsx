@@ -21,6 +21,7 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<FlippyRenderer | null>(null);
+  const scoreDisplayRef = useRef<HTMLSpanElement>(null);
   
   const [score, setScore] = useState(0);
   const [status, setStatus] = useState<FlippyState["status"]>("idle");
@@ -121,51 +122,33 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
     // and only skips the redundant extra redraws on faster screens; physics
     // (dt) stays exactly as accurate since skipped frames' elapsed time
     // just carries over into the next actual update.
-    const TARGET_FRAME_MS = 1000 / 60;
-    let lastRenderTime = performance.now();
-    // Adaptive render quality: a fixed DPR cap can't be both sharp and
-    // smooth on every device — weaker ones just can't push as many pixels.
-    // So sample real frame cost during actual play, once per session, and
-    // if it's sustained-slow, drop the renderer to cheaper 1x rendering for
-    // the rest of the session instead of leaving it stuck soft-locked at a
-    // resolution the device can't keep smooth.
     let qualityChecked = false;
     const frameMsSamples: number[] = [];
 
     const loop = (now: number) => {
-      // Paused: skip physics and drawing entirely (the last rendered frame
-      // just stays on screen under the pause overlay) — but keep updating
-      // the clocks every tick so a long pause doesn't show up as one huge
-      // dt/render-gap jump the moment play resumes.
+      // Paused: skip physics and drawing entirely
       if (isPausedRef.current) {
         lastTime = now;
-        lastRenderTime = now;
         animId = requestAnimationFrame(loop);
         return;
       }
 
-      // 90% tolerance avoids a naive-throttle trap: on a native 60Hz screen
-      // rAF intervals jitter slightly below the exact 16.667ms target, and
-      // a strict >= check would drop every other frame (effectively 30fps)
-      // chasing timer precision that doesn't exist. This still comfortably
-      // skips extra frames on 120Hz+ displays.
-      if (now - lastRenderTime < TARGET_FRAME_MS * 0.9) {
-        animId = requestAnimationFrame(loop);
-        return;
-      }
-      lastRenderTime = now;
+      // Continuous V-Sync aligned delta calculation (60Hz, 90Hz, 120Hz, 144Hz)
+      const elapsedMs = now - lastTime;
+      lastTime = now;
+
+      // Normalize to 60fps time unit (1.0 = 16.667ms). Clamp to prevent jump spikes on tab resume
+      const dt = Math.min(2.5, Math.max(0.1, elapsedMs / (1000 / 60)));
 
       const state = stateRef.current;
       const w = sizeRef.current.width;
       const h = sizeRef.current.height;
-      const dt = Math.min(3, Math.max(0, (now - lastTime) / (1000 / 60)));
-      lastTime = now;
 
       updateEngine(state, w, h, dt);
       rendererRef.current?.render(state, dt);
 
       if (!qualityChecked && state.status === "playing") {
-        frameMsSamples.push(dt * (1000 / 60));
+        frameMsSamples.push(elapsedMs);
         if (frameMsSamples.length >= 90) {
           qualityChecked = true;
           const avgMs = frameMsSamples.reduce((a, b) => a + b, 0) / frameMsSamples.length;
@@ -175,7 +158,9 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
 
       if (state.score !== lastScore) {
         lastScore = state.score;
-        setScore(state.score);
+        if (scoreDisplayRef.current) {
+          scoreDisplayRef.current.textContent = String(state.score);
+        }
       }
       
       if (state.status !== lastStatus) {
@@ -183,8 +168,12 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
         setStatus(state.status);
         if (state.status === "playing") {
           onGameStartRef.current?.();
+          if (scoreDisplayRef.current) {
+            scoreDisplayRef.current.textContent = String(state.score);
+          }
         }
         if (state.status === "gameover") {
+          setScore(state.score);
           onGameOverRef.current?.(state.score);
         }
       }
@@ -378,16 +367,9 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       {status === "playing" && (
         <div className="absolute top-16 w-full flex justify-center pointer-events-none z-10">
           <span
+            ref={scoreDisplayRef}
             className="text-6xl font-black text-white tracking-wider"
             style={{
-              // A faux stroke + drop shadow built entirely from text-shadow,
-              // not `-webkit-text-stroke` + `filter: drop-shadow(...)`.
-              // Safari renders that combination as a solid black box behind
-              // the digits instead of an outline — most visible right after
-              // a tab-visibility change forces a repaint — because the
-              // stroke and the filter fight over the same compositing
-              // layer. text-shadow alone doesn't trigger it and looks the
-              // same everywhere.
               textShadow:
                 "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.8)",
             }}

@@ -825,9 +825,21 @@ export class FlippyRenderer {
         // with a shadowBlur, the most expensive operation in the renderer.
         // Skipping the invisible copies halves that cost for free.
         if (ox + width <= 0 || ox >= width) continue;
+        // Ambient heat glow halo
+        ctx.fillStyle = "rgba(249, 115, 22, 0.45)";
+        ctx.beginPath();
+        ctx.moveTo(ox + width * 0.3 - 16, gY - 156);
+        ctx.lineTo(ox + width * 0.3, gY - 184);
+        ctx.lineTo(ox + width * 0.3 + 16, gY - 156);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(ox + width * 0.75 - 19, gY - 171);
+        ctx.lineTo(ox + width * 0.75, gY - 204);
+        ctx.lineTo(ox + width * 0.75 + 19, gY - 171);
+        ctx.fill();
+
+        // Molten core
         ctx.fillStyle = "#ef4444";
-        ctx.shadowColor = "#f97316";
-        ctx.shadowBlur = 20 + Math.sin(t * 0.05) * 10;
         ctx.beginPath();
         ctx.moveTo(ox + width * 0.3 - 12, gY - 160);
         ctx.lineTo(ox + width * 0.3, gY - 180);
@@ -838,7 +850,6 @@ export class FlippyRenderer {
         ctx.lineTo(ox + width * 0.75, gY - 200);
         ctx.lineTo(ox + width * 0.75 + 15, gY - 175);
         ctx.fill();
-        ctx.shadowBlur = 0;
       }
     }
     ctx.restore();
@@ -882,9 +893,24 @@ export class FlippyRenderer {
     riverGrad.addColorStop(0, "#fde047");
     riverGrad.addColorStop(0.5, "#f97316");
     riverGrad.addColorStop(1, "#7f1d1d");
+    // Outer heat glow
+    ctx.fillStyle = "rgba(249, 115, 22, 0.35)";
+    ctx.beginPath();
+    ctx.moveTo(0, riverY + 16);
+    for (let x = 0; x <= width; x += 24) {
+      const wave = Math.sin((x + this.scrollX * 0.6) * 0.02 + t * 0.04) * 5;
+      ctx.lineTo(x, riverY + wave - 4);
+    }
+    ctx.lineTo(width, riverY + 18);
+    for (let x = width; x >= 0; x -= 24) {
+      const wave = Math.sin((x + this.scrollX * 0.6) * 0.02 + t * 0.04) * 5;
+      ctx.lineTo(x, riverY + 14 + wave);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Molten core
     ctx.fillStyle = riverGrad;
-    ctx.shadowColor = "#f97316";
-    ctx.shadowBlur = 18 + Math.sin(t * 0.06) * 8;
     ctx.beginPath();
     ctx.moveTo(0, riverY + 12);
     for (let x = 0; x <= width; x += 24) {
@@ -898,7 +924,6 @@ export class FlippyRenderer {
     }
     ctx.closePath();
     ctx.fill();
-    ctx.shadowBlur = 0;
     ctx.restore();
 
     // NEAR: Cracked lava ground glow
@@ -1294,10 +1319,6 @@ export class FlippyRenderer {
       const boltSeed = this.seedOf(String(strikeIndex));
       const boltX = width * (0.2 + boltSeed * 0.6);
       ctx.save();
-      ctx.strokeStyle = "rgba(240,240,255,0.9)";
-      ctx.lineWidth = 2;
-      ctx.shadowColor = "#c7d2fe";
-      ctx.shadowBlur = 12;
       ctx.beginPath();
       let bx = boltX, by = 0;
       ctx.moveTo(bx, by);
@@ -1306,6 +1327,11 @@ export class FlippyRenderer {
         by += 22;
         ctx.lineTo(bx, by);
       }
+      ctx.strokeStyle = "rgba(199,210,254,0.45)";
+      ctx.lineWidth = 6;
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(240,240,255,0.95)";
+      ctx.lineWidth = 2;
       ctx.stroke();
       ctx.restore();
     }
@@ -2623,12 +2649,15 @@ export class FlippyRenderer {
           break;
 
         case "sparkles":
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 6;
+          const ss = p.size;
+          // Soft ambient halo
+          ctx.fillStyle = "rgba(253, 224, 71, 0.35)";
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, ss * 1.5, 0, Math.PI * 2);
+          ctx.fill();
+          // 4-pointed crisp star
           ctx.fillStyle = "#fde047";
           ctx.beginPath();
-          // 4-pointed star shape
-          const ss = p.size;
           ctx.moveTo(p.x, p.y - ss);
           ctx.lineTo(p.x + ss * 0.3, p.y - ss * 0.3);
           ctx.lineTo(p.x + ss, p.y);
@@ -3070,11 +3099,12 @@ export class FlippyRenderer {
 
     // Glowing molten edge at the gap
     const capY = isTop ? y + h : y;
+    ctx.fillStyle = "rgba(249, 115, 22, 0.45)";
+    ctx.fillRect(x - 5, capY - (isTop ? 9 : 0), w + 10, 9);
     ctx.fillStyle = "#ef4444";
-    ctx.shadowColor = "#f97316";
-    ctx.shadowBlur = 12;
     ctx.fillRect(x - 3, capY - (isTop ? 6 : 0), w + 6, 6);
-    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#fef08a";
+    ctx.fillRect(x, capY - (isTop ? 2 : 0), w, 2);
   }
 
   /** A bulging reef-rock column — the body itself undulates like a real
@@ -3258,12 +3288,12 @@ export class FlippyRenderer {
     // here (and on the cap below) rather than being switched on for the whole
     // pipe — this outline is what actually reads as neon, and confining the
     // blur to it keeps the look at a fraction of the cost.
+    ctx.strokeStyle = "rgba(34, 211, 238, 0.4)";
+    ctx.lineWidth = 5;
+    ctx.stroke();
     ctx.strokeStyle = "#22d3ee";
     ctx.lineWidth = 2;
-    ctx.shadowColor = "#22d3ee";
-    ctx.shadowBlur = 8;
     ctx.stroke();
-    ctx.shadowBlur = 0;
 
     ctx.save();
     ctx.clip();
@@ -3293,11 +3323,12 @@ export class FlippyRenderer {
 
     // Cap
     const capY = isTop ? y + h : y;
+    ctx.fillStyle = "rgba(192, 38, 211, 0.4)";
+    ctx.fillRect(x - 8, capY - (isTop ? 11 : -3), w + 16, 11);
     ctx.fillStyle = "#c026d3";
-    ctx.shadowColor = "#c026d3";
-    ctx.shadowBlur = 10;
     ctx.fillRect(x - 5, capY - (isTop ? 8 : 0), w + 10, 8);
-    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#f0abfc";
+    ctx.fillRect(x - 2, capY - (isTop ? 6 : 2), w + 4, 2);
   }
 
   /** An ornate carved-stone pillar with a flared capital/base and fluted
@@ -3722,15 +3753,18 @@ export class FlippyRenderer {
     bodyGrad.addColorStop(1, this.shade(bodyColor, -0.22));
     ctx.fillStyle = bodyGrad;
     if (world.birdSkin === "cyber") {
-      ctx.shadowColor = "#22d3ee";
-      ctx.shadowBlur = 10;
+      ctx.save();
+      ctx.fillStyle = "rgba(34, 211, 238, 0.35)";
+      ctx.beginPath();
+      ctx.arc(2, 0, 21, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
     ctx.beginPath();
     ctx.moveTo(-12, 0);
     ctx.bezierCurveTo(-13, -17, 13, -19, 17, -3);
     ctx.bezierCurveTo(19, 13, -5, 19, -12, 0);
     ctx.fill();
-    ctx.shadowBlur = 0;
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = this.shade(bodyColor, -0.4);
     ctx.stroke();
