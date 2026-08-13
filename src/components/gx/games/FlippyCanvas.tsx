@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Volume2, VolumeX, Pause, Play, Zap, Sparkles, Info, LogOut, MousePointerClick } from "lucide-react";
+import { Volume2, VolumeX, Pause, Play, Zap, Sparkles, Info, LogOut, MousePointerClick, Activity } from "lucide-react";
 import { createInitialState, updateEngine, jump, type FlippyState } from "@/lib/gx/games/flippy-engine";
 import { FlippyRenderer } from "@/lib/gx/games/flippy-renderer";
 import { flippyAudio } from "@/lib/gx/games/flippy-audio";
@@ -49,6 +49,38 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
   // canvas underneath has room to play out first (see the status-watching
   // effect below) — purely a presentation delay, doesn't touch onGameOver.
   const [showOverCard, setShowOverCard] = useState(false);
+
+  // ─── Diagnostic FPS overlay ───────────────────────────────────────────
+  // Off by default; toggled from the HUD (or forced on with ?perf=1) so a
+  // real device can be measured where it actually lags instead of guessing
+  // from a desktop emulation. `fps` is frames actually presented in the last
+  // window; `p95` is the 95th-percentile gap between presented frames (the
+  // number that captures the occasional hitch a plain average hides); `work`
+  // is the 95th-percentile time spent inside updateEngine + render, i.e. how
+  // much of the ~16.7ms budget this game itself is responsible for. A low
+  // fps with low `work` means something outside the canvas (compositing, GC,
+  // another element repainting) is the cost, not the drawing code.
+  const [perfStats, setPerfStats] = useState<{ fps: number; p95: number; work: number; worst: number } | null>(null);
+  const [showPerf, setShowPerf] = useState(false);
+  const showPerfRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const forced = new URLSearchParams(window.location.search).get("perf") === "1";
+    let saved = false;
+    try { saved = localStorage.getItem("gx_flippy_perf") === "1"; } catch { /* ignore */ }
+    if (forced || saved) {
+      showPerfRef.current = true;
+      setShowPerf(true);
+    }
+  }, []);
+  const togglePerf = () => {
+    const next = !showPerfRef.current;
+    showPerfRef.current = next;
+    setShowPerf(next);
+    if (!next) setPerfStats(null);
+    try { localStorage.setItem("gx_flippy_perf", next ? "1" : "0"); } catch { /* ignore */ }
+  };
+
 
   const stateRef = useRef<FlippyState>(createInitialState(600));
   // Logical (CSS-pixel) canvas size — see the comment in updateSize().
@@ -123,18 +155,33 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
     // (dt) stays exactly as accurate since skipped frames' elapsed time
     // just carries over into the next actual update.
     let qualityChecked = false;
-    const frameMsSamples: number[] = [];
+    const workMsSamples: number[] = [];
+
+    // Rolling one-second windows feeding the diagnostic overlay. Kept as
+    // plain arrays that are refilled (not reallocated per frame) so the
+    // measurement itself costs essentially nothing when the overlay is off.
+    const perfGaps: number[] = [];
+    const perfWork: number[] = [];
+    let perfWindowStart = performance.now();
+    const pct = (arr: number[], q: number) => {
+      const sorted = [...arr].sort((a, b) => a - b);
+      return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))] ?? 0;
+    };
 
     const loop = (now: number) => {
       // Paused: skip physics and drawing entirely
       if (isPausedRef.current) {
         lastTime = now;
+        perfWindowStart = now;
+        perfGaps.length = 0;
+        perfWork.length = 0;
         animId = requestAnimationFrame(loop);
         return;
       }
 
       // Continuous V-Sync aligned delta calculation (60Hz, 90Hz, 120Hz, 144Hz)
-      const elapsedMs = now - lastTime;
+      const frameGap = now - lastTime;
+      const elapsedMs = frameGap;
       lastTime = now;
 
       // Normalize to 60fps time unit (1.0 = 16.667ms). Clamp to prevent jump spikes on tab resume
@@ -144,17 +191,40 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       const w = sizeRef.current.width;
       const h = sizeRef.current.height;
 
+      const workStart = performance.now();
       updateEngine(state, w, h, dt);
       rendererRef.current?.render(state, dt);
+      const workMs = performance.now() - workStart;
 
       if (!qualityChecked && state.status === "playing") {
-        frameMsSamples.push(elapsedMs);
-        if (frameMsSamples.length >= 90) {
+        workMsSamples.push(workMs);
+        if (workMsSamples.length >= 60) {
           qualityChecked = true;
-          const avgMs = frameMsSamples.reduce((a, b) => a + b, 0) / frameMsSamples.length;
-          if (avgMs > 20) rendererRef.current?.downgradeQuality(); // sustained under ~50fps
+          const sorted = [...workMsSamples].sort((a, b) => a - b);
+          const median = sorted[Math.floor(sorted.length / 2)];
+          // >11ms of the 16.7ms budget spent drawing = no slack left.
+          if (median > 11) rendererRef.current?.downgradeQuality();
         }
       }
+
+      if (showPerfRef.current) {
+        perfGaps.push(frameGap);
+        perfWork.push(workMs);
+        const elapsed = now - perfWindowStart;
+        if (elapsed >= 500 && perfGaps.length > 0) {
+          setPerfStats({
+            fps: Math.round((perfGaps.length * 1000) / elapsed),
+            p95: Math.round(pct(perfGaps, 0.95) * 10) / 10,
+            work: Math.round(pct(perfWork, 0.95) * 10) / 10,
+            worst: Math.round(Math.max(...perfGaps) * 10) / 10,
+          });
+          perfGaps.length = 0;
+          perfWork.length = 0;
+          perfWindowStart = now;
+        }
+      }
+
+
 
       if (state.score !== lastScore) {
         lastScore = state.score;
@@ -309,7 +379,18 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
             >
               {qualityMode === "performance" ? <Zap size={16} /> : <Sparkles size={16} />}
             </button>
+            <div className="w-px h-5 bg-white/15" aria-hidden />
+            <button
+              onClick={togglePerf}
+              className={`flex items-center justify-center w-8 h-8 rounded-lg active:scale-90 transition-all hover:bg-white/10 ${
+                showPerf ? "text-emerald-300" : "text-slate-400"
+              }`}
+              title={lang === "ar" ? "عدّاد الإطارات (FPS)" : "FPS counter"}
+            >
+              <Activity size={16} />
+            </button>
           </div>
+
         )}
 
         {status === "playing" ? (
@@ -348,6 +429,36 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
           </div>
         )}
       </div>
+
+      {/* ─── Diagnostic perf overlay ───────────────────────────────────
+          Stays visible while playing (that's the whole point — the lag is
+          reported during flight/dive), so it is deliberately built without
+          backdrop-blur and without any animation: a blurred or animated
+          chip over a canvas that repaints every frame would itself cost
+          frames and corrupt the very measurement it displays. */}
+      {showPerf && (
+        <div
+          dir="ltr"
+          className="absolute bottom-3 left-3 z-30 pointer-events-none rounded-lg bg-slate-950/85 border border-emerald-400/25 px-2.5 py-1.5 font-mono text-[10px] leading-tight text-emerald-200 shadow-lg"
+        >
+          <div className="flex items-baseline gap-1.5">
+            <span
+              className={`text-[15px] font-bold ${
+                !perfStats ? "text-slate-400" : perfStats.fps >= 55 ? "text-emerald-300" : perfStats.fps >= 40 ? "text-amber-300" : "text-rose-400"
+              }`}
+            >
+              {perfStats ? perfStats.fps : "--"}
+            </span>
+            <span className="text-slate-400">FPS</span>
+          </div>
+          <div className="text-slate-300">p95 {perfStats ? `${perfStats.p95}ms` : "--"}</div>
+          <div className="text-slate-300">draw {perfStats ? `${perfStats.work}ms` : "--"}</div>
+          <div className="text-slate-400">worst {perfStats ? `${perfStats.worst}ms` : "--"}</div>
+          <div className="text-slate-500">{qualityMode === "performance" ? "perf" : "quality"}</div>
+        </div>
+      )}
+
+
 
       {/* ─── Quality-switch warning — brief, dismissible, auto-hides ─── */}
       {showQualityWarning && (
