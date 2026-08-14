@@ -47,30 +47,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   // Saved choice wins; otherwise detect by visitor location (NOT device language)
   useEffect(() => {
-    const html = typeof document !== "undefined" ? document.documentElement : null;
-    const clearLangGate = () => {
-      if (html) {
-        html.removeAttribute("data-lang-pending");
-        document.getElementById("gx-lang-gate")?.remove();
-      }
-    };
-
     const saved = readSaved();
-    if (saved) {
-      clearLangGate();
-      setLangState(saved);
-      return;
-    }
-    if (typeof window === "undefined") {
-      clearLangGate();
-      return;
-    }
+    if (saved) { setLangState(saved); return; }
+    if (typeof window === "undefined") return;
 
     // Cached country from a previous visit
     try {
       const cc = localStorage.getItem(GEO_KEY);
       if (cc) {
-        clearLangGate();
         const detected = langFromCountry(cc);
         setLangState(detected);
         localStorage.setItem(STORAGE_KEY, detected);
@@ -79,9 +63,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     } catch { /* noop */ }
 
     // Hide content briefly to avoid an AR -> EN flash on first visit
-    if (html) {
-      html.setAttribute("data-lang-pending", "1");
-    }
+    const html = document.documentElement;
+    html.setAttribute("data-lang-pending", "1");
     if (!document.getElementById("gx-lang-gate")) {
       const st = document.createElement("style");
       st.id = "gx-lang-gate";

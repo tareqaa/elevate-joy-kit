@@ -155,16 +155,20 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
+    // Wait for the auth session to be known before revealing the app.
+    supabase.auth.getSession().then(() => {
+      setAppReady(true);
+    });
+
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });
-    return () => {
-      sub.subscription.unsubscribe();
-    };
+    return () => sub.subscription.unsubscribe();
   }, [router, queryClient]);
 
   return (
@@ -173,7 +177,47 @@ function RootComponent() {
         <LanguageProvider>
           <CurrencyProvider>
             <CartProvider>
-              <div style={{ minHeight: "100vh" }}>
+              {!appReady && (
+                <div style={{
+                  position: "fixed",
+                  top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: "#090b10",
+                  zIndex: 99999,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "column",
+                  transition: "opacity 0.4s ease, visibility 0.4s",
+                }}>
+                  <div className="relative flex items-center justify-center">
+                    <img src="/app/assets/img/gx-logo.png" alt="Elevate Joy" style={{ width: 80, height: 80, objectFit: "contain", zIndex: 2, position: "relative" }} />
+                    <div style={{
+                      position: "absolute",
+                      width: 120, height: 120,
+                      border: "3px solid transparent",
+                      borderTopColor: "var(--cyan)",
+                      borderRightColor: "var(--cyan)",
+                      borderRadius: "50%",
+                      animation: "spin 1s linear infinite",
+                      opacity: 0.5
+                    }} />
+                    <div style={{
+                      position: "absolute",
+                      width: 140, height: 140,
+                      border: "2px solid transparent",
+                      borderBottomColor: "#3b82f6",
+                      borderLeftColor: "#3b82f6",
+                      borderRadius: "50%",
+                      animation: "spin 1.5s linear infinite reverse",
+                      opacity: 0.3
+                    }} />
+                  </div>
+                  <style>{`
+                    @keyframes spin { 100% { transform: rotate(360deg); } }
+                  `}</style>
+                </div>
+              )}
+              <div style={{ opacity: appReady ? 1 : 0, transition: "opacity 0.5s ease", minHeight: "100vh" }}>
                 <Outlet />
               </div>
               <Toaster richColors position="top-center" />

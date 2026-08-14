@@ -31,10 +31,9 @@ export function supabaseFetch(key: string): typeof fetch {
   };
 }
 
-const FALLBACK_SUPABASE_URL = "https://pvwsktauvvxvmdpdzqrb.supabase.co";
-const FALLBACK_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2d3NrdGF1dnZ4dm1kcGR6cXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNjM1NjUsImV4cCI6MjEwMDkzOTU2NX0.iqwL3MJAcKJsmPceBm0ZyFEQa4m3wjcsisv31I9sgO4";
-
 function supabaseEnv() {
+  // Static `import.meta.env.VITE_*` reads are the only ones Vite inlines at build
+  // time; dynamic indexing can come back undefined in the worker runtime.
   const env = (import.meta.env ?? {}) as Record<string, string | undefined>;
   const proc = (typeof process !== "undefined" ? process.env : {}) as Record<
     string,
@@ -44,15 +43,18 @@ function supabaseEnv() {
     proc["SUPABASE_URL"] ||
     proc["VITE_SUPABASE_URL"] ||
     import.meta.env.VITE_SUPABASE_URL ||
-    env["VITE_SUPABASE_URL"] ||
-    FALLBACK_SUPABASE_URL;
+    env["VITE_SUPABASE_URL"];
   const key =
     proc["SUPABASE_PUBLISHABLE_KEY"] ||
     proc["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
-    FALLBACK_SUPABASE_KEY;
+    env["VITE_SUPABASE_PUBLISHABLE_KEY"];
 
+  if (!url || !key) {
+    throw new Error(
+      "Backend is not configured: missing SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY in the server environment.",
+    );
+  }
   return { url, key };
 }
 

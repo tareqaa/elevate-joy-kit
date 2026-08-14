@@ -37,7 +37,7 @@ export const listMiniGames = createServerFn({ method: "GET" }).handler(
       return [];
     }
 
-    const result = (data ?? []).map((row: Record<string, any>) => ({
+    return (data ?? []).map((row: Record<string, any>) => ({
       id: row.id,
       slug: row.slug,
       gameSlug: row.game_slug,
@@ -48,21 +48,5 @@ export const listMiniGames = createServerFn({ method: "GET" }).handler(
       descAr: row.desc_ar,
       descEn: row.desc_en,
     }));
-
-    if (!result.some((g: MiniGameRow) => g.slug === "gx-flux")) {
-      result.push({
-        id: "gx-flux-default",
-        slug: "gx-flux",
-        gameSlug: "gx-flux",
-        path: "/games/flux",
-        icon: "⚡",
-        nameAr: "GX Flux 3D",
-        nameEn: "GX Flux 3D",
-        descAr: "طابق ألوان بوابات النيون ثلاثية الأبعاد بسرعة فائقة!",
-        descEn: "Match 3D neon gate colors at hyper speed!",
-      });
-    }
-
-    return result;
   },
 );
