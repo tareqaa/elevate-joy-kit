@@ -31,6 +31,7 @@ import { Route as GamesIndexRouteImport } from './routes/games.index'
 import { Route as GamesSlugRouteImport } from './routes/games.$slug'
 import { Route as GamesBlastRouteImport } from './routes/games.blast'
 import { Route as GamesFlippyRouteImport } from './routes/games.flippy'
+import { Route as GamesFluxRouteImport } from './routes/games.flux'
 import { Route as GiftCardsSlugRouteImport } from './routes/gift-cards.$slug'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -163,6 +164,11 @@ const GamesBlastRoute = GamesBlastRouteImport.update({
 const GamesFlippyRoute = GamesFlippyRouteImport.update({
   id: '/games/flippy',
   path: '/games/flippy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesFluxRoute = GamesFluxRouteImport.update({
+  id: '/games/flux',
+  path: '/games/flux',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GiftCardsSlugRoute = GiftCardsSlugRouteImport.update({
@@ -311,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/games/$slug': typeof GamesSlugRoute
   '/games/blast': typeof GamesBlastRoute
   '/games/flippy': typeof GamesFlippyRoute
+  '/games/flux': typeof GamesFluxRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -355,6 +362,7 @@ export interface FileRoutesByTo {
   '/games/$slug': typeof GamesSlugRoute
   '/games/blast': typeof GamesBlastRoute
   '/games/flippy': typeof GamesFlippyRoute
+  '/games/flux': typeof GamesFluxRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -402,6 +410,7 @@ export interface FileRoutesById {
   '/games/$slug': typeof GamesSlugRoute
   '/games/blast': typeof GamesBlastRoute
   '/games/flippy': typeof GamesFlippyRoute
+  '/games/flux': typeof GamesFluxRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -449,6 +458,7 @@ export interface FileRouteTypes {
     | '/games/$slug'
     | '/games/blast'
     | '/games/flippy'
+    | '/games/flux'
     | '/gift-cards/$slug'
     | '/product/$slug'
     | '/u/$username'
@@ -493,6 +503,7 @@ export interface FileRouteTypes {
     | '/games/$slug'
     | '/games/blast'
     | '/games/flippy'
+    | '/games/flux'
     | '/gift-cards/$slug'
     | '/product/$slug'
     | '/u/$username'
@@ -539,6 +550,7 @@ export interface FileRouteTypes {
     | '/games/$slug'
     | '/games/blast'
     | '/games/flippy'
+    | '/games/flux'
     | '/gift-cards/$slug'
     | '/product/$slug'
     | '/u/$username'
@@ -584,6 +596,7 @@ export interface RootRouteChildren {
   GamesSlugRoute: typeof GamesSlugRoute
   GamesBlastRoute: typeof GamesBlastRoute
   GamesFlippyRoute: typeof GamesFlippyRoute
+  GamesFluxRoute: typeof GamesFluxRoute
   GiftCardsSlugRoute: typeof GiftCardsSlugRoute
   ProductSlugRoute: typeof ProductSlugRoute
   UUsernameRoute: typeof UUsernameRoute
@@ -746,6 +759,13 @@ declare module '@tanstack/react-router' {
       path: '/games/flippy'
       fullPath: '/games/flippy'
       preLoaderRoute: typeof GamesFlippyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/flux': {
+      id: '/games/flux'
+      path: '/games/flux'
+      fullPath: '/games/flux'
+      preLoaderRoute: typeof GamesFluxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gift-cards/$slug': {
@@ -982,6 +1002,7 @@ const rootRouteChildren: RootRouteChildren = {
   GamesSlugRoute: GamesSlugRoute,
   GamesBlastRoute: GamesBlastRoute,
   GamesFlippyRoute: GamesFlippyRoute,
+  GamesFluxRoute: GamesFluxRoute,
   GiftCardsSlugRoute: GiftCardsSlugRoute,
   ProductSlugRoute: ProductSlugRoute,
   UUsernameRoute: UUsernameRoute,

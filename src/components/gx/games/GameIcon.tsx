@@ -53,6 +53,30 @@ export function GameIcon({ slug, size = 40 }: { slug: string; size?: number }) {
       </svg>
     );
   }
+  if (slug === "gx-flux" || slug === "flux") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 48 48" role="img" aria-label="GX Flux 3D" className="gicon">
+        <defs>
+          <linearGradient id="gxf-core" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#00f0ff" />
+            <stop offset="1" stopColor="#b537f2" />
+          </linearGradient>
+          <linearGradient id="gxf-gate" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#ff1e56" />
+            <stop offset="1" stopColor="#00ff88" />
+          </linearGradient>
+        </defs>
+        <rect x="3" y="3" width="42" height="42" rx="11" fill="#0b0f24" />
+        <rect x="3.75" y="3.75" width="40.5" height="40.5" rx="10.25" fill="none" stroke="rgba(0,240,255,.3)" strokeWidth="1.5" />
+        {/* 3D Isometric Cube Core */}
+        <polygon points="24,12 34,18 24,24 14,18" fill="#00f0ff" opacity="0.9" />
+        <polygon points="14,18 24,24 24,36 14,30" fill="#0077b6" opacity="0.8" />
+        <polygon points="24,24 34,18 34,30 24,36" fill="#b537f2" opacity="0.85" />
+        {/* Glowing Gate Line */}
+        <path d="M8 38 L24 28 L40 38" fill="none" stroke="url(#gxf-gate)" strokeWidth="2.5" strokeLinecap="round" />
+      </svg>
+    );
+  }
 
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" role="img" aria-label="Game" className="gicon">
