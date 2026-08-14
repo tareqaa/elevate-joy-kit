@@ -79,8 +79,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     } catch { /* noop */ }
 
     // Hide content briefly to avoid an AR -> EN flash on first visit
-    const html = document.documentElement;
-    html.setAttribute("data-lang-pending", "1");
+    if (html) {
+      html.setAttribute("data-lang-pending", "1");
+    }
     if (!document.getElementById("gx-lang-gate")) {
       const st = document.createElement("style");
       st.id = "gx-lang-gate";
