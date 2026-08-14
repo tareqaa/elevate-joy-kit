@@ -32,24 +32,17 @@ export function supabaseFetch(key: string): typeof fetch {
 }
 
 function supabaseEnv() {
-  // Static `import.meta.env.VITE_*` reads are the only ones Vite inlines at build
-  // time; dynamic indexing can come back undefined in the worker runtime.
-  const env = (import.meta.env ?? {}) as Record<string, string | undefined>;
-  const proc = (typeof process !== "undefined" ? process.env : {}) as Record<
-    string,
-    string | undefined
-  >;
+  // In the dev/worker runtime only VITE_* vars are injected into import.meta.env,
+  // while deployed servers expose the unprefixed ones on process.env. Check both.
+  const env = import.meta.env as Record<string, string | undefined>;
   const url =
-    proc["SUPABASE_URL"] ||
-    proc["VITE_SUPABASE_URL"] ||
-    import.meta.env.VITE_SUPABASE_URL ||
+    process.env["SUPABASE_URL"] ||
+    process.env["VITE_SUPABASE_URL"] ||
     env["VITE_SUPABASE_URL"];
   const key =
-    proc["SUPABASE_PUBLISHABLE_KEY"] ||
-    proc["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env["SUPABASE_PUBLISHABLE_KEY"] ||
+    process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
     env["VITE_SUPABASE_PUBLISHABLE_KEY"];
-
   if (!url || !key) {
     throw new Error(
       "Backend is not configured: missing SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY in the server environment.",
