@@ -57,10 +57,17 @@ function FlippyPage() {
   // Find active tournament for gx-flippy — skipped entirely in practice mode
   // (?practice=1), so activeTid stays null no matter what's live and no
   // tournament RPC below is ever reachable.
+  // Tournament lookups must never refetch while a run is in progress: any
+  // network/JSON work on the main thread lands as a visible hitch inside the
+  // RAF loop. Practice mode had none of these queries at all, which is
+  // exactly why it felt smoother than the tournament flow.
   const activeTidQ = useQuery({
     queryKey: ["active-tournament", "gx-flippy", tournamentId, practice],
     queryFn: () => resolveActiveTournamentId(tournamentId ?? null, ["gx-flippy", "flippy"]),
     enabled: !practice,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const activeTid = practice ? null : (activeTidQ.data ?? null);
@@ -69,6 +76,9 @@ function FlippyPage() {
     queryKey: ["my-tournament-standing", activeTid],
     queryFn: () => (activeTid ? readTournamentStanding(activeTid) : Promise.resolve(null)),
     enabled: !!activeTid,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const tournamentBestScore = myStandingQ.data?.score || 0;
@@ -79,9 +89,16 @@ function FlippyPage() {
       runIdPromiseRef.current = Promise.resolve(null);
       return;
     }
-    
-    runIdPromiseRef.current = startTournamentRun(activeTid);
+
+    // Opening the run is a network call fired from inside the animation
+    // loop's status transition — issuing it on that exact frame stalls the
+    // very first frames of the flight. Defer it off the frame; the run id is
+    // only awaited at game over, so nothing depends on it earlier.
+    runIdPromiseRef.current = new Promise<string | null>((resolve) => {
+      setTimeout(() => { void startTournamentRun(activeTid).then(resolve).catch(() => resolve(null)); }, 400);
+    });
   }, [activeTid]);
+
   
   const handleGameOver = useCallback(async (score: number) => {
     scoreRef.current = score;
