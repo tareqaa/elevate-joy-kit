@@ -47,14 +47,30 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   // Saved choice wins; otherwise detect by visitor location (NOT device language)
   useEffect(() => {
+    const html = typeof document !== "undefined" ? document.documentElement : null;
+    const clearLangGate = () => {
+      if (html) {
+        html.removeAttribute("data-lang-pending");
+        document.getElementById("gx-lang-gate")?.remove();
+      }
+    };
+
     const saved = readSaved();
-    if (saved) { setLangState(saved); return; }
-    if (typeof window === "undefined") return;
+    if (saved) {
+      clearLangGate();
+      setLangState(saved);
+      return;
+    }
+    if (typeof window === "undefined") {
+      clearLangGate();
+      return;
+    }
 
     // Cached country from a previous visit
     try {
       const cc = localStorage.getItem(GEO_KEY);
       if (cc) {
+        clearLangGate();
         const detected = langFromCountry(cc);
         setLangState(detected);
         localStorage.setItem(STORAGE_KEY, detected);
