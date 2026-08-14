@@ -155,20 +155,36 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
-  const [appReady, setAppReady] = useState(false);
+  const [appReady, setAppReady] = useState(() => typeof window !== "undefined");
 
   useEffect(() => {
-    // Wait for the auth session to be known before revealing the app.
-    supabase.auth.getSession().then(() => {
-      setAppReady(true);
-    });
+    let mounted = true;
+    const timer = setTimeout(() => {
+      if (mounted) setAppReady(true);
+    }, 100);
+
+    supabase.auth
+      .getSession()
+      .then(() => {
+        if (mounted) setAppReady(true);
+      })
+      .catch(() => {
+        if (mounted) setAppReady(true);
+      })
+      .finally(() => {
+        clearTimeout(timer);
+      });
 
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+      sub.subscription.unsubscribe();
+    };
   }, [router, queryClient]);
 
   return (
