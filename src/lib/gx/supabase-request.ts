@@ -31,6 +31,10 @@ export function supabaseFetch(key: string): typeof fetch {
   };
 }
 
+const FALLBACK_SUPABASE_URL = "https://pvwsktauvvxvmdpdzqrb.supabase.co";
+const FALLBACK_SUPABASE_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2d3NrdGF1dnZ4dm1kcGR6cXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNjM1NjUsImV4cCI6MjEwMDkzOTU2NX0.iqwL3MJAcKJsmPceBm0ZyFEQa4m3wjcsisv31I9sgO4";
+
 function supabaseEnv() {
   // In the dev/worker runtime only VITE_* vars are injected into import.meta.env,
   // while deployed servers expose the unprefixed ones on process.env. Check both.
@@ -38,16 +42,15 @@ function supabaseEnv() {
   const url =
     process.env["SUPABASE_URL"] ||
     process.env["VITE_SUPABASE_URL"] ||
-    env["VITE_SUPABASE_URL"];
+    import.meta.env.VITE_SUPABASE_URL ||
+    env["VITE_SUPABASE_URL"] ||
+    FALLBACK_SUPABASE_URL;
   const key =
     process.env["SUPABASE_PUBLISHABLE_KEY"] ||
     process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
-    env["VITE_SUPABASE_PUBLISHABLE_KEY"];
-  if (!url || !key) {
-    throw new Error(
-      "Backend is not configured: missing SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY in the server environment.",
-    );
-  }
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
+    FALLBACK_SUPABASE_KEY;
   return { url, key };
 }
 
