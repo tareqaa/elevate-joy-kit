@@ -6,6 +6,7 @@ import type { ComponentType } from "react";
 import {
   Sparkles, Megaphone, GalleryHorizontal, LayoutGrid,
   Star, ShoppingBag, ShieldCheck, MessageSquare, HelpCircle, Mail,
+  Clock, Gamepad2, Compass, Tag, Zap,
 } from "lucide-react";
 import type { SectionType } from "./types";
 import {
@@ -16,6 +17,11 @@ import {
   HeroEditor, AnnouncementEditor, CarouselEditor, CategoriesEditor,
   BestsellersEditor, ProductsEditor, TrustEditor, ReviewsEditor, FaqEditor, NewsletterEditor,
 } from "./editors";
+import { RecentlyViewedSection } from "@/components/gx/RecentlyViewedSection";
+import { BestSellingGamesSection } from "@/components/gx/BestSellingGamesSection";
+import { DiscoverGamesCategorySection } from "@/components/gx/DiscoverGamesCategorySection";
+import { DiscoverByPriceSection } from "@/components/gx/DiscoverByPriceSection";
+import { BestSellingGamepointsSection } from "@/components/gx/BestSellingGamepointsSection";
 
 export type SectionDef = {
   type: SectionType;
@@ -86,6 +92,31 @@ export const SECTION_REGISTRY: Record<SectionType, SectionDef> = {
     type: "newsletter", label: "النشرة البريدية", description: "نموذج اشتراك بالبريد", Icon: Mail,
     defaultData: { title: "اشترك بالنشرة", subtitle: "أول من يعرف عن العروض", cta: "اشترك", placeholder: "بريدك الإلكتروني" },
     Renderer: asRenderer(NewsletterRenderer), Editor: asEditor(NewsletterEditor),
+  },
+  recently_viewed: {
+    type: "recently_viewed", label: "شوهدت مؤخراً", description: "المنتجات التي تصفحها الزائر", Icon: Clock,
+    defaultData: {},
+    Renderer: asRenderer(RecentlyViewedSection), Editor: asEditor(() => null),
+  },
+  best_selling_games: {
+    type: "best_selling_games", label: "الألعاب الأكثر مبيعاً", description: "أفضل ألعاب الكمبيوتر مع إظهار الكل", Icon: Gamepad2,
+    defaultData: {},
+    Renderer: asRenderer(BestSellingGamesSection), Editor: asEditor(() => null),
+  },
+  discover_genres: {
+    type: "discover_genres", label: "اكتشف الألعاب حسب التصنيف", description: "بطاقات التصنيفات الأفقية", Icon: Compass,
+    defaultData: {},
+    Renderer: asRenderer(DiscoverGamesCategorySection), Editor: asEditor(() => null),
+  },
+  discover_price: {
+    type: "discover_price", label: "اكتشف حسب السعر", description: "بطاقات التصفح حسب الميزانية", Icon: Tag,
+    defaultData: {},
+    Renderer: asRenderer(DiscoverByPriceSection), Editor: asEditor(() => null),
+  },
+  gamepoints: {
+    type: "gamepoints", label: "نقاط وشحن الألعاب", description: "بطاقات ونقاط الألعاب الأكثر مبيعاً", Icon: Zap,
+    defaultData: {},
+    Renderer: asRenderer(BestSellingGamepointsSection), Editor: asEditor(() => null),
   },
 };
 

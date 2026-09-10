@@ -55,11 +55,10 @@ function readCachedCategories(): StorefrontCategory[] {
 
 /** Active root categories used by the homepage. New admin categories appear here automatically. */
 export function useStorefrontCategories(): StorefrontCategory[] {
-  const queryClient = useQueryClient();
   const { data } = useQuery({
     queryKey: ["storefront-root-categories"],
     initialData: readCachedCategories(),
-    staleTime: 30_000,
+    staleTime: 10 * 60_000, // 10 minutes fresh
     queryFn: async () => {
       const { data: rows, error } = await supabase
         .from("categories")
@@ -99,24 +98,13 @@ export function useStorefrontCategories(): StorefrontCategory[] {
     },
   });
 
-  useEffect(() => {
-    const channel = supabase
-      .channel("storefront-root-categories-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["storefront-root-categories"] });
-        queryClient.invalidateQueries({ queryKey: ["storefront-category-visibility"] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [queryClient]);
-
   return data ?? [];
 }
 
 export function useHiddenCategorySlugs(): Set<string> {
   const { data } = useQuery({
     queryKey: ["storefront-category-visibility"],
-    staleTime: 60_000,
+    staleTime: 10 * 60_000, // 10 minutes fresh
     queryFn: async () => {
       const { data, error } = await supabase
         .from("categories")

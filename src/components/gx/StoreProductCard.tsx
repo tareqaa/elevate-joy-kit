@@ -17,6 +17,7 @@ import {
   CrewIcon,
 } from "@/lib/gx/brand-icons";
 import { VBUCKS_TIER_THEMES, CREW_TIER_THEMES } from "@/components/gx/ProductTemplates";
+import { trackRecentlyViewed } from "@/lib/gx/recently-viewed";
 
 export type StoreProductCardProps = {
   slug: string;
@@ -190,9 +191,24 @@ export function StoreProductCard({
     lang
   );
 
+  const handleTrack = () => {
+    trackRecentlyViewed({
+      slug,
+      nameAr: name,
+      nameEn: name,
+      taglineAr: tagline || undefined,
+      taglineEn: tagline || undefined,
+      price: numPrice,
+      oldPrice: numOldPrice || undefined,
+      imageUrl: imageUrl || undefined,
+      icon: icon || undefined,
+      categorySlug: categorySlug || undefined,
+    });
+  };
+
   return (
     <div className="prod-card">
-      <Link to={finalLink as never} style={{ display: "contents" }}>
+      <Link to={finalLink as never} style={{ display: "contents" }} onClick={handleTrack}>
         <div className="prod-thumb" style={{ background: bgStyle }}>
           {renderThumbnail()}
         </div>
@@ -211,7 +227,11 @@ export function StoreProductCard({
           />
         )}
 
-        <Link to={finalLink as never} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+        <Link
+          to={finalLink as never}
+          style={{ textDecoration: "none", color: "inherit", display: "block" }}
+          onClick={handleTrack}
+        >
           <div className="prod-name">{formattedTitle}</div>
         </Link>
 

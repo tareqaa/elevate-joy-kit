@@ -403,3 +403,848 @@ html[dir="rtl"] .car-nav svg{transform:scaleX(-1);}
   .hg-bird{width:26px;}
 }
 
+/* ============================================================
+   NEW HOMEPAGE SECTIONS: RECENTLY VIEWED, GAMES, CATEGORIES, PRICE
+   ============================================================ */
+
+.gx-home-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  width: 100%;
+}
+
+.gx-section-modern {
+  padding: 44px 0 24px;
+  position: relative;
+}
+
+/* Header Row */
+.gx-section-header-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.gx-section-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gx-badge-glow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--cyan, #00e5ff);
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 999px;
+  padding: 4px 12px;
+  width: fit-content;
+}
+
+.gx-badge-icon {
+  color: var(--cyan, #00e5ff);
+}
+
+.gx-section-title {
+  font-size: 26px;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+}
+
+.gx-section-subtitle {
+  font-size: 14px;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.5;
+  max-width: 580px;
+}
+
+/* Section Controls */
+.gx-section-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gx-clear-history-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 7px 12px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.gx-clear-history-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Circular Arrow Navigation (Matching User Reference Image 1) */
+.gx-circular-arrow-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gx-circular-nav-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #252830;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  flex-shrink: 0;
+}
+
+.gx-circular-nav-btn:hover {
+  background: #343844;
+  border-color: rgba(0, 229, 255, 0.4);
+  color: #00e5ff;
+  transform: scale(1.08);
+  box-shadow: 0 8px 24px rgba(0, 229, 255, 0.2);
+}
+
+.gx-circular-nav-btn:active {
+  transform: scale(0.95);
+}
+
+/* Horizontal Scroll Carousel */
+.gx-carousel-scroll-container {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 10px 4px 20px;
+  scroll-snap-type: x mandatory;
+}
+
+.gx-carousel-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Recently Viewed Card */
+.gx-recent-card {
+  flex: 0 0 240px;
+  scroll-snap-align: start;
+  background: #151821;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  overflow: hidden;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.gx-recent-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(0, 229, 255, 0.45);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 0 24px rgba(0, 229, 255, 0.15);
+}
+
+.gx-recent-card-thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/11;
+  background: #0f121a;
+  overflow: hidden;
+}
+
+.gx-recent-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.gx-recent-card:hover .gx-recent-card-img {
+  transform: scale(1.08);
+}
+
+.gx-recent-card-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.1), transparent 70%);
+}
+
+.gx-recent-discount-badge {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+}
+
+.gx-recent-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.gx-recent-card:hover .gx-recent-card-overlay {
+  opacity: 1;
+}
+
+.gx-recent-quick-add-btn {
+  background: var(--cyan, #00e5ff);
+  color: #0b0f19;
+  border: none;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 9px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(0, 229, 255, 0.4);
+}
+
+.gx-recent-quick-add-btn:hover {
+  transform: scale(1.06);
+  background: #ffffff;
+}
+
+.gx-recent-card-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.gx-recent-card-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 6px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gx-recent-card-tagline {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0 0 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gx-recent-card-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gx-recent-price-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.gx-recent-price-current {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--cyan, #00e5ff);
+}
+
+.gx-recent-price-old {
+  font-size: 12px;
+  color: #64748b;
+  text-decoration: line-through;
+}
+
+.gx-recent-action-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.gx-recent-card:hover .gx-recent-action-icon {
+  background: var(--cyan, #00e5ff);
+  color: #0b0f19;
+  transform: translateX(-3px);
+}
+
+/* ============================================================
+   DISCOVER GAMES BY CATEGORY (Matching User Reference Image 2)
+   ============================================================ */
+
+.gx-genre-cards-scroll {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  padding: 6px 2px 16px;
+}
+
+.gx-genre-cards-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.gx-genre-pill-card {
+  flex: 0 0 112px;
+  height: 94px;
+  background: #212328;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  text-decoration: none;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.gx-genre-pill-card:hover {
+  background: #2a2e37;
+  border-color: var(--genre-color, #00e5ff);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4), 0 0 18px rgba(0, 229, 255, 0.16);
+}
+
+.gx-genre-icon-box {
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.gx-genre-pill-card:hover .gx-genre-icon-box {
+  transform: scale(1.15);
+  color: var(--genre-color, #00e5ff);
+}
+
+.gx-genre-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #e2e8f0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.gx-genre-pill-card:hover .gx-genre-name {
+  color: #ffffff;
+}
+
+/* ============================================================
+   DISCOVER BY PRICE (Matching User Reference Image 3)
+   ============================================================ */
+
+.gx-price-tiers-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
+  padding: 8px 0 16px;
+}
+
+@media (max-width: 1024px) {
+  .gx-price-tiers-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .gx-price-tiers-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.gx-price-tier-card {
+  background: #24262b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-decoration: none;
+  transition: all 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.gx-price-tier-card:hover {
+  background: #2d3038;
+  border-color: var(--tier-accent, #00e5ff);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38), 0 0 22px rgba(0, 229, 255, 0.18);
+}
+
+.gx-price-tier-top {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+}
+
+.gx-price-tier-amount {
+  font-size: 20px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+}
+
+.gx-price-tier-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 120%, var(--tier-accent, #00e5ff), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.gx-price-tier-card:hover .gx-price-tier-glow {
+  opacity: 0.18;
+}
+
+/* ============================================================
+   BEST SELLING GAMES POSTER SECTION
+   ============================================================ */
+
+.gx-game-poster-card {
+  flex: 0 0 250px;
+  scroll-snap-align: start;
+  background: #151821;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  overflow: hidden;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.gx-game-poster-card:hover {
+  transform: translateY(-7px);
+  border-color: rgba(0, 229, 255, 0.45);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 0 0 26px rgba(0, 229, 255, 0.16);
+}
+
+.gx-game-card-cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3/4;
+  background: #0d1017;
+  overflow: hidden;
+}
+
+.gx-game-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.45s ease;
+}
+
+.gx-game-poster-card:hover .gx-game-card-img {
+  transform: scale(1.08);
+}
+
+.gx-game-badges-layer {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  z-index: 2;
+}
+
+.gx-game-feature-badge {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  color: #ffd54a;
+  border: 1px solid rgba(255, 213, 74, 0.35);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.gx-game-discount-badge {
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+}
+
+.gx-game-platform-pill {
+  position: absolute;
+  bottom: 10px;
+  inset-inline-start: 10px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  z-index: 2;
+}
+
+.gx-game-card-hover-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 3;
+}
+
+.gx-game-poster-card:hover .gx-game-card-hover-overlay {
+  opacity: 1;
+}
+
+.gx-game-quick-add-btn {
+  background: var(--cyan, #00e5ff);
+  color: #0b0f19;
+  border: none;
+  font-size: 13.5px;
+  font-weight: 800;
+  padding: 10px 22px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 18px rgba(0, 229, 255, 0.45);
+}
+
+.gx-game-quick-add-btn:hover {
+  transform: scale(1.06);
+  background: #ffffff;
+}
+
+.gx-game-card-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.gx-game-card-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 4px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gx-game-card-desc {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0 0 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gx-game-card-pricing {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gx-game-price-stack {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.gx-game-price-current {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--cyan, #00e5ff);
+}
+
+.gx-game-price-old {
+  font-size: 12.5px;
+  color: #64748b;
+  text-decoration: line-through;
+}
+
+.gx-game-view-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.gx-game-poster-card:hover .gx-game-view-icon {
+  background: var(--cyan, #00e5ff);
+  color: #0b0f19;
+  transform: translateX(-3px);
+}
+
+/* View All Games Button */
+.gx-view-all-games-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+.gx-view-all-games-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 34px;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.12), rgba(139, 92, 246, 0.14));
+  border: 1.5px solid rgba(0, 229, 255, 0.35);
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gx-view-all-games-btn:hover {
+  background: linear-gradient(135deg, #00e5ff, #8b5cf6);
+  color: #0b0f19;
+  border-color: #00e5ff;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(0, 229, 255, 0.4);
+}
+
+.gx-view-all-sparkle {
+  color: #ffd54a;
+  transition: transform 0.2s;
+}
+
+.gx-view-all-games-btn:hover .gx-view-all-sparkle {
+  transform: rotate(20deg) scale(1.2);
+  color: #0b0f19;
+}
+
+.gx-view-all-arrow {
+  font-size: 20px;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+
+.gx-view-all-games-btn:hover .gx-view-all-arrow {
+  transform: translateX(-4px);
+}
+
+/* ============================================================
+   BEST SELLING GAMEPOINTS SECTION
+   ============================================================ */
+
+.gx-gamepoint-card {
+  flex: 0 0 280px;
+  scroll-snap-align: start;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 20px;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.gx-gamepoint-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(0, 229, 255, 0.4);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+}
+
+.gx-gamepoint-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.gx-gamepoint-icon-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  overflow: hidden;
+}
+
+.gx-gamepoint-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.gx-gamepoint-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffd54a;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 213, 74, 0.3);
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+
+.gx-gamepoint-card-body {
+  margin-bottom: 18px;
+}
+
+.gx-gamepoint-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 6px;
+  line-height: 1.35;
+}
+
+.gx-gamepoint-desc {
+  font-size: 12.5px;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.gx-gamepoint-card-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gx-gamepoint-price-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.gx-gamepoint-price-label {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.gx-gamepoint-price-val {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--cyan, #00e5ff);
+}
+
+.gx-gamepoint-arrow-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.gx-gamepoint-card:hover .gx-gamepoint-arrow-btn {
+  background: var(--cyan, #00e5ff);
+  color: #0b0f19;
+  transform: translateX(-3px);
+}
+
+@media (max-width: 768px) {
+  .gx-section-title {
+    font-size: 21px;
+  }
+  .gx-hide-mobile {
+    display: none;
+  }
+  .gx-recent-card {
+    flex: 0 0 200px;
+  }
+  .gx-game-poster-card {
+    flex: 0 0 200px;
+  }
+  .gx-gamepoint-card {
+    flex: 0 0 240px;
+  }
+}
+
+

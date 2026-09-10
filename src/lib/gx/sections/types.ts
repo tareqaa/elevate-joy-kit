@@ -14,7 +14,12 @@ export type SectionType =
   | "trust"
   | "reviews"
   | "faq"
-  | "newsletter";
+  | "newsletter"
+  | "recently_viewed"
+  | "best_selling_games"
+  | "discover_genres"
+  | "discover_price"
+  | "gamepoints";
 
 // Per-section visual controls applied by the wrapper (no code editing).
 export type SectionAnimation = "none" | "fade" | "slide-up" | "slide-down" | "slide-left" | "slide-right" | "zoom-in";
@@ -177,15 +182,20 @@ export const DEFAULT_HOME_LAYOUT: HomeLayout = {
   version: 1,
   theme: DEFAULT_THEME,
   sections: [
-    { id: "sec_hero",         type: "hero",         enabled: true,  data: {} },
-    { id: "sec_announcement", type: "announcement", enabled: false, data: { text: "", link: "", bg: "#0f172a", color: "#ffffff" } },
-    { id: "sec_carousel",     type: "carousel",     enabled: true,  data: {} },
-    { id: "sec_categories",   type: "categories",   enabled: true,  data: {} },
-    { id: "sec_bestsellers",  type: "bestsellers",  enabled: true,  data: {} },
-    { id: "sec_trust",        type: "trust",        enabled: true,  data: {} },
-    { id: "sec_reviews",      type: "reviews",      enabled: true,  data: {} },
-    { id: "sec_faq",          type: "faq",          enabled: false, data: {} },
-    { id: "sec_newsletter",   type: "newsletter",   enabled: false, data: {} },
+    { id: "sec_hero",               type: "hero",               enabled: true,  data: {} },
+    { id: "sec_announcement",       type: "announcement",       enabled: false, data: { text: "", link: "", bg: "#0f172a", color: "#ffffff" } },
+    { id: "sec_carousel",           type: "carousel",           enabled: true,  data: {} },
+    { id: "sec_recently_viewed",    type: "recently_viewed",    enabled: true,  data: {} },
+    { id: "sec_bestsellers",        type: "bestsellers",        enabled: true,  data: {} },
+    { id: "sec_best_selling_games", type: "best_selling_games", enabled: true,  data: {} },
+    { id: "sec_discover_genres",    type: "discover_genres",    enabled: true,  data: {} },
+    { id: "sec_discover_price",     type: "discover_price",     enabled: true,  data: {} },
+    { id: "sec_gamepoints",         type: "gamepoints",         enabled: true,  data: {} },
+    { id: "sec_categories",         type: "categories",         enabled: true,  data: {} },
+    { id: "sec_trust",              type: "trust",              enabled: true,  data: {} },
+    { id: "sec_reviews",            type: "reviews",            enabled: true,  data: {} },
+    { id: "sec_faq",                type: "faq",                enabled: false, data: {} },
+    { id: "sec_newsletter",         type: "newsletter",         enabled: false, data: {} },
   ],
 };
 

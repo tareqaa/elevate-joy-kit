@@ -120,7 +120,17 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    async function load() {
+    const TS_KEY = "gx_site_settings_v2_ts";
+    const CACHE_VALID_MS = 10 * 60 * 1000; // 10 minutes cache
+
+    async function load(force = false) {
+      if (!force && typeof window !== "undefined") {
+        const lastFetched = Number(localStorage.getItem(TS_KEY) || "0");
+        if (Date.now() - lastFetched < CACHE_VALID_MS) {
+          return; // Still fresh, avoid querying Supabase
+        }
+      }
+
       const { data } = await supabase.from("site_settings").select("key,value");
       if (!mounted || !data) return;
       const merged: SiteSettings = { ...DEFAULTS };
@@ -155,15 +165,14 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
       applyCatalogPrices(merged.catalog_prices);
       cacheCatalogPrices(merged.catalog_prices);
       setSettings(merged);
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify(merged)); } catch { /* noop */ }
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(merged));
+        localStorage.setItem(TS_KEY, String(Date.now()));
+      } catch { /* noop */ }
     }
     load();
 
-    const ch = supabase
-      .channel("site-settings-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "site_settings" }, () => load())
-      .subscribe();
-    return () => { mounted = false; supabase.removeChannel(ch); };
+    return () => { mounted = false; };
   }, []);
 
   const value = useMemo(() => settings, [settings]);

@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { SECTION_REGISTRY } from "@/lib/gx/sections/registry";
-import { containerMaxWidth, sectionWrapperStyle, themeToCssVars, type HomeLayout } from "@/lib/gx/sections/types";
+import { containerMaxWidth, sectionWrapperStyle, themeToCssVars, type HomeLayout, type Section } from "@/lib/gx/sections/types";
 import { AnimatedSection } from "@/components/gx/AnimatedSection";
 
 
@@ -43,7 +43,54 @@ function Home() {
   }, [isDraftPreview]);
 
   const layout = draftLayout ?? home_layout;
-  const sections = layout.sections.filter((s) => s.enabled);
+
+  // Ensure sections render in the exact sequence requested by the user:
+  // 1. Hero / Carousel
+  // 2. Recently Viewed (recently_viewed)
+  // 3. Best Selling in Store (bestsellers)
+  // 4. Best Selling Games (best_selling_games)
+  // 5. Discover Games By Category (discover_genres)
+  // 6. Discover By Price (discover_price)
+  // 7. Best Selling Gamepoints (gamepoints)
+  // 8. Categories Grid & Trust & Reviews
+  const sections = useMemo(() => {
+    const rawList = layout?.sections || [];
+
+    const hasRecent = rawList.some((s) => s.type === "recently_viewed");
+    const hasBestGames = rawList.some((s) => s.type === "best_selling_games");
+    const hasGenres = rawList.some((s) => s.type === "discover_genres");
+    const hasPrice = rawList.some((s) => s.type === "discover_price");
+    const hasGamepoints = rawList.some((s) => s.type === "gamepoints");
+
+    if (hasRecent && hasBestGames && hasGenres && hasPrice && hasGamepoints) {
+      return rawList.filter((s) => s.enabled);
+    }
+
+    const topSections = rawList.filter((s) => ["hero", "announcement", "carousel"].includes(s.type));
+    const bestsellersSection = rawList.find((s) => s.type === "bestsellers") ?? {
+      id: "sec_bestsellers",
+      type: "bestsellers" as const,
+      enabled: true,
+      data: {},
+    };
+    const remainingSections = rawList.filter(
+      (s) => !["hero", "announcement", "carousel", "bestsellers"].includes(s.type)
+    );
+
+    const composed: Section[] = [
+      ...topSections,
+      { id: "sec_recently_viewed", type: "recently_viewed", enabled: true, data: {} },
+      bestsellersSection,
+      { id: "sec_best_selling_games", type: "best_selling_games", enabled: true, data: {} },
+      { id: "sec_discover_genres", type: "discover_genres", enabled: true, data: {} },
+      { id: "sec_discover_price", type: "discover_price", enabled: true, data: {} },
+      { id: "sec_gamepoints", type: "gamepoints", enabled: true, data: {} },
+      ...remainingSections,
+    ];
+
+    return composed.filter((s) => s.enabled);
+  }, [layout.sections]);
+
   const themeVars = themeToCssVars(layout.theme);
 
   return (

@@ -123,7 +123,7 @@ type CacheEntry<T> = { data: T; expiresAt: number };
 const productCache = new Map<string, CacheEntry<CatalogProduct | null>>();
 const categoryCache = new Map<string, CacheEntry<CatalogCategory | null>>();
 let overridesCache: CacheEntry<Overrides> = { data: {}, expiresAt: 0 };
-const CACHE_TTL_MS = 30_000; // 30 seconds server-side cache to absorb concurrent traffic spikes
+const CACHE_TTL_MS = 5 * 60_000; // 5 minutes server-side cache to absorb traffic and prevent database egress
 
 /** Invalidate server catalog cache (e.g. on admin catalog updates) */
 export function invalidateCatalogCache(slug?: string) {
@@ -206,25 +206,25 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
     const resolvedVariants: CatalogVariant[] =
       variants && variants.length > 0
         ? variants.map((v: Record<string, any>) => {
-            const o = v.cart_id ? overrides[v.cart_id] : undefined;
-            const price =
-              typeof o?.price === "number" && o.price >= 0 ? o.price : Number(v.price_jod) || 0;
-            const rawOld = o && "oldPrice" in o ? o.oldPrice : v.old_price_jod;
-            return {
-              cartId: v.cart_id ?? "",
-              labelAr: v.label_ar,
-              labelEn: v.label_en || v.label_ar,
-              price,
-              oldPrice: typeof rawOld === "number" && rawOld > 0 ? Number(rawOld) : null,
-              tagAr: v.tag_ar ?? null,
-              tagEn: v.tag_en ?? v.tag_ar ?? null,
-              planGroup: v.plan_group ?? null,
-              region: v.region ?? null,
-              deliveryType: v.delivery_type ?? null,
-            };
-          })
+          const o = v.cart_id ? overrides[v.cart_id] : undefined;
+          const price =
+            typeof o?.price === "number" && o.price >= 0 ? o.price : Number(v.price_jod) || 0;
+          const rawOld = o && "oldPrice" in o ? o.oldPrice : v.old_price_jod;
+          return {
+            cartId: v.cart_id ?? "",
+            labelAr: v.label_ar,
+            labelEn: v.label_en || v.label_ar,
+            price,
+            oldPrice: typeof rawOld === "number" && rawOld > 0 ? Number(rawOld) : null,
+            tagAr: v.tag_ar ?? null,
+            tagEn: v.tag_en ?? v.tag_ar ?? null,
+            planGroup: v.plan_group ?? null,
+            region: v.region ?? null,
+            deliveryType: v.delivery_type ?? null,
+          };
+        })
         : rawBasePrice != null && rawBasePrice > 0
-        ? [
+          ? [
             {
               cartId: p.slug,
               labelAr: p.name_ar,
@@ -241,7 +241,7 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
               deliveryType: p.delivery_type ?? "code",
             },
           ]
-        : [];
+          : [];
 
     const product: CatalogProduct = {
       slug: p.slug,
@@ -324,28 +324,28 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
         .order("sort_order", { ascending: true }),
       c.parent_id
         ? supabase
-            .from("categories")
-            .select("slug, name_ar, name_en")
-            .eq("id", c.parent_id)
-            .maybeSingle()
+          .from("categories")
+          .select("slug, name_ar, name_en")
+          .eq("id", c.parent_id)
+          .maybeSingle()
         : Promise.resolve({ data: null }),
       c.parent_id
         ? supabase
-            .from("categories")
-            .select("id, slug, name_ar, name_en, icon, icon_url, theme_gradient, sort_order")
-            .eq("parent_id", c.parent_id)
-            .eq("is_active", true)
-            .order("sort_order", { ascending: true })
+          .from("categories")
+          .select("id, slug, name_ar, name_en, icon, icon_url, theme_gradient, sort_order")
+          .eq("parent_id", c.parent_id)
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true })
         : Promise.resolve({ data: [] }),
     ]);
 
     const kidIds = (kids ?? []).map((k: Record<string, any>) => k.id);
     const { data: subProds } = kidIds.length
       ? await supabase
-          .from("products")
-          .select("slug, category_id, icon, icon_image_url, thumb_bg, is_active")
-          .in("category_id", kidIds)
-          .eq("is_active", true)
+        .from("products")
+        .select("slug, category_id, icon, icon_image_url, thumb_bg, is_active")
+        .in("category_id", kidIds)
+        .eq("is_active", true)
       : { data: [] as Record<string, any>[] };
 
     const byCat = new Map<string, Record<string, any>>();
@@ -364,10 +364,10 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
       iconImage: c.icon_url ?? null,
       parent: pRow
         ? {
-            slug: pRow.slug,
-            nameAr: pRow.name_ar,
-            nameEn: pRow.name_en || pRow.name_ar,
-          }
+          slug: pRow.slug,
+          nameAr: pRow.name_ar,
+          nameEn: pRow.name_en || pRow.name_ar,
+        }
         : null,
       siblings: (sibRows ?? []).map((s: Record<string, any>) => ({
         slug: s.slug,
@@ -531,68 +531,68 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           (p.slug === "playstation"
             ? "PlayStation"
             : p.slug === "xbox"
-            ? "Xbox Live"
-            : p.slug === "itunes"
-            ? "Apple"
-            : p.slug === "google-play"
-            ? "Google Play"
-            : "Gift Cards");
+              ? "Xbox Live"
+              : p.slug === "itunes"
+                ? "Apple"
+                : p.slug === "google-play"
+                  ? "Google Play"
+                  : "Gift Cards");
 
         const nameAr =
           p.slug === "playstation"
             ? "بطاقات بلايستيشن"
             : p.slug === "xbox"
-            ? "بطاقات إكسبوكس"
-            : p.slug === "itunes"
-            ? "بطاقات آبل وآيتونز"
-            : p.slug === "google-play"
-            ? "بطاقات جوجل بلاي"
-            : p.name_ar;
+              ? "بطاقات إكسبوكس"
+              : p.slug === "itunes"
+                ? "بطاقات آبل وآيتونز"
+                : p.slug === "google-play"
+                  ? "بطاقات جوجل بلاي"
+                  : p.name_ar;
 
         const nameEn =
           p.slug === "playstation"
             ? "PlayStation Gift Cards"
             : p.slug === "xbox"
-            ? "Xbox Gift Cards"
-            : p.slug === "itunes"
-            ? "iTunes & Apple Gift Cards"
-            : p.slug === "google-play"
-            ? "Google Play Gift Cards"
-            : p.name_en || p.name_ar;
+              ? "Xbox Gift Cards"
+              : p.slug === "itunes"
+                ? "iTunes & Apple Gift Cards"
+                : p.slug === "google-play"
+                  ? "Google Play Gift Cards"
+                  : p.name_en || p.name_ar;
 
         const taglineAr =
           p.slug === "playstation"
             ? "شحن رصيد رسمي للحسابات الأمريكية، السعودية، والإماراتية"
             : p.slug === "xbox"
-            ? "شحن رصيد إكسبوكس وجيم باس للحسابات التركية والأمريكية"
-            : p.slug === "itunes"
-            ? "شحن رصيد متجر App Store وآبل للحسابات التركية"
-            : p.slug === "google-play"
-            ? "بطاقات شحن رقمية لمتجر Google Play للأندرويد"
-            : (p.tagline_ar || "بطاقات شحن رقمية فورية معتمدة");
+              ? "شحن رصيد إكسبوكس وجيم باس للحسابات التركية والأمريكية"
+              : p.slug === "itunes"
+                ? "شحن رصيد متجر App Store وآبل للحسابات التركية"
+                : p.slug === "google-play"
+                  ? "بطاقات شحن رقمية لمتجر Google Play للأندرويد"
+                  : (p.tagline_ar || "بطاقات شحن رقمية فورية معتمدة");
 
         const iconImage =
           p.slug === "playstation"
             ? "/app/assets/img/playstation-logo.svg"
             : p.slug === "xbox"
-            ? "/app/assets/img/xbox-logo.svg"
-            : p.slug === "itunes"
-            ? "/app/assets/img/itunes-logo.svg"
-            : p.slug === "google-play"
-            ? "/app/assets/img/googleplay-logo.png"
-            : (p.icon_image_url || p.image_url || null);
+              ? "/app/assets/img/xbox-logo.svg"
+              : p.slug === "itunes"
+                ? "/app/assets/img/itunes-logo.svg"
+                : p.slug === "google-play"
+                  ? "/app/assets/img/googleplay-logo.png"
+                  : (p.icon_image_url || p.image_url || null);
 
         const thumbBg =
           p.card_gradient ||
           (p.slug === "playstation"
             ? "linear-gradient(135deg,#0a3d91,#0066cc 45%,#00a3ff)"
             : p.slug === "xbox"
-            ? "linear-gradient(135deg,#0e4d0e,#107c10 45%,#4fdc4f)"
-            : p.slug === "itunes"
-            ? "linear-gradient(135deg,#7b2ff7,#f107a3 55%,#ff5c8a)"
-            : p.slug === "google-play"
-            ? "linear-gradient(135deg,#1a73e8,#34a853 35%,#fbbc04 70%,#ea4335)"
-            : p.thumb_bg || null);
+              ? "linear-gradient(135deg,#0e4d0e,#107c10 45%,#4fdc4f)"
+              : p.slug === "itunes"
+                ? "linear-gradient(135deg,#7b2ff7,#f107a3 55%,#ff5c8a)"
+                : p.slug === "google-play"
+                  ? "linear-gradient(135deg,#1a73e8,#34a853 35%,#fbbc04 70%,#ea4335)"
+                  : p.thumb_bg || null);
 
         items.push({
           id: p.id,

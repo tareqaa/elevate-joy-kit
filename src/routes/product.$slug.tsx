@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { getCatalogProduct } from "@/lib/gx/catalog.functions";
 import { ProductTemplate } from "@/components/gx/ProductTemplates";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
+import { trackRecentlyViewed } from "@/lib/gx/recently-viewed";
 
 export const Route = createFileRoute("/product/$slug")({
   loader: async ({ params }) => {
@@ -42,6 +44,24 @@ export const Route = createFileRoute("/product/$slug")({
 
 function ProductPage() {
   const { product } = Route.useLoaderData();
+
+  useEffect(() => {
+    if (product) {
+      trackRecentlyViewed({
+        slug: product.slug,
+        nameAr: product.nameAr,
+        nameEn: product.nameEn,
+        taglineAr: product.taglineAr || undefined,
+        taglineEn: product.taglineEn || undefined,
+        price: product.basePriceJod || 0,
+        oldPrice: product.oldPriceJod || undefined,
+        imageUrl: product.imageUrl || undefined,
+        icon: product.icon || undefined,
+        categorySlug: product.categoryNameEn?.toLowerCase() || undefined,
+      });
+    }
+  }, [product]);
+
   return (
     <StoreShell>
       <ProductTemplate product={product} />

@@ -148,15 +148,38 @@ function AllProductsPage() {
   const [selectedPricePreset, setSelectedPricePreset] = useState<string>("all");
   const [customMinPrice, setCustomMinPrice] = useState<string>("");
   const [customMaxPrice, setCustomMaxPrice] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // 5x5 Pagination State (25 items per page)
   const ITEMS_PER_PAGE = 25;
   const [currentPage, setCurrentPage] = useState<number>(1);
 
+  // Sync state with URL search query params on load and navigation
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const catParam = params.get("category");
+    const sortParam = params.get("sort");
+    const searchParam = params.get("search");
+    const maxPriceParam = params.get("max_price");
+    const minPriceParam = params.get("min_price");
+    const delivParam = params.get("delivery_type");
+
+    if (catParam) setSelectedCat(catParam);
+    if (sortParam) setSortBy(sortParam);
+    if (searchParam) setSearchQuery(searchParam);
+    if (maxPriceParam) {
+      setCustomMaxPrice(maxPriceParam);
+      setSelectedPricePreset("all");
+    }
+    if (minPriceParam) setCustomMinPrice(minPriceParam);
+    if (delivParam) setSelectedDeliveryType(delivParam);
+  }, []);
+
   // Reset pagination on filter or sort change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCat, sortBy, selectedDeliveryType, selectedPricePreset, customMinPrice, customMaxPrice]);
+  }, [selectedCat, sortBy, selectedDeliveryType, selectedPricePreset, customMinPrice, customMaxPrice, searchQuery]);
 
   // Compute category counts
   const categoryTabsWithCounts = useMemo(() => {
@@ -166,9 +189,35 @@ function AllProductsPage() {
     })).filter((tab) => tab.id === "all" || tab.count > 0);
   }, [products]);
 
+  // Top selling games slug priority for "popular" sort
+  const TOP_GAME_SLUGS: string[] = [
+    "ea-fc-27-pc",
+    "gta-v-enhanced-pc",
+    "red-dead-redemption-2",
+    "helldivers-2",
+    "minecraft-java-bedrock",
+    "mortal-kombat-11-ultimate",
+    "forza-horizon-6-pc",
+    "resident-evil-4-remake",
+    "arc-raiders",
+    "batman-arkham-collection",
+    "dark-souls-3-deluxe",
+    "bioshock-the-collection",
+    "fortnite",
+  ];
+
   // Filter and sort products
   const displayedProducts = useMemo(() => {
     let list = [...products];
+
+    // 0. Search Query Filter (e.g. from genre cards or search input)
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((p) => {
+        const text = `${p.nameAr || ""} ${p.nameEn || ""} ${p.taglineAr || ""} ${p.taglineEn || ""} ${p.slug || ""} ${p.categorySlug || ""} ${p.parentCategorySlug || ""}`.toLowerCase();
+        return text.includes(q);
+      });
+    }
 
     // 1. Category Filter
     if (selectedCat !== "all") {
@@ -222,11 +271,21 @@ function AllProductsPage() {
       if (sortBy === "date_asc") return dateA - dateB;
       if (sortBy === "alpha_asc") return nameA.localeCompare(nameB, "ar");
       if (sortBy === "alpha_desc") return nameB.localeCompare(nameA, "ar");
+
+      // Bestseller / Popular sort
+      if (sortBy === "popular") {
+        const rankA = TOP_GAME_SLUGS.indexOf(a.slug);
+        const rankB = TOP_GAME_SLUGS.indexOf(b.slug);
+        if (rankA !== -1 && rankB !== -1) return rankA - rankB;
+        if (rankA !== -1) return -1;
+        if (rankB !== -1) return 1;
+      }
+
       return (a.sortOrder || 0) - (b.sortOrder || 0);
     });
 
     return list;
-  }, [products, selectedCat, sortBy, selectedDeliveryType, selectedPricePreset, customMinPrice, customMaxPrice]);
+  }, [products, selectedCat, sortBy, selectedDeliveryType, selectedPricePreset, customMinPrice, customMaxPrice, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(displayedProducts.length / ITEMS_PER_PAGE));
 
@@ -387,6 +446,25 @@ function AllProductsPage() {
                       setCustomMaxPrice("");
                     }}
                     title={ar ? "إلغاء فلتر السعر" : "Clear price filter"}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Active Search Query Pill */}
+              {searchQuery.trim() !== "" && (
+                <div
+                  className="cat-toolbar-filter-pill"
+                  style={{ borderColor: "#00e5ff", background: "rgba(0, 229, 255, 0.1)" }}
+                >
+                  <span style={{ color: "#00e5ff" }}>🔍 {ar ? "البحث:" : "Search:"}</span>
+                  <strong className="filter-value">{searchQuery}</strong>
+                  <button
+                    type="button"
+                    className="reset-btn"
+                    onClick={() => setSearchQuery("")}
+                    title={ar ? "إلغاء البحث" : "Clear search"}
                   >
                     ✕
                   </button>
