@@ -211,6 +211,12 @@ export function StoreProductCard({
       <Link to={finalLink as never} style={{ display: "contents" }} onClick={handleTrack}>
         <div className="prod-thumb" style={{ background: bgStyle }}>
           {renderThumbnail()}
+          <div className="prod-hover-overlay">
+            <span className="prod-hover-view-details">
+              <span>{lang === "en" ? "View Details" : "عرض التفاصيل"}</span>
+              <span className="prod-hover-arrow">{lang === "en" ? "›" : "‹"}</span>
+            </span>
+          </div>
         </div>
       </Link>
 

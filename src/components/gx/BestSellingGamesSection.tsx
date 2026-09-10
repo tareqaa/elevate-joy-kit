@@ -1,127 +1,159 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Sparkles, Gamepad2 } from "lucide-react";
 import { useLang } from "@/lib/gx/i18n";
 import { StoreProductCard } from "@/components/gx/StoreProductCard";
+import { supabase } from "@/integrations/supabase/client";
 
-export interface GameCatalogItem {
+export interface RealGameProduct {
+  id?: string;
   slug: string;
-  nameAr: string;
-  nameEn: string;
-  price: number;
-  oldPrice?: number;
-  imageUrl: string;
+  name_ar: string;
+  name_en?: string | null;
+  base_price_jod: number;
+  old_price_jod?: number | null;
+  delivery_type: string;
   platform: string;
+  image_url: string;
+  purchases_count?: number;
 }
 
-export const BEST_SELLING_GAMES_LIST: GameCatalogItem[] = [
+// Initial fallback with real data from database
+export const INITIAL_REAL_GAMES: RealGameProduct[] = [
   {
     slug: "ea-fc-27-pc",
-    nameAr: "EA Sports FC 27",
-    nameEn: "EA Sports FC 27",
-    price: 26.0,
-    oldPrice: 35.0,
-    imageUrl: "/app/assets/img/catalog/ea-fc-27-pc.png",
-    platform: "Steam (PC)",
+    name_ar: "EA Sports FC 27 | حساب ستيم خاص بك (PC)",
+    name_en: "EA Sports FC 27 (Steam Account)",
+    base_price_jod: 26.0,
+    delivery_type: "account",
+    platform: "Steam / PC",
+    image_url: "/app/assets/img/catalog/ea-fc-27-pc.png",
   },
   {
     slug: "gta-v-enhanced-pc",
-    nameAr: "Grand Theft Auto V Enhanced",
-    nameEn: "GTA V Enhanced",
-    price: 11.0,
-    oldPrice: 19.0,
-    imageUrl: "/app/assets/img/catalog/gta-v-enhanced-pc.jpg",
-    platform: "Rockstar (PC)",
+    name_ar: "Grand Theft Auto V (GTA V) Enhanced | كود روكستار (PC)",
+    name_en: "Grand Theft Auto V Enhanced",
+    base_price_jod: 11.0,
+    delivery_type: "code",
+    platform: "Rockstar Launcher",
+    image_url: "/app/assets/img/catalog/gta-v-enhanced-pc.jpg",
   },
   {
     slug: "red-dead-redemption-2",
-    nameAr: "Red Dead Redemption 2 (RDR2)",
-    nameEn: "Red Dead Redemption 2",
-    price: 18.5,
-    oldPrice: 28.0,
-    imageUrl: "/app/assets/img/catalog/red-dead-redemption-2.jpg",
-    platform: "Rockstar (PC)",
+    name_ar: "Red Dead Redemption 2 (RDR2) | كود روكستار (PC)",
+    name_en: "Red Dead Redemption 2",
+    base_price_jod: 18.5,
+    delivery_type: "code",
+    platform: "Rockstar Launcher",
+    image_url: "/app/assets/img/catalog/red-dead-redemption-2.jpg",
   },
   {
     slug: "helldivers-2",
-    nameAr: "Helldivers 2",
-    nameEn: "Helldivers 2",
-    price: 27.0,
-    oldPrice: 35.0,
-    imageUrl: "/app/assets/img/catalog/helldivers-2.webp",
-    platform: "Steam (PC)",
-  },
-  {
-    slug: "minecraft-java-bedrock",
-    nameAr: "Minecraft: Java & Bedrock Edition",
-    nameEn: "Minecraft: Java & Bedrock",
-    price: 17.0,
-    oldPrice: 24.0,
-    imageUrl: "/app/assets/img/catalog/minecraft-java-bedrock.png",
-    platform: "Windows (PC)",
-  },
-  {
-    slug: "mortal-kombat-11-ultimate",
-    nameAr: "Mortal Kombat 11: Ultimate",
-    nameEn: "Mortal Kombat 11: Ultimate",
-    price: 5.5,
-    oldPrice: 12.0,
-    imageUrl: "/app/assets/img/catalog/mortal-kombat-11-ultimate.jpg",
-    platform: "Steam (PC)",
+    name_ar: "Helldivers 2 | كود ستيم (PC)",
+    name_en: "Helldivers 2",
+    base_price_jod: 27.0,
+    delivery_type: "code",
+    platform: "Steam / PC",
+    image_url: "/app/assets/img/catalog/helldivers-2.webp",
   },
   {
     slug: "forza-horizon-6-pc",
-    nameAr: "Forza Horizon 6",
-    nameEn: "Forza Horizon 6",
-    price: 30.0,
-    oldPrice: 40.0,
-    imageUrl: "/app/assets/img/catalog/forza-horizon-6-pc.png",
-    platform: "Steam (PC)",
+    name_ar: "Forza Horizon 6 | حساب ستيم خاص بك (PC)",
+    name_en: "Forza Horizon 6 (Steam Account)",
+    base_price_jod: 30.0,
+    delivery_type: "account",
+    platform: "Steam / PC",
+    image_url: "/app/assets/img/catalog/forza-horizon-6-pc.png",
   },
   {
     slug: "resident-evil-4-remake",
-    nameAr: "Resident Evil 4 Remake",
-    nameEn: "Resident Evil 4 Remake",
-    price: 15.0,
-    oldPrice: 24.0,
-    imageUrl: "/app/assets/img/catalog/resident-evil-4-remake.png",
-    platform: "Steam (PC)",
+    name_ar: "Resident Evil 4 Remake | كود ستيم (PC)",
+    name_en: "Resident Evil 4 Remake",
+    base_price_jod: 15.0,
+    delivery_type: "code",
+    platform: "Steam / PC",
+    image_url: "/app/assets/img/catalog/resident-evil-4-remake.png",
   },
   {
-    slug: "arc-raiders",
-    nameAr: "ARC Raiders",
-    nameEn: "ARC Raiders",
-    price: 23.0,
-    oldPrice: 30.0,
-    imageUrl: "/app/assets/img/catalog/arc-raiders.jpg",
-    platform: "Steam (PC)",
+    slug: "minecraft-java-bedrock",
+    name_ar: "Minecraft: Java & Bedrock Edition | كود ويندوز ستور (PC)",
+    name_en: "Minecraft: Java & Bedrock",
+    base_price_jod: 17.0,
+    delivery_type: "code",
+    platform: "Windows Store / PC",
+    image_url: "/app/assets/img/catalog/minecraft-java-bedrock.png",
   },
   {
-    slug: "batman-arkham-collection",
-    nameAr: "Batman: Arkham Collection",
-    nameEn: "Batman: Arkham Collection",
-    price: 6.0,
-    oldPrice: 15.0,
-    imageUrl: "/app/assets/img/catalog/batman-arkham-collection.jpg",
-    platform: "Steam (PC)",
+    slug: "mortal-kombat-11-ultimate",
+    name_ar: "Mortal Kombat 11: Ultimate | كود ستيم (PC)",
+    name_en: "Mortal Kombat 11: Ultimate",
+    base_price_jod: 5.5,
+    delivery_type: "code",
+    platform: "Steam / PC",
+    image_url: "/app/assets/img/catalog/mortal-kombat-11-ultimate.jpg",
   },
   {
-    slug: "dark-souls-3-deluxe",
-    nameAr: "Dark Souls III: Deluxe Edition",
-    nameEn: "Dark Souls III: Deluxe Edition",
-    price: 14.0,
-    oldPrice: 25.0,
-    imageUrl: "/app/assets/img/catalog/dark-souls-3-deluxe.jpg",
-    platform: "Steam (PC)",
+    slug: "control-ultimate-edition",
+    name_ar: "Control: Ultimate Edition | كود ستيم (PC)",
+    name_en: "Control: Ultimate Edition",
+    base_price_jod: 5.5,
+    delivery_type: "code",
+    platform: "Steam / PC",
+    image_url: "/app/assets/img/catalog/control-ultimate-edition.webp",
+  },
+  {
+    slug: "batman-arkham-origins",
+    name_ar: "Batman: Arkham Origins | كود ستيم (PC)",
+    name_en: "Batman: Arkham Origins",
+    base_price_jod: 5.0,
+    delivery_type: "code",
+    platform: "Steam / PC",
+    image_url: "/app/assets/img/catalog/batman-arkham-origins.jpg",
   },
   {
     slug: "bioshock-the-collection",
-    nameAr: "BioShock: The Collection",
-    nameEn: "BioShock: The Collection",
-    price: 5.0,
-    oldPrice: 16.0,
-    imageUrl: "/app/assets/img/catalog/bioshock-the-collection.jpg",
-    platform: "Steam (PC)",
+    name_ar: "BioShock: The Collection | ثلاثية بايوشوك (Steam)",
+    name_en: "BioShock: The Collection",
+    base_price_jod: 10.0,
+    delivery_type: "code",
+    platform: "Steam / PC",
+    image_url: "/app/assets/img/catalog/bioshock-the-collection.jpg",
+  },
+  {
+    slug: "ea-fc-26-pc",
+    name_ar: "EA Sports FC 26 | حساب ستيم خاص بك (PC)",
+    name_en: "EA Sports FC 26",
+    base_price_jod: 4.5,
+    delivery_type: "account",
+    platform: "Steam / PC",
+    image_url: "/app/assets/img/catalog/ea-fc-26-pc.png",
+  },
+  {
+    slug: "euro-truck-simulator-2",
+    name_ar: "Euro Truck Simulator 2 | كود ستيم (PC)",
+    name_en: "Euro Truck Simulator 2",
+    base_price_jod: 12.0,
+    delivery_type: "code",
+    platform: "Steam / PC",
+    image_url: "/app/assets/img/catalog/euro-truck-simulator-2.jpg",
+  },
+  {
+    slug: "hollow-knight-silksong-pc",
+    name_ar: "Hollow Knight: Silksong | كود ستيم (PC)",
+    name_en: "Hollow Knight: Silksong",
+    base_price_jod: 12.0,
+    delivery_type: "code",
+    platform: "Steam / PC",
+    image_url: "/app/assets/img/catalog/hollow-knight-silksong-pc.webp",
+  },
+  {
+    slug: "ratchet-and-clank-rift-apart",
+    name_ar: "Ratchet & Clank: Rift Apart | كود ستيم (PC)",
+    name_en: "Ratchet & Clank: Rift Apart",
+    base_price_jod: 21.0,
+    delivery_type: "code",
+    platform: "Steam / PC",
+    image_url: "/app/assets/img/catalog/ratchet-and-clank-rift-apart.jpg",
   },
 ];
 
@@ -129,6 +161,48 @@ export function BestSellingGamesSection() {
   const { lang } = useLang();
   const scrollRef = useRef<HTMLDivElement>(null);
   const ar = lang === "ar";
+  const [games, setGames] = useState<RealGameProduct[]>(INITIAL_REAL_GAMES);
+
+  // Fetch real games dynamically from database
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("id, slug, name_ar, name_en, base_price_jod, delivery_type, platform, purchases_count, image_url, category_id, is_active")
+          .in("category_id", [
+            "d18e98da-50b3-4740-9ac6-2619146f62b7", // PC games
+            "007a8ee0-7a10-4ea8-9002-56c0d2b92429", // Xbox games
+            "e244ef6f-d748-43da-a2f2-39c4d9bc83be", // PS games
+          ])
+          .eq("is_active", true)
+          .order("purchases_count", { ascending: false })
+          .limit(24);
+
+        if (!error && data && data.length > 0 && alive) {
+          setGames(
+            data.map((p) => ({
+              id: p.id,
+              slug: p.slug,
+              name_ar: p.name_ar,
+              name_en: p.name_en,
+              base_price_jod: Number(p.base_price_jod) || 0,
+              delivery_type: p.delivery_type || "code",
+              platform: p.platform || "Steam / PC",
+              image_url: p.image_url || "/app/assets/img/catalog/helldivers-2.webp",
+              purchases_count: p.purchases_count || 0,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error("Failed to load real games from Supabase", err);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
@@ -165,18 +239,18 @@ export function BestSellingGamesSection() {
             {ar ? <ChevronRight size={22} strokeWidth={2.5} /> : <ChevronLeft size={22} strokeWidth={2.5} />}
           </button>
 
-          {/* Cards Track using standard unified StoreProductCard */}
+          {/* Cards Track using standard unified StoreProductCard with 100% REAL data */}
           <div className="gx-cards-carousel-track" ref={scrollRef}>
-            {BEST_SELLING_GAMES_LIST.map((game) => (
+            {games.map((game) => (
               <div key={game.slug} className="gx-carousel-product-col">
                 <StoreProductCard
                   slug={game.slug}
                   cartId={game.slug}
-                  name={ar ? game.nameAr : game.nameEn}
+                  name={ar ? game.name_ar : (game.name_en || game.name_ar)}
                   link={`/category/games?product=${game.slug}`}
-                  price={game.price}
-                  oldPrice={game.oldPrice}
-                  imageUrl={game.imageUrl}
+                  price={game.base_price_jod}
+                  imageUrl={game.image_url}
+                  productType={game.delivery_type}
                   customPlatform={game.platform}
                   showPlatformBar={true}
                   showFromLabel={false}

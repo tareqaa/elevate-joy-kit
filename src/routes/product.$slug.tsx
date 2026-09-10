@@ -47,13 +47,19 @@ function ProductPage() {
 
   useEffect(() => {
     if (product) {
+      // Find lowest variant price for gift cards and products with variants
+      const variantPrices = (product.variants || [])
+        .map((v) => Number(v.priceJod))
+        .filter((p) => !isNaN(p) && p > 0);
+      const effectivePrice = variantPrices.length > 0 ? Math.min(...variantPrices) : (product.basePriceJod || 0);
+
       trackRecentlyViewed({
         slug: product.slug,
         nameAr: product.nameAr,
         nameEn: product.nameEn,
         taglineAr: product.taglineAr || undefined,
         taglineEn: product.taglineEn || undefined,
-        price: product.basePriceJod || 0,
+        price: effectivePrice,
         oldPrice: product.oldPriceJod || undefined,
         imageUrl: product.imageUrl || undefined,
         icon: product.icon || undefined,

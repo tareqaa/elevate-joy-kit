@@ -16,6 +16,7 @@ import { CatPagination } from "@/components/gx/CatPagination";
 import { CatDeliveryTypeDropdown, DELIVERY_TYPE_OPTIONS } from "@/components/gx/CatDeliveryTypeDropdown";
 import { CatPriceFilterDropdown, PRICE_PRESETS } from "@/components/gx/CatPriceFilterDropdown";
 import { resolveStrictDeliveryType } from "@/lib/gx/delivery-types";
+import { trackRecentlyViewed } from "@/lib/gx/recently-viewed";
 
 /**
  * الكاتجوريات التي يتم تفعيل شريط الفلتر (Filter Bar) فيها.
@@ -398,6 +399,32 @@ function CategoryPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isAllPlatformsModalOpen]);
+
+  // Track gift card categories in Recently Viewed with lowest variant price
+  useEffect(() => {
+    const GIFT_CARD_MAP: Record<string, { slug: string; nameAr: string; nameEn: string; price: number; iconImage: string }> = {
+      "gc-playstation": { slug: "playstation", nameAr: "بطاقات بلايستيشن", nameEn: "PlayStation Cards", price: 7.0, iconImage: "/app/assets/img/playstation-logo.svg" },
+      "playstation": { slug: "playstation", nameAr: "بطاقات بلايستيشن", nameEn: "PlayStation Cards", price: 7.0, iconImage: "/app/assets/img/playstation-logo.svg" },
+      "gc-xbox": { slug: "xbox", nameAr: "بطاقات إكسبوكس", nameEn: "Xbox Cards", price: 1.15, iconImage: "/app/assets/img/xbox-logo.svg" },
+      "xbox": { slug: "xbox", nameAr: "بطاقات إكسبوكس", nameEn: "Xbox Cards", price: 1.15, iconImage: "/app/assets/img/xbox-logo.svg" },
+      "gc-itunes": { slug: "itunes", nameAr: "بطاقات آبل وآيتونز", nameEn: "iTunes Cards", price: 2.22, iconImage: "/app/assets/img/itunes-logo.svg" },
+      "itunes": { slug: "itunes", nameAr: "بطاقات آبل وآيتونز", nameEn: "iTunes Cards", price: 2.22, iconImage: "/app/assets/img/itunes-logo.svg" },
+      "gc-google-play": { slug: "google-play", nameAr: "بطاقات جوجل بلاي", nameEn: "Google Play Cards", price: 4.5, iconImage: "/app/assets/img/googleplay-logo.png" },
+      "google-play": { slug: "google-play", nameAr: "بطاقات جوجل بلاي", nameEn: "Google Play Cards", price: 4.5, iconImage: "/app/assets/img/googleplay-logo.png" },
+    };
+
+    const matchedGc = GIFT_CARD_MAP[category.slug];
+    if (matchedGc) {
+      trackRecentlyViewed({
+        slug: matchedGc.slug,
+        nameAr: matchedGc.nameAr,
+        nameEn: matchedGc.nameEn,
+        price: matchedGc.price,
+        imageUrl: matchedGc.iconImage,
+        categorySlug: "gift-cards",
+      });
+    }
+  }, [category.slug]);
 
   // Platforms for software/design category
   const softwarePlatforms: CategoryPlatformItem[] = useMemo(() => {

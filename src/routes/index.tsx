@@ -77,6 +77,7 @@ function Home() {
           "best_selling_games",
           "gamepoints",
           "discover_price",
+          "categories",
         ].includes(s.type)
     );
 
