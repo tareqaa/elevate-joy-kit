@@ -71,32 +71,6 @@ export const BEST_SELLING_GIFT_CARDS: GiftCardItem[] = [
     badgeEn: "Available",
     link: "/product/google-play",
   },
-  {
-    id: "steam-gift",
-    nameAr: "بطاقات هدايا ستيم",
-    nameEn: "Steam Gift Cards",
-    descAr: "شحن رصيد محفظة Steam لشراء كافة ألعاب الكمبيوتر والإضافات",
-    descEn: "Steam wallet recharge for PC gaming & DLCs",
-    startingPrice: 5.0,
-    iconImage: "/app/assets/img/steam-logo.svg",
-    bgGradient: "linear-gradient(135deg, rgba(23, 29, 37, 0.7), rgba(0, 229, 255, 0.18))",
-    badgeAr: "تفعيل فوري",
-    badgeEn: "Instant Key",
-    link: "/category/gift-cards?cat=steam",
-  },
-  {
-    id: "amazon-gift",
-    nameAr: "بطاقات هدايا أمازون",
-    nameEn: "Amazon Gift Cards",
-    descAr: "شحن رصيد حساب أمازون للتسوق والشراء من المتجر الأمريكي والإقليمي",
-    descEn: "Amazon wallet balance for shopping and digital goods",
-    startingPrice: 5.0,
-    iconImage: "/app/assets/img/catalog/batman-arkham-collection.jpg",
-    bgGradient: "linear-gradient(135deg, rgba(255, 153, 0, 0.22), rgba(20, 25, 35, 0.4))",
-    badgeAr: "شحن رصيد",
-    badgeEn: "Balance Key",
-    link: "/category/gift-cards?cat=amazon",
-  },
 ];
 
 export function BestSellingGiftCardsSection() {

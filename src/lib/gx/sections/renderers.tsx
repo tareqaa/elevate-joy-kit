@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { LayoutGrid } from "lucide-react";
 import { CATEGORY_LINKS, getCategoryLink, getFeaturedItems, PRODUCTS_CATALOG, type FeaturedItem } from "@/data/products";
 import { useCurrency } from "@/lib/gx/currency";
 import { ProductIcon, CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
@@ -286,6 +287,7 @@ export function CarouselRenderer({ data }: { data: CarouselData }) {
 /* ---------------- CATEGORIES ---------------- */
 export function CategoriesRenderer({ data }: { data: CategoriesData }) {
   const { t, lang } = useLang();
+  const ar = lang === "ar";
   const overrides = data.overrides || {};
   const databaseCategories = useStorefrontCategories();
   const links = databaseCategories
@@ -297,18 +299,30 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
     .filter((x): x is NonNullable<typeof x> => !!x)
     .sort((a, b) => a._sort - b._sort);
   return (
-    <section className="section" id="categories">
+    <section className="section" id="categories" style={{ paddingTop: 28, paddingBottom: 28 }}>
       <div className="wrap">
-        <div className="section-head">
-          <div><span className="k">{data.eyebrow || t("home.cat_eyebrow")}</span><h2>{data.title || t("home.cat_title")}</h2></div>
+        <div className="section-head" style={{ marginBottom: 20 }}>
+          <div>
+            <span className="k" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <LayoutGrid size={14} style={{ color: "var(--cyan, #00e5ff)" }} />
+              {data.eyebrow || t("home.cat_eyebrow")}
+            </span>
+            <h2 style={{ fontSize: 24, fontWeight: 900 }}>{data.title || t("home.cat_title")}</h2>
+          </div>
         </div>
         <div className="cat-grid-big">
-          {links.map(c0 => {
+          {links.map((c0) => {
+            const fallbackDesc = CATEGORY_LINKS.find((x) => x.slug === c0.slug)?.desc;
             const name = c0._o_name || (lang === "en" ? c0.nameEn || c0.nameAr : c0.nameAr || c0.nameEn);
-            const desc = c0._o_desc || (lang === "en" ? c0.descriptionEn || c0.descriptionAr : c0.descriptionAr || c0.descriptionEn);
+            const desc = c0._o_desc || (lang === "en" ? c0.descriptionEn || c0.descriptionAr : c0.descriptionAr || c0.descriptionEn) || fallbackDesc;
             const accent = c0._o_accent || c0.accent;
             return (
-              <Link key={c0.slug} to={getCategoryLink(c0.slug) as never} className="cat-card-big" style={{ ["--accent" as string]: accent } as React.CSSProperties}>
+              <Link
+                key={c0.slug}
+                to={getCategoryLink(c0.slug) as never}
+                className="cat-card-big"
+                style={{ ["--accent" as string]: accent } as React.CSSProperties}
+              >
                 <div className="ccb-top">
                   {c0.iconImage ? (
                     <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>
@@ -330,7 +344,10 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
                   <div className="cname-modern">{name}</div>
                   {desc && <div className="cdesc">{desc}</div>}
                 </div>
-                <div className="carrow">{t("home.browse_category")} <span className="arrow-ic">‹</span></div>
+                <div className="carrow">
+                  <span>{t("home.browse_category")}</span>
+                  <span className="arrow-ic">{ar ? "←" : "→"}</span>
+                </div>
               </Link>
             );
           })}

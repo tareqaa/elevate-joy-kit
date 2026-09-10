@@ -168,8 +168,7 @@ export function BestSellingGamesSection() {
     let alive = true;
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from("products")
+        const { data, error } = await (supabase.from("products") as any)
           .select("id, slug, name_ar, name_en, base_price_jod, delivery_type, platform, purchases_count, image_url, category_id, is_active")
           .in("category_id", [
             "d18e98da-50b3-4740-9ac6-2619146f62b7", // PC games
@@ -273,7 +272,7 @@ export function BestSellingGamesSection() {
         {/* View All Games Button */}
         <div className="gx-view-all-games-row">
           <Link
-            to="/products?category=games&sort=popular"
+            to={"/products?category=games&sort=popular" as never}
             className="gx-view-all-games-btn"
           >
             <Sparkles size={18} className="gx-view-all-sparkle" />

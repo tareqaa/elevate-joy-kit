@@ -83,7 +83,7 @@ function Home() {
 
     const composed: Section[] = [
       ...topSections,
-      { id: "sec_top_categories_bar", type: "top_categories_bar", enabled: true, data: {} },
+      { id: "sec_categories", type: "categories", enabled: true, data: {} },
       { id: "sec_recently_viewed", type: "recently_viewed", enabled: true, data: {} },
       bestsellersSection,
       { id: "sec_discover_genres", type: "discover_genres", enabled: true, data: {} },

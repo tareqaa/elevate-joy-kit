@@ -88,8 +88,24 @@ export function StoreProductCard({
 
   // Calculate discount percentage
   const numPrice = typeof price === "number" ? price : 0;
-  const numOldPrice = typeof oldPrice === "number" && oldPrice > numPrice ? oldPrice : null;
-  const discount = numOldPrice ? Math.round((1 - numPrice / numOldPrice) * 100) : 0;
+  const isGiftCard =
+    isGiftCardMaster ||
+    categorySlug === "gift-cards" ||
+    ["playstation", "xbox", "itunes", "google-play"].includes(slug) ||
+    slug.startsWith("gc-");
+
+  const getGiftCardMinPrice = (s: string) => {
+    const l = s.toLowerCase();
+    if (l.includes("xbox")) return 1.15;
+    if (l.includes("itunes") || l.includes("apple")) return 2.22;
+    if (l.includes("google")) return 4.5;
+    if (l.includes("playstation") || l.includes("psn") || l.includes("sony")) return 7.0;
+    return 5.0;
+  };
+
+  const finalDisplayPrice = numPrice > 0 ? numPrice : (isGiftCard ? getGiftCardMinPrice(slug) : 0);
+  const numOldPrice = typeof oldPrice === "number" && oldPrice > finalDisplayPrice ? oldPrice : null;
+  const discount = numOldPrice ? Math.round((1 - finalDisplayPrice / numOldPrice) * 100) : 0;
 
   // Fortnite icons (without glowing card themes as requested)
   const isVbucks = slug === "fortnite" && finalCartId.startsWith("fn-vb");
@@ -198,11 +214,11 @@ export function StoreProductCard({
       nameEn: name,
       taglineAr: tagline || undefined,
       taglineEn: tagline || undefined,
-      price: numPrice,
+      price: finalDisplayPrice,
       oldPrice: numOldPrice || undefined,
       imageUrl: imageUrl || undefined,
       icon: icon || undefined,
-      categorySlug: categorySlug || undefined,
+      categorySlug: categorySlug || (isGiftCard ? "gift-cards" : undefined),
     });
   };
 
@@ -211,12 +227,6 @@ export function StoreProductCard({
       <Link to={finalLink as never} style={{ display: "contents" }} onClick={handleTrack}>
         <div className="prod-thumb" style={{ background: bgStyle }}>
           {renderThumbnail()}
-          <div className="prod-hover-overlay">
-            <span className="prod-hover-view-details">
-              <span>{lang === "en" ? "View Details" : "عرض التفاصيل"}</span>
-              <span className="prod-hover-arrow">{lang === "en" ? "›" : "‹"}</span>
-            </span>
-          </div>
         </div>
       </Link>
 
@@ -301,33 +311,37 @@ export function StoreProductCard({
         </div>
 
         <div className="prod-prices">
-          {numPrice > 0 ? (
+          {finalDisplayPrice > 0 ? (
             <>
-              {showFromLabel && (
+              {(showFromLabel || isGiftCard) && (
                 <span className="prod-from-label">{lang === "en" ? "From" : "من"}</span>
               )}
               <div className="prod-price-row">
                 <span className="prod-new">
-                  {format(numPrice)}
+                  {format(finalDisplayPrice)}
                 </span>
                 {discount > 0 && <span className="prod-discount-pill">-{discount}%</span>}
               </div>
             </>
           ) : (
             <div className="prod-price-row">
-              <span className="prod-new">{lang === "en" ? "View Details" : "عرض التفاصيل"}</span>
+              <span className="prod-new">{lang === "en" ? "Check Price" : "حسب الباقة"}</span>
             </div>
           )}
         </div>
 
-        {isGiftCardMaster ? (
+        {isGiftCard ? (
           <div className="buy-actions">
             <Link
               to={finalLink as never}
-              className="buy-now-btn"
+              className="buy-now-btn gx-browse-offers-btn"
               style={{
                 textDecoration: "none",
                 width: "100%",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
               }}
             >
               <span>{lang === "en" ? "Browse Offers" : "تصفح العروض"}</span>
