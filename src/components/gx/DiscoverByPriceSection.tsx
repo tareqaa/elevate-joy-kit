@@ -1,118 +1,67 @@
 import React from "react";
 import { Link } from "@tanstack/react-router";
-import { Tag, Sparkles } from "lucide-react";
+import { Tag } from "lucide-react";
+import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
 
 export interface PriceTier {
   id: string;
-  maxPrice: number;
-  labelTopEn: string;
-  labelTopAr: string;
-  amountEn: string;
-  amountAr: string;
+  jodPrice: number;
   accentColor: string;
 }
 
-export const PRICE_TIERS: PriceTier[] = [
-  {
-    id: "under-1",
-    maxPrice: 1,
-    labelTopEn: "Under",
-    labelTopAr: "أقل من",
-    amountEn: "JOD 1",
-    amountAr: "1 د.أ",
-    accentColor: "#10b981",
-  },
-  {
-    id: "under-2",
-    maxPrice: 2,
-    labelTopEn: "Under",
-    labelTopAr: "أقل من",
-    amountEn: "JOD 2",
-    amountAr: "2 د.أ",
-    accentColor: "#00e5ff",
-  },
-  {
-    id: "under-5",
-    maxPrice: 5,
-    labelTopEn: "Under",
-    labelTopAr: "أقل من",
-    amountEn: "JOD 5",
-    amountAr: "5 د.أ",
-    accentColor: "#6366f1",
-  },
-  {
-    id: "under-10",
-    maxPrice: 10,
-    labelTopEn: "Under",
-    labelTopAr: "أقل من",
-    amountEn: "JOD 10",
-    amountAr: "10 د.أ",
-    accentColor: "#a855f7",
-  },
-  {
-    id: "under-20",
-    maxPrice: 20,
-    labelTopEn: "Under",
-    labelTopAr: "أقل من",
-    amountEn: "JOD 20",
-    amountAr: "20 د.أ",
-    accentColor: "#ec4899",
-  },
-  {
-    id: "under-50",
-    maxPrice: 50,
-    labelTopEn: "Under",
-    labelTopAr: "أقل من",
-    amountEn: "JOD 50",
-    amountAr: "50 د.أ",
-    accentColor: "#f59e0b",
-  },
+export const BASE_PRICE_TIERS: PriceTier[] = [
+  { id: "tier-1", jodPrice: 1, accentColor: "#10b981" },
+  { id: "tier-2", jodPrice: 2, accentColor: "#00e5ff" },
+  { id: "tier-5", jodPrice: 5, accentColor: "#6366f1" },
+  { id: "tier-10", jodPrice: 10, accentColor: "#a855f7" },
+  { id: "tier-20", jodPrice: 20, accentColor: "#ec4899" },
+  { id: "tier-50", jodPrice: 50, accentColor: "#f59e0b" },
 ];
 
 export function DiscoverByPriceSection() {
+  const { format, currency } = useCurrency();
   const { lang } = useLang();
   const ar = lang === "ar";
 
   return (
-    <section className="gx-section-modern gx-discover-price-wrap">
-      <div className="gx-home-container">
+    <section className="section gx-discover-price-wrap" style={{ paddingTop: 28, paddingBottom: 36 }}>
+      <div className="wrap">
         {/* Section Header */}
-        <div className="gx-section-header-row">
-          <div className="gx-section-title-group">
-            <div className="gx-badge-glow">
-              <Tag size={14} className="gx-badge-icon" />
-              <span>{ar ? "ميزانيتك أولاً" : "Budget Friendly"}</span>
-            </div>
-            <h2 className="gx-section-title">
+        <div className="section-head" style={{ marginBottom: 18 }}>
+          <div>
+            <span className="k" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <Tag size={14} style={{ color: "var(--cyan, #00e5ff)" }} />
+              {ar ? "ميزانيتك أولاً" : "Budget Friendly"}
+            </span>
+            <h2 style={{ fontSize: 24, fontWeight: 900 }}>
               {ar ? "اكتشف حسب السعر" : "Discover By Price"}
             </h2>
-            <p className="gx-section-subtitle">
-              {ar
-                ? "حدد ميزانيتك وتصفح الألعاب والاشتراكات المناسبة لك ابتداءً من دينار واحد"
-                : "Find games, subscriptions and keys tailored to your exact budget"}
-            </p>
           </div>
         </div>
 
-        {/* Price Cards Grid matching user image 3 */}
+        {/* Price Cards Grid matching user reference Image */}
         <div className="gx-price-tiers-grid">
-          {PRICE_TIERS.map((tier) => (
-            <Link
-              key={tier.id}
-              to={`/products?max_price=${tier.maxPrice}` as never}
-              className="gx-price-tier-card"
-              style={{ ["--tier-accent" as string]: tier.accentColor } as React.CSSProperties}
-            >
-              <span className="gx-price-tier-top">
-                {ar ? tier.labelTopAr : tier.labelTopEn}
-              </span>
-              <span className="gx-price-tier-amount">
-                {ar ? tier.amountAr : tier.amountEn}
-              </span>
-              <div className="gx-price-tier-glow" />
-            </Link>
-          ))}
+          {BASE_PRICE_TIERS.map((tier) => {
+            const formattedAmount = format(tier.jodPrice);
+
+            return (
+              <Link
+                key={tier.id}
+                to={`/products?max_price=${tier.jodPrice}` as never}
+                className="gx-price-tier-card"
+                style={{ ["--tier-accent" as string]: tier.accentColor } as React.CSSProperties}
+              >
+                <span className="gx-price-tier-top">
+                  {ar ? "أقل من" : "Under"}
+                </span>
+                <span className="gx-price-tier-amount">
+                  {formattedAmount}
+                </span>
+                <div className="gx-price-tier-glow" />
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>

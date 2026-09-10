@@ -22,6 +22,7 @@ import { BestSellingGamesSection } from "@/components/gx/BestSellingGamesSection
 import { DiscoverGamesCategorySection } from "@/components/gx/DiscoverGamesCategorySection";
 import { DiscoverByPriceSection } from "@/components/gx/DiscoverByPriceSection";
 import { BestSellingGamepointsSection } from "@/components/gx/BestSellingGamepointsSection";
+import { HomeCategoriesBar } from "@/components/gx/HomeCategoriesBar";
 
 export type SectionDef = {
   type: SectionType;
@@ -57,6 +58,11 @@ export const SECTION_REGISTRY: Record<SectionType, SectionDef> = {
     type: "carousel", label: "سلايدر الصور", description: "شرائح تلقائية لعروض وبانرات", Icon: GalleryHorizontal,
     defaultData: { autoplay: true, interval_ms: 5000, items: [] },
     Renderer: asRenderer(CarouselRenderer), Editor: asEditor(CarouselEditor),
+  },
+  top_categories_bar: {
+    type: "top_categories_bar", label: "شريط الأقسام السريع", description: "شريط أيقونات الأقسام الرئيسي البنفسجي", Icon: LayoutGrid,
+    defaultData: {},
+    Renderer: asRenderer(HomeCategoriesBar), Editor: asEditor(() => null),
   },
   categories: {
     type: "categories", label: "الأقسام", description: "شبكة الأقسام الرئيسية", Icon: LayoutGrid,

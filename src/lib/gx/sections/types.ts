@@ -8,6 +8,7 @@ export type SectionType =
   | "hero"
   | "announcement"
   | "carousel"
+  | "top_categories_bar"
   | "categories"
   | "bestsellers"
   | "products"

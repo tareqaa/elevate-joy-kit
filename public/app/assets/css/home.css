@@ -150,29 +150,35 @@
 .car-row .car-scroller.is-drag a, .car-row .car-scroller.is-drag img{-webkit-user-drag:none;}
 .car-nav{
   position:absolute; top:calc(50% - 18px); transform:translateY(-50%);
-  width:44px; height:44px; border-radius:999px; z-index:4; cursor:pointer;
+  width:46px; height:46px; border-radius:50%; z-index:5; cursor:pointer;
   display:flex; align-items:center; justify-content:center;
-  color:var(--white); background:rgba(12,15,22,.72);
-  border:1.5px solid rgba(255,255,255,.14);
-  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-  box-shadow:0 12px 30px -14px rgba(0,0,0,.9);
-  transition:opacity .25s var(--ease), transform .25s var(--ease), border-color .25s var(--ease), background .25s var(--ease);
+  color:#ffffff; background:#252830;
+  border:1.5px solid rgba(255,255,255,.12);
+  box-shadow:0 8px 24px rgba(0,0,0,.45);
+  transition:all .22s cubic-bezier(0.4, 0, 0.2, 1);
+  outline:none;
 }
 .car-nav:hover{
-  border-color:rgba(0,229,255,.55); background:rgba(0,229,255,.14);
-  transform:translateY(-50%) scale(1.06);
+  border-color:rgba(0,229,255,.5); background:#363b47;
+  color:#00e5ff;
+  transform:translateY(-50%) scale(1.1);
+  box-shadow:0 10px 30px rgba(0,229,255,0.25);
 }
+.car-nav:active{transform:translateY(-50%) scale(0.95);}
 .car-nav:disabled{opacity:0; pointer-events:none;}
-.car-prev{inset-inline-start:-10px;}
-.car-next{inset-inline-end:-10px;}
+.car-prev{inset-inline-start:-24px;}
+.car-next{inset-inline-end:-24px;}
 html[dir="rtl"] .car-nav svg{transform:scaleX(-1);}
-/* Mobile: keep the arrows visible (smaller, tucked inside the edges) so it's
-   obvious the row can be swiped/dragged. */
-@media(max-width:820px){
-  .car-nav{width:36px; height:36px; background:rgba(12,15,22,.82);}
-  .car-prev{inset-inline-start:2px;}
-  .car-next{inset-inline-end:2px;}
-  .car-nav svg{width:17px; height:17px;}
+/* Mobile: keep the arrows accessible */
+@media(max-width:1200px){
+  .car-prev{inset-inline-start:-12px;}
+  .car-next{inset-inline-end:-12px;}
+}
+@media(max-width:768px){
+  .car-nav{width:38px; height:38px;}
+  .car-prev{inset-inline-start:-6px;}
+  .car-next{inset-inline-end:-6px;}
+  .car-nav svg{width:18px; height:18px;}
 }
 
 .featured-grid{
@@ -1245,6 +1251,384 @@ html[dir="rtl"] .car-nav svg{transform:scaleX(-1);}
   .gx-gamepoint-card {
     flex: 0 0 240px;
   }
+}
+
+/* ============================================================
+   TOP CATEGORIES BAR (Matching User Reference Image 2)
+   ============================================================ */
+
+.gx-top-categories-bar-wrap {
+  width: 100%;
+  background: linear-gradient(90deg, #32006e 0%, #4c0099 50%, #290059 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  margin-top: 10px;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 10;
+}
+
+.gx-top-categories-bar {
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding: 10px 0;
+}
+
+.gx-cat-bar-scroll {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 4px 8px;
+  width: 100%;
+}
+
+.gx-cat-bar-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.gx-cat-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #ffffff;
+  text-decoration: none;
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 10px;
+  transition: all 0.22s ease;
+}
+
+.gx-cat-bar-item:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.gx-cat-bar-icon {
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  transition: transform 0.2s ease;
+}
+
+.gx-cat-bar-item:hover .gx-cat-bar-icon {
+  transform: scale(1.15);
+}
+
+.gx-cat-bar-label {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: -0.1px;
+}
+
+.gx-cat-bar-arrow {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  transition: all 0.2s;
+}
+
+.gx-cat-bar-arrow:hover {
+  background: #00e5ff;
+  color: #0b0f19;
+}
+
+.gx-cat-bar-prev {
+  inset-inline-start: -8px;
+}
+
+.gx-cat-bar-next {
+  inset-inline-end: -8px;
+}
+
+@media (max-width: 1024px) {
+  .gx-cat-bar-arrow {
+    display: flex;
+  }
+}
+
+/* ============================================================
+   SIDE FLOATING CAROUSEL ARROWS (Matching User Reference Image 1)
+   ============================================================ */
+
+.gx-side-arrow-carousel-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.gx-cards-carousel-track {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 8px 4px 20px;
+  scroll-snap-type: x mandatory;
+}
+
+.gx-cards-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.gx-carousel-product-col {
+  flex: 0 0 250px;
+  max-width: 250px;
+  scroll-snap-align: start;
+}
+
+.gx-carousel-giftcard-col {
+  flex: 0 0 280px;
+  max-width: 280px;
+  scroll-snap-align: start;
+}
+
+.gx-side-nav-arrow {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #252830;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  position: absolute;
+  top: calc(50% - 14px);
+  transform: translateY(-50%);
+  z-index: 5;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.gx-side-nav-arrow:hover {
+  background: #363b47;
+  border-color: rgba(0, 229, 255, 0.5);
+  color: #00e5ff;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 10px 30px rgba(0, 229, 255, 0.25);
+}
+
+.gx-side-nav-arrow:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.gx-side-nav-prev {
+  inset-inline-start: -24px;
+}
+
+.gx-side-nav-next {
+  inset-inline-end: -24px;
+}
+
+@media (max-width: 1200px) {
+  .gx-side-nav-prev {
+    inset-inline-start: -12px;
+  }
+  .gx-side-nav-next {
+    inset-inline-end: -12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .gx-side-nav-arrow {
+    width: 38px;
+    height: 38px;
+  }
+  .gx-side-nav-prev {
+    inset-inline-start: -6px;
+  }
+  .gx-side-nav-next {
+    inset-inline-end: -6px;
+  }
+  .gx-carousel-product-col {
+    flex: 0 0 215px;
+    max-width: 215px;
+  }
+}
+
+/* ============================================================
+   DISCOVER GAMES BY CATEGORY — AUTO-SCROLLING MARQUEE
+   ============================================================ */
+
+.gx-auto-scroll-marquee-container {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  padding: 8px 0 16px;
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+.gx-auto-scroll-marquee-track {
+  display: flex;
+  gap: 16px;
+  width: max-content;
+  animation: gxMarqueeAutoScroll 34s linear infinite;
+}
+
+.gx-auto-scroll-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes gxMarqueeAutoScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+html[dir="rtl"] .gx-auto-scroll-marquee-track {
+  animation-name: gxMarqueeAutoScrollRtl;
+}
+
+@keyframes gxMarqueeAutoScrollRtl {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(50%);
+  }
+}
+
+/* Genre Pill Cards — Matching User Reference Image 3 */
+.gx-genre-pill-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 116px;
+  min-width: 116px;
+  height: 94px;
+  background: #1f2228;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  color: #ffffff;
+  text-decoration: none;
+  padding: 12px 10px;
+  transition: all 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  -webkit-user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.gx-genre-pill-card:hover {
+  background: #282d36;
+  border-color: var(--genre-color, #00e5ff);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 16px -4px var(--genre-color, #00e5ff);
+}
+
+.gx-genre-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  transition: transform 0.24s ease, color 0.24s ease;
+}
+
+.gx-genre-pill-card:hover .gx-genre-icon-box {
+  transform: scale(1.15);
+  color: var(--genre-color, #00e5ff);
+}
+
+.gx-genre-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #e6edf7;
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+}
+
+.gx-genre-pill-card:hover .gx-genre-name {
+  color: #ffffff;
+}
+
+/* View All Games Button */
+.gx-view-all-games-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 24px;
+  padding-bottom: 4px;
+}
+
+.gx-view-all-games-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 32px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.12), rgba(139, 92, 246, 0.16));
+  border: 1.5px solid rgba(0, 229, 255, 0.35);
+  color: #ffffff;
+  font-size: 14.5px;
+  font-weight: 800;
+  text-decoration: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(0, 229, 255, 0.15);
+  transition: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gx-view-all-games-btn:hover {
+  background: linear-gradient(135deg, #00e5ff, #8b5cf6);
+  border-color: transparent;
+  color: #050811;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(0, 229, 255, 0.35);
+}
+
+.gx-view-all-sparkle {
+  color: #00e5ff;
+  transition: transform 0.26s ease;
+}
+
+.gx-view-all-games-btn:hover .gx-view-all-sparkle {
+  color: #050811;
+  transform: rotate(15deg) scale(1.15);
+}
+
+.gx-view-all-arrow {
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.26s ease;
+}
+
+html[dir="rtl"] .gx-view-all-games-btn:hover .gx-view-all-arrow {
+  transform: translateX(-4px);
+}
+
+html[dir="ltr"] .gx-view-all-games-btn:hover .gx-view-all-arrow {
+  transform: translateX(4px);
 }
 
 
