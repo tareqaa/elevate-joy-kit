@@ -4,7 +4,6 @@ import { ChevronLeft, ChevronRight, Clock, Trash2, ArrowLeft, ArrowRight } from 
 import { useRecentlyViewed } from "@/lib/gx/recently-viewed";
 import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
-import { CartThumb } from "@/components/gx/CartThumb";
 import { useCart } from "@/lib/gx/cart";
 import { toast } from "sonner";
 
@@ -129,13 +128,9 @@ export function RecentlyViewedSection() {
                     />
                   ) : (
                     <div className="gx-recent-card-fallback">
-                      <CartThumb
-                        image={item.imageUrl || undefined}
-                        icon={item.icon || undefined}
-                        name={ar ? item.nameAr : item.nameEn}
-                        slug={item.slug}
-                        size={64}
-                      />
+                      <span style={{ fontSize: 38, lineHeight: 1, userSelect: "none" }}>
+                        {item.icon || "🎮"}
+                      </span>
                     </div>
                   )}
 

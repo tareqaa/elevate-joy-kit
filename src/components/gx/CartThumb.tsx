@@ -70,3 +70,5 @@ export function CartItemThumb({ item, size = 64, className = "" }: CartItemThumb
     </div>
   );
 }
+
+export { CartItemThumb as CartThumb };
