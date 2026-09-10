@@ -4,7 +4,6 @@ import { Footer } from "./Footer";
 import { CartDrawer } from "./CartDrawer";
 import { AddedToCartModal } from "./AddedToCartModal";
 import { AdminFab } from "./AdminFab";
-import { InlineTextEditor } from "@/lib/gx/copy-overrides";
 import { ensureStoreStyles } from "@/lib/gx/store-head";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 
@@ -47,9 +46,7 @@ export function StoreShell({ children, bare = false }: { children: ReactNode; ba
       <CartDrawer />
       <AddedToCartModal />
       <AdminFab />
-      <InlineTextEditor />
     </>
-
   );
 }
 

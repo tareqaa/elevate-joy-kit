@@ -57,10 +57,11 @@
   display:flex; align-items:center; gap:6px;
 }
 
-.plans-grid{display:flex; flex-wrap:wrap; gap:20px;}
-.plans-grid .prod-card{flex:1 1 260px; max-width:340px;}
-
-@media(max-width:900px){
-  .product-hero-inner{flex-direction:column; text-align:center; padding:36px 26px;}
-  .plans-grid .prod-card{max-width:100%;}
+.plans-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(210px, 1fr));
+  gap:18px;
+}
+.plans-grid .prod-card{
+  height:100%;
 }

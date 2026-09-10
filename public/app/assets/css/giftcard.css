@@ -66,9 +66,9 @@
   font-family:'Tajawal',sans-serif; font-weight:900; font-size:19px; margin-bottom:6px;
   color:var(--gc-accent, var(--cyan));
 }
-.denom-card .dc-price{font-size:15px; font-weight:800; margin-bottom:12px;}
-.denom-card .add-cart-btn, .denom-card .buy-now-btn{padding:9px; font-size:12px;}
-.denom-card .buy-actions{gap:6px;}
+.denom-card .dc-price{font-size:15px; font-weight:800; margin-bottom:14px;}
+.denom-card .buy-actions{display:flex; flex-direction:column; gap:10px;}
+.denom-card .add-cart-btn, .denom-card .buy-now-btn{width:100%; padding:9.5px 12px; font-size:12px; border-radius:6px;}
 
 /* ---------- Empty / no-prices-yet state ---------- */
 .giftcard-empty{

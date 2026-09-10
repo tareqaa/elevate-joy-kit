@@ -667,6 +667,36 @@ function ProductDialog({ product, categories, defaultCategoryId, onClose, onSave
               </div>
 
               <div className="gx-fieldset">
+                <div className="gx-fs-title"><ShoppingBag size={12} /> صورة الغلاف وشريط المنصة</div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>صورة الغلاف / البوستر (Image URL)</Label>
+                    <div className="flex items-center gap-3 mt-1">
+                      <div className="gx-prod-img" style={{ width: 60, height: 60 }}>
+                        {imageUrl ? <img src={imageUrl} alt="" /> : <ShoppingBag size={22} className="text-cyan-400/40" />}
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="رابط صورة الغلاف أو ارفع ملفاً" className="gx-adm-input" dir="ltr" />
+                        <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], setImageUrl)} className="text-xs text-cyan-100/70" />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>أيقونة / لوجو المنصة المخصص (Custom Platform Icon)</Label>
+                    <div className="flex items-center gap-3 mt-1">
+                      <div className="gx-prod-img" style={{ width: 60, height: 60 }}>
+                        {iconImageUrl ? <img src={iconImageUrl} alt="" /> : <span style={{ fontSize: 20 }}>🎮</span>}
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        <Input value={iconImageUrl} onChange={(e) => setIconImageUrl(e.target.value)} placeholder="رابط لوقو مخصص (يتم ضبط الحجم تلقائياً)" className="gx-adm-input" dir="ltr" />
+                        <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], setIconImageUrl)} className="text-xs text-cyan-100/70" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="gx-fieldset">
                 <div className="gx-fs-title"><Layers size={12} /> السعر والعرض</div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div><Label>سعر أساسي (د.أ)</Label><Input type="number" step="0.01" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="اختياري لو في خيارات" className="gx-adm-input" /></div>

@@ -3,6 +3,7 @@ import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
+import { CartItemThumb } from "@/components/gx/CartThumb";
 import { Link } from "@tanstack/react-router";
 
 export function CartDrawer() {
@@ -38,13 +39,7 @@ export function CartDrawer() {
               const isSnap = it.cartId.startsWith("snap-");
               return (
                 <div key={it.cartId} className="cart-item">
-                  <div className="ci-thumb" style={{ background: it.bg }}>
-                    {it.imageUrl || it.iconImage ? (
-                      <img src={it.imageUrl || it.iconImage || undefined} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 8 }} />
-                    ) : (
-                      it.icon
-                    )}
-                  </div>
+                  <CartItemThumb item={it} size={52} />
                   <div className="ci-info">
                     <div className="ci-name">{localizeResolvedName(it.name, lang)}</div>
                     <div className="ci-price">{format(it.price)}</div>

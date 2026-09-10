@@ -37,7 +37,7 @@ const INITIAL_STOREFRONT_CATEGORIES: StorefrontCategory[] = CATEGORY_LINKS.map((
   sortOrder: i + 1,
 }));
 
-const CATS_CACHE_KEY = "gx_storefront_root_cats_v4";
+const CATS_CACHE_KEY = "gx_storefront_root_cats_v7";
 
 const DEFAULT_BY_SLUG = new Map(CATEGORY_LINKS.map((c) => [c.slug, { accent: c.accent, bg: c.bg }]));
 

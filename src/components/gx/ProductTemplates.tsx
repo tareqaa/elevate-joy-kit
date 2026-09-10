@@ -13,9 +13,11 @@ import { useLang } from "@/lib/gx/i18n";
 import type { Lang } from "@/lib/gx/i18n";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { BuyActions } from "@/components/gx/BuyActions";
-import { DiscountBadge } from "@/components/gx/DiscountBadge";
 import { FeatureAccordion, DeliveryBox, SectionHead } from "@/components/gx/Primitives";
-import { CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
+import { CrewIcon, VbucksIcon, SnapchatPoster, AdobePoster, CanvaPoster, WindowsPoster } from "@/lib/gx/brand-icons";
+import { ProductPlatformBar } from "@/components/gx/ProductPlatformBar";
+import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
+import { GxProductTemplate } from "@/components/gx/GxProductTemplate";
 
 const pick = (lang: Lang, ar: string | null | undefined, en: string | null | undefined) =>
   (lang === "en" ? en || ar : ar || en) || "";
@@ -50,7 +52,12 @@ function useLocalized(p: CatalogProduct) {
 }
 
 function ProductHero({ p, l }: { p: CatalogProduct; l: ReturnType<typeof useLocalized> }) {
-  const imgSrc = p.imageUrl || p.iconImage;
+  const imgSrc =
+    p.slug === "snapchat"
+      ? "/app/assets/img/snapchat-logo.png"
+      : p.slug === "windows"
+      ? "/app/assets/img/windows-icon.svg"
+      : p.imageUrl || p.iconImage;
   return (
     <section className="product-hero">
       <div className="wrap">
@@ -58,7 +65,7 @@ function ProductHero({ p, l }: { p: CatalogProduct; l: ReturnType<typeof useLoca
           <div className="product-icon-badge">
             <div className="core">
               {imgSrc ? (
-                <img src={imgSrc} alt={l.name} style={{ width: 56, height: 56, objectFit: "contain" }} />
+                <img src={imgSrc} alt={l.name} style={{ width: 56, height: 56, objectFit: "contain", borderRadius: 12 }} />
               ) : (
                 <span>{p.icon}</span>
               )}
@@ -145,41 +152,99 @@ export const CREW_TIER_THEMES: Record<
 function VariantCard({
   p,
   v,
+  theme,
   icon,
 }: {
   p: CatalogProduct;
   v: CatalogVariant & { label: string; tag: string | null };
+  theme?: { bg?: string; border?: string; accent?: string; badgeAr?: string; badgeEn?: string } | null;
   icon?: React.ReactNode;
 }) {
   const { format } = useCurrency();
   const { lang } = useLang();
   const siteSettings = useSiteSettings();
-  const imgSrc = p.imageUrl || p.iconImage;
-  const tier = parseInt(v.cartId.replace(/\D+/g, ""), 10) || 0;
-  const vbucksTheme = v.planGroup === "vbucks" ? VBUCKS_TIER_THEMES[tier] : null;
-  const crewTheme = v.planGroup === "crew" ? (CREW_TIER_THEMES[v.cartId] || {
-    bg: "linear-gradient(145deg, rgba(31,169,255,0.25), rgba(10,35,70,0.95))",
-    border: "rgba(31,169,255,0.5)",
-    accent: "#1fa9ff",
-    badgeAr: "⭐ Fortnite Crew",
-    badgeEn: "Fortnite Crew",
-  }) : null;
-  const theme = vbucksTheme || crewTheme;
-
+  const rawTag = pick(lang, v.tagAr, v.tagEn);
   const isTagDisabled =
-    v.tag?.toLowerCase() === "none" ||
-    v.tag?.toLowerCase() === "no-badge" ||
-    v.tag?.toLowerCase() === "off" ||
-    v.tag === "بدون شارة" ||
-    v.tag === "إخفاء" ||
-    v.tag === "لا شيء";
+    !rawTag ||
+    rawTag.toLowerCase() === "none" ||
+    rawTag.toLowerCase() === "no-badge" ||
+    rawTag.toLowerCase() === "off" ||
+    rawTag === "بدون شارة" ||
+    rawTag === "إخفاء" ||
+    rawTag === "لا شيء";
+
+  const imgSrc =
+    (v as { imageUrl?: string }).imageUrl ||
+    (p.imageUrl && !p.imageUrl.includes("gradient") ? p.imageUrl : undefined) ||
+    (p.iconImage && !p.iconImage.includes("gradient") ? p.iconImage : undefined) ||
+    (p.slug === "gemini" ? "/app/assets/img/gemini-logo.svg" : undefined) ||
+    (p.thumbBg && (p.thumbBg.startsWith("/") || p.thumbBg.startsWith("http")) ? p.thumbBg : undefined);
 
   let badgeText: string | null = null;
-  if (v.tag && !isTagDisabled) {
-    badgeText = v.tag;
+  if (!isTagDisabled && !(siteSettings as Record<string, unknown>).hide_plan_badges) {
+    badgeText = rawTag;
   } else if (!isTagDisabled && !siteSettings.hide_fortnite_badges && theme) {
-    badgeText = lang === "en" ? theme.badgeEn : theme.badgeAr;
+    badgeText = (lang === "en" ? theme.badgeEn : theme.badgeAr) || null;
   }
+
+  const snapDuration =
+    p.slug === "snapchat"
+      ? v.cartId === "snap-3" || (v as { id?: string }).id === "snap-3"
+        ? lang === "en"
+          ? "3 MONTHS"
+          : "3 أشهر"
+        : v.cartId === "snap-6" || (v as { id?: string }).id === "snap-6"
+        ? lang === "en"
+          ? "6 MONTHS"
+          : "6 أشهر"
+        : v.cartId === "snap-12" || (v as { id?: string }).id === "snap-12"
+        ? lang === "en"
+          ? "12 MONTHS"
+          : "12 شهر"
+        : v.cartId === "snap-1" || (v as { id?: string }).id === "snap-1"
+        ? lang === "en"
+          ? "1 MONTH"
+          : "شهر واحد"
+        : undefined
+      : undefined;
+
+  let thumbContent = icon;
+  if (!thumbContent) {
+    if (p.slug === "snapchat") {
+      thumbContent = <SnapchatPoster duration={snapDuration} />;
+    } else if (p.slug === "adobe") {
+      thumbContent = <AdobePoster />;
+    } else if (p.slug === "canva") {
+      thumbContent = <CanvaPoster />;
+    } else if (p.slug === "windows") {
+      thumbContent = <WindowsPoster cartId={v.cartId} planLabel={v.label} />;
+    } else if (imgSrc) {
+      thumbContent = <img src={imgSrc} alt="" className="prod-thumb-img prod-card-img" />;
+    } else {
+      thumbContent = <span style={{ fontSize: 44 }}>{p.icon}</span>;
+    }
+  }
+
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const deliveryInfo = getDeliveryTypeInfo(
+    { slug: p.slug, cartId: v.cartId, name: v.label, productType: p.deliveryType },
+    lang
+  );
+
+  const getCleanRegion = () => {
+    const r = (p.region || "").toLowerCase();
+    const t = (p.taglineAr || "").toLowerCase();
+    const n = (v.label || "").toLowerCase();
+    const str = `${r} ${t} ${n}`;
+
+    if (str.includes("أمريك") || str.includes("usa") || str.includes("us")) return lang === "en" ? "USA" : "أمريكي";
+    if (str.includes("ترك") || str.includes("turkey") || str.includes("try")) return lang === "en" ? "Turkey" : "تركي";
+    if (str.includes("سعود") || str.includes("ksa") || str.includes("saudi")) return lang === "en" ? "KSA" : "سعودي";
+    if (str.includes("إمارات") || str.includes("uae") || str.includes("emirates")) return lang === "en" ? "UAE" : "إماراتي";
+    if (str.includes("بريطان") || str.includes("uk") || str.includes("gb")) return lang === "en" ? "UK" : "بريطاني";
+    return lang === "en" ? "Global" : "عالمي";
+  };
+  const cleanRegion = getCleanRegion();
 
   return (
     <div
@@ -187,31 +252,86 @@ function VariantCard({
       style={theme ? { borderColor: theme.border, boxShadow: `0 8px 24px -6px ${theme.border}` } : undefined}
     >
       <div className="prod-thumb" style={{ background: theme?.bg || p.thumbBg || undefined }}>
-        {badgeText && (
-          <span
-            className="tag-badge"
-            style={theme ? { background: theme.accent, color: "#001018", fontWeight: 800 } : undefined}
-          >
-            {badgeText}
-          </span>
-        )}
-        <DiscountBadge value={discountOf(v)} />
-        {icon ??
-          (imgSrc ? (
-            <img src={imgSrc} alt="" style={{ width: 64, height: 64, objectFit: "contain" }} />
-          ) : (
-            <span style={{ fontSize: 44 }}>{p.icon}</span>
-          ))}
+        {thumbContent}
       </div>
       <div className="prod-body">
-        <div className="prod-name" style={{ minHeight: "auto", fontSize: 16 }}>
+        <ProductPlatformBar
+          productKey={p.slug}
+          cartId={v.cartId}
+          name={`${lang === "en" ? p.nameEn : p.nameAr} — ${v.label}`}
+          categoryName={lang === "en" ? p.categoryNameEn || p.categoryNameAr || undefined : p.categoryNameAr || p.categoryNameEn || undefined}
+        />
+        <div className="prod-name">
           {v.label}
         </div>
+
+        {/* Region (Right in Blue) & Product Delivery Type (Left) with Exclamation Info Tooltip */}
+        <div className="prod-meta-row">
+          <span className="prod-meta-region">{cleanRegion}</span>
+
+          <div
+            className={`prod-meta-type-wrap ${tooltipOpen ? "is-active" : ""}`}
+            onMouseEnter={() => setTooltipOpen(true)}
+            onMouseLeave={() => setTooltipOpen(false)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setTooltipOpen((prev) => !prev);
+            }}
+          >
+            <span className="prod-meta-type-label">{deliveryInfo.label}</span>
+            <span
+              className="prod-meta-info-icon"
+              role="button"
+              tabIndex={0}
+              aria-label={deliveryInfo.label}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setTooltipOpen((prev) => !prev);
+                }
+              }}
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="8" cy="8" r="7" />
+                <line x1="8" y1="4.5" x2="8" y2="8.5" />
+                <circle cx="8" cy="11.5" r="0.8" fill="currentColor" stroke="none" />
+              </svg>
+            </span>
+          </div>
+
+          <div
+            className={`prod-type-tooltip ${tooltipOpen ? "is-visible" : ""}`}
+            onClick={(e) => e.stopPropagation()}
+            onMouseEnter={() => setTooltipOpen(true)}
+            onMouseLeave={() => setTooltipOpen(false)}
+          >
+            <div className="prod-type-tooltip-title">
+              <span>{deliveryInfo.icon}</span>
+              <span>{deliveryInfo.label}</span>
+            </div>
+            <div className="prod-type-tooltip-desc">{deliveryInfo.desc}</div>
+          </div>
+        </div>
+
         <div className="prod-prices">
           {v.oldPrice && <span className="prod-old">{format(v.oldPrice)}</span>}
-          <span className="prod-new" style={theme ? { color: theme.accent } : undefined}>
-            {format(v.price)}
-          </span>
+          <div className="prod-price-row">
+            <span className="prod-new" style={theme ? { color: theme.accent } : undefined}>
+              {format(v.price)}
+            </span>
+            {discountOf(v) > 0 && <span className="prod-discount-pill">-{discountOf(v)}%</span>}
+          </div>
         </div>
         <BuyActions cartId={v.cartId} />
       </div>
@@ -316,7 +436,13 @@ export function MultiAccountTemplate({ product }: { product: CatalogProduct }) {
                   <div className="sp-check">✓</div>
                   {discount > 0 && <div className="sp-discount">{t("snap.save_pct")} {discount}%</div>}
                   <div className="sp-icon">
-                    {product.iconImage ? <img src={product.iconImage} alt="" style={{ width: 34, height: 34, objectFit: "contain" }} /> : product.icon}
+                    {product.slug === "snapchat" ? (
+                      <img src="/app/assets/img/snapchat-logo.png" alt="" style={{ width: 34, height: 34, objectFit: "contain", borderRadius: 6 }} />
+                    ) : product.iconImage ? (
+                      <img src={product.iconImage} alt="" style={{ width: 34, height: 34, objectFit: "contain" }} />
+                    ) : (
+                      product.icon
+                    )}
                   </div>
                   <div className="sp-label">{pl.label}</div>
                   <div>
@@ -583,14 +709,21 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
 }
 
 export function ProductTemplate({ product }: { product: CatalogProduct }) {
-  switch (product.pageTemplate) {
-    case "multi_account":
-      return <MultiAccountTemplate product={product} />;
-    case "dual_plans":
-      return <DualPlansTemplate product={product} />;
-    case "gift_card":
-      return <GiftCardTemplate product={product} />;
-    default:
-      return <StandardTemplate product={product} />;
+  // منتجات فورت نايت تبقى بقالبها المخصص (Crew + V-Bucks)
+  if (product.slug === "fortnite" || product.pageTemplate === "dual_plans") {
+    return <DualPlansTemplate product={product} />;
   }
+
+  // منتجات سناب شات بلس تبقى بقالبها المخصص (عداد الحسابات وإدخال اليوزرات)
+  if (product.slug === "snapchat" || product.pageTemplate === "multi_account") {
+    return <MultiAccountTemplate product={product} />;
+  }
+
+  // بطاقات الهدايا الرقمية تبقى بقالبها المخصص (اختيار الدول والفئات)
+  if (product.pageTemplate === "gift_card") {
+    return <GiftCardTemplate product={product} />;
+  }
+
+  // جميع المنتجات الأخرى (Gemini, Windows, Adobe, Canva, Steam, Games, etc.) تستخدم تصميم GX Store الشامل الموحد
+  return <GxProductTemplate product={product} />;
 }

@@ -85,7 +85,7 @@ export function BestsellersManager() {
     },
   });
 
-  // 2. Initialize order from site_settings or default featured items
+  // 2. Initialize order & labels from site_settings or defaults
   useEffect(() => {
     const raw = siteSettings.home_bestseller_order;
     const sanitized: string[] = Array.isArray(raw)
@@ -108,20 +108,21 @@ export function BestsellersManager() {
       const defaults = getFeaturedItems().map((f) => f.cartId);
       setOrder(defaults);
     }
+
     setDirty(false);
   }, [siteSettings.home_bestseller_order]);
 
   // Save mutation
   const saveMut = useMutation({
-    mutationFn: async (newOrder: string[]) => {
-      const { error } = await supabase.from("site_settings").upsert({
+    mutationFn: async () => {
+      const { error: errOrder } = await supabase.from("site_settings").upsert({
         key: "home_bestseller_order",
-        value: newOrder as never,
+        value: order as never,
       }, { onConflict: "key" });
-      if (error) throw error;
+      if (errOrder) throw errOrder;
     },
     onSuccess: () => {
-      toast.success("تم حفظ قائمة وترتيب المنتجات الأكثر مبيعاً بنجاح! 🎉");
+      toast.success("تم حفظ قائمة وترتيب الأكثر مبيعاً بنجاح! 🎉");
       qc.invalidateQueries({ queryKey: ["site-settings"] });
       qc.invalidateQueries({ queryKey: ["home-layout"] });
       setDirty(false);
@@ -208,10 +209,10 @@ export function BestsellersManager() {
                 : "bg-cyan-950/40 text-cyan-400/50 border border-cyan-400/20"
             }`}
             disabled={!dirty || saveMut.isPending}
-            onClick={() => saveMut.mutate(order)}
+            onClick={() => saveMut.mutate()}
           >
             <Check size={14} />
-            {saveMut.isPending ? "جاري الحفظ..." : dirty ? "حفظ الترتيب والمنتجات ✓" : "محفوظ"}
+            {saveMut.isPending ? "جاري الحفظ..." : dirty ? "حفظ الترتيب ✓" : "محفوظ"}
           </button>
         </div>
       </div>
@@ -223,7 +224,7 @@ export function BestsellersManager() {
             <h3 className="text-sm font-bold text-cyan-200 flex items-center gap-1.5">
               <Flame size={15} className="text-amber-400" /> القائمة المعتمدة حالياً ({order.length} منتج)
             </h3>
-            <span className="text-xs text-cyan-100/50">استخدم الأسهم للترتيب</span>
+            <span className="text-xs text-cyan-100/50">استخدم الأسهم لترتيب ظهور المنتجات في الصفحة الرئيسية</span>
           </div>
 
           {activeItems.length === 0 ? (

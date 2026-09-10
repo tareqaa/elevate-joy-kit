@@ -1,23 +1,48 @@
 import { useState, type ReactNode } from "react";
 
 export function FeatureAccordion({ features }: { features: { icon: string; title: string; desc: string }[] }) {
-  const [openIdx, setOpenIdx] = useState<number | null>(null);
-  return (
-    <div className="features-grid">
-      {features.map((f, i) => (
-        <div key={i} className={"feature-card" + (openIdx === i ? " open" : "")}>
-          <div className="fhead" onClick={() => setOpenIdx(openIdx === i ? null : i)}>
-            <div className="fleft">
-              <div className="ficon">{f.icon}</div>
-              <div className="ftitle">{f.title}</div>
-            </div>
-            <div className="chev">⌄</div>
+  const [openMap, setOpenMap] = useState<Record<number, boolean>>({});
+
+  const toggle = (i: number) => {
+    setOpenMap((prev) => ({ ...prev, [i]: !prev[i] }));
+  };
+
+  if (!features || features.length === 0) return null;
+
+  // Split into 2 columns for clean masonry layout without row stretching
+  const col1 = features.map((f, i) => ({ f, i })).filter((_, idx) => idx % 2 === 0);
+  const col2 = features.map((f, i) => ({ f, i })).filter((_, idx) => idx % 2 === 1);
+
+  const renderCard = ({ f, i }: { f: { icon: string; title: string; desc: string }; i: number }) => {
+    const isOpen = Boolean(openMap[i]);
+    return (
+      <div key={i} className={"feature-card" + (isOpen ? " open" : "")}>
+        <div className="fhead" onClick={() => toggle(i)}>
+          <div className="fleft">
+            <div className="ficon">{f.icon}</div>
+            <div className="ftitle">{f.title}</div>
           </div>
-          <div className="fbody">
-            <div className="fbody-inner"><p>{f.desc}</p></div>
+          <div className="chev">⌄</div>
+        </div>
+        <div className="fbody">
+          <div className="fbody-inner">
+            <p>{f.desc}</p>
           </div>
         </div>
-      ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="features-grid">
+      <div className="features-col">
+        {col1.map(renderCard)}
+      </div>
+      {col2.length > 0 && (
+        <div className="features-col">
+          {col2.map(renderCard)}
+        </div>
+      )}
     </div>
   );
 }

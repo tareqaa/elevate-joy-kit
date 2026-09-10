@@ -1,0 +1,1230 @@
+<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <LastAuthor>طارق عبد الله محمد الزبن</LastAuthor>
+  <LastSaved>2026-09-04T21:08:27Z</LastSaved>
+  <Version>16.00</Version>
+ </DocumentProperties>
+ <OfficeDocumentSettings xmlns="urn:schemas-microsoft-com:office:office">
+  <AllowPNG/>
+ </OfficeDocumentSettings>
+ <ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">
+  <WindowHeight>8676</WindowHeight>
+  <WindowWidth>23040</WindowWidth>
+  <WindowTopX>32767</WindowTopX>
+  <WindowTopY>32767</WindowTopY>
+  <ProtectStructure>False</ProtectStructure>
+  <ProtectWindows>False</ProtectWindows>
+ </ExcelWorkbook>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Center"/>
+   <Borders/>
+   <Font ss:FontName="Segoe UI" ss:Size="11" ss:Color="#000000"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="s62" ss:Name="Hyperlink">
+   <Font ss:FontName="Segoe UI" ss:Size="11" ss:Color="#666699"
+    ss:Underline="Single"/>
+  </Style>
+  <Style ss:ID="s63">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2"
+     ss:Color="#3B82F6"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#CBD5E1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#CBD5E1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#CBD5E1"/>
+   </Borders>
+   <Font ss:FontName="Segoe UI" ss:Size="12" ss:Color="#FFFFFF" ss:Bold="1"/>
+   <Interior ss:Color="#0F172A" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s64">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+   </Borders>
+   <Font ss:FontName="Segoe UI" ss:Color="#333333"/>
+  </Style>
+  <Style ss:ID="s65">
+   <Alignment ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+   </Borders>
+   <Font ss:FontName="Segoe UI" ss:Color="#333333"/>
+  </Style>
+  <Style ss:ID="s66">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+   </Borders>
+   <Font ss:FontName="Segoe UI" ss:Color="#339966" ss:Bold="1"/>
+   <NumberFormat ss:Format="#,##0.00\ &quot;JOD&quot;"/>
+  </Style>
+  <Style ss:ID="s67">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+   </Borders>
+   <Font ss:FontName="Segoe UI" ss:Color="#333333"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s70">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders/>
+   <Font ss:FontName="Segoe UI" ss:Color="#333333"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s71" ss:Parent="s62">
+   <Alignment ss:Vertical="Center" ss:WrapText="1"/>
+  </Style>
+  <Style ss:ID="s72">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders/>
+   <Font ss:FontName="Segoe UI" x:Family="Swiss" ss:Color="#333333"/>
+   <Interior/>
+  </Style>
+  <Style ss:ID="s73">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+   </Borders>
+   <Font ss:FontName="Segoe UI" x:Family="Swiss" ss:Color="#339966" ss:Bold="1"/>
+   <NumberFormat ss:Format="#,##0.00\ &quot;JOD&quot;"/>
+  </Style>
+  <Style ss:ID="s74">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"
+     ss:Color="#E2E8F0"/>
+   </Borders>
+   <Font ss:FontName="Segoe UI" ss:Color="#333333"/>
+   <Interior/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="GX Products Catalog" ss:RightToLeft="1">
+  <Table ss:ExpandedColumnCount="10" ss:ExpandedRowCount="93" x:FullColumns="1"
+   x:FullRows="1" ss:DefaultColumnWidth="52.8" ss:DefaultRowHeight="24">
+   <Column ss:Width="40.200000000000003"/>
+   <Column ss:Width="220.2"/>
+   <Column ss:Width="259.8" ss:Span="1"/>
+   <Column ss:Index="5" ss:AutoFitWidth="0" ss:Width="139.80000000000001"/>
+   <Column ss:AutoFitWidth="0" ss:Width="130.19999999999999"/>
+   <Column ss:AutoFitWidth="0" ss:Width="100.19999999999999"/>
+   <Column ss:AutoFitWidth="0" ss:Width="109.8"/>
+   <Column ss:AutoFitWidth="0" ss:Width="96"/>
+   <Row ss:AutoFitHeight="0" ss:Height="30">
+    <Cell ss:StyleID="s63"><Data ss:Type="String">#</Data></Cell>
+    <Cell ss:StyleID="s63"><Data ss:Type="String">معرف المنتج (Slug)</Data></Cell>
+    <Cell ss:StyleID="s63"><Data ss:Type="String">اسم المنتج بالعربي</Data></Cell>
+    <Cell ss:StyleID="s63"><Data ss:Type="String">اسم المنتج بالإنجليزي</Data></Cell>
+    <Cell ss:StyleID="s63"><Data ss:Type="String">القسم (Category)</Data></Cell>
+    <Cell ss:StyleID="s63"><Data ss:Type="String">المنصة (Platform)</Data></Cell>
+    <Cell ss:StyleID="s63"><Data ss:Type="String">السعر (JOD)</Data></Cell>
+    <Cell ss:StyleID="s63"><Data ss:Type="String">نوع المنتج (Type)</Data></Cell>
+    <Cell ss:StyleID="s63"><Data ss:Type="String">المزود (suppler)</Data></Cell>
+    <Cell ss:StyleID="s63"><Data ss:Type="String">image</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">1</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">arc-raiders-global-pc-steam-digital-key</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ARC Raiders Global PC Steam Key</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ARC Raiders Global PC Steam Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">23 JOD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2F9d01a805-f58c-4963-8f97-ab0c3a48e6ac_1808500.jpg&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">2</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">arc-raiders-global-pc-steam-digital-key-1</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ARC Raiders Deluxe Global Steam Key</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ARC Raiders Deluxe Global Steam Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">32JOD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2F64af0ae3-60db-425a-b7c5-53729bac017d_arc-raiders&#45;&#45;-deluxe-edition.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">3</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">assassins-creed-valhalla-steam-key-pc-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Assassin's Creed Valhalla Steam Key PC Global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Assassin's Creed Valhalla Steam Key PC Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">9 JOD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell ss:StyleID="s62" ss:HRef="https://imgproxy.eneba.games/iiDiTuBBK1gHAb_xFSX-nxNQcuJzHWLj6zmQqsyfGdk/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9K/N0NBWlBsUnMyT0Qz/NGhRd3Q4OUJWSWgz/aFpNWC01RDY2R2pm/VjVaWmhrLmpwZw"><Data
+      ss:Type="String">https://imgproxy.eneba.games/iiDiTuBBK1gHAb_xFSX-nxNQcuJzHWLj6zmQqsyfGdk/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9K/N0NBWlBsUnMyT0Qz/NGhRd3Q4OUJWSWgz/aFpNWC01RDY2R2pm/VjVaWmhrLmpwZw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">4</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">batman-arkham-collection-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Batman: Arkham Collection Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Batman: Arkham Collection Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">6 JOD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell ss:StyleID="s62" ss:HRef="https://imgproxy.eneba.games/PkhWW22cblo2mkPvApliuwkZPaSgBZsTBLAEkBwCgiQ/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9F/bHJQU253ZmF2cFlV/aHpjQXc0UWdUeVlj/akZNYUZYQ2dxb01Y/TzY2MEo4LmpwZWc"><Data
+      ss:Type="String">https://imgproxy.eneba.games/PkhWW22cblo2mkPvApliuwkZPaSgBZsTBLAEkBwCgiQ/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9F/bHJQU253ZmF2cFlV/aHpjQXc0UWdUeVlj/akZNYUZYQ2dxb01Y/TzY2MEo4LmpwZWc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">5</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">batman-arkham-origins-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Batman: Arkham Origins Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Batman: Arkham Origins Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/JxYmnWn0wss1VPXROo2kuXr-ojIRUrQsm32rKKPc-bY/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy82/ZVVDeGVPbDhkWG1C/QlB4RlpVaWk2WXhv/TDUwaG5uT1VLREJO/Tmh1V19ZLmpwZw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">6</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">bioshock-infinite-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">BioShock Infinite Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">BioShock Infinite Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/0FhMXrAapkH6awgg-JcetQPQN66HggObwZ9a4kqMa_c/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy93/ZGp6aXZqOWg1dzBr/NmFuejJxNy5qcGc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">7</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">bioshock-the-collection-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">BioShock: The Collection Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">BioShock: The Collection Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">10 JOD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">ENABA</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/umqpyfojNWLu4IoCxFtTjT0aPScumhQown8YsZXhuyM/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy8w/RWUzdGdrLmpwZw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">8</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">bioshock-the-collection-xbox-live-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">مجموعة بايوشوك - مفتاح إكس بوكس لايف عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">BioShock: The Collection Xbox Live Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">ألعاب Xbox</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Xbox Live</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">8JD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/RL4tr5kmfcPQgUl6xziROMMOoqDpxbtJ4l0R1nNTmtE/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy8y/dFlXUnUzaEJrTEtS/eVJJRWRtUm5UVnBX/V1B2OWwtanVhVmlR/eFg4djEwLmpwZWc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">9</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">control-ultimate-edition-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">كنترول النسخة النهائية - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Control Ultimate Edition Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">5.5 JOD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fprod%2F169426902184698000_control-ue_1694269028.webp&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">10</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">dark-souls-remastered-xbox-live-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">دارك سولز ريماسترد - مفتاح إكس بوكس لايف عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Dark Souls Remastered Xbox Live Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">ألعاب Xbox</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Xbox Live</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">5 JOD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/N16ECAR1B0zqvqJQtGb54SnZO2Srnc1WMBifjNM_ldA/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy83/M3kwT1JFaE5EODJQ/U3c5elY3TXc4RzMt/YThOYWl3YXk4eXJi/eTRWOHV3LmpwZWc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">11</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ea-sports-fc-26-global-pc-steam-account</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إي أيه سبورتس إف سي 26 - حساب ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">EA SPORTS FC 26 Global PC Steam Account</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">4.5 JOD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Account</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2F1b566408-fcba-482b-93d1-57d1fba320d8_fc-26.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">12</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ea-sports-fc-27-global-pc-steam-account</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إي أيه سبورتس إف سي 27 - حساب ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">EA SPORTS FC 27 Global PC Steam Account</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">26 JOD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Account</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2Fadb2b889-e6ae-47a1-a82d-e52bed991940_fc-27-standard-edition.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">13</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ea-sports-fc-27-global-xbox-standard-edition</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إي أيه سبورتس إف سي 27 - إكس بوكس النسخة القياسية</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">EA SPORTS FC 27 Global Xbox Standard Edition</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">ألعاب Xbox</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Xbox Series X/S</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">50 JOD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">merza</Data></Cell>
+    <Cell><Data ss:Type="String">https://www.gamezawy.com/wp-content/uploads/2026/07/FC-27.jpg</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">14</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">euro-truck-simulator-2-global-pc-mac-linux-steam-d</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">يورو تراك سيميولاتور 2 - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Euro Truck Simulator 2 Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">12</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fdevelopment%2F5d5683c1-6275-4d03-8eff-2a79eb8c3afd_euro-truck-simulator-2-steam-cd-key-p515433jpeg&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">15</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">forza-horizon-6-global-pc-steam-account</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">فورزا هورايزن 6 - حساب ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Forza Horizon 6 Global PC Steam Account</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">30JD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Account</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2F6e1e69e4-bca1-48b7-9f95-00ab295e74b6_151781.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">16</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">forza-horizon-6-global-pc-xbox-series-xs-xbox-live</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">فورزا هورايزن 6 - مفتاح إكس بوكس والكمبيوتر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Forza Horizon 6 Xbox Live Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">ألعاب Xbox</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Xbox / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">45</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2F6e1e69e4-bca1-48b7-9f95-00ab295e74b6_151781.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">17</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">grand-theft-auto-v-enhanced-pc-rockstar-games-laun</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">قراند 5 المحسنة - مفتاح روكستار للكمبيوتر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Grand Theft Auto V Enhanced PC Rockstar Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Rockstar Launcher</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">11JD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2Ffc92a79b-41d9-4cc1-8997-d5f993f13579_3240220.jpg&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">18</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">grand-theft-auto-v-xbox-series-sx-xbox-live-key-gl</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">قراند 5 - مفتاح إكس بوكس سيريس X/S عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Grand Theft Auto V Xbox Series X/S Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">ألعاب Xbox</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Xbox Series X/S</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">18</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/2xMUS-CApcWWA0Dbxa2FBvkyPAzGBjNgDWxsBm1iwCo/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9r/SkwteHhqM1JwZUU2/SzNYaHpJbWlpMV9E/NlRkR1RjSDFMdUV1/WGk0WnM0LmpwZWc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">19</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">gta-iv-complete-edition-rockstar-games-launcher-ke</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">قراند 4 النسخة الكاملة - مفتاح روكستار للكمبيوتر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">GTA IV Complete Edition Rockstar Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Rockstar Launcher</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">8.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/ZZkdDq3tXkZ08BYoCgjDNGvJTEHL6d9DiWcFSOMfUGo/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy8w/OHVSMjE1Sm1URl84/UmNNTmxEQThyVjND/RGI1eDhNUVdTMGdC/cTJDeVBnLmpwZw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">20</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">red-dead-redemption-2-rockstar-games-launcher-key-</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ريد ديد ريدمبشن 2 - مفتاح روكستار للكمبيوتر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Red Dead Redemption 2 Rockstar Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Rockstar Launcher</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">18.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/5KH5PbydU4nJtjaRRk0gcH66cO7QPLdfQy9kGnid5k4/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9n/SkpWQXdzMkNGeklr/RnQyQUZLLU45em9T/SjZYOE8xTklBUUI5/bkZIQnpVLmpwZWc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">21</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">helldivers-2-global-pc-steam-digital-key</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">هيل دايفرز 2 - مفتاح ستيم عالمي للكمبيوتر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">HELLDIVERS 2 Global PC Steam Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">27</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fprod%2F169891771304831100_Helldivers_2_1698917719.webp&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">22</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">hollow-knight-silksong-global-pc-steam-digital-key</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">هولو نايت سيلكسونج - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Hollow Knight: Silksong Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">12</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fprod%2F170168350738055500_1030300_1701683517.webp&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">23</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">hollow-knight-silksong-pcxbox-xbox-live-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">هولو نايت سيلكسونج - مفتاح إكس بوكس لايف عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Hollow Knight: Silksong Xbox Live Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">ألعاب Xbox</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Xbox / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">10</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fprod%2F170168350738055500_1030300_1701683517.webp&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">24</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">human-fall-flat-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">هيومان فول فلات - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Human: Fall Flat Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">3.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">ENABA</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/OOF1enCSEM6I8aalsQ2UFOXDPxug6z2CCXhkN8ZtzPs/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy92/aHR3ZDR0OGhwcWtn/cHExc2lkcy5qcGc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">25</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">jusant-pc-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">جوسانت - مفتاح ستيم عالمي للكمبيوتر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Jusant PC Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">4JD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/EXOA_D8uO9Xvjq-Uaiv6YbbB__91zcYt8m59igmNICQ/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9j/YmNFVTB3blI4S1Bo/cFZHQkJYVzFlazlK/NXc0UlR6Ukp4WmZl/RjcxNUdRLmpwZw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">26</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">mafia-ii-definitive-edition-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">مافيا 2 النسخة النهائية - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Mafia II: Definitive Edition Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">5JD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/efK397X01lxaxDn-XqWsvQjVQqCgbnE2tyJIbz5952A/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9m/SmpWczdZRlVFcm1i/RnlOaklnaWJJWXZV/SDV5Yk5ab1JJN3JY/YjNNVXJjLmpwZWc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">27</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">middle-earth-shadow-of-mordor-goty-steam-key-globa</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ميدل إيرث شادو أوف موردور - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Middle-earth: Shadow of Mordor GOTY Steam Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">3.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/Oyq-kpULpl7L36LAg3obPrPNSoh1RCvvATCqcYruzHU/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9N/aWRkbGUtZWFydGg6/IFNoYWRvdyBvZiBN/b3Jkb3IuanBn</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">28</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">middle-earth-shadow-of-war-definitive-edition-stea</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ميدل إيرث شادو أوف وور - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Middle-earth: Shadow of War Definitive Steam Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/GuS7fiMEJ2FZZ1tSwDDkjQcZ-noRcnpP_3YprZ77f7E/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9I/bVMySGY3cnBPdnpH/SWJsaFpvT2hlYVcw/bWJuZi1zUFEwanlU/dk0yUUJBLmpwZWc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">29</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">minecraft-java-bedrock-edition-pc-windows-store-ke</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ماينكرافت جافا وبيدروك - مفتاح ويندوز ستور للكمبيوتر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Minecraft Java &amp; Bedrock Edition PC Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Windows Store / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">17</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">Enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/HFctKs2s7yb7zhAs0t_IixbCiF7Ewpe_gj15SCBhQMY/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy93/NV9aR2wxaHJ2Unpu/THpTVlhUZW4yUjlZ/eE5SRkd3M0JZUk5Q/UlRQejJFLnBuZw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">30</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">minecraft-xbox-onexbox-series-xs-xbox-live-key-glo</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ماينكرافت - مفتاح إكس بوكس ون وسيريس عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Minecraft Xbox Live Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">ألعاب Xbox</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Xbox Live</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">17.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/_naOcWdv5D2TsYWAo1rklE9p6hTWtuF-5_ObPAkAZLQ/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9z/Mm9COWxNWFFjaEVx/NHdJc1lSTnRVNmxy/MDJSR05WVERrSlF1/NWQtbG80LmM2Y2Nh/MGJjLTUzY2MtNDhl/Yy04ODdhLWU1YWI4/M2U1YmVkZQ</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">31</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">mortal-kombat-1-pc-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">مورتال كومبات 1 - مفتاح ستيم عالمي للكمبيوتر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Mortal Kombat 1 PC Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">9</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s70"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell ss:StyleID="s71" ss:HRef="https://imgproxy.eneba.games/3suHQ71qs8d4XYXusy9RwBUAaoD0523Ysh-UYNePhvo/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy8z/b0FvQkItLWJ5WTgz/emZNTG9CNGlGeE5W/M2UtenlUalRmUHVJ/SUJFSEJJLmpwZw"><Data
+      ss:Type="String">https://imgproxy.eneba.games/3suHQ71qs8d4XYXusy9RwBUAaoD0523Ysh-UYNePhvo/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy8z/b0FvQkItLWJ5WTgz/emZNTG9CNGlGeE5W/M2UtenlUalRmUHVJ/SUJFSEJJLmpwZw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">32</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">mortal-kombat-11-ultimate-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">مورتال كومبات 11 ألتميت - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Mortal Kombat 11 Ultimate Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">5.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/qqFUHl_7PHS824XmK3SUmCAS2EsSeFbOAMIaCY-ea-c/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9s/V3d3MjRhSEFjNGJh/V3lTU2t2emxhN0N6/XzVkSXdyRTdIbnAz/M1FXdFM0LmpwZWc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">33</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">mortal-kombat-xl-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">مورتال كومبات XL - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Mortal Kombat XL Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">4.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/qmGE1RGUpYiVK2Nde4XsLk7d8p1p536PNR33msS2wLA/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9M/OG55dk5yLmpwZw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">34</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">mount-blade-ii-bannerlord-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ماونت آند بليد 2 بانرلورد - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Mount &amp; Blade II: Bannerlord Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">16</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fprod%2F166671158275181100_mount-and-blade-ii-bannerlord.webp&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">35</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">nba-2k26-global-pc-steam-digital-key</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إن بي إيه 2K26 - مفتاح ستيم عالمي للكمبيوتر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">NBA 2K26 Global PC Steam Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">9</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2F2230f6e6-f006-4784-b12d-467c2672a1a8_106074-1.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">36</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ori-and-the-blind-forest-definitive-edition-steam-</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">أوري آند ذا بلايند فورست - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Ori and the Blind Forest Definitive Steam Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">4.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/C-XEGIEYKh5TANeneIXt0Rslgx6Tqwl4j3DxXlewD2M/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9u/NjI0aHFzcXhmd3Fq/bjRoeHZmcS5qcGc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">37</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">peak-steam-key-pc-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">بيك - مفتاح ستيم عالمي للكمبيوتر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">PEAK Steam Key PC Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">4</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/Ca-dIG29MNNLKBDqwf-UQfx5TbizG1yKZ4AooBpQfSk/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9R/RzNtVDRKNFlYZGtG/am9KZVA1M1NIcG4t/OVE1UlhMbXhFXzZI/YnVLRzNvLmpwZw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">38</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ratchet-clank-rift-apart-pc-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">راتشيت آند كلانك ريفت أبارت - مفتاح ستيم للكمبيوتر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Ratchet &amp; Clank: Rift Apart PC Steam Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">21</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/mPZtn8tGyKdi8jy7XCJLkUGdQmEqr1IDaVpBwjrZpBw/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9x/NV9FT3ExdzJReXd4/NVAtenFPSC1jeUlp/b09HeTdRSy14R0dr/Mmpla2lvLmpwZw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">39</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">resident-evil-4-pc-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ريزيدنت إيفل 4 ريميك - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Resident Evil 4 Remake Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">15</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2Fc032b680-cbaf-4b06-94e9-41f4e9746efa_gemini-generated-image-w8n8n6w8n8n6w8n8.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">40</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">resident-evil-4-gold-edition-pc-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ريزيدنت إيفل 4 النسخة الذهبية - مفتاح ستيم</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Resident Evil 4 Gold Edition Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s73"><Data ss:Type="String">SOLD OUT</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2Fc032b680-cbaf-4b06-94e9-41f4e9746efa_gemini-generated-image-w8n8n6w8n8n6w8n8.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">41</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">resident-evil-7-biohazard-steam-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ريزيدنت إيفل 7 بايوهازارد - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Resident Evil 7 Biohazard Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">6.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/ghy2ENHxG5zvXkL9InPMngvXtq4p_-grp5VR-tcIbBc/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9B/Q0lxZkdkcTJGUjZ0/SWdjRWREZUREaHRt/YUxhaTl4LTFoT1pX/WUF6d3pRLmpwZw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">42</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">resident-evil-7-gold-edition-village-gold-edition-</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">باقة ريزيدنت إيفل 7 و فيليدج الذهبية - مفتاح ستيم</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Resident Evil 7 Gold + Village Resident Evil  Steam   Key global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">15</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/xVU6Iu3lIu8w5_cTWDSgUS1Y4tsh-Wo5lrvQCEtI94w/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy93/SmdKTTE0LWx6d0hw/Z0k2Z1lCYVVnaHpR/QkdEQllDZTU0OU1E/cDN2WWZNLmYyYjJm/YmUzLWFjMzQtNGZl/Yy1hMTY0LWQ1Mzc2/YjcyNDBkYw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">43</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">resident-evil-village-resident-evil-8-steam-key-gl</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ريزيدنت إيفل فيليدج (RE8) - مفتاح ستيم عالمي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Resident Evil Village Steam Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">9</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/LCL7BUbB7jEZK_s-zmJ-OxGX59ZmnMbkSwb9WLpW3H0/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy85/UDNzU0tQWWdCcHRy/RDEtdVA1X1F3NGg1/Wkt6UlJqblNDRlRK/SEdfU1dvLmpwZWc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">44</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">resident-evil-village-resident-evil-8-gold-edition</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ريزيدنت إيفل فيليدج النسخة الذهبية - مفتاح ستيم</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Resident Evil Village Gold Edition Steam Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">PC GAMES </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Steam / PC</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">16 jd</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/H46iAN57sVwBfDjUERCIXpHNGgajKHYoFaiYEdggkKE/rs:fit:300/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy8t/S041aGdfOWhwTUp0/WGZNMXA3UmZoU2U2/am1TT3JrSjBBXzlL/YXVFQ0I4LnBuZw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">45</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">discord-nitro-1-month-digtal-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">اشتراك ديسكورد نيترو - شهر واحد (مفتاح رقمي)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Discord Nitro 1 Month Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">البرامج والتطبيقات</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Discord</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">6.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Activation Link</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">g2g</Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2Fb81d19c4-614c-4312-9b99-5660c73712e1_44738-1.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">46</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">discord-nitro-1-year-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">اشتراك ديسكورد نيترو - سنة كاملة (عالمي)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Discord Nitro 1 Year Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">البرامج والتطبيقات</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Discord</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">63</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Activation Link</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2F0a79bdb8-d064-4a59-bfad-a5837e86dccd_1-month-trial-subscription-1png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">47</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">discord-nitro-3-month-trail-0-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ديسكورد نيترو 3 أشهر تجريبي (للحسابات الجديدة)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Discord Nitro 3 Months Trial Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">البرامج والتطبيقات</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Discord</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">1.85</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">G2G , DRIFFLE</Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2Fc2edf3ea-09f9-4191-b13c-cb8db5a0d4fb_3-months-trial-subscriptionpng&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">48</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">49</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">discord-server-14x-boost-1-month-subscription-glob</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">بوست سيرفر ديسكورد 14x (مستوى 3) - شهر واحد</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Discord Server 14x Boost 1 Month Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">البرامج والتطبيقات</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Discord</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">6</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Subscription</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2F2d60d400-9fd1-424d-b570-1c40b243c8f6_114134.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">50</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">discord-server-14x-boost-3-months-subscription-glo</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">بوست سيرفر ديسكورد 14x (مستوى 3) - 3 أشهر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Discord Server 14x Boost 3 Months Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">البرامج والتطبيقات</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Discord</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">15</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Subscription</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2F7695934d-a6ba-4960-88e9-ff92ca7c0608_114135.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">51</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">xbox-gamepass-ultimate-1-month</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إكس بوكس جيم باس التيميت - شهر واحد</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Xbox Game Pass Ultimate 1 Month</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">10.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">TOP UP </Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2Fcdbeff33-51b2-41c5-8709-f35974ce4f52_18110.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">52</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">xbox-gamepass-ultimate-2-month-account</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إكس بوكس جيم باس التيميت - شهرين (حساب)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Xbox Game Pass Ultimate 2 Months Account</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">13.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Account</Data></Cell>
+    <Cell ss:StyleID="s72"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2F0e2ae3bf-4071-4bfe-ab7b-6c9daf9645d9_134585.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">53</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">xbox-gamepass-ultimate-35-month</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إكس بوكس جيم باس التيميت - 3.5 شهر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Xbox Game Pass Ultimate 3.5 Months</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">30</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">TOP UP </Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://cms-assets.xboxservices.com/assets/35/4b/354b3ddf-1b39-48c2-92d7-44e5fda75dc4.jpg?n=RE2TAjc.jpg&amp;q=90&amp;o=f&amp;w=80&amp;h=128</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">54</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">xbox-gamepass-ultimate-4-month-account</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إكس بوكس جيم باس التيميت - 4 أشهر (حساب)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Xbox Game Pass Ultimate 4 Months Account</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">27</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Account</Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://cms-assets.xboxservices.com/assets/35/4b/354b3ddf-1b39-48c2-92d7-44e5fda75dc4.jpg?n=RE2TAjc.jpg&amp;q=90&amp;o=f&amp;w=80&amp;h=128</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">55</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">xbox-gamepass-ultimate-6-month-account</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إكس بوكس جيم باس التيميت - 6 أشهر (حساب)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Xbox Game Pass Ultimate 6 Months Account</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">39</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Account</Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://cms-assets.xboxservices.com/assets/35/4b/354b3ddf-1b39-48c2-92d7-44e5fda75dc4.jpg?n=RE2TAjc.jpg&amp;q=90&amp;o=f&amp;w=80&amp;h=128</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">56</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">xbox-gamepass-ultimate-65-month</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إكس بوكس جيم باس التيميت - 6.5 شهر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Xbox Game Pass Ultimate 6.5 Months</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">43</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">TOP UP </Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://cms-assets.xboxservices.com/assets/35/4b/354b3ddf-1b39-48c2-92d7-44e5fda75dc4.jpg?n=RE2TAjc.jpg&amp;q=90&amp;o=f&amp;w=80&amp;h=128</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">57</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">xbox-gamepass-ultimate-8-month</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إكس بوكس جيم باس التيميت - 8 أشهر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Xbox Game Pass Ultimate 8 Months</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">55</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">TOP UP </Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://cms-assets.xboxservices.com/assets/35/4b/354b3ddf-1b39-48c2-92d7-44e5fda75dc4.jpg?n=RE2TAjc.jpg&amp;q=90&amp;o=f&amp;w=80&amp;h=128</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">58</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">xbox-gamepass-ultimate-10-month</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إكس بوكس جيم باس التيميت - 10 أشهر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Xbox Game Pass Ultimate 10 Months</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">65</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">TOP UP </Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://cms-assets.xboxservices.com/assets/35/4b/354b3ddf-1b39-48c2-92d7-44e5fda75dc4.jpg?n=RE2TAjc.jpg&amp;q=90&amp;o=f&amp;w=80&amp;h=128</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">59</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">xbox-gamepass-ultimate-10-month-account</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إكس بوكس جيم باس التيميت - 10 أشهر (حساب)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Xbox Game Pass Ultimate 10 Months Account</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">60</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Account</Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://cms-assets.xboxservices.com/assets/35/4b/354b3ddf-1b39-48c2-92d7-44e5fda75dc4.jpg?n=RE2TAjc.jpg&amp;q=90&amp;o=f&amp;w=80&amp;h=128</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">60</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">xbox-gamepass-ultimate-12-month</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إكس بوكس جيم باس التيميت - 12 شهر (سنة)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Xbox Game Pass Ultimate 12 Months</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">82</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">TOP UP </Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://cms-assets.xboxservices.com/assets/35/4b/354b3ddf-1b39-48c2-92d7-44e5fda75dc4.jpg?n=RE2TAjc.jpg&amp;q=90&amp;o=f&amp;w=80&amp;h=128</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">61</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">xbox-gamepass-ultimate-12-month-account</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إكس بوكس جيم باس التيميت - 12 شهر (حساب)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Xbox Game Pass Ultimate 12 Months Account</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">70</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Account</Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://cms-assets.xboxservices.com/assets/35/4b/354b3ddf-1b39-48c2-92d7-44e5fda75dc4.jpg?n=RE2TAjc.jpg&amp;q=90&amp;o=f&amp;w=80&amp;h=128</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">62</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">pc-game-pass-3-month</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">بي سي جيم باس للكمبيوتر - 3 أشهر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">PC Game Pass 3 Months</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">17</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">TOP UP </Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://cms-assets.xboxservices.com/assets/69/bf/69bfe842-512b-4d42-89f6-2dece92ad4e1.jpg?n=PCGP-Poster-720x1080.jpg</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">63</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">pc-game-pass-6-month</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">بي سي جيم باس للكمبيوتر - 6 أشهر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">PC Game Pass 6 Months</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">31</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">TOP UP </Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://cms-assets.xboxservices.com/assets/69/bf/69bfe842-512b-4d42-89f6-2dece92ad4e1.jpg?n=PCGP-Poster-720x1080.jpg</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">64</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">pc-game-pass-9-month</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">بي سي جيم باس للكمبيوتر - 9 أشهر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">PC Game Pass 9 Months</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">45</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">TOP UP </Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://cms-assets.xboxservices.com/assets/69/bf/69bfe842-512b-4d42-89f6-2dece92ad4e1.jpg?n=PCGP-Poster-720x1080.jpg</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">65</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">pc-game-pass-12-month</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">بي سي جيم باس للكمبيوتر - 12 شهر</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">PC Game Pass 12 Months</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">الاشتراكات </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">XBOX GAME PASS</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">60</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">TOP UP </Data></Cell>
+    <Cell ss:Index="10"><Data ss:Type="String">https://cms-assets.xboxservices.com/assets/69/bf/69bfe842-512b-4d42-89f6-2dece92ad4e1.jpg?n=PCGP-Poster-720x1080.jpg</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">66</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">capcut-pro-1-month-global-capcut-account</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">كاب كات برو - اشتراك شهر واحد (حساب عالمي)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">CapCut Pro 1 Month Global Account</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">البرامج والتطبيقات</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">CapCut</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">4.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Account</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">driffle </Data></Cell>
+    <Cell><Data ss:Type="String">https://driffle.com/_next/image?url=https%3A%2F%2Fstatic.driffle.com%2Ffit-in%2F720x512%2Fmedia-gallery%2Fproduction%2F73243c72-e0de-4e20-a6cd-5796e28d92cc_135849.png&amp;w=1080&amp;q=75</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">67</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">expressvpn-1-month-account</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إكسبريس في بي إن - اشتراك شهر واحد (حساب)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">ExpressVPN 1 Month key </Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">البرامج والتطبيقات</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">ExpressVPN</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">5.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">g2a</Data></Cell>
+    <Cell><Data ss:Type="String">https://images.g2a.com/300x400/1x1x1/express-vpn-pc-mac-1-device-1-month-expressvpn-key-global-i10000339746001/9889c89be8a9499fb5c365c7</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">68</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">surfshark-vpn-unlimited-devices-2-month-trial-key-</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">سيرف شارك في بي إن - مفتاح شهرين تجريبي</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Surfshark VPN Unlimited Devices 2 Months Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">البرامج والتطبيقات</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Surfshark</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">1.75JD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/XaV784Lfa6hZv0BoY-14FA6odJc42maYOR2tR9_0MMs/rs:fit:600/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9Z/RXV5THFoRTBBMjZm/WXBTUGl5WlVrX1hp/UUpZN0ZUVzAzXzNl/QTJnNVpvLnBuZw</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">69</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">avast-secureline-vpn-1-devices-1-year-avast-key-gl</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">أفاست سكيور لاين في بي إن - جهاز واحد سنة كاملة</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Avast SecureLine VPN 1 Device 1 Year Key</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">البرامج والتطبيقات</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Avast</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">6.5JD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/B&#45;-NxwZlESXrDVHdAXVe3owzK051VqCNh5d3lUcCato/rs:fit:600/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9Y/SlNZYmFCUkN6U1hp/eE1sN04zbm9JVzVB/QXVxclZXTGtBMFZC/T2dNdHhNLmpwZWc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">70</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">avg-secure-vpn-1-device-1-year-avg-key-global</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">إيه في جي سكيور في بي إن - جهاز واحد سنة كاملة</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">AVG Secure VPN 1 Device 1 Year Key Global</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">البرامج والتطبيقات</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">AVG</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="String">6.5JD</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Digital Key</Data></Cell>
+    <Cell ss:StyleID="s74"><Data ss:Type="String">enaba</Data></Cell>
+    <Cell><Data ss:Type="String">https://imgproxy.eneba.games/a_BQrvP-OHwOMfDGABxFlP12iFkN0VSw3m-fDLc8k1o/rs:fit:600/ar:1/czM6Ly9wcm9kdWN0/cy5lbmViYS5nYW1l/cy9wcm9kdWN0cy9K/eVBvblEzT1RKMEt2/MFJqSUVoTlp5ZGx0/bjJidHRPNGdmcmJh/cF8wSE1RLmpwZWc</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">71</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">google-play-gift-card-5-usd-key-united-states</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">بطاقة جوجل بلاي 5 دولار (المتجر الأمريكي)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Google Play Gift Card 5 USD US</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">بطاقات الهدايا والشحن</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Google Play (US)</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">4.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Gift Card</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">72</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">google-play-gift-card-10-usd-key-united-states</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">بطاقة جوجل بلاي 10 دولار (المتجر الأمريكي)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Google Play Gift Card 10 USD US</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">بطاقات الهدايا والشحن</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Google Play (US)</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">8</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Gift Card</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">73</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">google-play-gift-card-20-usd-key-united-states</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">بطاقة جوجل بلاي 20 دولار (المتجر الأمريكي)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Google Play Gift Card 20 USD US</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">بطاقات الهدايا والشحن</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Google Play (US)</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">15.5</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Gift Card</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">74</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">google-play-gift-card-50-usd-key-united-states</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">بطاقة جوجل بلاي 50 دولار (المتجر الأمريكي)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Google Play Gift Card 50 USD US</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">بطاقات الهدايا والشحن</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Google Play (US)</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">38</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Gift Card</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">75</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">google-play-gift-card-100-usd-key-united-states</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">بطاقة جوجل بلاي 100 دولار (المتجر الأمريكي)</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">Google Play Gift Card 100 USD US</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">بطاقات الهدايا والشحن</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Google Play (US)</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">74</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Gift Card</Data></Cell>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">76</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">77</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">78</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">79</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">80</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">81</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">82</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">83</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">84</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">85</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">86</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">87</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">88</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">89</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">90</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">91</Data></Cell>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s65"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+   <Row ss:AutoFitHeight="0">
+    <Cell ss:StyleID="s64"><Data ss:Type="Number">92</Data></Cell>
+    <Cell ss:Index="5" ss:StyleID="s64"/>
+    <Cell ss:StyleID="s64"/>
+    <Cell ss:StyleID="s66"/>
+    <Cell ss:StyleID="s64"/>
+   </Row>
+  </Table>
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+   <Unsynced/>
+   <Selected/>
+   <DisplayRightToLeft/>
+   <LeftColumnVisible>2</LeftColumnVisible>
+   <Panes>
+    <Pane>
+     <Number>3</Number>
+     <ActiveRow>71</ActiveRow>
+     <ActiveCol>5</ActiveCol>
+    </Pane>
+   </Panes>
+   <ProtectObjects>False</ProtectObjects>
+   <ProtectScenarios>False</ProtectScenarios>
+  </WorksheetOptions>
+ </Worksheet>
+</Workbook>

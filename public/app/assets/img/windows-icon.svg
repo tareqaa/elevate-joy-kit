@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="winGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#29a7ff" />
+      <stop offset="100%" stopColor="#0078d4" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="43" height="43" rx="5" fill="url(#winGrad)" />
+  <rect x="53" y="4" width="43" height="43" rx="5" fill="url(#winGrad)" />
+  <rect x="4" y="53" width="43" height="43" rx="5" fill="url(#winGrad)" />
+  <rect x="53" y="53" width="43" height="43" rx="5" fill="url(#winGrad)" />
+</svg>

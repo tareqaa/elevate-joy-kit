@@ -1,17 +1,160 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { getCatalogCategory } from "@/lib/gx/catalog.functions";
-import type { CatalogCategoryChild, CatalogCategoryProductItem } from "@/lib/gx/catalog.functions";
+import {
+  getCatalogCategory,
+  getAllCatalogProducts,
+  type CatalogCategoryChild,
+  type CatalogStoreProduct,
+} from "@/lib/gx/catalog.functions";
 import { useLang } from "@/lib/gx/i18n";
-import { useCurrency } from "@/lib/gx/currency";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
-import { BuyActions } from "@/components/gx/BuyActions";
+import { StoreProductCard } from "@/components/gx/StoreProductCard";
+import { CatalogFilterBar } from "@/components/gx/CatalogFilterBar";
+import { CatSortDropdown, SORT_OPTIONS } from "@/components/gx/CatSortDropdown";
+import { CatPagination } from "@/components/gx/CatPagination";
+import { CatDeliveryTypeDropdown, DELIVERY_TYPE_OPTIONS } from "@/components/gx/CatDeliveryTypeDropdown";
+import { CatPriceFilterDropdown, PRICE_PRESETS } from "@/components/gx/CatPriceFilterDropdown";
+import { resolveStrictDeliveryType } from "@/lib/gx/delivery-types";
+
+/**
+ * الكاتجوريات التي يتم تفعيل شريط الفلتر (Filter Bar) فيها.
+ * بشكل افتراضي الفلتر ملغي من صفحات الكاتجوري، وفقط الكاتجوريات المضافة هنا (أو التي تحوي hasFilter) يظهر فيها الفلتر.
+ */
+export const FILTER_ENABLED_CATEGORIES = new Set<string>([
+  // أضف slugs الكاتجوري هنا إذا رغبت بتفعيل الفلتر لها مستقبلاً، مثال: "pc-games"
+]);
+
+/**
+ * ثيمات وألوان التوهج اللوني المحيطي لكل كاتجوري
+ */
+function getCategoryTheme(slug: string) {
+  switch (slug) {
+    case "subscriptions":
+      return { glow: "rgba(245, 158, 11, 0.45)", ambient: "rgba(245, 158, 11, 0.15)", accent: "#f59e0b" };
+    case "canva":
+      return { glow: "rgba(0, 196, 204, 0.45)", ambient: "rgba(0, 196, 204, 0.16)", accent: "#00c4cc" };
+    case "adobe":
+      return { glow: "rgba(235, 16, 0, 0.4)", ambient: "rgba(235, 16, 0, 0.14)", accent: "#eb1000" };
+    case "windows-keys":
+    case "windows":
+      return { glow: "rgba(0, 120, 212, 0.45)", ambient: "rgba(0, 120, 212, 0.16)", accent: "#0078d4" };
+    case "microsoft365":
+      return { glow: "rgba(242, 80, 34, 0.4)", ambient: "rgba(242, 80, 34, 0.14)", accent: "#f25022" };
+    case "autodesk":
+      return { glow: "rgba(6, 150, 215, 0.4)", ambient: "rgba(6, 150, 215, 0.14)", accent: "#0696d7" };
+    case "linkedin":
+    case "linkedin-premium":
+      return { glow: "rgba(10, 102, 194, 0.45)", ambient: "rgba(10, 102, 194, 0.16)", accent: "#0a66c2" };
+    case "gemini":
+    case "ai":
+      return { glow: "rgba(147, 51, 234, 0.45)", ambient: "rgba(126, 34, 206, 0.15)", accent: "#9333ea" };
+    case "fortnite":
+      return { glow: "rgba(168, 85, 247, 0.4)", ambient: "rgba(147, 51, 234, 0.15)", accent: "#a855f7" };
+    case "games":
+    case "pc-games":
+    case "steam":
+      return { glow: "rgba(0, 229, 255, 0.35)", ambient: "rgba(0, 229, 255, 0.14)", accent: "#00e5ff" };
+    case "sony":
+      return { glow: "rgba(0, 112, 209, 0.4)", ambient: "rgba(0, 112, 209, 0.15)", accent: "#0070d1" };
+    case "xbox-games":
+      return { glow: "rgba(16, 124, 65, 0.4)", ambient: "rgba(16, 124, 65, 0.15)", accent: "#107c41" };
+    case "gift-cards":
+    case "gc-playstation":
+    case "gc-xbox":
+    case "gc-google-play":
+    case "gc-itunes":
+      return { glow: "rgba(255, 45, 120, 0.35)", ambient: "rgba(255, 45, 120, 0.14)", accent: "#ff2d78" };
+    case "design":
+    case "apps":
+    case "software":
+    default:
+      return { glow: "rgba(0, 229, 255, 0.3)", ambient: "rgba(0, 229, 255, 0.12)", accent: "#00e5ff" };
+  }
+}
+
+/**
+ * حساب عدد العروض المتاحة للقسم الفرعي
+ */
+function getSubcatOfferCount(slug: string, allProducts: CatalogStoreProduct[]) {
+  return allProducts.filter(
+    (p) => p.categorySlug === slug || p.slug === slug || (p.cartId && p.cartId.startsWith(slug))
+  ).length;
+}
+
+/**
+ * صياغة عدد العروض المتوفرة بدقة لغوية
+ */
+function formatOfferCount(count: number, lang: "ar" | "en") {
+  if (count === 0) return lang === "en" ? "Coming Soon" : "قريباً";
+  if (lang === "en") {
+    return count === 1 ? "1 Offer" : `${count} Offers`;
+  }
+  if (count === 1) return "عرض واحد";
+  if (count === 2) return "عرضان";
+  if (count >= 3 && count <= 10) return `${count} عروض`;
+  if (count > 10) return `${count} عرض`;
+  return `${count}`;
+}
 
 export const Route = createFileRoute("/category/$slug")({
   loader: async ({ params }) => {
-    const category = await getCatalogCategory({ data: { slug: params.slug } });
+    if (params.slug === "products" || params.slug === "all") {
+      throw redirect({ to: "/products" });
+    }
+    if (params.slug === "game-pass" || params.slug === "gamepass" || params.slug === "xbox-game-pass") {
+      throw redirect({ to: "/category/$slug", params: { slug: "subscriptions" }, replace: true });
+    }
+    if (params.slug === "linkedin") {
+      throw redirect({ to: "/category/$slug", params: { slug: "linkedin-premium" }, replace: true });
+    }
+    if (params.slug === "windows") {
+      throw redirect({ to: "/category/$slug", params: { slug: "windows-keys" }, replace: true });
+    }
+    if (params.slug === "steam") {
+      throw redirect({ to: "/category/$slug", params: { slug: "pc-games" }, replace: true });
+    }
+    const [category, allProducts] = await Promise.all([
+      getCatalogCategory({ data: { slug: params.slug } }),
+      getAllCatalogProducts(),
+    ]);
     if (!category) throw notFound();
-    return { category };
+
+    const childSlugs = new Set((category.children ?? []).map((c) => c.slug));
+
+    // جمع كافة المنتجات المتطابقة مع الكاتجوري أو أي قسم فرعي تابع له
+    let categoryProducts: CatalogStoreProduct[] = [];
+
+    if (category.slug === "subscriptions") {
+      categoryProducts = allProducts.filter(
+        (p) =>
+          p.categorySlug === "subscriptions" ||
+          p.parentCategorySlug === "subscriptions" ||
+          (p.slug || "").includes("game-pass")
+      );
+    } else {
+      const matchingAll = allProducts.filter(
+        (p) =>
+          p.categorySlug === category.slug ||
+          p.parentCategorySlug === category.slug ||
+          p.slug === category.slug ||
+          (p.categorySlug && childSlugs.has(p.categorySlug))
+      );
+
+      const directProducts = (category.products ?? []).map((cp) => {
+        const full = allProducts.find((ap) => ap.id === cp.id || ap.slug === cp.slug);
+        return {
+          ...cp,
+          ...(full || {}),
+          nameAr: cp.nameAr || full?.nameAr || "",
+          nameEn: cp.nameEn || full?.nameEn || "",
+        } as CatalogStoreProduct;
+      });
+
+      categoryProducts = matchingAll.length > 0 ? matchingAll : directProducts;
+    }
+
+    return { category, products: categoryProducts, allProducts };
   },
   head: ({ loaderData }) => {
     const c = loaderData?.category;
@@ -38,132 +181,1333 @@ export const Route = createFileRoute("/category/$slug")({
   component: CategoryPage,
 });
 
+function DiscordIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="#ffffff">
+      <path d="M20.3 4.4C18.8 3.7 17.2 3.2 15.5 3c-.2.4-.4.8-.6 1.2-1.7-.3-3.4-.3-5.1 0-.2-.4-.4-.8-.6-1.2-1.7.2-3.3.7-4.8 1.4-3 4.5-3.8 8.9-3.4 13.2 2 1.5 3.9 2.4 5.8 3 .5-.6.9-1.3 1.3-2-1-.4-2-.9-2.9-1.6.2-.2.5-.3.7-.5 3.8 1.8 8 1.8 11.8 0 .2.2.5.3.7.5-.9.7-1.9 1.2-2.9 1.6.4.7.8 1.4 1.3 2 1.9-.6 3.8-1.5 5.8-3 .5-5-.7-9.3-3.4-13.2zM8.5 14.5c-1.1 0-2-1-2-2.3s.9-2.3 2-2.3c1.1 0 2 1 2 2.3s-.9 2.3-2 2.3zm7 0c-1.1 0-2-1-2-2.3s.9-2.3 2-2.3c1.1 0 2 1 2 2.3s-.9 2.3-2 2.3z" />
+    </svg>
+  );
+}
+
+function CapCutIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="32" height="32" fill="none">
+      <rect width="40" height="40" rx="10" fill="#000000" />
+      <path d="M10 12.5L20 20L10 27.5V12.5Z" fill="#00e5ff" />
+      <path d="M30 12.5L20 20L30 27.5V12.5Z" fill="#ffffff" />
+      <circle cx="20" cy="20" r="2.5" fill="#00e5ff" />
+    </svg>
+  );
+}
+
+function SurfsharkIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="32" height="32" fill="none">
+      <rect width="40" height="40" rx="10" fill="rgba(0, 209, 143, 0.15)" stroke="#00d18f" strokeWidth="1.5" />
+      <path d="M20 9C14.5 9 10 13.5 10 18.5C10 24.5 17 25.5 17 29C17 30.5 15.5 31.5 14 31.5C12 31.5 10.5 30.5 10.5 30.5L9 34C9 34 11.5 35.5 14 35.5C19 35.5 22.5 32 22.5 27C22.5 21 15.5 20 15.5 16.5C15.5 15 17 14 19 14C21.5 14 23 15 23 15L24.5 11.5C24.5 11.5 22.5 9 20 9Z" fill="#00d18f" />
+      <path d="M26 19.5L31 14.5V29.5L26 24.5V19.5Z" fill="#00d18f" />
+    </svg>
+  );
+}
+
+function ExpressVpnIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="32" height="32" fill="none">
+      <rect width="40" height="40" rx="10" fill="#da3941" />
+      <path d="M12 13L20 28L28 13H23L20 19L17 13H12Z" fill="#ffffff" />
+    </svg>
+  );
+}
+
+function SecurityShieldIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="32" height="32" fill="none">
+      <rect width="40" height="40" rx="10" fill="rgba(255, 102, 0, 0.15)" stroke="#ff6600" strokeWidth="1.5" />
+      <path d="M20 9L29 13V20C29 25.5 25 30.5 20 32C15 30.5 11 25.5 11 20V13L20 9Z" fill="#ff6600" />
+      <path d="M18.5 21.5L15.5 18.5L14 20L18.5 24.5L26 17L24.5 15.5L18.5 21.5Z" fill="#ffffff" />
+    </svg>
+  );
+}
+
+function AllPlatformsIcon() {
+  return (
+    <div
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        background: "linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(168, 85, 247, 0.25))",
+        border: "1.5px solid rgba(0, 229, 255, 0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 18,
+      }}
+    >
+      🌟
+    </div>
+  );
+}
+
+function SoftwareSuiteIcon() {
+  return (
+    <svg viewBox="0 0 44 44" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="swG1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#00e5ff" />
+          <stop offset="100%" stopColor="#0284c7" />
+        </linearGradient>
+        <linearGradient id="swG2" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#c084fc" />
+          <stop offset="100%" stopColor="#9333ea" />
+        </linearGradient>
+        <linearGradient id="swG3" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#34d399" />
+          <stop offset="100%" stopColor="#059669" />
+        </linearGradient>
+        <linearGradient id="swG4" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fbbf24" />
+          <stop offset="100%" stopColor="#ea580c" />
+        </linearGradient>
+      </defs>
+      <rect x="4" y="4" width="16" height="16" rx="5" fill="url(#swG1)" />
+      <path d="M8.5 12L11 14.5L15.5 10" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+
+      <rect x="24" y="4" width="16" height="16" rx="5" fill="url(#swG2)" />
+      <circle cx="32" cy="12" r="3.2" stroke="#ffffff" strokeWidth="1.8" fill="none" />
+
+      <rect x="4" y="24" width="16" height="16" rx="5" fill="url(#swG3)" />
+      <path d="M8 32H16M12 28V36" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
+
+      <rect x="24" y="24" width="16" height="16" rx="5" fill="url(#swG4)" />
+      <path d="M28 34L32 28L36 34" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function GamingHeroIcon() {
+  return (
+    <svg viewBox="0 0 44 44" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="gmGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#00e5ff" />
+          <stop offset="100%" stopColor="#7c3aed" />
+        </linearGradient>
+      </defs>
+      <rect x="3" y="9" width="38" height="26" rx="13" fill="url(#gmGrad)" />
+      <path d="M10 22H18M14 18V26" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="28" cy="19" r="1.8" fill="#ffffff" />
+      <circle cx="33" cy="22" r="1.8" fill="#ffffff" />
+      <circle cx="28" cy="25" r="1.8" fill="#ffffff" />
+      <circle cx="23" cy="22" r="1.8" fill="#ffffff" />
+    </svg>
+  );
+}
+
+function SubscriptionsHeroIcon() {
+  return (
+    <svg viewBox="0 0 44 44" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="subGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#f59e0b" />
+          <stop offset="100%" stopColor="#b45309" />
+        </linearGradient>
+      </defs>
+      <rect x="3" y="8" width="38" height="28" rx="8" fill="url(#subGrad)" />
+      <path d="M10 22H34M10 27H24M10 17H16" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="32" cy="16" r="3" fill="#ffffff" />
+    </svg>
+  );
+}
+
+export type CategoryPlatformItem = {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  color: string;
+  glow: string;
+  logoSrc?: string;
+  renderLogo?: () => React.ReactNode;
+  count: number;
+  match: (product: CatalogStoreProduct) => boolean;
+  directLink?: string;
+};
+
 function CategoryPage() {
-  const { category } = Route.useLoaderData();
+  const { category, products, allProducts } = Route.useLoaderData();
   const { lang, t } = useLang();
-  const { format } = useCurrency();
   const pick = (ar?: string | null, en?: string | null) => (lang === "en" ? en || ar : ar || en) || "";
 
   const catName = pick(category.nameAr, category.nameEn);
+  const theme = getCategoryTheme(category.slug);
   const hasChildren = (category.children ?? []).length > 0;
-  const hasProducts = (category.products ?? []).length > 0;
+  const isSoftwareCategory =
+    category.slug === "design" ||
+    category.slug === "apps" ||
+    category.slug === "software";
+
+  const isGamingCategory =
+    category.slug === "games" ||
+    category.slug === "pc-games" ||
+    category.slug === "xbox-games" ||
+    category.slug === "sony";
+
+  const isSubscriptionsCategory =
+    category.slug === "subscriptions";
+
+  const showcaseBrands = useMemo(() => {
+    if (isSoftwareCategory) {
+      return [
+        { name: "Canva", logo: "/app/assets/img/canva-logo.png" },
+        { name: "Adobe", logo: "/app/assets/img/adobe-cc.webp" },
+        { name: "Windows", logo: "/app/assets/img/windows-logo.svg" },
+        { name: "Microsoft 365", logo: "/app/assets/img/microsoft365-logo.svg" },
+      ];
+    }
+    if (isGamingCategory) {
+      return [
+        { name: "Steam", logo: "/app/assets/img/steam-logo.svg" },
+        { name: "Xbox", logo: "/app/assets/img/xbox-logo.svg" },
+        { name: "PlayStation", logo: "/app/assets/img/playstation-logo.svg" },
+        { name: "Fortnite", logo: "/app/assets/img/fortnite-f-icon.jpg" },
+      ];
+    }
+    if (isSubscriptionsCategory) {
+      return [
+        { name: "Xbox Game Pass", logo: "/app/assets/img/xbox-logo.svg" },
+      ];
+    }
+    return [];
+  }, [isSoftwareCategory, isGamingCategory, isSubscriptionsCategory]);
+
+  // State for active platform selection, search, sort, and modal
+  const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("popular");
+  const [selectedDeliveryType, setSelectedDeliveryType] = useState<string>("all");
+  const [selectedPricePreset, setSelectedPricePreset] = useState<string>("all");
+  const [customMinPrice, setCustomMinPrice] = useState<string>("");
+  const [customMaxPrice, setCustomMaxPrice] = useState<string>("");
+  const [isAllPlatformsModalOpen, setIsAllPlatformsModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isAllPlatformsModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsAllPlatformsModalOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isAllPlatformsModalOpen]);
+
+  // Platforms for software/design category
+  const softwarePlatforms: CategoryPlatformItem[] = useMemo(() => {
+    const defs = [
+      {
+        id: "all",
+        nameAr: "كل المنصات",
+        nameEn: "All Platforms",
+        color: "#00e5ff",
+        glow: "rgba(0, 229, 255, 0.45)",
+        renderLogo: () => <AllPlatformsIcon />,
+        match: () => true,
+      },
+      {
+        id: "canva",
+        nameAr: "Canva",
+        nameEn: "Canva",
+        color: "#00c4cc",
+        glow: "rgba(0, 196, 204, 0.45)",
+        logoSrc: "/app/assets/img/canva-logo.png",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("canva") || (p.categorySlug || "") === "canva",
+      },
+      {
+        id: "adobe",
+        nameAr: "Adobe",
+        nameEn: "Adobe",
+        color: "#eb1000",
+        glow: "rgba(235, 16, 0, 0.45)",
+        logoSrc: "/app/assets/img/adobe-cc.webp",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("adobe") || (p.categorySlug || "") === "adobe",
+      },
+      {
+        id: "windows",
+        nameAr: "Windows",
+        nameEn: "Windows",
+        color: "#0078d4",
+        glow: "rgba(0, 120, 212, 0.45)",
+        logoSrc: "/app/assets/img/windows-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("windows") || (p.categorySlug || "") === "windows-keys",
+      },
+      {
+        id: "microsoft",
+        nameAr: "Microsoft 365",
+        nameEn: "Microsoft 365",
+        color: "#f25022",
+        glow: "rgba(242, 80, 34, 0.45)",
+        logoSrc: "/app/assets/img/microsoft365-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("microsoft") ||
+          (p.slug || "").includes("office") ||
+          (p.slug || "").includes("365") ||
+          (p.categorySlug || "") === "microsoft365",
+      },
+      {
+        id: "discord",
+        nameAr: "Discord",
+        nameEn: "Discord",
+        color: "#5865F2",
+        glow: "rgba(88, 101, 242, 0.45)",
+        renderLogo: () => (
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: "#5865F2", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <DiscordIcon />
+          </div>
+        ),
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("discord") ||
+          (p.nameAr || "").toLowerCase().includes("discord") ||
+          (p.nameAr || "").includes("ديسكورد"),
+      },
+      {
+        id: "capcut",
+        nameAr: "CapCut",
+        nameEn: "CapCut",
+        color: "#00e5ff",
+        glow: "rgba(0, 229, 255, 0.45)",
+        renderLogo: () => <CapCutIcon />,
+        match: (p: CatalogStoreProduct) => (p.slug || "").includes("capcut"),
+      },
+      {
+        id: "autodesk",
+        nameAr: "Autodesk",
+        nameEn: "Autodesk",
+        color: "#0696d7",
+        glow: "rgba(6, 150, 215, 0.45)",
+        logoSrc: "/app/assets/img/autodesk-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("autodesk") || (p.categorySlug || "") === "autodesk",
+      },
+      {
+        id: "surfshark",
+        nameAr: "Surfshark",
+        nameEn: "Surfshark",
+        color: "#00d18f",
+        glow: "rgba(0, 209, 143, 0.45)",
+        renderLogo: () => <SurfsharkIcon />,
+        match: (p: CatalogStoreProduct) => (p.slug || "").includes("surfshark"),
+      },
+      {
+        id: "expressvpn",
+        nameAr: "ExpressVPN",
+        nameEn: "ExpressVPN",
+        color: "#da3941",
+        glow: "rgba(218, 57, 65, 0.45)",
+        renderLogo: () => <ExpressVpnIcon />,
+        match: (p: CatalogStoreProduct) => (p.slug || "").includes("expressvpn"),
+      },
+      {
+        id: "linkedin",
+        nameAr: "LinkedIn",
+        nameEn: "LinkedIn",
+        color: "#0a66c2",
+        glow: "rgba(10, 102, 194, 0.45)",
+        logoSrc: "/app/assets/img/linkedin-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("linkedin") || (p.categorySlug || "") === "linkedin-premium",
+      },
+      {
+        id: "security",
+        nameAr: "Avast & AVG",
+        nameEn: "Avast & AVG",
+        color: "#ff6600",
+        glow: "rgba(255, 102, 0, 0.45)",
+        renderLogo: () => <SecurityShieldIcon />,
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("avast") || (p.slug || "").includes("avg"),
+      },
+    ];
+
+    return defs
+      .map((d) => ({
+        ...d,
+        count: d.id === "all" ? products.length : products.filter(d.match).length,
+      }))
+      .filter((d) => d.id === "all" || d.count > 0);
+  }, [products]);
+
+  // Platforms for main gaming category (/category/games)
+  const gamingPlatforms: CategoryPlatformItem[] = useMemo(() => {
+    const defs = [
+      {
+        id: "all",
+        nameAr: "كل الألعاب",
+        nameEn: "All Games",
+        color: "#00e5ff",
+        glow: "rgba(0, 229, 255, 0.45)",
+        renderLogo: () => <AllPlatformsIcon />,
+        match: () => true,
+      },
+      {
+        id: "pc-games",
+        nameAr: "العاب PC",
+        nameEn: "PC Games",
+        color: "#00e5ff",
+        glow: "rgba(0, 229, 255, 0.45)",
+        logoSrc: "/app/assets/img/steam-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          p.categorySlug === "pc-games" ||
+          p.parentCategorySlug === "pc-games" ||
+          (p.slug || "").endsWith("-pc") ||
+          (p.nameAr || "").toLowerCase().includes("(pc)") ||
+          p.platform === "PC" ||
+          p.platform === "Steam",
+      },
+      {
+        id: "xbox-games",
+        nameAr: "ألعاب Xbox",
+        nameEn: "Xbox Games",
+        color: "#107c41",
+        glow: "rgba(16, 124, 65, 0.45)",
+        logoSrc: "/app/assets/img/xbox-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          p.categorySlug === "xbox-games" ||
+          (p.slug || "").includes("xbox") ||
+          (p.nameAr || "").toLowerCase().includes("xbox") ||
+          p.platform === "Xbox",
+      },
+      {
+        id: "sony",
+        nameAr: "ألعاب PlayStation (PSN)",
+        nameEn: "PlayStation (PSN)",
+        color: "#0070d1",
+        glow: "rgba(0, 112, 209, 0.45)",
+        logoSrc: "/app/assets/img/playstation-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          p.categorySlug === "sony" ||
+          p.categorySlug === "gc-playstation" ||
+          (p.slug || "").includes("playstation") ||
+          (p.slug || "").includes("sony") ||
+          (p.nameAr || "").includes("بلايستيشن") ||
+          p.platform === "PlayStation",
+      },
+      {
+        id: "fortnite",
+        nameAr: "فورت نايت",
+        nameEn: "Fortnite",
+        color: "#a855f7",
+        glow: "rgba(168, 85, 247, 0.45)",
+        logoSrc: "/app/assets/img/fortnite-f-icon.jpg",
+        directLink: "/product/fortnite",
+        match: (p: CatalogStoreProduct) =>
+          p.categorySlug === "fortnite" ||
+          (p.slug || "").includes("fortnite") ||
+          (p.nameAr || "").includes("فورت نايت"),
+      },
+    ];
+
+    return defs
+      .map((d) => ({
+        ...d,
+        count: d.id === "all" ? products.length : products.filter(d.match).length,
+      }))
+      .filter((d) => d.id === "all" || d.id === "sony" || d.count > 0);
+  }, [products]);
+
+  // Launchers for PC Games subcategory (/category/pc-games)
+  const pcGamesLaunchers: CategoryPlatformItem[] = useMemo(() => {
+    const defs = [
+      {
+        id: "all",
+        nameAr: "كل ألعاب PC",
+        nameEn: "All PC Games",
+        color: "#00e5ff",
+        glow: "rgba(0, 229, 255, 0.45)",
+        renderLogo: () => <AllPlatformsIcon />,
+        match: () => true,
+      },
+      {
+        id: "steam",
+        nameAr: "Steam",
+        nameEn: "Steam",
+        color: "#66c0f4",
+        glow: "rgba(102, 192, 244, 0.45)",
+        logoSrc: "/app/assets/img/steam-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.nameAr || "").includes("ستيم") ||
+          (p.slug || "").includes("steam") ||
+          (!p.slug.includes("gta") && !p.slug.includes("red-dead") && !p.slug.includes("minecraft")),
+      },
+      {
+        id: "rockstar",
+        nameAr: "Rockstar Launcher",
+        nameEn: "Rockstar Launcher",
+        color: "#fcaf17",
+        glow: "rgba(252, 175, 23, 0.45)",
+        logoSrc: "/app/assets/img/gx-logo.png",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("gta") ||
+          (p.slug || "").includes("red-dead") ||
+          (p.nameAr || "").toLowerCase().includes("rockstar") ||
+          (p.nameAr || "").includes("روكستار"),
+      },
+      {
+        id: "ea",
+        nameAr: "EA Sports (FC)",
+        nameEn: "EA Sports (FC)",
+        color: "#00e5ff",
+        glow: "rgba(0, 229, 255, 0.45)",
+        logoSrc: "/app/assets/img/steam-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("fc-") ||
+          (p.nameAr || "").toLowerCase().includes("ea sports") ||
+          (p.nameAr || "").includes("fc 2"),
+      },
+      {
+        id: "minecraft",
+        nameAr: "Minecraft Launcher",
+        nameEn: "Minecraft",
+        color: "#107c41",
+        glow: "rgba(16, 124, 65, 0.45)",
+        logoSrc: "/app/assets/img/xbox-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("minecraft") ||
+          (p.nameAr || "").includes("ماينكرافت"),
+      },
+    ];
+
+    return defs
+      .map((d) => ({
+        ...d,
+        count: d.id === "all" ? products.length : products.filter(d.match).length,
+      }))
+      .filter((d) => d.id === "all" || d.count > 0);
+  }, [products]);
+
+  // Platforms for subscriptions category (/category/subscriptions)
+  const subscriptionPlatforms: CategoryPlatformItem[] = useMemo(() => {
+    const defs = [
+      {
+        id: "all",
+        nameAr: "كل الاشتراكات",
+        nameEn: "All Subscriptions",
+        color: "#f59e0b",
+        glow: "rgba(245, 158, 11, 0.45)",
+        renderLogo: () => <AllPlatformsIcon />,
+        match: () => true,
+      },
+      {
+        id: "gamepass",
+        nameAr: "Xbox Game Pass",
+        nameEn: "Xbox Game Pass",
+        color: "#107c41",
+        glow: "rgba(16, 124, 65, 0.45)",
+        logoSrc: "/app/assets/img/xbox-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("game-pass") ||
+          (p.nameAr || "").toLowerCase().includes("game pass") ||
+          (p.nameAr || "").includes("جيم باس"),
+      },
+      {
+        id: "entertainment",
+        nameAr: "اشتراكات ترفيه ومشاهدة",
+        nameEn: "Entertainment",
+        color: "#e50914",
+        glow: "rgba(229, 9, 20, 0.45)",
+        renderLogo: () => <span style={{ fontSize: 24 }}>🎬</span>,
+        match: (p: CatalogStoreProduct) =>
+          ["netflix", "shahid", "youtube", "spotify", "iptv", "disney", "osn", "watch"].some((k) =>
+            (p.slug || "").includes(k) || (p.nameAr || "").toLowerCase().includes(k)
+          ),
+      },
+    ];
+
+    return defs
+      .map((d) => ({
+        ...d,
+        count: d.id === "all" ? products.length : products.filter(d.match).length,
+      }))
+      .filter((d) => d.id === "all" || d.count > 0);
+  }, [products]);
+
+  // Platforms for gift cards category
+  const giftCardPlatforms: CategoryPlatformItem[] = useMemo(() => {
+    const defs = [
+      {
+        id: "all",
+        nameAr: "كل البطاقات",
+        nameEn: "All Gift Cards",
+        color: "#ff2d78",
+        glow: "rgba(255, 45, 120, 0.45)",
+        renderLogo: () => <AllPlatformsIcon />,
+        match: () => true,
+      },
+      {
+        id: "playstation",
+        nameAr: "PlayStation",
+        nameEn: "PlayStation",
+        color: "#0070d1",
+        glow: "rgba(0, 112, 209, 0.45)",
+        logoSrc: "/app/assets/img/playstation-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("playstation") || (p.categorySlug || "") === "gc-playstation",
+      },
+      {
+        id: "xbox",
+        nameAr: "Xbox",
+        nameEn: "Xbox",
+        color: "#107c41",
+        glow: "rgba(16, 124, 65, 0.45)",
+        logoSrc: "/app/assets/img/xbox-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("xbox") || (p.categorySlug || "") === "gc-xbox",
+      },
+      {
+        id: "googleplay",
+        nameAr: "Google Play",
+        nameEn: "Google Play",
+        color: "#00e5ff",
+        glow: "rgba(0, 229, 255, 0.45)",
+        logoSrc: "/app/assets/img/googleplay-logo.png",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("google") || (p.categorySlug || "") === "gc-google-play",
+      },
+      {
+        id: "itunes",
+        nameAr: "iTunes & Apple",
+        nameEn: "iTunes",
+        color: "#ffffff",
+        glow: "rgba(255, 255, 255, 0.4)",
+        logoSrc: "/app/assets/img/itunes-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("itunes") ||
+          (p.slug || "").includes("apple") ||
+          (p.categorySlug || "") === "gc-itunes",
+      },
+    ];
+
+    return defs
+      .map((d) => ({
+        ...d,
+        count: d.id === "all" ? products.length : products.filter(d.match).length,
+      }))
+      .filter((d) => d.id === "all" || d.count > 0);
+  }, [products]);
+
+  // Generic platforms for other categories with children
+  const genericPlatforms: CategoryPlatformItem[] = useMemo(() => {
+    if (!hasChildren) return [];
+    const list: CategoryPlatformItem[] = [
+      {
+        id: "all",
+        nameAr: lang === "en" ? "All Sections" : "كل الأقسام",
+        nameEn: "All Sections",
+        color: "#00e5ff",
+        glow: "rgba(0, 229, 255, 0.45)",
+        renderLogo: () => <AllPlatformsIcon />,
+        count: products.length,
+        match: () => true,
+      },
+    ];
+    for (const ch of category.children) {
+      const matchFn = (p: CatalogStoreProduct) =>
+        p.categorySlug === ch.slug || p.slug === ch.slug;
+      const count = products.filter(matchFn).length;
+      if (count > 0) {
+        list.push({
+          id: ch.slug,
+          nameAr: pick(ch.nameAr, ch.nameEn),
+          nameEn: pick(ch.nameEn, ch.nameAr),
+          color: "#00e5ff",
+          glow: "rgba(0, 229, 255, 0.35)",
+          logoSrc: ch.iconImage || undefined,
+          renderLogo: ch.icon ? () => <span style={{ fontSize: 24 }}>{ch.icon}</span> : undefined,
+          count,
+          match: matchFn,
+        });
+      }
+    }
+    return list;
+  }, [hasChildren, category.children, products, lang]);
+
+  const platformsList = useMemo(() => {
+    if (category.slug === "subscriptions") return subscriptionPlatforms;
+    if (isSoftwareCategory) return softwarePlatforms;
+    if (category.slug === "gift-cards") return giftCardPlatforms;
+    if (category.slug === "pc-games") return pcGamesLaunchers;
+    if (category.slug === "games") return gamingPlatforms;
+    return genericPlatforms;
+  }, [
+    category.slug,
+    isSoftwareCategory,
+    subscriptionPlatforms,
+    softwarePlatforms,
+    giftCardPlatforms,
+    pcGamesLaunchers,
+    gamingPlatforms,
+    genericPlatforms,
+  ]);
+
+  // Infinite Marquee Items (duplicated array for seamless continuous looping)
+  const marqueeItems = useMemo(() => {
+    if (platformsList.length <= 1) return platformsList;
+    return [...platformsList, ...platformsList];
+  }, [platformsList]);
+
+  // Active platform object
+  const activePlatformObj = useMemo(() => {
+    return platformsList.find((p) => p.id === selectedPlatform) || null;
+  }, [platformsList, selectedPlatform]);
+
+  const handleSelectPlatform = (platId: string) => {
+    if (selectedPlatform === platId && platId !== "all") {
+      setSelectedPlatform("all");
+    } else {
+      setSelectedPlatform(platId);
+    }
+  };
+
+  // Filter and sort products
+  const displayedProducts = useMemo(() => {
+    let list = [...products];
+
+    // 1. Platform filter
+    if (selectedPlatform !== "all") {
+      const plat = platformsList.find((p) => p.id === selectedPlatform);
+      if (plat) {
+        list = list.filter(plat.match);
+      }
+    }
+
+    // 2. Search query filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((p) => {
+        const arName = (p.nameAr || "").toLowerCase();
+        const enName = (p.nameEn || "").toLowerCase();
+        const arTag = (p.taglineAr || "").toLowerCase();
+        const enTag = (p.taglineEn || "").toLowerCase();
+        return arName.includes(q) || enName.includes(q) || arTag.includes(q) || enTag.includes(q);
+      });
+    }
+
+    // 3. Delivery Type filter (Key, Account, Activation Link, Top Up)
+    if (selectedDeliveryType !== "all") {
+      list = list.filter((p) => {
+        const itemType = resolveStrictDeliveryType(p);
+        return itemType === selectedDeliveryType;
+      });
+    }
+
+    // 4. Price range filter
+    if (customMinPrice !== "") {
+      const minVal = parseFloat(customMinPrice);
+      if (!isNaN(minVal)) list = list.filter((p) => (p.basePriceJod || 0) >= minVal);
+    } else if (selectedPricePreset !== "all") {
+      const preset = PRICE_PRESETS.find((pr) => pr.id === selectedPricePreset);
+      if (preset?.min !== undefined) {
+        list = list.filter((p) => (p.basePriceJod || 0) >= preset.min!);
+      }
+    }
+
+    if (customMaxPrice !== "") {
+      const maxVal = parseFloat(customMaxPrice);
+      if (!isNaN(maxVal)) list = list.filter((p) => (p.basePriceJod || 0) <= maxVal);
+    } else if (selectedPricePreset !== "all") {
+      const preset = PRICE_PRESETS.find((pr) => pr.id === selectedPricePreset);
+      if (preset?.max !== undefined) {
+        list = list.filter((p) => (p.basePriceJod || 0) <= preset.max!);
+      }
+    }
+
+    // 5. Sorting (Matches Image 3 options)
+    list.sort((a, b) => {
+      const priceA = typeof a.basePriceJod === "number" ? a.basePriceJod : 0;
+      const priceB = typeof b.basePriceJod === "number" ? b.basePriceJod : 0;
+      const nameA = (a.nameAr || a.nameEn || "").trim();
+      const nameB = (b.nameAr || b.nameEn || "").trim();
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+      if (sortBy === "price_asc") return priceA - priceB;
+      if (sortBy === "price_desc") return priceB - priceA;
+      if (sortBy === "date_desc") return dateB - dateA;
+      if (sortBy === "date_asc") return dateA - dateB;
+      if (sortBy === "alpha_asc") return nameA.localeCompare(nameB, "ar");
+      if (sortBy === "alpha_desc") return nameB.localeCompare(nameA, "ar");
+      return (a.sortOrder || 0) - (b.sortOrder || 0);
+    });
+
+    return list;
+  }, [
+    products,
+    selectedPlatform,
+    platformsList,
+    searchQuery,
+    selectedDeliveryType,
+    selectedPricePreset,
+    customMinPrice,
+    customMaxPrice,
+    sortBy,
+  ]);
+
+  // 5x5 Pagination (25 items per page for lightning fast page loading)
+  const ITEMS_PER_PAGE = 25;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset pagination to page 1 whenever any filter, search, or sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    category.slug,
+    selectedPlatform,
+    searchQuery,
+    selectedDeliveryType,
+    selectedPricePreset,
+    customMinPrice,
+    customMaxPrice,
+    sortBy,
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(displayedProducts.length / ITEMS_PER_PAGE));
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return displayedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [displayedProducts, currentPage]);
+
+  // Platform card rendering helper (renders a Link for directLink items like Fortnite, or a button for filtering)
+  const isStaticPlatforms = platformsList.length <= 6;
+
+  const renderPlatformCard = (plat: CategoryPlatformItem, key: string, inModal = false) => {
+    const isActive = selectedPlatform === plat.id;
+    const cardContent = (
+      <>
+        <div className="platform-square-logo">
+          {plat.logoSrc ? (
+            <img src={plat.logoSrc} alt={pick(plat.nameAr, plat.nameEn)} loading="lazy" />
+          ) : plat.renderLogo ? (
+            plat.renderLogo()
+          ) : (
+            <span style={{ fontSize: 24 }}>📁</span>
+          )}
+        </div>
+        <div className="platform-square-name">
+          {pick(plat.nameAr, plat.nameEn)}
+        </div>
+        <div className="platform-square-badge">
+          {plat.id === "all"
+            ? (lang === "en" ? "All" : "الكل")
+            : formatOfferCount(plat.count, lang)}
+        </div>
+      </>
+    );
+
+    const styleObj = {
+      ['--plat-color' as any]: plat.color,
+      ['--plat-glow' as any]: plat.glow,
+    };
+
+    if (plat.directLink) {
+      return (
+        <Link
+          key={key}
+          to={plat.directLink as any}
+          className={`platform-square-card ${inModal ? "in-modal" : ""}`}
+          style={styleObj}
+          onClick={() => {
+            if (inModal) setIsAllPlatformsModalOpen(false);
+          }}
+          title={pick(plat.nameAr, plat.nameEn)}
+        >
+          {cardContent}
+        </Link>
+      );
+    }
+
+    return (
+      <button
+        key={key}
+        type="button"
+        className={`platform-square-card ${inModal ? "in-modal" : ""} ${isActive ? "is-active" : ""}`}
+        style={styleObj}
+        onClick={() => {
+          handleSelectPlatform(plat.id);
+          if (inModal) setIsAllPlatformsModalOpen(false);
+        }}
+        title={pick(plat.nameAr, plat.nameEn)}
+      >
+        {cardContent}
+      </button>
+    );
+  };
+
+  // Sibling switcher pills (when on subcategory like Canva or Windows)
+  const navPills: Array<{
+    slug: string;
+    name: string;
+    icon: React.ReactNode;
+    to: string;
+    params: { slug: string };
+    active: boolean;
+  }> = [];
+
+  if (category.parent && (category.siblings || []).length > 0) {
+    navPills.push({
+      slug: category.parent.slug,
+      name: pick(category.parent.nameAr, category.parent.nameEn),
+      icon: <span className="pill-icon">🧩</span>,
+      to: "/category/$slug",
+      params: { slug: category.parent.slug },
+      active: false,
+    });
+    (category.siblings || []).forEach((sib) => {
+      navPills.push({
+        slug: sib.slug,
+        name: pick(sib.nameAr, sib.nameEn),
+        icon: sib.iconImage ? (
+          <img src={sib.iconImage} alt="" style={{ width: 18, height: 18, objectFit: "contain" }} />
+        ) : (
+          <span className="pill-icon">{sib.icon || "📂"}</span>
+        ),
+        to: "/category/$slug",
+        params: { slug: sib.slug },
+        active: sib.slug === category.slug,
+      });
+    });
+  }
+
+  // Render product card helper
+  const renderProductCard = (p: CatalogStoreProduct) => {
+    const name = pick(p.nameAr, p.nameEn);
+    const tagline = pick(p.taglineAr, p.taglineEn);
+    const defaultLink = p.slug
+      ? (p.slug.startsWith("/")
+          ? p.slug
+          : `/product/${p.slug}${p.cartId && p.cartId !== p.slug ? `?plan=${p.cartId}` : ""}`)
+      : undefined;
+    const linkTarget = p.isGiftCardMaster && p.viewOfferLink ? p.viewOfferLink : defaultLink;
+
+    return (
+      <StoreProductCard
+        key={p.cartId ? `${p.id}-${p.cartId}` : p.id}
+        slug={p.slug}
+        cartId={p.cartId || p.slug}
+        name={name}
+        link={linkTarget}
+        price={p.basePriceJod}
+        oldPrice={p.oldPriceJod}
+        tagline={tagline}
+        region={p.region}
+        productType={p.productType}
+        badge={p.badge}
+        imageUrl={p.imageUrl}
+        iconImage={p.iconImage}
+        icon={p.icon}
+        thumbBg={p.thumbBg}
+        snapDuration={p.snapDuration || undefined}
+        categoryName={category.nameAr}
+        categorySlug={category.slug}
+        showFromLabel={Boolean(p.isGiftCardMaster)}
+        isGiftCardMaster={Boolean(p.isGiftCardMaster)}
+      />
+    );
+  };
 
   return (
     <StoreShell>
-      <section className="product-hero category-hero">
+      {/* 1. Dynamic Integrated Category Stage (Hero + Moving Platforms) */}
+      <section
+        className="category-hero"
+        style={{
+          ['--cat-glow' as any]: theme.glow,
+          ['--cat-ambient' as any]: theme.ambient,
+        }}
+      >
         <div className="wrap">
-          <div className="product-hero-inner category-hero-inner fade-in">
-            <div className="product-icon-badge">
-              <div className="core">
-                {category.iconImage ? (
-                  <img src={category.iconImage} alt={catName} style={{ width: 56, height: 56, objectFit: "contain", borderRadius: 14 }} />
-                ) : (
-                  <span style={{ fontSize: 36 }}>{category.icon || "📁"}</span>
-                )}
+          <div className="category-stage-card fade-in">
+            {/* Stage Top Bar: Breadcrumb, Title, and View All Platforms Button */}
+            <div className="cat-stage-top">
+              <div className="cat-stage-info">
+                <div className="cat-breadcrumb">
+                  <Link to="/">
+                    <span className="home-dot"></span>
+                    {lang === "en" ? "Home" : "الرئيسية"}
+                  </Link>
+                  <span className="sep">/</span>
+                  {category.parent && (
+                    <>
+                      <Link to="/category/$slug" params={{ slug: category.parent.slug }}>
+                        {pick(category.parent.nameAr, category.parent.nameEn)}
+                      </Link>
+                      <span className="sep">/</span>
+                    </>
+                  )}
+                  <span className="current">{catName}</span>
+                </div>
+
+                <div className="cat-stage-heading">
+                  <div className="cat-stage-badge">
+                    {category.iconImage ? (
+                      <img src={category.iconImage} alt={catName} />
+                    ) : isSoftwareCategory ? (
+                      <SoftwareSuiteIcon />
+                    ) : isGamingCategory ? (
+                      <GamingHeroIcon />
+                    ) : isSubscriptionsCategory ? (
+                      <SubscriptionsHeroIcon />
+                    ) : (
+                      <span className="cat-hero-emoji">{category.icon || "📁"}</span>
+                    )}
+                  </div>
+
+                  <div className="cat-stage-title-wrap">
+                    <h1>{catName}</h1>
+                    {pick(category.taglineAr, category.taglineEn) ? (
+                      <p className="cat-stage-desc">{pick(category.taglineAr, category.taglineEn)}</p>
+                    ) : category.slug === "subscriptions" ? (
+                      <p className="cat-stage-desc">
+                        {lang === "en"
+                          ? "Official digital gaming, entertainment, and streaming subscriptions at competitive prices with instant delivery."
+                          : "اشتراكات الألعاب والترفيه الرقمي الرسمية والمضمونة بأفضل الأسعار والتسليم الفوري."}
+                      </p>
+                    ) : (
+                      <p className="cat-stage-desc">
+                        {lang === "en"
+                          ? `Explore the best official deals and subscriptions for ${catName} at GX Store.`
+                          : `استكشف أفضل العروض والاشتراكات الرسمية المعتمدة لـ ${catName} بأفضل الأسعار وأعلى سرعة تسليم.`}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="product-hero-text">
-              <span className="cat-tag">{catName}</span>
-              <h1>{catName}</h1>
-              {pick(category.taglineAr, category.taglineEn) && (
-                <p>{pick(category.taglineAr, category.taglineEn)}</p>
+
+              {/* View All Platforms Button in Header (if > 6 platforms) */}
+              {!isStaticPlatforms && platformsList.length > 1 && (
+                <button
+                  type="button"
+                  className="platform-open-all-btn cat-stage-all-btn"
+                  onClick={() => setIsAllPlatformsModalOpen(true)}
+                  title={lang === "en" ? "Open all platforms in a window" : "عرض جميع المنصات في نافذة واحدة"}
+                >
+                  <span className="btn-icon">⊞</span>
+                  <span>{lang === "en" ? "View All Platforms" : "عرض كل المنصات"}</span>
+                </button>
               )}
             </div>
+
+            {/* Sibling Switcher Bar for Subcategories (e.g. Canva, Windows) */}
+            {navPills.length > 0 && (
+              <div className="cat-pills-bar-wrap">
+                <div className="cat-pills-bar">
+                  {navPills.map((pill) => (
+                    <Link
+                      key={pill.slug}
+                      to={pill.to as any}
+                      params={pill.params as any}
+                      className={`cat-pill-item ${pill.active ? "active" : ""}`}
+                    >
+                      {pill.icon}
+                      <span>{pill.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Moving Platforms Track (or Static Grid if <= 6) directly in the Stage */}
+            {platformsList.length > 1 && (
+              <div className="cat-stage-platforms">
+                {isStaticPlatforms ? (
+                  <div className="platform-static-grid">
+                    {platformsList.map((plat) => renderPlatformCard(plat, plat.id))}
+                  </div>
+                ) : (
+                  <div className="platform-marquee-wrap">
+                    <div className="platform-marquee-track">
+                      {marqueeItems.map((plat, idx) =>
+                        renderPlatformCard(plat, `${plat.id}-${idx}`)
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      {hasChildren && (
-        <section className="section">
-          <div className="wrap">
-            <div className="subcat-grid">
-              {category.children.map((s: CatalogCategoryChild) => {
-                const name = pick(s.nameAr, s.nameEn);
-                const iconInner = s.iconImage ? (
-                  <img src={s.iconImage} alt={name} className="prod-thumb-img" />
-                ) : (
-                  <span>{s.icon || "📂"}</span>
-                );
-                const isProd = Boolean(s.productSlug) && s.slug !== "pc-games";
-                const isPcGames = s.slug === "pc-games";
-                return (
-                  <Link
-                    key={s.slug}
-                    to={isProd ? "/product/$slug" : isPcGames ? "/games/$slug" : "/category/$slug"}
-                    params={{ slug: isProd ? s.productSlug! : s.slug }}
-                    className="subcat-card clickable"
-                  >
-                    <div className="subcat-ic" style={{ background: s.bg || undefined }}>{iconInner}</div>
-                    <div>
-                      <div className="subcat-name">{name}</div>
-                      <div className="subcat-status">{t("cat.browse_products")}</div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {hasProducts && (
-        <section className="section" style={{ background: "var(--bg2)" }}>
-          <div className="wrap">
-            <div className="section-head">
-              <div>
-                <span className="k">{t("home.browse_products")}</span>
-                <h2>{pick(category.nameAr, category.nameEn)}</h2>
+      {/* 2. Main Products Section */}
+      <section className="section" style={{ background: "var(--bg2)", paddingTop: 20, minHeight: 450 }}>
+        <div className="wrap">
+          {/* Clean Modern Products Header Toolbar */}
+          <div className="cat-products-toolbar">
+            <div className="cat-toolbar-start">
+              <div className="cat-toolbar-count">
+                <span className="count-num">{displayedProducts.length}</span>
+                <span className="count-label">{lang === "en" ? "Products" : "منتج متوفر"}</span>
               </div>
+
+              {/* Active Platform Pill */}
+              {activePlatformObj && activePlatformObj.id !== "all" && (
+                <div
+                  className="cat-toolbar-filter-pill"
+                  style={{
+                    borderColor: activePlatformObj.color,
+                    background: `${activePlatformObj.color}15`,
+                  }}
+                >
+                  <span style={{ color: activePlatformObj.color }}>⚡ {lang === "en" ? "Platform:" : "المنصة:"}</span>
+                  <span style={{ fontWeight: 800 }}>{pick(activePlatformObj.nameAr, activePlatformObj.nameEn)}</span>
+                  <button
+                    type="button"
+                    className="reset-btn"
+                    onClick={() => setSelectedPlatform("all")}
+                    title={lang === "en" ? "Clear platform filter" : "إلغاء فلتر المنصة"}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Active Delivery Type Pill */}
+              {selectedDeliveryType !== "all" && (
+                <div
+                  className="cat-toolbar-filter-pill"
+                  style={{ borderColor: "#00f5a0", background: "rgba(0, 245, 160, 0.1)" }}
+                >
+                  <span style={{ color: "#00f5a0" }}>📦 {lang === "en" ? "Type:" : "النوع:"}</span>
+                  <span style={{ fontWeight: 800 }}>
+                    {DELIVERY_TYPE_OPTIONS.find((o) => o.id === selectedDeliveryType)?.shortLabelAr || selectedDeliveryType}
+                  </span>
+                  <button
+                    type="button"
+                    className="reset-btn"
+                    onClick={() => setSelectedDeliveryType("all")}
+                    title={lang === "en" ? "Clear type filter" : "إلغاء فلتر النوع"}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Active Price Range Pill */}
+              {(selectedPricePreset !== "all" || customMinPrice || customMaxPrice) && (
+                <div
+                  className="cat-toolbar-filter-pill"
+                  style={{ borderColor: "#38bdf8", background: "rgba(56, 189, 248, 0.1)" }}
+                >
+                  <span style={{ color: "#38bdf8" }}>🏷️ {lang === "en" ? "Price:" : "السعر:"}</span>
+                  <span style={{ fontWeight: 800 }}>
+                    {selectedPricePreset === "custom"
+                      ? `${customMinPrice || "0"} – ${customMaxPrice || "∞"} JOD`
+                      : PRICE_PRESETS.find((p) => p.id === selectedPricePreset)?.labelAr || selectedPricePreset}
+                  </span>
+                  <button
+                    type="button"
+                    className="reset-btn"
+                    onClick={() => {
+                      setSelectedPricePreset("all");
+                      setCustomMinPrice("");
+                      setCustomMaxPrice("");
+                    }}
+                    title={lang === "en" ? "Clear price filter" : "إلغاء فلتر السعر"}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {category.products.map((p: CatalogCategoryProductItem) => {
-                const name = pick(p.nameAr, p.nameEn);
-                const tagline = pick(p.taglineAr, p.taglineEn);
-                const imgSrc = p.imageUrl || p.iconImage;
-                return (
-                  <div key={p.id} className="prod-card">
-                    <div className="prod-thumb" style={{ background: p.thumbBg || undefined }}>
-                      {p.badge && p.badge !== "none" && p.badge !== "off" && p.badge !== "بدون شارة" && (
-                        <span className="tag-badge">{p.badge}</span>
-                      )}
-                      {imgSrc ? (
-                        <img src={imgSrc} alt={name} className="prod-thumb-img prod-card-img" />
-                      ) : (
-                        <span style={{ fontSize: 44 }}>{p.icon}</span>
-                      )}
-                    </div>
-                    <div className="prod-body">
-                      <div className="prod-name">{name}</div>
-                      {tagline && (
-                        <p className="text-xs text-cyan-100/60 line-clamp-2 mt-1 mb-2" style={{ fontSize: 12, opacity: 0.75 }}>
-                          {tagline}
-                        </p>
-                      )}
-                      {p.basePriceJod !== null && p.basePriceJod > 0 && (
-                        <div className="prod-prices">
-                          <span className="prod-new">{format(p.basePriceJod)}</span>
-                        </div>
-                      )}
-                      <BuyActions cartId={p.cartId || p.slug} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
+            <div className="cat-toolbar-end">
+              {/* Product Delivery Type Filter Dropdown */}
+              <CatDeliveryTypeDropdown
+                selectedType={selectedDeliveryType}
+                onTypeChange={setSelectedDeliveryType}
+                lang={lang}
+              />
 
-      {!hasChildren && !hasProducts && (
-        <section className="section">
-          <div className="wrap">
-            <div className="text-center py-12 text-cyan-100/60">
-              <div className="text-4xl mb-2">📁</div>
-              <p>لا توجد منتجات في هذا القسم حالياً.</p>
+              {/* Price Range Filter Dropdown */}
+              <CatPriceFilterDropdown
+                selectedPreset={selectedPricePreset}
+                customMin={customMinPrice}
+                customMax={customMaxPrice}
+                onSelectPreset={(p) => {
+                  setSelectedPricePreset(p);
+                  setCustomMinPrice("");
+                  setCustomMaxPrice("");
+                }}
+                onApplyCustom={(min, max) => {
+                  setSelectedPricePreset("custom");
+                  setCustomMinPrice(min);
+                  setCustomMaxPrice(max);
+                }}
+                lang={lang}
+              />
+
+              {/* Custom Sort Dropdown */}
+              <CatSortDropdown
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                lang={lang}
+              />
             </div>
           </div>
-        </section>
+
+          {/* Product Cards Grid (5x5 Adaptive Grid with Pagination) */}
+          {displayedProducts.length > 0 ? (
+            <>
+              <div className="cat-adaptive-grid">
+                {paginatedProducts.map((p) => renderProductCard(p))}
+              </div>
+
+              <CatPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={displayedProducts.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setCurrentPage}
+                lang={lang}
+                scrollSelector=".cat-products-toolbar"
+              />
+            </>
+          ) : selectedPlatform === "sony" ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "48px 24px",
+                background: "linear-gradient(145deg, rgba(0, 112, 209, 0.1) 0%, rgba(10, 14, 24, 0.85) 100%)",
+                border: "1.5px dashed rgba(0, 112, 209, 0.4)",
+                borderRadius: 22,
+                boxShadow: "0 12px 32px rgba(0, 0, 0, 0.35)",
+              }}
+            >
+              <div
+                style={{
+                  width: 72,
+                  height: 72,
+                  margin: "0 auto 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 20,
+                  background: "rgba(0, 112, 209, 0.18)",
+                  border: "1px solid rgba(0, 112, 209, 0.4)",
+                }}
+              >
+                <img
+                  src="/app/assets/img/playstation-logo.svg"
+                  alt="PlayStation"
+                  style={{ width: 44, height: 44, objectFit: "contain" }}
+                />
+              </div>
+              <h3 style={{ color: "#ffffff", fontSize: 20, fontWeight: 800, marginBottom: 8 }}>
+                {lang === "en" ? "PlayStation Games Library (PSN)" : "مكتبة ألعاب PlayStation (PSN)"}
+              </h3>
+              <p style={{ fontSize: 14, color: "#94a3b8", maxWidth: 520, margin: "0 auto 20px", lineHeight: 1.6 }}>
+                {lang === "en"
+                  ? "We are actively curating and adding verified PlayStation digital keys and accounts at the best prices. In the meantime, official PlayStation Store gift cards are available with instant delivery!"
+                  : "يتم حالياً تجهيز وإضافة مكتبة أكواد وحسابات ألعاب بلايستيشن الرسمية بأفضل الأسعار. بإمكانك شحن حسابك مباشرة عبر بطاقات بلايستيشن المتوفرة بالتسليم الفوري!"}
+              </p>
+              <Link
+                to="/product/playstation"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 24px",
+                  borderRadius: 99,
+                  background: "linear-gradient(135deg, #0070d1, #005bb5)",
+                  color: "#ffffff",
+                  fontWeight: 800,
+                  fontSize: 14,
+                  textDecoration: "none",
+                  boxShadow: "0 4px 18px rgba(0, 112, 209, 0.45)",
+                }}
+              >
+                <span>🎁 {lang === "en" ? "Browse PlayStation Gift Cards" : "تصفح بطاقات شحن بلايستيشن المعتمدة"}</span>
+                <span>{lang === "en" ? "→" : "←"}</span>
+              </Link>
+            </div>
+          ) : (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "48px 20px",
+                background: "rgba(13, 17, 26, 0.5)",
+                border: "1px dashed rgba(255, 255, 255, 0.12)",
+                borderRadius: 18,
+                color: "#94a3b8",
+              }}
+            >
+              <div style={{ fontSize: 42, marginBottom: 12 }}>🔍</div>
+              <h3 style={{ color: "#ffffff", fontSize: 18, fontWeight: 700, marginBottom: 6 }}>
+                {lang === "en" ? "No matching products found" : "لا توجد نتائج مطابقة لبحثك"}
+              </h3>
+              <p style={{ fontSize: 14, color: "#64748b" }}>
+                {lang === "en"
+                  ? "Try searching with different keywords or switch categories."
+                  : "جرب البحث بكلمات أخرى أو اختر قسماً آخر من التبويبات أعلاه."}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedPlatform("all");
+                }}
+                style={{
+                  marginTop: 16,
+                  padding: "8px 20px",
+                  borderRadius: 99,
+                  background: "rgba(0, 229, 255, 0.15)",
+                  border: "1px solid #00e5ff",
+                  color: "#00e5ff",
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                {lang === "en" ? "Reset filters" : "إعادة ضبط الفلتر"}
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 4. Modal Popup: View All Platforms in a Grid */}
+      {isAllPlatformsModalOpen && (
+        <div className="platform-modal-backdrop" onClick={() => setIsAllPlatformsModalOpen(false)}>
+          <div className="platform-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="platform-modal-header">
+              <div>
+                <h3 className="platform-modal-title">
+                  <span>⚡</span>
+                  <span>{lang === "en" ? "All Platforms & Brands" : "جميع المنصات والبراندات"}</span>
+                </h3>
+                <p className="platform-modal-sub">
+                  {lang === "en"
+                    ? "Pick any platform to instantly browse all its official products and subscriptions"
+                    : "اختر أي منصة لاستعراض كافة عروضها واشتراكاتها المعتمدة فوراً دون انتظار"}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="platform-modal-close"
+                onClick={() => setIsAllPlatformsModalOpen(false)}
+                title={lang === "en" ? "Close" : "إغلاق"}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="platform-modal-grid">
+              {platformsList.map((plat) =>
+                renderPlatformCard(plat, `modal-${plat.id}`, true)
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </StoreShell>
   );

@@ -4,6 +4,7 @@ import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
 import { GxIcon } from "@/components/gx/GxIcon";
+import { CartItemThumb } from "@/components/gx/CartThumb";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
@@ -107,13 +108,7 @@ function CartList() {
         const isSnap = it.cartId.startsWith("snap-");
         return (
           <div key={it.cartId} className="cart-row">
-            <div className="cr-thumb" style={{ background: it.bg }}>
-              {it.imageUrl || it.iconImage ? (
-                <img src={it.imageUrl || it.iconImage || undefined} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 8 }} />
-              ) : (
-                it.icon
-              )}
-            </div>
+            <CartItemThumb item={it} size={64} />
             <div className="cr-info">
               <div className="cr-name">{localizeResolvedName(it.name, lang)}</div>
               <div className="cr-unit">{t("cart.unit_price")}: <span>{format(it.price)}</span></div>

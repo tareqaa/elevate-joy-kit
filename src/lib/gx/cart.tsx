@@ -67,9 +67,9 @@ type Ctx = {
   applyCredit: (jod: number) => Promise<{ ok: boolean; message: string }>;
   removeCredit: () => void;
 
-  add: (cartId: string, qty?: number) => void;
+  add: (cartId: string, qty?: number, meta?: Record<string, any>) => void;
   addSnap: (cartId: string, usernames: string[]) => void;
-  buyNow: (cartId: string, qty?: number) => void;
+  buyNow: (cartId: string, qty?: number, meta?: Record<string, any>) => void;
   buyNowSnap: (cartId: string, usernames: string[]) => void;
   addCustom: (data: { name: string; icon?: string; bg?: string; price: number }, qty?: number) => void;
   changeQty: (cartId: string, delta: number) => void;
@@ -89,7 +89,12 @@ const DEFAULT_CONTACT: ContactInfo = { name: "", countryCode: "+962", phone: "",
 function loadRaw(): CartItem[] {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    return Array.isArray(raw) ? raw : [];
+    if (!Array.isArray(raw)) return [];
+    return raw.map((i) => {
+      if (i.cartId === "gemini-18m") i.cartId = "gemini-18";
+      if (i.cartId === "linkedin-12m") i.cartId = "linkedin-12";
+      return i;
+    });
   } catch { return []; }
 }
 
@@ -112,10 +117,11 @@ function loadCoupon(): AppliedCoupon | null {
 function resolve(items: CartItem[]): ResolvedItem[] {
   return items
     .map((i) => {
+      const cId = i.cartId === "gemini-18m" ? "gemini-18" : i.cartId === "linkedin-12m" ? "linkedin-12" : i.cartId;
       const usernames = i.meta?.usernames?.slice() ?? null;
       if (i.custom) {
         return {
-          cartId: i.cartId,
+          cartId: cId,
           product: "custom",
           name: i.custom.name,
           icon: i.custom.icon,
@@ -125,16 +131,37 @@ function resolve(items: CartItem[]): ResolvedItem[] {
           usernames,
         };
       }
-      const plan = findPlanByCartId(i.cartId) || findDbPlanByCartId(i.cartId);
-      if (plan) return { ...plan, qty: i.qty, usernames };
-      if (i.cartId) {
+      const plan = findPlanByCartId(cId) || findDbPlanByCartId(cId);
+      if (plan) {
+        const price =
+          typeof i.meta?.price === "number" && i.meta.price > 0 && (!plan.price || plan.price === 0)
+            ? i.meta.price
+            : plan.price;
+        const iconImage = i.meta?.iconImage || plan.iconImage || plan.imageUrl || i.meta?.imageUrl || null;
+        const imageUrl = i.meta?.imageUrl || plan.imageUrl || plan.iconImage || i.meta?.iconImage || null;
+        return { 
+          ...plan, 
+          iconImage,
+          imageUrl,
+          price, 
+          qty: i.qty, 
+          usernames 
+        };
+      }
+      if (cId) {
+        const catalogP = PRODUCTS_CATALOG[cId] || PRODUCTS_CATALOG[i.meta?.product || ""];
+        const fallbackImg = catalogP ? (catalogP.imageUrl || catalogP.iconImg || null) : null;
+        const iconImage = i.meta?.iconImage || i.meta?.imageUrl || fallbackImg || null;
+        const imageUrl = i.meta?.imageUrl || i.meta?.iconImage || fallbackImg || null;
         return {
-          cartId: i.cartId,
-          product: i.cartId,
-          name: i.cartId,
-          icon: "🎮",
-          bg: "linear-gradient(145deg,#1a1e2a,#0a0c12)",
-          price: 0,
+          cartId: cId,
+          product: i.meta?.product || (catalogP ? catalogP.slug : cId),
+          name: i.meta?.name || (catalogP ? catalogP.name : cId),
+          icon: i.meta?.icon || (catalogP ? catalogP.icon : "🎮"),
+          iconImage,
+          imageUrl,
+          bg: i.meta?.bg || (catalogP ? catalogP.thumbBg : "linear-gradient(145deg,#1a1e2a,#0a0c12)"),
+          price: typeof i.meta?.price === "number" ? i.meta.price : 0,
           qty: i.qty,
           usernames,
         };
@@ -388,12 +415,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [subtotalJOD]);
 
   const add = useCallback(
-    (cartId: string, qty = 1) => {
+    (cartId: string, qty = 1, meta?: Record<string, any>) => {
       void loadDbVariants(true);
       const next = [...rawItems];
       const ex = next.find((i) => i.cartId === cartId && !i.custom);
-      if (ex) ex.qty += qty;
-      else next.push({ cartId, qty });
+      if (ex) {
+        ex.qty += qty;
+        if (meta) ex.meta = { ...(ex.meta || {}), ...meta };
+      } else {
+        next.push({ cartId, qty, meta });
+      }
       persist(next);
     },
     [rawItems, persist]
@@ -409,9 +440,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (ex) {
         ex.meta = ex.meta || {};
         ex.meta.usernames = (ex.meta.usernames || []).concat(clean);
+        ex.meta.iconImage = ex.meta.iconImage || "/app/assets/img/snapchat-logo.png";
+        ex.meta.imageUrl = ex.meta.imageUrl || "/app/assets/img/snapchat-logo.png";
         ex.qty = ex.meta.usernames.length;
       } else {
-        next.push({ cartId, qty: clean.length, meta: { usernames: clean } });
+        next.push({
+          cartId,
+          qty: clean.length,
+          meta: {
+            usernames: clean,
+            product: "snapchat",
+            name: "سناب بلس",
+            iconImage: "/app/assets/img/snapchat-logo.png",
+            imageUrl: "/app/assets/img/snapchat-logo.png",
+          },
+        });
       }
       persist(next);
     },
@@ -419,12 +462,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const buyNow = useCallback(
-    (cartId: string, qty = 1) => {
+    (cartId: string, qty = 1, meta?: Record<string, any>) => {
       void loadDbVariants(true);
       const next = [...rawItems];
       const ex = next.find((i) => i.cartId === cartId && !i.custom);
-      if (ex) ex.qty = Math.max(qty, ex.qty);
-      else next.push({ cartId, qty });
+      if (ex) {
+        ex.qty = Math.max(qty, ex.qty);
+        if (meta) ex.meta = { ...(ex.meta || {}), ...meta };
+      } else {
+        next.push({ cartId, qty, meta });
+      }
       persist(next);
     },
     [rawItems, persist]
@@ -435,7 +482,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const clean = usernames.map((u) => (u || "").trim()).filter(Boolean);
       if (!clean.length) return;
       const next = rawItems.filter((i) => i.cartId !== cartId);
-      next.push({ cartId, qty: clean.length, meta: { usernames: clean } });
+      next.push({
+        cartId,
+        qty: clean.length,
+        meta: {
+          usernames: clean,
+          product: "snapchat",
+          name: "سناب بلس",
+          iconImage: "/app/assets/img/snapchat-logo.png",
+          imageUrl: "/app/assets/img/snapchat-logo.png",
+        },
+      });
       persist(next);
     },
     [rawItems, persist]

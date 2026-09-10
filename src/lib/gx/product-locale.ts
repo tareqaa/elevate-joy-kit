@@ -128,17 +128,25 @@ const PLAN_TAGS_EN: Record<string, string> = {
 /* --- Category translations --- */
 const CATEGORY_LINKS_EN: Record<string, { name: string; desc: string }> = {
   snapchat: { name: "Snapchat+", desc: "Exclusive icon, chat colors and more" },
+  subscriptions: { name: "Subscriptions", desc: "Game Pass, entertainment subscriptions & more" },
+  "social-media": { name: "Social Media", desc: "TikTok, Instagram, and social media services" },
   design: { name: "Software & Apps", desc: "Adobe, Canva, Microsoft 365, Autodesk & more" },
-  ai: { name: "Artificial Intelligence", desc: "Gemini Pro subscriptions and other AI tools" },
+  services: { name: "Services", desc: "Student services, transfers, and diverse digital solutions" },
   games: { name: "Games", desc: "Fortnite, PlayStation, Xbox" },
   "gift-cards": { name: "Gift Cards", desc: "PlayStation, Xbox, Google Play, iTunes" },
+  products: { name: "View All", desc: "Browse all store products and subscriptions" },
+  ai: { name: "Artificial Intelligence", desc: "Gemini Pro subscriptions and other AI tools" },
 };
 
 const CATEGORY_META_EN: Record<string, { name: string; tagline: string }> = {
+  subscriptions: { name: "Subscriptions", tagline: "Digital gaming and entertainment subscriptions at best prices" },
+  "social-media": { name: "Social Media", tagline: "Followers, growth and engagement for popular social platforms" },
   design: { name: "Software & Apps", tagline: "Professional design software and apps at competitive prices" },
-  ai: { name: "Artificial Intelligence", tagline: "The most powerful AI tools at exclusive prices" },
+  services: { name: "Services", tagline: "Fast and reliable student assistance and digital solutions" },
   games: { name: "Games", tagline: "Subscriptions, currency and top-up cards for the biggest gaming platforms" },
   "gift-cards": { name: "Gift Cards", tagline: "Digital top-up cards for the biggest platforms — denominations & prices coming soon" },
+  products: { name: "View All", tagline: "Everything GX Store offers in one place" },
+  ai: { name: "Artificial Intelligence", tagline: "The most powerful AI tools at exclusive prices" },
 };
 
 const SUBCATEGORY_NAMES_EN: Record<string, string> = {
@@ -150,6 +158,7 @@ const SUBCATEGORY_NAMES_EN: Record<string, string> = {
   linkedin: "LinkedIn Premium",
   gemini: "Gemini Pro",
   fortnite: "Fortnite",
+  "pc-games": "PC Games",
   steam: "Steam Games",
   sony: "PlayStation Games",
   xbox: "Xbox Games",

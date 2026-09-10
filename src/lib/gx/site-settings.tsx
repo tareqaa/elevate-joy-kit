@@ -44,6 +44,12 @@ export type HomeCategoryOverride = {
   sort?: number;
 };
 
+export type BestsellerLabelConfig = {
+  mode?: "category" | "custom";
+  customLabel?: string;
+  customIcon?: string;
+};
+
 export type SiteSettings = {
   store_name: string;
   default_currency: string;
@@ -60,6 +66,7 @@ export type SiteSettings = {
   home_categories_meta: Record<string, HomeCategoryOverride>;
   home_subcategories_meta: Record<string, HomeCategoryOverride>;
   home_bestseller_order: string[];
+  home_bestseller_labels: Record<string, BestsellerLabelConfig>;
   home_layout: HomeLayout;
   catalog_prices: CatalogPrices;
   hide_fortnite_badges: boolean;
@@ -88,6 +95,7 @@ const DEFAULTS: SiteSettings = {
   home_categories_meta: {},
   home_subcategories_meta: {},
   home_bestseller_order: [],
+  home_bestseller_labels: {},
   home_layout: DEFAULT_HOME_LAYOUT,
   catalog_prices: {},
   hide_fortnite_badges: false,
@@ -127,6 +135,10 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
       merged.home_categories_meta = merged.home_categories_meta || {};
       merged.home_subcategories_meta = merged.home_subcategories_meta || {};
       merged.home_bestseller_order = Array.isArray(merged.home_bestseller_order) ? merged.home_bestseller_order : [];
+      merged.home_bestseller_labels =
+        merged.home_bestseller_labels && typeof merged.home_bestseller_labels === "object"
+          ? merged.home_bestseller_labels
+          : {};
       // Normalize home_layout — accept partial rows and fill missing sections keys.
       const rawLayout = merged.home_layout as unknown;
       if (!rawLayout || typeof rawLayout !== "object" || !Array.isArray((rawLayout as HomeLayout).sections)) {

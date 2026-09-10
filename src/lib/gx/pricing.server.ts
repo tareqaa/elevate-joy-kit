@@ -74,6 +74,22 @@ export async function loadDbBasePrices(
     if (row.products?.is_active === false) continue;
     if (row.cart_id) out.set(String(row.cart_id), Number(row.price_jod) || 0);
   }
+
+  // Secondary fallback: check products table by slug for direct products
+  const missingIds = ids.filter((id) => !out.has(id));
+  if (missingIds.length > 0) {
+    const { data: prodData } = await supabase
+      .from("products")
+      .select("slug, base_price_jod, is_active")
+      .in("slug", missingIds)
+      .eq("is_active", true);
+    for (const prod of (prodData ?? []) as Record<string, any>[]) {
+      if (prod.slug && prod.base_price_jod != null) {
+        out.set(String(prod.slug), Number(prod.base_price_jod) || 0);
+      }
+    }
+  }
+
   return out;
 }
 

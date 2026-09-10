@@ -14,7 +14,9 @@ export function BuyActions({ cartId }: { cartId: string }) {
       <button
         className={`add-cart-btn ${added ? "added" : ""}`}
         type="button"
-        onClick={() => {
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
           cart.add(cartId);
           setAdded(true);
           window.dispatchEvent(new CustomEvent(CART_ADDED_EVENT));
@@ -23,7 +25,16 @@ export function BuyActions({ cartId }: { cartId: string }) {
       >
         {added ? t("buy.added") : t("buy.add")}
       </button>
-      <button className="buy-now-btn" type="button" onClick={() => { cart.buyNow(cartId); navigate({ to: "/cart" }); }}>
+      <button
+        className="buy-now-btn"
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          cart.buyNow(cartId);
+          navigate({ to: "/cart" });
+        }}
+      >
         {t("buy.buy_now")}
       </button>
     </div>

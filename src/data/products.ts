@@ -10,6 +10,7 @@ export type Plan = {
   price: number;
   oldPrice?: number;
   tag?: string | null;
+  imageUrl?: string;
 };
 
 export type Feature = { icon: string; title: string; desc: string };
@@ -19,6 +20,7 @@ export type Product = {
   name: string;
   icon: string;
   iconImg?: string;
+  imageUrl?: string;
   thumbBg: string;
   category: string;
   tagline: string;
@@ -44,7 +46,9 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
     slug: "snapchat",
     name: "سناب بلس",
     icon: "👻",
-    thumbBg: "linear-gradient(145deg,#3a3a10,#14150c)",
+    iconImg: "/app/assets/img/snapchat-logo.png",
+    imageUrl: "/app/assets/img/snapchat-logo.png",
+    thumbBg: "#FFFC00",
     category: "اشتراك سناب بلس",
     tagline: "فعّل سناب بلس بأسهل وأسرع طريقة",
     description:
@@ -71,7 +75,9 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
     slug: "adobe",
     name: "Adobe Creative Cloud",
     icon: "🎨",
-    thumbBg: "linear-gradient(145deg,#2a0d30,#150818)",
+    iconImg: "/app/assets/img/adobe-cc.webp",
+    imageUrl: "/app/assets/img/adobe-cc.webp",
+    thumbBg: "#12151e",
     category: "البرامج والتطبيقات",
     tagline: "كل تطبيقات Adobe باشتراك واحد",
     description: "فوتوشوب، إليستريتور، بريمير برو، وأكثر — اشتراك رسمي على حسابك الخاص بأفضل سعر.",
@@ -94,19 +100,23 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
     name: "Canva Pro",
     icon: "🎨",
     iconImg: "/app/assets/img/canva-logo.png",
-    thumbBg: "linear-gradient(145deg,#0a3d4d,#062028)",
+    imageUrl: "/app/assets/img/canva-logo.png",
+    thumbBg: "#12151e",
     category: "البرامج والتطبيقات",
-    tagline: "كانفا برو سنة كاملة",
-    description: "كل مميزات Canva Pro على حسابك الشخصي — قوالب بريميوم، خلفيات، خطوط، وإزالة الخلفية.",
+    tagline: "كانفا برو — اشتراك رسمي سنوي",
+    description: "كل مميزات Canva Pro على حسابك الشخصي — قوالب بريميوم، أكثر من 100 مليون صورة وفيديو، آلاف الخطوط الاحترافية، وأداة إزالة الخلفية بضغطة زر.",
     identifierLabel: "إيميل حساب Canva",
     identifierPlaceholder: "example@email.com",
-    deliveryMethod: "منفعّلك اشتراك Canva Pro مباشرة على حسابك الشخصي — بترسلنا إيميلك بس، وبتوصلك دعوة رسمية من كانفا للانضمام.",
-    plans: [{ id: "canva-12", label: "12 شهر", price: 2, oldPrice: 4, tag: "الأفضل قيمة" }],
+    deliveryMethod: "منفعّلك اشتراك Canva Pro مباشرة على حسابك الشخصي — بترسلنا إيميلك فقط، وبتوصلك دعوة تفعيل رسمية من كانفا مباشرة.",
+    plans: [
+      { id: "canva-12", label: "12 شهر (سنة كاملة)", price: 2, oldPrice: 5, tag: "الأكثر طلبًا" },
+    ],
     features: [
-      { icon: "✨", title: "قوالب بريميوم", desc: "وصول كامل لأكثر من 100 مليون قالب وصورة وفيديو بريميوم." },
-      { icon: "🪄", title: "إزالة الخلفية بضغطة", desc: "أداة Background Remover الاحترافية جاهزة داخل التطبيق." },
-      { icon: "🔤", title: "مكتبة خطوط ضخمة", desc: "آلاف الخطوط الاحترافية بما فيها العربي والإنجليزي." },
-      { icon: "☁️", title: "1 تيرا تخزين سحابي", desc: "احفظ كل تصاميمك ومشاريعك بأمان ومساحة كبيرة." },
+      { icon: "✨", title: "مكتبة بريميوم كاملة", desc: "وصول غير محدود لأكثر من 100 مليون قالب، صورة، فيديو، ورسم توضيحي بجودة فائقة." },
+      { icon: "🪄", title: "إزالة الخلفية السحرية", desc: "أداة Background Remover وممحاة العناصر بالذكاء الاصطناعي بضغطة زر واحدة." },
+      { icon: "🔤", title: "آلاف الخطوط وألوان العلامة", desc: "تحميل خطوطك الخاصة وحفظ هوية علامتك التجارية مع Brand Kit كامل." },
+      { icon: "☁️", title: "1 تيرا تخزين سحابي", desc: "مساحة سحابية ضخمة لحفظ وتنظيم كل مشاريعك ومشاركتها مع فريقك بسهولة." },
+      { icon: "📐", title: "تغيير الحجم السحري Magic Resize", desc: "تحويل التصميم بضغطة واحدة ليناسب إنستغرام، تيك توك، يوتيوب، وباقي المنصات فوراً." },
     ],
   },
   linkedin: {
@@ -114,6 +124,7 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
     name: "LinkedIn Premium Business",
     icon: "💼",
     iconImg: "/app/assets/img/linkedin-logo.svg",
+    imageUrl: "/app/assets/img/linkedin-logo.svg",
     thumbBg: "linear-gradient(145deg,#082a4a,#03101e)",
     category: "البرامج والتطبيقات",
     tagline: "لينكدإن بريميوم بزنس سنة كاملة",
@@ -134,6 +145,7 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
     name: "Microsoft 365",
     icon: "🅼",
     iconImg: "/app/assets/img/microsoft365-logo.svg",
+    imageUrl: "/app/assets/img/microsoft365-logo.svg",
     thumbBg: "linear-gradient(145deg,#3a1208,#180804)",
     category: "البرامج والتطبيقات",
     tagline: "مايكروسوفت 365 — أكثر من خيار",
@@ -156,6 +168,7 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
     name: "Autodesk All Apps",
     icon: "📐",
     iconImg: "/app/assets/img/autodesk-logo.svg",
+    imageUrl: "/app/assets/img/autodesk-logo.svg",
     thumbBg: "linear-gradient(145deg,#2a1a10,#140a05)",
     category: "البرامج والتطبيقات",
     tagline: "كل برامج أوتوديسك سنة كاملة",
@@ -176,6 +189,7 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
     name: "Gemini Pro",
     icon: "✨",
     iconImg: "/app/assets/img/gemini-logo.svg",
+    imageUrl: "/app/assets/img/gemini-logo.svg",
     thumbBg: "linear-gradient(145deg,#2a1a4a,#0e0820)",
     category: "الذكاء الاصطناعي",
     tagline: "Gemini Pro سنة ونص",
@@ -195,7 +209,8 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
     slug: "windows",
     name: "تفعيل ويندوز",
     icon: "🪟",
-    iconImg: "/app/assets/img/windows-logo.svg",
+    iconImg: "/app/assets/img/windows-icon.svg",
+    imageUrl: "/app/assets/img/windows-icon.svg",
     thumbBg: "linear-gradient(145deg,#0a2540,#04101c)",
     category: "البرامج والتطبيقات",
     tagline: "مفاتيح تفعيل رسمية لويندوز 10 و 11",
@@ -218,6 +233,8 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
     slug: "fortnite",
     name: "فورت نايت",
     icon: "🪂",
+    iconImg: "/app/assets/img/fortnite-logo.png",
+    imageUrl: "/app/assets/img/fortnite-logo.png",
     thumbBg: "linear-gradient(145deg,#0d1a30,#080d18)",
     category: "الألعاب",
     tagline: "كرو شهري ورصيد V-Bucks يوصلك فورًا",
@@ -242,14 +259,14 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
       ],
     },
     crewPlans: [
-      { id: "fn-crew", label: "Fortnite Crew — شهر", price: 4, oldPrice: 6, tag: "يشمل V-Bucks شهرية" },
-      { id: "fn-crew-3", label: "Fortnite Crew — 3 أشهر", price: 9, oldPrice: 12 },
+      { id: "fn-crew", label: "Fortnite Crew — شهر واحد", price: 4, oldPrice: 6, tag: "يشمل 1000 V-Bucks", imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473" },
+      { id: "fn-crew-3", label: "Fortnite Crew — 3 أشهر", price: 9, oldPrice: 12, tag: "الأفضل قيمة", imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473" },
     ],
     vbucksPlans: [
-      { id: "fn-vb-800", label: "800 وحدة V-Bucks", price: 5, oldPrice: 7 },
-      { id: "fn-vb-2400", label: "2400 وحدة V-Bucks", price: 12, oldPrice: 16 },
-      { id: "fn-vb-4500", label: "4500 وحدة V-Bucks", price: 19, oldPrice: 25 },
-      { id: "fn-vb-12500", label: "12500 وحدة V-Bucks", price: 38, oldPrice: 49 },
+      { id: "fn-vb-800", label: "800 وحدة V-Bucks", price: 5, oldPrice: 7, imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_800_EGS_Portrait_1200x1600_1200x1600-79529d8c20514e82ae2ebce58991b912" },
+      { id: "fn-vb-2400", label: "2400 وحدة V-Bucks", price: 12, oldPrice: 16, imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_2400_EGS_Landscape_2560x1440_2560x1440-e51d802c9d414431973ae3e2ba60528d" },
+      { id: "fn-vb-4500", label: "4500 وحدة V-Bucks", price: 19, oldPrice: 25, imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_4500_EGS_Landscape_2560x1440_2560x1440-799cfafb76bf4ae795fece5e4c0de4a3" },
+      { id: "fn-vb-12500", label: "12500 وحدة V-Bucks", price: 38, oldPrice: 49, imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_12500_EGS_Portrait_1200x1600_1200x1600-070f17d0f6a34e9180b2927c8c24c40e" },
     ],
     features: [
       { icon: "🎽", title: "طقم Crew Pack حصري شهريًا", desc: "تشكيلة (Outfit) حصرية مع إكسسواراتها تتجدد كل شهر، وما بتنباع بشكل منفصل بأي مكان تاني." },
@@ -362,10 +379,13 @@ export type CategoryLink = {
 
 export const CATEGORY_LINKS: CategoryLink[] = [
   { slug: "snapchat", name: "سناب بلس", icon: "👻", type: "direct", accent: "#FFCB47", bg: "linear-gradient(145deg, rgba(255,203,71,0.18), rgba(255,203,71,0.04))", desc: "أيقونة حصرية، ألوان دردشة، وأكثر" },
+  { slug: "subscriptions", name: "الاشتراكات", icon: "⚡", type: "group", accent: "#8B5CF6", bg: "linear-gradient(145deg, rgba(139,92,246,0.18), rgba(139,92,246,0.04))", desc: "اشتراكات جيم باس، اشتراكات ترفيه والمزيد" },
+  { slug: "social-media", name: "السوشال ميديا", icon: "📱", type: "group", accent: "#3B82F6", bg: "linear-gradient(145deg, rgba(59,130,246,0.18), rgba(59,130,246,0.04))", desc: "خدمات تيك توك، انستقرام، وباقي منصات التواصل" },
   { slug: "design", name: "البرامج والتطبيقات", icon: "🧩", type: "group", accent: "#C6FF3D", bg: "linear-gradient(145deg, rgba(198,255,61,0.16), rgba(198,255,61,0.04))", desc: "Adobe، Canva، Microsoft 365، Autodesk وأكثر" },
-  { slug: "ai", name: "الذكاء الاصطناعي", icon: "🤖", type: "group", accent: "#b26bff", bg: "linear-gradient(145deg, rgba(178,107,255,0.18), rgba(178,107,255,0.04))", desc: "اشتراكات Gemini Pro وأدوات AI الأخرى" },
+  { slug: "services", name: "الخدمات", icon: "🛠️", type: "group", accent: "#FF9500", bg: "linear-gradient(145deg, rgba(255,149,0,0.18), rgba(255,149,0,0.04))", desc: "خدمات طلابية، تحويل، ومساعدات رقمية متنوعة" },
   { slug: "games", name: "الألعاب", icon: "🎮", type: "group", accent: "#00E5FF", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "فورت نايت، بلايستيشن، إكسبوكس" },
   { slug: "gift-cards", name: "بطاقات الهدايا", icon: "🎁", type: "group", accent: "#FF2D78", bg: "linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))", desc: "PlayStation، Xbox، Google Play، iTunes" },
+  { slug: "products", name: "عرض الكل", icon: "✨", type: "direct", accent: "#00F5A0", bg: "linear-gradient(145deg, rgba(0,245,160,0.18), rgba(0,245,160,0.04))", desc: "تصفح جميع المنتجات والاشتراكات المتوفرة بالمتجر" },
 ];
 
 export type Subcategory = {
@@ -381,20 +401,23 @@ export type Subcategory = {
 };
 
 export const SUBCATEGORIES: Record<string, Subcategory[]> = {
+  subscriptions: [],
+  "social-media": [],
   design: [
-    { slug: "adobe", product: "adobe", name: "Adobe Creative Cloud", icon: "🎨", iconImg: "/app/assets/img/adobe-cc.webp", bg: "linear-gradient(145deg,#2a0d30,#150818)" },
+    { slug: "adobe", product: "adobe", name: "Adobe Creative Cloud", icon: "🎨", iconImg: "/app/assets/img/adobe-cc.webp", bg: "#12151e" },
     { slug: "canva", product: "canva", name: "Canva Pro", icon: "🎨", iconImg: "/app/assets/img/canva-logo.png", bg: "linear-gradient(145deg,#1a2f6b,#0a1230)" },
     { slug: "microsoft365", product: "microsoft365", name: "Microsoft 365", icon: "🅼", iconImg: "/app/assets/img/microsoft365-logo.svg", bg: "linear-gradient(145deg,#3a1208,#180804)" },
-    { slug: "windows", product: "windows", name: "تفعيل ويندوز", icon: "🪟", iconImg: "/app/assets/img/windows-logo.svg", bg: "linear-gradient(145deg,#0a2540,#04101c)" },
+    { slug: "windows", product: "windows", name: "تفعيل ويندوز", icon: "🪟", iconImg: "/app/assets/img/windows-icon.svg", bg: "linear-gradient(145deg,#0a2540,#04101c)" },
     { slug: "autodesk", product: "autodesk", name: "Autodesk", icon: "📐", iconImg: "/app/assets/img/autodesk-logo.svg", bg: "linear-gradient(145deg,#2a1a10,#140a05)" },
     { slug: "linkedin", product: "linkedin", name: "LinkedIn Premium", icon: "💼", iconImg: "/app/assets/img/linkedin-logo.svg", bg: "linear-gradient(145deg,#3a2b08,#1a1305)" },
   ],
+  services: [],
   ai: [
     { slug: "gemini", product: "gemini", name: "Gemini Pro", icon: "✨", iconImg: "/app/assets/img/gemini-logo.svg", bg: "linear-gradient(145deg,#2a1a4a,#0e0820)" },
   ],
   games: [
     { slug: "fortnite", product: "fortnite", name: "فورت نايت", icon: "🪂", iconImg: "/app/assets/img/fortnite-logo.png", bg: "linear-gradient(145deg,#0d1a30,#080d18)" },
-    { slug: "steam", product: null, name: "ألعاب Steam", icon: "🎮", iconImg: "/app/assets/img/steam-logo.svg", bg: "linear-gradient(145deg,#101a24,#05090d)", comingSoon: true },
+    { slug: "pc-games", product: null, name: "ألعاب PC", icon: "🖥️", iconImg: "/app/assets/img/steam-logo.svg", bg: "linear-gradient(145deg,#101a24,#05090d)" },
     { slug: "sony", product: null, name: "ألعاب بلايستيشن", icon: "🎮", iconImg: "/app/assets/img/playstation-logo.svg", bg: "linear-gradient(145deg,#0d1430,#080a18)", comingSoon: true },
     { slug: "xbox", product: null, name: "ألعاب إكسبوكس", icon: "🕹️", iconImg: "/app/assets/img/xbox-logo.svg", bg: "linear-gradient(145deg,#0d2a1a,#081510)", comingSoon: true },
   ],
@@ -407,10 +430,14 @@ export const SUBCATEGORIES: Record<string, Subcategory[]> = {
 };
 
 export const CATEGORY_META: Record<string, { name: string; icon: string; tagline: string }> = {
+  subscriptions: { name: "الاشتراكات", icon: "⚡", tagline: "اشتراكات الألعاب والترفيه الرقمي بأفضل الأسعار" },
+  "social-media": { name: "السوشال ميديا", icon: "📱", tagline: "خدمات وتطوير حسابات التواصل الاجتماعي المختلفة" },
   design: { name: "البرامج والتطبيقات", icon: "🧩", tagline: "برامج التصميم والتطبيقات الاحترافية بأسعار منافسة" },
-  ai: { name: "الذكاء الاصطناعي", icon: "🤖", tagline: "أقوى أدوات الذكاء الاصطناعي بأسعار حصرية" },
+  services: { name: "الخدمات", icon: "🛠️", tagline: "حلول وخدمات رقمية وطلابية سريعة وموثوقة" },
   games: { name: "الألعاب", icon: "🎮", tagline: "اشتراكات، عملات، وكروت شحن لأشهر منصات الألعاب" },
   "gift-cards": { name: "بطاقات الهدايا", icon: "🎁", tagline: "بطاقات شحن رقمية لأشهر المنصات — القيم والأسعار قريبًا" },
+  products: { name: "عرض الكل", icon: "✨", tagline: "كل ما يقدمه متجر GX في مكان واحد" },
+  ai: { name: "الذكاء الاصطناعي", icon: "🤖", tagline: "أقوى أدوات الذكاء الاصطناعي بأسعار حصرية" },
 };
 
 export type ResolvedPlan = {
@@ -430,7 +457,17 @@ export function findPlanByCartId(cartId: string): ResolvedPlan | null {
     const all = [...(p.plans || []), ...(p.crewPlans || []), ...(p.vbucksPlans || [])];
     const plan = all.find((pl) => pl.id === cartId);
     if (plan) {
-      return { cartId: plan.id, product: key, name: `${p.name} — ${plan.label}`, icon: p.icon, bg: p.thumbBg, price: plan.price };
+      const img = plan.imageUrl || p.imageUrl || p.iconImg || null;
+      return {
+        cartId: plan.id,
+        product: key,
+        name: `${p.name} — ${plan.label}`,
+        icon: p.icon,
+        iconImage: img,
+        imageUrl: img,
+        bg: p.thumbBg || "linear-gradient(145deg,#12151e,#0b0d14)",
+        price: plan.price,
+      };
     }
   }
   for (const platformKey in GIFT_CARDS_CATALOG) {
@@ -438,7 +475,17 @@ export function findPlanByCartId(cartId: string): ResolvedPlan | null {
     for (const region of platform.regions) {
       const denom = region.denominations.find((d) => d.id === cartId);
       if (denom) {
-        return { cartId: denom.id, product: platformKey, name: `${platform.name} (${region.name}) — ${denom.value}`, icon: platform.icon, bg: platform.cardGradient, price: denom.price };
+        const img = platform.iconImg || null;
+        return {
+          cartId: denom.id,
+          product: platformKey,
+          name: `${platform.name} (${region.name}) — ${denom.value}`,
+          icon: platform.icon,
+          iconImage: img,
+          imageUrl: img,
+          bg: platform.cardGradient || "linear-gradient(145deg,#12151e,#0b0d14)",
+          price: denom.price,
+        };
       }
     }
   }
@@ -452,7 +499,9 @@ export function getProductLink(slug: string): string {
 export function getCategoryLink(slug: string): string {
   if (slug === "snapchat") return "/product/snapchat";
   if (slug === "fortnite") return "/product/fortnite";
-  if (["pc-games", "steam", "xbox-games", "sony"].includes(slug)) return `/games/${slug}`;
+  if (slug === "products" || slug === "all") return "/products";
+  if (slug === "steam") return "/category/pc-games";
+  if (["pc-games", "xbox-games", "sony"].includes(slug)) return `/category/${slug}`;
   return `/category/${slug}`;
 }
 
@@ -476,6 +525,7 @@ export function getFeaturedItems(): FeaturedItem[] {
     { product: "snapchat", planId: "snap-6" },
     { product: "adobe", planId: "adobe-4" },
     { product: "fortnite", planId: "fn-crew" },
+    { product: "gemini", planId: "gemini-18" },
     { product: "fortnite", planId: "fn-vb-2400" },
     { product: "snapchat", planId: "snap-3" },
     { product: "fortnite", planId: "fn-vb-800" },

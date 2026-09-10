@@ -20,7 +20,6 @@ import type {
 } from "./types";
 import { activeCarouselSlides } from "./types";
 import { RichHtml } from "./rich-text";
-import { DiscountBadge } from "@/components/gx/DiscountBadge";
 import { formatTitle } from "@/lib/gx/text";
 import { CarouselRow } from "@/components/gx/CarouselRow";
 import { useSiteSettings } from "../site-settings";
@@ -342,6 +341,8 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
 }
 
 import { VBUCKS_TIER_THEMES, CREW_TIER_THEMES } from "@/components/gx/ProductTemplates";
+import { ProductPlatformBar } from "@/components/gx/ProductPlatformBar";
+import { StoreProductCard } from "@/components/gx/StoreProductCard";
 
 /* ---------------- BESTSELLERS ---------------- */
 export function BestsellersRenderer({ data }: { data: BestsellersData }) {
@@ -464,11 +465,32 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
             const dbV = dbVariants[p.cartId];
             const price = dbV?.price ?? p.price;
             const oldPrice = dbV?.oldPrice ?? p.oldPrice;
-            const dbTag = lang === "en" ? dbV?.tagEn || dbV?.tagAr : dbV?.tagAr || dbV?.tagEn;
             const discount = oldPrice && oldPrice > price ? Math.round((1 - price / oldPrice) * 100) : 0;
 
             const product = PRODUCTS_CATALOG[p.product];
-            let iconEl: React.ReactNode = <ProductIcon product={product} />;
+
+            const snapDuration =
+              p.product === "snapchat"
+                ? p.cartId === "snap-3"
+                  ? lang === "en"
+                    ? "3 MONTHS"
+                    : "3 أشهر"
+                  : p.cartId === "snap-6"
+                  ? lang === "en"
+                    ? "6 MONTHS"
+                    : "6 أشهر"
+                  : p.cartId === "snap-12"
+                  ? lang === "en"
+                    ? "12 MONTHS"
+                    : "12 شهر"
+                  : p.cartId === "snap-1"
+                  ? lang === "en"
+                    ? "1 MONTH"
+                    : "شهر واحد"
+                  : undefined
+                : undefined;
+
+            let iconEl: React.ReactNode = <ProductIcon product={product} duration={snapDuration} />;
 
             const tier = parseInt(p.cartId.replace(/\D+/g, ""), 10) || 0;
             const isVbucks = p.product === "fortnite" && p.cartId.startsWith("fn-vb");
@@ -476,30 +498,6 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
 
             if (isCrew) iconEl = <CrewIcon />;
             else if (isVbucks) iconEl = <VbucksIcon tier={tier} />;
-
-            const vbucksTheme = isVbucks ? VBUCKS_TIER_THEMES[tier] : null;
-            const crewTheme = isCrew
-              ? CREW_TIER_THEMES[p.cartId] || {
-                  bg: "linear-gradient(145deg, rgba(31,169,255,0.25), rgba(10,35,70,0.95))",
-                  border: "rgba(31,169,255,0.5)",
-                  accent: "#1fa9ff",
-                  badgeAr: "⭐ Fortnite Crew",
-                  badgeEn: "Fortnite Crew",
-                }
-              : null;
-
-            const theme = vbucksTheme || crewTheme;
-            const isTagDisabled =
-              !dbTag ||
-              dbTag.toLowerCase() === "none" ||
-              dbTag.toLowerCase() === "no-badge" ||
-              dbTag.toLowerCase() === "off" ||
-              dbTag === "بدون شارة" ||
-              dbTag === "إخفاء" ||
-              dbTag === "لا شيء";
-
-            // Bestsellers section: only display custom badge if explicitly set by admin, otherwise remove tier badges
-            const badgeText = isTagDisabled ? null : dbTag;
 
             const prodName = product?.name || (lang === "en" ? dbV?.productNameEn || dbV?.productNameAr : dbV?.productNameAr || dbV?.productNameEn) || "";
             const vLabel = lang === "en" ? dbV?.labelEn || dbV?.labelAr : dbV?.labelAr || dbV?.labelEn;
@@ -513,23 +511,22 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
             }
 
             return (
-              <div key={p.cartId} className="prod-card">
-                <div className="prod-thumb" style={{ background: theme?.bg || p.bg || "rgba(0, 229, 255, 0.05)" }}>
-                  <DiscountBadge value={discount} />
-                  {iconEl}
-                </div>
-                <div className="prod-body">
-                  <div className="prod-stars">★★★★★</div>
-                  <div className="prod-name">{formatTitle(localizeResolvedName(displayName, lang))}</div>
-                  <div className="prod-prices">
-                    {oldPrice && oldPrice > 0 ? <span className="prod-old">{format(oldPrice)}</span> : null}
-                    <span className="prod-new">
-                      {format(price)}
-                    </span>
-                  </div>
-                  <BuyActions cartId={p.cartId} />
-                </div>
-              </div>
+              <StoreProductCard
+                key={p.cartId}
+                slug={p.product}
+                cartId={p.cartId}
+                name={displayName}
+                link={p.link}
+                price={price}
+                oldPrice={oldPrice}
+                imageUrl={dbV?.imageUrl}
+                iconImage={dbV?.icon}
+                thumbBg={p.bg}
+                snapDuration={snapDuration}
+                showPlatformBar={true}
+                showBadge={false}
+                disableTierTheme={true}
+              />
             );
           })}
         </CarouselRow>
@@ -561,30 +558,45 @@ export function ProductsRenderer({ data }: { data: ProductsData }) {
           {items.map((p) => {
             const discount = Math.round((1 - p.price / p.oldPrice) * 100);
             const product = PRODUCTS_CATALOG[p.product];
-            let iconEl: React.ReactNode = <ProductIcon product={product} />;
+            const snapDuration =
+              p.product === "snapchat"
+                ? p.cartId === "snap-3"
+                  ? lang === "en"
+                    ? "3 MONTHS"
+                    : "3 أشهر"
+                  : p.cartId === "snap-6"
+                  ? lang === "en"
+                    ? "6 MONTHS"
+                    : "6 أشهر"
+                  : p.cartId === "snap-12"
+                  ? lang === "en"
+                    ? "12 MONTHS"
+                    : "12 شهر"
+                  : p.cartId === "snap-1"
+                  ? lang === "en"
+                    ? "1 MONTH"
+                    : "شهر واحد"
+                  : undefined
+                : undefined;
+
+            let iconEl: React.ReactNode = <ProductIcon product={product} duration={snapDuration} />;
             if (p.product === "fortnite" && p.cartId.startsWith("fn-crew")) iconEl = <CrewIcon />;
             else if (p.product === "fortnite" && p.cartId.startsWith("fn-vb")) {
               const tier = parseInt(p.cartId.replace("fn-vb-", ""), 10);
               iconEl = <VbucksIcon tier={tier} />;
             }
             return (
-              <div key={p.cartId} className="prod-card">
-                <Link to={p.link as never} style={{ display: "contents" }}>
-                  <div className="prod-thumb" style={{ background: p.bg }}>
-                    <DiscountBadge value={discount} />
-                    {iconEl}
-                  </div>
-                </Link>
-                <div className="prod-body">
-                  <div className="prod-stars">★★★★★</div>
-                  <div className="prod-name">{formatTitle(localizeResolvedName(p.name, lang))}</div>
-                  <div className="prod-prices">
-                    <span className="prod-old">{format(p.oldPrice)}</span>
-                    <span className="prod-new">{format(p.price)}</span>
-                  </div>
-                  <BuyActions cartId={p.cartId} />
-                </div>
-              </div>
+              <StoreProductCard
+                key={p.cartId}
+                slug={p.product}
+                cartId={p.cartId}
+                name={p.name}
+                link={p.link}
+                price={p.price}
+                oldPrice={p.oldPrice}
+                thumbBg={p.bg}
+                snapDuration={snapDuration}
+              />
             );
           })}
         </CarouselRow>
