@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Copy, Check, Sparkles, Timer } from "lucide-react";
+import { useLang } from "@/lib/gx/i18n";
 
 type Prize = {
   id: string;
@@ -52,8 +53,11 @@ const RARITY_FALLBACK: Record<string, string> = {
   legendary: "#f59e0b",
 };
 
-function rarityLabel(r?: string) {
-  return r === "legendary" ? "أسطوري" : r === "epic" ? "ملحمي" : r === "rare" ? "نادر" : "عادي";
+function rarityLabel(r?: string, isAr = true) {
+  if (isAr) {
+    return r === "legendary" ? "أسطوري" : r === "epic" ? "ملحمي" : r === "rare" ? "نادر" : "عادي";
+  }
+  return r === "legendary" ? "Legendary" : r === "epic" ? "Epic" : r === "rare" ? "Rare" : "Common";
 }
 
 function isRare(rarity?: string) {
@@ -94,26 +98,41 @@ function fmtCountdown(sec: number) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
 }
 
-function fmtDate(iso?: string | null) {
+function fmtDate(iso?: string | null, isAr = true) {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleString("ar-EG", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString(isAr ? "ar-EG" : "en-US", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-function rewardSummary(r: SpinResult) {
+function rewardSummary(r: SpinResult, isAr = true) {
   const v = Number(r.reward_value ?? 0);
   switch (r.reward_type) {
     case "xp":
-      return { value: `+${v.toLocaleString("en-US")} XP`, desc: "نقاط خبرة تُضاف لمستواك فورًا" };
+      return {
+        value: `+${v.toLocaleString("en-US")} XP`,
+        desc: isAr ? "نقاط خبرة تُضاف لمستواك فورًا" : "XP added directly to your level",
+      };
     case "gx_coins":
-      return { value: `+${v.toLocaleString("en-US")} 💰`, desc: "GX Coins أُضيفت إلى رصيدك" };
+      return {
+        value: `+${v.toLocaleString("en-US")} 💰`,
+        desc: isAr ? "GX Coins أُضيفت إلى رصيدك" : "GX Coins added to your balance",
+      };
     case "discount_percent":
-      return { value: `${v}% خصم`, desc: "كوبون خصم لمرة واحدة على طلبك القادم" };
+      return {
+        value: isAr ? `${v}% خصم` : `${v}% OFF`,
+        desc: isAr ? "كوبون خصم لمرة واحدة على طلبك القادم" : "One-time discount code for your next order",
+      };
     case "boost_double_coins":
-      return { value: "×2 GX Coins", desc: "مضاعفة عملات طلبك القادم" };
+      return {
+        value: "×2 GX Coins",
+        desc: isAr ? "مضاعفة عملات طلبك القادم" : "Double coins on your next order",
+      };
     case "boost_double_xp":
-      return { value: "×2 XP", desc: "مضاعفة نقاط الخبرة في طلبك القادم" };
+      return {
+        value: "×2 XP",
+        desc: isAr ? "مضاعفة نقاط الخبرة في طلبك القادم" : "Double XP on your next order",
+      };
     default:
       return { value: "", desc: "" };
   }
@@ -151,6 +170,8 @@ body.gxw-wheel-open div[data-state="open"][class*="inset-0"] { background: rgba(
 `;
 
 export function WheelCore({ compact = false }: { compact?: boolean }) {
+  const { lang, dir } = useLang();
+  const ar = lang === "ar";
   const qc = useQueryClient();
   const [angle, setAngle] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -237,7 +258,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
     const res = (data ?? {}) as SpinResult;
     if (res.ok === false) {
       setSpinning(false);
-      toast.error("لفة اليوم مستخدمة، عد غدًا 🎡");
+      toast.error(ar ? "لفة اليوم مستخدمة، عد غدًا 🎡" : "Today's spin is used, come back tomorrow! 🎡");
       void qc.invalidateQueries({ queryKey: ["wheel-status"] });
       return;
     }
@@ -263,14 +284,14 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
     if (!result?.coupon_code) return;
     await navigator.clipboard.writeText(result.coupon_code);
     setCopied(true);
-    toast.success("تم نسخ الكود");
+    toast.success(ar ? "تم نسخ الكود" : "Code copied");
     setTimeout(() => setCopied(false), 1500);
   }
 
-  const summary = result ? rewardSummary(result) : null;
+  const summary = result ? rewardSummary(result, ar) : null;
   const noReward = result?.reward_type === "no_reward";
   const legendary = isRare(result?.rarity);
-  const expiry = fmtDate(result?.coupon_expires_at || result?.boost_expires_at);
+  const expiry = fmtDate(result?.coupon_expires_at || result?.boost_expires_at, ar);
   const size = compact
     ? "w-[280px] h-[280px] sm:w-[330px] sm:h-[330px]"
     : "w-[300px] h-[300px] sm:w-[360px] sm:h-[360px]";
@@ -415,7 +436,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
             type="button"
             onClick={spin}
             disabled={!canSpin}
-            aria-label="لف الآن"
+            aria-label={ar ? "لف الآن" : "Spin Now"}
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 grid place-items-center rounded-full border-[3px] border-amber-300/80 text-[13px] font-black tracking-wide transition-transform duration-200 hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
             style={{
               width: compact ? 76 : 84,
@@ -425,30 +446,30 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
               color: "#fde68a",
             }}
           >
-            {spinning ? <span className="text-[11px]">…يلف</span> : canSpin ? "SPIN" : "🔒"}
+            {spinning ? <span className="text-[11px]">{ar ? "…يلف" : "…Spin"}</span> : canSpin ? "SPIN" : "🔒"}
           </button>
         </div>
 
         {statusQ.isLoading ? (
-          <p className="text-sm text-muted-foreground">جاري التحميل…</p>
+          <p className="text-sm text-muted-foreground">{ar ? "جاري التحميل…" : "Loading…"}</p>
         ) : statusQ.data?.can_spin ? (
           <Button size="lg" onClick={spin} disabled={!canSpin} className="min-w-44 font-bold">
-            {spinning ? "جاري اللف…" : "لف الآن"}
+            {spinning ? (ar ? "جاري اللف…" : "Spinning…") : (ar ? "لف الآن" : "Spin Now")}
           </Button>
         ) : (
           <div className="text-center space-y-2">
             <Button size="lg" disabled aria-disabled className="min-w-44 font-bold pointer-events-none opacity-60">
-              لفة اليوم مستخدمة
+              {ar ? "لفة اليوم مستخدمة" : "Today's Spin Used"}
             </Button>
             <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
               <Timer className="w-4 h-4" />
-              اللفة القادمة بعد <span className="font-mono text-foreground" dir="ltr">{fmtCountdown(remaining)}</span>
+              {ar ? "اللفة القادمة بعد " : "Next spin in "} <span className="font-mono text-foreground" dir="ltr">{fmtCountdown(remaining)}</span>
             </p>
           </div>
         )}
         {Number(statusQ.data?.bonus_spins ?? 0) > 0 && (
           <p className="text-center text-xs font-bold text-amber-400">
-            لديك {Number(statusQ.data?.bonus_spins)} لفة إضافية 🎁
+            {ar ? `لديك ${Number(statusQ.data?.bonus_spins)} لفة إضافية 🎁` : `You have ${Number(statusQ.data?.bonus_spins)} bonus spin(s) 🎁`}
           </p>
         )}
       </div>
@@ -466,13 +487,13 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
           {noReward ? (
             <>
               <div className="text-3xl">🍀</div>
-              <div className="text-lg font-bold">حظ أوفر!</div>
-              <p className="text-sm text-muted-foreground">ما في جائزة هالمرة — رجعة بكرة معها فرصة جديدة تمامًا 💪</p>
+              <div className="text-lg font-bold">{ar ? "حظ أوفر!" : "Better luck next time!"}</div>
+              <p className="text-sm text-muted-foreground">{ar ? "ما في جائزة هالمرة — رجعة بكرة معها فرصة جديدة تمامًا 💪" : "No prize this time — come back tomorrow for a fresh chance! 💪"}</p>
             </>
           ) : (
             <>
               <div className="flex items-center justify-center gap-2 text-primary font-bold">
-                <Sparkles className="w-5 h-5" /> 🎉 مبروك! لقد حصلت على
+                <Sparkles className="w-5 h-5" /> {ar ? "🎉 مبروك! لقد حصلت على" : "🎉 Congratulations! You won"}
               </div>
               <div className="text-2xl font-black flex items-center justify-center gap-2">
                 <span>{result.icon || "🎁"}</span><span>{result.name}</span>
@@ -480,22 +501,22 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
               {summary?.value && <div className="text-lg font-extrabold" style={{ color: prizeColor(result) }}>{summary.value}</div>}
               {summary?.desc && <p className="text-sm text-muted-foreground">{summary.desc}</p>}
               <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                {rarityLabel(result.rarity)}
+                {rarityLabel(result.rarity, ar)}
               </div>
               {result.coupon_code && (
                 <div className="space-y-2">
-                  <div className="text-xs text-muted-foreground">كود الكوبون</div>
+                  <div className="text-xs text-muted-foreground">{ar ? "كود الكوبون" : "Coupon Code"}</div>
                   <div className="flex items-center justify-center gap-2">
                     <div className="font-mono bg-background border rounded px-3 py-2 select-all tracking-wider" dir="ltr">
                       {result.coupon_code}
                     </div>
-                    <Button size="icon" variant="outline" onClick={copyCode} aria-label="نسخ الكود">
+                    <Button size="icon" variant="outline" onClick={copyCode} aria-label={ar ? "نسخ الكود" : "Copy code"}>
                       {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
                     </Button>
                   </div>
                 </div>
               )}
-              {expiry && <p className="text-xs text-muted-foreground">ينتهي في {expiry}</p>}
+              {expiry && <p className="text-xs text-muted-foreground">{ar ? `ينتهي في ${expiry}` : `Expires ${expiry}`}</p>}
             </>
           )}
         </div>
@@ -505,14 +526,16 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
 }
 
 export function SpinWheel() {
+  const { lang, dir } = useLang();
+  const ar = lang === "ar";
   return (
-    <Card className="overflow-hidden border-primary/25" dir="rtl">
+    <Card className="overflow-hidden border-primary/25" dir={dir}>
       <CardContent className="p-5 space-y-5">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-bold">🎡 عجلة الحظ اليومية</h2>
+          <h2 className="text-lg font-bold">{ar ? "🎡 عجلة الحظ اليومية" : "🎡 Daily Lucky Wheel"}</h2>
         </div>
-        <p className="text-sm text-muted-foreground">لفّة مجانية كل يوم واحصل على مكافآت GX</p>
+        <p className="text-sm text-muted-foreground">{ar ? "لفّة مجانية كل يوم واحصل على مكافآت GX" : "Free daily spin for exclusive GX rewards"}</p>
         <WheelCore />
       </CardContent>
     </Card>
@@ -520,6 +543,9 @@ export function SpinWheel() {
 }
 
 export function SpinWheelModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { lang, dir } = useLang();
+  const ar = lang === "ar";
+
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.body.classList.toggle("gxw-wheel-open", open);
@@ -529,12 +555,12 @@ export function SpinWheelModal({ open, onOpenChange }: { open: boolean; onOpenCh
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        dir="rtl"
+        dir={dir}
         className="max-w-[440px] w-[calc(100vw-1.5rem)] overflow-hidden border-0 shadow-none bg-transparent p-4"
       >
         <DialogHeader className="text-center sm:text-center">
-          <DialogTitle className="text-xl font-black">🎡 عجلة الحظ اليومية</DialogTitle>
-          <DialogDescription>لفّة مجانية كل يوم واحصل على مكافآت GX</DialogDescription>
+          <DialogTitle className="text-xl font-black">{ar ? "🎡 عجلة الحظ اليومية" : "🎡 Daily Lucky Wheel"}</DialogTitle>
+          <DialogDescription>{ar ? "لفّة مجانية كل يوم واحصل على مكافآت GX" : "Free daily spin for exclusive GX rewards"}</DialogDescription>
         </DialogHeader>
         <WheelCore compact />
       </DialogContent>

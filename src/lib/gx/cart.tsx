@@ -173,10 +173,22 @@ function resolve(items: CartItem[]): ResolvedItem[] {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [rawItems, setRawItems] = useState<CartItem[]>([]);
-  const [notes, setNotesState] = useState("");
-  const [contact, setContactState] = useState<ContactInfo>(DEFAULT_CONTACT);
-  const [coupon, setCouponState] = useState<AppliedCoupon | null>(null);
+  const [rawItems, setRawItems] = useState<CartItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    return loadRaw();
+  });
+  const [notes, setNotesState] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem(NOTES_KEY) || "";
+  });
+  const [contact, setContactState] = useState<ContactInfo>(() => {
+    if (typeof window === "undefined") return DEFAULT_CONTACT;
+    return loadContact();
+  });
+  const [coupon, setCouponState] = useState<AppliedCoupon | null>(() => {
+    if (typeof window === "undefined") return null;
+    return loadCoupon();
+  });
   const [coins, setCoinsState] = useState<AppliedCoins | null>(null);
   const [creditJOD, setCreditState] = useState(0);
 
@@ -186,11 +198,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const validateCouponRpc = useServerFn(validateCouponFn);
 
   useEffect(() => {
-    setRawItems(loadRaw());
-    setNotesState(localStorage.getItem(NOTES_KEY) || "");
-    const initialContact = loadContact();
-    setContactState(initialContact);
-    setCouponState(loadCoupon());
     const onStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY) setRawItems(loadRaw());
       if (e.key === NOTES_KEY) setNotesState(localStorage.getItem(NOTES_KEY) || "");
@@ -248,7 +255,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const on = () => setPriceVersion((v) => v + 1);
     window.addEventListener("gx:prices-updated", on);
     window.addEventListener("gx:db-variants-updated", on);
-    void loadDbVariants(true);
+    void loadDbVariants(false);
     return () => {
       window.removeEventListener("gx:prices-updated", on);
       window.removeEventListener("gx:db-variants-updated", on);

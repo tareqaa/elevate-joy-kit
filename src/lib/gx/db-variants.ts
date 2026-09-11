@@ -33,7 +33,10 @@ function hydrateCache() {
   if (loaded || typeof localStorage === "undefined") return;
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    if (raw) map = JSON.parse(raw) as Record<string, Entry>;
+    if (raw) {
+      map = JSON.parse(raw) as Record<string, Entry>;
+      loaded = true;
+    }
   } catch { /* noop */ }
 }
 

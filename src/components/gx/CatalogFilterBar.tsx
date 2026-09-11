@@ -695,7 +695,7 @@ export function CatalogFilterBar({
               }}
               title={ar ? "إلغاء تصفية السعر" : "Remove price filter"}
             >
-              💰 {minPrice || "0"} - {maxPrice || "∞"} د.أ ✕
+              💰 {minPrice || "0"} - {maxPrice || "∞"} {ar ? "د.أ" : "JOD"} ✕
             </span>
           )}
           {searchQuery && (

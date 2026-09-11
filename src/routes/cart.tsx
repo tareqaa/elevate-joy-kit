@@ -250,11 +250,44 @@ function CartList() {
   );
 }
 
+function readStoredUser(): { id: string; email: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key || !key.includes("auth-token")) continue;
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw) as { user?: { id?: string; email?: string }; currentSession?: { user?: { id?: string; email?: string } } };
+      const user = parsed.user ?? parsed.currentSession?.user;
+      if (user?.id) return { id: user.id, email: user.email || "" };
+    }
+  } catch { /* noop */ }
+  return null;
+}
+
+function readCachedBalances(): { coins: number; credit: number } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("gx_profile_cache");
+    if (raw) {
+      const p = JSON.parse(raw) as { gx_coins?: number; store_credit_jod?: number };
+      if (p && (typeof p.gx_coins === "number" || typeof p.store_credit_jod === "number")) {
+        return {
+          coins: Number(p.gx_coins ?? 0),
+          credit: Number(p.store_credit_jod ?? 0),
+        };
+      }
+    }
+  } catch { /* noop */ }
+  return null;
+}
+
 /** Card: "البريد الإلكتروني" - Hidden completely if user is signed in */
 function CartDeliveryCard() {
   const cart = useCart();
   const { t } = useLang();
-  const [signedInUser, setSignedInUser] = useState<{ id: string; email: string } | null>(null);
+  const [signedInUser, setSignedInUser] = useState<{ id: string; email: string } | null>(() => readStoredUser());
   const [rememberMe, setRememberMe] = useState(true);
 
   useEffect(() => {
@@ -308,11 +341,11 @@ function CartDeliveryCard() {
 function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
   const cart = useCart();
   const { format } = useCurrency();
-  const { t, lang } = useLang();
+  const { t, lang, dir } = useLang();
   const isAr = lang !== "en";
 
-  // Balances state
-  const [balance, setBalance] = useState<{ coins: number; credit: number } | null>(null);
+  // Balances state - synchronously initialize from cached profile for instant 0ms render
+  const [balance, setBalance] = useState<{ coins: number; credit: number } | null>(() => readCachedBalances());
   const [openSection, setOpenSection] = useState<"coupon" | "coins" | "credit" | null>(
     cart.coupon ? "coupon" : null
   );
@@ -343,10 +376,10 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
         .select("gx_coins, store_credit_jod")
         .eq("id", uid)
         .maybeSingle();
-      if (alive) {
+      if (alive && data) {
         setBalance({
-          coins: Number(data?.gx_coins ?? 0),
-          credit: Number(data?.store_credit_jod ?? 0),
+          coins: Number(data.gx_coins ?? 0),
+          credit: Number(data.store_credit_jod ?? 0),
         });
       }
     };
@@ -422,7 +455,7 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
 
       {/* Prominent Action Button at TOP */}
       <button className="btn btn-primary btn-block gx-eneba-cta" onClick={handleAdvance}>
-        {t("cart.continue_to_payment")} ←
+        {t("cart.continue_to_payment")} {dir === "rtl" ? "←" : "→"}
       </button>
 
       {/* Breakdown Lines */}
@@ -459,7 +492,7 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
         </div>
       </div>
 
-      {/* Integrated Loyalty & Discounts Section (طريقة أنيقة ومدمجة بالكامل) */}
+      {/* Integrated Loyalty & Discounts Section */}
       <div className="gx-summary-loyalty-section">
         {/* Accordion 1: Coupon */}
         <div className="gx-sl-item">
@@ -487,7 +520,7 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
                 <div className="gx-sl-applied-row">
                   <div>
                     <span className="gx-sl-applied-code">{cart.coupon.code}</span>
-                    <span className="gx-sl-applied-sub">خصم: -{format(cart.coupon.discount_jod)}</span>
+                    <span className="gx-sl-applied-sub">{t("cart.discount_label")} -{format(cart.coupon.discount_jod)}</span>
                   </div>
                   <button
                     type="button"
@@ -536,13 +569,13 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
             >
               <div className="gx-sl-head-left">
                 <span className="gx-sl-icon">🪙</span>
-                <span className="gx-sl-title">عملات GX Coins</span>
+                <span className="gx-sl-title">{t("cart.coins_title")}</span>
               </div>
               <div className="gx-sl-head-right">
                 {cart.coins ? (
-                  <span className="gx-sl-badge active coins">مُفعل (-{format(cart.coins.discount_jod)})</span>
+                  <span className="gx-sl-badge active coins">{t("cart.coins_applied_badge")} (-{format(cart.coins.discount_jod)})</span>
                 ) : (
-                  <span className="gx-sl-badge coins">{coinsBalance.toLocaleString("en-US")} عملة</span>
+                  <span className="gx-sl-badge coins">{coinsBalance.toLocaleString("en-US")} {t("cart.coins_unit")}</span>
                 )}
                 <span className="gx-sl-arrow">{openSection === "coins" ? "▲" : "▼"}</span>
               </div>
@@ -554,20 +587,20 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
                   <div className="gx-sl-applied-row coins">
                     <div>
                       <span className="gx-sl-applied-code coins">
-                        {cart.coins.coins.toLocaleString("en-US")} عملة
+                        {cart.coins.coins.toLocaleString("en-US")} {t("cart.coins_unit")}
                       </span>
-                      <span className="gx-sl-applied-sub">خصم: -{format(cart.coins.discount_jod)}</span>
+                      <span className="gx-sl-applied-sub">{t("cart.discount_label")} -{format(cart.coins.discount_jod)}</span>
                     </div>
                     <button
                       type="button"
                       className="gx-sl-remove-link"
                       onClick={() => { cart.removeCoins(); setCoinMsg(null); }}
                     >
-                      إلغاء
+                      {t("cart.coins_cancel_btn")}
                     </button>
                   </div>
                 ) : usableCoins < 1 ? (
-                  <div className="gx-sl-hint">لا يمكن استخدام العملات في هذا الطلب حالياً.</div>
+                  <div className="gx-sl-hint">{t("cart.coins_low")}</div>
                 ) : (
                   <div className="gx-sl-action-box">
                     <div className="gx-sl-hint">
@@ -580,7 +613,7 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
                       {[
                         { label: "25%", ratio: 0.25 },
                         { label: "50%", ratio: 0.5 },
-                        { label: isAr ? `الحد الأقصى` : `Max`, ratio: 1 },
+                        { label: isAr ? "الحد الأقصى" : "Max", ratio: 1 },
                       ].map((p) => {
                         const v = Math.max(1, Math.floor(usableCoins * p.ratio));
                         return (
@@ -605,7 +638,7 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
                         type="number"
                         min={1}
                         max={usableCoins}
-                        placeholder={`حدد العملات (حتى ${usableCoins.toLocaleString("en-US")})`}
+                        placeholder={t("cart.coins_input_ph").replace("{max}", usableCoins.toLocaleString("en-US"))}
                         value={coinAmount}
                         onChange={(e) => setCoinAmount(e.target.value)}
                         onKeyDown={(e) => {
@@ -621,7 +654,7 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
                         disabled={coinBusy || !coinAmount || Number(coinAmount) <= 0}
                         onClick={() => applyCoins(Number(coinAmount))}
                       >
-                        {coinBusy ? "..." : "استخدام"}
+                        {coinBusy ? "..." : t("cart.coins_use_btn")}
                       </button>
                     </div>
 
@@ -647,11 +680,11 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
             >
               <div className="gx-sl-head-left">
                 <span className="gx-sl-icon">💳</span>
-                <span className="gx-sl-title">{t("cart.store_credit")}</span>
+                <span className="gx-sl-title">{t("cart.credit_title")}</span>
               </div>
               <div className="gx-sl-head-right">
                 {cart.creditJOD > 0 ? (
-                  <span className="gx-sl-badge active credit">مُفعل (-{format(cart.creditJOD)})</span>
+                  <span className="gx-sl-badge active credit">{t("cart.credit_applied_badge")} (-{format(cart.creditJOD)})</span>
                 ) : (
                   <span className="gx-sl-badge credit">{format(creditBalance)}</span>
                 )}
@@ -665,20 +698,20 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
                   <div className="gx-sl-applied-row credit">
                     <div>
                       <span className="gx-sl-applied-code credit">{format(cart.creditJOD)}</span>
-                      <span className="gx-sl-applied-sub">مخصوم من إجمالي الطلب</span>
+                      <span className="gx-sl-applied-sub">{t("cart.credit_applied_desc")}</span>
                     </div>
                     <button
                       type="button"
                       className="gx-sl-remove-link"
                       onClick={() => { cart.removeCredit(); setCreditMsg(null); }}
                     >
-                      إلغاء
+                      {t("cart.credit_cancel_btn")}
                     </button>
                   </div>
                 ) : usableCredit > 0 ? (
                   <div className="gx-sl-action-box">
                     <div className="gx-sl-hint">
-                      يمكنك استخدام حتى {format(usableCredit)} من رصيدك.
+                      {t("cart.credit_can_use").replace("{amount}", format(usableCredit))}
                     </div>
 
                     <div className="gx-cb-row">
@@ -688,7 +721,7 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
                         min={0.01}
                         step={0.01}
                         max={usableCredit}
-                        placeholder={`المبلغ (حتى ${format(usableCredit)})`}
+                        placeholder={t("cart.credit_input_ph").replace("{max}", format(usableCredit))}
                         value={creditAmount}
                         onChange={(e) => setCreditAmount(e.target.value)}
                         onKeyDown={(e) => {
@@ -704,7 +737,7 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
                         disabled={creditBusy || !creditAmount || Number(creditAmount) <= 0}
                         onClick={() => applyCredit(Number(creditAmount))}
                       >
-                        {creditBusy ? "..." : "استخدام"}
+                        {creditBusy ? "..." : t("cart.credit_use_btn")}
                       </button>
                     </div>
 
@@ -716,7 +749,7 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
                         applyCredit(usableCredit);
                       }}
                     >
-                      استخدام كامل الرصيد المتاح ({format(usableCredit)})
+                      {t("cart.credit_use_all_btn").replace("{amount}", format(usableCredit))}
                     </button>
 
                     {creditMsg && (
@@ -747,18 +780,18 @@ function CartPaymentStage2({
   isJordan: boolean;
   onBack: () => void;
 }) {
-  const { t } = useLang();
+  const { t, dir } = useLang();
 
   return (
     <div className="gx-payment-stage-wrapper">
-      {/* Clean Header with Back Link (Right-pointing arrow in RTL) */}
+      {/* Clean Header with Back Link (Right-pointing arrow in RTL, Left in LTR) */}
       <div className="gx-pm-header">
         <div className="gx-pm-header-info">
           <h2>{t("cart.payment_method_title")}</h2>
-          <p>اختر الطريقة المناسبة لك لإتمام عملية الدفع بأمان وسرعة</p>
+          <p>{t("cart.payment_method_sub")}</p>
         </div>
         <button type="button" className="gx-pm-back-pill" onClick={onBack}>
-          <span className="gx-arr">→</span> {t("cart.shopping_cart")}
+          <span className="gx-arr">{dir === "rtl" ? "→" : "←"}</span> {t("cart.shopping_cart")}
         </button>
       </div>
 
@@ -779,7 +812,7 @@ function CartPaymentStage2({
             <div className="gx-pm-info">
               <div className="gx-pm-name-row">
                 <span className="gx-pm-name">{t("cart.method_cliq")}</span>
-                <span className="gx-pm-tag cliq">الأردن فقط 🇯🇴</span>
+                <span className="gx-pm-tag cliq">{t("cart.badge_jordan_only")}</span>
               </div>
               <p className="gx-pm-desc">{t("cart.method_cliq_desc")}</p>
             </div>
@@ -805,7 +838,7 @@ function CartPaymentStage2({
           <div className="gx-pm-info">
             <div className="gx-pm-name-row">
               <span className="gx-pm-name">{t("cart.method_card")}</span>
-              <span className="gx-pm-tag card">محلي ودولي 🌐</span>
+              <span className="gx-pm-tag card">{t("cart.badge_global_local")}</span>
             </div>
             <p className="gx-pm-desc">{t("cart.method_card_desc")}</p>
           </div>
@@ -839,7 +872,7 @@ function CartOrderRecapStage2({
   async function handleCheckout() {
     if (site.maintenance_mode) {
       const { toast } = await import("sonner");
-      toast.error(site.maintenance_message || "الموقع تحت الصيانة حالياً");
+      toast.error(site.maintenance_message || (lang === "ar" ? "الموقع تحت الصيانة حالياً" : "The store is currently under maintenance"));
       return;
     }
     setBusy(true);

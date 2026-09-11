@@ -15,7 +15,8 @@ export function OrderConfirmedModal({
   paymentMethod?: "cliq" | "card" | "gx_wallet" | null;
   onClose: () => void;
 }) {
-  const { t, dir } = useLang();
+  const { t, dir, lang } = useLang();
+  const isAr = lang !== "en";
   const [copied, setCopied] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
 
@@ -98,7 +99,11 @@ export function OrderConfirmedModal({
             border: paymentMethod === "cliq" ? "1px solid rgba(168,85,247,0.4)" : paymentMethod === "card" ? "1px solid rgba(59,130,246,0.4)" : "1px solid rgba(0,229,255,0.35)",
             color: paymentMethod === "cliq" ? "#d8b4fe" : paymentMethod === "card" ? "#93c5fd" : "#00e5ff",
           }}>
-            <span>{paymentMethod === "cliq" ? "🇯🇴 طريقة الدفع: كليك (CliQ)" : paymentMethod === "card" ? "💳 طريقة الدفع: بطاقة بنكية (Visa / Mastercard)" : "🌐 طريقة الدفع: محفظة GX (GX Wallet)"}</span>
+            <span>
+              {isAr
+                ? (paymentMethod === "cliq" ? "🇯🇴 طريقة الدفع: كليك (CliQ)" : paymentMethod === "card" ? "💳 طريقة الدفع: بطاقة بنكية (Visa / Mastercard)" : "🌐 طريقة الدفع: محفظة GX (GX Wallet)")
+                : (paymentMethod === "cliq" ? "🇯🇴 Payment Method: CliQ" : paymentMethod === "card" ? "💳 Payment Method: Bank Card (Visa / Mastercard)" : "🌐 Payment Method: GX Wallet")}
+            </span>
           </div>
         )}
         <p style={{ margin: "10px 0 16px", fontSize: 13, color: "#a1a7b8", lineHeight: 1.6 }}>
@@ -134,7 +139,9 @@ export function OrderConfirmedModal({
           padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,0.03)",
           border: "1px solid rgba(255,255,255,0.06)",
         }}>
-          💡 انسخ رقم الطلب وتابِع الدفع فوراً عبر واتساب، أو أرسل الرقم إلى فريق الدعم عبر أي منصة (تيليجرام، إنستغرام) لتأكيد الطلب.
+          {isAr
+            ? "💡 انسخ رقم الطلب وتابِع الدفع فوراً عبر واتساب، أو أرسل الرقم إلى فريق الدعم عبر أي منصة (تيليجرام، إنستغرام) لتأكيد الطلب."
+            : "💡 Copy your order number and proceed to payment via WhatsApp, or send it to our support team on Telegram or Instagram to confirm your order."}
         </div>
 
         {waUrl && (
