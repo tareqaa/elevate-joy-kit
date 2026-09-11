@@ -136,6 +136,8 @@ export function StoreProductCard({
           <img
             src={imgSrc!}
             alt={name}
+            loading="lazy"
+            decoding="async"
             style={{
               width: 76,
               height: 76,
@@ -155,6 +157,8 @@ export function StoreProductCard({
         <img
           src={imgSrc}
           alt={name}
+          loading="lazy"
+          decoding="async"
           className="prod-thumb-img prod-card-img"
           draggable={false}
           onContextMenu={(e) => e.preventDefault()}

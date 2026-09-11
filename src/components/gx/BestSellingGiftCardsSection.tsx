@@ -133,6 +133,7 @@ export function BestSellingGiftCardsSection() {
                         alt={ar ? card.nameAr : card.nameEn}
                         className="gx-gamepoint-icon-img"
                         loading="lazy"
+                        decoding="async"
                       />
                     </div>
                     {card.badgeAr && (

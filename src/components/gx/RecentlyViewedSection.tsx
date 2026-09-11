@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useRecentlyViewed } from "@/lib/gx/recently-viewed";
 import { useLang } from "@/lib/gx/i18n";
@@ -9,29 +9,6 @@ export function RecentlyViewedSection() {
   const { lang } = useLang();
   const scrollRef = useRef<HTMLDivElement>(null);
   const ar = lang === "ar";
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
-
-  const checkScrollLimits = () => {
-    if (!scrollRef.current) return;
-    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    const pos = Math.abs(scrollLeft);
-    const max = scrollWidth - clientWidth;
-    setCanScrollLeft(pos > 5);
-    setCanScrollRight(pos < max - 5);
-  };
-
-  useEffect(() => {
-    checkScrollLimits();
-    const el = scrollRef.current;
-    if (!el) return;
-    el.addEventListener("scroll", checkScrollLimits, { passive: true });
-    window.addEventListener("resize", checkScrollLimits);
-    return () => {
-      el.removeEventListener("scroll", checkScrollLimits);
-      window.removeEventListener("resize", checkScrollLimits);
-    };
-  }, [items]);
 
   if (!items || items.length === 0) return null;
 

@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { LayoutGrid, ChevronLeft, ChevronRight, Gamepad2, Sparkles } from "lucide-react";
+import { LayoutGrid, ChevronLeft, ChevronRight } from "lucide-react";
 import { CATEGORY_LINKS, getCategoryLink, getFeaturedItems, PRODUCTS_CATALOG, type FeaturedItem } from "@/data/products";
 import { useCurrency } from "@/lib/gx/currency";
 import { ProductIcon, CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
@@ -151,7 +151,21 @@ export function HeroRenderer({ data }: { data: HeroData }) {
   const basePct = slide * 100;
   return (
     <section className="hero">
-      <div className="wrap">
+      <div className="wrap hero-wrap-outer">
+        {/* Navigation arrow outside hero - Prev */}
+        <button
+          type="button"
+          className="hero-arrow-out hero-arrow-prev"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setSlide((s) => (s === 0 ? SLIDES - 1 : s - 1));
+          }}
+          aria-label={ar ? "السابق" : "Previous"}
+        >
+          {ar ? <ChevronRight size={40} strokeWidth={2.4} /> : <ChevronLeft size={40} strokeWidth={2.4} />}
+        </button>
+
         <div
           className={"hero-car" + (dragging ? " is-dragging" : "")}
           ref={carRef}
@@ -180,9 +194,9 @@ export function HeroRenderer({ data }: { data: HeroData }) {
                     <a href={ctaBLink} className="btn btn-ghost">{ctaBText}</a>
                   </div>
                 </div>
-                <div className="hero-visual">
+                <div className="hero-visual" aria-hidden>
                   {data.image_url ? (
-                    <img src={data.image_url} alt="" draggable={false} style={{ maxWidth: "100%", borderRadius: 20, boxShadow: "0 20px 60px rgba(0,0,0,.35)" }} />
+                    <img src={data.image_url} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
                   ) : (
                     <>
                       <div className="orb" />
@@ -199,77 +213,37 @@ export function HeroRenderer({ data }: { data: HeroData }) {
             </div>
           </div>
 
-          {/* Side navigation arrows for switching hero slides */}
-          <button
-            type="button"
-            className="hero-nav-arrow hero-nav-prev"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setSlide((s) => (s === 0 ? SLIDES - 1 : s - 1));
-            }}
-            aria-label={ar ? "السابق" : "Previous"}
-          >
-            {ar ? <ChevronRight size={22} strokeWidth={2.5} /> : <ChevronLeft size={22} strokeWidth={2.5} />}
-          </button>
-
-          <button
-            type="button"
-            className="hero-nav-arrow hero-nav-next"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setSlide((s) => (s === SLIDES - 1 ? 0 : s + 1));
-            }}
-            aria-label={ar ? "التالي" : "Next"}
-          >
-            {ar ? <ChevronLeft size={22} strokeWidth={2.5} /> : <ChevronRight size={22} strokeWidth={2.5} />}
-          </button>
-
-          {/* Dots and Slide Teaser Pill */}
-          <div className="hero-car-controls">
-            <div className="hero-car-dots" role="tablist">
-              {Array.from({ length: SLIDES }).map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  role="tab"
-                  aria-selected={slide === i}
-                  aria-label={`Slide ${i + 1}`}
-                  className={"hcd" + (slide === i ? " on" : "")}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSlide(i);
-                  }}
-                />
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className="hero-slide-teaser-pill"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSlide((s) => (s === 0 ? 1 : 0));
-              }}
-              aria-label={slide === 0 ? (ar ? "الانتقال إلى ساحة اللعب GX" : "Go to GX Arena") : (ar ? "الانتقال إلى عروض المتجر" : "Go to Main Store")}
-            >
-              {slide === 0 ? (
-                <>
-                  <Gamepad2 size={15} style={{ color: "#00e5ff" }} />
-                  <span>{ar ? "اكتشف ساحة ألعاب GX" : "Discover GX Play Arena"}</span>
-                  <span className="hst-arrow">{ar ? "←" : "→"}</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles size={15} style={{ color: "#f59e0b" }} />
-                  <span>{ar ? "اشتراكات وعروض المتجر" : "Store & Subscriptions"}</span>
-                  <span className="hst-arrow">{ar ? "←" : "→"}</span>
-                </>
-              )}
-            </button>
+          <div className="hero-car-dots" role="tablist">
+            {Array.from({ length: SLIDES }).map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={slide === i}
+                aria-label={`Slide ${i + 1}`}
+                className={"hcd" + (slide === i ? " on" : "")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSlide(i);
+                }}
+              />
+            ))}
           </div>
         </div>
+
+        {/* Navigation arrow outside hero - Next */}
+        <button
+          type="button"
+          className="hero-arrow-out hero-arrow-next"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setSlide((s) => (s === SLIDES - 1 ? 0 : s + 1));
+          }}
+          aria-label={ar ? "التالي" : "Next"}
+        >
+          {ar ? <ChevronLeft size={40} strokeWidth={2.4} /> : <ChevronRight size={40} strokeWidth={2.4} />}
+        </button>
       </div>
     </section>
   );
@@ -384,7 +358,7 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
                 <div className="ccb-top">
                   {c0.iconImage ? (
                     <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>
-                      <img src={c0.iconImage} alt="" style={{ width: "70%", height: "70%", objectFit: "contain" }} />
+                      <img src={c0.iconImage} alt="" loading="lazy" decoding="async" style={{ width: "70%", height: "70%", objectFit: "contain" }} />
                     </div>
                   ) : c0.slug === "design" ? (
                     <div className="app-icon-grid">

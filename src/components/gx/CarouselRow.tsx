@@ -19,13 +19,25 @@ export function CarouselRow({ children, className = "" }: { children: React.Reac
     setAtEnd(max <= 2 || pos >= max - 2);
   }, []);
 
+  const rafRef = useRef<number | null>(null);
+  const handleScroll = useCallback(() => {
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      sync();
+      rafRef.current = null;
+    });
+  }, [sync]);
+
   useEffect(() => {
     sync();
     const el = ref.current;
     if (!el) return;
     const ro = new ResizeObserver(sync);
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
   }, [sync]);
 
   const step = (dir: 1 | -1) => {
@@ -68,7 +80,7 @@ export function CarouselRow({ children, className = "" }: { children: React.Reac
       <div
         ref={ref}
         className={`car-scroller ${className}`}
-        onScroll={sync}
+        onScroll={handleScroll}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}

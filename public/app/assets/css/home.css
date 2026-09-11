@@ -377,7 +377,6 @@ html[dir="ltr"] .cat-card-big:hover .arrow-ic {
    one row at every viewport width. Native scrollbar hidden, arrows instead. */
 .car-row {
   position: relative;
-  padding-inline: 56px;
 }
 
 .car-row .car-scroller {
@@ -443,11 +442,11 @@ html[dir="ltr"] .cat-card-big:hover .arrow-ic {
 }
 
 .car-prev {
-  inset-inline-start: 4px;
+  inset-inline-start: -24px;
 }
 
 .car-next {
-  inset-inline-end: 4px;
+  inset-inline-end: -24px;
 }
 
 html[dir="rtl"] .car-nav svg {
@@ -455,40 +454,27 @@ html[dir="rtl"] .car-nav svg {
 }
 
 @media(max-width:1024px) {
-  .car-row {
-    padding-inline: 48px;
-  }
-
-  .car-nav {
-    width: 38px;
-    height: 38px;
-  }
-
   .car-prev {
-    inset-inline-start: 4px;
+    inset-inline-start: -12px;
   }
 
   .car-next {
-    inset-inline-end: 4px;
+    inset-inline-end: -12px;
   }
 }
 
 @media(max-width:768px) {
-  .car-row {
-    padding-inline: 42px;
-  }
-
   .car-nav {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
   }
 
   .car-prev {
-    inset-inline-start: 2px;
+    inset-inline-start: -6px;
   }
 
   .car-next {
-    inset-inline-end: 2px;
+    inset-inline-end: -6px;
   }
 
   .car-nav svg {
@@ -806,64 +792,55 @@ html[dir="rtl"] .car-nav svg {
 }
 
 
-.hero-nav-arrow {
+.hero-wrap-outer {
+  position: relative;
+}
+
+/* Outer Semi-Transparent White Chevron Arrows for Hero */
+.hero-arrow-out {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: rgba(15, 20, 32, 0.8);
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(14px);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 6;
-  transition: all .22s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  background: transparent;
+  border: none;
   outline: none;
-}
-
-.hero-nav-arrow:hover {
-  background: rgba(0, 229, 255, 0.22);
-  border-color: #00e5ff;
-  color: #00e5ff;
-  transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 10px 28px rgba(0, 229, 255, 0.35);
-}
-
-.hero-nav-arrow:active {
-  transform: translateY(-50%) scale(0.95);
-}
-
-.hero-nav-prev {
-  inset-inline-start: 16px;
-}
-
-.hero-nav-next {
-  inset-inline-end: 16px;
-}
-
-.hero-car-controls {
-  position: absolute;
-  bottom: 14px;
-  inset-inline: 0;
+  cursor: pointer;
+  z-index: 10;
+  padding: 4px;
+  color: rgba(255, 255, 255, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  z-index: 5;
-  pointer-events: none;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-arrow-out:hover {
+  color: #ffffff;
+  transform: translateY(-50%) scale(1.18);
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.75));
+}
+
+.hero-arrow-out:active {
+  transform: translateY(-50%) scale(0.92);
+}
+
+.hero-arrow-prev {
+  inset-inline-start: -38px;
+}
+
+.hero-arrow-next {
+  inset-inline-end: -38px;
 }
 
 .hero-car-dots {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 8px;
-  pointer-events: auto;
+  z-index: 5;
 }
 
 .hcd {
@@ -882,61 +859,25 @@ html[dir="rtl"] .car-nav svg {
   background: linear-gradient(90deg, var(--cyan), var(--lime));
 }
 
-.hero-slide-teaser-pill {
-  pointer-events: auto;
-  background: rgba(18, 23, 36, 0.88);
-  border: 1px solid rgba(0, 229, 255, 0.35);
-  border-radius: 999px;
-  padding: 5px 14px;
-  color: #ffffff;
-  font-size: 12.5px;
-  font-weight: 800;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  backdrop-filter: blur(14px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  transition: all .22s var(--ease);
-}
-
-.hero-slide-teaser-pill:hover {
-  background: rgba(0, 229, 255, 0.16);
-  border-color: #00e5ff;
-  color: #00e5ff;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 229, 255, 0.3);
-}
-
-.hero-slide-teaser-pill .hst-arrow {
-  transition: transform .22s var(--ease);
-}
-
-html[dir="rtl"] .hero-slide-teaser-pill:hover .hst-arrow {
-  transform: translateX(-4px);
-}
-
-html[dir="ltr"] .hero-slide-teaser-pill:hover .hst-arrow {
-  transform: translateX(4px);
-}
-
-@media(max-width:768px) {
-  .hero-nav-arrow {
-    width: 38px;
-    height: 38px;
+@media(max-width: 1340px) {
+  .hero-arrow-prev {
+    inset-inline-start: -18px;
   }
-
-  .hero-nav-prev {
-    inset-inline-start: 10px;
+  .hero-arrow-next {
+    inset-inline-end: -18px;
   }
+}
 
-  .hero-nav-next {
-    inset-inline-end: 10px;
+@media(max-width: 1024px) {
+  .hero-arrow-prev {
+    inset-inline-start: 4px;
   }
-
-  .hero-slide-teaser-pill {
-    font-size: 11.5px;
-    padding: 4px 10px;
+  .hero-arrow-next {
+    inset-inline-end: 4px;
+  }
+  .hero-arrow-out svg {
+    width: 32px;
+    height: 32px;
   }
 }
 
@@ -1134,6 +1075,7 @@ html[dir="ltr"] .hero-slide-teaser-pill:hover .hst-arrow {
   overflow: hidden;
   pointer-events: none;
   z-index: 1;
+  contain: strict;
 }
 
 .hg-tet {
@@ -1144,6 +1086,7 @@ html[dir="ltr"] .hero-slide-teaser-pill:hover .hst-arrow {
   opacity: .75;
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .25);
   animation: hg-fall linear infinite;
+  will-change: transform;
 }
 
 .hg-tet::after {
@@ -1237,6 +1180,7 @@ html[dir="ltr"] .hero-slide-teaser-pill:hover .hst-arrow {
   top: 38%;
   width: 34px;
   animation: hg-fly 11s linear infinite;
+  will-change: transform;
 }
 
 .hg-bird svg {
@@ -1298,6 +1242,7 @@ html[dir="ltr"] .hero-slide-teaser-pill:hover .hst-arrow {
   background: var(--cyan);
   opacity: .6;
   animation: hgfloat 5s ease-in-out infinite;
+  will-change: transform;
 }
 
 .hg-pix.p1 {
@@ -2318,7 +2263,6 @@ html[dir="ltr"] .hero-slide-teaser-pill:hover .hst-arrow {
 .gx-side-arrow-carousel-wrapper {
   position: relative;
   width: 100%;
-  padding-inline: 56px;
 }
 
 .gx-cards-carousel-track {
@@ -2382,42 +2326,32 @@ html[dir="ltr"] .hero-slide-teaser-pill:hover .hst-arrow {
 }
 
 .gx-side-nav-prev {
-  inset-inline-start: 4px;
+  inset-inline-start: -22px;
 }
 
 .gx-side-nav-next {
-  inset-inline-end: 4px;
+  inset-inline-end: -22px;
 }
 
-@media (max-width: 1024px) {
-  .gx-side-arrow-carousel-wrapper {
-    padding-inline: 48px;
-  }
-  .gx-side-nav-arrow {
-    width: 38px;
-    height: 38px;
-  }
+@media (max-width: 1200px) {
   .gx-side-nav-prev {
-    inset-inline-start: 4px;
+    inset-inline-start: -12px;
   }
   .gx-side-nav-next {
-    inset-inline-end: 4px;
+    inset-inline-end: -12px;
   }
 }
 
 @media (max-width: 768px) {
-  .gx-side-arrow-carousel-wrapper {
-    padding-inline: 42px;
-  }
   .gx-side-nav-arrow {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
   }
   .gx-side-nav-prev {
-    inset-inline-start: 2px;
+    inset-inline-start: -6px;
   }
   .gx-side-nav-next {
-    inset-inline-end: 2px;
+    inset-inline-end: -6px;
   }
   .gx-carousel-product-col {
     flex: 0 0 215px;
@@ -2434,14 +2368,15 @@ html[dir="ltr"] .hero-slide-teaser-pill:hover .hst-arrow {
   overflow: hidden;
   position: relative;
   padding: 8px 0 16px;
-  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  contain: paint;
 }
 
 .gx-auto-scroll-marquee-track {
   display: flex;
   gap: 16px;
   width: max-content;
+  will-change: transform;
+  transform: translateZ(0);
   animation: gxMarqueeAutoScroll 34s linear infinite;
 }
 
