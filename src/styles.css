@@ -2752,16 +2752,8 @@ input[type="number"] {
   height: 78px;
 }
 
-/* Center Group: Search + Adjacent Compact Language Selector */
-.gx-nav-center-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-  max-width: 580px;
-}
-
-.gx-nav-center-group .search-box {
+/* Center Search Box */
+.nav .search-box {
   flex: 1;
   min-width: 200px;
   height: 42px !important;
@@ -2774,21 +2766,21 @@ input[type="number"] {
   align-items: center !important;
   gap: 10px !important;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  margin: 0 !important;
+  margin: 0 auto !important;
 }
 
-.gx-nav-center-group .search-box:focus-within {
+.nav .search-box:focus-within {
   border-color: rgba(0, 229, 255, 0.5) !important;
   box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.12) !important;
 }
 
-.gx-nav-center-group .search-box .search-ico-svg {
+.nav .search-box .search-ico-svg {
   color: var(--gray, #94a3b8);
   flex-shrink: 0;
   transition: color 0.2s ease;
 }
 
-.gx-nav-center-group .search-box:focus-within .search-ico-svg {
+.nav .search-box:focus-within .search-ico-svg {
   color: var(--cyan, #00e5ff);
 }
 
@@ -3046,21 +3038,13 @@ html[dir="ltr"] .gx-nav-login-pill:hover svg {
   object-fit: cover;
 }
 
-/* Mobile-only currency button and zero-count badge hidden on desktop */
-.gx-nav-mobile-currency {
-  display: none !important;
-}
-.gx-badge-zero {
+/* Mobile Menu completely hidden per user request */
+.menu-wrap,
+.gx-nav-mobile-menu {
   display: none !important;
 }
 
 /* Mobile & Tablet responsiveness */
-@media (min-width: 769px) {
-  .gx-nav-mobile-menu {
-    display: none !important;
-  }
-}
-
 @media (max-width: 768px) {
   .nav .wrap {
     display: flex !important;
@@ -3068,202 +3052,140 @@ html[dir="ltr"] .gx-nav-login-pill:hover svg {
     align-items: center !important;
     justify-content: space-between !important;
     height: auto !important;
-    min-height: 54px !important;
-    padding: 10px 14px !important;
+    min-height: 52px !important;
+    padding: 8px 10px 10px !important;
     gap: 0 !important;
   }
 
-  /* Row 1 - Brand */
+  /* Row 1 - Brand (Right in RTL, Left in LTR) */
   .brand {
     order: 1 !important;
     display: flex !important;
     align-items: center !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
     margin: 0 !important;
   }
+  .brand .mark {
+    width: 26px !important;
+    height: 26px !important;
+  }
+  .brand-word {
+    font-size: 13px !important;
+  }
 
-  /* Row 1 - Actions Container */
+  /* Row 1 - Actions Container (Left in RTL, Right in LTR) */
   .nav-right {
     order: 2 !important;
     display: flex !important;
     align-items: center !important;
     flex-wrap: nowrap !important;
-    gap: 7px !important;
+    gap: 5px !important;
     margin: 0 !important;
+    flex-shrink: 0 !important;
   }
 
-  /* Hide Wishlist & Play Arena Controller on mobile top bar to avoid clutter (matching image 2) */
-  .gx-nav-wishlist-ghost,
-  .gx-nav-arena-ghost {
-    display: none !important;
-  }
-
-  /* 1. Account / Login Button on Mobile (Image 2: clean rounded dark square with icon only) */
-  .gx-nav-login-pill {
-    order: 1 !important;
-    width: 38px !important;
-    height: 38px !important;
-    min-width: 38px !important;
-    padding: 0 !important;
-    border-radius: 10px !important;
-    background: rgba(255, 255, 255, 0.04) !important;
-    border: 1px solid rgba(255, 255, 255, 0.09) !important;
-    box-shadow: none !important;
+  /* Compact Language & Currency Selector Chip on mobile */
+  .gx-nav-lang-compact-btn {
+    height: 30px !important;
+    padding: 0 6px !important;
+    font-size: 11px !important;
+    gap: 3px !important;
+    border-radius: 6px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
     color: #ffffff !important;
+    flex-shrink: 0 !important;
+  }
+  .gx-nav-lang-compact-btn svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  /* Ghost Icons on mobile: Wishlist, Cart, Play Arena Controller */
+  .gx-nav-ghost-btn {
+    width: 30px !important;
+    height: 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+    padding: 0 !important;
+  }
+  .gx-nav-ghost-btn svg {
+    width: 17px !important;
+    height: 17px !important;
+  }
+
+  /* Floating badge on icons */
+  .gx-floating-badge {
+    min-width: 15px !important;
+    height: 15px !important;
+    font-size: 9px !important;
+    line-height: 15px !important;
+    padding: 0 3px !important;
+    top: -3px !important;
+    inset-inline-end: -3px !important;
+  }
+
+  /* Login Pill Button on mobile - exactly desktop style, sized for mobile */
+  .gx-nav-login-pill {
+    height: 30px !important;
+    padding: 0 9px !important;
+    font-size: 11.5px !important;
+    gap: 4px !important;
+    border-radius: 9999px !important;
+    background: linear-gradient(135deg, #00e5ff 0%, #00b8e6 100%) !important;
+    color: #050811 !important;
+    font-weight: 800 !important;
+    box-shadow: 0 2px 8px rgba(0, 229, 255, 0.3) !important;
+    flex-shrink: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
   }
   .gx-nav-login-pill span {
-    display: none !important;
+    display: inline !important;
+    font-size: 11.5px !important;
   }
   .gx-nav-login-pill svg {
-    width: 20px !important;
-    height: 20px !important;
-    color: #ffffff !important;
-    stroke: #ffffff !important;
+    width: 13px !important;
+    height: 13px !important;
+    color: #050811 !important;
   }
+
+  /* Logged-in Avatar on mobile */
   .account-wrap {
-    order: 1 !important;
+    flex-shrink: 0 !important;
   }
   .gx-nav-avatar-btn {
-    width: 38px !important;
-    height: 38px !important;
-    border-radius: 10px !important;
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 50% !important;
   }
 
-  /* 2. Mobile Currency / Language Button (Image 2: [ JOD | AR ]) */
-  .gx-nav-mobile-currency {
-    order: 2 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 6px !important;
-    height: 38px !important;
-    padding: 0 11px !important;
-    background: rgba(255, 255, 255, 0.04) !important;
-    border: 1px solid rgba(255, 255, 255, 0.09) !important;
-    border-radius: 10px !important;
-    color: #ffffff !important;
-    font-family: inherit !important;
-    font-size: 13px !important;
-    font-weight: 800 !important;
-    cursor: pointer !important;
-    white-space: nowrap !important;
-    box-shadow: none !important;
-  }
-  .gx-nav-mobile-currency .cl-part {
-    font-weight: 800 !important;
-    color: #ffffff !important;
-    font-size: 13px !important;
-    line-height: 1 !important;
-  }
-  .gx-nav-mobile-currency .cl-sep {
-    opacity: 0.3 !important;
-    color: #ffffff !important;
-    font-size: 13px !important;
-    font-weight: 400 !important;
-  }
-
-  /* 3. Shopping Cart Button on Mobile (Image 2: rounded box with border and badge) */
-  .nav-right .gx-nav-cart-ghost,
-  button.gx-nav-cart-ghost {
+  /* Row 2 - Search Box: Full width alone under the nav bar */
+  .nav .search-box {
     order: 3 !important;
-    width: 38px !important;
-    height: 38px !important;
-    border-radius: 10px !important;
-    background: rgba(255, 255, 255, 0.04) !important;
-    border: 1px solid rgba(255, 255, 255, 0.09) !important;
-    color: #ffffff !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    position: relative !important;
-    box-shadow: none !important;
-  }
-  .nav-right .gx-nav-cart-ghost svg,
-  button.gx-nav-cart-ghost svg {
-    width: 19px !important;
-    height: 19px !important;
-    color: #ffffff !important;
-  }
-  .gx-nav-cart-ghost .gx-floating-badge {
-    position: absolute !important;
-    top: -4px !important;
-    left: -4px !important;
-    right: auto !important;
-    inset-inline-start: -4px !important;
-    inset-inline-end: auto !important;
-    font-size: 10px !important;
-    min-width: 17px !important;
-    height: 17px !important;
-    line-height: 17px !important;
-    padding: 0 4px !important;
-    background: #ff2d78 !important;
-    border: 2px solid #090b10 !important;
-    box-shadow: 0 2px 6px rgba(255, 45, 120, 0.5) !important;
-  }
-  .gx-nav-cart-ghost .gx-badge-zero {
-    display: flex !important;
-  }
-
-  /* 4. Hamburger Menu Button on Mobile */
-  .gx-nav-mobile-menu {
-    order: 4 !important;
-    display: block !important;
-  }
-  .gx-nav-mobile-menu .menu-btn {
-    width: 38px !important;
-    height: 38px !important;
-    border-radius: 10px !important;
-    background: rgba(255, 255, 255, 0.04) !important;
-    border: 1px solid rgba(255, 255, 255, 0.09) !important;
-    padding: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-  .gx-nav-mobile-menu .menu-btn .btn-label {
-    display: none !important;
-  }
-  .gx-nav-mobile-menu .bars {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 4px !important;
-  }
-  .gx-nav-mobile-menu .bars span {
-    width: 18px !important;
-    height: 2px !important;
-    background: #ffffff !important;
-    border-radius: 2px !important;
-  }
-
-  /* Row 2 - Center Group & Search Box (Image 2: 100% full width, clean) */
-  .gx-nav-center-group {
-    order: 3 !important;
+    width: 100% !important;
     flex: 0 0 100% !important;
-    width: 100% !important;
     max-width: 100% !important;
-    margin-top: 8px !important;
-    display: block !important;
-  }
-  .gx-nav-center-group .gx-nav-lang-compact-btn {
-    display: none !important;
-  }
-  .gx-nav-center-group .search-box {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 42px !important;
-    border-radius: 12px !important;
-    background: rgba(255, 255, 255, 0.03) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    height: 40px !important;
+    margin: 8px 0 0 !important;
+    border-radius: 11px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
     display: flex !important;
     align-items: center !important;
-    padding: 0 14px !important;
+    padding: 0 13px !important;
     gap: 8px !important;
-    margin: 0 !important;
   }
-  .gx-nav-center-group .search-box input {
-    font-size: 13.5px !important;
+  .nav .search-box input {
+    font-size: 13px !important;
     color: #ffffff !important;
     width: 100% !important;
   }

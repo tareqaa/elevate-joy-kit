@@ -324,42 +324,42 @@ export function Navbar() {
             <div className="brand-word">GX <span>STORE</span></div>
           </Link>
 
-          {/* Center Group: Search Box + Adjacent Compact Language Selector */}
-          <div className="gx-nav-center-group">
-            <div className="search-box" ref={searchRef}>
-              <Search size={17} strokeWidth={2} className="search-ico-svg" />
-              <input
-                type="text"
-                value={query}
-                placeholder={lang === "ar" ? "دور على منتج أو اشتراك..." : t("nav.search_placeholder")}
-                onChange={(e) => { setQuery(e.target.value); setSearchOpen(true); }}
-                onFocus={() => setSearchOpen(true)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && results[0]) goToResult(results[0].link);
-                }}
-              />
-              {searchOpen && query.trim().length > 0 && (
-                <div className="gx-search-results">
-                  {results.length === 0 ? (
-                    <div className="gx-search-empty">{lang === "ar" ? "لا توجد نتائج" : "No results"}</div>
-                  ) : (
-                    results.map((r) => (
-                      <button key={r.key} type="button" className="gx-search-item" onClick={() => goToResult(r.link)}>
-                        <span className="gx-search-ico">
-                          {r.iconImg ? <img src={r.iconImg} alt="" style={{ width: 22, height: 22, objectFit: "contain" }} /> : r.icon}
-                        </span>
-                        <span className="gx-search-txt">
-                          <b>{r.title}</b>
-                          <small>{r.sub}</small>
-                        </span>
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
+          {/* Center Search Box */}
+          <div className="search-box" ref={searchRef}>
+            <Search size={17} strokeWidth={2} className="search-ico-svg" />
+            <input
+              type="text"
+              value={query}
+              placeholder={lang === "ar" ? "دور على منتج أو اشتراك..." : t("nav.search_placeholder")}
+              onChange={(e) => { setQuery(e.target.value); setSearchOpen(true); }}
+              onFocus={() => setSearchOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && results[0]) goToResult(results[0].link);
+              }}
+            />
+            {searchOpen && query.trim().length > 0 && (
+              <div className="gx-search-results">
+                {results.length === 0 ? (
+                  <div className="gx-search-empty">{lang === "ar" ? "لا توجد نتائج" : "No results"}</div>
+                ) : (
+                  results.map((r) => (
+                    <button key={r.key} type="button" className="gx-search-item" onClick={() => goToResult(r.link)}>
+                      <span className="gx-search-ico">
+                        {r.iconImg ? <img src={r.iconImg} alt="" style={{ width: 22, height: 22, objectFit: "contain" }} /> : r.icon}
+                      </span>
+                      <span className="gx-search-txt">
+                        <b>{r.title}</b>
+                        <small>{r.sub}</small>
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
 
-            {/* Compact Language & Currency Selector directly next to Search */}
+          <div className="nav-right">
+            {/* Language & Currency Selector */}
             <button
               type="button"
               className="gx-nav-lang-compact-btn"
@@ -371,9 +371,7 @@ export function Navbar() {
               <span className="gx-lang-divider">·</span>
               <span className="gx-curr-txt">{currency}</span>
             </button>
-          </div>
 
-          <div className="nav-right">
             {/* 1. Wishlist Button (Clean borderless floating icon) */}
             <Link
               to="/favorites"
@@ -394,7 +392,7 @@ export function Navbar() {
               aria-label={t("nav.cart_title") || (lang === "ar" ? "السلة" : "Cart")}
             >
               <ShoppingCart size={21} strokeWidth={1.8} />
-              <span className={`gx-floating-badge ${cart.count === 0 ? "gx-badge-zero" : ""}`}>{cart.count}</span>
+              {cart.count > 0 && <span className="gx-floating-badge">{cart.count}</span>}
             </button>
 
             {/* 3. Play Arena Controller Icon (Clean borderless floating icon directly next to Cart) */}
@@ -407,7 +405,7 @@ export function Navbar() {
               <Gamepad2 size={21} strokeWidth={1.8} />
             </Link>
 
-            {/* 3. User Account / Login Pill Button */}
+            {/* 4. User Account / Login Pill Button */}
             {session ? (
               <div className="account-wrap" onMouseEnter={cancelClose} onMouseLeave={scheduleClose}>
                 <button
@@ -508,58 +506,6 @@ export function Navbar() {
                 <span>{lang === "ar" ? "تسجيل الدخول" : "Log in"}</span>
               </button>
             )}
-
-            {/* Mobile-only Currency / Lang Combo button (Image 2: JOD | AR) */}
-            <button
-              type="button"
-              className="currency-pick currency-lang-combo gx-nav-mobile-currency"
-              onClick={() => setCurrencyOpen(true)}
-              title={lang === "ar" ? "تغيير العملة واللغة" : "Change currency & language"}
-              aria-label={lang === "ar" ? "تغيير العملة واللغة" : "Change currency & language"}
-            >
-              <span className="cl-part cl-cur">{currency}</span>
-              <span className="cl-sep">|</span>
-              <span className="cl-part cl-lang">{lang === "ar" ? "AR" : "EN"}</span>
-            </button>
-
-            {/* 4. Mobile Menu Button (Hamburger) */}
-            <div className="menu-wrap gx-nav-mobile-menu">
-              <button type="button" className="menu-btn" onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}>
-                <div className="bars"><span /><span /><span /></div>
-                <span className="btn-label">{t("nav.menu")}</span>
-              </button>
-              <div className={"menu-panel" + (menuOpen ? " open" : "")}>
-                <div className="menu-section">
-                  <div className="ms-title">{t("nav.pages")}</div>
-                  <MenuLink to="/" icon="🏠" label={t("nav.home")} onClick={() => setMenuOpen(false)} />
-                  <MenuLink to="/cart" icon="🛒" label={t("nav.cart")} onClick={() => setMenuOpen(false)} />
-                  <MenuLink to="/faq" icon="❓" label={t("nav.faq")} onClick={() => setMenuOpen(false)} />
-                  <MenuLink to="/policy" icon="🛡️" label={t("nav.policy")} onClick={() => setMenuOpen(false)} />
-                  <MenuLink to="/games" icon="🎮" label={lang === "en" ? "Play Arena" : "ساحة اللعب"} onClick={() => setMenuOpen(false)} />
-                </div>
-                <div className="menu-divider" />
-                <div className="menu-section">
-                  <div className="ms-title">{t("nav.categories")}</div>
-                  {CATEGORY_LINKS.filter(c0 => !hiddenCats.has(c0.slug)).map(c0 => {
-                    const c = localizedCategoryLink(c0, lang);
-                    return (
-                      <Link key={c.slug} to={getCategoryLink(c.slug) as never} className="menu-link" onClick={() => setMenuOpen(false)}>
-                        <span className="mi">{c.icon}</span> {c.name}
-                      </Link>
-                    );
-                  })}
-                </div>
-                <div className="menu-divider" />
-                <div className="menu-section">
-                  <div className="ms-title">{t("nav.contact")}</div>
-                  <a href="https://wa.me/962776252313" target="_blank" rel="noopener" className="menu-link wa-menu-link">
-                    <span className="mi">{waLogo}</span>
-                    <span>{t("nav.whatsapp")}</span>
-                    <span className="wa-number" dir="ltr">+962 77 625 2313</span>
-                  </a>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </nav>
