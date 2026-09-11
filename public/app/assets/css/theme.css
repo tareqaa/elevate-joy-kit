@@ -738,14 +738,7 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   border-color:rgba(0,229,255,0.4); transform:rotate(90deg);
 }
 
-/* Feature notice banner */
-.gx-cart-feature-banner{
-  background:linear-gradient(90deg, rgba(0,229,255,0.08), rgba(16,185,129,0.08));
-  border-bottom:1px solid rgba(255,255,255,0.06);
-  padding:9px 20px; display:flex; align-items:center; gap:8px;
-  font-size:11.5px; font-weight:700; color:#7dd3fc;
-}
-.gx-cart-banner-icon{color:#38bdf8; flex-shrink:0;}
+
 
 /* Scrollable items */
 .cart-items.gx-cart-items-body{
@@ -841,25 +834,13 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   background:#080b11; border-top:1px solid rgba(255,255,255,0.08);
   padding:16px 20px 20px; display:flex; flex-direction:column; gap:12px;
 }
-.gx-cart-breakdown{
-  background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.06);
-  border-radius:12px; padding:12px 14px;
-}
-.gx-cart-breakdown-row{
+.gx-cart-total-box{
   display:flex; align-items:center; justify-content:space-between;
-  font-size:12.5px; margin-bottom:6px;
+  background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07);
+  border-radius:12px; padding:14px 18px;
 }
-.gx-cart-breakdown-row .lbl{color:#94a3b8; font-weight:600;}
-.gx-cart-breakdown-row .val{color:#ffffff; font-weight:700;}
-.gx-cart-breakdown-row .val.delivery-instant{
-  color:#10b981; display:inline-flex; align-items:center; gap:4px; font-weight:700;
-}
-.gx-cart-breakdown-divider{
-  height:1px; background:rgba(255,255,255,0.06); margin:8px 0;
-}
-.gx-cart-breakdown-total{display:flex; align-items:center; justify-content:space-between;}
-.gx-cart-breakdown-total .lbl{font-size:15px; font-weight:800; color:#ffffff;}
-.gx-cart-breakdown-total .val{
+.gx-cart-total-box .lbl{font-size:15.5px; font-weight:800; color:#ffffff;}
+.gx-cart-total-box .val{
   font-size:22px; font-weight:900; color:#00e5ff;
   text-shadow:0 0 18px rgba(0,229,255,0.35); font-feature-settings:'tnum';
 }

@@ -5,7 +5,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { CartItemThumb } from "@/components/gx/CartThumb";
 import { Link } from "@tanstack/react-router";
-import { X, Trash2, Plus, Minus, ShoppingBag, ArrowLeft, ArrowRight, Zap, ShieldCheck } from "lucide-react";
+import { X, Trash2, Plus, Minus, ShoppingBag, ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
 
 export function CartDrawer() {
   const cart = useCart();
@@ -62,12 +62,6 @@ export function CartDrawer() {
           >
             <X size={19} strokeWidth={2.4} />
           </button>
-        </div>
-
-        {/* Digital Delivery Badge Banner */}
-        <div className="gx-cart-feature-banner">
-          <Zap size={13} className="gx-cart-banner-icon" />
-          <span>{lang === "ar" ? "تسليم فوري وتلقائي للكود / الحساب بعد الدفع" : "Instant automated delivery after payment"}</span>
         </div>
 
         {/* Scrollable Items */}
@@ -160,23 +154,10 @@ export function CartDrawer() {
         {/* Footer Area */}
         {cart.items.length > 0 && (
           <div className="cart-footer gx-cart-footer-modern">
-            {/* Cost Breakdown Box */}
-            <div className="gx-cart-breakdown">
-              <div className="gx-cart-breakdown-row">
-                <span className="lbl">{lang === "ar" ? "عدد المنتجات" : "Total items"}</span>
-                <span className="val">{cart.count}</span>
-              </div>
-              <div className="gx-cart-breakdown-row">
-                <span className="lbl">{lang === "ar" ? "حالة التسليم" : "Delivery"}</span>
-                <span className="val delivery-instant">
-                  <Zap size={12} /> {lang === "ar" ? "فوري وتلقائي ⚡" : "Instant ⚡"}
-                </span>
-              </div>
-              <div className="gx-cart-breakdown-divider" />
-              <div className="gx-cart-breakdown-total">
-                <span className="lbl">{t("cart.total")}</span>
-                <span className="val">{format(cart.totalJOD)}</span>
-              </div>
+            {/* Total Price Row */}
+            <div className="gx-cart-total-box">
+              <span className="lbl">{t("cart.total")}</span>
+              <span className="val">{format(cart.totalJOD)}</span>
             </div>
 
             {/* Primary Action Button */}
