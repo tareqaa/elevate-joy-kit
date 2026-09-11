@@ -93,63 +93,86 @@ export function getCategoryTheme(slug: string): CategoryTheme {
    and a matching 36x36 squircle base so every card is identical in height.
    ========================================================================= */
 
-/** 1. Snapchat Plus: Authentic Snapchat Ghost */
+/** 1. Snapchat Plus: Official Snapchat Logo with Snapchat+ Plus Badge */
 export function SnapchatCatIcon({ size = 40 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 40 40" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-      <defs>
-        <linearGradient id="snapG" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fff200" />
-          <stop offset="100%" stopColor="#ffd000" />
-        </linearGradient>
-      </defs>
-      <rect width="40" height="40" rx="12" fill="url(#snapG)" />
-      {/* Official Snapchat Ghost Silhouette */}
-      <path
-        d="M20 9c-3.6 0-6.1 2.6-6.1 5.9 0 1.7.7 3.1 1.5 3.9-.2.5-.9 1.3-1.9 1.5-.3.1-.4.3-.3.6.1.2.3.3.5.3 1.9 0 3.1-.8 3.6-1.4.8.3 1.7.4 2.7.4s1.9-.1 2.7-.4c.5.6 1.7 1.4 3.6 1.4.2 0 .4-.1.5-.3.1-.3 0-.5-.3-.6-1-.2-1.7-1-1.9-1.5.8-.8 1.5-2.2 1.5-3.9 0-3.3-2.5-5.9-6.1-5.9z"
-        fill="#ffffff"
-        stroke="#111318"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 12,
+        background: "#FFFC00",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+        boxSizing: "border-box",
+        overflow: "hidden",
+        flexShrink: 0,
+        boxShadow: "0 4px 12px rgba(255, 252, 0, 0.25)",
+      }}
+      title="Snapchat+"
+    >
+      {/* Official Snapchat Ghost Logo */}
+      <img
+        src="/app/assets/img/snapchat-logo.png"
+        alt="Snapchat+"
+        style={{
+          width: "76%",
+          height: "76%",
+          objectFit: "contain",
+          filter: "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12))",
+        }}
       />
-      <path
-        d="M13 25.5c.7-.4 1.5-.3 2.3.2.8.4 1.6.7 2.6.7.7 0 1.2-.2 1.7-.4.4.2.9.4 1.7.4 1 0 1.8-.3 2.6-.7.8-.5 1.6-.6 2.3-.2.7.4 1 1 1 1.5 0 .4-.3.5-.6.6-1.8.3-3.6.7-5.2 1.2-.6.2-1.2.3-1.8.3s-1.2-.1-1.8-.3c-1.6-.5-3.4-.9-5.2-1.2-.3-.1-.6-.2-.6-.6 0-.5.4-1.1 1-1.5z"
-        fill="#ffffff"
-        stroke="#111318"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-    </svg>
+      {/* Official Snapchat+ (Plus) Badge */}
+      <div
+        style={{
+          position: "absolute",
+          top: 3,
+          right: 3,
+          width: 14,
+          height: 14,
+          borderRadius: "50%",
+          background: "#000000",
+          border: "1px solid #FFFC00",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#ffffff",
+          fontSize: 10,
+          fontWeight: 900,
+          lineHeight: 1,
+          boxShadow: "0 2px 4px rgba(0,0,0,0.35)",
+        }}
+      >
+        +
+      </div>
+    </div>
   );
 }
 
-/** 2. Subscriptions: Royal Electric Purple VIP Crown & Star Badge */
+/** 2. Subscriptions: Royal Electric Purple VIP Crown Badge */
 export function SubscriptionsCatIcon({ size = 40 }: { size?: number }) {
   return (
     <svg viewBox="0 0 40 40" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
       <defs>
         <linearGradient id="subPassG" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#a855f7" />
+          <stop offset="0%" stopColor="#8b5cf6" />
           <stop offset="100%" stopColor="#6366f1" />
         </linearGradient>
       </defs>
       <rect width="40" height="40" rx="12" fill="url(#subPassG)" />
-      {/* Modern VIP Royal Crown */}
+      {/* Seamless Royal VIP Crown */}
       <path
-        d="M10 26.5c0 .6.4 1 1 1h18c.6 0 1-.4 1-1l1.5-12c.1-.8-.8-1.4-1.5-.9L24 18l-3.2-7c-.3-.7-1.3-.7-1.6 0l-3.2 7-6-4.4c-.7-.5-1.6.1-1.5.9L10 26.5z"
+        d="M10 25c0 .6.4 1 1 1h18c.6 0 1-.4 1-1l2-12c.1-.7-.7-1.2-1.3-.7L25 17l-4.2-7c-.3-.6-1.3-.6-1.6 0l-4.2 7-5.7-4.7c-.6-.5-1.4 0-1.3.7L10 25z"
         fill="#ffffff"
       />
-      {/* Crown Jewels on peaks */}
-      <circle cx="20" cy="9.5" r="1.8" fill="#ffffff" />
-      <circle cx="11.5" cy="13.5" r="1.5" fill="#ffffff" />
-      <circle cx="28.5" cy="13.5" r="1.5" fill="#ffffff" />
-      {/* Base gem strip */}
-      <rect x="11.5" y="24" width="17" height="2.5" rx="1.2" fill="#7c3aed" fillOpacity="0.35" />
-      <circle cx="15.5" cy="25.2" r="0.9" fill="#ffffff" />
-      <circle cx="20" cy="25.2" r="1.1" fill="#ffffff" />
-      <circle cx="24.5" cy="25.2" r="0.9" fill="#ffffff" />
-      {/* VIP Sparkle Star */}
-      <path d="M30 7.5l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6.6-1.8z" fill="#fef08a" />
+      {/* Crown Rim Base */}
+      <rect x="9" y="24.5" width="22" height="3" rx="1.5" fill="#ffffff" />
+      {/* 3 Regal Inset Jewels */}
+      <circle cx="15" cy="21.5" r="1.3" fill="#7c3aed" />
+      <circle cx="20" cy="19.5" r="1.6" fill="#7c3aed" />
+      <circle cx="25" cy="21.5" r="1.3" fill="#7c3aed" />
     </svg>
   );
 }
@@ -257,7 +280,7 @@ export function ServicesCatIcon({ size = 40 }: { size?: number }) {
   );
 }
 
-/** 6. Games: Modern Ergonomic Pro Console Gamepad Controller */
+/** 6. Games: Simple, Clean Xbox Wireless Controller */
 export function GamingHeroIcon({ size = 40 }: { size?: number }) {
   return (
     <svg viewBox="0 0 40 40" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
@@ -268,27 +291,26 @@ export function GamingHeroIcon({ size = 40 }: { size?: number }) {
         </linearGradient>
       </defs>
       <rect width="40" height="40" rx="12" fill="url(#gmGrad)" />
-      {/* Top Bumpers / Triggers */}
-      <path d="M12 11.5c1.5-1.5 4-2 6-2h4c2 0 4.5.5 6 2" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.75" />
-      {/* Ergonomic Gamepad Body */}
+      {/* Simple, Clean Xbox Controller Ergonomic Body */}
       <path
-        d="M11 13.5h18c3 0 5.5 2 5.8 5l1.2 8.5c.3 2-1.2 3.8-3.2 3.8-1.4 0-2.6-.8-3.2-2.1L28 25.5c-.5-1-1.5-1.5-2.6-1.5h-10.8c-1.1 0-2.1.5-2.6 1.5l-1.6 3.2c-.6 1.3-1.8 2.1-3.2 2.1-2 0-3.5-1.8-3.2-3.8l1.2-8.5c.3-3 2.8-5 5.8-5z"
+        d="M11 15c0-2.8 2.5-4 6-4h6c3.5 0 6 1.2 6 4 0 2-.4 4.5-1.2 7-1 3.2-2.8 5-4.8 4-1.2-.6-2-2-2.5-3.5-.4-1.2-1.2-1.5-2.5-1.5h-4c-1.3 0-2.1.3-2.5 1.5-.5 1.5-1.3 2.9-2.5 3.5-2 1-3.8-.8-4.8-4C11.4 19.5 11 17 11 15z"
         fill="#ffffff"
       />
-      {/* Directional Pad (D-pad) */}
-      <path d="M13 18v4.5M10.8 20.2h4.4" stroke="#059669" strokeWidth="2.2" strokeLinecap="round" />
-      {/* ABXY Action Buttons */}
-      <circle cx="26.5" cy="18" r="1.1" fill="#059669" />
-      <circle cx="28.8" cy="20.2" r="1.1" fill="#059669" />
-      <circle cx="26.5" cy="22.5" r="1.1" fill="#059669" />
-      <circle cx="24.2" cy="20.2" r="1.1" fill="#059669" />
-      {/* Dual Analog Thumbsticks with Bevels */}
-      <circle cx="16.5" cy="22.5" r="2.2" fill="#059669" fillOpacity="0.3" />
-      <circle cx="16.5" cy="22.5" r="1.2" fill="#059669" />
-      <circle cx="23.5" cy="22.5" r="2.2" fill="#059669" fillOpacity="0.3" />
-      <circle cx="23.5" cy="22.5" r="1.2" fill="#059669" />
-      {/* Center Home Guide LED */}
-      <circle cx="20" cy="17" r="1" fill="#059669" />
+      {/* Xbox Center Guide Button */}
+      <circle cx="20" cy="14" r="1.8" fill="#059669" />
+      {/* Asymmetric Left Thumbstick (Upper-Left) */}
+      <circle cx="15" cy="16.5" r="2.2" fill="#059669" />
+      <circle cx="15" cy="16.5" r="1.1" fill="#ffffff" />
+      {/* Directional D-Pad (Lower-Left) */}
+      <path d="M17.5 22.5v3M16 24h3" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" />
+      {/* 4 Action Buttons (ABXY) (Upper-Right) */}
+      <circle cx="25" cy="15" r="0.9" fill="#059669" />
+      <circle cx="27" cy="16.8" r="0.9" fill="#059669" />
+      <circle cx="25" cy="18.6" r="0.9" fill="#059669" />
+      <circle cx="23" cy="16.8" r="0.9" fill="#059669" />
+      {/* Asymmetric Right Thumbstick (Lower-Right) */}
+      <circle cx="22.5" cy="22.5" r="2.2" fill="#059669" />
+      <circle cx="22.5" cy="22.5" r="1.1" fill="#ffffff" />
     </svg>
   );
 }
