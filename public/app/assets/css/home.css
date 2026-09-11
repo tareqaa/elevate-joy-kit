@@ -2152,6 +2152,7 @@ html[dir="rtl"] .car-nav svg {
   text-decoration: none;
   display: flex;
   flex-direction: column;
+  height: 100%;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -2201,6 +2202,9 @@ html[dir="rtl"] .car-nav svg {
 
 .gx-gamepoint-card-body {
   margin-bottom: 18px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .gx-gamepoint-title {
@@ -2209,6 +2213,7 @@ html[dir="rtl"] .car-nav svg {
   color: #ffffff;
   margin: 0 0 6px;
   line-height: 1.35;
+  min-height: 44px;
 }
 
 .gx-gamepoint-desc {
@@ -2216,6 +2221,8 @@ html[dir="rtl"] .car-nav svg {
   color: #94a3b8;
   margin: 0;
   line-height: 1.45;
+  min-height: 36px;
+  height: 36px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

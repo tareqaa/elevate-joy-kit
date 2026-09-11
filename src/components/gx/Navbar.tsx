@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Search, Globe, Heart, ShoppingCart, User, ArrowLeft, ArrowRight, Gamepad2 } from "lucide-react";
+import { Search, Globe, Heart, ShoppingCart, User, ArrowLeft, ArrowRight, Gamepad2, X } from "lucide-react";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
 import { useFavorites } from "@/lib/gx/favorites";
@@ -113,6 +114,19 @@ export function Navbar() {
   const { count: favCount } = useFavorites();
   const hiddenCats = useHiddenCategorySlugs();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (menuOpen && window.innerWidth <= 768) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [menuOpen, mounted]);
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [session, setSession] = useState<{ userId: string; email?: string } | null>(null);
@@ -329,60 +343,6 @@ export function Navbar() {
             >
               <div className="bars"><span /><span /><span /></div>
             </button>
-            <div className={"menu-panel" + (menuOpen ? " open" : "")}>
-              {/* Currency & Language Change inside menu */}
-              <div className="menu-section gx-menu-lang-section">
-                <button
-                  type="button"
-                  className="menu-link gx-menu-lang-btn"
-                  onClick={() => { setMenuOpen(false); setCurrencyOpen(true); }}
-                >
-                  <span className="mi">🌐</span>
-                  <div className="gx-menu-lang-info">
-                    <span className="gx-menu-lang-title">{lang === "ar" ? "تغيير العملة واللغة" : "Currency & Language"}</span>
-                    <span className="gx-menu-lang-sub">{currency} · {lang === "ar" ? "العربية" : "English"}</span>
-                  </div>
-                  <span className="gx-menu-lang-arrow">›</span>
-                </button>
-              </div>
-
-              <div className="menu-divider" />
-
-              <div className="menu-section">
-                <div className="ms-title">{t("nav.pages")}</div>
-                <MenuLink to="/" icon="🏠" label={t("nav.home")} onClick={() => setMenuOpen(false)} />
-                <MenuLink to="/cart" icon="🛒" label={t("nav.cart")} onClick={() => setMenuOpen(false)} />
-                <MenuLink to="/favorites" icon="🤍" label={lang === "ar" ? "المفضلة" : "Wishlist"} onClick={() => setMenuOpen(false)} />
-                <MenuLink to="/faq" icon="❓" label={t("nav.faq")} onClick={() => setMenuOpen(false)} />
-                <MenuLink to="/policy" icon="🛡️" label={t("nav.policy")} onClick={() => setMenuOpen(false)} />
-                <MenuLink to="/games" icon="🎮" label={lang === "en" ? "Play Arena" : "ساحة اللعب"} onClick={() => setMenuOpen(false)} />
-              </div>
-
-              <div className="menu-divider" />
-
-              <div className="menu-section">
-                <div className="ms-title">{t("nav.categories")}</div>
-                {CATEGORY_LINKS.filter(c0 => !hiddenCats.has(c0.slug)).map(c0 => {
-                  const c = localizedCategoryLink(c0, lang);
-                  return (
-                    <Link key={c.slug} to={getCategoryLink(c.slug) as never} className="menu-link" onClick={() => setMenuOpen(false)}>
-                      <span className="mi">{c.icon}</span> {c.name}
-                    </Link>
-                  );
-                })}
-              </div>
-
-              <div className="menu-divider" />
-
-              <div className="menu-section">
-                <div className="ms-title">{t("nav.contact")}</div>
-                <a href="https://wa.me/962776252313" target="_blank" rel="noopener" className="menu-link wa-menu-link">
-                  <span className="mi">💬</span>
-                  <span>{t("nav.whatsapp")}</span>
-                  <span className="wa-number" dir="ltr">+962 77 625 2313</span>
-                </a>
-              </div>
-            </div>
           </div>
 
           <Link to="/" className="brand">
@@ -453,7 +413,14 @@ export function Navbar() {
             <button
               type="button"
               className="gx-nav-ghost-btn gx-nav-cart-ghost"
-              onClick={cart.openDrawer}
+              onClick={(e) => {
+                e.preventDefault();
+                if (typeof window !== "undefined" && window.innerWidth <= 768) {
+                  navigate({ to: "/cart" });
+                } else {
+                  cart.openDrawer();
+                }
+              }}
               title={t("nav.cart_title") || (lang === "ar" ? "السلة" : "Cart")}
               aria-label={t("nav.cart_title") || (lang === "ar" ? "السلة" : "Cart")}
             >
@@ -575,6 +542,85 @@ export function Navbar() {
           </div>
         </div>
       </nav>
+      {mounted && typeof document !== "undefined" && createPortal(
+        <>
+          <div
+            className={"gx-mobile-menu-overlay" + (menuOpen ? " open" : "")}
+            onClick={() => setMenuOpen(false)}
+          />
+          <div className={"menu-panel" + (menuOpen ? " open" : "")}>
+            {/* Drawer Top Header with Logo and Close Button */}
+            <div className="gx-mobile-menu-header">
+              <div className="brand" style={{ margin: 0, gap: 6 }}>
+                <div className="mark"><img src="/app/assets/img/gx-logo.png" alt="GX" /></div>
+                <div className="brand-word">GX <span>STORE</span></div>
+              </div>
+              <button
+                type="button"
+                className="gx-mobile-menu-close-btn"
+                onClick={() => setMenuOpen(false)}
+                aria-label={lang === "ar" ? "إغلاق القائمة" : "Close menu"}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Currency & Language Change inside menu */}
+            <div className="menu-section gx-menu-lang-section">
+              <button
+                type="button"
+                className="menu-link gx-menu-lang-btn"
+                onClick={() => { setMenuOpen(false); setCurrencyOpen(true); }}
+              >
+                <span className="mi">🌐</span>
+                <div className="gx-menu-lang-info">
+                  <span className="gx-menu-lang-title">{lang === "ar" ? "تغيير العملة واللغة" : "Currency & Language"}</span>
+                  <span className="gx-menu-lang-sub">{currency} · {lang === "ar" ? "العربية" : "English"}</span>
+                </div>
+                <span className="gx-menu-lang-arrow">›</span>
+              </button>
+            </div>
+
+            <div className="menu-divider" />
+
+            <div className="menu-section">
+              <div className="ms-title">{t("nav.pages")}</div>
+              <MenuLink to="/" icon="🏠" label={t("nav.home")} onClick={() => setMenuOpen(false)} />
+              <MenuLink to="/cart" icon="🛒" label={t("nav.cart")} onClick={() => setMenuOpen(false)} />
+              <MenuLink to="/favorites" icon="🤍" label={lang === "ar" ? "المفضلة" : "Wishlist"} onClick={() => setMenuOpen(false)} />
+              <MenuLink to="/faq" icon="❓" label={t("nav.faq")} onClick={() => setMenuOpen(false)} />
+              <MenuLink to="/policy" icon="🛡️" label={t("nav.policy")} onClick={() => setMenuOpen(false)} />
+              <MenuLink to="/games" icon="🎮" label={lang === "en" ? "Play Arena" : "ساحة اللعب"} onClick={() => setMenuOpen(false)} />
+            </div>
+
+            <div className="menu-divider" />
+
+            <div className="menu-section">
+              <div className="ms-title">{t("nav.categories")}</div>
+              {CATEGORY_LINKS.filter(c0 => !hiddenCats.has(c0.slug)).map(c0 => {
+                const c = localizedCategoryLink(c0, lang);
+                return (
+                  <Link key={c.slug} to={getCategoryLink(c.slug) as never} className="menu-link" onClick={() => setMenuOpen(false)}>
+                    <span className="mi">{c.icon}</span> {c.name}
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="menu-divider" />
+
+            <div className="menu-section">
+              <div className="ms-title">{t("nav.contact")}</div>
+              <a href="https://wa.me/962776252313" target="_blank" rel="noopener" className="menu-link wa-menu-link">
+                <span className="mi">💬</span>
+                <span>{t("nav.whatsapp")}</span>
+                <span className="wa-number" dir="ltr">+962 77 625 2313</span>
+              </a>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
       <CurrencyModal open={currencyOpen} onClose={() => setCurrencyOpen(false)} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       <SpinWheelModal open={wheelOpen} onOpenChange={setWheelOpen} />

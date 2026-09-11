@@ -5,6 +5,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { CartItemThumb } from "@/components/gx/CartThumb";
 import { Link } from "@tanstack/react-router";
+import { X } from "lucide-react";
 
 export function CartDrawer() {
   const cart = useCart();
@@ -28,8 +29,19 @@ export function CartDrawer() {
       <div className={"overlay" + (cart.isDrawerOpen ? " open" : "")} onClick={cart.closeDrawer} />
       <div className={"cart-drawer" + (cart.isDrawerOpen ? " open" : "")}>
         <div className="cart-head">
-          <h3>{t("cart.title")}</h3>
-          <button type="button" className="cart-close" onClick={cart.closeDrawer} aria-label={t("common.close")} title={t("common.close")}>✕</button>
+          <div className="cart-head-title-wrap">
+            <span className="cart-head-icon">🛒</span>
+            <h3>{t("cart.title")}</h3>
+          </div>
+          <button
+            type="button"
+            className="cart-close"
+            onClick={cart.closeDrawer}
+            aria-label={t("common.close")}
+            title={t("common.close")}
+          >
+            <X size={19} strokeWidth={2.4} />
+          </button>
         </div>
         <div className="cart-items">
           {cart.items.length === 0 ? (
@@ -62,6 +74,13 @@ export function CartDrawer() {
           <Link to="/cart" className="checkout-btn" onClick={cart.closeDrawer} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none" }}>
             {t("cart.checkout_wa")}
           </Link>
+          <button
+            type="button"
+            className="cart-continue-shopping-btn"
+            onClick={cart.closeDrawer}
+          >
+            {lang === "ar" ? "← متابعة التسوق" : "Continue Shopping →"}
+          </button>
           {cart.items.length > 0 && (
             <button type="button" className="cart-clear-link" onClick={() => cart.clear()}>
               {lang === "ar" ? "تفريغ السلة" : "Clear cart"}
