@@ -90,9 +90,11 @@ function validateOrderInput(input: CreateOrderInput) {
   }
 
   const contact = String(input.customerWhatsapp ?? "").trim();
-  if (!contact) {
-    if (!input.userId) throw new Error("رقم التواصل مطلوب لإتمام الطلب");
-  } else {
+  const email = String(input.customerEmail ?? "").trim();
+  if (!contact && !input.userId && !email) {
+    throw new Error("البريد الإلكتروني مطلوب لإتمام الطلب");
+  }
+  if (contact) {
     if (contact.length > 30) throw new Error("رقم التواصل غير صالح: طويل جداً");
     if (!/^[0-9+\-\s()]+$/.test(contact)) {
       throw new Error("رقم التواصل غير صالح: استخدم أرقاماً فقط");

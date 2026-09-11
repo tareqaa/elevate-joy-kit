@@ -628,15 +628,21 @@ ${lines}
 
   const submitOrder = useCallback(async (paymentMethod?: "cliq" | "gx_wallet") => {
     if (items.length === 0) return null;
-    const isWa = contact.type === "whatsapp";
-    const contactValue = isWa
-      ? (contact.countryCode + contact.phone).replace(/\s+/g, "")
-      : "@" + contact.phone.trim().replace(/^@+/, "");
-    if (!contact.name.trim() || contact.phone.trim().length < 3) {
+    const { data: sess } = await supabase.auth.getSession();
+    const uid = sess.session?.user?.id;
+    const email = contact.email?.trim() || sess.session?.user?.email || "";
+    if (!uid && (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
       const { toast } = await import("sonner");
-      toast.error(isWa ? "عبّي الاسم ورقم الواتساب قبل إتمام الطلب" : "عبّي الاسم ويوزر التيليجرام قبل إتمام الطلب");
+      toast.error("عبّي البريد الإلكتروني بشكل صحيح قبل إتمام الطلب");
       return null;
     }
+    const hasPhone = !!contact.phone?.trim() && contact.phone.trim().length >= 3;
+    const isWa = contact.type === "whatsapp";
+    const contactValue = hasPhone
+      ? (isWa ? (contact.countryCode + contact.phone).replace(/\s+/g, "") : "@" + contact.phone.trim().replace(/^@+/, ""))
+      : null;
+    const contactType = hasPhone ? contact.type : "email";
+    const customerName = contact.name?.trim() || null;
     try {
       const payloadItems = items.map((it) => ({
         cartId: it.cartId,
@@ -652,11 +658,11 @@ ${lines}
           totalJOD,
           currency,
           notes,
-          customerName: contact.name.trim(),
+          customerName: customerName || (email ? email.split("@")[0] : "عميل المتجر"),
           customerWhatsapp: contactValue,
-          customerEmail: contact.email?.trim() || null,
+          customerEmail: email || null,
           paymentMethod: paymentMethod || null,
-          contactType: contact.type,
+          contactType,
           coupon: coupon
             ? {
                 id: coupon.id,
@@ -671,13 +677,13 @@ ${lines}
       });
       // Persist contact to the signed-in user's profile so it auto-fills next time.
       try {
-        const { data: sess } = await supabase.auth.getSession();
-        const uid = sess.session?.user?.id;
         if (uid) {
-          await supabase.from("profiles").update({
-            full_name: contact.name.trim(),
-            whatsapp: contactValue,
-          }).eq("id", uid);
+          const updateData: Record<string, any> = {};
+          if (customerName) updateData.full_name = customerName;
+          if (contactValue) updateData.whatsapp = contactValue;
+          if (Object.keys(updateData).length > 0) {
+            await supabase.from("profiles").update(updateData).eq("id", uid);
+          }
         }
       } catch { /* noop */ }
       setCoinsState(null);

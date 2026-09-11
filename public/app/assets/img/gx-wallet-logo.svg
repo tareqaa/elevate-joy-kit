@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 48" fill="none">
+  <defs>
+    <linearGradient id="gxBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0e1a" />
+      <stop offset="100%" stop-color="#121626" />
+    </linearGradient>
+    <linearGradient id="gxGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00e5ff" />
+      <stop offset="50%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#a855f7" />
+    </linearGradient>
+    <filter id="neonBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Border & subtle glow -->
+  <rect x="1" y="1" width="158" height="46" rx="10" fill="url(#gxBg)" stroke="rgba(0, 229, 255, 0.35)" stroke-width="1.5"/>
+
+  <!-- Wallet Icon -->
+  <g transform="translate(14, 10)">
+    <!-- Wallet body -->
+    <rect x="0" y="3" width="26" height="21" rx="4" fill="none" stroke="url(#gxGlow)" stroke-width="2.2" />
+    <!-- Wallet fold flap -->
+    <path d="M0 8h26" stroke="rgba(0, 229, 255, 0.6)" stroke-width="1.5" stroke-dasharray="2 1"/>
+    <!-- Wallet clasp -->
+    <rect x="16" y="9.5" width="10" height="8" rx="2" fill="#00e5ff" />
+    <circle cx="20" cy="13.5" r="1.5" fill="#0a0e1a" />
+    <!-- Mini sparkle -->
+    <path d="M4 0l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="#00e5ff" />
+  </g>
+
+  <!-- Typography: GX WALLET -->
+  <g transform="translate(48, 14)">
+    <!-- GX -->
+    <text x="0" y="18" font-family="'Orbitron', 'Inter', system-ui, sans-serif" font-weight="900" font-size="18" fill="#00e5ff" letter-spacing="1">GX</text>
+    <!-- WALLET -->
+    <text x="32" y="18" font-family="'Orbitron', 'Inter', system-ui, sans-serif" font-weight="800" font-size="13.5" fill="#ffffff" letter-spacing="2">WALLET</text>
+  </g>
+</svg>
