@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Heart } from "lucide-react";
 import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
+import { useFavorites } from "@/lib/gx/favorites";
 import { formatTitle } from "@/lib/gx/text";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { ProductPlatformBar } from "@/components/gx/ProductPlatformBar";
@@ -82,6 +84,9 @@ export function StoreProductCard({
 }: StoreProductCardProps) {
   const { format } = useCurrency();
   const { lang, t } = useLang();
+  const navigate = useNavigate();
+  const { isFav, toggle } = useFavorites();
+  const isFavorited = isFav(slug);
 
   const finalCartId = cartId || slug;
   const finalLink = link || `/product/${slug}`;
@@ -226,8 +231,52 @@ export function StoreProductCard({
     });
   };
 
+  const handleFavClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggle({
+      slug,
+      cartId: finalCartId,
+      name,
+      link: finalLink,
+      price: finalDisplayPrice,
+      oldPrice: numOldPrice,
+      imageUrl,
+      iconImage,
+      icon,
+      categoryName,
+      categorySlug,
+      customPlatform,
+      productType,
+    });
+  };
+
   return (
     <div className="prod-card">
+      {/* Top-Left Driffle-Style Bookmark Wishlist Ribbon */}
+      <button
+        type="button"
+        className={`prod-fav-bookmark ${isFavorited ? "is-active" : ""}`}
+        title={
+          isFavorited
+            ? lang === "ar"
+              ? "إزالة من المفضلة"
+              : "Remove from favorites"
+            : lang === "ar"
+              ? "إضافة إلى المفضلة"
+              : "Add to favorites"
+        }
+        aria-label={isFavorited ? "Remove from wishlist" : "Add to wishlist"}
+        onClick={handleFavClick}
+      >
+        <Heart
+          size={14}
+          fill={isFavorited ? "#ffffff" : "none"}
+          stroke={isFavorited ? "none" : "#ffffff"}
+          strokeWidth={2.4}
+        />
+      </button>
+
       <Link to={finalLink as never} style={{ display: "contents" }} onClick={handleTrack}>
         <div className="prod-thumb" style={{ background: bgStyle }}>
           {renderThumbnail()}

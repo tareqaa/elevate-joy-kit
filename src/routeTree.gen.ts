@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as FaqRouteImport } from './routes/faq'
+import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as FortniteRouteImport } from './routes/fortnite'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as McpRouteImport } from './routes/mcp'
@@ -77,6 +78,11 @@ const CartRoute = CartRouteImport.update({
 const FaqRoute = FaqRouteImport.update({
   id: '/faq',
   path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FavoritesRoute = FavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FortniteRoute = FortniteRouteImport.update({
@@ -301,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
+  '/favorites': typeof FavoritesRoute
   '/fortnite': typeof FortniteRoute
   '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
@@ -347,6 +354,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
+  '/favorites': typeof FavoritesRoute
   '/fortnite': typeof FortniteRoute
   '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
@@ -394,6 +402,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/faq': typeof FaqRoute
+  '/favorites': typeof FavoritesRoute
   '/fortnite': typeof FortniteRoute
   '/leaderboard': typeof LeaderboardRoute
   '/mcp': typeof McpRoute
@@ -442,6 +451,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/faq'
+    | '/favorites'
     | '/fortnite'
     | '/leaderboard'
     | '/mcp'
@@ -488,6 +498,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/faq'
+    | '/favorites'
     | '/fortnite'
     | '/leaderboard'
     | '/mcp'
@@ -534,6 +545,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/faq'
+    | '/favorites'
     | '/fortnite'
     | '/leaderboard'
     | '/mcp'
@@ -582,6 +594,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CartRoute: typeof CartRoute
   FaqRoute: typeof FaqRoute
+  FavoritesRoute: typeof FavoritesRoute
   FortniteRoute: typeof FortniteRoute
   LeaderboardRoute: typeof LeaderboardRoute
   McpRoute: typeof McpRoute
@@ -640,6 +653,13 @@ declare module '@tanstack/react-router' {
       path: '/faq'
       fullPath: '/faq'
       preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/favorites': {
+      id: '/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof FavoritesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fortnite': {
@@ -987,6 +1007,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CartRoute: CartRoute,
   FaqRoute: FaqRoute,
+  FavoritesRoute: FavoritesRoute,
   FortniteRoute: FortniteRoute,
   LeaderboardRoute: LeaderboardRoute,
   McpRoute: McpRoute,

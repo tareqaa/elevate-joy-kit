@@ -284,9 +284,9 @@ export function BestSellingGamesSection() {
             {ar ? <ChevronRight size={22} strokeWidth={2.5} /> : <ChevronLeft size={22} strokeWidth={2.5} />}
           </button>
 
-          {/* Cards Track using standard unified StoreProductCard with 100% REAL data */}
+          {/* Cards Track using standard unified StoreProductCard with 100% REAL data (Limited to 8 games) */}
           <div className="gx-cards-carousel-track" ref={scrollRef}>
-            {games.map((game) => (
+            {games.slice(0, 8).map((game) => (
               <div key={game.slug} className="gx-carousel-product-col">
                 <StoreProductCard
                   slug={game.slug}

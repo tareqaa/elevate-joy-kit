@@ -37,7 +37,7 @@ export function getCategoryTheme(slug: string): CategoryTheme {
       return { glow: "rgba(0, 229, 255, 0.4)", ambient: "rgba(0, 229, 255, 0.14)", accent: "#00e5ff" };
 
     case "services":
-      return { glow: "rgba(255, 145, 0, 0.45)", ambient: "rgba(255, 145, 0, 0.16)", accent: "#ff9100" };
+      return { glow: "rgba(37, 99, 235, 0.45)", ambient: "rgba(37, 99, 235, 0.16)", accent: "#3b82f6" };
 
     case "games":
     case "pc-games":
@@ -97,13 +97,13 @@ export function getCategoryTheme(slug: string): CategoryTheme {
 export function SnapchatCatIcon({ size = 40 }: { size?: number }) {
   return (
     <img
-      src="/app/assets/img/snapchat-logo.png"
+      src="/app/assets/img/snapchat-square.png"
       alt="Snapchat+"
       style={{
         width: size,
         height: size,
         borderRadius: 12,
-        objectFit: "contain",
+        objectFit: "cover",
         flexShrink: 0,
         display: "block",
       }}
@@ -212,30 +212,36 @@ export function ServicesCatIcon({ size = 40 }: { size?: number }) {
     <svg viewBox="0 0 40 40" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
       <defs>
         <linearGradient id="srvGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fb923c" />
-          <stop offset="100%" stopColor="#ea580c" />
+          <stop offset="0%" stopColor="#3b82f6" />
+          <stop offset="100%" stopColor="#1d4ed8" />
         </linearGradient>
       </defs>
       <rect width="40" height="40" rx="12" fill="url(#srvGrad)" />
-      {/* Digital Canvas / Landing Page / Post Design Window */}
-      <rect x="7" y="8" width="24" height="18" rx="3.5" fill="#ffffff" />
-      {/* Window Header Bar */}
-      <rect x="7" y="8" width="24" height="4.5" rx="3.5" fill="#fed7aa" />
-      <circle cx="10.5" cy="10.2" r="0.9" fill="#ea580c" />
-      <circle cx="13" cy="10.2" r="0.9" fill="#ea580c" />
-      {/* Post Image Block */}
-      <rect x="10" y="15" width="7" height="7.5" rx="1.5" fill="#fdba74" />
-      {/* Text / Document / Code Lines */}
-      <rect x="19" y="15.5" width="9" height="1.8" rx="0.9" fill="#ea580c" />
-      <rect x="19" y="18.5" width="7.5" height="1.5" rx="0.75" fill="#ea580c" fillOpacity="0.7" />
-      <rect x="19" y="21" width="5" height="1.5" rx="0.75" fill="#ea580c" fillOpacity="0.4" />
-      {/* Creative Stylus / Design Pen */}
-      <path d="M21 30.5l7-7" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M28 23.5l2-2" stroke="#fef08a" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M21 30.5l-2.2 1.2 1.2-2.2z" fill="#ffffff" />
-      {/* Meta Ads / Growth Sparkle */}
-      <path d="M31.5 8l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z" fill="#ffffff" />
-      <circle cx="33" cy="27" r="1.5" fill="#fef08a" />
+
+      {/* Precision 6-Tooth Service Cog - Perfectly Centered in the middle (20, 20) with matching size */}
+      <g transform="translate(20, 20)">
+        {/* 6 Precision Rounded Teeth (3 Rotated Rectangles) */}
+        <rect x="-2.7" y="-11.2" width="5.4" height="22.4" rx="1.8" fill="#ffffff" />
+        <rect x="-2.7" y="-11.2" width="5.4" height="22.4" rx="1.8" fill="#ffffff" transform="rotate(60)" />
+        <rect x="-2.7" y="-11.2" width="5.4" height="22.4" rx="1.8" fill="#ffffff" transform="rotate(120)" />
+
+        {/* Main Solid Hub */}
+        <circle cx="0" cy="0" r="8.6" fill="#ffffff" />
+
+        {/* Recessed Center Core Hole */}
+        <circle cx="0" cy="0" r="4.6" fill="#1d4ed8" />
+
+        {/* Inner Glowing Diamond / Star Core */}
+        <path
+          d="M0 -3L.75 -.75L3 0L.75 .75L0 3L-.75 .75L-3 0L-.75 -.75Z"
+          fill="#ffffff"
+        />
+        <circle cx="0" cy="0" r="0.9" fill="#93c5fd" />
+      </g>
+
+      {/* Dynamic Service Sparkles */}
+      <path d="M31.5 7.5l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6.6-1.8z" fill="#ffffff" fillOpacity="0.9" />
+      <path d="M8.5 30.5l.4 1.2 1.2.4-1.2.4-.4 1.2-.4-1.2-1.2-.4 1.2-.4.4-1.2z" fill="#ffffff" fillOpacity="0.8" />
     </svg>
   );
 }

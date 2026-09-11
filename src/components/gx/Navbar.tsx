@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { Search, Globe, Heart, ShoppingCart, User, ArrowLeft, ArrowRight, Gamepad2 } from "lucide-react";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
+import { useFavorites } from "@/lib/gx/favorites";
 import {
   CATEGORY_LINKS,
   getCategoryLink,
@@ -108,6 +110,7 @@ export function Navbar() {
   const cart = useCart();
   const { currency, format, formatCoins } = useCurrency();
   const { t, lang, setLang } = useLang();
+  const { count: favCount } = useFavorites();
   const hiddenCats = useHiddenCategorySlugs();
   const [menuOpen, setMenuOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
@@ -320,44 +323,96 @@ export function Navbar() {
             <div className="mark"><img src="/app/assets/img/gx-logo.png" alt="GX" /></div>
             <div className="brand-word">GX <span>STORE</span></div>
           </Link>
-          <div className="search-box" ref={searchRef}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
-            <input
-              type="text"
-              value={query}
-              placeholder={t("nav.search_placeholder")}
-              onChange={(e) => { setQuery(e.target.value); setSearchOpen(true); }}
-              onFocus={() => setSearchOpen(true)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && results[0]) goToResult(results[0].link);
-              }}
-            />
-            {searchOpen && query.trim().length > 0 && (
-              <div className="gx-search-results">
-                {results.length === 0 ? (
-                  <div className="gx-search-empty">{lang === "ar" ? "لا توجد نتائج" : "No results"}</div>
-                ) : (
-                  results.map((r) => (
-                    <button key={r.key} type="button" className="gx-search-item" onClick={() => goToResult(r.link)}>
-                      <span className="gx-search-ico">
-                        {r.iconImg ? <img src={r.iconImg} alt="" style={{ width: 22, height: 22, objectFit: "contain" }} /> : r.icon}
-                      </span>
-                      <span className="gx-search-txt">
-                        <b>{r.title}</b>
-                        <small>{r.sub}</small>
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
+
+          {/* Center Group: Search Box + Adjacent Compact Language Selector */}
+          <div className="gx-nav-center-group">
+            <div className="search-box" ref={searchRef}>
+              <Search size={17} strokeWidth={2} className="search-ico-svg" />
+              <input
+                type="text"
+                value={query}
+                placeholder={lang === "ar" ? "ابحث عن الألعاب وتعبئة الرصيد والمزيد..." : t("nav.search_placeholder")}
+                onChange={(e) => { setQuery(e.target.value); setSearchOpen(true); }}
+                onFocus={() => setSearchOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && results[0]) goToResult(results[0].link);
+                }}
+              />
+              {searchOpen && query.trim().length > 0 && (
+                <div className="gx-search-results">
+                  {results.length === 0 ? (
+                    <div className="gx-search-empty">{lang === "ar" ? "لا توجد نتائج" : "No results"}</div>
+                  ) : (
+                    results.map((r) => (
+                      <button key={r.key} type="button" className="gx-search-item" onClick={() => goToResult(r.link)}>
+                        <span className="gx-search-ico">
+                          {r.iconImg ? <img src={r.iconImg} alt="" style={{ width: 22, height: 22, objectFit: "contain" }} /> : r.icon}
+                        </span>
+                        <span className="gx-search-txt">
+                          <b>{r.title}</b>
+                          <small>{r.sub}</small>
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Compact Language & Currency Selector directly next to Search */}
+            <button
+              type="button"
+              className="gx-nav-lang-compact-btn"
+              onClick={() => setCurrencyOpen(true)}
+              title={lang === "ar" ? "تغيير العملة واللغة" : "Change currency & language"}
+            >
+              <Globe size={13} strokeWidth={2.2} />
+              <span className="gx-lang-txt">{lang === "ar" ? "العربية" : "EN"}</span>
+              <span className="gx-lang-divider">·</span>
+              <span className="gx-curr-txt">{currency}</span>
+            </button>
           </div>
 
           <div className="nav-right">
+            {/* 1. Wishlist Button (Clean borderless floating icon) */}
+            <Link
+              to="/favorites"
+              className="gx-nav-ghost-btn gx-nav-wishlist-ghost"
+              title={lang === "ar" ? "المفضلة" : "Wishlist"}
+              aria-label={lang === "ar" ? "المفضلة" : "Wishlist"}
+            >
+              <Heart size={21} strokeWidth={1.8} />
+              {favCount > 0 && <span className="gx-floating-badge gx-wishlist-badge">{favCount}</span>}
+            </Link>
+
+            {/* 2. Shopping Cart Button (Clean borderless floating icon + Badge) */}
+            <button
+              type="button"
+              className="gx-nav-ghost-btn gx-nav-cart-ghost"
+              onClick={cart.openDrawer}
+              title={t("nav.cart_title") || (lang === "ar" ? "السلة" : "Cart")}
+              aria-label={t("nav.cart_title") || (lang === "ar" ? "السلة" : "Cart")}
+            >
+              <ShoppingCart size={21} strokeWidth={1.8} />
+              {cart.count > 0 && <span className="gx-floating-badge">{cart.count}</span>}
+            </button>
+
+            {/* 3. Play Arena Controller Icon (Clean borderless floating icon directly next to Cart) */}
+            <Link
+              to="/games"
+              className="gx-nav-ghost-btn gx-nav-arena-ghost"
+              title={lang === "ar" ? "ساحة اللعب" : "Play Arena"}
+              aria-label={lang === "ar" ? "ساحة اللعب" : "Play Arena"}
+            >
+              <Gamepad2 size={21} strokeWidth={1.8} />
+            </Link>
+
+            {/* 3. User Account / Login Pill Button */}
             {session ? (
               <div className="account-wrap" onMouseEnter={cancelClose} onMouseLeave={scheduleClose}>
                 <button
-                  type="button" className="icon-btn account-avatar-btn"
+                  type="button"
+                  className="gx-nav-avatar-btn"
                   onClick={(e) => { e.stopPropagation(); cancelClose(); setAccountOpen(v => !v); }}
                   onMouseEnter={() => { cancelClose(); setAccountOpen(true); }}
                   aria-label={t("nav.account")}
@@ -441,27 +496,21 @@ export function Navbar() {
                     <span className="ai">🚪</span><span>{t("nav.logout")}</span>
                   </button>
                 </div>
-
               </div>
             ) : (
-              <button type="button" className="icon-btn account-link" onClick={() => setAuthOpen(true)} aria-label={t("nav.login")}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+              <button
+                type="button"
+                className="gx-nav-login-pill"
+                onClick={() => setAuthOpen(true)}
+                aria-label={t("nav.login")}
+              >
+                <User size={15} strokeWidth={2.4} />
+                <span>{lang === "ar" ? "تسجيل الدخول" : "Log in"}</span>
               </button>
             )}
-            <div className="currency-pick currency-lang-combo">
-              <button type="button" className="cl-part cl-cur" onClick={() => setCurrencyOpen(true)} title={t("common.currency") || currency}>
-                <span>{currency}</span>
-              </button>
-              <span className="cl-sep">|</span>
-              <button type="button" className="cl-part cl-lang" onClick={() => setCurrencyOpen(true)} title={t("common.language")} aria-label={t("common.language")}>
-                <span>{lang === "ar" ? "AR" : "EN"}</span>
-              </button>
-            </div>
-            <button type="button" className="icon-btn" onClick={cart.openDrawer} title={t("nav.cart_title")}>
-              🛒
-              <span className="badge-count">{cart.count}</span>
-            </button>
-            <div className="menu-wrap">
+
+            {/* 4. Mobile Menu Button (Hamburger) */}
+            <div className="menu-wrap gx-nav-mobile-menu">
               <button type="button" className="menu-btn" onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}>
                 <div className="bars"><span /><span /><span /></div>
                 <span className="btn-label">{t("nav.menu")}</span>

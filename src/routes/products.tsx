@@ -150,8 +150,21 @@ function AllProductsPage() {
   const [customMaxPrice, setCustomMaxPrice] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // 5x5 Pagination State (25 items per page)
-  const ITEMS_PER_PAGE = 25;
+  // Responsive Pagination State (25 on desktop, 10 on mobile)
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth < 640;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const itemsPerPage = isMobile ? 10 : 25;
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Sync state with URL search query params on load and navigation
@@ -287,12 +300,12 @@ function AllProductsPage() {
     return list;
   }, [products, selectedCat, sortBy, selectedDeliveryType, selectedPricePreset, customMinPrice, customMaxPrice, searchQuery]);
 
-  const totalPages = Math.max(1, Math.ceil(displayedProducts.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(displayedProducts.length / itemsPerPage));
 
   const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return displayedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [displayedProducts, currentPage]);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return displayedProducts.slice(startIndex, startIndex + itemsPerPage);
+  }, [displayedProducts, currentPage, itemsPerPage]);
 
   const activeCategoryObj = useMemo(() => {
     return categoryTabsWithCounts.find((t) => t.id === selectedCat) || null;
@@ -544,6 +557,7 @@ function AllProductsPage() {
                       snapDuration={p.snapDuration || undefined}
                       categoryName={p.categoryNameAr || undefined}
                       categorySlug={p.categorySlug || undefined}
+                      customPlatform={p.platform || undefined}
                       showFromLabel={Boolean(p.isGiftCardMaster)}
                       isGiftCardMaster={Boolean(p.isGiftCardMaster)}
                     />
@@ -551,12 +565,12 @@ function AllProductsPage() {
                 })}
               </div>
 
-              {/* 5x5 Pagination */}
+              {/* Responsive Pagination (10 per page on mobile, 25 on desktop) */}
               <CatPagination
                 currentPage={currentPage}
                 totalPages={totalPages}
                 totalItems={displayedProducts.length}
-                itemsPerPage={ITEMS_PER_PAGE}
+                itemsPerPage={itemsPerPage}
                 onPageChange={setCurrentPage}
                 lang={lang}
                 scrollSelector="#all-products-section"

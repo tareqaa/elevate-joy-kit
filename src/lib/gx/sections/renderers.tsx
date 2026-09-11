@@ -98,7 +98,7 @@ export function HeroRenderer({ data }: { data: HeroData }) {
       setSlide((s) => (s + 1) % SLIDES);
     }, 6500);
     return () => window.clearInterval(id);
-  }, []);
+  }, [slide]);
 
   // --- unified pointer drag (mouse + touch) ---
   const startX = useRef(0);
@@ -226,6 +226,7 @@ export function HeroRenderer({ data }: { data: HeroData }) {
                 aria-selected={slide === i}
                 aria-label={`Slide ${i + 1}`}
                 className={"hcd" + (slide === i ? " on" : "")}
+                onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation();
                   setSlide(i);

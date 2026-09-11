@@ -1028,6 +1028,7 @@ function CategoryPage() {
         snapDuration={p.snapDuration || undefined}
         categoryName={category.nameAr}
         categorySlug={category.slug}
+        customPlatform={p.platform || undefined}
         showFromLabel={Boolean(p.isGiftCardMaster)}
         isGiftCardMaster={Boolean(p.isGiftCardMaster)}
       />
