@@ -331,7 +331,7 @@ export function Navbar() {
               <input
                 type="text"
                 value={query}
-                placeholder={lang === "ar" ? "ابحث عن الألعاب وتعبئة الرصيد والمزيد..." : t("nav.search_placeholder")}
+                placeholder={lang === "ar" ? "دور على منتج أو اشتراك..." : t("nav.search_placeholder")}
                 onChange={(e) => { setQuery(e.target.value); setSearchOpen(true); }}
                 onFocus={() => setSearchOpen(true)}
                 onKeyDown={(e) => {
@@ -394,7 +394,7 @@ export function Navbar() {
               aria-label={t("nav.cart_title") || (lang === "ar" ? "السلة" : "Cart")}
             >
               <ShoppingCart size={21} strokeWidth={1.8} />
-              {cart.count > 0 && <span className="gx-floating-badge">{cart.count}</span>}
+              <span className={`gx-floating-badge ${cart.count === 0 ? "gx-badge-zero" : ""}`}>{cart.count}</span>
             </button>
 
             {/* 3. Play Arena Controller Icon (Clean borderless floating icon directly next to Cart) */}
@@ -508,6 +508,19 @@ export function Navbar() {
                 <span>{lang === "ar" ? "تسجيل الدخول" : "Log in"}</span>
               </button>
             )}
+
+            {/* Mobile-only Currency / Lang Combo button (Image 2: JOD | AR) */}
+            <button
+              type="button"
+              className="currency-pick currency-lang-combo gx-nav-mobile-currency"
+              onClick={() => setCurrencyOpen(true)}
+              title={lang === "ar" ? "تغيير العملة واللغة" : "Change currency & language"}
+              aria-label={lang === "ar" ? "تغيير العملة واللغة" : "Change currency & language"}
+            >
+              <span className="cl-part cl-cur">{currency}</span>
+              <span className="cl-sep">|</span>
+              <span className="cl-part cl-lang">{lang === "ar" ? "AR" : "EN"}</span>
+            </button>
 
             {/* 4. Mobile Menu Button (Hamburger) */}
             <div className="menu-wrap gx-nav-mobile-menu">
