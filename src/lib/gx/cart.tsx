@@ -585,42 +585,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
         })
         .join("\n\n");
 
-      let msg = `🧾 *فاتورة طلب جديد — GX Store*
-━━━━━━━━━━━━━━━━━━━━
-🆔 رقم الطلب: ${orderId}
-📅 التاريخ: ${dateStr}
-🕐 الوقت: ${timeStr}
-━━━━━━━━━━━━━━━━━━━━
+      const pmLabel =
+        paymentMethod === "cliq"
+          ? "خدمة كليك (CliQ) 🇯🇴"
+          : paymentMethod === "card"
+          ? "فيزا / ماستركارد (Visa / Mastercard) 💳"
+          : "محفظة GX (GX Wallet) 🌐";
 
-🛍️ *تفاصيل المنتجات:*
+      let msg = `مرحباً GX Store، أود تأكيد طلبي:
+🆔 *رقم الطلب:* ${orderId}
+💳 *طريقة الدفع:* ${pmLabel}`;
 
-${lines}
-
-━━━━━━━━━━━━━━━━━━━━
-📦 عدد القطع: ${itemCount}`;
-      if (coupon) msg += `\n🏷️ كوبون (${coupon.code}): -${format(coupon.discount_jod)}`;
-      if (coins) msg += `\n🪙 عملات GX (${coins.coins}): -${format(coins.discount_jod)}`;
-      if (appliedCredit > 0) msg += `\n💳 رصيد المتجر: -${format(appliedCredit)}`;
-      msg += `\n💰 *الإجمالي المستحق: ${format(totalJOD)}*
-💱 العملة: ${currency}`;
-      if (paymentMethod) {
-        const pmLabel =
-          paymentMethod === "cliq"
-            ? "خدمة كليك (CliQ) 🇯🇴"
-            : paymentMethod === "card"
-            ? "بطاقة بنكية (Visa / Mastercard) 💳"
-            : "محفظة GX (GX Wallet) 🌐";
-        msg += `\n💳 *طريقة الدفع:* ${pmLabel}`;
-      }
       if (contact.email?.trim()) {
         msg += `\n📧 *البريد:* ${contact.email.trim()}`;
       }
-      msg += `\n━━━━━━━━━━━━━━━━━━━━`;
 
-      if (notes.trim()) {
-        msg += `\n\n📝 *ملاحظات إضافية:*\n${notes.trim()}\n━━━━━━━━━━━━━━━━━━━━`;
-      }
-      msg += `\n\n✅ الرجاء تأكيد الطلب ليتم البدء بالتجهيز.\nشكراً لاختيارك GX Store 💙`;
+      msg += `\n\n✅ بانتظار استكمال وتأكيد الطلب.`;
 
       const encoded = encodeURIComponent(msg);
       const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
@@ -628,7 +608,7 @@ ${lines}
         ? "https://wa.me/962776252313?text=" + encoded
         : "https://web.whatsapp.com/send?phone=962776252313&text=" + encoded;
     },
-    [items, notes, currency, format, totalJOD, coupon, coins, appliedCredit, contact.email]
+    [contact.email]
   );
 
   const submitOrder = useCallback(async (paymentMethod?: "cliq" | "card" | "gx_wallet") => {

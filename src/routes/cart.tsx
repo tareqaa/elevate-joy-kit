@@ -33,6 +33,41 @@ function TrashIcon({ size = 17 }: { size?: number }) {
   );
 }
 
+/** 2-Step Horizontal Progress Bar */
+function CheckoutStepper({ stage, onStepClick }: { stage: 1 | 2; onStepClick: (s: 1 | 2) => void }) {
+  const { t } = useLang();
+  return (
+    <div className="gx-stepper-container">
+      {/* Step 1: Shopping Cart */}
+      <div
+        className={"gx-step-node " + (stage === 1 ? "active" : "done")}
+        onClick={() => onStepClick(1)}
+        title={t("cart.shopping_cart")}
+      >
+        <div className="gx-step-circle">
+          {stage === 2 ? "✓" : "1"}
+        </div>
+        <span className="gx-step-label">{t("cart.shopping_cart")}</span>
+      </div>
+
+      {/* Progress Line */}
+      <div className="gx-step-divider">
+        <div className={"gx-step-divider-fill " + (stage === 2 ? "active" : "inactive")} />
+      </div>
+
+      {/* Step 2: Payment */}
+      <div
+        className={"gx-step-node " + (stage === 2 ? "active" : "pending")}
+        onClick={() => { if (stage === 2) onStepClick(2); }}
+        title={t("cart.payment_step")}
+      >
+        <div className="gx-step-circle">2</div>
+        <span className="gx-step-label">{t("cart.payment_step")}</span>
+      </div>
+    </div>
+  );
+}
+
 function CartPage() {
   const { t } = useLang();
   const cart = useCart();
@@ -57,13 +92,24 @@ function CartPage() {
       <section className="section gx-checkout-section">
         <style>{checkoutCss}</style>
         <div className="wrap">
+          {cart.items.length > 0 && (
+            <CheckoutStepper
+              stage={stage}
+              onStepClick={(s) => {
+                setStage(s);
+                window.scrollTo({ top: 80, behavior: "smooth" });
+              }}
+            />
+          )}
+
           {cart.items.length === 0 ? (
             <CartList />
           ) : stage === 1 ? (
             <div className="gx-eneba-grid">
-              {/* Right column in RTL: Cart Items */}
+              {/* Right column in RTL: Cart Items & Rewards */}
               <div className="gx-eneba-main">
                 <CartList />
+                <RewardsAndBalanceCard />
               </div>
 
               {/* Left column in RTL: Delivery & Summary */}
@@ -205,7 +251,290 @@ function CartList() {
   );
 }
 
-/** Card 1: "أين تريد تسليم الطلب؟" - Hidden completely if user is signed in */
+/** Dedicated Rewards & Loyalty Card below the cart items (Ample room, luxurious presentation) */
+function RewardsAndBalanceCard() {
+  const [balance, setBalance] = useState<{ coins: number; credit: number } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("gx_coins, store_credit_jod")
+        .eq("id", uid)
+        .maybeSingle();
+      if (alive) {
+        setBalance({
+          coins: Number(data?.gx_coins ?? 0),
+          credit: Number(data?.store_credit_jod ?? 0),
+        });
+      }
+    };
+    void load();
+    const on = () => void load();
+    window.addEventListener("gx:balances-updated", on);
+    return () => {
+      alive = false;
+      window.removeEventListener("gx:balances-updated", on);
+    };
+  }, []);
+
+  if (!balance || (balance.coins <= 0 && balance.credit <= 0)) {
+    return null;
+  }
+
+  return (
+    <div className="gx-rewards-container-card">
+      <div className="gx-rcc-head">
+        <div className="gx-rcc-title">
+          <span>🎁</span>
+          <h3>مكافآت ورصيد حسابك المتاح</h3>
+        </div>
+        <span className="gx-rcc-badge">خصم إضافي</span>
+      </div>
+
+      <div className="gx-rewards-grid">
+        {balance.coins > 0 && <CoinsBlock balance={balance.coins} />}
+        {balance.credit > 0 && <CreditBlock balance={balance.credit} />}
+      </div>
+    </div>
+  );
+}
+
+/** Re-engineered GX Coins block with 100% accurate discount calculations */
+function CoinsBlock({ balance }: { balance: number }) {
+  const cart = useCart();
+  const { format } = useCurrency();
+  const { t, lang } = useLang();
+  const isAr = lang !== "en";
+  const [amount, setAmount] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // Maximum allowed discount is 50% of the payable amount (after coupon)
+  const payable = Math.max(0, cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0));
+  const capJod = Math.round(payable * MAX_COINS_DISCOUNT_RATIO * 100) / 100;
+  const maxCoinsForOrder = jodToCoins(capJod);
+
+  // Usable coins is bounded by user balance and order cap
+  const usable = Math.min(balance, maxCoinsForOrder);
+  // Actual discount that these usable coins represent:
+  const maxDiscountFromUsable = coinsToJod(usable);
+
+  async function apply(v: number) {
+    if (busy || v <= 0) return;
+    setBusy(true);
+    const r = await cart.applyCoins(v);
+    setMsg({ ok: r.ok, msg: r.message });
+    setBusy(false);
+  }
+
+  return (
+    <div className="gx-reward-tile coins">
+      <div className="gx-rt-header">
+        <div className="gx-rt-title-box">
+          <span className="gx-rt-icon">🪙</span>
+          <div>
+            <div className="gx-rt-title">عملات GX Coins</div>
+            <div className="gx-rt-sub">
+              رصيدك: <b>{balance.toLocaleString("en-US")} عملة</b> ≈ {format(coinsToJod(balance))}
+            </div>
+          </div>
+        </div>
+        <div className="gx-rt-badge coins">GX Rewards</div>
+      </div>
+
+      {cart.coins ? (
+        <div className="gx-rt-applied-state coins">
+          <div className="gx-rta-left">
+            <span className="gx-rta-icon">✓</span>
+            <div>
+              <div className="gx-rta-val">تم تطبيق خصم {format(cart.coins.discount_jod)}</div>
+              <div className="gx-rta-sub">مقابل {cart.coins.coins.toLocaleString("en-US")} عملة GX</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="gx-rt-remove-btn"
+            onClick={() => { cart.removeCoins(); setMsg(null); }}
+          >
+            إلغاء الخصم
+          </button>
+        </div>
+      ) : usable < 1 ? (
+        <div className="gx-rt-notice">
+          {balance < 1 ? t("cart.coins_earn") : t("cart.coins_low")}
+        </div>
+      ) : (
+        <div className="gx-rt-controls">
+          <p className="gx-rt-hint">
+            {isAr
+              ? `يمكنك خصم حتى ${format(maxDiscountFromUsable)} باستخدام ${usable.toLocaleString("en-US")} عملة من هذا الطلب.`
+              : `You can knock off up to ${format(maxDiscountFromUsable)} using ${usable.toLocaleString("en-US")} coins.`}
+          </p>
+
+          <div className="gx-rt-preset-row">
+            {[
+              { label: "25%", ratio: 0.25 },
+              { label: "50%", ratio: 0.5 },
+              { label: isAr ? `الحد الأقصى (${usable.toLocaleString("en-US")})` : `Max (${usable.toLocaleString("en-US")})`, ratio: 1 },
+            ].map((p) => {
+              const v = Math.max(1, Math.floor(usable * p.ratio));
+              return (
+                <button
+                  key={p.ratio}
+                  type="button"
+                  className="gx-rt-preset-pill"
+                  onClick={() => {
+                    setAmount(String(v));
+                    apply(v);
+                  }}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="gx-rt-input-wrap">
+            <input
+              className="gx-rt-input"
+              type="number"
+              min={1}
+              max={usable}
+              placeholder={`حدد كمية العملات (حتى ${usable.toLocaleString("en-US")})`}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (amount) apply(Number(amount));
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="gx-rt-action-btn coins"
+              disabled={busy || !amount || Number(amount) <= 0}
+              onClick={() => apply(Number(amount))}
+            >
+              {busy ? "..." : "استخدام الخصم"}
+            </button>
+          </div>
+
+          {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Re-engineered Store Credit block */
+function CreditBlock({ balance }: { balance: number }) {
+  const cart = useCart();
+  const { format } = useCurrency();
+  const { t } = useLang();
+  const [amount, setAmount] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const payable = Math.max(0, cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0) - (cart.coins?.discount_jod ?? 0));
+  const usable = Math.round(Math.min(balance, payable) * 100) / 100;
+
+  async function apply(v: number) {
+    if (busy || v <= 0) return;
+    setBusy(true);
+    const r = await cart.applyCredit(v);
+    setMsg({ ok: r.ok, msg: r.message });
+    setBusy(false);
+  }
+
+  return (
+    <div className="gx-reward-tile credit">
+      <div className="gx-rt-header">
+        <div className="gx-rt-title-box">
+          <span className="gx-rt-icon">💳</span>
+          <div>
+            <div className="gx-rt-title">رصيد المتجر</div>
+            <div className="gx-rt-sub">
+              الرصيد المتاح بحسابك: <b>{format(balance)}</b>
+            </div>
+          </div>
+        </div>
+        <div className="gx-rt-badge credit">رصيد مباشر</div>
+      </div>
+
+      {cart.creditJOD > 0 ? (
+        <div className="gx-rt-applied-state credit">
+          <div className="gx-rta-left">
+            <span className="gx-rta-icon">✓</span>
+            <div>
+              <div className="gx-rta-val">تم استخدام رصيد بقيمة {format(cart.creditJOD)}</div>
+              <div className="gx-rta-sub">مخصوم من إجمالي الطلب</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="gx-rt-remove-btn"
+            onClick={() => { cart.removeCredit(); setMsg(null); }}
+          >
+            إلغاء الخصم
+          </button>
+        </div>
+      ) : usable > 0 ? (
+        <div className="gx-rt-controls">
+          <p className="gx-rt-hint">
+            يمكنك دفع حتى {format(usable)} من قيمة الطلب مباشرة من رصيدك.
+          </p>
+
+          <div className="gx-rt-input-wrap">
+            <input
+              className="gx-rt-input"
+              type="number"
+              min={0.01}
+              step={0.01}
+              max={usable}
+              placeholder={`المبلغ (حتى ${format(usable)})`}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (amount) apply(Number(amount));
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="gx-rt-max-pill"
+              onClick={() => {
+                setAmount(usable.toFixed(2));
+                apply(usable);
+              }}
+            >
+              استخدام الكل ({format(usable)})
+            </button>
+            <button
+              type="button"
+              className="gx-rt-action-btn credit"
+              disabled={busy || !amount || Number(amount) <= 0}
+              onClick={() => apply(Number(amount))}
+            >
+              {busy ? "..." : "تطبيق"}
+            </button>
+          </div>
+
+          {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Card: "البريد الإلكتروني" - Hidden completely if user is signed in */
 function CartDeliveryCard() {
   const cart = useCart();
   const { t } = useLang();
@@ -224,7 +553,6 @@ function CartDeliveryCard() {
     });
   }, [cart]);
 
-  // If user is signed in, completely omit this card
   if (signedInUser) {
     return null;
   }
@@ -260,7 +588,7 @@ function CartDeliveryCard() {
   );
 }
 
-/** Card 2: "الملخص" (Summary Stage 1) */
+/** Card: "الملخص" (Summary Stage 1) */
 function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
   const cart = useCart();
   const { format } = useCurrency();
@@ -396,14 +724,11 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
           </div>
         )}
       </div>
-
-      <CreditBlock />
-      <CoinsBlock />
     </div>
   );
 }
 
-/** Stage 2: Payment Methods Page */
+/** Stage 2: Payment Methods Page (Spacious, Separated, Luxury Design) */
 function CartPaymentStage2({
   paymentMethod,
   setPaymentMethod,
@@ -418,32 +743,42 @@ function CartPaymentStage2({
   const { t } = useLang();
 
   return (
-    <div className="cart-list-card gx-eneba-payment-card">
-      <div className="cart-list-head" style={{ alignItems: "center" }}>
-        <h2>{t("cart.payment_method_title")}</h2>
-        <button type="button" className="gx-back-link" onClick={onBack}>
-          ← {t("cart.shopping_cart")}
+    <div className="gx-payment-stage-wrapper">
+      {/* Clean Header with Back Link */}
+      <div className="gx-pm-header">
+        <div className="gx-pm-header-info">
+          <h2>{t("cart.payment_method_title")}</h2>
+          <p>اختر الطريقة المناسبة لك لإتمام عملية الدفع بأمان وسرعة</p>
+        </div>
+        <button type="button" className="gx-pm-back-pill" onClick={onBack}>
+          <span className="gx-arr">←</span> {t("cart.shopping_cart")}
         </button>
       </div>
 
-      <div className="gx-payment-list">
-        {/* CliQ Option - Jordan ONLY (Clean official logo badge, no exposed raw alias) */}
+      {/* Payment Selection List (Spacious & Cleanly Separated) */}
+      <div className="gx-pm-tiles-list">
+        {/* CliQ Option - Jordan ONLY */}
         {isJordan && (
           <div
-            className={"gx-payment-card-eneba " + (paymentMethod === "cliq" ? "active" : "")}
+            className={"gx-pm-tile " + (paymentMethod === "cliq" ? "active" : "")}
             onClick={() => setPaymentMethod("cliq")}
           >
-            <div className="gx-pc-radio">
-              <span className="gx-pc-dot" />
+            <div className="gx-pm-radio">
+              <div className="gx-pm-radio-ring">
+                <div className="gx-pm-radio-inner" />
+              </div>
             </div>
 
-            <div className="gx-pc-body">
-              <div className="gx-pc-title">{t("cart.method_cliq")}</div>
-              <div className="gx-pc-sub">{t("cart.method_cliq_desc")}</div>
+            <div className="gx-pm-info">
+              <div className="gx-pm-name-row">
+                <span className="gx-pm-name">{t("cart.method_cliq")}</span>
+                <span className="gx-pm-tag cliq">الأردن فقط 🇯🇴</span>
+              </div>
+              <p className="gx-pm-desc">{t("cart.method_cliq_desc")}</p>
             </div>
 
-            {/* Official CliQ Logo Badge */}
-            <div className="gx-pc-logo-badge cliq">
+            {/* Official CliQ Logo in pristine white container */}
+            <div className="gx-pm-logo cliq">
               <img src="/app/assets/img/cliq-logo.png" alt="CliQ" />
             </div>
           </div>
@@ -451,20 +786,25 @@ function CartPaymentStage2({
 
         {/* Visa / Mastercard Option - Jordan & International */}
         <div
-          className={"gx-payment-card-eneba " + (paymentMethod === "card" ? "active" : "")}
+          className={"gx-pm-tile " + (paymentMethod === "card" ? "active" : "")}
           onClick={() => setPaymentMethod("card")}
         >
-          <div className="gx-pc-radio">
-            <span className="gx-pc-dot" />
+          <div className="gx-pm-radio">
+            <div className="gx-pm-radio-ring">
+              <div className="gx-pm-radio-inner" />
+            </div>
           </div>
 
-          <div className="gx-pc-body">
-            <div className="gx-pc-title">{t("cart.method_card")}</div>
-            <div className="gx-pc-sub">{t("cart.method_card_desc")}</div>
+          <div className="gx-pm-info">
+            <div className="gx-pm-name-row">
+              <span className="gx-pm-name">{t("cart.method_card")}</span>
+              <span className="gx-pm-tag card">محلي ودولي 🌐</span>
+            </div>
+            <p className="gx-pm-desc">{t("cart.method_card_desc")}</p>
           </div>
 
-          {/* Visa / Mastercard Logo Badge */}
-          <div className="gx-pc-logo-badge card">
+          {/* Visa / Mastercard Official Vector Badge */}
+          <div className="gx-pm-logo card">
             <img src="/app/assets/img/cards-logo.svg" alt="Visa / Mastercard" />
           </div>
         </div>
@@ -603,250 +943,97 @@ function CartOrderRecapStage2({
   );
 }
 
-/** Re-engineered, elegant GX Coins block */
-function CoinsBlock() {
-  const cart = useCart();
-  const { format } = useCurrency();
-  const { t, lang } = useLang();
-  const isAr = lang !== "en";
-  const [balance, setBalance] = useState<number | null>(null);
-  const [amount, setAmount] = useState("");
-  const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    const load = async () => {
-      const { data: sess } = await supabase.auth.getSession();
-      const uid = sess.session?.user?.id;
-      if (!uid) return;
-      const { data } = await supabase.from("profiles").select("gx_coins").eq("id", uid).maybeSingle();
-      if (alive) setBalance(Number(data?.gx_coins ?? 0));
-    };
-    void load();
-    const on = () => void load();
-    window.addEventListener("gx:balances-updated", on);
-    return () => { alive = false; window.removeEventListener("gx:balances-updated", on); };
-  }, []);
-
-  if (balance === null || balance <= 0) return null;
-
-  const payable = Math.max(0, cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0));
-  const capJod = Math.round(payable * MAX_COINS_DISCOUNT_RATIO * 100) / 100;
-  const usable = Math.min(balance, jodToCoins(capJod));
-
-  async function apply(v: number) {
-    if (busy || v <= 0) return;
-    setBusy(true);
-    const r = await cart.applyCoins(v);
-    setMsg({ ok: r.ok, msg: r.message });
-    setBusy(false);
-  }
-
-  return (
-    <div className="gx-balance-card coins">
-      <div className="gx-bc-head">
-        <div className="gx-bc-left">
-          <span className="gx-bc-icon">🪙</span>
-          <span className="gx-bc-title">GX Coins</span>
-        </div>
-        <div className="gx-bc-pill coins">
-          {balance.toLocaleString("en-US")} ≈ {format(coinsToJod(balance))}
-        </div>
-      </div>
-
-      {cart.coins ? (
-        <div className="gx-bc-applied coins">
-          <div className="gx-bca-info">
-            <span className="gx-bca-val">{cart.coins.coins.toLocaleString("en-US")} Coins</span>
-            <span className="gx-bca-sub">{t("cart.discount")}: -{format(cart.coins.discount_jod)}</span>
-          </div>
-          <button
-            type="button"
-            className="gx-bc-remove"
-            onClick={() => { cart.removeCoins(); setMsg(null); }}
-          >
-            {t("cart.remove")}
-          </button>
-        </div>
-      ) : usable < 1 ? (
-        <div className="gx-bc-hint">
-          {balance < 1 ? t("cart.coins_earn") : t("cart.coins_low")}
-        </div>
-      ) : (
-        <div className="gx-bc-actions">
-          <div className="gx-bc-hint">
-            {isAr
-              ? `يمكنك خصم حتى ${format(capJod)} باستخدام ${usable.toLocaleString("en-US")} عملة`
-              : `Knock off up to ${format(capJod)} with ${usable.toLocaleString("en-US")} coins`}
-          </div>
-
-          {/* Quick Preset Segmented Buttons */}
-          <div className="gx-bc-presets">
-            {[
-              { label: "25%", ratio: 0.25 },
-              { label: "50%", ratio: 0.5 },
-              { label: isAr ? `الحد الأقصى (${usable.toLocaleString("en-US")})` : `Max (${usable.toLocaleString("en-US")})`, ratio: 1 },
-            ].map((p) => {
-              const v = Math.max(1, Math.floor(usable * p.ratio));
-              return (
-                <button
-                  key={p.ratio}
-                  type="button"
-                  className="gx-bc-preset-btn"
-                  onClick={() => {
-                    setAmount(String(v));
-                    apply(v);
-                  }}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Clean input row */}
-          <div className="gx-bc-input-group">
-            <input
-              className="gx-bc-input"
-              type="number"
-              min={1}
-              max={usable}
-              placeholder={`${t("cart.use_up_to")} ${usable.toLocaleString("en-US")}`}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  if (amount) apply(Number(amount));
-                }
-              }}
-            />
-            <button
-              type="button"
-              className="gx-bc-apply-btn"
-              disabled={busy || !amount || Number(amount) <= 0}
-              onClick={() => apply(Number(amount))}
-            >
-              {busy ? "..." : t("cart.use")}
-            </button>
-          </div>
-
-          {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Re-engineered, elegant Store Credit block */
-function CreditBlock() {
-  const cart = useCart();
-  const { format } = useCurrency();
-  const { t } = useLang();
-  const [balance, setBalance] = useState<number | null>(null);
-  const [amount, setAmount] = useState("");
-  const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    const load = async () => {
-      const { data: sess } = await supabase.auth.getSession();
-      const uid = sess.session?.user?.id;
-      if (!uid) return;
-      const { data } = await supabase.from("profiles").select("store_credit_jod").eq("id", uid).maybeSingle();
-      if (alive) setBalance(Number(data?.store_credit_jod ?? 0));
-    };
-    void load();
-    const on = () => void load();
-    window.addEventListener("gx:balances-updated", on);
-    return () => { alive = false; window.removeEventListener("gx:balances-updated", on); };
-  }, []);
-
-  if (balance === null || balance <= 0) return null;
-
-  const payable = Math.max(0, cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0) - (cart.coins?.discount_jod ?? 0));
-  const usable = Math.round(Math.min(balance, payable) * 100) / 100;
-
-  async function apply(v: number) {
-    if (busy || v <= 0) return;
-    setBusy(true);
-    const r = await cart.applyCredit(v);
-    setMsg({ ok: r.ok, msg: r.message });
-    setBusy(false);
-  }
-
-  return (
-    <div className="gx-balance-card credit">
-      <div className="gx-bc-head">
-        <div className="gx-bc-left">
-          <span className="gx-bc-icon">💳</span>
-          <span className="gx-bc-title">{t("cart.store_credit")}</span>
-        </div>
-        <div className="gx-bc-pill credit">
-          {format(balance)}
-        </div>
-      </div>
-
-      {cart.creditJOD > 0 ? (
-        <div className="gx-bc-applied credit">
-          <div className="gx-bca-info">
-            <span className="gx-bca-val">{format(cart.creditJOD)}</span>
-            <span className="gx-bca-sub">{t("cart.credit_applied")}</span>
-          </div>
-          <button
-            type="button"
-            className="gx-bc-remove"
-            onClick={() => { cart.removeCredit(); setMsg(null); }}
-          >
-            {t("cart.remove")}
-          </button>
-        </div>
-      ) : usable > 0 ? (
-        <div className="gx-bc-actions">
-          <div className="gx-bc-input-group">
-            <input
-              className="gx-bc-input"
-              type="number"
-              min={0.01}
-              step={0.01}
-              max={usable}
-              placeholder={`${t("cart.use_up_to")} ${format(usable)}`}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  if (amount) apply(Number(amount));
-                }
-              }}
-            />
-            <button
-              type="button"
-              className="gx-bc-max-btn"
-              onClick={() => { setAmount(usable.toFixed(2)); apply(usable); }}
-            >
-              كامل الرصيد
-            </button>
-            <button
-              type="button"
-              className="gx-bc-apply-btn"
-              disabled={busy || !amount || Number(amount) <= 0}
-              onClick={() => apply(Number(amount))}
-            >
-              {busy ? "..." : t("cart.use")}
-            </button>
-          </div>
-          {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 const checkoutCss = `
-/* 2-Column Grid (Main right, sidebar left in RTL) */
+/* Top 2-Step Horizontal Progress Bar */
+.gx-stepper-container {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto 28px !important;
+  max-width: 540px !important;
+  width: 100% !important;
+  padding: 12px 20px !important;
+  border-radius: 999px !important;
+  background: rgba(18, 24, 38, 0.6) !important;
+  border: 1px solid rgba(0, 229, 255, 0.14) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5) !important;
+  box-sizing: border-box !important;
+}
+.gx-step-node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  flex: 0 0 auto;
+}
+.gx-step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13.5px;
+  font-weight: 900;
+  transition: all 0.25s ease;
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+}
+.gx-step-node.active .gx-step-circle {
+  background: linear-gradient(135deg, #00e5ff 0%, #00b4d8 100%);
+  color: #020b14;
+  border-color: #00e5ff;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.65);
+}
+.gx-step-node.done .gx-step-circle {
+  background: #00e5b0;
+  color: #0a0e1a;
+  border-color: #00e5b0;
+}
+.gx-step-label {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #94a3b8;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+.gx-step-node.active .gx-step-label {
+  color: #f1f5f9;
+}
+.gx-step-node.done .gx-step-label {
+  color: #00e5b0;
+}
+.gx-step-divider {
+  flex: 1;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 16px;
+  position: relative;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.gx-step-divider-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  background: linear-gradient(90deg, #00e5ff, #00e5b0);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: right center;
+}
+.gx-step-divider-fill.inactive {
+  transform: scaleX(0);
+}
+.gx-step-divider-fill.active {
+  transform: scaleX(1);
+}
+
+/* 2-Column Grid */
 .gx-eneba-grid{display:grid;grid-template-columns:1fr 370px;gap:24px;align-items:start}
 .gx-eneba-main{display:flex;flex-direction:column;gap:20px}
 .gx-eneba-side{display:flex;flex-direction:column;gap:18px}
@@ -855,6 +1042,264 @@ const checkoutCss = `
 .gx-eneba-row{position:relative;border-bottom:1px solid rgba(255,255,255,.06)!important;padding:16px 0!important}
 .gx-row-trash{background:transparent;border:none;color:#64748b;cursor:pointer;padding:8px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .18s}
 .gx-row-trash:hover{color:#ff5470;background:rgba(255,84,112,.1)}
+
+/* Rewards & Loyalty Container Card */
+.gx-rewards-container-card {
+  border-radius: 18px;
+  padding: 20px;
+  border: 1px solid rgba(0, 229, 255, 0.16);
+  background: linear-gradient(180deg, rgba(18, 22, 34, 0.75), rgba(10, 13, 22, 0.9));
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+.gx-rcc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.gx-rcc-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gx-rcc-title h3 {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 900;
+  color: #f1f5f9;
+}
+.gx-rcc-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: rgba(0, 229, 255, 0.1);
+  color: #00e5ff;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+}
+.gx-rewards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 768px) {
+  .gx-rewards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.gx-reward-tile {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+}
+.gx-reward-tile.coins {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.04) 0%, rgba(14, 20, 35, 0.5) 100%);
+  border-color: rgba(245, 158, 11, 0.22);
+}
+.gx-reward-tile.credit {
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.04) 0%, rgba(14, 20, 35, 0.5) 100%);
+  border-color: rgba(56, 189, 248, 0.22);
+}
+.gx-rt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.gx-rt-title-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.gx-rt-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+.gx-rt-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+.gx-rt-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.gx-rt-badge {
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 99px;
+}
+.gx-rt-badge.coins {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.gx-rt-badge.credit {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+.gx-rt-controls {
+  margin-top: 12px;
+}
+.gx-rt-hint {
+  font-size: 12px;
+  color: #cbd5e1;
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+.gx-rt-preset-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.gx-rt-preset-pill {
+  padding: 6px 14px;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.gx-rt-preset-pill:hover {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+  transform: translateY(-1px);
+}
+.gx-rt-input-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.gx-rt-input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.4);
+  color: #f1f5f9;
+  font-size: 13.5px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.gx-rt-input:focus {
+  outline: none;
+  border-color: #00e5ff;
+}
+.gx-rt-max-pill {
+  white-space: nowrap;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.08);
+  color: #38bdf8;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.gx-rt-max-pill:hover {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: #38bdf8;
+}
+.gx-rt-action-btn {
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: none;
+  color: #020b14;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+.gx-rt-action-btn.coins {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+.gx-rt-action-btn.credit {
+  background: linear-gradient(135deg, #00e5ff, #00b4d8);
+}
+.gx-rt-action-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.4);
+}
+.gx-rt-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.gx-rt-applied-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 12px;
+  margin-top: 10px;
+}
+.gx-rt-applied-state.coins {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.gx-rt-applied-state.credit {
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+.gx-rta-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.gx-rta-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  background: #00e5b0;
+  color: #020b14;
+}
+.gx-rta-val {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+.gx-rta-sub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+.gx-rt-remove-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 84, 112, 0.4);
+  color: #ff98a8;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.gx-rt-remove-btn:hover {
+  background: rgba(255, 84, 112, 0.15);
+}
+.gx-rt-notice {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 8px;
+}
 
 /* Delivery Card (Where to deliver) */
 .gx-delivery-card{border-radius:18px;padding:18px;border:1px solid rgba(0,229,255,.16);background:linear-gradient(180deg,rgba(18,22,34,.7),rgba(10,13,22,.85))}
@@ -874,60 +1319,168 @@ const checkoutCss = `
 .gx-ca-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:none;color:#cbd5e1;font-size:13px;font-weight:800;cursor:pointer;padding:6px 0}
 .gx-ca-toggle:hover{color:#00e5ff}
 
-/* Balance & Loyalty Cards (Store Credit & GX Coins) */
-.gx-balance-card{margin-top:14px;padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);transition:all .2s ease}
-.gx-balance-card.credit{background:linear-gradient(180deg,rgba(56,189,248,.04) 0%,rgba(14,20,35,.4) 100%);border-color:rgba(56,189,248,.2)}
-.gx-balance-card.coins{background:linear-gradient(180deg,rgba(245,158,11,.04) 0%,rgba(14,20,35,.4) 100%);border-color:rgba(245,158,11,.2)}
-.gx-bc-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.gx-bc-left{display:flex;align-items:center;gap:8px}
-.gx-bc-icon{font-size:16px;line-height:1}
-.gx-bc-title{font-size:13.5px;font-weight:800;color:#f1f5f9}
-.gx-bc-pill{font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px;border:1px solid transparent}
-.gx-bc-pill.credit{background:rgba(56,189,248,.12);color:#38bdf8;border-color:rgba(56,189,248,.3)}
-.gx-bc-pill.coins{background:rgba(245,158,11,.12);color:#fbbf24;border-color:rgba(245,158,11,.3)}
-.gx-bc-actions{margin-top:10px}
-.gx-bc-hint{font-size:11.5px;color:#94a3b8;margin:4px 0 10px;line-height:1.5}
-.gx-bc-presets{display:flex;gap:6px;margin-bottom:10px}
-.gx-bc-preset-btn{flex:1;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#cbd5e1;font-size:11.5px;font-weight:800;cursor:pointer;transition:all .18s;text-align:center}
-.gx-bc-preset-btn:hover{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.45);color:#fbbf24}
-.gx-bc-input-group{display:flex;gap:6px;align-items:center}
-.gx-bc-input{flex:1;min-width:0;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.4);color:#f1f5f9;font-size:13px;font-family:inherit;box-sizing:border-box}
-.gx-bc-input:focus{outline:none;border-color:#00e5ff}
-.gx-bc-max-btn{white-space:nowrap;padding:8px 10px;border-radius:10px;border:1px solid rgba(56,189,248,.3);background:rgba(56,189,248,.08);color:#38bdf8;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .18s}
-.gx-bc-max-btn:hover{background:rgba(56,189,248,.18);border-color:#38bdf8}
-.gx-bc-apply-btn{padding:8px 14px;border-radius:10px;border:none;background:linear-gradient(135deg,#00e5ff,#00b4d8);color:#020b14;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;transition:all .18s}
-.gx-bc-apply-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,229,255,.4)}
-.gx-bc-apply-btn:disabled{opacity:.4;cursor:not-allowed}
-.gx-bc-applied{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;margin-top:8px}
-.gx-bc-applied.credit{background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3)}
-.gx-bc-applied.coins{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3)}
-.gx-bca-info{display:flex;flex-direction:column}
-.gx-bca-val{font-size:13.5px;font-weight:800;color:#f1f5f9}
-.gx-bca-sub{font-size:11px;color:#94a3b8}
-.gx-bc-remove{background:transparent;border:1px solid rgba(255,84,112,.4);color:#ff98a8;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer}
-.gx-bc-remove:hover{background:rgba(255,84,112,.12)}
-
-/* Payment Stage 2 Cards */
-.gx-eneba-payment-card{border-radius:18px;border:1px solid rgba(0,229,255,.16);background:linear-gradient(180deg,rgba(18,22,34,.7),rgba(10,13,22,.85))}
-.gx-payment-list{display:flex;flex-direction:column;gap:14px;margin:16px 0}
-.gx-payment-card-eneba{display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:16px;background:rgba(255,255,255,.02);border:1.5px solid rgba(255,255,255,.08);cursor:pointer;transition:all .2s ease}
-.gx-payment-card-eneba:hover{background:rgba(255,255,255,.04);border-color:rgba(0,229,255,.35)}
-.gx-payment-card-eneba.active{background:linear-gradient(135deg,rgba(0,229,255,.1),rgba(124,58,237,.06));border-color:#00e5ff;box-shadow:0 10px 28px -6px rgba(0,229,255,.25)}
-.gx-pc-radio{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;flex:0 0 auto;transition:all .18s}
-.gx-payment-card-eneba.active .gx-pc-radio{border-color:#00e5ff}
-.gx-pc-dot{width:10px;height:10px;border-radius:50%;background:transparent;transition:all .18s}
-.gx-payment-card-eneba.active .gx-pc-dot{background:#00e5ff;box-shadow:0 0 8px #00e5ff}
-.gx-pc-body{flex:1}
-.gx-pc-title{font-size:15px;font-weight:900;color:#f8fafc}
-.gx-payment-card-eneba.active .gx-pc-title{color:#00e5ff}
-.gx-pc-sub{font-size:12px;color:#94a3b8;margin-top:2px}
-
-/* Payment Logos (CliQ and Visa/Mastercard) */
-.gx-pc-logo-badge{flex:0 0 auto;height:40px;min-width:104px;padding:4px 12px;border-radius:10px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
-.gx-pc-logo-badge.cliq{background:#ffffff;border:1px solid rgba(255,255,255,.9);box-shadow:0 4px 12px rgba(0,0,0,.35)}
-.gx-pc-logo-badge.cliq img{height:24px;width:auto;max-width:86px;object-fit:contain}
-.gx-pc-logo-badge.card{background:#ffffff;border:1px solid rgba(255,255,255,.9);box-shadow:0 4px 12px rgba(0,0,0,.35);padding:4px 8px}
-.gx-pc-logo-badge.card img{height:24px;width:auto;object-fit:contain}
+/* Payment Stage 2: Spacious & Separated Tiles */
+.gx-payment-stage-wrapper {
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(0, 229, 255, 0.16);
+  background: linear-gradient(180deg, rgba(18, 22, 34, 0.75), rgba(10, 13, 22, 0.9));
+  box-shadow: 0 14px 40px -10px rgba(0, 0, 0, 0.6);
+}
+.gx-pm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 22px;
+}
+.gx-pm-header-info h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+  color: #f8fafc;
+}
+.gx-pm-header-info p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: #94a3b8;
+}
+.gx-pm-back-pill {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  color: #00e5ff;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 7px 14px;
+  border-radius: 99px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.gx-pm-back-pill:hover {
+  background: rgba(0, 229, 255, 0.1);
+  border-color: #00e5ff;
+}
+.gx-pm-tiles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.gx-pm-tile {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 24px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+}
+.gx-pm-tile:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(0, 229, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+.gx-pm-tile.active {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.09) 0%, rgba(124, 58, 237, 0.05) 100%);
+  border-color: #00e5ff;
+  box-shadow: 0 12px 32px -6px rgba(0, 229, 255, 0.3);
+}
+.gx-pm-radio {
+  flex: 0 0 auto;
+}
+.gx-pm-radio-ring {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.gx-pm-tile.active .gx-pm-radio-ring {
+  border-color: #00e5ff;
+}
+.gx-pm-radio-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.2s;
+}
+.gx-pm-tile.active .gx-pm-radio-inner {
+  background: #00e5ff;
+  box-shadow: 0 0 10px #00e5ff;
+}
+.gx-pm-info {
+  flex: 1;
+  min-width: 0;
+}
+.gx-pm-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.gx-pm-name {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+.gx-pm-tile.active .gx-pm-name {
+  color: #00e5ff;
+}
+.gx-pm-tag {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.gx-pm-tag.cliq {
+  background: rgba(168, 85, 247, 0.15);
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+}
+.gx-pm-tag.card {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+.gx-pm-desc {
+  font-size: 12.5px;
+  color: #94a3b8;
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+.gx-pm-logo {
+  flex: 0 0 auto;
+  height: 44px;
+  min-width: 115px;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-sizing: border-box;
+}
+.gx-pm-logo img {
+  height: 26px;
+  width: auto;
+  max-width: 95px;
+  object-fit: contain;
+}
 
 /* Recap Side (Stage 2) */
 .gx-recap-items{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;max-height:220px;overflow-y:auto;padding-inline-end:4px}
@@ -954,9 +1507,11 @@ const checkoutCss = `
 .gx-coupon-msg{margin-top:6px;font-size:12px;font-weight:700;padding:6px 10px;border-radius:8px}
 .gx-coupon-msg.ok{background:rgba(0,229,176,.12);color:#00e5b0}
 .gx-coupon-msg.err{background:rgba(255,84,112,.1);color:#ff98a8}
-.gx-back-link{background:none;border:none;color:#00e5ff;font-size:13px;font-weight:800;cursor:pointer}
 
 @media (max-width:900px){
   .gx-eneba-grid{grid-template-columns:1fr}
+  .gx-stepper-container{padding:10px 14px !important}
+  .gx-pm-tile{padding:16px 18px;gap:14px}
+  .gx-pm-logo{min-width:90px;height:38px}
 }
 `;

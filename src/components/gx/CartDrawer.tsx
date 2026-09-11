@@ -189,12 +189,6 @@ export function CartDrawer() {
                 <span>{lang === "ar" ? "تفريغ السلة" : "Clear"}</span>
               </button>
             </div>
-
-            {/* Trust badge */}
-            <div className="gx-cart-trust-note">
-              <ShieldCheck size={14} />
-              <span>{lang === "ar" ? "دفع آمن 100% · ضمان ذهبي على جميع المنتجات" : "100% Secure Checkout · Official Warranty"}</span>
-            </div>
           </div>
         )}
       </aside>
