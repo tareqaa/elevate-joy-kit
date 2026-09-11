@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid, ChevronLeft, ChevronRight, Gamepad2, Sparkles } from "lucide-react";
 import { CATEGORY_LINKS, getCategoryLink, getFeaturedItems, PRODUCTS_CATALOG, type FeaturedItem } from "@/data/products";
 import { useCurrency } from "@/lib/gx/currency";
 import { ProductIcon, CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
@@ -78,7 +78,8 @@ function HeroGamesSlide() {
 }
 
 export function HeroRenderer({ data }: { data: HeroData }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const ar = lang === "ar";
   const [slide, setSlide] = useState(0);
   const carRef = useRef<HTMLDivElement | null>(null);
   const [drag, setDrag] = useState(0);      // live px offset while dragging
@@ -198,18 +199,75 @@ export function HeroRenderer({ data }: { data: HeroData }) {
             </div>
           </div>
 
-          <div className="hero-car-dots" role="tablist">
-            {Array.from({ length: SLIDES }).map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                role="tab"
-                aria-selected={slide === i}
-                aria-label={`Slide ${i + 1}`}
-                className={"hcd" + (slide === i ? " on" : "")}
-                onClick={() => setSlide(i)}
-              />
-            ))}
+          {/* Side navigation arrows for switching hero slides */}
+          <button
+            type="button"
+            className="hero-nav-arrow hero-nav-prev"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setSlide((s) => (s === 0 ? SLIDES - 1 : s - 1));
+            }}
+            aria-label={ar ? "السابق" : "Previous"}
+          >
+            {ar ? <ChevronRight size={22} strokeWidth={2.5} /> : <ChevronLeft size={22} strokeWidth={2.5} />}
+          </button>
+
+          <button
+            type="button"
+            className="hero-nav-arrow hero-nav-next"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setSlide((s) => (s === SLIDES - 1 ? 0 : s + 1));
+            }}
+            aria-label={ar ? "التالي" : "Next"}
+          >
+            {ar ? <ChevronLeft size={22} strokeWidth={2.5} /> : <ChevronRight size={22} strokeWidth={2.5} />}
+          </button>
+
+          {/* Dots and Slide Teaser Pill */}
+          <div className="hero-car-controls">
+            <div className="hero-car-dots" role="tablist">
+              {Array.from({ length: SLIDES }).map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  role="tab"
+                  aria-selected={slide === i}
+                  aria-label={`Slide ${i + 1}`}
+                  className={"hcd" + (slide === i ? " on" : "")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSlide(i);
+                  }}
+                />
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="hero-slide-teaser-pill"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSlide((s) => (s === 0 ? 1 : 0));
+              }}
+              aria-label={slide === 0 ? (ar ? "الانتقال إلى ساحة اللعب GX" : "Go to GX Arena") : (ar ? "الانتقال إلى عروض المتجر" : "Go to Main Store")}
+            >
+              {slide === 0 ? (
+                <>
+                  <Gamepad2 size={15} style={{ color: "#00e5ff" }} />
+                  <span>{ar ? "اكتشف ساحة ألعاب GX" : "Discover GX Play Arena"}</span>
+                  <span className="hst-arrow">{ar ? "←" : "→"}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={15} style={{ color: "#f59e0b" }} />
+                  <span>{ar ? "اشتراكات وعروض المتجر" : "Store & Subscriptions"}</span>
+                  <span className="hst-arrow">{ar ? "←" : "→"}</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -474,7 +532,11 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
         <div className="section-head">
           <div>
             <span className="k">{data.eyebrow || t("home.featured_eyebrow")}</span>
-            <h2>{data.title || t("home.featured_title")}</h2>
+            <h2>
+              {!data.title || data.title.includes("منتجاتنا")
+                ? t("home.featured_title")
+                : data.title}
+            </h2>
           </div>
         </div>
         <CarouselRow className="featured-grid">

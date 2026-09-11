@@ -1,11 +1,11 @@
 import React, { useRef, useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Clock, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useRecentlyViewed } from "@/lib/gx/recently-viewed";
 import { useLang } from "@/lib/gx/i18n";
 import { StoreProductCard } from "@/components/gx/StoreProductCard";
 
 export function RecentlyViewedSection() {
-  const { items, hasRealHistory, clearHistory } = useRecentlyViewed();
+  const { items, hasRealHistory } = useRecentlyViewed();
   const { lang } = useLang();
   const scrollRef = useRef<HTMLDivElement>(null);
   const ar = lang === "ar";
@@ -59,18 +59,6 @@ export function RecentlyViewedSection() {
               {ar ? (hasRealHistory ? "شاهدتها مؤخراً في المتجر" : "منتجات يفضلها زوار GX Store") : (hasRealHistory ? "Recently Viewed Products" : "Trending on GX Store")}
             </h2>
           </div>
-
-          {hasRealHistory && (
-            <button
-              type="button"
-              onClick={clearHistory}
-              className="gx-clear-history-btn"
-              title={ar ? "مسح سجل المشاهدة" : "Clear history"}
-            >
-              <Trash2 size={14} />
-              <span>{ar ? "مسح السجل" : "Clear"}</span>
-            </button>
-          )}
         </div>
 
         {/* Unified Cards Carousel with Side Floating Navigation Arrows */}

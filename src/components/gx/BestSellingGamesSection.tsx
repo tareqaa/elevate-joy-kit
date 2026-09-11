@@ -157,13 +157,43 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
   },
 ];
 
+const TOP_GAME_SLUGS: string[] = [
+  "ea-fc-27-pc",
+  "gta-v-enhanced-pc",
+  "red-dead-redemption-2",
+  "helldivers-2",
+  "minecraft-java-bedrock",
+  "mortal-kombat-11-ultimate",
+  "forza-horizon-6-pc",
+  "resident-evil-4-remake",
+  "arc-raiders",
+  "batman-arkham-collection",
+  "dark-souls-3-deluxe",
+  "bioshock-the-collection",
+  "ea-fc-27-xbox",
+  "gta-v-xbox",
+  "forza-horizon-6-xbox",
+  "minecraft-xbox",
+  "hollow-knight-silksong-pc",
+  "hollow-knight-silksong-xbox",
+  "human-fall-flat",
+  "jusant",
+  "mafia-2-definitive-edition",
+  "batman-arkham-origins",
+  "gta-iv-complete-edition",
+  "control-ultimate-edition",
+  "euro-truck-simulator-2",
+  "ea-fc-26-pc",
+  "ratchet-and-clank-rift-apart",
+];
+
 export function BestSellingGamesSection() {
   const { lang } = useLang();
   const scrollRef = useRef<HTMLDivElement>(null);
   const ar = lang === "ar";
   const [games, setGames] = useState<RealGameProduct[]>(INITIAL_REAL_GAMES);
 
-  // Fetch real games dynamically from database
+  // Fetch real games dynamically from database and order by popular priority matching /products
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -176,23 +206,32 @@ export function BestSellingGamesSection() {
             "e244ef6f-d748-43da-a2f2-39c4d9bc83be", // PS games
           ])
           .eq("is_active", true)
-          .order("purchases_count", { ascending: false })
-          .limit(24);
+          .limit(60);
 
         if (!error && data && data.length > 0 && alive) {
-          setGames(
-            data.map((p) => ({
-              id: p.id,
-              slug: p.slug,
-              name_ar: p.name_ar,
-              name_en: p.name_en,
-              base_price_jod: Number(p.base_price_jod) || 0,
-              delivery_type: p.delivery_type || "code",
-              platform: p.platform || "Steam / PC",
-              image_url: p.image_url || "/app/assets/img/catalog/helldivers-2.webp",
-              purchases_count: p.purchases_count || 0,
-            }))
-          );
+          const mapped: RealGameProduct[] = data.map((p: any) => ({
+            id: p.id,
+            slug: p.slug,
+            name_ar: p.name_ar,
+            name_en: p.name_en,
+            base_price_jod: Number(p.base_price_jod) || 0,
+            delivery_type: p.delivery_type || "code",
+            platform: p.platform || "Steam / PC",
+            image_url: p.image_url || "/app/assets/img/catalog/helldivers-2.webp",
+            purchases_count: p.purchases_count || 0,
+          }));
+
+          // Sort by exact popular order matching all products (/products)
+          mapped.sort((a, b) => {
+            const rankA = TOP_GAME_SLUGS.indexOf(a.slug);
+            const rankB = TOP_GAME_SLUGS.indexOf(b.slug);
+            if (rankA !== -1 && rankB !== -1) return rankA - rankB;
+            if (rankA !== -1) return -1;
+            if (rankB !== -1) return 1;
+            return (b.purchases_count || 0) - (a.purchases_count || 0);
+          });
+
+          setGames(mapped);
         }
       } catch (err) {
         console.error("Failed to load real games from Supabase", err);
@@ -202,6 +241,13 @@ export function BestSellingGamesSection() {
       alive = false;
     };
   }, []);
+
+  // Ensure carousel starts at the beginning (right side in RTL, left side in LTR)
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ left: 0, behavior: "instant" });
+    }
+  }, [games]);
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
