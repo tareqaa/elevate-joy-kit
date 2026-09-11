@@ -782,9 +782,9 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
     max-height:calc(100vh - 92px);
     border-radius: 16px;
   }
-  html[dir="rtl"] .menu-panel,
+  html[dir="rtl"] .menu-panel{ right:12px !important; left:auto !important; }
   html[dir="rtl"] .account-panel{ left:12px !important; right:auto !important; }
-  html[dir="ltr"] .menu-panel,
+  html[dir="ltr"] .menu-panel{ left:12px !important; right:auto !important; }
   html[dir="ltr"] .account-panel{ right:12px !important; left:auto !important; }
   .account-panel{
     position:fixed; top:76px;
@@ -822,9 +822,9 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
     max-height:calc(100vh - 80px);
     border-radius: 16px;
   }
-  html[dir="rtl"] .menu-panel,
+  html[dir="rtl"] .menu-panel{ right:12px !important; left:auto !important; }
   html[dir="rtl"] .account-panel{ left:12px !important; right:auto !important; }
-  html[dir="ltr"] .menu-panel,
+  html[dir="ltr"] .menu-panel{ left:12px !important; right:auto !important; }
   html[dir="ltr"] .account-panel{ right:12px !important; left:auto !important; }
   .account-panel{
     position:fixed; top:64px;

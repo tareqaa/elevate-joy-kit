@@ -319,6 +319,72 @@ export function Navbar() {
     <>
       <nav className="nav">
         <div className="wrap">
+          {/* Mobile Menu - Positioned before brand on mobile */}
+          <div className="menu-wrap gx-nav-mobile-menu">
+            <button
+              type="button"
+              className="menu-btn gx-mobile-menu-trigger"
+              onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
+              aria-label={t("nav.menu")}
+            >
+              <div className="bars"><span /><span /><span /></div>
+            </button>
+            <div className={"menu-panel" + (menuOpen ? " open" : "")}>
+              {/* Currency & Language Change inside menu */}
+              <div className="menu-section gx-menu-lang-section">
+                <button
+                  type="button"
+                  className="menu-link gx-menu-lang-btn"
+                  onClick={() => { setMenuOpen(false); setCurrencyOpen(true); }}
+                >
+                  <span className="mi">🌐</span>
+                  <div className="gx-menu-lang-info">
+                    <span className="gx-menu-lang-title">{lang === "ar" ? "تغيير العملة واللغة" : "Currency & Language"}</span>
+                    <span className="gx-menu-lang-sub">{currency} · {lang === "ar" ? "العربية" : "English"}</span>
+                  </div>
+                  <span className="gx-menu-lang-arrow">›</span>
+                </button>
+              </div>
+
+              <div className="menu-divider" />
+
+              <div className="menu-section">
+                <div className="ms-title">{t("nav.pages")}</div>
+                <MenuLink to="/" icon="🏠" label={t("nav.home")} onClick={() => setMenuOpen(false)} />
+                <MenuLink to="/cart" icon="🛒" label={t("nav.cart")} onClick={() => setMenuOpen(false)} />
+                <MenuLink to="/favorites" icon="🤍" label={lang === "ar" ? "المفضلة" : "Wishlist"} onClick={() => setMenuOpen(false)} />
+                <MenuLink to="/faq" icon="❓" label={t("nav.faq")} onClick={() => setMenuOpen(false)} />
+                <MenuLink to="/policy" icon="🛡️" label={t("nav.policy")} onClick={() => setMenuOpen(false)} />
+                <MenuLink to="/games" icon="🎮" label={lang === "en" ? "Play Arena" : "ساحة اللعب"} onClick={() => setMenuOpen(false)} />
+              </div>
+
+              <div className="menu-divider" />
+
+              <div className="menu-section">
+                <div className="ms-title">{t("nav.categories")}</div>
+                {CATEGORY_LINKS.filter(c0 => !hiddenCats.has(c0.slug)).map(c0 => {
+                  const c = localizedCategoryLink(c0, lang);
+                  return (
+                    <Link key={c.slug} to={getCategoryLink(c.slug) as never} className="menu-link" onClick={() => setMenuOpen(false)}>
+                      <span className="mi">{c.icon}</span> {c.name}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div className="menu-divider" />
+
+              <div className="menu-section">
+                <div className="ms-title">{t("nav.contact")}</div>
+                <a href="https://wa.me/962776252313" target="_blank" rel="noopener" className="menu-link wa-menu-link">
+                  <span className="mi">💬</span>
+                  <span>{t("nav.whatsapp")}</span>
+                  <span className="wa-number" dir="ltr">+962 77 625 2313</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
           <Link to="/" className="brand">
             <div className="mark"><img src="/app/assets/img/gx-logo.png" alt="GX" /></div>
             <div className="brand-word">GX <span>STORE</span></div>
