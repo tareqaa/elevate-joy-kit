@@ -28,6 +28,7 @@ export const FILTER_ENABLED_CATEGORIES = new Set<string>([
 
 import {
   getCategoryTheme,
+  renderCategoryVectorIcon,
   SoftwareSuiteIcon,
   GamingHeroIcon,
   SubscriptionsHeroIcon,
@@ -1069,14 +1070,8 @@ function CategoryPage() {
                   <div className="cat-stage-badge">
                     {category.iconImage ? (
                       <img src={category.iconImage} alt={catName} />
-                    ) : isSoftwareCategory ? (
-                      <SoftwareSuiteIcon />
-                    ) : isGamingCategory ? (
-                      <GamingHeroIcon />
-                    ) : isSubscriptionsCategory ? (
-                      <SubscriptionsHeroIcon />
                     ) : (
-                      <span className="cat-hero-emoji">{category.icon || "📁"}</span>
+                      renderCategoryVectorIcon(category.slug, 40)
                     )}
                   </div>
 

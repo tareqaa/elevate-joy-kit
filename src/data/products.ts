@@ -378,14 +378,14 @@ export type CategoryLink = {
 };
 
 export const CATEGORY_LINKS: CategoryLink[] = [
-  { slug: "snapchat", name: "سناب بلس", icon: "👻", type: "direct", accent: "#ffcb47", bg: "linear-gradient(145deg, rgba(255,203,71,0.18), rgba(255,203,71,0.04))", desc: "" },
-  { slug: "subscriptions", name: "الاشتراكات", icon: "⚡", type: "group", accent: "#f59e0b", bg: "linear-gradient(145deg, rgba(245,158,11,0.18), rgba(245,158,11,0.04))", desc: "" },
-  { slug: "social-media", name: "السوشال ميديا", icon: "📱", type: "group", accent: "#3b82f6", bg: "linear-gradient(145deg, rgba(59,130,246,0.18), rgba(59,130,246,0.04))", desc: "" },
+  { slug: "snapchat", name: "سناب بلس", icon: "👻", type: "direct", accent: "#ffd600", bg: "linear-gradient(145deg, rgba(255,214,0,0.18), rgba(255,214,0,0.04))", desc: "" },
+  { slug: "subscriptions", name: "الاشتراكات", icon: "⚡", type: "group", accent: "#8b5cf6", bg: "linear-gradient(145deg, rgba(139,92,246,0.18), rgba(139,92,246,0.04))", desc: "" },
+  { slug: "social-media", name: "السوشال ميديا", icon: "📱", type: "group", accent: "#0088ff", bg: "linear-gradient(145deg, rgba(0,136,255,0.18), rgba(0,136,255,0.04))", desc: "" },
   { slug: "design", name: "البرامج والتطبيقات", icon: "🧩", type: "group", accent: "#00e5ff", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "" },
-  { slug: "services", name: "الخدمات", icon: "🛠️", type: "group", accent: "#ff9500", bg: "linear-gradient(145deg, rgba(255,149,0,0.18), rgba(255,149,0,0.04))", desc: "" },
-  { slug: "games", name: "الألعاب", icon: "🎮", type: "group", accent: "#00e5ff", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "" },
+  { slug: "services", name: "الخدمات", icon: "🛠️", type: "group", accent: "#ff9100", bg: "linear-gradient(145deg, rgba(255,145,0,0.18), rgba(255,145,0,0.04))", desc: "" },
+  { slug: "games", name: "الألعاب", icon: "🎮", type: "group", accent: "#05df72", bg: "linear-gradient(145deg, rgba(5,223,114,0.18), rgba(5,223,114,0.04))", desc: "" },
   { slug: "gift-cards", name: "بطاقات الهدايا", icon: "🎁", type: "group", accent: "#ff2d78", bg: "linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))", desc: "" },
-  { slug: "products", name: "عرض الكل", icon: "✨", type: "direct", accent: "#00f5a0", bg: "linear-gradient(145deg, rgba(0,245,160,0.18), rgba(0,245,160,0.04))", desc: "" },
+  { slug: "products", name: "عرض الكل", icon: "✨", type: "direct", accent: "#ff385c", bg: "linear-gradient(145deg, rgba(255,56,92,0.18), rgba(255,56,92,0.04))", desc: "" },
 ];
 
 export type Subcategory = {

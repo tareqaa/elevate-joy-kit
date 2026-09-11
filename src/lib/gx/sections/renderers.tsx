@@ -26,9 +26,7 @@ import { CarouselRow } from "@/components/gx/CarouselRow";
 import { useSiteSettings } from "../site-settings";
 import {
   getCategoryTheme,
-  SoftwareSuiteIcon,
-  GamingHeroIcon,
-  SubscriptionsHeroIcon,
+  renderCategoryVectorIcon,
 } from "@/lib/gx/category-themes";
 
 /* ---------------- HERO ---------------- */
@@ -370,17 +368,7 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
                 <div className="cat-card-body">
                   <div className="cat-card-top-row">
                     <div className="cat-ic">
-                      {c0.slug === "design" ? (
-                        <SoftwareSuiteIcon size={32} />
-                      ) : c0.slug === "subscriptions" ? (
-                        <SubscriptionsHeroIcon size={32} />
-                      ) : c0.slug === "games" ? (
-                        <GamingHeroIcon size={32} />
-                      ) : c0.iconImage ? (
-                        <img src={c0.iconImage} alt="" loading="lazy" decoding="async" style={{ width: "65%", height: "65%", objectFit: "contain" }} />
-                      ) : (
-                        <span className="cat-ic-emoji">{c0.icon}</span>
-                      )}
+                      {renderCategoryVectorIcon(c0.slug, 34)}
                     </div>
 
                     <div className="carrow-circle" aria-hidden="true">
