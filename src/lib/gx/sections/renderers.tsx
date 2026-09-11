@@ -24,6 +24,12 @@ import { RichHtml } from "./rich-text";
 import { formatTitle } from "@/lib/gx/text";
 import { CarouselRow } from "@/components/gx/CarouselRow";
 import { useSiteSettings } from "../site-settings";
+import {
+  getCategoryTheme,
+  SoftwareSuiteIcon,
+  GamingHeroIcon,
+  SubscriptionsHeroIcon,
+} from "@/lib/gx/category-themes";
 
 /* ---------------- HERO ---------------- */
 
@@ -344,42 +350,54 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
         </div>
         <div className="cat-grid-big">
           {links.map((c0) => {
-            const fallbackDesc = CATEGORY_LINKS.find((x) => x.slug === c0.slug)?.desc;
+            const theme = getCategoryTheme(c0.slug);
             const name = c0._o_name || (lang === "en" ? c0.nameEn || c0.nameAr : c0.nameAr || c0.nameEn);
-            const desc = c0._o_desc || (lang === "en" ? c0.descriptionEn || c0.descriptionAr : c0.descriptionAr || c0.descriptionEn) || fallbackDesc;
-            const accent = c0._o_accent || c0.accent;
+            const accent = c0._o_accent || theme.accent;
+            const glow = theme.glow;
+            const ambient = theme.ambient;
+
             return (
               <Link
                 key={c0.slug}
                 to={getCategoryLink(c0.slug) as never}
                 className="cat-card-big"
-                style={{ ["--accent" as string]: accent } as React.CSSProperties}
+                style={{
+                  ["--accent" as string]: accent,
+                  ["--cat-glow" as string]: glow,
+                  ["--cat-ambient" as string]: ambient,
+                } as React.CSSProperties}
               >
-                <div className="ccb-top">
-                  {c0.iconImage ? (
-                    <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>
-                      <img src={c0.iconImage} alt="" loading="lazy" decoding="async" style={{ width: "70%", height: "70%", objectFit: "contain" }} />
+                <div className="cat-card-body">
+                  <div className="cat-card-top-row">
+                    <div className="cat-ic">
+                      {c0.slug === "design" ? (
+                        <SoftwareSuiteIcon size={32} />
+                      ) : c0.slug === "subscriptions" ? (
+                        <SubscriptionsHeroIcon size={32} />
+                      ) : c0.slug === "games" ? (
+                        <GamingHeroIcon size={32} />
+                      ) : c0.iconImage ? (
+                        <img src={c0.iconImage} alt="" loading="lazy" decoding="async" style={{ width: "65%", height: "65%", objectFit: "contain" }} />
+                      ) : (
+                        <span className="cat-ic-emoji">{c0.icon}</span>
+                      )}
                     </div>
-                  ) : c0.slug === "design" ? (
-                    <div className="app-icon-grid">
-                      <span style={{ background: "linear-gradient(135deg,#3b7bf6,#1e4fd1)" }}>Ps</span>
-                      <span style={{ background: "linear-gradient(135deg,#ff7a3d,#e0402a)" }}>Ai</span>
-                      <span style={{ background: "linear-gradient(135deg,#8b5cf6,#5b21b6)" }}>Pr</span>
-                      <span style={{ background: "linear-gradient(135deg,#22c1a8,#0e7a6a)" }}>Id</span>
+
+                    <div className="carrow-circle" aria-hidden="true">
+                      <span className="arrow-ic">{ar ? "←" : "→"}</span>
                     </div>
-                  ) : (
-                    <div className="cat-ic" style={{ background: c0.background, boxShadow: `inset 0 0 0 1.5px ${accent}33` }}>{c0.icon}</div>
-                  )}
-                  <div className="ccb-glow" style={{ background: accent }} />
+                  </div>
+
+                  <div className="cat-card-bottom-row">
+                    <div className="cname-modern">{name}</div>
+                    <div className="cat-browse-action">
+                      <span>{t("home.browse_category")}</span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="cname-modern">{name}</div>
-                  {desc && <div className="cdesc">{desc}</div>}
-                </div>
-                <div className="carrow">
-                  <span>{t("home.browse_category")}</span>
-                  <span className="arrow-ic">{ar ? "←" : "→"}</span>
-                </div>
+
+                <div className="cat-card-accent-glow" />
+                <div className="cat-card-line" />
               </Link>
             );
           })}

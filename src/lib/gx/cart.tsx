@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { findPlanByCartId, type ResolvedPlan } from "@/data/products";
+import { findPlanByCartId, PRODUCTS_CATALOG, type ResolvedPlan } from "@/data/products";
 import { findDbPlanByCartId, loadDbVariants } from "./db-variants";
 import { useCurrency } from "./currency";
 import { submitStoreOrder } from "./orders.functions";

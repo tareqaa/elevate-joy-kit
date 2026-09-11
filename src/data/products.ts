@@ -378,14 +378,14 @@ export type CategoryLink = {
 };
 
 export const CATEGORY_LINKS: CategoryLink[] = [
-  { slug: "snapchat", name: "سناب بلس", icon: "👻", type: "direct", accent: "#FFCB47", bg: "linear-gradient(145deg, rgba(255,203,71,0.18), rgba(255,203,71,0.04))", desc: "أيقونة حصرية، ألوان دردشة، وأكثر" },
-  { slug: "subscriptions", name: "الاشتراكات", icon: "⚡", type: "group", accent: "#8B5CF6", bg: "linear-gradient(145deg, rgba(139,92,246,0.18), rgba(139,92,246,0.04))", desc: "اشتراكات جيم باس، اشتراكات ترفيه والمزيد" },
-  { slug: "social-media", name: "السوشال ميديا", icon: "📱", type: "group", accent: "#3B82F6", bg: "linear-gradient(145deg, rgba(59,130,246,0.18), rgba(59,130,246,0.04))", desc: "خدمات تيك توك، انستقرام، وباقي منصات التواصل" },
-  { slug: "design", name: "البرامج والتطبيقات", icon: "🧩", type: "group", accent: "#C6FF3D", bg: "linear-gradient(145deg, rgba(198,255,61,0.16), rgba(198,255,61,0.04))", desc: "Adobe، Canva، Microsoft 365، Autodesk وأكثر" },
-  { slug: "services", name: "الخدمات", icon: "🛠️", type: "group", accent: "#FF9500", bg: "linear-gradient(145deg, rgba(255,149,0,0.18), rgba(255,149,0,0.04))", desc: "خدمات طلابية، تحويل، ومساعدات رقمية متنوعة" },
-  { slug: "games", name: "الألعاب", icon: "🎮", type: "group", accent: "#00E5FF", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "فورت نايت، بلايستيشن، إكسبوكس" },
-  { slug: "gift-cards", name: "بطاقات الهدايا", icon: "🎁", type: "group", accent: "#FF2D78", bg: "linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))", desc: "PlayStation، Xbox، Google Play، iTunes" },
-  { slug: "products", name: "عرض الكل", icon: "✨", type: "direct", accent: "#00F5A0", bg: "linear-gradient(145deg, rgba(0,245,160,0.18), rgba(0,245,160,0.04))", desc: "تصفح جميع المنتجات والاشتراكات المتوفرة بالمتجر" },
+  { slug: "snapchat", name: "سناب بلس", icon: "👻", type: "direct", accent: "#ffcb47", bg: "linear-gradient(145deg, rgba(255,203,71,0.18), rgba(255,203,71,0.04))", desc: "" },
+  { slug: "subscriptions", name: "الاشتراكات", icon: "⚡", type: "group", accent: "#f59e0b", bg: "linear-gradient(145deg, rgba(245,158,11,0.18), rgba(245,158,11,0.04))", desc: "" },
+  { slug: "social-media", name: "السوشال ميديا", icon: "📱", type: "group", accent: "#3b82f6", bg: "linear-gradient(145deg, rgba(59,130,246,0.18), rgba(59,130,246,0.04))", desc: "" },
+  { slug: "design", name: "البرامج والتطبيقات", icon: "🧩", type: "group", accent: "#00e5ff", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "" },
+  { slug: "services", name: "الخدمات", icon: "🛠️", type: "group", accent: "#ff9500", bg: "linear-gradient(145deg, rgba(255,149,0,0.18), rgba(255,149,0,0.04))", desc: "" },
+  { slug: "games", name: "الألعاب", icon: "🎮", type: "group", accent: "#00e5ff", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "" },
+  { slug: "gift-cards", name: "بطاقات الهدايا", icon: "🎁", type: "group", accent: "#ff2d78", bg: "linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))", desc: "" },
+  { slug: "products", name: "عرض الكل", icon: "✨", type: "direct", accent: "#00f5a0", bg: "linear-gradient(145deg, rgba(0,245,160,0.18), rgba(0,245,160,0.04))", desc: "" },
 ];
 
 export type Subcategory = {

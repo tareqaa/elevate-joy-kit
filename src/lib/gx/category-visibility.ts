@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CATEGORY_LINKS } from "@/data/products";
+import { getCategoryTheme } from "./category-themes";
 
 export type StorefrontCategory = {
   slug: string;
@@ -24,20 +25,23 @@ export type StorefrontCategory = {
   sortOrder: number;
 };
 
-const INITIAL_STOREFRONT_CATEGORIES: StorefrontCategory[] = CATEGORY_LINKS.map((c, i) => ({
-  slug: c.slug,
-  nameAr: c.name,
-  nameEn: c.name,
-  descriptionAr: c.desc,
-  descriptionEn: c.desc,
-  icon: c.icon,
-  iconImage: null,
-  accent: c.accent,
-  background: c.bg,
-  sortOrder: i + 1,
-}));
+const INITIAL_STOREFRONT_CATEGORIES: StorefrontCategory[] = CATEGORY_LINKS.map((c, i) => {
+  const theme = getCategoryTheme(c.slug);
+  return {
+    slug: c.slug,
+    nameAr: c.name,
+    nameEn: c.name,
+    descriptionAr: "",
+    descriptionEn: "",
+    icon: c.icon,
+    iconImage: null,
+    accent: theme.accent,
+    background: c.bg,
+    sortOrder: i + 1,
+  };
+});
 
-const CATS_CACHE_KEY = "gx_storefront_root_cats_v7";
+const CATS_CACHE_KEY = "gx_storefront_root_cats_v8";
 
 const DEFAULT_BY_SLUG = new Map(CATEGORY_LINKS.map((c) => [c.slug, { accent: c.accent, bg: c.bg }]));
 
@@ -70,9 +74,8 @@ export function useStorefrontCategories(): StorefrontCategory[] {
       if (error) throw error;
       const mapped = (rows ?? []).map((row) => {
         const def = DEFAULT_BY_SLUG.get(row.slug);
-        const accent = (row.accent_color && row.accent_color.trim() !== "" && row.accent_color !== "var(--cyan)")
-          ? row.accent_color
-          : (def?.accent || "#00E5FF");
+        const theme = getCategoryTheme(row.slug);
+        const accent = theme.accent;
 
         const background = (row.theme_gradient && row.theme_gradient.trim() !== "" && row.theme_gradient !== "var(--surface-2)")
           ? row.theme_gradient
