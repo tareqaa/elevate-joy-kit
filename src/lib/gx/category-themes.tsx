@@ -88,38 +88,131 @@ export function getCategoryTheme(slug: string): CategoryTheme {
 }
 
 /* =========================================================================
-   CUSTOM HIGH-END VECTOR SVG ICONS FOR ALL CATEGORIES (NO CHEAP EMOJIS)
+   REAL, LOGICAL, AUTHENTIC ICONS FOR EVERY CATEGORY (NO ABSTRACT CHECKS/MARKS)
    ========================================================================= */
 
-/** 1. Snapchat Plus: Crisp Snapchat Ghost on vibrant yellow squircle */
-export function SnapchatCatIcon({ size = 32 }: { size?: number }) {
+/** 1. Snapchat Plus: Official Real Snapchat Logo */
+export function SnapchatCatIcon({ size = 34 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 44 44" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="snapGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fff200" />
-          <stop offset="100%" stopColor="#ffb700" />
-        </linearGradient>
-      </defs>
-      <rect x="4" y="4" width="36" height="36" rx="11" fill="url(#snapGrad)" />
-      {/* Official styled Snapchat ghost outline */}
-      <path
-        d="M22 10.5c-4.2 0-7 3.1-7 6.6 0 1.9.8 3.5 1.7 4.4-.2.5-.9 1.4-2.1 1.7-.3.1-.4.3-.3.6.1.3.3.4.6.4 2.1 0 3.5-1 4-1.6.9.3 1.9.5 3.1.5s2.2-.2 3.1-.5c.5.6 1.9 1.6 4 1.6.3 0 .5-.1.6-.4.1-.3 0-.5-.3-.6-1.2-.3-1.9-1.2-2.1-1.7.9-.9 1.7-2.5 1.7-4.4 0-3.5-2.8-6.6-7-6.6z"
-        fill="#111318"
+    <div
+      style={{
+        width: size,
+        height: size,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <img
+        src="/app/assets/img/snapchat-logo.png"
+        alt="Snapchat"
+        loading="lazy"
+        decoding="async"
+        style={{
+          width: size,
+          height: size,
+          objectFit: "contain",
+          borderRadius: 8,
+          filter: "drop-shadow(0 2px 8px rgba(255, 214, 0, 0.35))",
+        }}
       />
-      <path
-        d="M13.8 28.2c.8-.4 1.8-.3 2.6.2.9.5 1.9.8 3 .8.8 0 1.5-.2 2-.5.5.3 1.2.5 2 .5 1.1 0 2.1-.3 3-.8.8-.5 1.8-.6 2.6-.2.8.4 1.3 1.1 1.3 1.8 0 .4-.3.6-.7.7-2.1.3-4.2.8-6.1 1.5-.7.2-1.4.3-2.1.3s-1.4-.1-2.1-.3c-1.9-.7-4-1.2-6.1-1.5-.4-.1-.7-.3-.7-.7 0-.7.5-1.4 1.3-1.8z"
-        fill="#111318"
-      />
-      {/* Inner white fill for ghost body */}
-      <circle cx="22" cy="17" r="4.2" fill="#ffffff" />
-      <path d="M19 19h6v4h-6z" fill="#ffffff" />
-    </svg>
+    </div>
   );
 }
 
-/** 2. Subscriptions: Royal Electric Purple VIP pass card with golden lighting star */
-export function SubscriptionsCatIcon({ size = 32 }: { size?: number }) {
+/** 2. Design & Software Suite: Real App Suite (Adobe CC, Canva, Windows, Microsoft 365) */
+export function SoftwareSuiteIcon({ size = 34 }: { size?: number }) {
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gridTemplateRows: "1fr 1fr",
+        gap: 3,
+        padding: 2,
+      }}
+      title="Adobe, Canva, Windows, Microsoft 365"
+    >
+      <div
+        style={{
+          background: "rgba(255, 255, 255, 0.08)",
+          borderRadius: 4,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          padding: 1.5,
+          border: "1px solid rgba(255, 255, 255, 0.12)",
+        }}
+      >
+        <img
+          src="/app/assets/img/adobe-cc.webp"
+          alt="Adobe"
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+        />
+      </div>
+      <div
+        style={{
+          background: "rgba(255, 255, 255, 0.08)",
+          borderRadius: 4,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          padding: 1.5,
+          border: "1px solid rgba(255, 255, 255, 0.12)",
+        }}
+      >
+        <img
+          src="/app/assets/img/canva-logo.png"
+          alt="Canva"
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+        />
+      </div>
+      <div
+        style={{
+          background: "rgba(255, 255, 255, 0.08)",
+          borderRadius: 4,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          padding: 1.5,
+          border: "1px solid rgba(255, 255, 255, 0.12)",
+        }}
+      >
+        <img
+          src="/app/assets/img/windows-icon.svg"
+          alt="Windows"
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+        />
+      </div>
+      <div
+        style={{
+          background: "rgba(255, 255, 255, 0.08)",
+          borderRadius: 4,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          padding: 1.5,
+          border: "1px solid rgba(255, 255, 255, 0.12)",
+        }}
+      >
+        <img
+          src="/app/assets/img/microsoft365-logo.svg"
+          alt="Microsoft 365"
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** 3. Subscriptions: Royal Electric Purple VIP pass card with star & smart chip */
+export function SubscriptionsCatIcon({ size = 34 }: { size?: number }) {
   return (
     <svg viewBox="0 0 44 44" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -127,25 +220,28 @@ export function SubscriptionsCatIcon({ size = 32 }: { size?: number }) {
           <stop offset="0%" stopColor="#a855f7" />
           <stop offset="100%" stopColor="#6366f1" />
         </linearGradient>
-        <linearGradient id="subBoltG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="subStarG" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="100%" stopColor="#e9d5ff" />
+          <stop offset="100%" stopColor="#f3e8ff" />
         </linearGradient>
       </defs>
       <rect x="4" y="9" width="36" height="26" rx="8" fill="url(#subPassG)" />
-      <rect x="4" y="9" width="36" height="26" rx="8" stroke="rgba(255,255,255,0.25)" strokeWidth="1.2" />
-      <path d="M4 17h36" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" />
-      {/* Lightning bolt badge */}
-      <path d="M23 18l-3.5 6h4.5l-2.5 7 7.5-8.5h-4.5l3-4.5h-4.5z" fill="url(#subBoltG)" />
-      {/* Chip dots */}
-      <circle cx="9.5" cy="27.5" r="1.8" fill="#ffffff" fillOpacity="0.4" />
-      <circle cx="14" cy="27.5" r="1.8" fill="#ffffff" fillOpacity="0.7" />
+      <rect x="4" y="9" width="36" height="26" rx="8" stroke="rgba(255,255,255,0.3)" strokeWidth="1.2" />
+      <path d="M4 17h36" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" />
+      {/* VIP Star Badge */}
+      <path
+        d="M22 19l1.8 3.6 4 .6-2.9 2.8.7 4-3.6-1.9-3.6 1.9.7-4-2.9-2.8 4-.6L22 19z"
+        fill="url(#subStarG)"
+      />
+      {/* Pass indicator chip */}
+      <rect x="8" y="24" width="5" height="5" rx="1.5" fill="#ffffff" fillOpacity="0.75" />
+      <path d="M16 26.5h8" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.6" />
     </svg>
   );
 }
 
-/** 3. Social Media: Vibrant Blue interconnected network & engagement nexus */
-export function SocialMediaCatIcon({ size = 32 }: { size?: number }) {
+/** 4. Social Media: Social Interaction Bubble with Likes Heart & Engagement */
+export function SocialMediaCatIcon({ size = 34 }: { size?: number }) {
   return (
     <svg viewBox="0 0 44 44" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -155,83 +251,56 @@ export function SocialMediaCatIcon({ size = 32 }: { size?: number }) {
         </linearGradient>
       </defs>
       <rect x="4" y="4" width="36" height="36" rx="11" fill="url(#socG)" />
-      {/* Network nodes */}
-      <circle cx="16" cy="22" r="4.5" fill="#ffffff" />
-      <circle cx="28" cy="14" r="3.8" fill="#ffffff" />
-      <circle cx="28" cy="30" r="3.8" fill="#ffffff" />
-      {/* Dynamic connection lines */}
-      <path d="M19.5 20.2l5.5-4.4M19.5 23.8l5.5 4.4" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" />
-      {/* Orbit pulses */}
-      <circle cx="33.5" cy="22" r="2.2" fill="#ffffff" fillOpacity="0.8" />
-      <path d="M28 17.5v9" stroke="#ffffff" strokeWidth="1.5" strokeOpacity="0.4" strokeDasharray="2 2" />
+      {/* Social Chat Bubble with Heart */}
+      <path
+        d="M12 21c0-5 4.5-9 10-9s10 4 10 9-4.5 9-10 9c-1.6 0-3.1-.3-4.5-1l-4.5 1.5 1.2-3.8c-1.4-1.6-2.2-3.6-2.2-5.7z"
+        fill="#ffffff"
+      />
+      {/* Glowing Social Heart in center */}
+      <path
+        d="M22 23.6l-.7-.6c-2.4-2.2-4-3.6-4-5.3 0-1.4 1.1-2.4 2.4-2.4 1 0 1.9.5 2.3 1.2.4-.7 1.3-1.2 2.3-1.2 1.4 0 2.4 1.1 2.4 2.4 0 1.7-1.6 3.1-4 5.3l-.7.6z"
+        fill="#0066ff"
+      />
     </svg>
   );
 }
 
-/** 4. Design & Software Suite: 4 Colorful App Badges */
-export function SoftwareSuiteIcon({ size = 32 }: { size?: number }) {
+/** 5. Services: Academic Graduation Cap (خدمات طلابية) & Digital Assistance */
+export function ServicesCatIcon({ size = 34 }: { size?: number }) {
   return (
     <svg viewBox="0 0 44 44" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="swG1" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#00e5ff" />
-          <stop offset="100%" stopColor="#0284c7" />
-        </linearGradient>
-        <linearGradient id="swG2" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#c084fc" />
-          <stop offset="100%" stopColor="#9333ea" />
-        </linearGradient>
-        <linearGradient id="swG3" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#34d399" />
-          <stop offset="100%" stopColor="#059669" />
-        </linearGradient>
-        <linearGradient id="swG4" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fbbf24" />
-          <stop offset="100%" stopColor="#ea580c" />
-        </linearGradient>
-      </defs>
-      <rect x="4" y="4" width="16" height="16" rx="5" fill="url(#swG1)" />
-      <path d="M8.5 12L11 14.5L15.5 10" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-
-      <rect x="24" y="4" width="16" height="16" rx="5" fill="url(#swG2)" />
-      <circle cx="32" cy="12" r="3.2" stroke="#ffffff" strokeWidth="1.8" fill="none" />
-
-      <rect x="4" y="24" width="16" height="16" rx="5" fill="url(#swG3)" />
-      <path d="M8 32H16M12 28V36" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
-
-      <rect x="24" y="24" width="16" height="16" rx="5" fill="url(#swG4)" />
-      <path d="M28 34L32 28L36 34" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-/** 5. Services: Tangerine Orange tech precision gear & digital spark */
-export function ServicesCatIcon({ size = 32 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 44 44" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="srvG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="srvGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#fb923c" />
           <stop offset="100%" stopColor="#ea580c" />
         </linearGradient>
+        <linearGradient id="capGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#fed7aa" />
+        </linearGradient>
       </defs>
-      <rect x="4" y="4" width="36" height="36" rx="11" fill="url(#srvG)" />
-      {/* Precision gear teeth */}
+      <rect x="4" y="4" width="36" height="36" rx="11" fill="url(#srvGrad)" />
+      {/* Academic Graduation Cap (Mortarboard) - Perfectly represents student services */}
+      <path d="M22 11L9 17.5L22 24L35 17.5L22 11Z" fill="url(#capGrad)" />
       <path
-        d="M22 13a9 9 0 100 18 9 9 0 000-18zm0 4a5 5 0 110 10 5 5 0 010-10z"
+        d="M14 20.5V26.5C14 29 17.5 31.5 22 31.5C26.5 31.5 30 29 30 26.5V20.5L22 24.5L14 20.5Z"
         fill="#ffffff"
+        fillOpacity="0.9"
       />
+      {/* Tassel */}
+      <path d="M32 18.5V26" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="32" cy="26.5" r="1.5" fill="#ffffff" />
+      {/* Central Star */}
       <path
-        d="M21 9h2v3h-2zm0 23h2v3h-2zm12-11v2h3v-2zm-24 0v2h3v-2zm18.5-7.5l1.4-1.4 2.1 2.1-1.4 1.4zm-14.8 14.8l1.4-1.4 2.1 2.1-1.4 1.4zm14.8 0l-1.4-1.4 2.1-2.1 1.4 1.4zm-14.8-14.8l-1.4-1.4 2.1-2.1 1.4 1.4z"
-        fill="#ffffff"
+        d="M22 14.5L23.2 17.5L26 17.5L23.8 19.2L24.6 22L22 20.3L19.4 22L20.2 19.2L18 17.5L20.8 17.5L22 14.5Z"
+        fill="#ea580c"
       />
-      <circle cx="22" cy="22" r="2.5" fill="#ffffff" />
     </svg>
   );
 }
 
-/** 6. Games: Cyber Gaming Neon Green controller */
-export function GamingHeroIcon({ size = 32 }: { size?: number }) {
+/** 6. Games: Modern Console Gamepad Controller */
+export function GamingHeroIcon({ size = 34 }: { size?: number }) {
   return (
     <svg viewBox="0 0 44 44" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -240,22 +309,28 @@ export function GamingHeroIcon({ size = 32 }: { size?: number }) {
           <stop offset="100%" stopColor="#059669" />
         </linearGradient>
       </defs>
-      <rect x="4" y="9" width="36" height="26" rx="13" fill="url(#gmGrad)" />
-      {/* D-pad */}
-      <path d="M12 22h6M15 19v6" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" />
-      {/* Face buttons */}
-      <circle cx="28" cy="19" r="1.6" fill="#ffffff" />
-      <circle cx="32" cy="22" r="1.6" fill="#ffffff" />
-      <circle cx="28" cy="25" r="1.6" fill="#ffffff" />
-      <circle cx="24" cy="22" r="1.6" fill="#ffffff" />
-      {/* Controller grip notches */}
-      <path d="M18 29h8" stroke="#ffffff" strokeWidth="1.6" strokeOpacity="0.5" strokeLinecap="round" />
+      <rect x="4" y="4" width="36" height="36" rx="11" fill="url(#gmGrad)" />
+      {/* Modern Gamepad Controller Silhouette */}
+      <path
+        d="M13 14h18c3.3 0 6 2.7 6 6v7c0 3.3-2.7 6-6 6-1.5 0-3-.6-4.1-1.7L24.5 29h-5l-2.4 2.3c-1.1 1.1-2.6 1.7-4.1 1.7-3.3 0-6-2.7-6-6v-7c0-3.3 2.7-6 6-6z"
+        fill="#ffffff"
+      />
+      {/* D-Pad on Left */}
+      <path d="M12 21h4M14 19v4" stroke="#059669" strokeWidth="2.2" strokeLinecap="round" />
+      {/* ABXY Action Buttons on Right */}
+      <circle cx="28" cy="19.5" r="1.3" fill="#059669" />
+      <circle cx="31" cy="21.5" r="1.3" fill="#059669" />
+      <circle cx="28" cy="23.5" r="1.3" fill="#059669" />
+      <circle cx="25" cy="21.5" r="1.3" fill="#059669" />
+      {/* Dual Thumbsticks */}
+      <circle cx="18" cy="24" r="2" fill="#059669" fillOpacity="0.75" />
+      <circle cx="24" cy="24" r="2" fill="#059669" fillOpacity="0.75" />
     </svg>
   );
 }
 
-/** 7. Gift Cards: Neon Magenta voucher with satin ribbon bow & chip */
-export function GiftCardCatIcon({ size = 32 }: { size?: number }) {
+/** 7. Gift Cards: Gift Voucher Card with Satin Ribbon Bow */
+export function GiftCardCatIcon({ size = 34 }: { size?: number }) {
   return (
     <svg viewBox="0 0 44 44" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -264,24 +339,22 @@ export function GiftCardCatIcon({ size = 32 }: { size?: number }) {
           <stop offset="100%" stopColor="#db2777" />
         </linearGradient>
       </defs>
-      <rect x="4" y="10" width="36" height="24" rx="6" fill="url(#giftG)" />
-      <rect x="4" y="10" width="36" height="24" rx="6" stroke="rgba(255,255,255,0.28)" strokeWidth="1.2" />
-      {/* Ribbon vertical */}
-      <path d="M17 10v24" stroke="#ffffff" strokeWidth="2.6" strokeOpacity="0.9" />
-      {/* Ribbon horizontal */}
-      <path d="M4 22h36" stroke="#ffffff" strokeWidth="2.6" strokeOpacity="0.9" />
-      {/* Gift Ribbon Bow */}
-      <path
-        d="M17 10c-1.8-3.2-4.5-2.8-4.5-.6 0 2.2 3.8 2.8 4.5.6zm0 0c1.8-3.2 4.5-2.8 4.5-.6 0 2.2-3.8 2.8-4.5.6z"
-        fill="#ffffff"
-      />
-      <circle cx="31" cy="16" r="2.2" fill="#ffffff" fillOpacity="0.45" />
+      <rect x="4" y="4" width="36" height="36" rx="11" fill="url(#giftG)" />
+      {/* Gift Card Silhouette */}
+      <rect x="9" y="13" width="26" height="19" rx="4" fill="#ffffff" />
+      {/* Gift Ribbon Vertical & Horizontal */}
+      <rect x="18" y="13" width="4" height="19" fill="#db2777" />
+      <rect x="9" y="21" width="26" height="4" fill="#db2777" />
+      {/* Ribbon Bow on top */}
+      <circle cx="17.5" cy="12" r="2.5" fill="#ffffff" stroke="#db2777" strokeWidth="1.2" />
+      <circle cx="22.5" cy="12" r="2.5" fill="#ffffff" stroke="#db2777" strokeWidth="1.2" />
+      <circle cx="20" cy="13" r="1.8" fill="#db2777" />
     </svg>
   );
 }
 
-/** 8. All Products: Radiant Ruby Coral 4-diamond constellation */
-export function AllProductsCatIcon({ size = 32 }: { size?: number }) {
+/** 8. All Products: Store Shopping Bag with Catalog Grid */
+export function AllProductsCatIcon({ size = 34 }: { size?: number }) {
   return (
     <svg viewBox="0 0 44 44" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -291,13 +364,14 @@ export function AllProductsCatIcon({ size = 32 }: { size?: number }) {
         </linearGradient>
       </defs>
       <rect x="4" y="4" width="36" height="36" rx="11" fill="url(#allG)" />
-      {/* 4 sparkling diamond tiles */}
-      <rect x="10" y="10" width="9" height="9" rx="3" fill="#ffffff" />
-      <rect x="23" y="10" width="9" height="9" rx="3" fill="#ffffff" fillOpacity="0.75" />
-      <rect x="10" y="23" width="9" height="9" rx="3" fill="#ffffff" fillOpacity="0.75" />
-      <rect x="23" y="23" width="9" height="9" rx="3" fill="#ffffff" />
-      {/* Sparkle center */}
-      <circle cx="21" cy="21" r="2.2" fill="#ffffff" />
+      {/* Store Shopping Bag */}
+      <rect x="11" y="16" width="22" height="17" rx="4" fill="#ffffff" />
+      <path d="M16 16v-3c0-3.3 2.7-5 6-5s6 1.7 6 5v3" stroke="#ffffff" strokeWidth="2.6" strokeLinecap="round" />
+      {/* Store 4-square grid on bag */}
+      <rect x="15" y="20" width="4" height="4" rx="1" fill="#e11d48" />
+      <rect x="21" y="20" width="4" height="4" rx="1" fill="#e11d48" />
+      <rect x="15" y="26" width="4" height="4" rx="1" fill="#e11d48" />
+      <rect x="21" y="26" width="4" height="4" rx="1" fill="#e11d48" />
     </svg>
   );
 }
@@ -307,9 +381,9 @@ export const SubscriptionsHeroIcon = SubscriptionsCatIcon;
 
 /**
  * Universal Category Icon Renderer:
- * Returns the best-matching, ultra-high-definition vector SVG for each category.
+ * Returns the best-matching, authentic, highly recognized icon for each category.
  */
-export function renderCategoryVectorIcon(slug: string, size = 32): React.ReactNode {
+export function renderCategoryVectorIcon(slug: string, size = 34): React.ReactNode {
   switch (slug) {
     case "snapchat":
       return <SnapchatCatIcon size={size} />;

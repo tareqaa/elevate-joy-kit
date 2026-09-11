@@ -368,7 +368,7 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
                 <div className="cat-card-body">
                   <div className="cat-card-top-row">
                     <div className="cat-ic">
-                      {renderCategoryVectorIcon(c0.slug, 34)}
+                      {renderCategoryVectorIcon(c0.slug, 38)}
                     </div>
 
                     <div className="carrow-circle" aria-hidden="true">
