@@ -3282,4 +3282,117 @@ html[dir="ltr"] .gx-nav-login-pill:hover svg {
     opacity: 0.7 !important;
     color: #ffffff !important;
   }
+
+  /* ==========================================================
+     UNIFIED MOBILE PRODUCT CARDS (Identical sizing across all pages & sections)
+     Matches the compact "Best Sellers" card proportions
+     ========================================================== */
+  .prod-card,
+  .featured-grid .prod-card,
+  .cat-adaptive-grid .prod-card,
+  .prod-grid .prod-card {
+    min-width: 0 !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+  }
+
+  .prod-thumb,
+  .featured-grid .prod-thumb,
+  .cat-adaptive-grid .prod-thumb,
+  .prod-grid .prod-thumb {
+    height: 165px !important;
+    min-height: 165px !important;
+    max-height: 165px !important;
+    aspect-ratio: auto !important;
+    width: 100% !important;
+  }
+
+  .prod-body,
+  .featured-grid .prod-body,
+  .cat-adaptive-grid .prod-body,
+  .prod-grid .prod-body {
+    padding: 8px 8px 10px !important;
+    gap: 2px !important;
+  }
+
+  .prod-platform {
+    margin: -8px -8px 4px -8px !important;
+    padding: 3px 6px !important;
+    font-size: 9.5px !important;
+    line-height: 1.2 !important;
+    gap: 4px !important;
+  }
+
+  .prod-platform svg,
+  .prod-platform img {
+    width: 12px !important;
+    height: 12px !important;
+    max-width: 12px !important;
+    max-height: 12px !important;
+  }
+
+  .prod-name,
+  .featured-grid .prod-name,
+  .cat-adaptive-grid .prod-name,
+  .prod-grid .prod-name {
+    font-size: 11.5px !important;
+    line-height: 1.25 !important;
+    height: 29px !important;
+    min-height: 29px !important;
+    max-height: 29px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .prod-meta-row {
+    font-size: 9.5px !important;
+    height: 14px !important;
+    line-height: 14px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .prod-prices,
+  .featured-grid .prod-prices {
+    min-height: 30px !important;
+    padding-top: 2px !important;
+  }
+
+  .prod-new,
+  .featured-grid .prod-new {
+    font-size: 14px !important;
+    line-height: 1.15 !important;
+  }
+
+  .prod-old,
+  .featured-grid .prod-old {
+    font-size: 10px !important;
+  }
+
+  .prod-discount-pill,
+  .discount-badge {
+    font-size: 9px !important;
+    padding: 1px 4px !important;
+  }
+
+  .prod-card .buy-actions,
+  .featured-grid .buy-actions,
+  .cat-adaptive-grid .buy-actions {
+    gap: 4px !important;
+    padding: 4px 0 0 !important;
+  }
+
+  .add-cart-btn,
+  .featured-grid .add-cart-btn {
+    padding: 6.5px 6px !important;
+    font-size: 10.5px !important;
+    border-radius: 6px !important;
+    gap: 4px !important;
+  }
+
+  .buy-now-btn,
+  .featured-grid .buy-now-btn {
+    padding: 5.5px 6px !important;
+    font-size: 10px !important;
+    border-radius: 6px !important;
+    gap: 4px !important;
+  }
 }

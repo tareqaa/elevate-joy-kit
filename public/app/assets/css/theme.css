@@ -853,10 +853,15 @@ footer{border-top:1px solid var(--border); padding:24px 0 26px; background:var(-
   /* Product Cards in 2-Column Mode: Proportional, Compact & Unified */
   .prod-card{
     min-width:0;
-    border-radius:10px !important;
+    border-radius:12px !important;
+    overflow:hidden !important;
   }
   .prod-thumb{
-    aspect-ratio:3 / 3.6 !important;
+    height:165px !important;
+    min-height:165px !important;
+    max-height:165px !important;
+    aspect-ratio:auto !important;
+    width:100% !important;
   }
   .prod-body{
     padding:8px 8px 10px !important;
