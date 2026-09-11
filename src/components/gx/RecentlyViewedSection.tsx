@@ -10,7 +10,7 @@ export function RecentlyViewedSection() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const ar = lang === "ar";
 
-  if (!items || items.length === 0) return null;
+  if (!hasRealHistory || !items || items.length === 0) return null;
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
