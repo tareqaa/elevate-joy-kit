@@ -93,61 +93,21 @@ export function getCategoryTheme(slug: string): CategoryTheme {
    and a matching 36x36 squircle base so every card is identical in height.
    ========================================================================= */
 
-/** 1. Snapchat Plus: Official Snapchat Logo with Snapchat+ Plus Badge */
+/** 1. Snapchat Plus: Official Snapchat Logo Image */
 export function SnapchatCatIcon({ size = 40 }: { size?: number }) {
   return (
-    <div
+    <img
+      src="/app/assets/img/snapchat-logo.png"
+      alt="Snapchat+"
       style={{
         width: size,
         height: size,
         borderRadius: 12,
-        background: "#FFFC00",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        position: "relative",
-        boxSizing: "border-box",
-        overflow: "hidden",
+        objectFit: "contain",
         flexShrink: 0,
-        boxShadow: "0 4px 12px rgba(255, 252, 0, 0.25)",
+        display: "block",
       }}
-      title="Snapchat+"
-    >
-      {/* Official Snapchat Ghost Logo */}
-      <img
-        src="/app/assets/img/snapchat-logo.png"
-        alt="Snapchat+"
-        style={{
-          width: "76%",
-          height: "76%",
-          objectFit: "contain",
-          filter: "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12))",
-        }}
-      />
-      {/* Official Snapchat+ (Plus) Badge */}
-      <div
-        style={{
-          position: "absolute",
-          top: 3,
-          right: 3,
-          width: 14,
-          height: 14,
-          borderRadius: "50%",
-          background: "#000000",
-          border: "1px solid #FFFC00",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#ffffff",
-          fontSize: 10,
-          fontWeight: 900,
-          lineHeight: 1,
-          boxShadow: "0 2px 4px rgba(0,0,0,0.35)",
-        }}
-      >
-        +
-      </div>
-    </div>
+    />
   );
 }
 
@@ -280,7 +240,7 @@ export function ServicesCatIcon({ size = 40 }: { size?: number }) {
   );
 }
 
-/** 6. Games: Simple, Clean Xbox Wireless Controller */
+/** 6. Games: Authentic Vector Xbox Controller */
 export function GamingHeroIcon({ size = 40 }: { size?: number }) {
   return (
     <svg viewBox="0 0 40 40" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
@@ -291,26 +251,42 @@ export function GamingHeroIcon({ size = 40 }: { size?: number }) {
         </linearGradient>
       </defs>
       <rect width="40" height="40" rx="12" fill="url(#gmGrad)" />
-      {/* Simple, Clean Xbox Controller Ergonomic Body */}
-      <path
-        d="M11 15c0-2.8 2.5-4 6-4h6c3.5 0 6 1.2 6 4 0 2-.4 4.5-1.2 7-1 3.2-2.8 5-4.8 4-1.2-.6-2-2-2.5-3.5-.4-1.2-1.2-1.5-2.5-1.5h-4c-1.3 0-2.1.3-2.5 1.5-.5 1.5-1.3 2.9-2.5 3.5-2 1-3.8-.8-4.8-4C11.4 19.5 11 17 11 15z"
-        fill="#ffffff"
-      />
-      {/* Xbox Center Guide Button */}
-      <circle cx="20" cy="14" r="1.8" fill="#059669" />
-      {/* Asymmetric Left Thumbstick (Upper-Left) */}
-      <circle cx="15" cy="16.5" r="2.2" fill="#059669" />
-      <circle cx="15" cy="16.5" r="1.1" fill="#ffffff" />
-      {/* Directional D-Pad (Lower-Left) */}
-      <path d="M17.5 22.5v3M16 24h3" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" />
-      {/* 4 Action Buttons (ABXY) (Upper-Right) */}
-      <circle cx="25" cy="15" r="0.9" fill="#059669" />
-      <circle cx="27" cy="16.8" r="0.9" fill="#059669" />
-      <circle cx="25" cy="18.6" r="0.9" fill="#059669" />
-      <circle cx="23" cy="16.8" r="0.9" fill="#059669" />
-      {/* Asymmetric Right Thumbstick (Lower-Right) */}
-      <circle cx="22.5" cy="22.5" r="2.2" fill="#059669" />
-      <circle cx="22.5" cy="22.5" r="1.1" fill="#ffffff" />
+      {/* Official Geometric Xbox Wireless Controller */}
+      <g transform="translate(20, 20) scale(0.082) translate(-250, -256)">
+        {/* Top bumper line */}
+        <path
+          d="M351 172.4c-1-2.6-3.1-4.6-5.7-5.5l-32.5-12.3c-5.5-2.1-11.5-1.7-16.7 1l-8.4 4.4h-75.4l-8.3-4.4c-5.2-2.7-11.3-3.1-16.7-1l-32.6 12.3c-2.6 1-4.7 3-5.7 5.5l-2.5 6.2v18h207v-17.9z"
+          fill="#ffffff"
+          fillOpacity="0.8"
+        />
+        {/* Main Solid Xbox Controller Body */}
+        <path
+          d="M360 184.4c-1.3-2.8-3.7-4.9-6.6-5.9l-38.3-12.8c-6-2-12.5-0.2-16.7 4.5L278.5 193c-1.2 1.4-3 2.2-4.9 2.3h-47.2c-1.9 0-3.7-0.8-4.9-2.3l-19.9-22.9c-4.1-4.7-10.7-6.5-16.7-4.5l-38.3 12.8c-2.9 1-5.3 3.1-6.6 5.9c-11.7 25-66.2 148.8-9.9 162c3.4 0.8 7-0.2 9.5-2.8l40.5-40.5c3.5-3.5 8.3-5.5 13.3-5.5h113.2c5 0 9.8 2 13.3 5.5l40.5 40.5c2.5 2.5 6.1 3.5 9.5 2.8C426.3 333.2 371.7 209.5 360 184.4z"
+          fill="#ffffff"
+        />
+        {/* Xbox Center Guide Sphere */}
+        <circle cx="250.1" cy="180" r="14" fill="#059669" />
+        <path d="M254 172.5l-9 9M256.2 181.5l-9-9" stroke="#ffffff" strokeWidth="2.8" strokeLinecap="round" />
+        {/* Small View & Menu Buttons */}
+        <circle cx="226" cy="211" r="5" fill="#059669" />
+        <circle cx="274" cy="211" r="5" fill="#059669" />
+        {/* Left Thumbstick (Asymmetric, Upper-Left) */}
+        <circle cx="177" cy="211.6" r="20" fill="#059669" />
+        <circle cx="177" cy="211.6" r="9" fill="#ffffff" />
+        {/* Right Thumbstick (Asymmetric, Lower-Right) */}
+        <circle cx="290" cy="265" r="20" fill="#059669" />
+        <circle cx="290" cy="265" r="9" fill="#ffffff" />
+        {/* Directional D-Pad (Lower-Left) */}
+        <path
+          d="M224 260h-6.5v-6.5c0-2.5-2-4.5-4.5-4.5s-4.5 2-4.5 4.5v6.5h-6.5c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5h6.5v6.5c0 2.5 2 4.5 4.5 4.5s4.5-2 4.5-4.5v-6.5h6.5c2.5 0 4.5-2 4.5-4.5s-2-4.5-4.5-4.5z"
+          fill="#059669"
+        />
+        {/* 4 Action Buttons ABXY (Upper-Right) */}
+        <circle cx="323" cy="186" r="9.5" fill="#059669" />
+        <circle cx="351.5" cy="214" r="9.5" fill="#059669" />
+        <circle cx="323" cy="242" r="9.5" fill="#059669" />
+        <circle cx="294.5" cy="214" r="9.5" fill="#059669" />
+      </g>
     </svg>
   );
 }
