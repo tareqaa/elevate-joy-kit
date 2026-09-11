@@ -53,9 +53,7 @@ export function RecentlyViewedSection() {
           {/* Cards Track using the standard unified StoreProductCard */}
           <div className="gx-cards-carousel-track" ref={scrollRef}>
             {items.map((item) => {
-              const productLink = item.categorySlug === "games"
-                ? `/category/games?product=${item.slug}`
-                : `/product/${item.slug}`;
+              const productLink = `/product/${item.slug}`;
 
               return (
                 <div key={item.slug} className="gx-carousel-product-col">

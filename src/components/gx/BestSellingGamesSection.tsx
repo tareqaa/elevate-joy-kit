@@ -292,7 +292,7 @@ export function BestSellingGamesSection() {
                   slug={game.slug}
                   cartId={game.slug}
                   name={ar ? game.name_ar : (game.name_en || game.name_ar)}
-                  link={`/category/games?product=${game.slug}`}
+                  link={`/product/${game.slug}`}
                   price={game.base_price_jod}
                   imageUrl={game.image_url}
                   productType={game.delivery_type}
