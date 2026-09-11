@@ -502,7 +502,7 @@ export function Navbar() {
                 onClick={() => setAuthOpen(true)}
                 aria-label={t("nav.login")}
               >
-                <User size={15} strokeWidth={2.4} />
+                <User size={18} strokeWidth={2} />
                 <span>{lang === "ar" ? "تسجيل الدخول" : "Log in"}</span>
               </button>
             )}

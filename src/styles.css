@@ -3132,30 +3132,37 @@ html[dir="ltr"] .gx-nav-login-pill:hover svg {
     inset-inline-end: -3px !important;
   }
 
-  /* Login Pill Button on mobile - exactly desktop style, sized for mobile */
+  /* Login Button on mobile - icon only without text (matching Driffle & Eneba) */
   .gx-nav-login-pill {
-    height: 30px !important;
-    padding: 0 9px !important;
-    font-size: 11.5px !important;
-    gap: 4px !important;
-    border-radius: 9999px !important;
-    background: linear-gradient(135deg, #00e5ff 0%, #00b8e6 100%) !important;
-    color: #050811 !important;
-    font-weight: 800 !important;
-    box-shadow: 0 2px 8px rgba(0, 229, 255, 0.3) !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
     flex-shrink: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+    transition: all 0.2s ease !important;
+  }
+  .gx-nav-login-pill:hover,
+  .gx-nav-login-pill:active {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    transform: scale(1.05) !important;
   }
   .gx-nav-login-pill span {
-    display: inline !important;
-    font-size: 11.5px !important;
+    display: none !important;
   }
   .gx-nav-login-pill svg {
-    width: 13px !important;
-    height: 13px !important;
-    color: #050811 !important;
+    width: 18px !important;
+    height: 18px !important;
+    color: #ffffff !important;
+    stroke: #ffffff !important;
   }
 
   /* Logged-in Avatar on mobile */
@@ -3163,8 +3170,8 @@ html[dir="ltr"] .gx-nav-login-pill:hover svg {
     flex-shrink: 0 !important;
   }
   .gx-nav-avatar-btn {
-    width: 30px !important;
-    height: 30px !important;
+    width: 34px !important;
+    height: 34px !important;
     border-radius: 50% !important;
   }
 
