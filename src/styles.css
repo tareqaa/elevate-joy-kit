@@ -3395,4 +3395,18 @@ html[dir="ltr"] .gx-nav-login-pill:hover svg {
     border-radius: 6px !important;
     gap: 4px !important;
   }
+
+  /* Carousel Product Columns in Best Selling Games & Recently Viewed */
+  .gx-cards-carousel-track {
+    gap: 12px !important;
+  }
+  .gx-carousel-product-col {
+    flex: 0 0 calc((100% - 2 * 12px) / 2.2) !important;
+    max-width: calc((100% - 2 * 12px) / 2.2) !important;
+    min-width: 150px !important;
+  }
+  .gx-carousel-giftcard-col {
+    flex: 0 0 220px !important;
+    max-width: 220px !important;
+  }
 }
