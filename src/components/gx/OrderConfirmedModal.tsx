@@ -46,8 +46,13 @@ export function OrderConfirmedModal({
 
   function goWa() {
     if (!waUrl) return;
-    const opened = window.open(waUrl, "_blank", "noopener,noreferrer");
-    if (!opened) window.location.href = waUrl;
+    const a = document.createElement("a");
+    a.href = waUrl;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 
   return (

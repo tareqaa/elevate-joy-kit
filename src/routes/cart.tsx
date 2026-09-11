@@ -106,10 +106,9 @@ function CartPage() {
             <CartList />
           ) : stage === 1 ? (
             <div className="gx-eneba-grid">
-              {/* Right column in RTL: Cart Items & Rewards */}
+              {/* Right column in RTL: Cart Items */}
               <div className="gx-eneba-main">
                 <CartList />
-                <RewardsAndBalanceCard />
               </div>
 
               {/* Left column in RTL: Delivery & Summary */}
@@ -251,289 +250,6 @@ function CartList() {
   );
 }
 
-/** Dedicated Rewards & Loyalty Card below the cart items (Ample room, luxurious presentation) */
-function RewardsAndBalanceCard() {
-  const [balance, setBalance] = useState<{ coins: number; credit: number } | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    const load = async () => {
-      const { data: sess } = await supabase.auth.getSession();
-      const uid = sess.session?.user?.id;
-      if (!uid) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("gx_coins, store_credit_jod")
-        .eq("id", uid)
-        .maybeSingle();
-      if (alive) {
-        setBalance({
-          coins: Number(data?.gx_coins ?? 0),
-          credit: Number(data?.store_credit_jod ?? 0),
-        });
-      }
-    };
-    void load();
-    const on = () => void load();
-    window.addEventListener("gx:balances-updated", on);
-    return () => {
-      alive = false;
-      window.removeEventListener("gx:balances-updated", on);
-    };
-  }, []);
-
-  if (!balance || (balance.coins <= 0 && balance.credit <= 0)) {
-    return null;
-  }
-
-  return (
-    <div className="gx-rewards-container-card">
-      <div className="gx-rcc-head">
-        <div className="gx-rcc-title">
-          <span>🎁</span>
-          <h3>مكافآت ورصيد حسابك المتاح</h3>
-        </div>
-        <span className="gx-rcc-badge">خصم إضافي</span>
-      </div>
-
-      <div className="gx-rewards-grid">
-        {balance.coins > 0 && <CoinsBlock balance={balance.coins} />}
-        {balance.credit > 0 && <CreditBlock balance={balance.credit} />}
-      </div>
-    </div>
-  );
-}
-
-/** Re-engineered GX Coins block with 100% accurate discount calculations */
-function CoinsBlock({ balance }: { balance: number }) {
-  const cart = useCart();
-  const { format } = useCurrency();
-  const { t, lang } = useLang();
-  const isAr = lang !== "en";
-  const [amount, setAmount] = useState("");
-  const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  // Maximum allowed discount is 50% of the payable amount (after coupon)
-  const payable = Math.max(0, cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0));
-  const capJod = Math.round(payable * MAX_COINS_DISCOUNT_RATIO * 100) / 100;
-  const maxCoinsForOrder = jodToCoins(capJod);
-
-  // Usable coins is bounded by user balance and order cap
-  const usable = Math.min(balance, maxCoinsForOrder);
-  // Actual discount that these usable coins represent:
-  const maxDiscountFromUsable = coinsToJod(usable);
-
-  async function apply(v: number) {
-    if (busy || v <= 0) return;
-    setBusy(true);
-    const r = await cart.applyCoins(v);
-    setMsg({ ok: r.ok, msg: r.message });
-    setBusy(false);
-  }
-
-  return (
-    <div className="gx-reward-tile coins">
-      <div className="gx-rt-header">
-        <div className="gx-rt-title-box">
-          <span className="gx-rt-icon">🪙</span>
-          <div>
-            <div className="gx-rt-title">عملات GX Coins</div>
-            <div className="gx-rt-sub">
-              رصيدك: <b>{balance.toLocaleString("en-US")} عملة</b> ≈ {format(coinsToJod(balance))}
-            </div>
-          </div>
-        </div>
-        <div className="gx-rt-badge coins">GX Rewards</div>
-      </div>
-
-      {cart.coins ? (
-        <div className="gx-rt-applied-state coins">
-          <div className="gx-rta-left">
-            <span className="gx-rta-icon">✓</span>
-            <div>
-              <div className="gx-rta-val">تم تطبيق خصم {format(cart.coins.discount_jod)}</div>
-              <div className="gx-rta-sub">مقابل {cart.coins.coins.toLocaleString("en-US")} عملة GX</div>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="gx-rt-remove-btn"
-            onClick={() => { cart.removeCoins(); setMsg(null); }}
-          >
-            إلغاء الخصم
-          </button>
-        </div>
-      ) : usable < 1 ? (
-        <div className="gx-rt-notice">
-          {balance < 1 ? t("cart.coins_earn") : t("cart.coins_low")}
-        </div>
-      ) : (
-        <div className="gx-rt-controls">
-          <p className="gx-rt-hint">
-            {isAr
-              ? `يمكنك خصم حتى ${format(maxDiscountFromUsable)} باستخدام ${usable.toLocaleString("en-US")} عملة من هذا الطلب.`
-              : `You can knock off up to ${format(maxDiscountFromUsable)} using ${usable.toLocaleString("en-US")} coins.`}
-          </p>
-
-          <div className="gx-rt-preset-row">
-            {[
-              { label: "25%", ratio: 0.25 },
-              { label: "50%", ratio: 0.5 },
-              { label: isAr ? `الحد الأقصى (${usable.toLocaleString("en-US")})` : `Max (${usable.toLocaleString("en-US")})`, ratio: 1 },
-            ].map((p) => {
-              const v = Math.max(1, Math.floor(usable * p.ratio));
-              return (
-                <button
-                  key={p.ratio}
-                  type="button"
-                  className="gx-rt-preset-pill"
-                  onClick={() => {
-                    setAmount(String(v));
-                    apply(v);
-                  }}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="gx-rt-input-wrap">
-            <input
-              className="gx-rt-input"
-              type="number"
-              min={1}
-              max={usable}
-              placeholder={`حدد كمية العملات (حتى ${usable.toLocaleString("en-US")})`}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  if (amount) apply(Number(amount));
-                }
-              }}
-            />
-            <button
-              type="button"
-              className="gx-rt-action-btn coins"
-              disabled={busy || !amount || Number(amount) <= 0}
-              onClick={() => apply(Number(amount))}
-            >
-              {busy ? "..." : "استخدام الخصم"}
-            </button>
-          </div>
-
-          {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Re-engineered Store Credit block */
-function CreditBlock({ balance }: { balance: number }) {
-  const cart = useCart();
-  const { format } = useCurrency();
-  const { t } = useLang();
-  const [amount, setAmount] = useState("");
-  const [msg, setMsg] = useState<{ ok: boolean; msg: string } | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const payable = Math.max(0, cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0) - (cart.coins?.discount_jod ?? 0));
-  const usable = Math.round(Math.min(balance, payable) * 100) / 100;
-
-  async function apply(v: number) {
-    if (busy || v <= 0) return;
-    setBusy(true);
-    const r = await cart.applyCredit(v);
-    setMsg({ ok: r.ok, msg: r.message });
-    setBusy(false);
-  }
-
-  return (
-    <div className="gx-reward-tile credit">
-      <div className="gx-rt-header">
-        <div className="gx-rt-title-box">
-          <span className="gx-rt-icon">💳</span>
-          <div>
-            <div className="gx-rt-title">رصيد المتجر</div>
-            <div className="gx-rt-sub">
-              الرصيد المتاح بحسابك: <b>{format(balance)}</b>
-            </div>
-          </div>
-        </div>
-        <div className="gx-rt-badge credit">رصيد مباشر</div>
-      </div>
-
-      {cart.creditJOD > 0 ? (
-        <div className="gx-rt-applied-state credit">
-          <div className="gx-rta-left">
-            <span className="gx-rta-icon">✓</span>
-            <div>
-              <div className="gx-rta-val">تم استخدام رصيد بقيمة {format(cart.creditJOD)}</div>
-              <div className="gx-rta-sub">مخصوم من إجمالي الطلب</div>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="gx-rt-remove-btn"
-            onClick={() => { cart.removeCredit(); setMsg(null); }}
-          >
-            إلغاء الخصم
-          </button>
-        </div>
-      ) : usable > 0 ? (
-        <div className="gx-rt-controls">
-          <p className="gx-rt-hint">
-            يمكنك دفع حتى {format(usable)} من قيمة الطلب مباشرة من رصيدك.
-          </p>
-
-          <div className="gx-rt-input-wrap">
-            <input
-              className="gx-rt-input"
-              type="number"
-              min={0.01}
-              step={0.01}
-              max={usable}
-              placeholder={`المبلغ (حتى ${format(usable)})`}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  if (amount) apply(Number(amount));
-                }
-              }}
-            />
-            <button
-              type="button"
-              className="gx-rt-max-pill"
-              onClick={() => {
-                setAmount(usable.toFixed(2));
-                apply(usable);
-              }}
-            >
-              استخدام الكل ({format(usable)})
-            </button>
-            <button
-              type="button"
-              className="gx-rt-action-btn credit"
-              disabled={busy || !amount || Number(amount) <= 0}
-              onClick={() => apply(Number(amount))}
-            >
-              {busy ? "..." : "تطبيق"}
-            </button>
-          </div>
-
-          {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 /** Card: "البريد الإلكتروني" - Hidden completely if user is signed in */
 function CartDeliveryCard() {
   const cart = useCart();
@@ -588,15 +304,60 @@ function CartDeliveryCard() {
   );
 }
 
-/** Card: "الملخص" (Summary Stage 1) */
+/** Card: "الملخص" (Summary Stage 1 with Integrated Loyalty & Discounts) */
 function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
   const cart = useCart();
   const { format } = useCurrency();
-  const { t } = useLang();
-  const [couponOpen, setCouponOpen] = useState(!!cart.coupon);
+  const { t, lang } = useLang();
+  const isAr = lang !== "en";
+
+  // Balances state
+  const [balance, setBalance] = useState<{ coins: number; credit: number } | null>(null);
+  const [openSection, setOpenSection] = useState<"coupon" | "coins" | "credit" | null>(
+    cart.coupon ? "coupon" : null
+  );
+
+  // Coupon state
   const [couponInput, setCouponInput] = useState("");
   const [couponMsg, setCouponMsg] = useState<{ ok: boolean; msg: string } | null>(null);
   const [couponBusy, setCouponBusy] = useState(false);
+
+  // Coins state
+  const [coinAmount, setCoinAmount] = useState("");
+  const [coinMsg, setCoinMsg] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [coinBusy, setCoinBusy] = useState(false);
+
+  // Credit state
+  const [creditAmount, setCreditAmount] = useState("");
+  const [creditMsg, setCreditMsg] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [creditBusy, setCreditBusy] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("gx_coins, store_credit_jod")
+        .eq("id", uid)
+        .maybeSingle();
+      if (alive) {
+        setBalance({
+          coins: Number(data?.gx_coins ?? 0),
+          credit: Number(data?.store_credit_jod ?? 0),
+        });
+      }
+    };
+    void load();
+    const on = () => void load();
+    window.addEventListener("gx:balances-updated", on);
+    return () => {
+      alive = false;
+      window.removeEventListener("gx:balances-updated", on);
+    };
+  }, []);
 
   async function applyCoupon() {
     if (couponBusy) return;
@@ -605,6 +366,22 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
     setCouponMsg({ ok: r.ok, msg: r.message });
     setCouponBusy(false);
     if (r.ok) setCouponInput("");
+  }
+
+  async function applyCoins(v: number) {
+    if (coinBusy || v <= 0) return;
+    setCoinBusy(true);
+    const r = await cart.applyCoins(v);
+    setCoinMsg({ ok: r.ok, msg: r.message });
+    setCoinBusy(false);
+  }
+
+  async function applyCredit(v: number) {
+    if (creditBusy || v <= 0) return;
+    setCreditBusy(true);
+    const r = await cart.applyCredit(v);
+    setCreditMsg({ ok: r.ok, msg: r.message });
+    setCreditBusy(false);
   }
 
   async function handleAdvance() {
@@ -621,6 +398,23 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
     }
     onContinue();
   }
+
+  // Coins calculations
+  const coinsBalance = balance?.coins ?? 0;
+  const creditBalance = balance?.credit ?? 0;
+
+  const payableForCoins = Math.max(0, cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0));
+  const capJod = Math.round(payableForCoins * MAX_COINS_DISCOUNT_RATIO * 100) / 100;
+  const maxCoinsForOrder = jodToCoins(capJod);
+  const usableCoins = Math.min(coinsBalance, maxCoinsForOrder);
+  const maxCoinsDiscountJod = coinsToJod(usableCoins);
+
+  // Credit calculations
+  const payableForCredit = Math.max(
+    0,
+    cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0) - (cart.coins?.discount_jod ?? 0)
+  );
+  const usableCredit = Math.round(Math.min(creditBalance, payableForCredit) * 100) / 100;
 
   return (
     <div className="summary-card gx-eneba-summary-card">
@@ -665,38 +459,46 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
         </div>
       </div>
 
-      {/* Accordion: "هل لديك كود خصم؟" */}
-      <div className="gx-coupon-accordion">
-        <button
-          type="button"
-          className="gx-ca-toggle"
-          onClick={() => setCouponOpen(!couponOpen)}
-        >
-          <span>🏷️ {t("cart.have_coupon")}</span>
-          <span>{couponOpen ? "▲" : "▼"}</span>
-        </button>
+      {/* Integrated Loyalty & Discounts Section (طريقة أنيقة ومدمجة بالكامل) */}
+      <div className="gx-summary-loyalty-section">
+        {/* Accordion 1: Coupon */}
+        <div className="gx-sl-item">
+          <button
+            type="button"
+            className={"gx-sl-header " + (openSection === "coupon" ? "open" : "")}
+            onClick={() => setOpenSection(openSection === "coupon" ? null : "coupon")}
+          >
+            <div className="gx-sl-head-left">
+              <span className="gx-sl-icon">🏷️</span>
+              <span className="gx-sl-title">{t("cart.have_coupon")}</span>
+            </div>
+            <div className="gx-sl-head-right">
+              {cart.coupon ? (
+                <span className="gx-sl-badge active">{cart.coupon.code}</span>
+              ) : (
+                <span className="gx-sl-arrow">{openSection === "coupon" ? "▲" : "▼"}</span>
+              )}
+            </div>
+          </button>
 
-        {couponOpen && (
-          <div className="gx-ca-content">
-            {cart.coupon ? (
-              <div className="gx-coupon-applied">
-                <div>
-                  <div className="gx-coupon-code">{cart.coupon.code}</div>
-                  <div className="gx-coupon-note">
-                    {t("cart.discount")}: -{format(cart.coupon.discount_jod)}
+          {openSection === "coupon" && (
+            <div className="gx-sl-body">
+              {cart.coupon ? (
+                <div className="gx-sl-applied-row">
+                  <div>
+                    <span className="gx-sl-applied-code">{cart.coupon.code}</span>
+                    <span className="gx-sl-applied-sub">خصم: -{format(cart.coupon.discount_jod)}</span>
                   </div>
+                  <button
+                    type="button"
+                    className="gx-sl-remove-link"
+                    onClick={() => { cart.removeCoupon(); setCouponMsg(null); }}
+                  >
+                    {t("cart.remove")}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="gx-coupon-remove"
-                  onClick={() => { cart.removeCoupon(); setCouponMsg(null); }}
-                >
-                  {t("cart.remove")}
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="gx-cb-row" style={{ marginTop: 8 }}>
+              ) : (
+                <div className="gx-cb-row" style={{ marginTop: 6 }}>
                   <input
                     className="gx-cb-input"
                     type="text"
@@ -714,12 +516,217 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
                     {couponBusy ? "..." : t("cart.apply")}
                   </button>
                 </div>
-                {couponMsg && (
-                  <div className={"gx-coupon-msg " + (couponMsg.ok ? "ok" : "err")}>
-                    {couponMsg.msg}
+              )}
+              {couponMsg && (
+                <div className={"gx-coupon-msg " + (couponMsg.ok ? "ok" : "err")}>
+                  {couponMsg.msg}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Accordion 2: GX Coins (if user has coins) */}
+        {coinsBalance > 0 && (
+          <div className="gx-sl-item coins">
+            <button
+              type="button"
+              className={"gx-sl-header " + (openSection === "coins" ? "open" : "")}
+              onClick={() => setOpenSection(openSection === "coins" ? null : "coins")}
+            >
+              <div className="gx-sl-head-left">
+                <span className="gx-sl-icon">🪙</span>
+                <span className="gx-sl-title">عملات GX Coins</span>
+              </div>
+              <div className="gx-sl-head-right">
+                {cart.coins ? (
+                  <span className="gx-sl-badge active coins">مُفعل (-{format(cart.coins.discount_jod)})</span>
+                ) : (
+                  <span className="gx-sl-badge coins">{coinsBalance.toLocaleString("en-US")} عملة</span>
+                )}
+                <span className="gx-sl-arrow">{openSection === "coins" ? "▲" : "▼"}</span>
+              </div>
+            </button>
+
+            {openSection === "coins" && (
+              <div className="gx-sl-body">
+                {cart.coins ? (
+                  <div className="gx-sl-applied-row coins">
+                    <div>
+                      <span className="gx-sl-applied-code coins">
+                        {cart.coins.coins.toLocaleString("en-US")} عملة
+                      </span>
+                      <span className="gx-sl-applied-sub">خصم: -{format(cart.coins.discount_jod)}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="gx-sl-remove-link"
+                      onClick={() => { cart.removeCoins(); setCoinMsg(null); }}
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                ) : usableCoins < 1 ? (
+                  <div className="gx-sl-hint">لا يمكن استخدام العملات في هذا الطلب حالياً.</div>
+                ) : (
+                  <div className="gx-sl-action-box">
+                    <div className="gx-sl-hint">
+                      {isAr
+                        ? `يمكنك خصم حتى ${format(maxCoinsDiscountJod)} باستخدام ${usableCoins.toLocaleString("en-US")} عملة.`
+                        : `Knock off up to ${format(maxCoinsDiscountJod)} with ${usableCoins.toLocaleString("en-US")} coins.`}
+                    </div>
+
+                    <div className="gx-sl-preset-row">
+                      {[
+                        { label: "25%", ratio: 0.25 },
+                        { label: "50%", ratio: 0.5 },
+                        { label: isAr ? `الحد الأقصى` : `Max`, ratio: 1 },
+                      ].map((p) => {
+                        const v = Math.max(1, Math.floor(usableCoins * p.ratio));
+                        return (
+                          <button
+                            key={p.ratio}
+                            type="button"
+                            className="gx-sl-chip"
+                            onClick={() => {
+                              setCoinAmount(String(v));
+                              applyCoins(v);
+                            }}
+                          >
+                            {p.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="gx-cb-row">
+                      <input
+                        className="gx-cb-input"
+                        type="number"
+                        min={1}
+                        max={usableCoins}
+                        placeholder={`حدد العملات (حتى ${usableCoins.toLocaleString("en-US")})`}
+                        value={coinAmount}
+                        onChange={(e) => setCoinAmount(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (coinAmount) applyCoins(Number(coinAmount));
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-primary gx-coupon-apply"
+                        disabled={coinBusy || !coinAmount || Number(coinAmount) <= 0}
+                        onClick={() => applyCoins(Number(coinAmount))}
+                      >
+                        {coinBusy ? "..." : "استخدام"}
+                      </button>
+                    </div>
+
+                    {coinMsg && (
+                      <div className={"gx-coupon-msg " + (coinMsg.ok ? "ok" : "err")}>
+                        {coinMsg.msg}
+                      </div>
+                    )}
                   </div>
                 )}
-              </>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Accordion 3: Store Credit (if user has store credit) */}
+        {creditBalance > 0 && (
+          <div className="gx-sl-item credit">
+            <button
+              type="button"
+              className={"gx-sl-header " + (openSection === "credit" ? "open" : "")}
+              onClick={() => setOpenSection(openSection === "credit" ? null : "credit")}
+            >
+              <div className="gx-sl-head-left">
+                <span className="gx-sl-icon">💳</span>
+                <span className="gx-sl-title">{t("cart.store_credit")}</span>
+              </div>
+              <div className="gx-sl-head-right">
+                {cart.creditJOD > 0 ? (
+                  <span className="gx-sl-badge active credit">مُفعل (-{format(cart.creditJOD)})</span>
+                ) : (
+                  <span className="gx-sl-badge credit">{format(creditBalance)}</span>
+                )}
+                <span className="gx-sl-arrow">{openSection === "credit" ? "▲" : "▼"}</span>
+              </div>
+            </button>
+
+            {openSection === "credit" && (
+              <div className="gx-sl-body">
+                {cart.creditJOD > 0 ? (
+                  <div className="gx-sl-applied-row credit">
+                    <div>
+                      <span className="gx-sl-applied-code credit">{format(cart.creditJOD)}</span>
+                      <span className="gx-sl-applied-sub">مخصوم من إجمالي الطلب</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="gx-sl-remove-link"
+                      onClick={() => { cart.removeCredit(); setCreditMsg(null); }}
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                ) : usableCredit > 0 ? (
+                  <div className="gx-sl-action-box">
+                    <div className="gx-sl-hint">
+                      يمكنك استخدام حتى {format(usableCredit)} من رصيدك.
+                    </div>
+
+                    <div className="gx-cb-row">
+                      <input
+                        className="gx-cb-input"
+                        type="number"
+                        min={0.01}
+                        step={0.01}
+                        max={usableCredit}
+                        placeholder={`المبلغ (حتى ${format(usableCredit)})`}
+                        value={creditAmount}
+                        onChange={(e) => setCreditAmount(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (creditAmount) applyCredit(Number(creditAmount));
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-primary gx-coupon-apply"
+                        disabled={creditBusy || !creditAmount || Number(creditAmount) <= 0}
+                        onClick={() => applyCredit(Number(creditAmount))}
+                      >
+                        {creditBusy ? "..." : "استخدام"}
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="gx-sl-use-all-btn"
+                      onClick={() => {
+                        setCreditAmount(usableCredit.toFixed(2));
+                        applyCredit(usableCredit);
+                      }}
+                    >
+                      استخدام كامل الرصيد المتاح ({format(usableCredit)})
+                    </button>
+
+                    {creditMsg && (
+                      <div className={"gx-coupon-msg " + (creditMsg.ok ? "ok" : "err")}>
+                        {creditMsg.msg}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
             )}
           </div>
         )}
@@ -744,14 +751,14 @@ function CartPaymentStage2({
 
   return (
     <div className="gx-payment-stage-wrapper">
-      {/* Clean Header with Back Link */}
+      {/* Clean Header with Back Link (Right-pointing arrow in RTL) */}
       <div className="gx-pm-header">
         <div className="gx-pm-header-info">
           <h2>{t("cart.payment_method_title")}</h2>
           <p>اختر الطريقة المناسبة لك لإتمام عملية الدفع بأمان وسرعة</p>
         </div>
         <button type="button" className="gx-pm-back-pill" onClick={onBack}>
-          <span className="gx-arr">←</span> {t("cart.shopping_cart")}
+          <span className="gx-arr">→</span> {t("cart.shopping_cart")}
         </button>
       </div>
 
@@ -1043,262 +1050,190 @@ const checkoutCss = `
 .gx-row-trash{background:transparent;border:none;color:#64748b;cursor:pointer;padding:8px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .18s}
 .gx-row-trash:hover{color:#ff5470;background:rgba(255,84,112,.1)}
 
-/* Rewards & Loyalty Container Card */
-.gx-rewards-container-card {
-  border-radius: 18px;
-  padding: 20px;
-  border: 1px solid rgba(0, 229, 255, 0.16);
-  background: linear-gradient(180deg, rgba(18, 22, 34, 0.75), rgba(10, 13, 22, 0.9));
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+/* Integrated Loyalty & Discounts in Summary */
+.gx-summary-loyalty-section {
+  margin-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-.gx-rcc-head {
+.gx-sl-item {
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+.gx-sl-item:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.gx-sl-item.coins {
+  border-color: rgba(245, 158, 11, 0.25);
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.03) 0%, rgba(14, 20, 35, 0.3) 100%);
+}
+.gx-sl-item.credit {
+  border-color: rgba(56, 189, 248, 0.25);
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.03) 0%, rgba(14, 20, 35, 0.3) 100%);
+}
+.gx-sl-header {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #f1f5f9;
+  text-align: inherit;
+  transition: background 0.18s;
 }
-.gx-rcc-title {
+.gx-sl-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.gx-sl-head-left {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.gx-rcc-title h3 {
-  margin: 0;
-  font-size: 15.5px;
-  font-weight: 900;
-  color: #f1f5f9;
-}
-.gx-rcc-badge {
-  font-size: 11px;
-  font-weight: 800;
-  padding: 3px 10px;
-  border-radius: 99px;
-  background: rgba(0, 229, 255, 0.1);
-  color: #00e5ff;
-  border: 1px solid rgba(0, 229, 255, 0.25);
-}
-.gx-rewards-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
-@media (min-width: 768px) {
-  .gx-rewards-grid {
-    grid-template-columns: 1fr;
-  }
-}
-.gx-reward-tile {
-  padding: 16px 18px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: all 0.2s ease;
-}
-.gx-reward-tile.coins {
-  background: linear-gradient(180deg, rgba(245, 158, 11, 0.04) 0%, rgba(14, 20, 35, 0.5) 100%);
-  border-color: rgba(245, 158, 11, 0.22);
-}
-.gx-reward-tile.credit {
-  background: linear-gradient(180deg, rgba(56, 189, 248, 0.04) 0%, rgba(14, 20, 35, 0.5) 100%);
-  border-color: rgba(56, 189, 248, 0.22);
-}
-.gx-rt-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.gx-rt-title-box {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.gx-rt-icon {
-  font-size: 20px;
+.gx-sl-icon {
+  font-size: 15px;
   line-height: 1;
 }
-.gx-rt-title {
-  font-size: 14.5px;
+.gx-sl-title {
+  font-size: 13px;
   font-weight: 800;
-  color: #f8fafc;
+  color: #e2e8f0;
 }
-.gx-rt-sub {
-  font-size: 12px;
-  color: #94a3b8;
-  margin-top: 2px;
+.gx-sl-head-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.gx-rt-badge {
-  font-size: 11.5px;
+.gx-sl-badge {
+  font-size: 11px;
   font-weight: 800;
-  padding: 3px 10px;
+  padding: 2px 8px;
   border-radius: 99px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
 }
-.gx-rt-badge.coins {
+.gx-sl-badge.coins {
   background: rgba(245, 158, 11, 0.12);
   color: #fbbf24;
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
-.gx-rt-badge.credit {
+.gx-sl-badge.credit {
   background: rgba(56, 189, 248, 0.12);
   color: #38bdf8;
   border: 1px solid rgba(56, 189, 248, 0.3);
 }
-.gx-rt-controls {
-  margin-top: 12px;
+.gx-sl-badge.active {
+  background: rgba(0, 229, 176, 0.12);
+  color: #00e5b0;
+  border: 1px solid rgba(0, 229, 176, 0.3);
 }
-.gx-rt-hint {
-  font-size: 12px;
-  color: #cbd5e1;
-  margin: 0 0 10px;
-  line-height: 1.5;
+.gx-sl-arrow {
+  font-size: 10px;
+  color: #94a3b8;
 }
-.gx-rt-preset-row {
+.gx-sl-body {
+  padding: 10px 12px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
+}
+.gx-sl-hint {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.gx-sl-preset-row {
   display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
 }
-.gx-rt-preset-pill {
-  padding: 6px 14px;
-  border-radius: 99px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  color: #cbd5e1;
-  font-size: 12px;
+.gx-sl-chip {
+  flex: 1;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.08);
+  color: #fbbf24;
+  font-size: 11.5px;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.18s;
+  text-align: center;
 }
-.gx-rt-preset-pill:hover {
-  background: rgba(245, 158, 11, 0.15);
-  border-color: rgba(245, 158, 11, 0.45);
-  color: #fbbf24;
-  transform: translateY(-1px);
+.gx-sl-chip:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #fbbf24;
 }
-.gx-rt-input-wrap {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.gx-rt-input {
-  flex: 1;
-  min-width: 0;
-  padding: 9px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.4);
-  color: #f1f5f9;
-  font-size: 13.5px;
-  font-family: inherit;
-  box-sizing: border-box;
-}
-.gx-rt-input:focus {
-  outline: none;
-  border-color: #00e5ff;
-}
-.gx-rt-max-pill {
-  white-space: nowrap;
-  padding: 9px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(56, 189, 248, 0.35);
+.gx-sl-use-all-btn {
+  margin-top: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
   background: rgba(56, 189, 248, 0.08);
   color: #38bdf8;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.18s;
 }
-.gx-rt-max-pill:hover {
+.gx-sl-use-all-btn:hover {
   background: rgba(56, 189, 248, 0.18);
   border-color: #38bdf8;
 }
-.gx-rt-action-btn {
-  padding: 9px 18px;
-  border-radius: 10px;
-  border: none;
-  color: #020b14;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.18s ease;
-}
-.gx-rt-action-btn.coins {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-}
-.gx-rt-action-btn.credit {
-  background: linear-gradient(135deg, #00e5ff, #00b4d8);
-}
-.gx-rt-action-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.4);
-}
-.gx-rt-action-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.gx-rt-applied-state {
+.gx-sl-applied-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
-  border-radius: 12px;
-  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 229, 176, 0.08);
+  border: 1px solid rgba(0, 229, 176, 0.25);
 }
-.gx-rt-applied-state.coins {
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+.gx-sl-applied-row.coins {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
 }
-.gx-rt-applied-state.credit {
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.3);
+.gx-sl-applied-row.credit {
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.25);
 }
-.gx-rta-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.gx-rta-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
+.gx-sl-applied-code {
+  display: block;
+  font-size: 12.5px;
   font-weight: 900;
-  background: #00e5b0;
-  color: #020b14;
+  color: #00e5b0;
 }
-.gx-rta-val {
-  font-size: 13.5px;
-  font-weight: 800;
-  color: #f1f5f9;
+.gx-sl-applied-code.coins {
+  color: #fbbf24;
 }
-.gx-rta-sub {
+.gx-sl-applied-code.credit {
+  color: #38bdf8;
+}
+.gx-sl-applied-sub {
   font-size: 11px;
   color: #94a3b8;
 }
-.gx-rt-remove-btn {
+.gx-sl-remove-link {
   background: transparent;
   border: 1px solid rgba(255, 84, 112, 0.4);
   color: #ff98a8;
-  padding: 5px 12px;
-  border-radius: 8px;
-  font-size: 11.5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.18s;
 }
-.gx-rt-remove-btn:hover {
-  background: rgba(255, 84, 112, 0.15);
-}
-.gx-rt-notice {
-  font-size: 12px;
-  color: #94a3b8;
-  margin-top: 8px;
+.gx-sl-remove-link:hover {
+  background: rgba(255, 84, 112, 0.12);
 }
 
 /* Delivery Card (Where to deliver) */
@@ -1313,11 +1248,6 @@ const checkoutCss = `
 .gx-summary-title{margin:0 0 14px;font-size:16px;font-weight:900;color:#f1f5f9}
 .gx-eneba-cta{background:linear-gradient(135deg,#00e5ff,#00b4d8)!important;color:#020b14!important;font-weight:900!important;font-size:15.5px!important;padding:13px!important;border-radius:12px!important;box-shadow:0 8px 24px -4px rgba(0,229,255,.5)!important}
 .gx-eneba-cta:hover{transform:translateY(-1px);box-shadow:0 10px 28px -4px rgba(0,229,255,.65)!important}
-
-/* Coupon Accordion */
-.gx-coupon-accordion{margin-top:16px;border-top:1px solid rgba(255,255,255,.06);padding-top:12px}
-.gx-ca-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:none;color:#cbd5e1;font-size:13px;font-weight:800;cursor:pointer;padding:6px 0}
-.gx-ca-toggle:hover{color:#00e5ff}
 
 /* Payment Stage 2: Spacious & Separated Tiles */
 .gx-payment-stage-wrapper {
@@ -1365,6 +1295,10 @@ const checkoutCss = `
 .gx-pm-back-pill:hover {
   background: rgba(0, 229, 255, 0.1);
   border-color: #00e5ff;
+}
+.gx-pm-back-pill .gx-arr {
+  font-size: 14px;
+  line-height: 1;
 }
 .gx-pm-tiles-list {
   display: flex;
@@ -1500,10 +1434,6 @@ const checkoutCss = `
 .gx-cb-input:focus{outline:none;border-color:rgba(0,229,255,.55);box-shadow:0 0 0 3px rgba(0,229,255,.15)}
 .gx-cb-row{display:flex;gap:8px}
 .gx-coupon-apply{padding:10px 18px;white-space:nowrap}
-.gx-coupon-applied{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;background:rgba(0,229,176,.1);border:1px dashed rgba(0,229,176,.4)}
-.gx-coupon-code{font-family:ui-monospace,monospace;font-weight:900;color:#00e5b0}
-.gx-coupon-note{font-size:11px;color:#7fe5c8;margin-top:2px}
-.gx-coupon-remove{background:transparent;border:1px solid rgba(255,84,112,.4);color:#ff98a8;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer}
 .gx-coupon-msg{margin-top:6px;font-size:12px;font-weight:700;padding:6px 10px;border-radius:8px}
 .gx-coupon-msg.ok{background:rgba(0,229,176,.12);color:#00e5b0}
 .gx-coupon-msg.err{background:rgba(255,84,112,.1);color:#ff98a8}
