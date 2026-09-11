@@ -12,7 +12,7 @@ export function OrderConfirmedModal({
 }: {
   orderNumber: string;
   waUrl: string | null;
-  paymentMethod?: "cliq" | "gx_wallet" | null;
+  paymentMethod?: "cliq" | "card" | "gx_wallet" | null;
   onClose: () => void;
 }) {
   const { t, dir } = useLang();
@@ -89,11 +89,11 @@ export function OrderConfirmedModal({
             display: "inline-flex", alignItems: "center", gap: 6,
             margin: "8px auto 0", padding: "4px 12px", borderRadius: 999,
             fontSize: 12, fontWeight: 800,
-            background: paymentMethod === "cliq" ? "rgba(168,85,247,0.15)" : "rgba(0,229,255,0.12)",
-            border: paymentMethod === "cliq" ? "1px solid rgba(168,85,247,0.4)" : "1px solid rgba(0,229,255,0.35)",
-            color: paymentMethod === "cliq" ? "#d8b4fe" : "#00e5ff",
+            background: paymentMethod === "cliq" ? "rgba(168,85,247,0.15)" : paymentMethod === "card" ? "rgba(59,130,246,0.15)" : "rgba(0,229,255,0.12)",
+            border: paymentMethod === "cliq" ? "1px solid rgba(168,85,247,0.4)" : paymentMethod === "card" ? "1px solid rgba(59,130,246,0.4)" : "1px solid rgba(0,229,255,0.35)",
+            color: paymentMethod === "cliq" ? "#d8b4fe" : paymentMethod === "card" ? "#93c5fd" : "#00e5ff",
           }}>
-            <span>{paymentMethod === "cliq" ? "🇯🇴 طريقة الدفع: كليك (CliQ)" : "🌐 طريقة الدفع: محفظة GX (GX Wallet)"}</span>
+            <span>{paymentMethod === "cliq" ? "🇯🇴 طريقة الدفع: كليك (CliQ)" : paymentMethod === "card" ? "💳 طريقة الدفع: بطاقة بنكية (Visa / Mastercard)" : "🌐 طريقة الدفع: محفظة GX (GX Wallet)"}</span>
           </div>
         )}
         <p style={{ margin: "10px 0 16px", fontSize: 13, color: "#a1a7b8", lineHeight: 1.6 }}>

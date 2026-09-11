@@ -21,7 +21,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
     customerName: z.string().trim().max(120).optional().nullable(),
     customerWhatsapp: z.string().trim().max(40).optional().nullable(),
     customerEmail: z.string().trim().email().max(160).optional().nullable(),
-    paymentMethod: z.enum(["cliq", "gx_wallet"]).optional().nullable(),
+    paymentMethod: z.enum(["cliq", "gx_wallet", "card"]).optional().nullable(),
     contactType: z.enum(["whatsapp", "telegram", "email"]).optional().nullable(),
     coupon: z.object({
       id: z.string().uuid().nullable(),

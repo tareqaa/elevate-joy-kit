@@ -79,8 +79,8 @@ type Ctx = {
   isDrawerOpen: boolean;
   openDrawer: () => void;
   closeDrawer: () => void;
-  submitOrder: (paymentMethod?: "cliq" | "gx_wallet") => Promise<{ order_number: string } | null>;
-  buildWhatsAppUrl: (orderNumber?: string, paymentMethod?: "cliq" | "gx_wallet") => string | null;
+  submitOrder: (paymentMethod?: "cliq" | "card" | "gx_wallet") => Promise<{ order_number: string } | null>;
+  buildWhatsAppUrl: (orderNumber?: string, paymentMethod?: "cliq" | "card" | "gx_wallet") => string | null;
 };
 
 const CartContext = createContext<Ctx | null>(null);
@@ -604,7 +604,12 @@ ${lines}
       msg += `\n💰 *الإجمالي المستحق: ${format(totalJOD)}*
 💱 العملة: ${currency}`;
       if (paymentMethod) {
-        const pmLabel = paymentMethod === "cliq" ? "خدمة كليك (CliQ) 🇯🇴" : "محفظة GX (GX Wallet) 🌐";
+        const pmLabel =
+          paymentMethod === "cliq"
+            ? "خدمة كليك (CliQ) 🇯🇴"
+            : paymentMethod === "card"
+            ? "بطاقة بنكية (Visa / Mastercard) 💳"
+            : "محفظة GX (GX Wallet) 🌐";
         msg += `\n💳 *طريقة الدفع:* ${pmLabel}`;
       }
       if (contact.email?.trim()) {
@@ -626,7 +631,7 @@ ${lines}
     [items, notes, currency, format, totalJOD, coupon, coins, appliedCredit, contact.email]
   );
 
-  const submitOrder = useCallback(async (paymentMethod?: "cliq" | "gx_wallet") => {
+  const submitOrder = useCallback(async (paymentMethod?: "cliq" | "card" | "gx_wallet") => {
     if (items.length === 0) return null;
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;

@@ -3,14 +3,12 @@ import { StoreShell } from "@/components/gx/StoreShell";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
-import { GxIcon } from "@/components/gx/GxIcon";
 import { CartItemThumb } from "@/components/gx/CartThumb";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { OrderConfirmedModal } from "@/components/gx/OrderConfirmedModal";
 import { coinsToJod, jodToCoins, MAX_COINS_DISCOUNT_RATIO } from "@/lib/gx/loyalty";
-import { useLoyaltyCopy, bidi } from "@/lib/gx/loyalty-copy";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 
@@ -24,29 +22,6 @@ export const Route = createFileRoute("/cart")({
   }),
   component: CartPage,
 });
-
-const COUNTRY_CODES: { code: string; flag: string; name: string; en: string }[] = [
-  { code: "+962", flag: "🇯🇴", name: "الأردن", en: "Jordan" },
-  { code: "+966", flag: "🇸🇦", name: "السعودية", en: "Saudi Arabia" },
-  { code: "+971", flag: "🇦🇪", name: "الإمارات", en: "UAE" },
-  { code: "+965", flag: "🇰🇼", name: "الكويت", en: "Kuwait" },
-  { code: "+974", flag: "🇶🇦", name: "قطر", en: "Qatar" },
-  { code: "+973", flag: "🇧🇭", name: "البحرين", en: "Bahrain" },
-  { code: "+968", flag: "🇴🇲", name: "عُمان", en: "Oman" },
-  { code: "+20",  flag: "🇪🇬", name: "مصر", en: "Egypt" },
-  { code: "+970", flag: "🇵🇸", name: "فلسطين", en: "Palestine" },
-  { code: "+961", flag: "🇱🇧", name: "لبنان", en: "Lebanon" },
-  { code: "+963", flag: "🇸🇾", name: "سوريا", en: "Syria" },
-  { code: "+964", flag: "🇮🇶", name: "العراق", en: "Iraq" },
-  { code: "+967", flag: "🇾🇪", name: "اليمن", en: "Yemen" },
-  { code: "+218", flag: "🇱🇾", name: "ليبيا", en: "Libya" },
-  { code: "+216", flag: "🇹🇳", name: "تونس", en: "Tunisia" },
-  { code: "+213", flag: "🇩🇿", name: "الجزائر", en: "Algeria" },
-  { code: "+212", flag: "🇲🇦", name: "المغرب", en: "Morocco" },
-  { code: "+90",  flag: "🇹🇷", name: "تركيا", en: "Turkey" },
-  { code: "+1",   flag: "🇺🇸", name: "أمريكا/كندا", en: "USA/Canada" },
-  { code: "+44",  flag: "🇬🇧", name: "بريطانيا", en: "UK" },
-];
 
 function TrashIcon({ size = 17 }: { size?: number }) {
   return (
@@ -65,47 +40,23 @@ function CartPage() {
   const [confirmed, setConfirmed] = useState<{
     orderNumber: string;
     waUrl: string | null;
-    paymentMethod?: "cliq" | "gx_wallet";
+    paymentMethod?: "cliq" | "card" | "gx_wallet";
   } | null>(null);
 
   const isJordan = (cart.contact.countryCode || "+962") === "+962";
-  const [paymentMethod, setPaymentMethod] = useState<"cliq" | "gx_wallet">(isJordan ? "cliq" : "gx_wallet");
+  const [paymentMethod, setPaymentMethod] = useState<"cliq" | "card">(isJordan ? "cliq" : "card");
 
   useEffect(() => {
     if (!isJordan && paymentMethod === "cliq") {
-      setPaymentMethod("gx_wallet");
+      setPaymentMethod("card");
     }
   }, [isJordan, paymentMethod]);
 
   return (
     <StoreShell>
       <section className="section gx-checkout-section">
+        <style>{checkoutCss}</style>
         <div className="wrap">
-          {/* Top 3-Step Stepper (Eneba Style) */}
-          <div className="gx-eneba-stepper">
-            <div
-              className={"gx-es-step " + (stage === 1 ? "active" : "done")}
-              onClick={() => setStage(1)}
-            >
-              <div className="gx-es-circle">{stage === 2 ? "✓" : "1"}</div>
-              <span className="gx-es-label">{t("cart.shopping_cart")}</span>
-            </div>
-
-            <div className={"gx-es-line " + (stage === 2 ? "active" : "")} />
-
-            <div className={"gx-es-step " + (stage === 2 ? "active" : "pending")}>
-              <div className="gx-es-circle">2</div>
-              <span className="gx-es-label">{t("cart.payment_step")}</span>
-            </div>
-
-            <div className="gx-es-line pending" />
-
-            <div className="gx-es-step pending">
-              <div className="gx-es-circle">3</div>
-              <span className="gx-es-label">{t("cart.step3_title")}</span>
-            </div>
-          </div>
-
           {cart.items.length === 0 ? (
             <CartList />
           ) : stage === 1 ? (
@@ -138,7 +89,6 @@ function CartPage() {
                     setStage(1);
                     window.scrollTo({ top: 80, behavior: "smooth" });
                   }}
-                  onConfirmed={(data) => setConfirmed(data)}
                 />
               </div>
 
@@ -230,10 +180,6 @@ function CartList() {
                   <Link to="/snapchat">{t("cart.add_snap_hint_b")}</Link>
                 </div>
               )}
-
-              <div className="gx-cashback-hint">
-                ⚡ تسليم فوري وتلقائي | 🪙 مكافأة الطلب: نقاط XP وعملات GX
-              </div>
             </div>
 
             <div className="cr-qty" aria-label={t("cart.qty")}>
@@ -259,10 +205,10 @@ function CartList() {
   );
 }
 
-/** Card 1: "أين تريد تسليم الطلب؟" */
+/** Card 1: "أين تريد تسليم الطلب؟" - Hidden completely if user is signed in */
 function CartDeliveryCard() {
   const cart = useCart();
-  const { t, lang } = useLang();
+  const { t } = useLang();
   const [signedInUser, setSignedInUser] = useState<{ id: string; email: string } | null>(null);
   const [rememberMe, setRememberMe] = useState(true);
 
@@ -278,72 +224,43 @@ function CartDeliveryCard() {
     });
   }, [cart]);
 
+  // If user is signed in, completely omit this card
+  if (signedInUser) {
+    return null;
+  }
+
   return (
     <div className="gx-delivery-card">
       <div className="gx-dc-title">
-        <span>📦</span>
-        <h3>{t("cart.where_deliver")}</h3>
+        <span>✉️</span>
+        <h3>{t("cart.email_label")}</h3>
       </div>
 
-      {signedInUser ? (
-        <div className="gx-signedin-box">
-          <div className="gx-sic-badge">
-            <span className="gx-sic-dot" />
-            <span>{t("cart.logged_in_as")} <b>{signedInUser.email}</b></span>
-          </div>
-          <div className="gx-sic-note">🎮 {t("cart.rewards_linked")}</div>
-        </div>
-      ) : (
-        <div className="gx-email-box">
-          <label className="gx-field-label">
-            {t("cart.email_label")} <span className="gx-req">*</span>
-          </label>
+      <div className="gx-email-box">
+        <input
+          className="gx-cb-input"
+          type="email"
+          autoComplete="email"
+          placeholder={t("cart.email_ph")}
+          value={cart.contact.email || ""}
+          onChange={(e) => cart.setContact({ email: e.target.value })}
+          style={{ direction: "ltr", textAlign: "left" }}
+        />
+
+        <label className="gx-remember-row">
           <input
-            className="gx-cb-input"
-            type="email"
-            autoComplete="email"
-            placeholder={t("cart.email_ph")}
-            value={cart.contact.email || ""}
-            onChange={(e) => cart.setContact({ email: e.target.value })}
-            style={{ direction: "ltr", textAlign: "left" }}
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
           />
-
-          <label className="gx-remember-row">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-            />
-            <span>{t("cart.remember_me")}</span>
-          </label>
-
-          <div className="gx-help" style={{ marginTop: 6, marginBottom: 0 }}>
-            {t("cart.email_help")}
-          </div>
-
-          {/* Quick country selection */}
-          <div style={{ marginTop: 12 }}>
-            <label className="gx-field-label">الدولة / العملة</label>
-            <select
-              className="gx-cb-select"
-              style={{ maxWidth: "100%" }}
-              value={cart.contact.countryCode || "+962"}
-              onChange={(e) => cart.setContact({ countryCode: e.target.value })}
-            >
-              {COUNTRY_CODES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.flag} {lang === "en" ? c.en : c.name} ({c.code})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
+          <span>{t("cart.remember_me")}</span>
+        </label>
+      </div>
     </div>
   );
 }
 
-/** Card 2: "الملخص" (Summary) */
+/** Card 2: "الملخص" (Summary Stage 1) */
 function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
   const cart = useCart();
   const { format } = useCurrency();
@@ -379,10 +296,9 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
 
   return (
     <div className="summary-card gx-eneba-summary-card">
-      <style>{checkoutCss}</style>
       <h3 className="gx-summary-title">{t("cart.summary_box")}</h3>
 
-      {/* Prominent Action Button at TOP of summary (like Eneba) */}
+      {/* Prominent Action Button at TOP */}
       <button className="btn btn-primary btn-block gx-eneba-cta" onClick={handleAdvance}>
         {t("cart.continue_to_payment")} ←
       </button>
@@ -404,13 +320,13 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
           </div>
         )}
         {cart.coins && (
-          <div className="summary-line" style={{ color: "#ffc400" }}>
+          <div className="summary-line" style={{ color: "#fbbf24" }}>
             <span>GX Coins ({cart.coins.coins.toLocaleString("en-US")})</span>
             <span>-{format(cart.coins.discount_jod)}</span>
           </div>
         )}
         {cart.creditJOD > 0 && (
-          <div className="summary-line" style={{ color: "#8ab4ff" }}>
+          <div className="summary-line" style={{ color: "#38bdf8" }}>
             <span>{t("cart.store_credit")}</span>
             <span>-{format(cart.creditJOD)}</span>
           </div>
@@ -487,34 +403,31 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-/** Stage 2: Payment Methods Page (Eneba Style) */
+/** Stage 2: Payment Methods Page */
 function CartPaymentStage2({
   paymentMethod,
   setPaymentMethod,
   isJordan,
   onBack,
-  onConfirmed,
 }: {
-  paymentMethod: "cliq" | "gx_wallet";
-  setPaymentMethod: (m: "cliq" | "gx_wallet") => void;
+  paymentMethod: "cliq" | "card";
+  setPaymentMethod: (m: "cliq" | "card") => void;
   isJordan: boolean;
   onBack: () => void;
-  onConfirmed: (data: { orderNumber: string; waUrl: string | null; paymentMethod?: "cliq" | "gx_wallet" }) => void;
 }) {
   const { t } = useLang();
 
   return (
     <div className="cart-list-card gx-eneba-payment-card">
-      <style>{checkoutCss}</style>
       <div className="cart-list-head" style={{ alignItems: "center" }}>
         <h2>{t("cart.payment_method_title")}</h2>
         <button type="button" className="gx-back-link" onClick={onBack}>
-          ← {t("cart.back_to_info")}
+          ← {t("cart.shopping_cart")}
         </button>
       </div>
 
       <div className="gx-payment-list">
-        {/* CliQ Option - Jordan ONLY (with official CliQ logo, no phone/account number here) */}
+        {/* CliQ Option - Jordan ONLY (Clean official logo badge, no exposed raw alias) */}
         {isJordan && (
           <div
             className={"gx-payment-card-eneba " + (paymentMethod === "cliq" ? "active" : "")}
@@ -536,23 +449,23 @@ function CartPaymentStage2({
           </div>
         )}
 
-        {/* GX Wallet Option - Jordan & All Countries (with custom GX Wallet logo) */}
+        {/* Visa / Mastercard Option - Jordan & International */}
         <div
-          className={"gx-payment-card-eneba " + (paymentMethod === "gx_wallet" ? "active" : "")}
-          onClick={() => setPaymentMethod("gx_wallet")}
+          className={"gx-payment-card-eneba " + (paymentMethod === "card" ? "active" : "")}
+          onClick={() => setPaymentMethod("card")}
         >
           <div className="gx-pc-radio">
             <span className="gx-pc-dot" />
           </div>
 
           <div className="gx-pc-body">
-            <div className="gx-pc-title">{t("cart.method_wallet")}</div>
-            <div className="gx-pc-sub">{t("cart.method_wallet_desc")}</div>
+            <div className="gx-pc-title">{t("cart.method_card")}</div>
+            <div className="gx-pc-sub">{t("cart.method_card_desc")}</div>
           </div>
 
-          {/* Custom GX Wallet Logo Badge */}
-          <div className="gx-pc-logo-badge wallet">
-            <img src="/app/assets/img/gx-wallet-logo.svg" alt="GX Wallet" />
+          {/* Visa / Mastercard Logo Badge */}
+          <div className="gx-pc-logo-badge card">
+            <img src="/app/assets/img/cards-logo.svg" alt="Visa / Mastercard" />
           </div>
         </div>
       </div>
@@ -566,9 +479,9 @@ function CartOrderRecapStage2({
   onEditEmail,
   onConfirmed,
 }: {
-  paymentMethod: "cliq" | "gx_wallet";
+  paymentMethod: "cliq" | "card";
   onEditEmail: () => void;
-  onConfirmed: (data: { orderNumber: string; waUrl: string | null; paymentMethod?: "cliq" | "gx_wallet" }) => void;
+  onConfirmed: (data: { orderNumber: string; waUrl: string | null; paymentMethod?: "cliq" | "card" }) => void;
 }) {
   const cart = useCart();
   const { format } = useCurrency();
@@ -623,16 +536,18 @@ function CartOrderRecapStage2({
         ))}
       </div>
 
-      {/* Email recap with Edit button */}
-      <div className="gx-recap-email-box">
-        <div className="gx-reb-left">
-          <span className="gx-reb-lbl">{t("cart.email_label")}:</span>
-          <span className="gx-reb-val" dir="ltr">{cart.contact.email || "—"}</span>
+      {/* Email recap with Edit button if entered */}
+      {cart.contact.email && (
+        <div className="gx-recap-email-box">
+          <div className="gx-reb-left">
+            <span className="gx-reb-lbl">{t("cart.email_label")}:</span>
+            <span className="gx-reb-val" dir="ltr">{cart.contact.email}</span>
+          </div>
+          <button type="button" className="gx-reb-edit" onClick={onEditEmail}>
+            {t("cart.edit")}
+          </button>
         </div>
-        <button type="button" className="gx-reb-edit" onClick={onEditEmail}>
-          {t("cart.edit")}
-        </button>
-      </div>
+      )}
 
       {/* Order Notes */}
       <div className="notes-field" style={{ marginTop: 12 }}>
@@ -658,13 +573,13 @@ function CartOrderRecapStage2({
           </div>
         )}
         {cart.coins && (
-          <div className="summary-line" style={{ color: "#ffc400" }}>
+          <div className="summary-line" style={{ color: "#fbbf24" }}>
             <span>GX Coins ({cart.coins.coins.toLocaleString("en-US")})</span>
             <span>-{format(cart.coins.discount_jod)}</span>
           </div>
         )}
         {cart.creditJOD > 0 && (
-          <div className="summary-line" style={{ color: "#8ab4ff" }}>
+          <div className="summary-line" style={{ color: "#38bdf8" }}>
             <span>{t("cart.store_credit")}</span>
             <span>-{format(cart.creditJOD)}</span>
           </div>
@@ -684,19 +599,15 @@ function CartOrderRecapStage2({
       >
         {busy ? t("cart.checkout_saving") : t("cart.complete_payment") + " 💳"}
       </button>
-
-      <button type="button" className="gx-back-subtle" onClick={onEditEmail}>
-        ← {t("cart.back_to_info")}
-      </button>
     </div>
   );
 }
 
+/** Re-engineered, elegant GX Coins block */
 function CoinsBlock() {
   const cart = useCart();
   const { format } = useCurrency();
   const { t, lang } = useLang();
-  const copy = useLoyaltyCopy();
   const isAr = lang !== "en";
   const [balance, setBalance] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
@@ -718,85 +629,117 @@ function CoinsBlock() {
     return () => { alive = false; window.removeEventListener("gx:balances-updated", on); };
   }, []);
 
-  if (balance === null) return null;
+  if (balance === null || balance <= 0) return null;
 
   const payable = Math.max(0, cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0));
   const capJod = Math.round(payable * MAX_COINS_DISCOUNT_RATIO * 100) / 100;
   const usable = Math.min(balance, jodToCoins(capJod));
 
   async function apply(v: number) {
-    if (busy) return;
+    if (busy || v <= 0) return;
     setBusy(true);
     const r = await cart.applyCoins(v);
     setMsg({ ok: r.ok, msg: r.message });
     setBusy(false);
   }
 
-  const pct = balance > 0 ? Math.min(100, Math.round((usable / balance) * 100)) : 0;
-
   return (
-    <div className="gx-coupon-block" style={{ marginTop: 12 }}>
-      <div className="gx-cb-title">
-        <GxIcon name="coin" size={16} /> GX Coins
-        <span className="gx-bal-pill" style={{ color: "#ffc400" }}>
+    <div className="gx-balance-card coins">
+      <div className="gx-bc-head">
+        <div className="gx-bc-left">
+          <span className="gx-bc-icon">🪙</span>
+          <span className="gx-bc-title">GX Coins</span>
+        </div>
+        <div className="gx-bc-pill coins">
           {balance.toLocaleString("en-US")} ≈ {format(coinsToJod(balance))}
-        </span>
+        </div>
       </div>
-      <div className="gx-help">
-        {copy.redeem}{" "}
-        {isAr ? `في هذا الطلب يمكنك خصم حتى ${bidi(format(capJod))}.` : `On this order you can knock off up to ${bidi(format(capJod))}.`}
-      </div>
+
       {cart.coins ? (
-        <div className="gx-coupon-applied">
-          <div>
-            <div className="gx-coupon-code">{cart.coins.coins.toLocaleString("en-US")} Coins</div>
-            <div className="gx-coupon-note">{t("cart.discount")}: -{format(cart.coins.discount_jod)}</div>
+        <div className="gx-bc-applied coins">
+          <div className="gx-bca-info">
+            <span className="gx-bca-val">{cart.coins.coins.toLocaleString("en-US")} Coins</span>
+            <span className="gx-bca-sub">{t("cart.discount")}: -{format(cart.coins.discount_jod)}</span>
           </div>
-          <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCoins(); setMsg(null); }}>{t("cart.remove")}</button>
+          <button
+            type="button"
+            className="gx-bc-remove"
+            onClick={() => { cart.removeCoins(); setMsg(null); }}
+          >
+            {t("cart.remove")}
+          </button>
         </div>
       ) : usable < 1 ? (
-        <div className="gx-coupon-note" style={{ fontSize: 12 }}>
+        <div className="gx-bc-hint">
           {balance < 1 ? t("cart.coins_earn") : t("cart.coins_low")}
         </div>
       ) : (
-        <>
-          <div className="gx-meter"><i style={{ width: `${pct}%` }} /></div>
-          <div className="gx-help" style={{ margin: "0 0 8px" }}>
-            {t("cart.coins_available")}: <b style={{ color: "#ffc400" }}>{usable.toLocaleString("en-US")}</b> {t("cart.coins_unit")} ({format(coinsToJod(usable))})
+        <div className="gx-bc-actions">
+          <div className="gx-bc-hint">
+            {isAr
+              ? `يمكنك خصم حتى ${format(capJod)} باستخدام ${usable.toLocaleString("en-US")} عملة`
+              : `Knock off up to ${format(capJod)} with ${usable.toLocaleString("en-US")} coins`}
           </div>
-          <div className="gx-chips">
-            {[0.25, 0.5, 1].map((f) => {
-              const v = Math.max(1, Math.floor(usable * f));
+
+          {/* Quick Preset Segmented Buttons */}
+          <div className="gx-bc-presets">
+            {[
+              { label: "25%", ratio: 0.25 },
+              { label: "50%", ratio: 0.5 },
+              { label: isAr ? `الحد الأقصى (${usable.toLocaleString("en-US")})` : `Max (${usable.toLocaleString("en-US")})`, ratio: 1 },
+            ].map((p) => {
+              const v = Math.max(1, Math.floor(usable * p.ratio));
               return (
-                <button key={f} type="button" className="gx-chip"
-                  onClick={() => { setAmount(String(v)); apply(v); }}>
-                  {f === 1 ? t("cart.max") : `${Math.round(f * 100)}%`} · {v.toLocaleString("en-US")}
+                <button
+                  key={p.ratio}
+                  type="button"
+                  className="gx-bc-preset-btn"
+                  onClick={() => {
+                    setAmount(String(v));
+                    apply(v);
+                  }}
+                >
+                  {p.label}
                 </button>
               );
             })}
           </div>
-          <div className="gx-cb-row">
+
+          {/* Clean input row */}
+          <div className="gx-bc-input-group">
             <input
-              className="gx-cb-input"
+              className="gx-bc-input"
               type="number"
               min={1}
               max={usable}
-              placeholder={`${t("cart.use_up_to")} ${usable.toLocaleString("en-US")} ${t("cart.coins_unit")}`}
+              placeholder={`${t("cart.use_up_to")} ${usable.toLocaleString("en-US")}`}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (amount) apply(Number(amount));
+                }
+              }}
             />
-            <button type="button" className="btn btn-primary gx-coupon-apply" disabled={busy || !amount}
-              onClick={() => apply(Number(amount))}>
+            <button
+              type="button"
+              className="gx-bc-apply-btn"
+              disabled={busy || !amount || Number(amount) <= 0}
+              onClick={() => apply(Number(amount))}
+            >
               {busy ? "..." : t("cart.use")}
             </button>
           </div>
+
           {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
-        </>
+        </div>
       )}
     </div>
   );
 }
 
+/** Re-engineered, elegant Store Credit block */
 function CreditBlock() {
   const cart = useCart();
   const { format } = useCurrency();
@@ -827,7 +770,7 @@ function CreditBlock() {
   const usable = Math.round(Math.min(balance, payable) * 100) / 100;
 
   async function apply(v: number) {
-    if (busy) return;
+    if (busy || v <= 0) return;
     setBusy(true);
     const r = await cart.applyCredit(v);
     setMsg({ ok: r.ok, msg: r.message });
@@ -835,24 +778,36 @@ function CreditBlock() {
   }
 
   return (
-    <div className="gx-coupon-block" style={{ marginTop: 12 }}>
-      <div className="gx-cb-title">
-        💳 {t("cart.credit_title")}
-        <span className="gx-bal-pill" style={{ color: "#8ab4ff" }}>{format(balance)}</span>
-      </div>
-      {cart.creditJOD > 0 ? (
-        <div className="gx-coupon-applied" style={{ background: "rgba(138,180,255,.1)", borderColor: "rgba(138,180,255,.4)" }}>
-          <div>
-            <div className="gx-coupon-code" style={{ color: "#8ab4ff" }}>{format(cart.creditJOD)}</div>
-            <div className="gx-coupon-note" style={{ color: "#a9c4f0" }}>{t("cart.credit_applied")}</div>
-          </div>
-          <button type="button" className="gx-coupon-remove" onClick={() => { cart.removeCredit(); setMsg(null); }}>{t("cart.remove")}</button>
+    <div className="gx-balance-card credit">
+      <div className="gx-bc-head">
+        <div className="gx-bc-left">
+          <span className="gx-bc-icon">💳</span>
+          <span className="gx-bc-title">{t("cart.store_credit")}</span>
         </div>
-      ) : (
-        <>
-          <div className="gx-cb-row">
+        <div className="gx-bc-pill credit">
+          {format(balance)}
+        </div>
+      </div>
+
+      {cart.creditJOD > 0 ? (
+        <div className="gx-bc-applied credit">
+          <div className="gx-bca-info">
+            <span className="gx-bca-val">{format(cart.creditJOD)}</span>
+            <span className="gx-bca-sub">{t("cart.credit_applied")}</span>
+          </div>
+          <button
+            type="button"
+            className="gx-bc-remove"
+            onClick={() => { cart.removeCredit(); setMsg(null); }}
+          >
+            {t("cart.remove")}
+          </button>
+        </div>
+      ) : usable > 0 ? (
+        <div className="gx-bc-actions">
+          <div className="gx-bc-input-group">
             <input
-              className="gx-cb-input"
+              className="gx-bc-input"
               type="number"
               min={0.01}
               step={0.01}
@@ -860,37 +815,37 @@ function CreditBlock() {
               placeholder={`${t("cart.use_up_to")} ${format(usable)}`}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (amount) apply(Number(amount));
+                }
+              }}
             />
-            <button type="button" className="btn btn-primary gx-coupon-apply" disabled={busy || !amount}
-              onClick={() => apply(Number(amount))}>
+            <button
+              type="button"
+              className="gx-bc-max-btn"
+              onClick={() => { setAmount(usable.toFixed(2)); apply(usable); }}
+            >
+              كامل الرصيد
+            </button>
+            <button
+              type="button"
+              className="gx-bc-apply-btn"
+              disabled={busy || !amount || Number(amount) <= 0}
+              onClick={() => apply(Number(amount))}
+            >
               {busy ? "..." : t("cart.use")}
             </button>
           </div>
-          <button type="button" className="gx-coins-max" style={{ borderColor: "rgba(138,180,255,.4)", color: "#8ab4ff" }}
-            onClick={() => { setAmount(usable.toFixed(2)); apply(usable); }}>
-            {t("cart.credit_use_all")} ({format(usable)})
-          </button>
           {msg && <div className={"gx-coupon-msg " + (msg.ok ? "ok" : "err")}>{msg.msg}</div>}
-        </>
-      )}
+        </div>
+      ) : null}
     </div>
   );
 }
 
 const checkoutCss = `
-/* Top Eneba-Style Stepper */
-.gx-eneba-stepper{display:flex;align-items:center;justify-content:center;gap:14px;margin:0 0 28px;padding:16px 20px;border-radius:20px;background:linear-gradient(180deg,rgba(18,22,34,.9),rgba(10,13,22,.9));border:1px solid rgba(0,229,255,.16);box-shadow:0 14px 34px -10px rgba(0,0,0,.6)}
-.gx-es-step{display:flex;align-items:center;gap:10px;cursor:pointer;opacity:.65;transition:all .2s ease}
-.gx-es-step.active{opacity:1}
-.gx-es-step.done{opacity:1}
-.gx-es-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;background:rgba(255,255,255,.06);color:#94a3b8;border:1px solid rgba(255,255,255,.1)}
-.gx-es-step.active .gx-es-circle{background:linear-gradient(135deg,#00e5ff,#7c3aed);color:#fff;box-shadow:0 0 14px rgba(0,229,255,.6);border:none}
-.gx-es-step.done .gx-es-circle{background:#00e5b0;color:#0a0e1a;border:none}
-.gx-es-label{font-size:14px;font-weight:800;color:#e2e8f0}
-.gx-es-step.active .gx-es-label{color:#00e5ff}
-.gx-es-line{flex:0 0 60px;height:2px;background:rgba(255,255,255,.1);border-radius:99px;transition:all .3s}
-.gx-es-line.active{background:linear-gradient(90deg,#00e5b0,#00e5ff)}
-
 /* 2-Column Grid (Main right, sidebar left in RTL) */
 .gx-eneba-grid{display:grid;grid-template-columns:1fr 370px;gap:24px;align-items:start}
 .gx-eneba-main{display:flex;flex-direction:column;gap:20px}
@@ -900,13 +855,12 @@ const checkoutCss = `
 .gx-eneba-row{position:relative;border-bottom:1px solid rgba(255,255,255,.06)!important;padding:16px 0!important}
 .gx-row-trash{background:transparent;border:none;color:#64748b;cursor:pointer;padding:8px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .18s}
 .gx-row-trash:hover{color:#ff5470;background:rgba(255,84,112,.1)}
-.gx-cashback-hint{font-size:11px;color:#00e5b0;margin-top:6px;font-weight:700}
 
 /* Delivery Card (Where to deliver) */
 .gx-delivery-card{border-radius:18px;padding:18px;border:1px solid rgba(0,229,255,.16);background:linear-gradient(180deg,rgba(18,22,34,.7),rgba(10,13,22,.85))}
 .gx-dc-title{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.06)}
-.gx-dc-title h3{margin:0;font-size:16px;font-weight:900;color:#f1f5f9}
-.gx-remember-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#cbd5e1;cursor:pointer;margin-top:6px}
+.gx-dc-title h3{margin:0;font-size:15px;font-weight:900;color:#f1f5f9}
+.gx-remember-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#cbd5e1;cursor:pointer;margin-top:8px}
 .gx-remember-row input{width:16px;height:16px;accent-color:#00e5ff;cursor:pointer}
 
 /* Summary Card */
@@ -920,7 +874,40 @@ const checkoutCss = `
 .gx-ca-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:none;color:#cbd5e1;font-size:13px;font-weight:800;cursor:pointer;padding:6px 0}
 .gx-ca-toggle:hover{color:#00e5ff}
 
-/* Payment Stage 2 Cards (Eneba Style) */
+/* Balance & Loyalty Cards (Store Credit & GX Coins) */
+.gx-balance-card{margin-top:14px;padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);transition:all .2s ease}
+.gx-balance-card.credit{background:linear-gradient(180deg,rgba(56,189,248,.04) 0%,rgba(14,20,35,.4) 100%);border-color:rgba(56,189,248,.2)}
+.gx-balance-card.coins{background:linear-gradient(180deg,rgba(245,158,11,.04) 0%,rgba(14,20,35,.4) 100%);border-color:rgba(245,158,11,.2)}
+.gx-bc-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.gx-bc-left{display:flex;align-items:center;gap:8px}
+.gx-bc-icon{font-size:16px;line-height:1}
+.gx-bc-title{font-size:13.5px;font-weight:800;color:#f1f5f9}
+.gx-bc-pill{font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px;border:1px solid transparent}
+.gx-bc-pill.credit{background:rgba(56,189,248,.12);color:#38bdf8;border-color:rgba(56,189,248,.3)}
+.gx-bc-pill.coins{background:rgba(245,158,11,.12);color:#fbbf24;border-color:rgba(245,158,11,.3)}
+.gx-bc-actions{margin-top:10px}
+.gx-bc-hint{font-size:11.5px;color:#94a3b8;margin:4px 0 10px;line-height:1.5}
+.gx-bc-presets{display:flex;gap:6px;margin-bottom:10px}
+.gx-bc-preset-btn{flex:1;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#cbd5e1;font-size:11.5px;font-weight:800;cursor:pointer;transition:all .18s;text-align:center}
+.gx-bc-preset-btn:hover{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.45);color:#fbbf24}
+.gx-bc-input-group{display:flex;gap:6px;align-items:center}
+.gx-bc-input{flex:1;min-width:0;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.4);color:#f1f5f9;font-size:13px;font-family:inherit;box-sizing:border-box}
+.gx-bc-input:focus{outline:none;border-color:#00e5ff}
+.gx-bc-max-btn{white-space:nowrap;padding:8px 10px;border-radius:10px;border:1px solid rgba(56,189,248,.3);background:rgba(56,189,248,.08);color:#38bdf8;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .18s}
+.gx-bc-max-btn:hover{background:rgba(56,189,248,.18);border-color:#38bdf8}
+.gx-bc-apply-btn{padding:8px 14px;border-radius:10px;border:none;background:linear-gradient(135deg,#00e5ff,#00b4d8);color:#020b14;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;transition:all .18s}
+.gx-bc-apply-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,229,255,.4)}
+.gx-bc-apply-btn:disabled{opacity:.4;cursor:not-allowed}
+.gx-bc-applied{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;margin-top:8px}
+.gx-bc-applied.credit{background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3)}
+.gx-bc-applied.coins{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3)}
+.gx-bca-info{display:flex;flex-direction:column}
+.gx-bca-val{font-size:13.5px;font-weight:800;color:#f1f5f9}
+.gx-bca-sub{font-size:11px;color:#94a3b8}
+.gx-bc-remove{background:transparent;border:1px solid rgba(255,84,112,.4);color:#ff98a8;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer}
+.gx-bc-remove:hover{background:rgba(255,84,112,.12)}
+
+/* Payment Stage 2 Cards */
 .gx-eneba-payment-card{border-radius:18px;border:1px solid rgba(0,229,255,.16);background:linear-gradient(180deg,rgba(18,22,34,.7),rgba(10,13,22,.85))}
 .gx-payment-list{display:flex;flex-direction:column;gap:14px;margin:16px 0}
 .gx-payment-card-eneba{display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:16px;background:rgba(255,255,255,.02);border:1.5px solid rgba(255,255,255,.08);cursor:pointer;transition:all .2s ease}
@@ -935,12 +922,12 @@ const checkoutCss = `
 .gx-payment-card-eneba.active .gx-pc-title{color:#00e5ff}
 .gx-pc-sub{font-size:12px;color:#94a3b8;margin-top:2px}
 
-/* Payment Logos (CliQ and GX Wallet) */
-.gx-pc-logo-badge{flex:0 0 auto;height:42px;min-width:105px;padding:6px 14px;border-radius:10px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
-.gx-pc-logo-badge.cliq{background:linear-gradient(135deg,#581c87,#3b0764);border:1px solid rgba(168,85,247,.4)}
-.gx-pc-logo-badge.cliq img{height:22px;width:auto;object-fit:contain}
-.gx-pc-logo-badge.wallet{background:transparent;padding:0}
-.gx-pc-logo-badge.wallet img{height:42px;width:auto;object-fit:contain}
+/* Payment Logos (CliQ and Visa/Mastercard) */
+.gx-pc-logo-badge{flex:0 0 auto;height:40px;min-width:104px;padding:4px 12px;border-radius:10px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.gx-pc-logo-badge.cliq{background:#ffffff;border:1px solid rgba(255,255,255,.9);box-shadow:0 4px 12px rgba(0,0,0,.35)}
+.gx-pc-logo-badge.cliq img{height:24px;width:auto;max-width:86px;object-fit:contain}
+.gx-pc-logo-badge.card{background:#ffffff;border:1px solid rgba(255,255,255,.9);box-shadow:0 4px 12px rgba(0,0,0,.35);padding:4px 8px}
+.gx-pc-logo-badge.card img{height:24px;width:auto;object-fit:contain}
 
 /* Recap Side (Stage 2) */
 .gx-recap-items{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;max-height:220px;overflow-y:auto;padding-inline-end:4px}
@@ -956,15 +943,8 @@ const checkoutCss = `
 .gx-reb-edit{background:none;border:none;color:#00e5ff;font-size:12.5px;font-weight:800;cursor:pointer;text-decoration:underline}
 
 /* Common form styles */
-.gx-cb-input, .gx-cb-select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.35);color:#e6f7ff;font-family:inherit;font-size:14px;margin-bottom:8px;box-sizing:border-box}
-.gx-cb-input:focus, .gx-cb-select:focus{outline:none;border-color:rgba(0,229,255,.55);box-shadow:0 0 0 3px rgba(0,229,255,.15)}
-.gx-field-label{display:block;font-size:12px;font-weight:700;color:#cbd5e1;margin-bottom:4px}
-.gx-req{color:#ff5470;font-size:12px;font-weight:800}
-.gx-help{font-size:11.5px;color:#94a3b8;line-height:1.6}
-.gx-signedin-box{padding:12px;border-radius:12px;background:rgba(0,229,176,.08);border:1px solid rgba(0,229,176,.35)}
-.gx-sic-badge{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#a7f3d0;font-weight:700}
-.gx-sic-dot{width:8px;height:8px;border-radius:50%;background:#00e5b0;box-shadow:0 0 8px #00e5b0}
-.gx-sic-note{margin-top:4px;font-size:11.5px;color:#7fe5c8}
+.gx-cb-input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.35);color:#e6f7ff;font-family:inherit;font-size:14px;box-sizing:border-box}
+.gx-cb-input:focus{outline:none;border-color:rgba(0,229,255,.55);box-shadow:0 0 0 3px rgba(0,229,255,.15)}
 .gx-cb-row{display:flex;gap:8px}
 .gx-coupon-apply{padding:10px 18px;white-space:nowrap}
 .gx-coupon-applied{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;background:rgba(0,229,176,.1);border:1px dashed rgba(0,229,176,.4)}
@@ -975,20 +955,8 @@ const checkoutCss = `
 .gx-coupon-msg.ok{background:rgba(0,229,176,.12);color:#00e5b0}
 .gx-coupon-msg.err{background:rgba(255,84,112,.1);color:#ff98a8}
 .gx-back-link{background:none;border:none;color:#00e5ff;font-size:13px;font-weight:800;cursor:pointer}
-.gx-back-subtle{display:block;width:100%;text-align:center;background:none;border:none;color:#94a3b8;font-size:12.5px;font-weight:700;margin-top:10px;cursor:pointer}
-.gx-back-subtle:hover{color:#f1f5f9}
-.gx-bal-pill{margin-inline-start:auto;font-size:12px;font-weight:800;padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
-.gx-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-.gx-chip{padding:6px 12px;border-radius:99px;font-size:12px;font-weight:800;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:#cfe0ee}
-.gx-chip:hover{border-color:rgba(0,229,255,.5);color:#00e5ff}
-.gx-meter{height:6px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin:8px 0 4px}
-.gx-meter > i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ffc400,#ff8a00)}
-.gx-coins-max{margin-top:6px;background:transparent;border:1px dashed rgba(255,196,0,.4);color:#ffc400;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;width:100%}
 
 @media (max-width:900px){
   .gx-eneba-grid{grid-template-columns:1fr}
-  .gx-eneba-stepper{gap:8px;padding:12px}
-  .gx-es-line{flex:0 0 30px}
-  .gx-es-label{font-size:12px}
 }
 `;

@@ -11,7 +11,7 @@ type CreateOrderInput = {
   customerName?: string | null;
   customerWhatsapp?: string | null;
   customerEmail?: string | null;
-  paymentMethod?: "cliq" | "gx_wallet" | null;
+  paymentMethod?: "cliq" | "gx_wallet" | "card" | null;
   contactType?: "whatsapp" | "telegram" | null;
   deliveryData?: Record<string, unknown>;
   userId?: string | null;
