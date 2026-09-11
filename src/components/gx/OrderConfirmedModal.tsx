@@ -7,10 +7,12 @@ import { supabase } from "@/integrations/supabase/client";
 export function OrderConfirmedModal({
   orderNumber,
   waUrl,
+  paymentMethod,
   onClose,
 }: {
   orderNumber: string;
   waUrl: string | null;
+  paymentMethod?: "cliq" | "gx_wallet" | null;
   onClose: () => void;
 }) {
   const { t, dir } = useLang();
@@ -82,7 +84,19 @@ export function OrderConfirmedModal({
         <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>
           {t("cart.order_created")}
         </h3>
-        <p style={{ margin: "6px 0 16px", fontSize: 13, color: "#a1a7b8", lineHeight: 1.6 }}>
+        {paymentMethod && (
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            margin: "8px auto 0", padding: "4px 12px", borderRadius: 999,
+            fontSize: 12, fontWeight: 800,
+            background: paymentMethod === "cliq" ? "rgba(168,85,247,0.15)" : "rgba(0,229,255,0.12)",
+            border: paymentMethod === "cliq" ? "1px solid rgba(168,85,247,0.4)" : "1px solid rgba(0,229,255,0.35)",
+            color: paymentMethod === "cliq" ? "#d8b4fe" : "#00e5ff",
+          }}>
+            <span>{paymentMethod === "cliq" ? "🇯🇴 طريقة الدفع: كليك (CliQ)" : "🌐 طريقة الدفع: محفظة GX (GX Wallet)"}</span>
+          </div>
+        )}
+        <p style={{ margin: "10px 0 16px", fontSize: 13, color: "#a1a7b8", lineHeight: 1.6 }}>
           {t("cart.order_saved_note")}
         </p>
         <div style={{
@@ -109,6 +123,15 @@ export function OrderConfirmedModal({
             {copied ? "✓ " + t("acc.copied") : "📋 " + t("cart.copy_number")}
           </button>
         </div>
+
+        <div style={{
+          fontSize: 12, color: "#94a3b8", lineHeight: 1.6, marginBottom: 14,
+          padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.06)",
+        }}>
+          💡 انسخ رقم الطلب وتابِع الدفع فوراً عبر واتساب، أو أرسل الرقم إلى فريق الدعم عبر أي منصة (تيليجرام، إنستغرام) لتأكيد الطلب.
+        </div>
+
         {waUrl && (
           <button
             type="button" onClick={goWa}

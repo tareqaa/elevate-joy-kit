@@ -10,6 +10,8 @@ type CreateOrderInput = {
   currency: string;
   customerName?: string | null;
   customerWhatsapp?: string | null;
+  customerEmail?: string | null;
+  paymentMethod?: "cliq" | "gx_wallet" | null;
   contactType?: "whatsapp" | "telegram" | null;
   deliveryData?: Record<string, unknown>;
   userId?: string | null;
@@ -133,6 +135,8 @@ export async function createStoreOrder(input: CreateOrderInput) {
 
   const deliveryData: Record<string, unknown> = { ...(input.deliveryData ?? {}) };
   if (input.contactType) deliveryData.contact_type = input.contactType;
+  if (input.customerEmail) deliveryData.customer_email = input.customerEmail.trim().toLowerCase();
+  if (input.paymentMethod) deliveryData.payment_method = input.paymentMethod;
   // Only the code travels with the order note; the discount is whatever the
   // database says it is.
   if (input.coupon?.code) deliveryData.coupon = { code: input.coupon.code };

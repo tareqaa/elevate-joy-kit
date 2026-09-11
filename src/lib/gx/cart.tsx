@@ -40,6 +40,7 @@ export type ContactInfo = {
   countryCode: string;
   phone: string;
   type: "whatsapp" | "telegram";
+  email: string;
 };
 
 const STORAGE_KEY = "gx_cart";
@@ -78,13 +79,13 @@ type Ctx = {
   isDrawerOpen: boolean;
   openDrawer: () => void;
   closeDrawer: () => void;
-  submitOrder: () => Promise<{ order_number: string } | null>;
-  buildWhatsAppUrl: (orderNumber?: string, currencyLabel?: string) => string | null;
+  submitOrder: (paymentMethod?: "cliq" | "gx_wallet") => Promise<{ order_number: string } | null>;
+  buildWhatsAppUrl: (orderNumber?: string, paymentMethod?: "cliq" | "gx_wallet") => string | null;
 };
 
 const CartContext = createContext<Ctx | null>(null);
 
-const DEFAULT_CONTACT: ContactInfo = { name: "", countryCode: "+962", phone: "", type: "whatsapp" };
+const DEFAULT_CONTACT: ContactInfo = { name: "", countryCode: "+962", phone: "", type: "whatsapp", email: "" };
 
 function loadRaw(): CartItem[] {
   try {
@@ -204,19 +205,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const { data: sess } = await supabase.auth.getSession();
         const uid = sess.session?.user?.id;
         if (!uid) return;
+        const userEmail = sess.session?.user?.email || "";
         const { data: prof } = await supabase
           .from("profiles")
-          .select("full_name, whatsapp")
+          .select("full_name, whatsapp, email")
           .eq("id", uid)
           .maybeSingle();
-        if (!prof) return;
         setContactState((prev) => {
+          const emailVal = prof?.email || userEmail;
           const needsName = !prev.name.trim();
           const needsPhone = !prev.phone.trim();
-          if (!needsName && !needsPhone) return prev;
+          const needsEmail = !prev.email?.trim();
+          if (!needsName && !needsPhone && !needsEmail) return prev;
           const next = { ...prev };
-          if (needsName && prof.full_name) next.name = prof.full_name;
-          if (needsPhone && prof.whatsapp) {
+          if (needsName && prof?.full_name) next.name = prof.full_name;
+          if (needsEmail && emailVal) next.email = emailVal;
+          if (needsPhone && prof?.whatsapp) {
             // stored as "+962XXXXXXX" — split code from digits
             const raw = String(prof.whatsapp).trim();
             const m = raw.match(/^(\+\d{1,4})(\d+)$/);
@@ -558,7 +562,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   const buildWhatsAppUrl = useCallback(
-    (orderNumber?: string) => {
+    (orderNumber?: string, paymentMethod?: "cliq" | "gx_wallet") => {
       if (items.length === 0) return null;
       const itemCount = items.reduce((n, it) => n + it.qty, 0);
       const orderId = orderNumber || "GX-" + Date.now().toString().slice(-6);
@@ -595,9 +599,18 @@ ${lines}
 ━━━━━━━━━━━━━━━━━━━━
 📦 عدد القطع: ${itemCount}`;
       if (coupon) msg += `\n🏷️ كوبون (${coupon.code}): -${format(coupon.discount_jod)}`;
+      if (coins) msg += `\n🪙 عملات GX (${coins.coins}): -${format(coins.discount_jod)}`;
+      if (appliedCredit > 0) msg += `\n💳 رصيد المتجر: -${format(appliedCredit)}`;
       msg += `\n💰 *الإجمالي المستحق: ${format(totalJOD)}*
-💱 العملة: ${currency}
-━━━━━━━━━━━━━━━━━━━━`;
+💱 العملة: ${currency}`;
+      if (paymentMethod) {
+        const pmLabel = paymentMethod === "cliq" ? "خدمة كليك (CliQ) 🇯🇴" : "محفظة GX (GX Wallet) 🌐";
+        msg += `\n💳 *طريقة الدفع:* ${pmLabel}`;
+      }
+      if (contact.email?.trim()) {
+        msg += `\n📧 *البريد:* ${contact.email.trim()}`;
+      }
+      msg += `\n━━━━━━━━━━━━━━━━━━━━`;
 
       if (notes.trim()) {
         msg += `\n\n📝 *ملاحظات إضافية:*\n${notes.trim()}\n━━━━━━━━━━━━━━━━━━━━`;
@@ -610,10 +623,10 @@ ${lines}
         ? "https://wa.me/962776252313?text=" + encoded
         : "https://web.whatsapp.com/send?phone=962776252313&text=" + encoded;
     },
-    [items, notes, currency, format, totalJOD, coupon]
+    [items, notes, currency, format, totalJOD, coupon, coins, appliedCredit, contact.email]
   );
 
-  const submitOrder = useCallback(async () => {
+  const submitOrder = useCallback(async (paymentMethod?: "cliq" | "gx_wallet") => {
     if (items.length === 0) return null;
     const isWa = contact.type === "whatsapp";
     const contactValue = isWa
@@ -641,6 +654,8 @@ ${lines}
           notes,
           customerName: contact.name.trim(),
           customerWhatsapp: contactValue,
+          customerEmail: contact.email?.trim() || null,
+          paymentMethod: paymentMethod || null,
           contactType: contact.type,
           coupon: coupon
             ? {
@@ -682,8 +697,6 @@ ${lines}
       } catch { /* noop */ }
       return null;
     }
-
-
   }, [items, totalJOD, currency, notes, contact, coupon, coins, appliedCredit, submitStoreOrderFn]);
 
   const value = useMemo<Ctx>(
