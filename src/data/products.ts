@@ -433,7 +433,7 @@ export const CATEGORY_META: Record<string, { name: string; icon: string; tagline
   subscriptions: { name: "الاشتراكات", icon: "⚡", tagline: "اشتراكات الألعاب والترفيه الرقمي بأفضل الأسعار" },
   "social-media": { name: "السوشال ميديا", icon: "📱", tagline: "خدمات وتطوير حسابات التواصل الاجتماعي المختلفة" },
   design: { name: "البرامج والتطبيقات", icon: "🧩", tagline: "برامج التصميم والتطبيقات الاحترافية بأسعار منافسة" },
-  services: { name: "الخدمات", icon: "🛠️", tagline: "حلول وخدمات رقمية وطلابية سريعة وموثوقة" },
+  services: { name: "الخدمات", icon: "🛠️", tagline: "حلول وخدمات رقمية، تصاميم وإعلانات احترافية سريعة وموثوقة" },
   games: { name: "الألعاب", icon: "🎮", tagline: "اشتراكات، عملات، وكروت شحن لأشهر منصات الألعاب" },
   "gift-cards": { name: "بطاقات الهدايا", icon: "🎁", tagline: "بطاقات شحن رقمية لأشهر المنصات — القيم والأسعار قريبًا" },
   products: { name: "عرض الكل", icon: "✨", tagline: "كل ما يقدمه متجر GX في مكان واحد" },

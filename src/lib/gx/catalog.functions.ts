@@ -291,6 +291,7 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
   .inputValidator((data: { slug: string }) => ({ slug: String(data.slug) }))
   .handler(async ({ data }): Promise<CatalogCategory | null> => {
     const now = Date.now();
+    // Cache reset for updated category metadata
     const cached = categoryCache.get(data.slug);
     if (cached && now < cached.expiresAt) {
       return cached.data;
