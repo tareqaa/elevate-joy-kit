@@ -85,7 +85,7 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
     identifierPlaceholder: "example@email.com",
     deliveryMethod: "منفعّلك الاشتراك مباشرة على حساب Adobe ID تبعك عن طريق الإيميل، من غير ما نطلب الباسورد — بترجعلك رسالة تفعيل رسمية من Adobe نفسها.",
     plans: [
-      { id: "adobe-1", label: "شهر واحد", price: 5, oldPrice: 8 },
+      { id: "adobe-1", label: "شهر واحد", price: 10, oldPrice: 15 },
       { id: "adobe-4", label: "4 أشهر", price: 13, oldPrice: 20, tag: "الأكثر طلبًا" },
     ],
     features: [
@@ -435,7 +435,7 @@ export const CATEGORY_META: Record<string, { name: string; icon: string; tagline
   design: { name: "البرامج والتطبيقات", icon: "🧩", tagline: "برامج التصميم والتطبيقات الاحترافية بأسعار منافسة" },
   services: { name: "الخدمات", icon: "🛠️", tagline: "حلول وخدمات رقمية، تصاميم وإعلانات احترافية سريعة وموثوقة" },
   games: { name: "الألعاب", icon: "🎮", tagline: "اشتراكات، عملات، وكروت شحن لأشهر منصات الألعاب" },
-  "gift-cards": { name: "بطاقات الهدايا", icon: "🎁", tagline: "بطاقات شحن رقمية لأشهر المنصات — القيم والأسعار قريبًا" },
+  "gift-cards": { name: "بطاقات الهدايا", icon: "🎁", tagline: "بطاقات شحن رقمية رسمية معتمدة لأشهر المنصات والمتاجر العالمية بتسليم فوري للأكواد" },
   products: { name: "عرض الكل", icon: "✨", tagline: "كل ما يقدمه متجر GX في مكان واحد" },
   ai: { name: "الذكاء الاصطناعي", icon: "🤖", tagline: "أقوى أدوات الذكاء الاصطناعي بأسعار حصرية" },
 };
@@ -518,34 +518,108 @@ export type FeaturedItem = {
   price: number;
   oldPrice: number;
   link: string;
+  imageUrl?: string | null;
+  iconImage?: string | null;
+  badge?: string | null;
 };
 
 export function getFeaturedItems(): FeaturedItem[] {
-  const picks: { product: string; planId: string }[] = [
-    { product: "snapchat", planId: "snap-6" },
-    { product: "adobe", planId: "adobe-4" },
-    { product: "fortnite", planId: "fn-crew" },
-    { product: "gemini", planId: "gemini-18" },
-    { product: "fortnite", planId: "fn-vb-2400" },
-    { product: "snapchat", planId: "snap-3" },
-    { product: "fortnite", planId: "fn-vb-800" },
+  return [
+    {
+      cartId: "snap-6",
+      product: "snapchat",
+      name: "سناب بلس — 6 أشهر",
+      icon: "👻",
+      bg: "linear-gradient(145deg,#3a3a10,#14150c)",
+      price: 9,
+      oldPrice: 14,
+      link: "/product/snapchat",
+      imageUrl: "/app/assets/img/snapchat-logo.png",
+      iconImage: "/app/assets/img/snapchat-logo.png",
+    },
+    {
+      cartId: "fn-crew",
+      product: "fortnite",
+      name: "فورت نايت — Fortnite Crew — شهر",
+      icon: "🪂",
+      bg: "linear-gradient(145deg,#0d1a30,#080d18)",
+      price: 4,
+      oldPrice: 6,
+      link: "/product/fortnite",
+      imageUrl: "/app/assets/img/fortnite-logo.png",
+      iconImage: "/app/assets/img/fortnite-logo.png",
+    },
+    {
+      cartId: "adobe-1",
+      product: "adobe",
+      name: "Adobe Creative Cloud — شهر واحد",
+      icon: "🎨",
+      bg: "linear-gradient(145deg,#2a0d30,#150818)",
+      price: 10,
+      oldPrice: 8,
+      link: "/product/adobe",
+      imageUrl: "/app/assets/img/adobe-cc.webp",
+      iconImage: "/app/assets/img/adobe-cc.webp",
+    },
+    {
+      cartId: "red-dead-redemption-2",
+      product: "red-dead-redemption-2",
+      name: "Red Dead Redemption 2 (RDR2) | كود روكستار (PC)",
+      icon: "🎮",
+      bg: "linear-gradient(145deg,#10141f,#090c14)",
+      price: 18.5,
+      oldPrice: 23.13,
+      link: "/product/red-dead-redemption-2",
+      imageUrl: "/app/assets/img/catalog/red-dead-redemption-2.jpg",
+      iconImage: "/app/assets/img/catalog/red-dead-redemption-2.jpg",
+    },
+    {
+      cartId: "gemini-18",
+      product: "gemini",
+      name: "Gemini Pro — 18 شهر",
+      icon: "✨",
+      bg: "linear-gradient(145deg,#2a1a4a,#0e0820)",
+      price: 8,
+      oldPrice: 20,
+      link: "/product/gemini",
+      imageUrl: "/app/assets/img/gemini-logo.svg",
+      iconImage: "/app/assets/img/gemini-logo.svg",
+    },
+    {
+      cartId: "fn-vb-2400",
+      product: "fortnite",
+      name: "فورت نايت — 2400 وحدة V-Bucks",
+      icon: "🪂",
+      bg: "linear-gradient(145deg,#0d1a30,#080d18)",
+      price: 12,
+      oldPrice: 16,
+      link: "/product/fortnite",
+      imageUrl: "/app/assets/img/fortnite-logo.png",
+      iconImage: "/app/assets/img/fortnite-logo.png",
+    },
+    {
+      cartId: "snap-3",
+      product: "snapchat",
+      name: "سناب بلس — 3 أشهر",
+      icon: "👻",
+      bg: "linear-gradient(145deg,#3a3a10,#14150c)",
+      price: 5,
+      oldPrice: 7,
+      link: "/product/snapchat",
+      imageUrl: "/app/assets/img/snapchat-logo.png",
+      iconImage: "/app/assets/img/snapchat-logo.png",
+    },
+    {
+      cartId: "fn-vb-800",
+      product: "fortnite",
+      name: "فورت نايت — 800 وحدة V-Bucks",
+      icon: "🪂",
+      bg: "linear-gradient(145deg,#0d1a30,#080d18)",
+      price: 5,
+      oldPrice: 7,
+      link: "/product/fortnite",
+      imageUrl: "/app/assets/img/fortnite-logo.png",
+      iconImage: "/app/assets/img/fortnite-logo.png",
+    },
   ];
-  return picks
-    .map(({ product, planId }) => {
-      const p = PRODUCTS_CATALOG[product];
-      const all = [...(p.plans || []), ...(p.crewPlans || []), ...(p.vbucksPlans || [])];
-      const plan = all.find((pl) => pl.id === planId);
-      if (!plan || !plan.oldPrice) return null;
-      return {
-        cartId: plan.id,
-        product,
-        name: `${p.name} — ${plan.label}`,
-        icon: p.icon,
-        bg: p.thumbBg,
-        price: plan.price,
-        oldPrice: plan.oldPrice,
-        link: getProductLink(product),
-      };
-    })
-    .filter((x): x is FeaturedItem => x !== null);
 }

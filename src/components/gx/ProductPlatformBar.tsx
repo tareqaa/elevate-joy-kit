@@ -24,6 +24,30 @@ export function CanvaPlatformIcon() {
   );
 }
 
+export function InstagramPlatformIcon() {
+  return (
+    <img
+      src="/app/assets/img/instagram-logo.svg"
+      alt="Instagram"
+      width={14}
+      height={14}
+      style={{ width: 14, height: 14, objectFit: "contain", display: "block", flexShrink: 0, borderRadius: 3 }}
+    />
+  );
+}
+
+export function FacebookPlatformIcon() {
+  return (
+    <img
+      src="/app/assets/img/facebook-logo.svg"
+      alt="Facebook"
+      width={14}
+      height={14}
+      style={{ width: 14, height: 14, objectFit: "contain", display: "block", flexShrink: 0, borderRadius: 3 }}
+    />
+  );
+}
+
 export function GooglePlayPlatformIcon() {
   return (
     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" style={{ display: "block", flexShrink: 0 }} aria-label="Google Play">
@@ -392,6 +416,16 @@ export function getProductPlatform(
   // 4. Snapchat
   if (has(["snapchat", "سناب"])) {
     return { name: "Snapchat", icon: <SnapchatPlatformIcon /> };
+  }
+
+  // 4a. Instagram
+  if (has(["instagram", "انستقرام", "انستا", "insta", "ig"])) {
+    return { name: "Instagram", icon: <InstagramPlatformIcon /> };
+  }
+
+  // 4b. Facebook
+  if (has(["facebook", "فيسبوك", "فيس بوك", "fb"])) {
+    return { name: "Facebook", icon: <FacebookPlatformIcon /> };
   }
 
   // 5. Xbox (Checked BEFORE general game checks so console editions like GTA V Xbox or EA FC Xbox get Xbox)

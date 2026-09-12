@@ -17,7 +17,7 @@ type ProductI18n = {
   deliveryMethod?: string;
 };
 
-const PRODUCTS_EN: Record<string, ProductI18n> = {
+export const PRODUCTS_EN: Record<string, ProductI18n> = {
   snapchat: {
     name: "Snapchat+",
     tagline: "Activate Snapchat+ the easiest, fastest way",
@@ -144,7 +144,7 @@ const CATEGORY_META_EN: Record<string, { name: string; tagline: string }> = {
   design: { name: "Software & Apps", tagline: "Professional design software and apps at competitive prices" },
   services: { name: "Services", tagline: "Fast and reliable student assistance and digital solutions" },
   games: { name: "Games", tagline: "Subscriptions, currency and top-up cards for the biggest gaming platforms" },
-  "gift-cards": { name: "Gift Cards", tagline: "Digital top-up cards for the biggest platforms — denominations & prices coming soon" },
+  "gift-cards": { name: "Gift Cards", tagline: "Official digital gift cards for global platforms with instant code delivery" },
   products: { name: "View All", tagline: "Everything GX Store offers in one place" },
   ai: { name: "Artificial Intelligence", tagline: "The most powerful AI tools at exclusive prices" },
 };

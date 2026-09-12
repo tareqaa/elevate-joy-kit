@@ -355,4 +355,322 @@ export function ProductIcon({ product, duration }: { product: Product; duration?
   return <span style={{ fontSize: 44 }}>{product.icon}</span>;
 }
 
+export function extractDenomination(name?: string, cartId?: string): string {
+  const n = name || "";
+  const c = (cartId || "").toLowerCase();
+
+  // 1. Try TRY values (e.g. 50 TRY, 100 TRY, 300 TRY, 1000 TRY)
+  const tryMatch = n.match(/(\d+)\s*(?:TRY|ليرة|TL)/i) || c.match(/(?:tr-)(\d+)/);
+  if (tryMatch) return `${tryMatch[1]} TRY`;
+
+  // 2. Try GBP £ values
+  const gbpMatch = n.match(/(\d+)\s*£/) || n.match(/£\s*(\d+)/) || (c === "gb" ? ["", "10"] : null);
+  if (gbpMatch) return `£${gbpMatch[1]}`;
+
+  // 3. Try USD $ values (e.g. 10$, $10, 5$, 50$)
+  const usdMatch = n.match(/(\d+)\s*\$/) || n.match(/\$\s*(\d+)/) || c.match(/(?:us-|ae-|sa-|gp-us-)(\d+)/);
+  if (usdMatch) return `$${usdMatch[1]}`;
+
+  // 4. Any numbers
+  const anyNum = n.match(/(\d+)/);
+  if (anyNum) return anyNum[1];
+
+  return "CARD";
+}
+
+export function extractRegionInfo(name?: string, cartId?: string, region?: string): { flag: string; label: string } {
+  const str = `${name || ""} ${cartId || ""} ${region || ""}`.toLowerCase();
+  if (str.includes("tr") || str.includes("ترك") || str.includes("try")) {
+    return { flag: "🇹🇷", label: "TURKEY" };
+  }
+  if (str.includes("sa") || str.includes("سعود") || str.includes("ksa")) {
+    return { flag: "🇸🇦", label: "KSA" };
+  }
+  if (str.includes("ae") || str.includes("إمارات") || str.includes("uae")) {
+    return { flag: "🇦🇪", label: "UAE" };
+  }
+  if (str.includes("gb") || str.includes("uk") || str.includes("بريطان") || str.includes("باوند")) {
+    return { flag: "🇬🇧", label: "UK" };
+  }
+  return { flag: "🇺🇸", label: "USA" };
+}
+
+export function GiftCardPoster({
+  slug,
+  cartId,
+  name,
+  region,
+}: {
+  slug: string;
+  cartId?: string;
+  name?: string;
+  region?: string;
+}) {
+  const denom = extractDenomination(name, cartId);
+  const reg = extractRegionInfo(name, cartId, region);
+
+  const isPlaystation = slug.includes("playstation") || (cartId || "").includes("psn") || slug.startsWith("gc-playstation");
+  const isXbox = slug.includes("xbox") || (cartId || "").includes("xbox") || slug.startsWith("gc-xbox");
+  const isItunes = slug.includes("itunes") || slug.includes("apple") || (cartId || "").includes("itunes") || slug.startsWith("gc-itunes");
+  const isGooglePlay = slug.includes("google") || (cartId || "").startsWith("gp-") || slug.startsWith("gc-google");
+
+  let brandName = "GIFT CARD";
+  let brandLogo = "/app/assets/img/playstation-logo.svg";
+  let bgGradient = "linear-gradient(135deg, #003791 0%, #001f5c 55%, #000f30 100%)";
+  let ambientColor = "rgba(0, 112, 209, 0.4)";
+  let watermarkSymbols: React.ReactNode = null;
+
+  if (isPlaystation) {
+    brandName = "PLAYSTATION";
+    brandLogo = "/app/assets/img/playstation-logo.svg";
+    bgGradient = "linear-gradient(135deg, #003791 0%, #002366 50%, #001133 100%)";
+    ambientColor = "rgba(0, 112, 209, 0.45)";
+    watermarkSymbols = (
+      <div
+        style={{
+          position: "absolute",
+          top: 8,
+          right: 12,
+          display: "flex",
+          gap: 5,
+          opacity: 0.15,
+          fontSize: 14,
+          fontWeight: 900,
+          color: "#ffffff",
+          letterSpacing: 2,
+          pointerEvents: "none",
+        }}
+      >
+        ▲ ● ✖ ■
+      </div>
+    );
+  } else if (isXbox) {
+    brandName = "XBOX STORE";
+    brandLogo = "/app/assets/img/xbox-logo.svg";
+    bgGradient = "linear-gradient(135deg, #107c10 0%, #0b540b 50%, #052605 100%)";
+    ambientColor = "rgba(16, 124, 65, 0.45)";
+  } else if (isItunes) {
+    brandName = "APPLE & ITUNES";
+    brandLogo = "/app/assets/img/itunes-logo.svg";
+    bgGradient = "linear-gradient(135deg, #3b0764 0%, #701a75 50%, #be185d 100%)";
+    ambientColor = "rgba(241, 7, 163, 0.45)";
+  } else if (isGooglePlay) {
+    brandName = "GOOGLE PLAY";
+    brandLogo = "/app/assets/img/googleplay-logo.png";
+    bgGradient = "linear-gradient(135deg, #064e3b 0%, #047857 50%, #0f172a 100%)";
+    ambientColor = "rgba(52, 168, 83, 0.45)";
+  }
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        minHeight: 180,
+        background: bgGradient,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: "16px 14px",
+        overflow: "hidden",
+        userSelect: "none",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Glossy Card Reflection Sweep */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(125deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.03) 38%, transparent 60%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Ambient radial glow in center */}
+      <div
+        style={{
+          position: "absolute",
+          top: "45%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 120,
+          height: 120,
+          borderRadius: "50%",
+          background: ambientColor,
+          filter: "blur(32px)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {watermarkSymbols}
+
+      {/* Top Header: Brand Logo on Left, Flag Pill on Right */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          position: "relative",
+          zIndex: 1,
+          width: "100%",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <img
+            src={brandLogo}
+            alt={brandName}
+            style={{
+              width: 24,
+              height: 24,
+              objectFit: "contain",
+              filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.5))",
+            }}
+          />
+          <span
+            style={{
+              color: "rgba(255,255,255,0.9)",
+              fontSize: 10,
+              fontWeight: 800,
+              letterSpacing: 0.8,
+              fontFamily: "'Tajawal', sans-serif",
+            }}
+          >
+            {brandName}
+          </span>
+        </div>
+
+        {/* Region Flag Badge */}
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            padding: "2px 7px",
+            borderRadius: 99,
+            background: "rgba(0, 0, 0, 0.45)",
+            border: "1px solid rgba(255, 255, 255, 0.22)",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+          }}
+        >
+          <span style={{ fontSize: 13, lineHeight: 1 }}>{reg.flag}</span>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 800,
+              color: "#ffffff",
+              letterSpacing: 0.5,
+              fontFamily: "monospace",
+            }}
+          >
+            {reg.label}
+          </span>
+        </div>
+      </div>
+
+      {/* Center: Large High-Contrast Denomination */}
+      <div
+        style={{
+          textAlign: "center",
+          position: "relative",
+          zIndex: 1,
+          margin: "auto 0",
+        }}
+      >
+        <div
+          style={{
+            fontSize: denom.length > 6 ? 24 : denom.length > 4 ? 28 : 34,
+            fontWeight: 900,
+            color: "#ffffff",
+            letterSpacing: -0.5,
+            fontFamily: "'Tajawal', sans-serif",
+            textShadow: "0 4px 18px rgba(0, 0, 0, 0.65), 0 1px 2px rgba(0,0,0,0.8)",
+            lineHeight: 1,
+          }}
+        >
+          {denom}
+        </div>
+        <div
+          style={{
+            fontSize: 9.5,
+            fontWeight: 700,
+            color: "rgba(255, 255, 255, 0.85)",
+            letterSpacing: 0.8,
+            marginTop: 4,
+            textShadow: "0 1px 3px rgba(0,0,0,0.6)",
+          }}
+        >
+          STORE CREDIT • رصيد متجر
+        </div>
+      </div>
+
+      {/* Bottom Row: Micro Security Chip on Left, Instant Code on Right */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          position: "relative",
+          zIndex: 1,
+          width: "100%",
+          paddingTop: 4,
+        }}
+      >
+        {/* Micro Golden Smart Chip Graphic */}
+        <div
+          style={{
+            width: 22,
+            height: 16,
+            borderRadius: 3,
+            background: "linear-gradient(135deg, #f5d061 0%, #e6a117 50%, #c4830a 100%)",
+            border: "1px solid rgba(255,255,255,0.4)",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.35)",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: 0,
+              right: 0,
+              height: 1,
+              background: "rgba(0,0,0,0.25)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: 0,
+              bottom: 0,
+              width: 1,
+              background: "rgba(0,0,0,0.25)",
+            }}
+          />
+        </div>
+
+        {/* Verification watermark */}
+        <div
+          style={{
+            fontSize: 9.5,
+            fontWeight: 800,
+            color: "rgba(255, 255, 255, 0.9)",
+            display: "flex",
+            alignItems: "center",
+            gap: 3,
+            letterSpacing: 0.4,
+          }}
+        >
+          <span style={{ color: "#00e5ff" }}>⚡</span>
+          <span>DIGITAL CODE</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export { VBUCKS_TIER_THEMES, CREW_TIER_THEMES } from "@/components/gx/ProductTemplates";
+

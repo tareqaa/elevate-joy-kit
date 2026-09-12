@@ -34,6 +34,12 @@ export const Route = createFileRoute("/_authenticated/admin")({
     adminRoleCache = { userId: user.id, isAdmin };
     if (!isAdmin) throw redirect({ to: "/account" });
   },
+  head: () => ({
+    meta: [
+      { title: "لوحة الإدارة | متجر GX Store" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: AdminLayout,
 });
 
@@ -131,6 +137,10 @@ function AdminLayout() {
   }
 
   const initials = (me?.full_name || me?.email || "GX").trim().slice(0, 2).toUpperCase();
+
+  if (location.pathname.startsWith("/admin/product-editor")) {
+    return <Outlet />;
+  }
 
   return (
     <div dir="rtl" className="gx-admin-root">

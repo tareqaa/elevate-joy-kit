@@ -10,10 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Upload, Trash2, Plus, ArrowUp, ArrowDown, Image as ImageIcon } from "lucide-react";
+import { Upload, Trash2, Plus, ArrowUp, ArrowDown, Image as ImageIcon, Flame, ExternalLink } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { CATEGORY_LINKS, getFeaturedItems } from "@/data/products";
 import { MediaPicker } from "./media-library";
 import { RichTextField } from "./rich-text";
+import { useSiteSettings } from "../site-settings";
 import type {
   HeroData, AnnouncementData, CarouselData, CarouselSlide, CategoriesData,
   BestsellersData, ProductsData, TrustData, ReviewsData, ReviewItem, FaqData, FaqItem, NewsletterData, CategoryOverride,
@@ -226,37 +228,51 @@ export function CategoriesEditor({ data, onChange }: { data: CategoriesData; onC
 
 /* ---------------- BESTSELLERS ---------------- */
 export function BestsellersEditor({ data, onChange }: { data: BestsellersData; onChange: (d: BestsellersData) => void }) {
-  const items = getFeaturedItems();
-  const order = data.order || [];
-  const ordered = [
-    ...order.map((id) => items.find((i) => i.cartId === id)).filter((x): x is typeof items[number] => !!x),
-    ...items.filter((i) => !order.includes(i.cartId)),
-  ];
-  function move(id: string, dir: -1 | 1) {
-    const ids = ordered.map((i) => i.cartId); const idx = ids.indexOf(id); const j = idx + dir;
-    if (j < 0 || j >= ids.length) return;
-    [ids[idx], ids[j]] = [ids[j], ids[idx]];
-    onChange({ ...data, order: ids });
-  }
+  const siteSettings = useSiteSettings();
+  const items = siteSettings.home_bestseller_items && siteSettings.home_bestseller_items.length > 0
+    ? siteSettings.home_bestseller_items
+    : getFeaturedItems();
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2">
         <TextField label="العنوان" value={data.title ?? null} onChange={(v) => onChange({ ...data, title: v ?? undefined })} />
         <TextField label="النص العلوي" value={data.eyebrow ?? null} onChange={(v) => onChange({ ...data, eyebrow: v ?? undefined })} />
       </div>
-      <div className="max-h-[360px] overflow-y-auto space-y-1 pr-1">
-        {ordered.map((it, i) => (
-          <div key={it.cartId} className="flex items-center gap-2 rounded-md border border-slate-800 bg-slate-950/40 p-1.5">
-            <div className="w-8 h-8 rounded-md grid place-items-center text-sm shrink-0" style={{ background: it.bg }}>{it.icon}</div>
-            <div className="flex-1 min-w-0 text-slate-100 text-xs font-semibold truncate">{it.name}</div>
-            <div className="flex gap-0.5">
-              <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => move(it.cartId, -1)} disabled={i === 0}><ArrowUp size={10} /></Button>
-              <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => move(it.cartId, 1)} disabled={i === ordered.length - 1}><ArrowDown size={10} /></Button>
+
+      <div className="p-3 rounded-xl bg-cyan-950/30 border border-cyan-500/30 flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-cyan-300 font-bold text-xs">
+          <Flame size={14} className="text-amber-400" />
+          إدارة قائمة وترتيب المنتجات الأكثر مبيعاً
+        </div>
+        <p className="text-[11px] text-cyan-100/70 leading-relaxed">
+          قائمة المنتجات الأكثر مبيعاً وصورها وأسعارها وترتيبها مدارة بشكل شامل وديناميكي من صفحة المنتجات مع إمكانية إضافة أي لعبة أو بطاقة أو اشتراك.
+        </p>
+        <Link
+          to="/admin/products"
+          search={{ tab: "bestsellers" } as never}
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-400 text-black font-bold text-xs hover:bg-cyan-300 transition mt-1 w-full"
+        >
+          فتح محرر الأكثر مبيعاً المتقدم ⚡
+        </Link>
+      </div>
+
+      <div className="max-h-[260px] overflow-y-auto space-y-1 pr-1">
+        <div className="text-[11px] font-bold text-slate-400 mb-1">المنتجات النشطة حالياً ({items.length}):</div>
+        {items.map((it: any, i: number) => (
+          <div key={it.cartId || i} className="flex items-center gap-2 rounded-md border border-slate-800 bg-slate-950/40 p-1.5">
+            <div className="w-8 h-8 rounded-md grid place-items-center text-sm shrink-0 overflow-hidden" style={{ background: it.thumbBg || it.bg || "#10141f" }}>
+              {it.imageUrl ? <img src={it.imageUrl} alt="" className="w-full h-full object-contain p-0.5" /> : (it.icon || "🎮")}
+            </div>
+            <div className="flex-1 min-w-0 text-slate-100 text-xs font-semibold truncate">
+              {it.nameAr || it.name}
+            </div>
+            <div className="text-[11px] font-mono text-cyan-400/80">
+              {it.priceJod ? `${Number(it.priceJod).toFixed(2)} د.أ` : ""}
             </div>
           </div>
         ))}
       </div>
-      {order.length > 0 && <Button size="sm" variant="outline" className="w-full border-slate-700 text-slate-300" onClick={() => onChange({ ...data, order: [] })}>ترتيب افتراضي</Button>}
     </div>
   );
 }

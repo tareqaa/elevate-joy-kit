@@ -14,6 +14,7 @@ import {
   AdobePoster,
   CanvaPoster,
   WindowsPoster,
+  GiftCardPoster,
   FortniteIcon,
   VbucksIcon,
   CrewIcon,
@@ -93,11 +94,7 @@ export function StoreProductCard({
 
   // Calculate discount percentage
   const numPrice = typeof price === "number" ? price : 0;
-  const isGiftCard =
-    isGiftCardMaster ||
-    categorySlug === "gift-cards" ||
-    ["playstation", "xbox", "itunes", "google-play"].includes(slug) ||
-    slug.startsWith("gc-");
+  const isGiftCardMasterCard = Boolean(isGiftCardMaster);
 
   const getGiftCardMinPrice = (s: string) => {
     const l = s.toLowerCase();
@@ -108,7 +105,7 @@ export function StoreProductCard({
     return 5.0;
   };
 
-  const finalDisplayPrice = numPrice > 0 ? numPrice : (isGiftCard ? getGiftCardMinPrice(slug) : 0);
+  const finalDisplayPrice = numPrice > 0 ? numPrice : (isGiftCardMasterCard ? getGiftCardMinPrice(slug) : 0);
   const numOldPrice = typeof oldPrice === "number" && oldPrice > finalDisplayPrice ? oldPrice : null;
   const discount = numOldPrice ? Math.round((1 - finalDisplayPrice / numOldPrice) * 100) : 0;
 
@@ -126,6 +123,24 @@ export function StoreProductCard({
     if (slug === "canva") return <CanvaPoster />;
     if (slug === "windows") return <WindowsPoster cartId={finalCartId} planLabel={name} />;
     if (slug === "fortnite") return <FortniteIcon />;
+
+    if (
+      slug === "playstation" ||
+      slug === "xbox" ||
+      slug === "itunes" ||
+      slug === "google-play" ||
+      categorySlug === "gift-cards" ||
+      categorySlug?.startsWith("gc-")
+    ) {
+      return (
+        <GiftCardPoster
+          slug={slug}
+          cartId={finalCartId}
+          name={name}
+          region={region || undefined}
+        />
+      );
+    }
 
     // For brand logos, Gift Cards, and SVG vector icons
     const imgSrc = imageUrl || iconImage || (slug === "gemini" ? "/app/assets/img/gemini-logo.svg" : null);
@@ -189,22 +204,23 @@ export function StoreProductCard({
     const r = (region || "").toLowerCase();
     const t = (tagline || "").toLowerCase();
     const n = (name || "").toLowerCase();
-    const str = `${r} ${t} ${n}`;
+    const c = (finalCartId || "").toLowerCase();
+    const str = `${r} ${t} ${n} ${c}`;
 
-    if (str.includes("أمريك") || str.includes("usa") || str.includes("united states") || str.includes("us")) {
-      return lang === "en" ? "USA" : "أمريكي";
+    if (str.includes("أمريك") || str.includes("usa") || str.includes("united states") || str.includes("us-") || str.includes("-us")) {
+      return lang === "en" ? "USA 🇺🇸" : "أمريكي 🇺🇸";
     }
-    if (str.includes("ترك") || str.includes("turkey") || str.includes("try")) {
-      return lang === "en" ? "Turkey" : "تركي";
+    if (str.includes("ترك") || str.includes("turkey") || str.includes("try") || str.includes("tr-") || str.includes("-tr")) {
+      return lang === "en" ? "Turkey 🇹🇷" : "تركي 🇹🇷";
     }
-    if (str.includes("سعود") || str.includes("ksa") || str.includes("saudi")) {
-      return lang === "en" ? "KSA" : "سعودي";
+    if (str.includes("سعود") || str.includes("ksa") || str.includes("saudi") || str.includes("sa-") || str.includes("-sa")) {
+      return lang === "en" ? "Saudi 🇸🇦" : "سعودي 🇸🇦";
     }
-    if (str.includes("إمارات") || str.includes("uae") || str.includes("emirates")) {
-      return lang === "en" ? "UAE" : "إماراتي";
+    if (str.includes("إمارات") || str.includes("uae") || str.includes("emirates") || str.includes("ae-") || str.includes("-ae")) {
+      return lang === "en" ? "UAE 🇦🇪" : "إماراتي 🇦🇪";
     }
-    if (str.includes("بريطان") || str.includes("uk") || str.includes("gb")) {
-      return lang === "en" ? "UK" : "بريطاني";
+    if (str.includes("بريطان") || str.includes("uk") || str.includes("gb") || str.includes("باوند")) {
+      return lang === "en" ? "UK 🇬🇧" : "بريطاني 🇬🇧";
     }
     return lang === "en" ? "Global" : "عالمي";
   };
@@ -227,7 +243,7 @@ export function StoreProductCard({
       oldPrice: numOldPrice || undefined,
       imageUrl: imageUrl || undefined,
       icon: icon || undefined,
-      categorySlug: categorySlug || (isGiftCard ? "gift-cards" : undefined),
+      categorySlug: categorySlug || (isGiftCardMasterCard ? "gift-cards" : undefined),
     });
   };
 
@@ -366,7 +382,7 @@ export function StoreProductCard({
         <div className="prod-prices">
           {finalDisplayPrice > 0 ? (
             <>
-              {(showFromLabel || isGiftCard) && (
+              {(showFromLabel || isGiftCardMasterCard) && (
                 <span className="prod-from-label">{lang === "en" ? "From" : "من"}</span>
               )}
               <div className="prod-price-row">
@@ -383,7 +399,7 @@ export function StoreProductCard({
           )}
         </div>
 
-        {isGiftCard ? (
+        {isGiftCardMasterCard ? (
           <div className="buy-actions">
             <Link
               to={finalLink as never}

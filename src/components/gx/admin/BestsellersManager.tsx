@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Flame, ArrowUp, ArrowDown, Trash2, Plus, Search, Check, ShoppingBag, RefreshCw } from "lucide-react";
 import { useSiteSettings } from "@/lib/gx/site-settings";
-import { PRODUCTS_CATALOG, getFeaturedItems } from "@/data/products";
+import { PRODUCTS_CATALOG, GIFT_CARDS_CATALOG, getFeaturedItems, findPlanByCartId } from "@/data/products";
+import { INITIAL_REAL_GAMES } from "@/components/gx/BestSellingGamesSection";
 
 type CatalogItem = {
   cartId: string;
@@ -16,6 +17,8 @@ type CatalogItem = {
   priceJod: number;
   oldPriceJod?: number | null;
   imageUrl?: string | null;
+  iconImage?: string | null;
+  thumbBg?: string | null;
   icon?: string | null;
   badge?: string | null;
 };
@@ -27,7 +30,7 @@ export function BestsellersManager() {
   const [order, setOrder] = useState<string[]>([]);
   const [dirty, setDirty] = useState(false);
 
-  // 1. Fetch products & variants from Supabase
+  // 1. Fetch products & variants from Supabase and build complete platform catalog
   const catalogQ = useQuery({
     queryKey: ["admin-bestsellers-catalog"],
     queryFn: async () => {
@@ -38,7 +41,7 @@ export function BestsellersManager() {
 
       const items: CatalogItem[] = [];
 
-      // Add database variants
+      // A. Add database variants
       (vars ?? []).forEach((v) => {
         const p = (prods ?? []).find((pr) => pr.id === v.product_id);
         const cartId = v.cart_id || v.id;
@@ -58,25 +61,92 @@ export function BestsellersManager() {
           priceJod: Number(v.price_jod) || 0,
           oldPriceJod: v.old_price_jod ? Number(v.old_price_jod) : null,
           imageUrl: p?.image_url || p?.icon_image_url,
+          iconImage: p?.icon_image_url || p?.image_url,
+          thumbBg: null,
           icon: p?.icon || "🎮",
           badge: v.tag_ar || p?.badge,
         });
       });
 
-      // Add fallback static items from data/products.ts if not present
-      const staticFeatured = getFeaturedItems();
-      staticFeatured.forEach((f) => {
-        if (!items.some((it) => it.cartId === f.cartId)) {
-          const p = PRODUCTS_CATALOG[f.product];
+      // B. Add standalone products from database (like games or digital keys)
+      (prods ?? []).forEach((p) => {
+        if (!items.some((it) => it.cartId === p.slug)) {
           items.push({
-            cartId: f.cartId,
-            productSlug: f.product,
-            nameAr: f.name,
-            nameEn: f.name,
-            priceJod: f.price,
-            oldPriceJod: f.oldPrice,
-            imageUrl: p?.iconImg,
-            icon: p?.icon || "🎮",
+            cartId: p.slug,
+            productSlug: p.slug,
+            nameAr: p.name_ar || p.slug,
+            nameEn: p.name_en || p.slug,
+            priceJod: Number(p.base_price_jod) || 0,
+            oldPriceJod: p.old_price_jod ? Number(p.old_price_jod) : null,
+            imageUrl: p.image_url || p.icon_image_url,
+            iconImage: p.icon_image_url || p.image_url,
+            thumbBg: null,
+            icon: p.icon || "🎮",
+            badge: p.badge || null,
+          });
+        }
+      });
+
+      // C. Add all subscription plans from PRODUCTS_CATALOG
+      for (const catKey in PRODUCTS_CATALOG) {
+        const prod = PRODUCTS_CATALOG[catKey];
+        const allPlans = [...(prod.plans || []), ...(prod.crewPlans || []), ...(prod.vbucksPlans || [])];
+        for (const pl of allPlans) {
+          if (!items.some((it) => it.cartId === pl.id)) {
+            items.push({
+              cartId: pl.id,
+              productSlug: catKey,
+              nameAr: `${prod.name} — ${pl.label}`,
+              nameEn: `${prod.name} — ${pl.label}`,
+              priceJod: pl.price,
+              oldPriceJod: pl.oldPrice || null,
+              imageUrl: pl.imageUrl || prod.imageUrl || prod.iconImg || null,
+              iconImage: prod.iconImg || pl.imageUrl || prod.imageUrl || null,
+              thumbBg: prod.thumbBg || null,
+              icon: prod.icon || "🎮",
+              badge: pl.tag || null,
+            });
+          }
+        }
+      }
+
+      // D. Add gift card denominations from GIFT_CARDS_CATALOG
+      for (const gKey in GIFT_CARDS_CATALOG) {
+        const gCat = GIFT_CARDS_CATALOG[gKey];
+        for (const reg of gCat.regions) {
+          for (const den of reg.denominations) {
+            if (!items.some((it) => it.cartId === den.id)) {
+              items.push({
+                cartId: den.id,
+                productSlug: gKey,
+                nameAr: `${gCat.name} (${reg.region}) — ${den.label}`,
+                nameEn: `${gCat.name} (${reg.region}) — ${den.label}`,
+                priceJod: den.price,
+                oldPriceJod: den.oldPrice || null,
+                imageUrl: gCat.iconImg || null,
+                iconImage: gCat.iconImg || null,
+                thumbBg: gCat.cardGradient || null,
+                icon: "🎁",
+              });
+            }
+          }
+        }
+      }
+
+      // E. Add all games from INITIAL_REAL_GAMES
+      INITIAL_REAL_GAMES.forEach((g) => {
+        if (!items.some((it) => it.cartId === g.slug)) {
+          items.push({
+            cartId: g.slug,
+            productSlug: g.slug,
+            nameAr: g.name_ar,
+            nameEn: g.name_en || g.name_ar,
+            priceJod: g.base_price_jod,
+            oldPriceJod: g.old_price_jod || null,
+            imageUrl: g.image_url,
+            iconImage: g.image_url,
+            thumbBg: "linear-gradient(145deg,#10141f,#090c14)",
+            icon: "🎮",
           });
         }
       });
@@ -112,14 +182,149 @@ export function BestsellersManager() {
     setDirty(false);
   }, [siteSettings.home_bestseller_order]);
 
+  const catalogItems = catalogQ.data ?? [];
+  const catalogMap = new Map(catalogItems.map((it) => [it.cartId, it]));
+
+  function resolveItem(cartId: string): CatalogItem {
+    // 1. Live database catalog has highest priority for fresh prices and details!
+    const it = catalogMap.get(cartId);
+    const prevSnap = (siteSettings.home_bestseller_items || []).find((s) => s.cartId === cartId);
+
+    if (it && it.priceJod > 0) {
+      return {
+        ...it,
+        nameAr: prevSnap?.nameAr || it.nameAr,
+        nameEn: prevSnap?.nameEn || it.nameEn,
+        badge: prevSnap?.badge || it.badge,
+        imageUrl: it.imageUrl || prevSnap?.imageUrl || null,
+        iconImage: it.iconImage || prevSnap?.iconImage || null,
+      };
+    }
+
+    if (prevSnap && prevSnap.priceJod > 0 && prevSnap.nameAr) {
+      return {
+        cartId: prevSnap.cartId,
+        productSlug: prevSnap.productSlug || "product",
+        nameAr: prevSnap.nameAr,
+        nameEn: prevSnap.nameEn || prevSnap.nameAr,
+        priceJod: prevSnap.priceJod,
+        oldPriceJod: prevSnap.oldPriceJod ?? null,
+        imageUrl: prevSnap.imageUrl ?? null,
+        iconImage: prevSnap.iconImage ?? prevSnap.imageUrl ?? null,
+        icon: prevSnap.icon ?? "🎮",
+        badge: prevSnap.badge ?? null,
+        thumbBg: prevSnap.thumbBg ?? null,
+      };
+    }
+
+    const plan = findPlanByCartId(cartId);
+    if (plan) {
+      return {
+        cartId: plan.cartId,
+        productSlug: plan.product,
+        nameAr: plan.name,
+        nameEn: plan.name,
+        priceJod: plan.price,
+        oldPriceJod: null,
+        imageUrl: plan.imageUrl,
+        iconImage: plan.iconImage || plan.imageUrl,
+        thumbBg: plan.bg,
+        icon: plan.icon,
+      };
+    }
+    const game = INITIAL_REAL_GAMES.find((g) => g.slug === cartId);
+    if (game) {
+      return {
+        cartId: game.slug,
+        productSlug: game.slug,
+        nameAr: game.name_ar,
+        nameEn: game.name_en || game.name_ar,
+        priceJod: game.base_price_jod,
+        oldPriceJod: game.old_price_jod || null,
+        imageUrl: game.image_url,
+        iconImage: game.image_url,
+        thumbBg: "linear-gradient(145deg,#10141f,#090c14)",
+        icon: "🎮",
+      };
+    }
+    if (it) return it;
+
+    return {
+      cartId,
+      productSlug: "product",
+      nameAr: cartId,
+      nameEn: cartId,
+      priceJod: 0,
+    };
+  }
+
+  // Selected items in order
+  const activeItems = order.map(resolveItem);
+
   // Save mutation
   const saveMut = useMutation({
     mutationFn: async () => {
+      const itemsSnapshot = order.map((cartId) => {
+        const it = resolveItem(cartId);
+        return {
+          cartId: it.cartId,
+          productSlug: it.productSlug,
+          nameAr: it.nameAr,
+          nameEn: it.nameEn,
+          priceJod: it.priceJod,
+          oldPriceJod: it.oldPriceJod ?? null,
+          imageUrl: it.imageUrl ?? null,
+          iconImage: (it as any).iconImage ?? it.imageUrl ?? null,
+          icon: it.icon ?? "🎮",
+          badge: it.badge ?? null,
+          thumbBg: (it as any).thumbBg ?? null,
+        };
+      });
+
+      // 1. Save order
       const { error: errOrder } = await supabase.from("site_settings").upsert({
         key: "home_bestseller_order",
         value: order as never,
       }, { onConflict: "key" });
       if (errOrder) throw errOrder;
+
+      // 2. Save full items snapshot for instant 0ms home page loading
+      const { error: errItems } = await supabase.from("site_settings").upsert({
+        key: "home_bestseller_items",
+        value: itemsSnapshot as never,
+      }, { onConflict: "key" });
+      if (errItems) throw errItems;
+
+      // 3. Atomically sync home_layout sec_bestsellers
+      try {
+        const { data: layoutRow } = await supabase.from("site_settings").select("value").eq("key", "home_layout").maybeSingle();
+        if (layoutRow && layoutRow.value && Array.isArray((layoutRow.value as any).sections)) {
+          const layoutObj = layoutRow.value as any;
+          const bSec = layoutObj.sections.find((s: any) => s.type === "bestsellers");
+          if (bSec) {
+            bSec.data = { ...(bSec.data || {}), order };
+            await supabase.from("site_settings").upsert({
+              key: "home_layout",
+              value: layoutObj as never,
+            }, { onConflict: "key" });
+          }
+        }
+      } catch { /* noop */ }
+
+      // 4. Immediately update client-side cache and broadcast event
+      try {
+        const raw = localStorage.getItem("gx_site_settings_v2");
+        const parsed = raw ? JSON.parse(raw) : {};
+        parsed.home_bestseller_order = order;
+        parsed.home_bestseller_items = itemsSnapshot;
+        if (parsed.home_layout?.sections) {
+          const bSec = parsed.home_layout.sections.find((s: any) => s.type === "bestsellers");
+          if (bSec) bSec.data = { ...(bSec.data || {}), order };
+        }
+        localStorage.setItem("gx_site_settings_v2", JSON.stringify(parsed));
+        localStorage.setItem("gx_site_settings_v2_ts", String(Date.now()));
+        window.dispatchEvent(new CustomEvent("gx_site_settings_changed", { detail: parsed }));
+      } catch { /* noop */ }
     },
     onSuccess: () => {
       toast.success("تم حفظ قائمة وترتيب الأكثر مبيعاً بنجاح! 🎉");
@@ -128,18 +333,6 @@ export function BestsellersManager() {
       setDirty(false);
     },
     onError: (e: Error) => toast.error(e.message),
-  });
-
-  const catalogItems = catalogQ.data ?? [];
-  const catalogMap = new Map(catalogItems.map((it) => [it.cartId, it]));
-
-  // Selected items in order
-  const activeItems = order.map((cartId) => catalogMap.get(cartId) || {
-    cartId,
-    productSlug: "product",
-    nameAr: cartId,
-    nameEn: cartId,
-    priceJod: 0,
   });
 
   function move(index: number, dir: -1 | 1) {

@@ -8,12 +8,9 @@ export const Route = createFileRoute("/reset-password")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Reset password — GX Store" },
-      { name: "description", content: "Set a new password for your GX Store account." },
-      { property: "og:title", content: "Reset password — GX Store" },
-      { property: "og:description", content: "Set a new password for your GX Store account." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { title: "استعادة كلمة المرور | متجر GX Store" },
+      { name: "description", content: "تعيين كلمة مرور جديدة لحسابك في متجر GX Store." },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
   component: ResetPasswordPage,

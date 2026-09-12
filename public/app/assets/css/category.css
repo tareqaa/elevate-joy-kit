@@ -378,6 +378,9 @@
   top: calc(100% + 8px);
   inset-inline-end: 0;
   min-width: 250px;
+  max-height: 380px;
+  overflow-y: auto;
+  scrollbar-width: thin;
   background: #ffffff;
   color: #0f172a;
   border-radius: 4px;
@@ -651,9 +654,20 @@
   }
   .cat-toolbar-end {
     display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 6px !important;
     width: 100% !important;
+  }
+  .cat-toolbar-end > *:last-child:nth-child(odd) {
+    grid-column: span 2;
+  }
+  @media (min-width: 520px) {
+    .cat-toolbar-end {
+      grid-template-columns: repeat(4, 1fr) !important;
+    }
+    .cat-toolbar-end > *:last-child:nth-child(odd) {
+      grid-column: span 1;
+    }
   }
   .cat-toolbar-end > * {
     width: 100% !important;

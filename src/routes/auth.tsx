@@ -8,8 +8,9 @@ import { useAuthActions } from "@/lib/gx/use-auth-actions";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — GX Store" },
-      { name: "description", content: "Sign in or create an account to track your orders." },
+      { title: "تسجيل الدخول | متجر GX Store" },
+      { name: "description", content: "تسجيل الدخول أو إنشاء حساب جديد — متجر GX Store." },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
   component: AuthPage,

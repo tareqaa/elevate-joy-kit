@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 import { supabase } from "@/integrations/supabase/client";
-
+import { useSiteSettings } from "@/lib/gx/site-settings";
 
 export function OrderConfirmedModal({
   orderNumber,
@@ -19,12 +19,11 @@ export function OrderConfirmedModal({
   const isAr = lang !== "en";
   const [copied, setCopied] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
+  const site = useSiteSettings();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
   }, []);
-
-
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -45,16 +44,27 @@ export function OrderConfirmedModal({
     } catch { /* noop */ }
   }
 
-  function goWa() {
-    if (!waUrl) return;
-    const a = document.createElement("a");
-    a.href = waUrl;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
+  const supportPhone = (site.support_whatsapp || "962776252313").replace(/[^0-9]/g, "");
+
+  const effectiveWaUrl = useMemo(() => {
+    if (waUrl && waUrl.trim()) return waUrl;
+
+    const pmLabel =
+      paymentMethod === "cliq"
+        ? "خدمة كليك (CliQ) 🇯🇴"
+        : paymentMethod === "card"
+        ? "بطاقة بنكية (Visa / Mastercard) 💳"
+        : "محفظة GX (GX Wallet) 🌐";
+
+    const msg = `مرحباً GX Store، قمت بعمل طلب جديد عبر المتجر:
+🆔 *رقم الطلب:* ${orderNumber}
+💳 *طريقة الدفع:* ${pmLabel}
+
+✅ يرجى تزويدي بتفاصيل الدفع وتأكيد استلام الطلب. شكراً!`;
+
+    const encoded = encodeURIComponent(msg);
+    return `https://wa.me/${supportPhone}?text=${encoded}`;
+  }, [waUrl, orderNumber, paymentMethod, supportPhone]);
 
   return (
     <div
@@ -86,6 +96,7 @@ export function OrderConfirmedModal({
           background: "linear-gradient(135deg,#00e5ff,#7c3aed)",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 34, boxShadow: "0 12px 30px -8px rgba(0,229,255,0.55)",
+          color: "#ffffff",
         }}>✓</div>
         <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>
           {t("cart.order_created")}
@@ -135,30 +146,37 @@ export function OrderConfirmedModal({
         </div>
 
         <div style={{
-          fontSize: 12, color: "#94a3b8", lineHeight: 1.6, marginBottom: 14,
+          fontSize: 12, color: "#94a3b8", lineHeight: 1.6, marginBottom: 16,
           padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,0.03)",
           border: "1px solid rgba(255,255,255,0.06)",
         }}>
           {isAr
-            ? "💡 انسخ رقم الطلب وتابِع الدفع فوراً عبر واتساب، أو أرسل الرقم إلى فريق الدعم عبر أي منصة (تيليجرام، إنستغرام) لتأكيد الطلب."
-            : "💡 Copy your order number and proceed to payment via WhatsApp, or send it to our support team on Telegram or Instagram to confirm your order."}
+            ? "💡 اضغط الزر الأخضر أدناه للمتابعة فوراً عبر واتساب، أو أرسل الرقم لفريق الدعم عبر أي منصة لتأكيد الطلب."
+            : "💡 Click the green button below to proceed via WhatsApp, or send your order number to our support team on any platform to confirm."}
         </div>
 
-        {waUrl && (
-          <button
-            type="button" onClick={goWa}
-            style={{
-              width: "100%", padding: "12px 16px", borderRadius: 12, border: "none",
-              background: "linear-gradient(135deg,#25D366,#128C7E)", color: "#fff",
-              fontSize: 15, fontWeight: 800, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              boxShadow: "0 10px 24px -8px rgba(37,211,102,0.55)",
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.07L2 22l5.06-1.33A9.94 9.94 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
-            {t("cart.continue_wa")}
-          </button>
-        )}
+        {/* Primary Call-to-Action: Direct WhatsApp Button */}
+        <a
+          href={effectiveWaUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="gx-wa-checkout-btn"
+          style={{
+            width: "100%", padding: "14px 18px", borderRadius: 14, textDecoration: "none",
+            background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)", color: "#ffffff",
+            fontSize: 15, fontWeight: 800, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+            boxShadow: "0 10px 28px -6px rgba(37,211,102,0.65), 0 0 0 1px rgba(255,255,255,0.2) inset",
+            transition: "all 0.2s ease",
+            boxSizing: "border-box",
+          }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff">
+            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.275.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.164.577 4.195 1.583 5.952l-1.683 6.155 6.305-1.654c1.704.931 3.663 1.464 5.795 1.464 6.627 0 12-5.373 12-12s-5.373-12-12-12z" />
+          </svg>
+          <span>{isAr ? "متابعة وتأكيد الطلب عبر واتساب" : "Confirm Order via WhatsApp"}</span>
+        </a>
+
         {signedIn && (
           <Link
             to="/account"
@@ -188,6 +206,14 @@ export function OrderConfirmedModal({
       <style>{`
         @keyframes gxFadeIn { from { opacity: 0 } to { opacity: 1 } }
         @keyframes gxPop { from { opacity: 0; transform: scale(.92) translateY(8px) } to { opacity: 1; transform: none } }
+        .gx-wa-checkout-btn:hover {
+          transform: translateY(-2px);
+          filter: brightness(1.08);
+          box-shadow: 0 14px 34px -6px rgba(37,211,102,0.8) !important;
+        }
+        .gx-wa-checkout-btn:active {
+          transform: translateY(0);
+        }
       `}</style>
     </div>
   );

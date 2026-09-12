@@ -60,9 +60,12 @@ export type CatalogProduct = {
   identifierLabelAr: string | null;
   identifierLabelEn: string | null;
   identifierPlaceholder: string | null;
+  requiresPlayerId?: boolean | null;
   deliveryMethodAr: string | null;
   deliveryMethodEn: string | null;
   deliveryDetails: DeliveryDetails | null;
+  deliveryInstructionsAr?: string | null;
+  importantNotes?: string[] | null;
   pageTemplate: string;
   deliveryType: string;
   region: string | null;
@@ -133,9 +136,16 @@ export function invalidateCatalogCache(slug?: string) {
   } else {
     productCache.clear();
     categoryCache.clear();
-    overridesCache = { data: {}, expiresAt: 0 };
   }
+  overridesCache = { data: {}, expiresAt: 0 };
 }
+
+export const purgeCatalogCacheFn = createServerFn({ method: "POST" })
+  .inputValidator((data?: { slug?: string }) => ({ slug: data?.slug ? String(data.slug) : undefined }))
+  .handler(async ({ data }) => {
+    invalidateCatalogCache(data?.slug);
+    return { ok: true };
+  });
 
 async function loadOverrides(supabase: ReturnType<typeof getPublicClient>): Promise<Overrides> {
   const now = Date.now();
@@ -158,19 +168,24 @@ async function loadOverrides(supabase: ReturnType<typeof getPublicClient>): Prom
 }
 
 export const getCatalogProduct = createServerFn({ method: "GET" })
-  .inputValidator((data: { slug: string }) => ({ slug: String(data.slug) }))
+  .inputValidator((data: { slug: string; bypassCache?: boolean }) => ({
+    slug: String(data.slug),
+    bypassCache: Boolean(data.bypassCache),
+  }))
   .handler(async ({ data }): Promise<CatalogProduct | null> => {
     const now = Date.now();
-    const cached = productCache.get(data.slug);
-    if (cached && now < cached.expiresAt) {
-      return cached.data;
+    if (!data.bypassCache) {
+      const cached = productCache.get(data.slug);
+      if (cached && now < cached.expiresAt) {
+        return cached.data;
+      }
     }
 
     const supabase = getPublicClient();
     const { data: row } = await supabase
       .from("products")
       .select(
-        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, base_price_jod, image_url, icon, icon_image_url, thumb_bg, accent_color, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, delivery_method_ar, delivery_method_en, delivery_details, page_template, delivery_type, region, is_active, categories:category_id (name_ar, name_en)",
+        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, base_price_jod, image_url, icon, icon_image_url, thumb_bg, accent_color, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, requires_player_id, delivery_method_ar, delivery_method_en, delivery_details, delivery_instructions_ar, delivery_instructions_en, page_template, delivery_type, region, is_active, categories:category_id (name_ar, name_en)",
       )
       .eq("slug", data.slug)
       .eq("is_active", true)
@@ -264,12 +279,29 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
       identifierLabelAr: p.identifier_label_ar ?? null,
       identifierLabelEn: p.identifier_label_en ?? null,
       identifierPlaceholder: p.identifier_placeholder ?? null,
+      requiresPlayerId: Boolean(p.requires_player_id),
       deliveryMethodAr: p.delivery_method_ar ?? null,
       deliveryMethodEn: p.delivery_method_en ?? null,
       deliveryDetails:
         p.delivery_details && typeof p.delivery_details === "object" && !Array.isArray(p.delivery_details)
           ? (p.delivery_details as DeliveryDetails)
           : null,
+      deliveryInstructionsAr: p.delivery_instructions_ar ?? null,
+      importantNotes: (() => {
+        if (p.delivery_details && typeof p.delivery_details === "object" && Array.isArray((p.delivery_details as any).important_notes)) {
+          return (p.delivery_details as any).important_notes;
+        }
+        if (p.delivery_instructions_en) {
+          try {
+            const parsed = JSON.parse(p.delivery_instructions_en);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          } catch {
+            const lines = p.delivery_instructions_en.split("\n").map((l: string) => l.trim()).filter(Boolean);
+            if (lines.length > 0) return lines;
+          }
+        }
+        return null;
+      })(),
       pageTemplate: p.page_template ?? "standard",
       deliveryType: p.delivery_type ?? "manual",
       region: p.region ?? null,
@@ -509,91 +541,73 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
       const categoryNameEn = parentCat?.name_en || cat?.name_en || null;
 
       const vars = variantsByProd.get(p.id) ?? [];
-      const isGiftCardMaster =
+      const isGiftCardProduct =
         ["playstation", "xbox", "itunes", "google-play"].includes(p.slug) ||
         rootCategorySlug === "gift-cards";
 
       // 1. SMART GIFT CARDS CONSOLIDATION
-      // Instead of exploding gift cards into 30+ identical cards, show ONE master platform card
-      // with a clear "عرض العروض / View Offers" button leading to the selection page.
-      if (isGiftCardMaster) {
-        let minPrice = Number(p.base_price_jod) || null;
-        if (vars.length > 0) {
-          const prices = vars.map((v) => {
-            const o = v.cart_id ? overrides[v.cart_id] : undefined;
-            return typeof o?.price === "number" && o.price >= 0 ? o.price : Number(v.price_jod) || 999999;
-          });
-          const validMin = Math.min(...prices);
-          if (validMin < 999999) minPrice = validMin;
+      // Show one master card per gift card brand (PlayStation, Xbox, iTunes, Google Play)
+      // with starting price ("يبدأ من") and link to the dedicated selector page (/product/[slug])
+      if (isGiftCardProduct && vars.length > 0) {
+        let minPrice = Infinity;
+        for (const v of vars) {
+          const o = v.cart_id ? overrides[v.cart_id] : undefined;
+          const pVal = typeof o?.price === "number" && o.price >= 0 ? o.price : Number(v.price_jod) || 0;
+          if (pVal > 0 && pVal < minPrice) minPrice = pVal;
         }
+        if (minPrice === Infinity) minPrice = Number(p.base_price_jod) || 5;
 
-        const platform =
-          p.platform ||
-          (p.slug === "playstation"
-            ? "PlayStation"
-            : p.slug === "xbox"
-              ? "Xbox Live"
-              : p.slug === "itunes"
-                ? "Apple"
-                : p.slug === "google-play"
-                  ? "Google Play"
-                  : "Gift Cards");
+        let nameAr = p.name_ar;
+        let nameEn = p.name_en || p.name_ar;
+        let taglineAr = p.tagline_ar ?? "رصيد رقمي معتمد للألعاب والتطبيقات بتسليم فوري للأكواد";
+        let taglineEn = p.tagline_en ?? "Official digital store credit with instant code delivery";
+        let thumbBg = p.thumb_bg ?? p.card_gradient ?? null;
+        let iconImage = p.icon_image_url ?? p.image_url ?? null;
+        let platform = p.platform || "Gift Cards";
+        let badge = "كود تفعيل";
+        let subCatSlug = categorySlug || "gift-cards";
 
-        const nameAr =
-          p.slug === "playstation"
-            ? "بطاقات بلايستيشن"
-            : p.slug === "xbox"
-              ? "بطاقات إكسبوكس"
-              : p.slug === "itunes"
-                ? "بطاقات آبل وآيتونز"
-                : p.slug === "google-play"
-                  ? "بطاقات جوجل بلاي"
-                  : p.name_ar;
-
-        const nameEn =
-          p.slug === "playstation"
-            ? "PlayStation Gift Cards"
-            : p.slug === "xbox"
-              ? "Xbox Gift Cards"
-              : p.slug === "itunes"
-                ? "iTunes & Apple Gift Cards"
-                : p.slug === "google-play"
-                  ? "Google Play Gift Cards"
-                  : p.name_en || p.name_ar;
-
-        const taglineAr =
-          p.slug === "playstation"
-            ? "شحن رصيد رسمي للحسابات الأمريكية، السعودية، والإماراتية"
-            : p.slug === "xbox"
-              ? "شحن رصيد إكسبوكس وجيم باس للحسابات التركية والأمريكية"
-              : p.slug === "itunes"
-                ? "شحن رصيد متجر App Store وآبل للحسابات التركية"
-                : p.slug === "google-play"
-                  ? "بطاقات شحن رقمية لمتجر Google Play للأندرويد"
-                  : (p.tagline_ar || "بطاقات شحن رقمية فورية معتمدة");
-
-        const iconImage =
-          p.slug === "playstation"
-            ? "/app/assets/img/playstation-logo.svg"
-            : p.slug === "xbox"
-              ? "/app/assets/img/xbox-logo.svg"
-              : p.slug === "itunes"
-                ? "/app/assets/img/itunes-logo.svg"
-                : p.slug === "google-play"
-                  ? "/app/assets/img/googleplay-logo.png"
-                  : (p.icon_image_url || p.image_url || null);
-
-        const thumbBg =
-          p.card_gradient ||
-          (p.slug === "playstation"
-            ? "linear-gradient(135deg,#0a3d91,#0066cc 45%,#00a3ff)"
-            : p.slug === "xbox"
-              ? "linear-gradient(135deg,#0e4d0e,#107c10 45%,#4fdc4f)"
-              : p.slug === "itunes"
-                ? "linear-gradient(135deg,#7b2ff7,#f107a3 55%,#ff5c8a)"
-                : p.slug === "google-play"
-                  ? "linear-gradient(135deg,#1a73e8,#34a853 35%,#fbbc04 70%,#ea4335)"
-                  : p.thumb_bg || null);
+        if (p.slug === "playstation") {
+          nameAr = "بطاقات بلايستيشن (PSN)";
+          nameEn = "PlayStation PSN Cards";
+          taglineAr = "رصيد المتجر لحسابات البلايستيشن السعودية، الأمريكية، والبريطانية";
+          taglineEn = "Store credit for Saudi, US, and UK PSN accounts";
+          platform = "PlayStation";
+          subCatSlug = "gc-playstation";
+          iconImage = "/app/assets/img/playstation-logo.svg";
+          thumbBg = "linear-gradient(135deg, rgba(0, 112, 209, 0.22), rgba(0, 60, 150, 0.12))";
+          minPrice = 7.0;
+        } else if (p.slug === "xbox") {
+          nameAr = "بطاقات إكسبوكس";
+          nameEn = "Xbox Gift Cards";
+          taglineAr = "شحن رصيد حسابات متجر إكسبوكس لجميع المناطق لشراء الألعاب والإضافات";
+          taglineEn = "Xbox store wallet balance for games and add-ons";
+          platform = "Xbox";
+          subCatSlug = "gc-xbox";
+          iconImage = "/app/assets/img/xbox-logo.svg";
+          thumbBg = "linear-gradient(135deg, rgba(16, 124, 65, 0.22), rgba(10, 80, 40, 0.12))";
+          minPrice = 1.15;
+        } else if (p.slug === "itunes") {
+          nameAr = "بطاقات آبل وآيتونز";
+          nameEn = "iTunes & Apple Gift Cards";
+          taglineAr = "شحن رصيد Apple ID لشراء التطبيقات والألعاب والاشتراكات";
+          taglineEn = "Apple ID balance for apps, games, and iCloud storage";
+          platform = "Apple";
+          subCatSlug = "gc-itunes";
+          iconImage = "/app/assets/img/itunes-logo.svg";
+          thumbBg = "linear-gradient(135deg, rgba(241, 7, 163, 0.22), rgba(123, 47, 247, 0.12))";
+          minPrice = 2.22;
+        } else if (p.slug === "google-play") {
+          nameAr = "بطاقات جوجل بلاي";
+          nameEn = "Google Play Cards";
+          taglineAr = "شحن رصيد متجر Play للأندرويد لشراء الألعاب والخدمات";
+          taglineEn = "Play Store digital balance for Android in-app purchases";
+          platform = "Google Play";
+          subCatSlug = "gc-google-play";
+          iconImage = "/app/assets/img/googleplay-logo.png";
+          thumbBg = "linear-gradient(135deg, rgba(52, 168, 83, 0.22), rgba(26, 115, 232, 0.12))";
+          minPrice = 4.5;
+        }
 
         items.push({
           id: p.id,
@@ -602,18 +616,18 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           nameAr,
           nameEn,
           taglineAr,
-          taglineEn: p.tagline_en ?? p.description_en ?? null,
+          taglineEn,
           imageUrl: p.image_url ?? p.icon_image_url ?? null,
           icon: p.icon ?? "🎁",
           iconImage,
           thumbBg,
           basePriceJod: minPrice,
           oldPriceJod: null,
-          badge: "🎁 كرت هدايا",
-          categorySlug,
-          parentCategorySlug: rootCategorySlug,
-          categoryNameAr,
-          categoryNameEn,
+          badge,
+          categorySlug: subCatSlug,
+          parentCategorySlug: "gift-cards",
+          categoryNameAr: parentCat?.name_ar || cat?.name_ar || "بطاقات الهدايا",
+          categoryNameEn: parentCat?.name_en || cat?.name_en || "Gift Cards",
           platform,
           productType: "giftcard",
           region: "Global",

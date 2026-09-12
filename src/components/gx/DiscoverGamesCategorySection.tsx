@@ -163,7 +163,7 @@ export function DiscoverGamesCategorySection() {
         <div className="gx-auto-scroll-marquee-track">
           {marqueeItems.map((genre, idx) => {
             const IconComp = genre.icon;
-            const targetUrl = `/products?category=games&search=${encodeURIComponent(genre.queryTerm)}`;
+            const targetUrl = `/category/games?genre=${genre.id}`;
 
             return (
               <Link

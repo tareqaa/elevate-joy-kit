@@ -624,9 +624,28 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
   const regions = useMemo(() => {
     const map = new Map<string, { code: string; name: string; items: typeof l.variants }>();
     for (const v of l.variants) {
-      const code = (v.planGroup || "xx").toLowerCase();
+      let code = (v.planGroup || "").toLowerCase();
+      const cId = (v.cartId || "").toLowerCase();
+      const r = (v.region || "").toLowerCase();
+      if (!code || code === "xx") {
+        if (cId.includes("-us-") || cId.startsWith("gp-us") || r.includes("أمريك") || r.includes("usa")) code = "us";
+        else if (cId.includes("-sa-") || r.includes("سعود") || r.includes("ksa")) code = "sa";
+        else if (cId.includes("-ae-") || r.includes("إمارات") || r.includes("uae")) code = "ae";
+        else if (cId.includes("-tr-") || r.includes("ترك") || r.includes("turkey")) code = "tr";
+        else if (cId === "gb" || cId.includes("uk") || r.includes("gb") || r.includes("بريطان")) code = "gb";
+        else code = "us";
+      }
+
       const [ar, en] = (v.region || "").split("|");
-      const name = (lang === "en" ? en || ar : ar || en) || code.toUpperCase();
+      let name = (lang === "en" ? en || ar : ar || en) || "";
+      if (!name || name === "XX" || name === "GB") {
+        if (code === "gb") name = lang === "en" ? "United Kingdom (UK) 🇬🇧" : "بريطانيا (UK) 🇬🇧";
+        else if (code === "us") name = lang === "en" ? "United States (USA) 🇺🇸" : "أمريكا (USA) 🇺🇸";
+        else if (code === "sa") name = lang === "en" ? "Saudi Arabia (KSA) 🇸🇦" : "السعودية (KSA) 🇸🇦";
+        else if (code === "ae") name = lang === "en" ? "United Arab Emirates (UAE) 🇦🇪" : "الإمارات (UAE) 🇦🇪";
+        else if (code === "tr") name = lang === "en" ? "Turkey 🇹🇷" : "تركيا 🇹🇷";
+      }
+
       if (!map.has(code)) map.set(code, { code, name, items: [] });
       map.get(code)!.items.push(v);
     }

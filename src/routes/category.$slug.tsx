@@ -8,6 +8,8 @@ import {
   type CatalogStoreProduct,
 } from "@/lib/gx/catalog.functions";
 import { useLang } from "@/lib/gx/i18n";
+import { useCurrency } from "@/lib/gx/currency";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { StoreProductCard } from "@/components/gx/StoreProductCard";
 import { CatalogFilterBar } from "@/components/gx/CatalogFilterBar";
@@ -15,8 +17,152 @@ import { CatSortDropdown, SORT_OPTIONS } from "@/components/gx/CatSortDropdown";
 import { CatPagination } from "@/components/gx/CatPagination";
 import { CatDeliveryTypeDropdown, DELIVERY_TYPE_OPTIONS } from "@/components/gx/CatDeliveryTypeDropdown";
 import { CatPriceFilterDropdown, PRICE_PRESETS } from "@/components/gx/CatPriceFilterDropdown";
+import { CatSubtypeDropdown, type SubtypeOption } from "@/components/gx/CatSubtypeDropdown";
 import { resolveStrictDeliveryType } from "@/lib/gx/delivery-types";
 import { trackRecentlyViewed } from "@/lib/gx/recently-viewed";
+
+export const SOCIAL_SUBTYPES: SubtypeOption[] = [
+  {
+    id: "all",
+    labelAr: "كل الخدمات",
+    labelEn: "All Services",
+    shortLabelAr: "الكل",
+    shortLabelEn: "All",
+    icon: "🌟",
+  },
+  {
+    id: "follow",
+    labelAr: "متابعين",
+    labelEn: "Followers",
+    shortLabelAr: "متابعين",
+    shortLabelEn: "Followers",
+    icon: "👤",
+  },
+  {
+    id: "likes",
+    labelAr: "لايكات وتفاعل",
+    labelEn: "Likes & Engagement",
+    shortLabelAr: "لايكات",
+    shortLabelEn: "Likes",
+    icon: "❤️",
+  },
+];
+
+export const GAMING_GENRES: SubtypeOption[] = [
+  {
+    id: "all",
+    labelAr: "كل التصنيفات",
+    labelEn: "All Genres",
+    shortLabelAr: "كل التصنيفات",
+    shortLabelEn: "All Genres",
+    icon: "🌟",
+  },
+  {
+    id: "adventure",
+    labelAr: "مغامرات",
+    labelEn: "Adventure",
+    shortLabelAr: "مغامرات",
+    shortLabelEn: "Adventure",
+    icon: "🗺️",
+  },
+  {
+    id: "fighting",
+    labelAr: "ألعاب قتال",
+    labelEn: "Fighting",
+    shortLabelAr: "قتال",
+    shortLabelEn: "Fighting",
+    icon: "🥊",
+  },
+  {
+    id: "fps",
+    labelAr: "تصويب (FPS)",
+    labelEn: "FPS",
+    shortLabelAr: "تصويب",
+    shortLabelEn: "FPS",
+    icon: "🎯",
+  },
+  {
+    id: "simulation",
+    labelAr: "محاكاة",
+    labelEn: "Simulation",
+    shortLabelAr: "محاكاة",
+    shortLabelEn: "Simulation",
+    icon: "📦",
+  },
+  {
+    id: "mmo",
+    labelAr: "ألعاب جماعية (MMO)",
+    labelEn: "MMO",
+    shortLabelAr: "ألعاب جماعية",
+    shortLabelEn: "MMO",
+    icon: "👥",
+  },
+  {
+    id: "platformer",
+    labelAr: "ألعاب منصات (Platformer)",
+    labelEn: "Platformer",
+    shortLabelAr: "منصات",
+    shortLabelEn: "Platformer",
+    icon: "🎮",
+  },
+  {
+    id: "point-and-click",
+    labelAr: "ألغاز وتفاعل (Point & Click)",
+    labelEn: "Point & Click",
+    shortLabelAr: "تفاعل",
+    shortLabelEn: "Point & Click",
+    icon: "🖱️",
+  },
+  {
+    id: "puzzle",
+    labelAr: "ألغاز",
+    labelEn: "Puzzle",
+    shortLabelAr: "ألغاز",
+    shortLabelEn: "Puzzle",
+    icon: "🧩",
+  },
+  {
+    id: "racing",
+    labelAr: "سباقات",
+    labelEn: "Racing",
+    shortLabelAr: "سباقات",
+    shortLabelEn: "Racing",
+    icon: "🏎️",
+  },
+  {
+    id: "sports",
+    labelAr: "رياضة",
+    labelEn: "Sports",
+    shortLabelAr: "رياضة",
+    shortLabelEn: "Sports",
+    icon: "⚽",
+  },
+  {
+    id: "horror",
+    labelAr: "رعب وبقاء",
+    labelEn: "Horror",
+    shortLabelAr: "رعب",
+    shortLabelEn: "Horror",
+    icon: "🧟",
+  },
+  {
+    id: "rpg",
+    labelAr: "ألعاب RPG و Souls",
+    labelEn: "RPG & Souls",
+    shortLabelAr: "RPG",
+    shortLabelEn: "RPG",
+    icon: "⚔️",
+  },
+  {
+    id: "open-world",
+    labelAr: "عالم مفتوح",
+    labelEn: "Open World",
+    shortLabelAr: "عالم مفتوح",
+    shortLabelEn: "Open World",
+    icon: "🌍",
+  },
+];
+
 
 /**
  * الكاتجوريات التي يتم تفعيل شريط الفلتر (Filter Bar) فيها.
@@ -120,18 +266,42 @@ export const Route = createFileRoute("/category/$slug")({
   },
   head: ({ loaderData }) => {
     const c = loaderData?.category;
-    const title = c ? `${c.nameEn || c.nameAr} — GX Store` : "Category — GX Store";
-    const desc = c?.taglineEn || c?.taglineAr || "Browse products at GX Store";
+    const catName = c?.nameAr || c?.nameEn || "الأقسام";
+    const title = c ? `${catName} | متجر GX Store` : "الأقسام | متجر GX Store";
+    const desc =
+      c?.taglineAr ||
+      c?.taglineEn ||
+      `تصفح عروض ومنتجات قسم ${catName} في متجر GX Store بأفضل الأسعار والتفعيل الفوري في الأردن والشرق الأوسط.`;
+    const canonical = c ? `https://gxstore.me/category/${c.slug}` : "https://gxstore.me/products";
+    const img = c?.iconImage
+      ? c.iconImage.startsWith("http")
+        ? c.iconImage
+        : `https://gxstore.me${c.iconImage}`
+      : "https://gxstore.me/app/assets/img/gx-logo-hires.jpg";
+
     return {
       meta: [
         { title },
         { name: "description", content: desc },
+        { property: "og:site_name", content: "GX Store" },
         { property: "og:title", content: title },
         { property: "og:description", content: desc },
         { property: "og:type", content: "website" },
+        { property: "og:url", content: canonical },
+        { property: "og:image", content: img },
         { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: desc },
+        { name: "twitter:image", content: img },
+        {
+          name: "robots",
+          content: "index, follow, max-image-preview:large, max-snippet:-1",
+        },
       ],
-      links: STORE_HEAD_LINKS,
+      links: [
+        ...STORE_HEAD_LINKS,
+        { rel: "canonical", href: canonical },
+      ],
     };
   },
   errorComponent: ({ error }) => (
@@ -229,6 +399,7 @@ export type CategoryPlatformItem = {
 function CategoryPage() {
   const { category, products, allProducts } = Route.useLoaderData();
   const { lang, t } = useLang();
+  const { format } = useCurrency();
   const pick = (ar?: string | null, en?: string | null) => (lang === "en" ? en || ar : ar || en) || "";
 
   const catName = pick(category.nameAr, category.nameEn);
@@ -247,6 +418,11 @@ function CategoryPage() {
 
   const isSubscriptionsCategory =
     category.slug === "subscriptions";
+
+  const isSocialCategory =
+    category.slug === "social-media" ||
+    category.slug === "instagram" ||
+    category.slug === "facebook";
 
   const showcaseBrands = useMemo(() => {
     if (isSoftwareCategory) {
@@ -275,6 +451,7 @@ function CategoryPage() {
 
   // State for active platform selection, search, sort, and modal
   const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
+  const [selectedSubtype, setSelectedSubtype] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("popular");
   const [selectedDeliveryType, setSelectedDeliveryType] = useState<string>("all");
@@ -282,6 +459,24 @@ function CategoryPage() {
   const [customMinPrice, setCustomMinPrice] = useState<string>("");
   const [customMaxPrice, setCustomMaxPrice] = useState<string>("");
   const [isAllPlatformsModalOpen, setIsAllPlatformsModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    let initialPlatform = "all";
+    let initialSubtype = "all";
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const g = sp.get("genre") || sp.get("subtype");
+      if (g) initialSubtype = g;
+      const p = sp.get("platform");
+      if (p) initialPlatform = p;
+    }
+    setSelectedPlatform(initialPlatform);
+    setSelectedSubtype(initialSubtype);
+  }, [category.slug]);
+
+
+  // Gift Cards category state
+  const isGiftCardCategory = category.slug === "gift-cards" || category.slug.startsWith("gc-");
 
   useEffect(() => {
     if (!isAllPlatformsModalOpen) return;
@@ -456,7 +651,51 @@ function CategoryPage() {
       .filter((d) => d.id === "all" || d.count > 0);
   }, [products]);
 
+  // Social Media Platforms (/category/social-media, /category/instagram, /category/facebook)
+  // Platforms are strictly real platforms: Instagram and Facebook (no subcategories/types)
+  const socialMediaPlatforms: CategoryPlatformItem[] = useMemo(() => {
+    const defs = [
+      {
+        id: "all",
+        nameAr: "كل المنصات",
+        nameEn: "All Platforms",
+        color: "#00e5ff",
+        glow: "rgba(0, 229, 255, 0.45)",
+        renderLogo: () => <AllPlatformsIcon />,
+        match: () => true,
+      },
+      {
+        id: "instagram",
+        nameAr: "إنستقرام",
+        nameEn: "Instagram",
+        color: "#e1306c",
+        glow: "rgba(225, 48, 108, 0.45)",
+        logoSrc: "/app/assets/img/instagram-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("instagram") || (p.categorySlug || "") === "instagram",
+      },
+      {
+        id: "facebook",
+        nameAr: "فيسبوك",
+        nameEn: "Facebook",
+        color: "#1877f2",
+        glow: "rgba(24, 119, 242, 0.45)",
+        logoSrc: "/app/assets/img/facebook-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("facebook") || (p.categorySlug || "") === "facebook",
+      },
+    ];
+
+    return defs
+      .map((d) => ({
+        ...d,
+        count: d.id === "all" ? products.length : products.filter(d.match).length,
+      }))
+      .filter((d) => d.id === "all" || d.count > 0);
+  }, [products]);
+
   // Platforms for main gaming category (/category/games)
+  // Platforms are strictly real platforms: PC, Xbox, PlayStation, Fortnite (no genres here)
   const gamingPlatforms: CategoryPlatformItem[] = useMemo(() => {
     const defs = [
       {
@@ -535,6 +774,7 @@ function CategoryPage() {
   }, [products]);
 
   // Launchers for PC Games subcategory (/category/pc-games)
+  // Strictly real launchers: Steam, Rockstar, EA, Minecraft (no genres here)
   const pcGamesLaunchers: CategoryPlatformItem[] = useMemo(() => {
     const defs = [
       {
@@ -652,7 +892,7 @@ function CategoryPage() {
 
   // Platforms for gift cards category
   const giftCardPlatforms: CategoryPlatformItem[] = useMemo(() => {
-    const defs = [
+    return [
       {
         id: "all",
         nameAr: "كل البطاقات",
@@ -660,6 +900,7 @@ function CategoryPage() {
         color: "#ff2d78",
         glow: "rgba(255, 45, 120, 0.45)",
         renderLogo: () => <AllPlatformsIcon />,
+        count: 35,
         match: () => true,
       },
       {
@@ -669,6 +910,8 @@ function CategoryPage() {
         color: "#0070d1",
         glow: "rgba(0, 112, 209, 0.45)",
         logoSrc: "/app/assets/img/playstation-logo.svg",
+        directLink: "/product/playstation",
+        count: 16,
         match: (p: CatalogStoreProduct) =>
           (p.slug || "").includes("playstation") || (p.categorySlug || "") === "gc-playstation",
       },
@@ -679,6 +922,8 @@ function CategoryPage() {
         color: "#107c41",
         glow: "rgba(16, 124, 65, 0.45)",
         logoSrc: "/app/assets/img/xbox-logo.svg",
+        directLink: "/product/xbox",
+        count: 9,
         match: (p: CatalogStoreProduct) =>
           (p.slug || "").includes("xbox") || (p.categorySlug || "") === "gc-xbox",
       },
@@ -689,6 +934,8 @@ function CategoryPage() {
         color: "#00e5ff",
         glow: "rgba(0, 229, 255, 0.45)",
         logoSrc: "/app/assets/img/googleplay-logo.png",
+        directLink: "/product/google-play",
+        count: 5,
         match: (p: CatalogStoreProduct) =>
           (p.slug || "").includes("google") || (p.categorySlug || "") === "gc-google-play",
       },
@@ -699,20 +946,15 @@ function CategoryPage() {
         color: "#ffffff",
         glow: "rgba(255, 255, 255, 0.4)",
         logoSrc: "/app/assets/img/itunes-logo.svg",
+        directLink: "/product/itunes",
+        count: 5,
         match: (p: CatalogStoreProduct) =>
           (p.slug || "").includes("itunes") ||
           (p.slug || "").includes("apple") ||
           (p.categorySlug || "") === "gc-itunes",
       },
     ];
-
-    return defs
-      .map((d) => ({
-        ...d,
-        count: d.id === "all" ? products.length : products.filter(d.match).length,
-      }))
-      .filter((d) => d.id === "all" || d.count > 0);
-  }, [products]);
+  }, []);
 
   // Generic platforms for other categories with children
   const genericPlatforms: CategoryPlatformItem[] = useMemo(() => {
@@ -751,15 +993,18 @@ function CategoryPage() {
   }, [hasChildren, category.children, products, lang]);
 
   const platformsList = useMemo(() => {
+    if (isSocialCategory) return socialMediaPlatforms;
     if (category.slug === "subscriptions") return subscriptionPlatforms;
     if (isSoftwareCategory) return softwarePlatforms;
-    if (category.slug === "gift-cards") return giftCardPlatforms;
+    if (category.slug === "gift-cards" || category.slug.startsWith("gc-")) return giftCardPlatforms;
     if (category.slug === "pc-games") return pcGamesLaunchers;
     if (category.slug === "games") return gamingPlatforms;
     return genericPlatforms;
   }, [
+    isSocialCategory,
     category.slug,
     isSoftwareCategory,
+    socialMediaPlatforms,
     subscriptionPlatforms,
     softwarePlatforms,
     giftCardPlatforms,
@@ -790,6 +1035,185 @@ function CategoryPage() {
   // Filter and sort products
   const displayedProducts = useMemo(() => {
     let list = [...products];
+
+    // 0. Subtype / Service / Genre filter (Social Media: follow vs likes | Gaming: RPG, Action, etc.)
+    if (selectedSubtype !== "all") {
+      if (isSocialCategory) {
+        if (selectedSubtype === "follow") {
+          list = list.filter(
+            (p) =>
+              (p.slug || "").includes("follow") ||
+              (p.nameAr || "").includes("متابعين") ||
+              (p.nameEn || "").toLowerCase().includes("follower")
+          );
+        } else if (selectedSubtype === "likes") {
+          list = list.filter(
+            (p) =>
+              (p.slug || "").includes("like") ||
+              (p.nameAr || "").includes("لايكات") ||
+              (p.nameEn || "").toLowerCase().includes("like")
+          );
+        }
+      } else if (isGamingCategory) {
+        list = list.filter((p) => {
+          const s = `${p.slug} ${p.nameAr} ${p.nameEn} ${p.taglineAr || ""} ${p.taglineEn || ""}`.toLowerCase();
+          if (selectedSubtype === "adventure") {
+            return (
+              s.includes("batman") ||
+              s.includes("assassin") ||
+              s.includes("uncharted") ||
+              s.includes("tomb") ||
+              s.includes("control") ||
+              s.includes("spider") ||
+              s.includes("horizon") ||
+              s.includes("ratchet") ||
+              s.includes("adventure") ||
+              s.includes("مغامر")
+            );
+          }
+          if (selectedSubtype === "fighting") {
+            return (
+              s.includes("mortal") ||
+              s.includes("kombat") ||
+              s.includes("tekken") ||
+              s.includes("fighter") ||
+              s.includes("street") ||
+              s.includes("قتال")
+            );
+          }
+          if (selectedSubtype === "fps") {
+            return (
+              s.includes("helldivers") ||
+              s.includes("cod") ||
+              s.includes("duty") ||
+              s.includes("battlefield") ||
+              s.includes("doom") ||
+              s.includes("wolfenstein") ||
+              s.includes("far-cry") ||
+              s.includes("shooter") ||
+              s.includes("fps") ||
+              s.includes("تصويب")
+            );
+          }
+          if (selectedSubtype === "simulation") {
+            return (
+              s.includes("minecraft") ||
+              s.includes("simulat") ||
+              s.includes("truck") ||
+              s.includes("farm") ||
+              s.includes("flight") ||
+              s.includes("city") ||
+              s.includes("محاك")
+            );
+          }
+          if (selectedSubtype === "mmo") {
+            return (
+              s.includes("raiders") ||
+              s.includes("arc-raiders") ||
+              s.includes("destiny") ||
+              s.includes("mmo") ||
+              s.includes("fortnite") ||
+              s.includes("جماع")
+            );
+          }
+          if (selectedSubtype === "platformer") {
+            return (
+              s.includes("hollow") ||
+              s.includes("silksong") ||
+              s.includes("ori") ||
+              s.includes("crash") ||
+              s.includes("spyro") ||
+              s.includes("cuphead") ||
+              s.includes("platform") ||
+              s.includes("منصات")
+            );
+          }
+          if (selectedSubtype === "point-and-click") {
+            return (
+              s.includes("human") ||
+              s.includes("click") ||
+              s.includes("detroit") ||
+              s.includes("تفاعل")
+            );
+          }
+          if (selectedSubtype === "puzzle") {
+            return (
+              s.includes("puzzle") ||
+              s.includes("human") ||
+              s.includes("portal") ||
+              s.includes("talos") ||
+              s.includes("limbo") ||
+              s.includes("inside") ||
+              s.includes("ألغاز")
+            );
+          }
+          if (selectedSubtype === "racing") {
+            return (
+              s.includes("forza") ||
+              s.includes("nfs") ||
+              s.includes("speed") ||
+              s.includes("f1") ||
+              s.includes("grid") ||
+              s.includes("crew") ||
+              s.includes("rally") ||
+              s.includes("سباق")
+            );
+          }
+          if (selectedSubtype === "sports") {
+            return (
+              s.includes("fc-") ||
+              s.includes("fc 2") ||
+              s.includes("fifa") ||
+              s.includes("nba") ||
+              s.includes("wwe") ||
+              s.includes("رياض")
+            );
+          }
+          if (selectedSubtype === "horror") {
+            return (
+              s.includes("resident") ||
+              s.includes("bioshock") ||
+              s.includes("silent") ||
+              s.includes("outlast") ||
+              s.includes("dead-space") ||
+              s.includes("amnesia") ||
+              s.includes("evil") ||
+              s.includes("alan-wake") ||
+              s.includes("رعب")
+            );
+          }
+          if (selectedSubtype === "rpg") {
+            return (
+              s.includes("souls") ||
+              s.includes("elden") ||
+              s.includes("rpg") ||
+              s.includes("witcher") ||
+              s.includes("mordor") ||
+              s.includes("war") ||
+              s.includes("mount") ||
+              s.includes("blade") ||
+              s.includes("skyrim") ||
+              s.includes("cyberpunk") ||
+              s.includes("تعاقب")
+            );
+          }
+          if (selectedSubtype === "open-world") {
+            return (
+              s.includes("gta") ||
+              s.includes("red-dead") ||
+              s.includes("rdr") ||
+              s.includes("witcher") ||
+              s.includes("cyberpunk") ||
+              s.includes("mafia") ||
+              s.includes("horizon") ||
+              s.includes("forza-horizon") ||
+              s.includes("عالم مفتوح")
+            );
+          }
+          return true;
+        });
+      }
+    }
 
     // 1. Platform filter
     if (selectedPlatform !== "all") {
@@ -861,6 +1285,7 @@ function CategoryPage() {
     return list;
   }, [
     products,
+    selectedSubtype,
     selectedPlatform,
     platformsList,
     searchQuery,
@@ -881,6 +1306,7 @@ function CategoryPage() {
   }, [
     category.slug,
     selectedPlatform,
+    selectedSubtype,
     searchQuery,
     selectedDeliveryType,
     selectedPricePreset,
@@ -999,6 +1425,79 @@ function CategoryPage() {
 
   // Render product card helper
   const renderProductCard = (p: CatalogStoreProduct) => {
+    if (p.isGiftCardMaster || isGiftCardCategory) {
+      const ar = lang === "ar";
+      const name = ar ? p.nameAr : (p.nameEn || p.nameAr);
+      const desc = ar ? p.taglineAr : (p.taglineEn || p.taglineAr);
+      const link = p.viewOfferLink || `/product/${p.slug}`;
+      const price = p.basePriceJod || 0;
+
+      return (
+        <Link
+          key={p.cartId ? `${p.id}-${p.cartId}` : p.id}
+          to={link as never}
+          className="gx-gamepoint-card"
+          style={{
+            background: p.thumbBg || "linear-gradient(135deg, rgba(0, 112, 209, 0.22), rgba(0, 60, 150, 0.12))",
+            textDecoration: "none",
+          }}
+          onClick={() => {
+            trackRecentlyViewed({
+              slug: p.slug,
+              nameAr: p.nameAr,
+              nameEn: p.nameEn,
+              taglineAr: p.taglineAr || undefined,
+              taglineEn: p.taglineEn || undefined,
+              price,
+              imageUrl: p.imageUrl || undefined,
+              icon: p.icon || undefined,
+              categorySlug: "gift-cards",
+            });
+          }}
+        >
+          <div className="gx-gamepoint-card-top">
+            <div className="gx-gamepoint-icon-box">
+              <img
+                src={p.iconImage || p.imageUrl || "/app/assets/img/playstation-logo.svg"}
+                alt={name}
+                className="gx-gamepoint-icon-img"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <span className="gx-gamepoint-badge">
+              {ar ? (p.badge || "كود تفعيل") : (p.badge === "كود تفعيل" || !p.badge ? "Digital Code" : p.badge)}
+            </span>
+          </div>
+
+          <div className="gx-gamepoint-card-body">
+            <h3 className="gx-gamepoint-title">{name}</h3>
+            <p className="gx-gamepoint-desc">{desc}</p>
+          </div>
+
+          <div className="gx-gamepoint-card-footer">
+            <div className="gx-gamepoint-price-box">
+              <span className="gx-gamepoint-price-label">
+                {ar ? "يبدأ من" : "Starts at"}
+              </span>
+              <span className="gx-gamepoint-price-val">
+                {format(price)}
+              </span>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--cyan, #00e5ff)" }}>
+                {ar ? "عرض العروض" : "View Offers"}
+              </span>
+              <div className="gx-gamepoint-arrow-btn">
+                {ar ? <ArrowLeft size={16} /> : <ArrowRight size={16} />}
+              </div>
+            </div>
+          </div>
+        </Link>
+      );
+    }
+
     const name = pick(p.nameAr, p.nameEn);
     const tagline = pick(p.taglineAr, p.taglineEn);
     const defaultLink = p.slug
@@ -1035,8 +1534,70 @@ function CategoryPage() {
     );
   };
 
+  const breadcrumbListSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: lang === "en" ? "Home" : "الرئيسية",
+        item: "https://gxstore.me/",
+      },
+      ...(category.parent
+        ? [
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: pick(category.parent.nameAr, category.parent.nameEn),
+              item: `https://gxstore.me/category/${category.parent.slug}`,
+            },
+            {
+              "@type": "ListItem",
+              position: 3,
+              name: catName,
+              item: `https://gxstore.me/category/${category.slug}`,
+            },
+          ]
+        : [
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: catName,
+              item: `https://gxstore.me/category/${category.slug}`,
+            },
+          ]),
+    ],
+  };
+
+  const collectionPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: `${catName} | متجر GX Store`,
+    description:
+      category.taglineAr ||
+      category.taglineEn ||
+      `تصفح عروض ومنتجات قسم ${catName} في متجر GX Store بأفضل الأسعار.`,
+    url: `https://gxstore.me/category/${category.slug}`,
+    isPartOf: {
+      "@type": "WebSite",
+      name: "GX Store",
+      url: "https://gxstore.me/",
+    },
+  };
+
   return (
     <StoreShell>
+      {/* Structured Data: BreadcrumbList & CollectionPage Schemas */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbListSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPageSchema) }}
+      />
+
       {/* 1. Dynamic Integrated Category Stage (Hero + Moving Platforms) */}
       <section
         className="category-hero"
@@ -1050,7 +1611,7 @@ function CategoryPage() {
             {/* Stage Top Bar: Breadcrumb, Title, and View All Platforms Button */}
             <div className="cat-stage-top">
               <div className="cat-stage-info">
-                <div className="cat-breadcrumb">
+                <nav className="cat-breadcrumb" aria-label="مسار التصفح">
                   <Link to="/">
                     <span className="home-dot"></span>
                     {lang === "en" ? "Home" : "الرئيسية"}
@@ -1065,7 +1626,7 @@ function CategoryPage() {
                     </>
                   )}
                   <span className="current">{catName}</span>
-                </div>
+                </nav>
 
                 <div className="cat-stage-heading">
                   <div className="cat-stage-badge">
@@ -1185,6 +1746,44 @@ function CategoryPage() {
                 </div>
               )}
 
+              {/* Active Subtype / Service / Genre Pill */}
+              {selectedSubtype !== "all" && (
+                <div
+                  className="cat-toolbar-filter-pill"
+                  style={{ borderColor: "#a855f7", background: "rgba(168, 85, 247, 0.12)" }}
+                >
+                  <span style={{ color: "#c084fc" }}>
+                    {isSocialCategory ? "✨ " : "🎮 "}
+                    {isSocialCategory
+                      ? lang === "en"
+                        ? "Service:"
+                        : "الخدمة:"
+                      : lang === "en"
+                        ? "Genre:"
+                        : "التصنيف:"}
+                  </span>
+                  <span style={{ fontWeight: 800 }}>
+                    {(() => {
+                      const opts = isSocialCategory ? SOCIAL_SUBTYPES : GAMING_GENRES;
+                      const opt = opts.find((o) => o.id === selectedSubtype);
+                      return opt
+                        ? lang === "en"
+                          ? opt.shortLabelEn
+                          : opt.shortLabelAr
+                        : selectedSubtype;
+                    })()}
+                  </span>
+                  <button
+                    type="button"
+                    className="reset-btn"
+                    onClick={() => setSelectedSubtype("all")}
+                    title={lang === "en" ? "Clear filter" : "إلغاء الفلتر"}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
               {/* Active Delivery Type Pill */}
               {selectedDeliveryType !== "all" && (
                 <div
@@ -1235,6 +1834,18 @@ function CategoryPage() {
             </div>
 
             <div className="cat-toolbar-end">
+              {/* Category-specific Subtype / Service / Genre Dropdown */}
+              {(isSocialCategory || isGamingCategory) && (
+                <CatSubtypeDropdown
+                  options={isSocialCategory ? SOCIAL_SUBTYPES : GAMING_GENRES}
+                  selectedId={selectedSubtype}
+                  onSelect={setSelectedSubtype}
+                  lang={lang}
+                  titleAr={isSocialCategory ? "نوع الخدمة" : "التصنيف"}
+                  titleEn={isSocialCategory ? "Service" : "Genre"}
+                />
+              )}
+
               {/* Product Delivery Type Filter Dropdown */}
               <CatDeliveryTypeDropdown
                 selectedType={selectedDeliveryType}
@@ -1272,7 +1883,7 @@ function CategoryPage() {
           {/* Product Cards Grid (5x5 Adaptive Grid with Pagination) */}
           {displayedProducts.length > 0 ? (
             <>
-              <div className="cat-adaptive-grid">
+              <div className={`cat-adaptive-grid ${isGiftCardCategory ? "cat-giftcards-grid" : ""}`}>
                 {paginatedProducts.map((p) => renderProductCard(p))}
               </div>
 

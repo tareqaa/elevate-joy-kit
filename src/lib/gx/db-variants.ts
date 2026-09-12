@@ -16,7 +16,8 @@ const CACHE_KEY = "gx_db_variants_v1";
 type Entry = ResolvedPlan;
 
 let map: Record<string, Entry> = {};
-let loaded = false;
+let hydrated = false;
+let dbFetched = false;
 let loading: Promise<void> | null = null;
 
 function overrides(): CatalogPrices {
@@ -30,14 +31,14 @@ function overrides(): CatalogPrices {
 }
 
 function hydrateCache() {
-  if (loaded || typeof localStorage === "undefined") return;
+  if (hydrated || typeof localStorage === "undefined") return;
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (raw) {
       map = JSON.parse(raw) as Record<string, Entry>;
-      loaded = true;
     }
   } catch { /* noop */ }
+  hydrated = true;
 }
 
 export function findDbPlanByCartId(cartId: string): ResolvedPlan | null {
@@ -49,10 +50,18 @@ export function findDbPlanByCartId(cartId: string): ResolvedPlan | null {
   return { ...hit, price };
 }
 
+export function clearDbVariantsCache() {
+  if (typeof localStorage !== "undefined") {
+    try { localStorage.removeItem(CACHE_KEY); } catch { /* noop */ }
+  }
+  dbFetched = false;
+  return loadDbVariants(true);
+}
+
 export async function loadDbVariants(force = false): Promise<void> {
   if (typeof window === "undefined") return;
   if (loading) return loading;
-  if (loaded && !force) return;
+  if (dbFetched && !force) return;
   loading = (async () => {
     try {
       const [{ data: variants }, { data: products }] = await Promise.all([
@@ -104,9 +113,10 @@ export async function loadDbVariants(force = false): Promise<void> {
       }
 
       map = next;
-      loaded = true;
+      dbFetched = true;
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(next)); } catch { /* noop */ }
       window.dispatchEvent(new Event("gx:db-variants-updated"));
+      window.dispatchEvent(new Event("gx:prices-updated"));
     } catch { /* keep whatever cache we have */ }
   })();
   await loading;

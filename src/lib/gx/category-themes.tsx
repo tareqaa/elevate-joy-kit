@@ -81,6 +81,10 @@ export function getCategoryTheme(slug: string): CategoryTheme {
       return { glow: "rgba(0, 200, 83, 0.4)", ambient: "rgba(0, 200, 83, 0.15)", accent: "#00c853" };
     case "gc-itunes":
       return { glow: "rgba(255, 45, 120, 0.4)", ambient: "rgba(255, 45, 120, 0.15)", accent: "#ff2d78" };
+    case "instagram":
+      return { glow: "rgba(225, 48, 108, 0.45)", ambient: "rgba(225, 48, 108, 0.16)", accent: "#e1306c" };
+    case "facebook":
+      return { glow: "rgba(24, 119, 242, 0.45)", ambient: "rgba(24, 119, 242, 0.16)", accent: "#1877f2" };
 
     default:
       return { glow: "rgba(0, 229, 255, 0.35)", ambient: "rgba(0, 229, 255, 0.12)", accent: "#00e5ff" };
@@ -366,6 +370,22 @@ export function renderCategoryVectorIcon(slug: string, size = 40): React.ReactNo
       return <SubscriptionsCatIcon size={size} />;
     case "social-media":
       return <SocialMediaCatIcon size={size} />;
+    case "instagram":
+      return (
+        <img
+          src="/app/assets/img/instagram-logo.svg"
+          alt="Instagram"
+          style={{ width: size, height: size, borderRadius: 12, objectFit: "contain", flexShrink: 0, display: "block" }}
+        />
+      );
+    case "facebook":
+      return (
+        <img
+          src="/app/assets/img/facebook-logo.svg"
+          alt="Facebook"
+          style={{ width: size, height: size, borderRadius: 12, objectFit: "contain", flexShrink: 0, display: "block" }}
+        />
+      );
     case "design":
     case "apps":
     case "software":

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CatalogProduct, CatalogVariant } from "@/lib/gx/catalog.functions";
 import { useCurrency } from "@/lib/gx/currency";
@@ -180,6 +180,93 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
   const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
   const [addedCart, setAddedCart] = useState<boolean>(false);
+  const [targetInput, setTargetInput] = useState<string>("");
+  const [inputError, setInputError] = useState<boolean>(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Social & Link Input Detection
+  const isLikeProduct = useMemo(() => {
+    const s = (product.slug || "").toLowerCase();
+    const n = (product.nameAr || "").toLowerCase();
+    return s.includes("like") || n.includes("لايك");
+  }, [product.slug, product.nameAr]);
+
+  const isFollowerProduct = useMemo(() => {
+    const s = (product.slug || "").toLowerCase();
+    const n = (product.nameAr || "").toLowerCase();
+    return s.includes("follow") || n.includes("متابع");
+  }, [product.slug, product.nameAr]);
+
+  const isSocialProduct = useMemo(() => {
+    const s = (product.slug || "").toLowerCase();
+    const c = (categoryName || "").toLowerCase();
+    return (
+      s.includes("instagram") ||
+      s.includes("facebook") ||
+      s.includes("tiktok") ||
+      s.includes("twitter") ||
+      c.includes("social") ||
+      c.includes("سوشال") ||
+      isLikeProduct ||
+      isFollowerProduct
+    );
+  }, [product.slug, categoryName, isLikeProduct, isFollowerProduct]);
+
+  const requiresCustomerInput = useMemo(() => {
+    return Boolean(
+      product.requiresPlayerId ||
+      product.identifierLabelAr ||
+      isSocialProduct
+    );
+  }, [product.requiresPlayerId, product.identifierLabelAr, isSocialProduct]);
+
+  const targetLabel = useMemo(() => {
+    if (isLikeProduct) {
+      return ar
+        ? "رابط المنشور أو الريلز (Post / Reel Link) *"
+        : "Post or Reel Link *";
+    }
+    if (isFollowerProduct || isSocialProduct) {
+      return ar
+        ? "رابط الحساب أو الصفحة (Profile / Page Link) *"
+        : "Profile or Page Link *";
+    }
+    return (
+      pick(product.identifierLabelAr, product.identifierLabelEn) ||
+      (ar ? "معرّف الحساب أو الرابط المطلوب *" : "Account ID or Link *")
+    );
+  }, [isLikeProduct, isFollowerProduct, isSocialProduct, product.identifierLabelAr, product.identifierLabelEn, ar]);
+
+  const targetPlaceholder = useMemo(() => {
+    if (isLikeProduct) {
+      return ar
+        ? "https://www.instagram.com/p/... أو رابط المنشور العام"
+        : "https://www.instagram.com/p/... or public post link";
+    }
+    if (isFollowerProduct || isSocialProduct) {
+      return ar
+        ? "https://www.instagram.com/... أو @username أو رابط الحساب"
+        : "https://... or @username or profile link";
+    }
+    return (
+      product.identifierPlaceholder ||
+      (ar ? "أدخل المعرّف أو الرابط المطلوب هنا" : "Enter requested identifier or link")
+    );
+  }, [isLikeProduct, isFollowerProduct, isSocialProduct, product.identifierPlaceholder, ar]);
+
+  const targetHint = useMemo(() => {
+    if (isLikeProduct) {
+      return ar
+        ? "⚠️ تأكد أن الحساب والمنشور عام (Public) لتصل اللايكات بنجاح ودون أي تأخير."
+        : "⚠️ Ensure account & post are Public for delivery to succeed without delays.";
+    }
+    if (isFollowerProduct || isSocialProduct) {
+      return ar
+        ? "⚠️ يجب أن يكون الحساب عام (Public) ولا تقم بتغيير اسم المستخدم أثناء فترة التنفيذ."
+        : "⚠️ Profile must be Public. Do not change username during processing.";
+    }
+    return null;
+  }, [isLikeProduct, isFollowerProduct, isSocialProduct, ar]);
 
   const activeVariant: CatalogVariant =
     variants.find((v) => v.cartId === selectedVariantId) || variants[0];
@@ -381,7 +468,22 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
   };
 
   // Actions
+  const validateTargetInput = () => {
+    if (requiresCustomerInput) {
+      const trimmed = targetInput.trim();
+      if (!trimmed) {
+        setInputError(true);
+        inputRef.current?.focus();
+        inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleAddToCart = () => {
+    if (!validateTargetInput()) return;
+    setInputError(false);
     const variantLabel = pick(activeVariant.labelAr, activeVariant.labelEn);
     const itemName = variantLabel && !name.includes(variantLabel) ? `${name} — ${variantLabel}` : name;
     cart.add(activeVariant.cartId, 1, {
@@ -392,6 +494,7 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
       iconImage: product.iconImage || product.imageUrl,
       imageUrl: product.imageUrl || product.iconImage,
       bg: product.thumbBg,
+      usernames: targetInput.trim() ? [targetInput.trim()] : undefined,
     });
     setAddedCart(true);
     window.dispatchEvent(new CustomEvent(CART_ADDED_EVENT));
@@ -399,6 +502,8 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
   };
 
   const handleBuyNow = () => {
+    if (!validateTargetInput()) return;
+    setInputError(false);
     const variantLabel = pick(activeVariant.labelAr, activeVariant.labelEn);
     const itemName = variantLabel && !name.includes(variantLabel) ? `${name} — ${variantLabel}` : name;
     cart.buyNow(activeVariant.cartId, 1, {
@@ -409,6 +514,7 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
       iconImage: product.iconImage || product.imageUrl,
       imageUrl: product.imageUrl || product.iconImage,
       bg: product.thumbBg,
+      usernames: targetInput.trim() ? [targetInput.trim()] : undefined,
     });
     navigate({ to: "/cart" });
   };
@@ -451,6 +557,22 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
 
   // Contextual Notice Points
   const noticePoints = useMemo(() => {
+    if (isSocialProduct || isFollowerProduct || isLikeProduct) {
+      return [
+        ar
+          ? "⚡ مدة التنفيذ: تبدأ معالجة الطلب فوراً ويتم التسليم والإنجاز بالكامل خلال مدة تتراوح بين ساعة إلى 24 ساعة كحد أقصى."
+          : "⚡ Execution Duration: Processing starts immediately; delivered and fully completed within 1 to 24 hours max.",
+        ar
+          ? "⚠️ تنبيه الانخفاض (Drop): قد يطرأ انخفاض طبيعي في عدد المتابعين مع مرور الوقت بسبب التحديثات الدورية لخوارزميات منصات التواصل."
+          : "⚠️ Natural Drop Notice: A natural drop in followers may occur over time due to periodic platform algorithm updates.",
+        ar
+          ? "🛡️ ضمان ذهبي لمدة 30 يوماً: نضمن لك الخدمة لمدة 30 يوماً كاملة؛ أي انخفاض أو Drop يحدث خلال هذه الفترة نقوم بتعويضه فوراً وبشكل مجاني."
+          : "🛡️ 30-Day Golden Guarantee: We guarantee 30 full days; any drop occurring during this period is refilled immediately and freely.",
+        ar
+          ? "🔒 أمان وخصوصية تامة: لا نطلب كلمة مرور حسابك إطلاقاً؛ نحتاج فقط رابط الحساب أو المنشور العام (Public)."
+          : "🔒 100% Safe & Private: We never ask for your password; only your public profile or post link is required.",
+      ];
+    }
     if (deliveryInfo.type === "link") {
       return [
         ar
@@ -501,10 +623,55 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
         ? "يتم التنفيذ السريع في غضون دقائق معدودة عبر فريق العمل المتخصص."
         : "Processed rapidly within minutes by our dedicated support agents.",
     ];
-  }, [deliveryInfo.type, ar]);
+  }, [deliveryInfo.type, isSocialProduct, isFollowerProduct, isLikeProduct, ar]);
+
+  const isNoticeHidden = useMemo(() => {
+    return (
+      Boolean(product.deliveryDetails && (product.deliveryDetails as any).hide_important_notes) ||
+      (Array.isArray(product.importantNotes) && product.importantNotes.length === 0)
+    );
+  }, [product.deliveryDetails, product.importantNotes]);
+
+  const displayNoticeList = useMemo(() => {
+    if (product.importantNotes && product.importantNotes.length > 0) {
+      return product.importantNotes;
+    }
+    return noticePoints;
+  }, [product.importantNotes, noticePoints]);
 
   // Contextual Redeem Steps
   const redeemSteps = useMemo(() => {
+    if (product.deliveryInstructionsAr) {
+      try {
+        const parsed = JSON.parse(product.deliveryInstructionsAr);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {
+        const lines = product.deliveryInstructionsAr.split("\n").map((l: string) => l.trim()).filter(Boolean);
+        if (lines.length > 0) return lines;
+      }
+    }
+
+    if (isSocialProduct || isFollowerProduct || isLikeProduct) {
+      return [
+        ar
+          ? (isLikeProduct
+              ? "انسخ رابط المنشور أو الريلز وتأكد أن حسابك ومنشورك عام (Public)."
+              : "انسخ رابط حسابك الشخصي أو اسم المستخدم وتأكد أن الحساب عام (Public).")
+          : (isLikeProduct
+              ? "Copy the link to your public post or reel."
+              : "Copy your public profile link or username."),
+        ar
+          ? "ضع الرابط في خانة الطلب الجانبية ثم اضغط على زر 'شراء الآن' أو إضافة للسلة."
+          : "Paste the link into the order box and click 'Buy now'.",
+        ar
+          ? "أكمل عملية الدفع الآمنة عبر وسيلة الدفع التي تناسبك."
+          : "Complete your secure payment via your preferred method.",
+        ar
+          ? "تبدأ المعالجة مباشرة ويتم الإنجاز بالكامل خلال مدة من ساعة إلى 24 ساعة مع ضمان 30 يوماً ضد أي Drop."
+          : "Processing starts immediately; completed within 1 to 24 hours with a 30-day refill guarantee.",
+      ];
+    }
+
     if (deliveryInfo.type === "link") {
       return [
         ar
@@ -740,20 +907,32 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
             </section>
           )}
 
-          {/* Important Notice Box */}
-          <section className="driffle-notice-box gx-notice-box">
-            <div className="driffle-notice-icon gx-notice-icon">⚠️</div>
-            <div className="driffle-notice-content gx-notice-content">
-              <div className="driffle-notice-title gx-notice-title">
-                {ar ? "تنبيه وتعليمات هامة (Important Notice):" : "Important Notice:"}
+          {/* Important Notice Box (Single top box, can be hidden from admin) */}
+          {!isNoticeHidden && displayNoticeList.length > 0 && (
+            <section className="driffle-notice-box gx-notice-box">
+              <div className="driffle-notice-icon gx-notice-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
               </div>
-              <ul className="driffle-notice-list gx-notice-list">
-                {noticePoints.map((pt, idx) => (
-                  <li key={idx}>{pt}</li>
-                ))}
-              </ul>
-            </div>
-          </section>
+              <div className="driffle-notice-content gx-notice-content">
+                <div className="driffle-notice-title gx-notice-title">
+                  <span>{ar ? "تنبيه وتعليمات هامة" : "Important Notice"}</span>
+                  <span className="driffle-notice-badge">{ar ? "معلومات هامة" : "Verified Info"}</span>
+                </div>
+                <div className="driffle-notice-items-grid">
+                  {displayNoticeList.map((pt: string, idx: number) => (
+                    <div key={idx} className="driffle-notice-item">
+                      <span className="driffle-notice-bullet">✦</span>
+                      <span className="driffle-notice-text">{pt}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* Frequently Bought Together: Only renders when configured with real catalog products */}
           {configuredBundle && (
@@ -838,7 +1017,7 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
                     ]
                 ).map((f, i) => (
                   <div key={i} className="driffle-feature-item gx-feature-item">
-                    <span className="feat-icon">★</span>
+                    <span className="feat-icon">{f.icon || "★"}</span>
                     <div>
                       <div className="feat-title">{pick(f.titleAr, f.titleEn)}</div>
                       <div className="feat-desc">{pick(f.descAr, f.descEn)}</div>
@@ -862,6 +1041,8 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
                 ))}
               </div>
             </div>
+
+
           </section>
         </main>
 
@@ -880,9 +1061,61 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
                 )}
               </div>
               <div className="driffle-price-note gx-price-note">
-                {ar ? "السعر النهائي شامل الضريبة والتسليم الفوري ⓘ" : "FINAL PRICE INCLUDES TAX & INSTANT DELIVERY ⓘ"}
+                {isSocialProduct || isFollowerProduct || isLikeProduct
+                  ? (ar ? "⚡ تنفيذ من ساعة إلى 24 ساعة • ضمان 30 يوماً ضد النقص ⓘ" : "⚡ 1-24h Delivery • 30-Day Drop Refill Guarantee ⓘ")
+                  : (ar ? "السعر النهائي شامل الضريبة والتسليم الفوري ⓘ" : "FINAL PRICE INCLUDES TAX & INSTANT DELIVERY ⓘ")}
               </div>
             </div>
+
+            {/* Target Link or Username Input Box */}
+            {requiresCustomerInput && (
+              <div className={`driffle-target-input-box ${inputError ? "has-error" : ""}`}>
+                <label className="driffle-target-label" htmlFor="driffle-target-input">
+                  <span className="driffle-target-label-icon">{isLikeProduct ? "❤️" : "🔗"}</span>
+                  <span>{targetLabel}</span>
+                </label>
+                <div className="driffle-target-field-wrap">
+                  <input
+                    ref={inputRef}
+                    id="driffle-target-input"
+                    type="text"
+                    dir="auto"
+                    className="driffle-target-input"
+                    placeholder={targetPlaceholder}
+                    value={targetInput}
+                    onChange={(e) => {
+                      setTargetInput(e.target.value);
+                      if (inputError && e.target.value.trim()) {
+                        setInputError(false);
+                      }
+                    }}
+                  />
+                  {targetInput && (
+                    <button
+                      type="button"
+                      className="driffle-target-clear-btn"
+                      onClick={() => setTargetInput("")}
+                      title={ar ? "مسح" : "Clear"}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {inputError && (
+                  <div className="driffle-input-error-msg">
+                    <span>⚠️</span>
+                    <span>
+                      {isLikeProduct
+                        ? (ar ? "يرجى وضع رابط المنشور أو الريلز قبل إتمام الشراء" : "Please provide the post link before purchasing")
+                        : (ar ? "يرجى وضع رابط الحساب أو اسم المستخدم للمتابعة" : "Please provide the profile link or username to proceed")}
+                    </span>
+                  </div>
+                )}
+                {targetHint && !inputError && (
+                  <div className="driffle-target-hint">{targetHint}</div>
+                )}
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="driffle-cta-row gx-cta-row">
@@ -907,18 +1140,41 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
 
             {/* Trust Highlights */}
             <div className="driffle-trust-box gx-trust-box">
-              <div className="driffle-trust-item gx-trust-item">
-                <span className="driffle-trust-icon gx-trust-icon">⚡</span>
-                <span>{ar ? "تسليم فوري ومباشر بعد الدفع" : "Instant Delivery within seconds"}</span>
-              </div>
-              <div className="driffle-trust-item gx-trust-item">
-                <span className="driffle-trust-icon gx-trust-icon">🎧</span>
-                <span>{ar ? "دعم فني وخدمة عملاء 24/7" : "24/7 Support & Live Assistance"}</span>
-              </div>
-              <div className="driffle-trust-item gx-trust-item">
-                <span className="driffle-trust-icon gx-trust-icon">🛡️</span>
-                <span>{ar ? "بائع موثوق وضمان رسمي 100%" : "Verified Seller & Official Warranty"}</span>
-              </div>
+              {isSocialProduct || isFollowerProduct || isLikeProduct ? (
+                <>
+                  <div className="driffle-trust-item gx-trust-item" style={{ color: "#00e5ff" }}>
+                    <span className="driffle-trust-icon gx-trust-icon">⚡</span>
+                    <span>{ar ? "تنفيذ وتسليم خلال ساعة إلى 24 ساعة" : "Delivery within 1 to 24 hours"}</span>
+                  </div>
+                  <div className="driffle-trust-item gx-trust-item" style={{ color: "#10b981" }}>
+                    <span className="driffle-trust-icon gx-trust-icon">🛡️</span>
+                    <span>{ar ? "ضمان 30 يوماً تعويض كامل لأي Drop أو نقص" : "30-Day Guarantee: Free Refill for Any Drop"}</span>
+                  </div>
+                  <div className="driffle-trust-item gx-trust-item" style={{ color: "#f59e0b" }}>
+                    <span className="driffle-trust-icon gx-trust-icon">⚠️</span>
+                    <span>{ar ? "قد يطرأ انخفاض طبيعي (Drop) ونضمن تعويضه" : "Natural Drop May Occur & Is 100% Compensated"}</span>
+                  </div>
+                  <div className="driffle-trust-item gx-trust-item">
+                    <span className="driffle-trust-icon gx-trust-icon">🔒</span>
+                    <span>{ar ? "أمان 100% بدون الحاجة لكلمة المرور" : "100% Safe — No Password Needed"}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="driffle-trust-item gx-trust-item">
+                    <span className="driffle-trust-icon gx-trust-icon">⚡</span>
+                    <span>{ar ? "تسليم فوري ومباشر بعد الدفع" : "Instant Delivery within seconds"}</span>
+                  </div>
+                  <div className="driffle-trust-item gx-trust-item">
+                    <span className="driffle-trust-icon gx-trust-icon">🎧</span>
+                    <span>{ar ? "دعم فني وخدمة عملاء 24/7" : "24/7 Support & Live Assistance"}</span>
+                  </div>
+                  <div className="driffle-trust-item gx-trust-item">
+                    <span className="driffle-trust-icon gx-trust-icon">🛡️</span>
+                    <span>{ar ? "بائع موثوق وضمان رسمي 100%" : "Verified Seller & Official Warranty"}</span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Only show other-offers-hint when multiple variants exist (> 1) */}

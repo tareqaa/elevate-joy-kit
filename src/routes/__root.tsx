@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CurrencyProvider } from "@/lib/gx/currency";
 import { CartProvider } from "@/lib/gx/cart";
 import { LanguageProvider } from "@/lib/gx/i18n";
-import { SiteSettingsProvider } from "@/lib/gx/site-settings";
+import { SiteSettingsProvider, useSiteSettings } from "@/lib/gx/site-settings";
 import { ensureStoreStyles } from "@/lib/gx/store-head";
 
 // Ensure legacy store stylesheets are present regardless of entry route.
@@ -98,12 +98,30 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "GX Store — متجر الألعاب والاشتراكات الرقمية" },
-      { name: "description", content: "وجهتك الرقمية للاشتراكات وبطاقات الألعاب — تفعيل رسمي وتسليم فوري، أينما كنت حول العالم." },
-      { property: "og:title", content: "GX Store" },
-      { property: "og:description", content: "اشتراكات، بطاقات ألعاب، وتفعيل فوري." },
+      { title: "GX Store | متجر ألعاب واشتراكات رقمية" },
+      {
+        name: "description",
+        content:
+          "GX Store متجر رقمي للألعاب والاشتراكات. اشتراكات، بطاقات هدايا، عملات ألعاب وخدمات رقمية بتفعيل سريع وأسعار منافسة.",
+      },
+      { property: "og:site_name", content: "GX Store" },
+      { property: "og:title", content: "GX Store | متجر ألعاب واشتراكات رقمية" },
+      {
+        property: "og:description",
+        content:
+          "GX Store متجر رقمي للألعاب والاشتراكات. اشتراكات، بطاقات هدايا، عملات ألعاب وخدمات رقمية بتفعيل سريع وأسعار منافسة.",
+      },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://gxstore.me/" },
+      { property: "og:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "GX Store | متجر ألعاب واشتراكات رقمية" },
+      {
+        name: "twitter:description",
+        content:
+          "GX Store متجر رقمي للألعاب والاشتراكات. اشتراكات، بطاقات هدايا، عملات ألعاب وخدمات رقمية بتفعيل سريع وأسعار منافسة.",
+      },
+      { name: "twitter:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
       { name: "theme-color", content: "#090b10" },
     ],
     links: [
@@ -111,7 +129,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&family=Almarai:wght@400;700;800&display=swap" },
-      { rel: "icon", href: "/app/assets/img/gx-logo.png", type: "image/png" },
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "icon", href: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+      { rel: "icon", href: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+      { rel: "manifest", href: "/site.webmanifest" },
     ],
   }),
   shellComponent: RootShell,
@@ -152,15 +174,106 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function AppGate({ authReady }: { authReady: boolean }) {
+  const settings = useSiteSettings();
+  const [gateReady, setGateReady] = useState(false);
+
+  useEffect(() => {
+    if (!authReady) return;
+
+    // Keep the splash screen for ~1.3s to 1.5s on page load/refresh
+    // to ensure Supabase database settings have 100% loaded and applied
+    const startTime = Date.now();
+    const MIN_SPLASH_MS = 1300;
+    const MAX_TIMEOUT_MS = 2200;
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      if (settings.dbFetched && elapsed >= MIN_SPLASH_MS) {
+        setGateReady(true);
+        clearInterval(interval);
+      } else if (elapsed >= MAX_TIMEOUT_MS) {
+        setGateReady(true);
+        clearInterval(interval);
+      }
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [authReady, settings.dbFetched]);
+
+  const isRevealed = authReady && gateReady;
+
+  return (
+    <>
+      <div
+        style={{
+          position: "fixed",
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: "#090b10",
+          zIndex: 99999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          transition: "opacity 0.4s ease, visibility 0.4s",
+          pointerEvents: isRevealed ? "none" : "auto",
+          opacity: isRevealed ? 0 : 1,
+          visibility: isRevealed ? "hidden" : "visible",
+        }}
+      >
+        <div className="relative flex items-center justify-center">
+          <img
+            src="/app/assets/img/gx-logo.png"
+            alt="GX Store"
+            style={{ width: 84, height: 84, objectFit: "contain", zIndex: 2, position: "relative" }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              width: 120, height: 120,
+              border: "3px solid transparent",
+              borderTopColor: "var(--cyan)",
+              borderRightColor: "var(--cyan)",
+              borderRadius: "50%",
+              animation: "gx-spin 1s linear infinite",
+              opacity: 0.7,
+              boxShadow: "0 0 16px rgba(0, 229, 255, 0.25)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              width: 146, height: 146,
+              border: "2.5px solid transparent",
+              borderBottomColor: "#3b82f6",
+              borderLeftColor: "#3b82f6",
+              borderRadius: "50%",
+              animation: "gx-spin 1.5s linear infinite reverse",
+              opacity: 0.45,
+            }}
+          />
+        </div>
+        <style>{`
+          @keyframes gx-spin { 100% { transform: rotate(360deg); } }
+        `}</style>
+      </div>
+
+      <div style={{ opacity: isRevealed ? 1 : 0, transition: "opacity 0.4s ease", minHeight: "100vh" }}>
+        <Outlet />
+      </div>
+      <Toaster richColors position="top-center" />
+    </>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
-  const [appReady, setAppReady] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    // Wait for the auth session to be known before revealing the app.
     supabase.auth.getSession().then(() => {
-      setAppReady(true);
+      setAuthReady(true);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
@@ -177,50 +290,7 @@ function RootComponent() {
         <LanguageProvider>
           <CurrencyProvider>
             <CartProvider>
-              {!appReady && (
-                <div style={{
-                  position: "fixed",
-                  top: 0, left: 0, right: 0, bottom: 0,
-                  backgroundColor: "#090b10",
-                  zIndex: 99999,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexDirection: "column",
-                  transition: "opacity 0.4s ease, visibility 0.4s",
-                }}>
-                  <div className="relative flex items-center justify-center">
-                    <img src="/app/assets/img/gx-logo.png" alt="Elevate Joy" style={{ width: 80, height: 80, objectFit: "contain", zIndex: 2, position: "relative" }} />
-                    <div style={{
-                      position: "absolute",
-                      width: 120, height: 120,
-                      border: "3px solid transparent",
-                      borderTopColor: "var(--cyan)",
-                      borderRightColor: "var(--cyan)",
-                      borderRadius: "50%",
-                      animation: "spin 1s linear infinite",
-                      opacity: 0.5
-                    }} />
-                    <div style={{
-                      position: "absolute",
-                      width: 140, height: 140,
-                      border: "2px solid transparent",
-                      borderBottomColor: "#3b82f6",
-                      borderLeftColor: "#3b82f6",
-                      borderRadius: "50%",
-                      animation: "spin 1.5s linear infinite reverse",
-                      opacity: 0.3
-                    }} />
-                  </div>
-                  <style>{`
-                    @keyframes spin { 100% { transform: rotate(360deg); } }
-                  `}</style>
-                </div>
-              )}
-              <div style={{ opacity: appReady ? 1 : 0, transition: "opacity 0.5s ease", minHeight: "100vh" }}>
-                <Outlet />
-              </div>
-              <Toaster richColors position="top-center" />
+              <AppGate authReady={authReady} />
             </CartProvider>
           </CurrencyProvider>
         </LanguageProvider>

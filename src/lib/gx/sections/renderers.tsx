@@ -5,7 +5,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { LayoutGrid, ChevronLeft, ChevronRight } from "lucide-react";
-import { CATEGORY_LINKS, getCategoryLink, getFeaturedItems, PRODUCTS_CATALOG, type FeaturedItem } from "@/data/products";
+import { CATEGORY_LINKS, getCategoryLink, getFeaturedItems, PRODUCTS_CATALOG, findPlanByCartId, type FeaturedItem } from "@/data/products";
+import { findDbPlanByCartId } from "@/lib/gx/db-variants";
+import { INITIAL_REAL_GAMES } from "@/components/gx/BestSellingGamesSection";
 import { useCurrency } from "@/lib/gx/currency";
 import { ProductIcon, CrewIcon, VbucksIcon } from "@/lib/gx/brand-icons";
 import { BuyActions } from "@/components/gx/BuyActions";
@@ -23,6 +25,7 @@ import { activeCarouselSlides } from "./types";
 import { RichHtml } from "./rich-text";
 import { formatTitle } from "@/lib/gx/text";
 import { CarouselRow } from "@/components/gx/CarouselRow";
+import { BestsellersSkeleton } from "@/components/gx/BestsellersSkeleton";
 import { useSiteSettings } from "../site-settings";
 import {
   getCategoryTheme,
@@ -191,7 +194,10 @@ export function HeroRenderer({ data }: { data: HeroData }) {
               <div className="hero-inner fade-in">
                 <div className="hero-text">
                   <div className="hero-badge"><span className="dot" /> {badge}</div>
-                  <h1>{titleA} <span>{titleB}</span><br />{titleC}</h1>
+                  <h1>
+                    <span className="sr-only">GX Store | </span>
+                    {titleA} <span>{titleB}</span><br />{titleC}
+                  </h1>
                   <RichHtml as="p" html={subtitle} />
                   <div className="hero-ctas">
                     <a href={ctaALink} className="btn btn-primary">{ctaAText}</a>
@@ -360,6 +366,7 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
                 key={c0.slug}
                 to={getCategoryLink(c0.slug) as never}
                 className="cat-card-big"
+                aria-label={`${ar ? "قسم" : "Category"} ${name} - GX Store`}
                 style={{
                   ["--accent" as string]: accent,
                   ["--cat-glow" as string]: glow,
@@ -380,7 +387,7 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
                   <div className="cat-card-bottom-row">
                     <div className="cname-modern">{name}</div>
                     <div className="cat-browse-action">
-                      <span>{t("home.browse_category")}</span>
+                      <span>{ar ? `تصفح ${name}` : t("home.browse_category")}</span>
                     </div>
                   </div>
                 </div>
@@ -406,71 +413,6 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
   const { t, lang } = useLang();
   const siteSettings = useSiteSettings();
 
-  const [dbVariants, setDbVariants] = useState<
-    Record<
-      string,
-      {
-        price: number;
-        oldPrice: number | null;
-        tagAr: string | null;
-        tagEn: string | null;
-        labelAr: string | null;
-        labelEn: string | null;
-        productSlug: string | null;
-        productNameAr: string | null;
-        productNameEn: string | null;
-        icon: string | null;
-        thumbBg: string | null;
-        imageUrl: string | null;
-      }
-    >
-  >({});
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const { data: rows } = await supabase
-          .from("product_variants")
-          .select("product_id, cart_id, label_ar, label_en, price_jod, old_price_jod, tag_ar, tag_en");
-        const { data: prods } = await supabase
-          .from("products")
-          .select("id, slug, name_ar, name_en, icon, thumb_bg, image_url");
-
-        if (alive && rows) {
-          const map: typeof dbVariants = {};
-          const prodMap = new Map((prods ?? []).map((p) => [p.id, p]));
-
-          for (const v of rows) {
-            if (v.cart_id) {
-              const p = v.product_id ? prodMap.get(v.product_id) : null;
-              map[v.cart_id] = {
-                price: Number(v.price_jod) || 0,
-                oldPrice: v.old_price_jod ? Number(v.old_price_jod) : null,
-                tagAr: v.tag_ar,
-                tagEn: v.tag_en,
-                labelAr: v.label_ar,
-                labelEn: v.label_en,
-                productSlug: p?.slug || null,
-                productNameAr: p?.name_ar || null,
-                productNameEn: p?.name_en || null,
-                icon: p?.icon || null,
-                thumbBg: p?.thumb_bg || null,
-                imageUrl: p?.image_url || null,
-              };
-            }
-          }
-          setDbVariants(map);
-        }
-      } catch {
-        /* fallback to base */
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
   const rawSettingsOrder = siteSettings.home_bestseller_order;
   const sanitizedSettingsOrder: string[] = Array.isArray(rawSettingsOrder)
     ? rawSettingsOrder
@@ -486,24 +428,128 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
         .filter(Boolean)
     : [];
 
-  const order = sanitizedSettingsOrder.length > 0
-    ? sanitizedSettingsOrder
-    : (data.order && data.order.length > 0 ? data.order : getFeaturedItems().map((f) => f.cartId));
+  const cachedSettingsItems = siteSettings.home_bestseller_items || [];
+  const hasSettingsItems = cachedSettingsItems.length > 0;
+  const hasSettingsOrder = sanitizedSettingsOrder.length > 0;
 
-  const base = getFeaturedItems();
+  // If site settings have not loaded from server yet and we don't have cached items, show luxury skeleton
+  if (!siteSettings.isLoaded && !hasSettingsItems && !hasSettingsOrder) {
+    return <BestsellersSkeleton data={data} />;
+  }
+
+  const order = hasSettingsOrder
+    ? sanitizedSettingsOrder
+    : (data.order && data.order.length > 0
+        ? data.order
+        : (hasSettingsItems ? cachedSettingsItems.map((it) => it.cartId) : DEFAULT_BESTSELLER_ORDER));
+
   const items: FeaturedItem[] = order.map((cartId) => {
-    const foundInBase = base.find((b) => b.cartId === cartId);
+    // 0. Live database variant has highest priority for live price and assets
+    const dbPlan = findDbPlanByCartId(cartId);
+
+    // 1. High priority: Check siteSettings.home_bestseller_items snapshot
+    const snap = cachedSettingsItems.find((it) => it.cartId === cartId);
+    if (snap && snap.nameAr && (snap.priceJod > 0 || dbPlan)) {
+      const isEn = lang === "en";
+      const name = isEn ? (snap.nameEn || snap.nameAr) : (snap.nameAr || snap.nameEn);
+      return {
+        cartId: snap.cartId,
+        product: snap.productSlug || (dbPlan?.product ?? "product"),
+        name: name || dbPlan?.name || cartId,
+        icon: snap.icon || dbPlan?.icon || "🎮",
+        bg: snap.thumbBg || dbPlan?.bg || "linear-gradient(145deg,#12151e,#0b0d14)",
+        price: dbPlan && typeof dbPlan.price === "number" && dbPlan.price > 0 ? dbPlan.price : snap.priceJod,
+        oldPrice: snap.oldPriceJod || 0,
+        imageUrl: dbPlan?.imageUrl || snap.imageUrl || null,
+        iconImage: dbPlan?.iconImage || snap.iconImage || null,
+        badge: snap.badge || null,
+        link: `/product/${snap.productSlug || dbPlan?.product || cartId}`,
+      };
+    }
+
+    if (dbPlan) {
+      return {
+        cartId: dbPlan.cartId,
+        product: dbPlan.product,
+        name: dbPlan.name,
+        icon: dbPlan.icon,
+        bg: dbPlan.bg,
+        price: dbPlan.price,
+        oldPrice: 0,
+        imageUrl: dbPlan.imageUrl,
+        iconImage: dbPlan.iconImage,
+        badge: null,
+        link: `/product/${dbPlan.product}`,
+      };
+    }
+
+    // 2. Check static plan catalog via findPlanByCartId(cartId)
+    const plan = findPlanByCartId(cartId);
+    if (plan) {
+      return {
+        cartId: plan.cartId,
+        product: plan.product,
+        name: plan.name,
+        icon: plan.icon,
+        bg: plan.bg,
+        price: plan.price,
+        oldPrice: 0,
+        imageUrl: plan.imageUrl,
+        iconImage: plan.iconImage,
+        link: `/product/${plan.product}`,
+      };
+    }
+
+    // 3. Check INITIAL_REAL_GAMES
+    const game = INITIAL_REAL_GAMES.find((g) => g.slug === cartId);
+    if (game) {
+      return {
+        cartId: game.slug,
+        product: game.slug,
+        name: lang === "en" ? (game.name_en || game.name_ar) : game.name_ar,
+        icon: "🎮",
+        bg: "linear-gradient(145deg,#10141f,#090c14)",
+        price: game.base_price_jod,
+        oldPrice: game.old_price_jod || 0,
+        imageUrl: game.image_url,
+        link: `/product/${game.slug}`,
+      };
+    }
+
+    // 4. Check base getFeaturedItems()
+    const foundInBase = getFeaturedItems().find((b) => b.cartId === cartId);
     if (foundInBase) return foundInBase;
-    const dbV = dbVariants[cartId];
+
+    // 5. Fallback to snap even if price was 0
+    if (snap) {
+      const isEn = lang === "en";
+      const name = isEn ? (snap.nameEn || snap.nameAr) : (snap.nameAr || snap.nameEn);
+      return {
+        cartId: snap.cartId,
+        product: snap.productSlug || "product",
+        name: name || cartId,
+        icon: snap.icon || "🎮",
+        bg: snap.thumbBg || "linear-gradient(145deg,#12151e,#0b0d14)",
+        price: snap.priceJod,
+        oldPrice: snap.oldPriceJod || 0,
+        imageUrl: snap.imageUrl || null,
+        iconImage: snap.iconImage || null,
+        badge: snap.badge || null,
+        link: `/product/${snap.productSlug || cartId}`,
+      };
+    }
+
     return {
       cartId,
-      product: dbV?.productSlug || "product",
-      name: dbV?.productNameAr ? `${dbV.productNameAr} — ${dbV.labelAr || ""}` : (dbV?.labelAr || cartId),
-      icon: dbV?.icon || "🎮",
-      bg: dbV?.thumbBg || "rgba(0, 229, 255, 0.05)",
-      price: dbV?.price || 0,
-      oldPrice: dbV?.oldPrice || 0,
-      link: `/product/${dbV?.productSlug || cartId}`,
+      product: "product",
+      name: cartId,
+      icon: "🎮",
+      bg: "rgba(0, 229, 255, 0.05)",
+      price: 0,
+      oldPrice: 0,
+      imageUrl: null,
+      iconImage: null,
+      link: `/product/${cartId}`,
     };
   });
 
@@ -522,9 +568,8 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
         </div>
         <CarouselRow className="featured-grid">
           {items.map((p) => {
-            const dbV = dbVariants[p.cartId];
-            const price = dbV?.price ?? p.price;
-            const oldPrice = dbV?.oldPrice ?? p.oldPrice;
+            const price = p.price;
+            const oldPrice = p.oldPrice;
             const discount = oldPrice && oldPrice > price ? Math.round((1 - price / oldPrice) * 100) : 0;
 
             const product = PRODUCTS_CATALOG[p.product];
@@ -550,37 +595,20 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
                   : undefined
                 : undefined;
 
-            let iconEl: React.ReactNode = <ProductIcon product={product} duration={snapDuration} />;
-
-            const tier = parseInt(p.cartId.replace(/\D+/g, ""), 10) || 0;
-            const isVbucks = p.product === "fortnite" && p.cartId.startsWith("fn-vb");
-            const isCrew = p.product === "fortnite" && p.cartId.startsWith("fn-crew");
-
-            if (isCrew) iconEl = <CrewIcon />;
-            else if (isVbucks) iconEl = <VbucksIcon tier={tier} />;
-
-            const prodName = product?.name || (lang === "en" ? dbV?.productNameEn || dbV?.productNameAr : dbV?.productNameAr || dbV?.productNameEn) || "";
-            const vLabel = lang === "en" ? dbV?.labelEn || dbV?.labelAr : dbV?.labelAr || dbV?.labelEn;
-            let displayName = p.name;
-            if (vLabel) {
-              if (prodName && !vLabel.toLowerCase().includes(prodName.toLowerCase())) {
-                displayName = `${prodName} — ${vLabel}`;
-              } else {
-                displayName = vLabel;
-              }
-            }
+            const cardImageUrl = p.imageUrl || product?.imageUrl || product?.iconImg;
+            const cardIconImage = p.iconImage || product?.iconImg;
 
             return (
               <StoreProductCard
                 key={p.cartId}
                 slug={p.product}
                 cartId={p.cartId}
-                name={displayName}
+                name={p.name}
                 link={p.link}
                 price={price}
                 oldPrice={oldPrice}
-                imageUrl={dbV?.imageUrl}
-                iconImage={dbV?.icon}
+                imageUrl={cardImageUrl}
+                iconImage={cardIconImage}
                 thumbBg={p.bg}
                 snapDuration={snapDuration}
                 showPlatformBar={true}

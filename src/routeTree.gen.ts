@@ -48,6 +48,7 @@ import { Route as AuthenticatedAdminLeaderboardRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminLoyaltyRouteImport } from './routes/_authenticated/admin/loyalty'
 import { Route as AuthenticatedAdminMiniGamesRouteImport } from './routes/_authenticated/admin/mini-games'
 import { Route as AuthenticatedAdminOrdersRouteImport } from './routes/_authenticated/admin/orders'
+import { Route as AuthenticatedAdminProductEditorRouteImport } from './routes/_authenticated/admin/product-editor'
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated/admin/products'
 import { Route as AuthenticatedAdminReviewsRouteImport } from './routes/_authenticated/admin/reviews'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
@@ -262,6 +263,12 @@ const AuthenticatedAdminOrdersRoute =
     path: '/orders',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminProductEditorRoute =
+  AuthenticatedAdminProductEditorRouteImport.update({
+    id: '/product-editor',
+    path: '/product-editor',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminProductsRoute =
   AuthenticatedAdminProductsRouteImport.update({
     id: '/products',
@@ -340,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/admin/loyalty': typeof AuthenticatedAdminLoyaltyRoute
   '/admin/mini-games': typeof AuthenticatedAdminMiniGamesRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/admin/product-editor': typeof AuthenticatedAdminProductEditorRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/reviews': typeof AuthenticatedAdminReviewsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
@@ -386,6 +394,7 @@ export interface FileRoutesByTo {
   '/admin/loyalty': typeof AuthenticatedAdminLoyaltyRoute
   '/admin/mini-games': typeof AuthenticatedAdminMiniGamesRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/admin/product-editor': typeof AuthenticatedAdminProductEditorRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/reviews': typeof AuthenticatedAdminReviewsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
@@ -435,6 +444,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/loyalty': typeof AuthenticatedAdminLoyaltyRoute
   '/_authenticated/admin/mini-games': typeof AuthenticatedAdminMiniGamesRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
+  '/_authenticated/admin/product-editor': typeof AuthenticatedAdminProductEditorRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
   '/_authenticated/admin/reviews': typeof AuthenticatedAdminReviewsRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
@@ -484,6 +494,7 @@ export interface FileRouteTypes {
     | '/admin/loyalty'
     | '/admin/mini-games'
     | '/admin/orders'
+    | '/admin/product-editor'
     | '/admin/products'
     | '/admin/reviews'
     | '/admin/settings'
@@ -530,6 +541,7 @@ export interface FileRouteTypes {
     | '/admin/loyalty'
     | '/admin/mini-games'
     | '/admin/orders'
+    | '/admin/product-editor'
     | '/admin/products'
     | '/admin/reviews'
     | '/admin/settings'
@@ -578,6 +590,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/loyalty'
     | '/_authenticated/admin/mini-games'
     | '/_authenticated/admin/orders'
+    | '/_authenticated/admin/product-editor'
     | '/_authenticated/admin/products'
     | '/_authenticated/admin/reviews'
     | '/_authenticated/admin/settings'
@@ -893,6 +906,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminOrdersRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/product-editor': {
+      id: '/_authenticated/admin/product-editor'
+      path: '/product-editor'
+      fullPath: '/admin/product-editor'
+      preLoaderRoute: typeof AuthenticatedAdminProductEditorRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/products': {
       id: '/_authenticated/admin/products'
       path: '/products'
@@ -956,6 +976,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminLoyaltyRoute: typeof AuthenticatedAdminLoyaltyRoute
   AuthenticatedAdminMiniGamesRoute: typeof AuthenticatedAdminMiniGamesRoute
   AuthenticatedAdminOrdersRoute: typeof AuthenticatedAdminOrdersRoute
+  AuthenticatedAdminProductEditorRoute: typeof AuthenticatedAdminProductEditorRoute
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
   AuthenticatedAdminReviewsRoute: typeof AuthenticatedAdminReviewsRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
@@ -976,6 +997,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminLoyaltyRoute: AuthenticatedAdminLoyaltyRoute,
   AuthenticatedAdminMiniGamesRoute: AuthenticatedAdminMiniGamesRoute,
   AuthenticatedAdminOrdersRoute: AuthenticatedAdminOrdersRoute,
+  AuthenticatedAdminProductEditorRoute: AuthenticatedAdminProductEditorRoute,
   AuthenticatedAdminProductsRoute: AuthenticatedAdminProductsRoute,
   AuthenticatedAdminReviewsRoute: AuthenticatedAdminReviewsRoute,
   AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,

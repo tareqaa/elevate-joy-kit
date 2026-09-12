@@ -132,12 +132,18 @@ function resolve(items: CartItem[]): ResolvedItem[] {
           usernames,
         };
       }
-      const plan = findPlanByCartId(cId) || findDbPlanByCartId(cId);
+      // 1. Database is the single source of truth for all products & variants!
+      const dbPlan = findDbPlanByCartId(cId);
+      const staticPlan = findPlanByCartId(cId);
+      const plan = dbPlan || staticPlan;
       if (plan) {
-        const price =
-          typeof i.meta?.price === "number" && i.meta.price > 0 && (!plan.price || plan.price === 0)
-            ? i.meta.price
-            : plan.price;
+        // If it's a DB plan, its price is the authoritative live price from Supabase.
+        // Otherwise, if item was added with a valid positive meta.price, prefer it over stale static prices.
+        const price = dbPlan
+          ? dbPlan.price
+          : typeof i.meta?.price === "number" && i.meta.price > 0
+          ? i.meta.price
+          : plan.price;
         const iconImage = i.meta?.iconImage || plan.iconImage || plan.imageUrl || i.meta?.imageUrl || null;
         const imageUrl = i.meta?.imageUrl || plan.imageUrl || plan.iconImage || i.meta?.iconImage || null;
         return { 
@@ -569,28 +575,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   const buildWhatsAppUrl = useCallback(
-    (orderNumber?: string, paymentMethod?: "cliq" | "gx_wallet") => {
-      if (items.length === 0) return null;
-      const itemCount = items.reduce((n, it) => n + it.qty, 0);
+    (orderNumber?: string, paymentMethod?: "cliq" | "card" | "gx_wallet") => {
+      if (!orderNumber && items.length === 0) return null;
       const orderId = orderNumber || "GX-" + Date.now().toString().slice(-6);
-      const now = new Date();
-      const dateStr = now.toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" });
-      const timeStr = now.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
 
-      const lines = items
-        .map((it, i) => {
-          const lineTotal = it.price * it.qty;
-          let block = `${i + 1}) ${it.name}
+      let lines = "";
+      if (items.length > 0) {
+        lines = items
+          .map((it, i) => {
+            const lineTotal = it.price * it.qty;
+            let block = `${i + 1}) ${it.name}
      • الكمية: ${it.qty}
      • سعر الوحدة: ${format(it.price)}
      • المجموع: ${format(lineTotal)}`;
-          if (it.usernames?.length) {
-            const users = it.usernames.map((u, k) => `        ${k + 1}. ${u}`).join("\n");
-            block += `\n     • اليوزرات:\n${users}`;
-          }
-          return block;
-        })
-        .join("\n\n");
+            if (it.usernames?.length) {
+              const users = it.usernames.map((u, k) => `        ${k + 1}. ${u}`).join("\n");
+              block += `\n     • اليوزرات:\n${users}`;
+            }
+            return block;
+          })
+          .join("\n\n");
+      }
 
       const pmLabel =
         paymentMethod === "cliq"
@@ -603,19 +608,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
 🆔 *رقم الطلب:* ${orderId}
 💳 *طريقة الدفع:* ${pmLabel}`;
 
+      if (lines) {
+        msg += `\n\n📦 *تفاصيل المنتجات:*\n${lines}`;
+      }
+
       if (contact.email?.trim()) {
-        msg += `\n📧 *البريد:* ${contact.email.trim()}`;
+        msg += `\n\n📧 *البريد:* ${contact.email.trim()}`;
       }
 
       msg += `\n\n✅ بانتظار استكمال وتأكيد الطلب.`;
 
       const encoded = encodeURIComponent(msg);
-      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
-      return isMobile
-        ? "https://wa.me/962776252313?text=" + encoded
-        : "https://web.whatsapp.com/send?phone=962776252313&text=" + encoded;
+      return "https://wa.me/962776252313?text=" + encoded;
     },
-    [contact.email]
+    [items, contact.email, format]
   );
 
   const submitOrder = useCallback(async (paymentMethod?: "cliq" | "card" | "gx_wallet") => {
@@ -636,7 +642,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const contactType = hasPhone ? contact.type : "email";
     const customerName = contact.name?.trim() || null;
     try {
-      const payloadItems = items.map((it) => ({
+      // Ensure prices are freshly verified from DB before submitting
+      await loadDbVariants(true);
+      const freshResolved = resolve(rawItems);
+      const freshSubtotal = freshResolved.reduce((s, i) => s + i.price * i.qty, 0);
+      const freshAfterCoupon = Math.max(0, freshSubtotal - (coupon?.discount_jod ?? 0));
+      const freshAfterCoins = Math.max(0, freshAfterCoupon - (coins?.discount_jod ?? 0));
+      const freshAppliedCredit = Math.min(creditJOD, freshAfterCoins);
+      const freshTotalJOD = Math.round(Math.max(0, freshAfterCoins - freshAppliedCredit) * 1000) / 1000;
+
+      const payloadItems = freshResolved.map((it) => ({
         cartId: it.cartId,
         product_slug: it.product || null,
         name: it.name,
@@ -647,7 +662,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const result = await submitStoreOrderFn({
         data: {
           items: payloadItems,
-          totalJOD,
+          totalJOD: freshTotalJOD,
           currency,
           notes,
           customerName: customerName || (email ? email.split("@")[0] : "عميل المتجر"),

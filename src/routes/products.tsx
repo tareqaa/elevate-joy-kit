@@ -18,14 +18,39 @@ export const Route = createFileRoute("/products")({
   },
   head: () => ({
     meta: [
-      { title: "جميع المنتجات — GX Store" },
-      { name: "description", content: "تصفح جميع المنتجات والاشتراكات والبطاقات المتوفرة في متجر GX Store." },
-      { property: "og:title", content: "جميع المنتجات — GX Store" },
-      { property: "og:description", content: "تصفح جميع منتجات واشتراكات متجر GX Store." },
+      { title: "جميع المنتجات والاشتراكات | متجر GX Store" },
+      {
+        name: "description",
+        content:
+          "تصفح جميع المنتجات الرقمية، اشتراكات الألعاب والترفيه، بطاقات الهدايا والشحن المتوفرة في متجر GX Store بتفعيل فوري وأسعار منافسة.",
+      },
+      { property: "og:site_name", content: "GX Store" },
+      { property: "og:title", content: "جميع المنتجات والاشتراكات | متجر GX Store" },
+      {
+        property: "og:description",
+        content:
+          "تصفح جميع المنتجات الرقمية، اشتراكات الألعاب والترفيه، بطاقات الهدايا والشحن المتوفرة في متجر GX Store بتفعيل فوري وأسعار منافسة.",
+      },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://gxstore.me/products" },
+      { property: "og:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "جميع المنتجات والاشتراكات | متجر GX Store" },
+      {
+        name: "twitter:description",
+        content:
+          "تصفح جميع المنتجات الرقمية، اشتراكات الألعاب والترفيه، بطاقات الهدايا والشحن المتوفرة في متجر GX Store بتفعيل فوري وأسعار منافسة.",
+      },
+      { name: "twitter:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
+      {
+        name: "robots",
+        content: "index, follow, max-image-preview:large, max-snippet:-1",
+      },
     ],
-    links: STORE_HEAD_LINKS,
+    links: [
+      ...STORE_HEAD_LINKS,
+      { rel: "canonical", href: "https://gxstore.me/products" },
+    ],
   }),
   component: AllProductsPage,
 });

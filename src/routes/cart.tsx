@@ -15,8 +15,9 @@ import { useEffect, useState } from "react";
 export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
-      { title: "Cart — GX Store" },
-      { name: "description", content: "Review your order before checking out — GX Store." },
+      { title: "السلة | متجر GX Store" },
+      { name: "description", content: "سلة المشتريات — متجر GX Store" },
+      { name: "robots", content: "noindex, nofollow" },
     ],
     links: STORE_HEAD_LINKS,
   }),
@@ -210,11 +211,32 @@ function CartList() {
                 {t("cart.unit_price")}: <span>{format(it.price)}</span>
               </div>
 
-              {isSnap && it.usernames && it.usernames.length > 0 && (
-                <div className="cr-users">
-                  <span className="cr-users-label">{t("cart.users_label")}</span>{" "}
+              {it.usernames && it.usernames.length > 0 && (
+                <div className="cr-users" style={{ marginTop: 4 }}>
+                  <span className="cr-users-label" style={{ fontSize: 12, color: "#94a3b8" }}>
+                    {isSnap ? t("cart.users_label") : (lang === "ar" ? "الرابط / المعرّف:" : "Link / Target:")}
+                  </span>{" "}
                   {it.usernames.map((u, i) => (
-                    <span key={i} className="cr-user-chip">@{u}</span>
+                    <span
+                      key={i}
+                      className="cr-user-chip"
+                      style={{
+                        display: "inline-block",
+                        fontSize: 11.5,
+                        color: "#00e5ff",
+                        background: "rgba(0, 229, 255, 0.12)",
+                        padding: "2px 8px",
+                        borderRadius: 6,
+                        maxWidth: "100%",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        verticalAlign: "middle",
+                      }}
+                      title={u}
+                    >
+                      {isSnap ? `@${u}` : (u.length > 35 ? `${u.slice(0, 32)}...` : u)}
+                    </span>
                   ))}
                 </div>
               )}
