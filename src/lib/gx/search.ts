@@ -24,6 +24,7 @@ export interface SearchableItem {
   deliveryType?: string | null;
   badge?: string | null;
   priceJod?: number | null;
+  oldPriceJod?: number | null;
   imageUrl?: string | null;
   icon?: string | null;
   iconImage?: string | null;
@@ -352,7 +353,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           .order("sort_order", { ascending: true }),
         supabase
           .from("product_variants")
-          .select("product_id, label_ar, label_en, tag_ar, tag_en, region")
+          .select("product_id, price_jod, old_price_jod, label_ar, label_en, tag_ar, tag_en, region")
           .eq("is_active", true),
         supabase
           .from("categories")
@@ -364,19 +365,35 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
       return cachedSearchIndex || [];
     }
 
-    // Group variants by product
-    const variantsByProd = new Map<string, string[]>();
+    // Group variants by product and resolve min price & old price
+    const variantDataByProd = new Map<
+      string,
+      { labels: string[]; minPrice: number; oldPrice: number | null }
+    >();
+
     if (variants) {
       for (const v of variants) {
-        if (!variantsByProd.has(v.product_id)) {
-          variantsByProd.set(v.product_id, []);
+        if (!variantDataByProd.has(v.product_id)) {
+          variantDataByProd.set(v.product_id, {
+            labels: [],
+            minPrice: Infinity,
+            oldPrice: null,
+          });
         }
-        const list = variantsByProd.get(v.product_id)!;
-        if (v.label_ar) list.push(v.label_ar);
-        if (v.label_en) list.push(v.label_en);
-        if (v.tag_ar) list.push(v.tag_ar);
-        if (v.tag_en) list.push(v.tag_en);
-        if (v.region) list.push(v.region);
+        const entry = variantDataByProd.get(v.product_id)!;
+        if (v.label_ar) entry.labels.push(v.label_ar);
+        if (v.label_en) entry.labels.push(v.label_en);
+        if (v.tag_ar) entry.labels.push(v.tag_ar);
+        if (v.tag_en) entry.labels.push(v.tag_en);
+        if (v.region) entry.labels.push(v.region);
+
+        const pVal = Number(v.price_jod) || 0;
+        if (pVal > 0 && pVal < entry.minPrice) {
+          entry.minPrice = pVal;
+          if (v.old_price_jod && Number(v.old_price_jod) > pVal) {
+            entry.oldPrice = Number(v.old_price_jod);
+          }
+        }
       }
     }
 
@@ -404,6 +421,15 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           ["playstation", "xbox", "itunes", "google-play"].includes(p.slug) ||
           rootCategorySlug === "gift-cards";
 
+        const vData = variantDataByProd.get(p.id);
+        const resolvedPrice =
+          vData && vData.minPrice !== Infinity
+            ? vData.minPrice
+            : typeof p.base_price_jod === "number"
+            ? p.base_price_jod
+            : null;
+        const resolvedOldPrice = vData?.oldPrice ?? null;
+
         const item: SearchableItem = {
           id: p.id,
           slug: p.slug,
@@ -421,12 +447,13 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           platform: p.platform,
           deliveryType: p.delivery_type,
           badge: p.badge,
-          priceJod: p.base_price_jod,
+          priceJod: resolvedPrice,
+          oldPriceJod: resolvedOldPrice,
           imageUrl: p.image_url,
           icon: p.icon,
           iconImage: p.icon_image_url || p.image_url,
           thumbBg: p.thumb_bg || p.card_gradient,
-          variantLabels: variantsByProd.get(p.id) || [],
+          variantLabels: vData?.labels || [],
           link: `/product/${p.slug}`,
         };
 
@@ -473,3 +500,128 @@ export function invalidateSearchCache(): void {
   cachedSearchIndex = null;
   lastFetchTime = 0;
 }
+
+/* ============================================================
+   RECENT & POPULAR SEARCHES HELPERS (Eneba / G2A Style)
+   ============================================================ */
+
+const RECENT_KEY = "gx_recent_searches";
+
+export function getRecentSearches(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(RECENT_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.slice(0, 5) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveRecentSearch(term: string): void {
+  if (typeof window === "undefined" || !term || !term.trim()) return;
+  try {
+    const clean = term.trim();
+    if (clean.length < 2) return;
+    const existing = getRecentSearches().filter((s) => s.toLowerCase() !== clean.toLowerCase());
+    const updated = [clean, ...existing].slice(0, 5);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(updated));
+  } catch {
+    // noop
+  }
+}
+
+export function removeRecentSearch(term: string): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const clean = term.trim().toLowerCase();
+    const existing = getRecentSearches().filter((s) => s.toLowerCase() !== clean);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(existing));
+    return existing;
+  } catch {
+    return [];
+  }
+}
+
+export function clearRecentSearches(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(RECENT_KEY);
+  } catch {
+    // noop
+  }
+}
+
+export interface PopularSearchTerm {
+  labelAr: string;
+  labelEn: string;
+  query: string;
+}
+
+export const POPULAR_SEARCHES: PopularSearchTerm[] = [
+  { labelAr: "ماينكرافت (Minecraft)", labelEn: "Minecraft", query: "minecraft" },
+  { labelAr: "فورت نايت (Fortnite)", labelEn: "Fortnite", query: "fortnite" },
+  { labelAr: "روبلوكس (Roblox)", labelEn: "Roblox", query: "roblox" },
+  { labelAr: "اشتراك جيم باس (Xbox Game Pass)", labelEn: "Xbox Game Pass", query: "game pass" },
+  { labelAr: "قراند 5 (GTA V)", labelEn: "GTA V", query: "gta" },
+  { labelAr: "شحن روبوكس (Robux)", labelEn: "Robux", query: "robux" },
+  { labelAr: "فيفا / EA Sports FC 25", labelEn: "EA Sports FC 25", query: "fc" },
+  { labelAr: "كول اوف ديوتي (Call of Duty)", labelEn: "Call of Duty", query: "call of duty" },
+  { labelAr: "إكسبوكس (Xbox)", labelEn: "Xbox", query: "xbox" },
+  { labelAr: "سناب بلس (Snapchat+)", labelEn: "Snapchat+", query: "snapchat" },
+  { labelAr: "بطاقات بلايستيشن (PlayStation)", labelEn: "PlayStation PSN", query: "playstation" },
+];
+
+/**
+ * Extracts top search query suggestions based on product titles and categories.
+ */
+export function getQuerySuggestions(
+  items: SearchableItem[],
+  rawQuery: string,
+  lang: "ar" | "en" = "ar",
+  limit = 4
+): string[] {
+  const cleanQ = normalizeSearchText(rawQuery);
+  if (cleanQ.length < 3) return [];
+
+  const seen = new Set<string>();
+  const suggestions: string[] = [];
+
+  const trimmed = rawQuery.trim();
+  if (trimmed.length >= 3) {
+    seen.add(cleanQ);
+    suggestions.push(trimmed);
+  }
+
+  for (const item of items) {
+    const primaryName = lang === "en" ? item.nameEn : item.nameAr;
+    const secondaryName = lang === "en" ? item.nameAr : item.nameEn;
+
+    for (const name of [primaryName, secondaryName]) {
+      if (!name) continue;
+      const cleanName = normalizeSearchText(name);
+
+      if (cleanName.includes(cleanQ)) {
+        // Strip subtitle or platform suffix for clean suggestion
+        const cleanPhrase = name
+          .split(/[|:()]/)[0]
+          .replace(/\s+/g, " ")
+          .trim();
+
+        const normPhrase = normalizeSearchText(cleanPhrase);
+        if (cleanPhrase && !seen.has(normPhrase) && cleanPhrase.length >= 3) {
+          seen.add(normPhrase);
+          suggestions.push(cleanPhrase);
+        }
+      }
+
+      if (suggestions.length >= limit) break;
+    }
+
+    if (suggestions.length >= limit) break;
+  }
+
+  return suggestions;
+}
+

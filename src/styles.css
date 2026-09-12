@@ -3079,6 +3079,7 @@ input[type="number"] {
 
 /* Center Search Box */
 .nav .search-box {
+  position: relative !important;
   flex: 1;
   min-width: 200px;
   height: 42px !important;
@@ -3910,54 +3911,325 @@ html[dir="ltr"] .gx-nav-login-pill:hover svg {
   background: rgba(255, 255, 255, 0.1) !important;
 }
 
+/* Search Input Clear Button */
+.search-clear-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  transition: all 0.15s ease !important;
+  flex-shrink: 0 !important;
+}
+.search-clear-btn:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
 /* Search Dropdown Results */
 .gx-search-results {
   position: absolute !important;
   top: calc(100% + 8px) !important;
   left: 0 !important;
   right: 0 !important;
-  background: rgba(15, 20, 31, 0.98) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(0, 229, 255, 0.25) !important;
+  background: rgba(14, 18, 28, 0.98) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(0, 229, 255, 0.22) !important;
   border-radius: 14px !important;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.75), 0 0 25px rgba(0, 229, 255, 0.08) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 30px rgba(0, 229, 255, 0.08) !important;
   z-index: 1000 !important;
-  max-height: 440px !important;
+  max-height: 480px !important;
   overflow-y: auto !important;
-  padding: 6px !important;
+  padding: 8px !important;
+  text-align: start !important;
 }
 
-.gx-search-item {
+@media (min-width: 769px) {
+  .gx-search-results {
+    min-width: 480px !important;
+    max-width: 520px !important;
+  }
+}
+
+/* Custom Scrollbar for Dropdown */
+.gx-search-results::-webkit-scrollbar {
+  width: 5px;
+}
+.gx-search-results::-webkit-scrollbar-track {
+  background: transparent;
+}
+.gx-search-results::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+.gx-search-results::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.4);
+}
+
+/* Pre-Search Sections (Recent & Popular) */
+.gx-search-pre-section {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.gx-search-section {
+  padding: 4px 0 !important;
+}
+.gx-search-section:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+  margin-bottom: 6px !important;
+  padding-bottom: 8px !important;
+}
+
+.gx-search-section-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 4px 8px 6px !important;
+}
+
+.gx-search-section-title {
+  font-size: 0.76rem !important;
+  font-weight: 700 !important;
+  color: #94a3b8 !important;
+  letter-spacing: 0.02em !important;
+}
+
+.gx-search-clear-all-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #64748b !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  transition: all 0.15s ease !important;
+}
+.gx-search-clear-all-btn:hover {
+  color: #f87171 !important;
+}
+
+.gx-search-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+/* Generic Row for Recent, Popular, and Suggestions */
+.gx-search-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  padding: 8px 10px !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  color: #e2e8f0 !important;
+  font-size: 0.86rem !important;
+  font-family: inherit !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+  user-select: none !important;
+  text-align: start !important;
+}
+.gx-search-row:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #00e5ff !important;
+}
+
+.gx-search-row-main {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.gx-search-row-ico {
+  color: #94a3b8 !important;
+  flex-shrink: 0 !important;
+  transition: color 0.15s ease !important;
+}
+.gx-search-row:hover .gx-search-row-ico {
+  color: #00e5ff !important;
+}
+
+.gx-search-row-text {
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.gx-search-row-delete {
+  background: transparent !important;
+  border: none !important;
+  color: #64748b !important;
+  padding: 4px 6px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s ease !important;
+  flex-shrink: 0 !important;
+}
+.gx-search-row-delete:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #ef4444 !important;
+}
+
+/* Query Suggestions */
+.gx-search-suggestions-list {
+  padding: 2px 0 6px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  margin-bottom: 6px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+/* Products List & Cards */
+.gx-search-products-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+.gx-search-product-card {
   display: flex !important;
   align-items: center !important;
   gap: 12px !important;
-  padding: 10px 12px !important;
+  padding: 8px 10px !important;
   border-radius: 10px !important;
-  color: #ffffff !important;
-  text-decoration: none !important;
   background: transparent !important;
-  border: none !important;
-  width: 100% !important;
+  border: 1px solid transparent !important;
   cursor: pointer !important;
-  font-family: inherit !important;
-  transition: all 0.15s ease !important;
+  transition: all 0.18s ease !important;
+  width: 100% !important;
+  color: #ffffff !important;
+  user-select: none !important;
 }
-.gx-search-item:hover,
-.gx-search-item:focus {
+.gx-search-product-card:hover {
   background: rgba(0, 229, 255, 0.08) !important;
+  border-color: rgba(0, 229, 255, 0.22) !important;
 }
 
-.gx-search-price {
-  font-size: 0.82rem !important;
+.gx-search-card-thumb-wrap {
+  width: 42px !important;
+  height: 52px !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+  background: #111827 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.gx-search-card-thumb {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+.gx-search-card-thumb-placeholder {
+  font-size: 20px !important;
+  line-height: 1 !important;
+}
+
+.gx-search-card-info {
+  flex: 1 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  text-align: start !important;
+}
+
+.gx-search-card-badge {
+  align-self: flex-start !important;
+  font-size: 0.67rem !important;
+  font-weight: 700 !important;
+  color: #00e5ff !important;
+  background: rgba(0, 229, 255, 0.1) !important;
+  border: 1px solid rgba(0, 229, 255, 0.28) !important;
+  padding: 1px 7px !important;
+  border-radius: 999px !important;
+  line-height: 1.4 !important;
+}
+
+.gx-search-card-title {
+  font-size: 0.84rem !important;
+  font-weight: 600 !important;
+  color: #f8fafc !important;
+  line-height: 1.35 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+.gx-search-card-pricing {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  text-align: end !important;
+  flex-shrink: 0 !important;
+  gap: 1px !important;
+}
+[dir="rtl"] .gx-search-card-pricing {
+  align-items: flex-start !important;
+  text-align: start !important;
+}
+
+.gx-search-card-price-main {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 4px !important;
+}
+.gx-search-card-from {
+  font-size: 0.72rem !important;
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+}
+.gx-search-card-price {
+  font-size: 0.94rem !important;
   font-weight: 800 !important;
   color: #00f5a0 !important;
-  background: rgba(0, 245, 160, 0.1) !important;
-  border: 1px solid rgba(0, 245, 160, 0.2) !important;
-  padding: 3px 8px !important;
-  border-radius: 6px !important;
+  letter-spacing: -0.01em !important;
   white-space: nowrap !important;
-  flex-shrink: 0 !important;
+}
+
+.gx-search-card-price-old {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 3px !important;
+}
+.gx-search-card-from-old {
+  font-size: 0.67rem !important;
+  color: #64748b !important;
+}
+.gx-search-card-old-val {
+  font-size: 0.75rem !important;
+  color: #64748b !important;
+  text-decoration: line-through !important;
+  white-space: nowrap !important;
+}
+
+.gx-search-empty {
+  padding: 18px 12px !important;
+  text-align: center !important;
 }
 
 .gx-search-view-all {
@@ -3965,7 +4237,7 @@ html[dir="ltr"] .gx-nav-login-pill:hover svg {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 11px 14px !important;
+  padding: 10px 14px !important;
   margin-top: 6px !important;
   border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
   background: rgba(0, 229, 255, 0.05) !important;
