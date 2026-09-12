@@ -932,6 +932,24 @@ export type Database = {
           },
         ]
       }
+      password_reset_requests: {
+        Row: {
+          email: string
+          id: string
+          requested_at: string
+        }
+        Insert: {
+          email: string
+          id?: string
+          requested_at?: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          requested_at?: string
+        }
+        Relationships: []
+      }
       pending_boosts: {
         Row: {
           boost_type: Database["public"]["Enums"]["boost_type"]
