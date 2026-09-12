@@ -1613,6 +1613,10 @@ function ProductModal({
       qc.invalidateQueries({ queryKey: ["admin-product-features-edit", savedProdId] });
       qc.invalidateQueries({ queryKey: ["admin-products"] });
       qc.invalidateQueries({ queryKey: ["admin-all-variants"] });
+      qc.invalidateQueries({ queryKey: ["store-search-catalog"] });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("gx:catalog-updated"));
+      }
 
       toast.success("تم حفظ المنتج والمميزات وخطوات التفعيل بنجاح في المتجر!");
       onSaved();

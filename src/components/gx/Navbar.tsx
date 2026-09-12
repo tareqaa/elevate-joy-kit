@@ -19,9 +19,11 @@ import { CurrencyModal } from "./CurrencyModal";
 
 import { SpinWheelModal } from "./SpinWheel";
 import { useLang } from "@/lib/gx/i18n";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GxIcon } from "@/components/gx/GxIcon";
 import { localizedCategoryLink, localizedProduct, localizedGiftCard } from "@/lib/gx/product-locale";
 import { useHiddenCategorySlugs } from "@/lib/gx/category-visibility";
+import { fetchLiveSearchIndex, matchSearchQuery, type SearchableItem } from "@/lib/gx/search";
 
 type SearchEntry = { key: string; title: string; sub: string; icon: string; iconImg?: string; link: string; hay: string };
 
@@ -241,59 +243,93 @@ export function Navbar() {
     if (closeTimerRef.current) { window.clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
   };
 
-  // ---- Search ----
+  // ---- Search Engine ----
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement | null>(null);
 
-  const searchIndex = useMemo<SearchEntry[]>(() => {
-    const out: SearchEntry[] = [];
+  const queryClient = useQueryClient();
+  const { data: liveCatalog } = useQuery({
+    queryKey: ["store-search-catalog"],
+    queryFn: fetchLiveSearchIndex,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  useEffect(() => {
+    const onCatalogUpdated = () => {
+      queryClient.invalidateQueries({ queryKey: ["store-search-catalog"] });
+    };
+    window.addEventListener("gx:catalog-updated", onCatalogUpdated);
+    return () => window.removeEventListener("gx:catalog-updated", onCatalogUpdated);
+  }, [queryClient]);
+
+  const searchIndexFallback = useMemo<SearchableItem[]>(() => {
+    const out: SearchableItem[] = [];
     for (const [slug, raw] of Object.entries(PRODUCTS_CATALOG)) {
       const p = localizedProduct(raw, lang);
       out.push({
-        key: `p:${slug}`,
-        title: p.name,
-        sub: p.category,
-        icon: p.icon,
-        iconImg: p.iconImg,
+        id: slug,
+        slug,
+        type: "product",
+        nameAr: raw.nameAr || raw.name,
+        nameEn: raw.name,
+        taglineAr: raw.taglineAr || raw.tagline,
+        taglineEn: raw.tagline,
+        categoryNameAr: raw.categoryAr || raw.category,
+        categoryNameEn: raw.category,
+        categorySlug: raw.category,
+        icon: raw.icon,
+        iconImage: raw.iconImg,
+        thumbBg: raw.thumbBg,
+        priceJod: raw.variants?.[0]?.price || 5,
         link: getProductLink(slug),
-        hay: normalizeQuery([p.name, raw.name, slug, p.category, p.tagline].join(" ")),
       });
     }
     for (const [slug, raw] of Object.entries(GIFT_CARDS_CATALOG)) {
       const g = localizedGiftCard(raw, lang);
       out.push({
-        key: `g:${slug}`,
-        title: g.name,
-        sub: lang === "ar" ? "بطاقات الهدايا" : "Gift Cards",
+        id: `g-${slug}`,
+        slug,
+        type: "gift_card",
+        nameAr: g.name,
+        nameEn: raw.name,
+        categoryNameAr: "بطاقات الهدايا",
+        categoryNameEn: "Gift Cards",
+        categorySlug: "gift-cards",
         icon: g.icon,
-        iconImg: g.iconImg,
+        iconImage: g.iconImg,
+        priceJod: raw.variants?.[0]?.price || 5,
         link: getGiftCardLink(slug),
-        hay: normalizeQuery([g.name, raw.name, slug, "gift card بطاقة"].join(" ")),
       });
     }
     for (const raw of CATEGORY_LINKS) {
       if (hiddenCats.has(raw.slug)) continue;
       const c = localizedCategoryLink(raw, lang);
       out.push({
-        key: `c:${c.slug}`,
-        title: c.name,
-        sub: lang === "ar" ? "قسم" : "Category",
+        id: `c-${c.slug}`,
+        slug: c.slug,
+        type: "category",
+        nameAr: c.name,
+        nameEn: raw.name,
+        categoryNameAr: "قسم",
+        categoryNameEn: "Category",
+        categorySlug: c.slug,
         icon: c.icon,
         link: getCategoryLink(c.slug),
-        hay: normalizeQuery([c.name, raw.name, c.slug, c.desc].join(" ")),
       });
     }
     return out;
   }, [lang, hiddenCats]);
 
-  const results = useMemo(() => {
-    const q = normalizeQuery(query);
-    if (q.length < 1) return [];
-    const terms = q.split(" ").filter(Boolean);
-    return searchIndex.filter((e) => terms.every((tm) => e.hay.includes(tm))).slice(0, 8);
-  }, [query, searchIndex]);
+  const matchResults = useMemo(() => {
+    if (!query.trim()) return [];
+    const items = (liveCatalog && liveCatalog.length > 0) ? liveCatalog : searchIndexFallback;
+    return matchSearchQuery(items, query, lang);
+  }, [query, liveCatalog, searchIndexFallback, lang]);
+
+  const results = useMemo(() => matchResults.slice(0, 8), [matchResults]);
+  const totalMatches = matchResults.length;
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -356,29 +392,110 @@ export function Navbar() {
             <input
               type="text"
               value={query}
-              placeholder={lang === "ar" ? "دور على منتج أو اشتراك..." : t("nav.search_placeholder")}
+              placeholder={lang === "ar" ? "دور على منتج، لعبة، أو اشتراك..." : t("nav.search_placeholder")}
               onChange={(e) => { setQuery(e.target.value); setSearchOpen(true); }}
               onFocus={() => setSearchOpen(true)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && results[0]) goToResult(results[0].link);
+                if (e.key === "Enter") {
+                  const trimmed = query.trim();
+                  if (!trimmed) return;
+                  if (results.length === 1) {
+                    goToResult(results[0].item.link);
+                  } else {
+                    setSearchOpen(false);
+                    navigate({ to: "/products", search: { search: trimmed } });
+                  }
+                }
               }}
             />
+            {query.length > 0 && (
+              <button
+                type="button"
+                className="search-clear-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setQuery("");
+                  setSearchOpen(false);
+                }}
+                aria-label="مسح البحث"
+              >
+                <X size={14} />
+              </button>
+            )}
             {searchOpen && query.trim().length > 0 && (
               <div className="gx-search-results">
                 {results.length === 0 ? (
-                  <div className="gx-search-empty">{lang === "ar" ? "لا توجد نتائج" : "No results"}</div>
-                ) : (
-                  results.map((r) => (
-                    <button key={r.key} type="button" className="gx-search-item" onClick={() => goToResult(r.link)}>
-                      <span className="gx-search-ico">
-                        {r.iconImg ? <img src={r.iconImg} alt="" style={{ width: 22, height: 22, objectFit: "contain" }} /> : r.icon}
-                      </span>
-                      <span className="gx-search-txt">
-                        <b>{r.title}</b>
-                        <small>{r.sub}</small>
-                      </span>
+                  <div className="gx-search-empty">
+                    <p style={{ margin: "0 0 6px", color: "#94a3b8", fontSize: "0.85rem" }}>
+                      {lang === "ar" ? `لا توجد نتائج لـ "${query}"` : `No results for "${query}"`}
+                    </p>
+                    <button
+                      type="button"
+                      className="gx-search-browse-all-btn"
+                      onClick={() => {
+                        setSearchOpen(false);
+                        navigate({ to: "/products" });
+                      }}
+                    >
+                      {lang === "ar" ? "تصفح كافة منتجات المتجر" : "Browse all store products"}
                     </button>
-                  ))
+                  </div>
+                ) : (
+                  <>
+                    <div className="gx-search-items-list" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      {results.map(({ item }) => {
+                        const title = lang === "en" ? item.nameEn : item.nameAr;
+                        const sub = item.categoryNameAr || item.platform || (lang === "ar" ? "منتج رقمي" : "Digital Product");
+                        return (
+                          <button
+                            key={item.id || item.slug}
+                            type="button"
+                            className="gx-search-item"
+                            onClick={() => goToResult(item.link)}
+                          >
+                            <span className="gx-search-ico">
+                              {item.iconImage ? (
+                                <img src={item.iconImage} alt="" style={{ width: 22, height: 22, objectFit: "contain" }} />
+                              ) : item.imageUrl ? (
+                                <img src={item.imageUrl} alt="" style={{ width: 22, height: 22, objectFit: "cover", borderRadius: 4 }} />
+                              ) : (
+                                item.icon || "🎮"
+                              )}
+                            </span>
+                            <span className="gx-search-txt">
+                              <b>{title}</b>
+                              <small>
+                                {sub}
+                                {item.badge ? ` · ${item.badge}` : ""}
+                              </small>
+                            </span>
+                            {typeof item.priceJod === "number" && item.priceJod > 0 && (
+                              <span className="gx-search-price">
+                                {format(item.priceJod)}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {totalMatches > results.length && (
+                      <button
+                        type="button"
+                        className="gx-search-view-all"
+                        onClick={() => {
+                          setSearchOpen(false);
+                          navigate({ to: "/products", search: { search: query.trim() } });
+                        }}
+                      >
+                        <span>
+                          {lang === "ar"
+                            ? `عرض جميع النتائج لـ "${query}" (${totalMatches} نتيجة)`
+                            : `View all ${totalMatches} results for "${query}"`}
+                        </span>
+                        <ArrowLeft size={14} className={lang === "ar" ? "" : "rotate-180"} />
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}

@@ -10,6 +10,8 @@ import { CatPagination } from "@/components/gx/CatPagination";
 import { CatDeliveryTypeDropdown, DELIVERY_TYPE_OPTIONS } from "@/components/gx/CatDeliveryTypeDropdown";
 import { CatPriceFilterDropdown, PRICE_PRESETS } from "@/components/gx/CatPriceFilterDropdown";
 import { resolveStrictDeliveryType } from "@/lib/gx/delivery-types";
+import { Search, X } from "lucide-react";
+import { matchSearchQuery, type SearchableItem } from "@/lib/gx/search";
 
 export const Route = createFileRoute("/products")({
   loader: async () => {
@@ -248,13 +250,32 @@ function AllProductsPage() {
   const displayedProducts = useMemo(() => {
     let list = [...products];
 
-    // 0. Search Query Filter (e.g. from genre cards or search input)
+    // 0. High-Precision Search Filter (Arabic normalization, synonyms, variants, ranking)
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter((p) => {
-        const text = `${p.nameAr || ""} ${p.nameEn || ""} ${p.taglineAr || ""} ${p.taglineEn || ""} ${p.slug || ""} ${p.categorySlug || ""} ${p.parentCategorySlug || ""}`.toLowerCase();
-        return text.includes(q);
-      });
+      const searchItems: SearchableItem[] = list.map((p) => ({
+        id: p.slug,
+        slug: p.slug,
+        type: "product",
+        nameAr: p.nameAr,
+        nameEn: p.nameEn || p.nameAr,
+        taglineAr: p.taglineAr,
+        taglineEn: p.taglineEn,
+        categoryNameAr: p.categorySlug,
+        categoryNameEn: p.categorySlug,
+        categorySlug: p.categorySlug,
+        parentCategorySlug: p.parentCategorySlug,
+        platform: p.platform,
+        badge: p.badge,
+        variantLabels: (p.variants || []).map(
+          (v) => `${v.labelAr} ${v.labelEn} ${v.tagAr || ""} ${v.tagEn || ""} ${v.region || ""}`
+        ),
+        link: `/product/${p.slug}`,
+      }));
+
+      const matched = matchSearchQuery(searchItems, searchQuery, lang);
+      const scoreMap = new Map(matched.map((m) => [m.item.slug, m.score]));
+      list = list.filter((p) => scoreMap.has(p.slug));
+      list.sort((a, b) => (scoreMap.get(b.slug) || 0) - (scoreMap.get(a.slug) || 0));
     }
 
     // 1. Category Filter
@@ -419,6 +440,28 @@ function AllProductsPage() {
                 <span className="count-label">
                   {ar ? "منتج متوفر" : "Products Available"}
                 </span>
+              </div>
+
+              {/* Inline Search Bar on Products Page */}
+              <div className="cat-search-inline-wrap">
+                <Search size={15} className="cat-search-inline-icon" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={ar ? "ابحث في المنتجات والألعاب..." : "Search products & games..."}
+                  className="cat-search-inline-input"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="cat-search-inline-clear"
+                    title={ar ? "مسح" : "Clear"}
+                  >
+                    <X size={13} />
+                  </button>
+                )}
               </div>
 
               {/* Active Category Pill */}

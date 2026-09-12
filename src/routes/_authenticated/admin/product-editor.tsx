@@ -781,6 +781,10 @@ function FullPageProductEditor() {
       qc.invalidateQueries({ queryKey: ["admin-editor-product", finalSlug] });
       qc.invalidateQueries({ queryKey: ["admin-editor-variants", currentId] });
       qc.invalidateQueries({ queryKey: ["admin-editor-features", currentId] });
+      qc.invalidateQueries({ queryKey: ["store-search-catalog"] });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("gx:catalog-updated"));
+      }
 
       toast.success("✅ تم حفظ ونشر المنتج وتحديثه في المتجر بنجاح!", {
         action: {
