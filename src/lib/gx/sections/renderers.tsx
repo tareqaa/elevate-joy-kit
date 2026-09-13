@@ -26,7 +26,7 @@ import { RichHtml } from "./rich-text";
 import { formatTitle } from "@/lib/gx/text";
 import { CarouselRow } from "@/components/gx/CarouselRow";
 import { BestsellersSkeleton } from "@/components/gx/BestsellersSkeleton";
-import { useSiteSettings } from "../site-settings";
+import { useSiteSettings, DEFAULT_BESTSELLER_ORDER } from "../site-settings";
 import {
   getCategoryTheme,
   renderCategoryVectorIcon,
@@ -443,7 +443,7 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
         ? data.order
         : (hasSettingsItems ? cachedSettingsItems.map((it) => it.cartId) : DEFAULT_BESTSELLER_ORDER));
 
-  const items: FeaturedItem[] = order.map((cartId) => {
+  const items: FeaturedItem[] = order.map((cartId: string) => {
     // 0. Live database variant has highest priority for live price and assets
     const dbPlan = findDbPlanByCartId(cartId);
 

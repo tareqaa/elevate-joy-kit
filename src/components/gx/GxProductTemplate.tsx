@@ -1010,10 +1010,10 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
                 {(product.features && product.features.length > 0
                   ? product.features
                   : [
-                      { titleAr: "وصول غير محدود وسريع", titleEn: "Unlimited Fast Access", descAr: "استفادة كاملة بدون انقطاع طوال فترة الاشتراك.", descEn: "Full access without interruption." },
-                      { titleAr: "ضمان رسمي كامل 100%", titleEn: "100% Official Warranty", descAr: "ضمان حقيقي يشمل الدعم الفني والاستبدال.", descEn: "Comprehensive warranty with continuous support." },
-                      { titleAr: "تسليم فوري ومباشر", titleEn: "Instant Automated Delivery", descAr: "استلام بيانات التفعيل فور إتمام عملية الدفع.", descEn: "Receive credentials immediately upon checkout." },
-                      { titleAr: "تكامل مع مختلف الأجهزة", titleEn: "Multi-Platform Compatibility", descAr: "يعمل على الهاتف، الحاسوب، واللوحي بسلاسة.", descEn: "Works seamlessly across mobile, desktop, and web." },
+                      { icon: null as string | null, titleAr: "وصول غير محدود وسريع", titleEn: "Unlimited Fast Access", descAr: "استفادة كاملة بدون انقطاع طوال فترة الاشتراك.", descEn: "Full access without interruption." },
+                      { icon: null as string | null, titleAr: "ضمان رسمي كامل 100%", titleEn: "100% Official Warranty", descAr: "ضمان حقيقي يشمل الدعم الفني والاستبدال.", descEn: "Comprehensive warranty with continuous support." },
+                      { icon: null as string | null, titleAr: "تسليم فوري ومباشر", titleEn: "Instant Automated Delivery", descAr: "استلام بيانات التفعيل فور إتمام عملية الدفع.", descEn: "Receive credentials immediately upon checkout." },
+                      { icon: null as string | null, titleAr: "تكامل مع مختلف الأجهزة", titleEn: "Multi-Platform Compatibility", descAr: "يعمل على الهاتف، الحاسوب، واللوحي بسلاسة.", descEn: "Works seamlessly across mobile, desktop, and web." },
                     ]
                 ).map((f, i) => (
                   <div key={i} className="driffle-feature-item gx-feature-item">

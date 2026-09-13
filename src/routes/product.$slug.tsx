@@ -75,7 +75,7 @@ function ProductPage() {
   const { product } = Route.useLoaderData();
 
   const variantPrices = (product?.variants || [])
-    .map((v) => Number(v.priceJod))
+    .map((v) => Number(v.price))
     .filter((p) => !isNaN(p) && p > 0);
   const effectivePrice = variantPrices.length > 0 ? Math.min(...variantPrices) : (product?.basePriceJod || 0);
 
