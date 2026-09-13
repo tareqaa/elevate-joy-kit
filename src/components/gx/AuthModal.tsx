@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLang } from "@/lib/gx/i18n";
 import { useAuthActions } from "@/lib/gx/use-auth-actions";
 import { ShieldCheck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useLang();
@@ -14,16 +15,40 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [username, setUsername] = useState("");
   const [msg, setMsg] = useState<{ text: string; ok?: boolean } | null>(null);
 
+  const resetAll = useCallback(() => {
+    setMode("signin");
+    setMfaFactorId(null);
+    setMfaCode("");
+    setMsg(null);
+    setEmail("");
+    setPass("");
+    setUsername("");
+  }, []);
+
   const handleClose = async () => {
     if (mode === "2fa") {
       await cancel2fa();
-      setMfaFactorId(null);
-      setMfaCode("");
-      setMode("signin");
-      setMsg(null);
     }
+    resetAll();
     onClose();
   };
+
+  // Reset completely whenever modal is closed
+  useEffect(() => {
+    if (!open) {
+      resetAll();
+    }
+  }, [open, resetAll]);
+
+  // Reset completely if user signs out anywhere
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        resetAll();
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [resetAll]);
 
   useEffect(() => {
     if (!open) return;
@@ -43,7 +68,10 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
         return setMsg({ text: res.error ?? t("auth.2fa_invalid_code") });
       }
       setMsg({ text: t("auth.signed_in_ok"), ok: true });
-      setTimeout(onClose, 500);
+      setTimeout(() => {
+        resetAll();
+        onClose();
+      }, 500);
       return;
     }
 
@@ -64,7 +92,10 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
         return;
       }
       setMsg({ text: t("auth.signed_in_ok"), ok: true });
-      setTimeout(onClose, 500);
+      setTimeout(() => {
+        resetAll();
+        onClose();
+      }, 500);
     } else {
       const res = await signUp(email, pass, username, "/");
       if (!res.ok) {
@@ -76,10 +107,7 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
 
   async function handleCancel2fa() {
     await cancel2fa();
-    setMfaFactorId(null);
-    setMfaCode("");
-    setMode("signin");
-    setMsg(null);
+    resetAll();
   }
 
   async function google() {

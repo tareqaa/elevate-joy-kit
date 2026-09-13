@@ -161,26 +161,52 @@ export function Navbar() {
 
   useEffect(() => {
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
+
+    const handleSession = async (session: any) => {
       if (!active) return;
-      const u = data.session?.user;
-      if (u) {
-        setProfile(readCachedProfile(u.id) ?? profileFromUser(u));
-        setSession({ userId: u.id, email: u.email ?? undefined });
-      } else {
+      const u = session?.user;
+      if (!u) {
+        setSession(null);
+        setProfile(null);
+        return;
+      }
+
+      // Check if user requires 2FA and has not completed it yet
+      try {
+        const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (aal && aal.currentLevel === "aal1" && aal.nextLevel === "aal2") {
+          // Incomplete 2FA: do NOT treat user as logged in in the Navbar
+          setSession(null);
+          setProfile(null);
+          // If not currently on /auth, redirect to /auth so user completes 2FA
+          if (typeof window !== "undefined" && !window.location.pathname.startsWith("/auth")) {
+            navigate({ to: "/auth" });
+          }
+          return;
+        }
+      } catch {
+        // ignore
+      }
+
+      setProfile(readCachedProfile(u.id) ?? profileFromUser(u));
+      setSession({ userId: u.id, email: u.email ?? undefined });
+    };
+
+    supabase.auth.getSession().then(({ data }) => {
+      void handleSession(data.session);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === "SIGNED_IN" || event === "USER_UPDATED" || event === "TOKEN_REFRESHED") {
+        void handleSession(s);
+      } else if (event === "SIGNED_OUT") {
         setSession(null);
         setProfile(null);
       }
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
-        const u = s?.user;
-        setProfile(u ? (readCachedProfile(u.id) ?? profileFromUser(u)) : null);
-        setSession(u ? { userId: u.id, email: u.email ?? undefined } : null);
-      }
-    });
+
     return () => { active = false; sub.subscription.unsubscribe(); };
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     if (!session) {
@@ -411,7 +437,15 @@ export function Navbar() {
     await supabase.auth.signOut();
     setSession(null);
     setProfile(null);
+    setIsAdmin(false);
     setAccountOpen(false);
+    try {
+      localStorage.removeItem("gx_profile_cache");
+    } catch { /* noop */ }
+    queryClient.clear();
+    if (typeof window !== "undefined" && (window.location.pathname.startsWith("/account") || window.location.pathname.startsWith("/admin"))) {
+      navigate({ to: "/" });
+    }
   }
 
   return (

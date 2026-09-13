@@ -205,12 +205,13 @@ export function useAuthActions() {
     }
   }
 
-  async function signInWithGoogle(redirectPath: string): Promise<AuthResult> {
+  async function signInWithGoogle(redirectPath?: string): Promise<AuthResult> {
     try {
+      const target = redirectPath || "/account";
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}${redirectPath}`,
+          redirectTo: `${window.location.origin}/auth?redirect=${encodeURIComponent(target)}`,
           queryParams: { prompt: "select_account" },
         },
       });
