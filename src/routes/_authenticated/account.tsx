@@ -17,6 +17,7 @@ import { GxProfile } from "@/components/gx/GxProfile";
 import { SpinWheel } from "@/components/gx/SpinWheel";
 import { Pager, usePager } from "@/components/gx/Pager";
 import { OrderReviewInline } from "@/components/gx/OrderReviewInline";
+import { useAuthActions } from "@/lib/gx/use-auth-actions";
 
 type AccountTab = "profile" | "orders" | "wheel" | "security";
 
@@ -639,9 +640,11 @@ function CodeBox({ label, value }: { label?: string; value?: string }) {
 
 function SecurityTab({ email }: { email: string }) {
   const { t } = useLang();
+  const { resetPassword } = useAuthActions();
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   async function change() {
     if (pw.length < 6) { toast.error(t("acc.password_short")); return; }
@@ -655,10 +658,13 @@ function SecurityTab({ email }: { email: string }) {
   }
 
   async function sendReset() {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`,
-    });
-    if (error) { toast.error(error.message); return; }
+    setResetting(true);
+    const res = await resetPassword(email);
+    setResetting(false);
+    if (!res.ok) {
+      toast.error(res.error || t("acc.reset_failed"));
+      return;
+    }
     toast.success(t("acc.reset_sent"));
   }
 
@@ -687,7 +693,9 @@ function SecurityTab({ email }: { email: string }) {
             <p className="text-sm text-muted-foreground">
               {t("acc.reset_send_desc")} <span dir="ltr" className="text-foreground">{email}</span>
             </p>
-            <Button variant="outline" onClick={sendReset} className="w-full">{t("acc.send_reset")}</Button>
+            <Button variant="outline" onClick={sendReset} disabled={resetting} className="w-full">
+              {resetting ? "..." : t("acc.send_reset")}
+            </Button>
           </CardContent>
         </Card>
       </div>
