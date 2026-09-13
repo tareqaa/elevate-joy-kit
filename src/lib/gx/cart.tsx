@@ -700,7 +700,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           if (customerName) updateData.full_name = customerName;
           if (contactValue) updateData.whatsapp = contactValue;
           if (Object.keys(updateData).length > 0) {
-            await supabase.from("profiles").update(updateData).eq("id", uid);
+            await supabase.from("profiles").update(updateData as never).eq("id", uid);
           }
         }
       } catch { /* noop */ }

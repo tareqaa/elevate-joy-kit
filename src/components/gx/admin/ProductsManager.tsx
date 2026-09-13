@@ -1143,6 +1143,7 @@ function ProductModal({
   product: Product | null;
   categories: Category[];
   onClose: () => void;
+  onSaved?: () => void;
 }) {
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);

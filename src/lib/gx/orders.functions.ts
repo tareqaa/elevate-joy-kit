@@ -83,7 +83,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       customerWhatsapp: data.customerWhatsapp,
       customerEmail: data.customerEmail ?? null,
       paymentMethod: data.paymentMethod ?? null,
-      contactType: data.contactType,
+      contactType: data.contactType === "email" ? null : data.contactType,
       deliveryData: {
         ...(data.notes?.trim() ? { customer_notes: data.notes.trim() } : {}),
         ...(data.customerEmail ? { customer_email: data.customerEmail.trim().toLowerCase() } : {}),
