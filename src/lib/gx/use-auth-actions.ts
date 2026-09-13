@@ -11,7 +11,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { useLang } from "@/lib/gx/i18n";
 
-export type AuthResult = { ok: boolean; error?: string };
+export type AuthResult = {
+  ok: boolean;
+  error?: string;
+  mfaRequired?: boolean;
+  factorId?: string;
+};
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
 
@@ -32,11 +37,69 @@ export function useAuthActions() {
 
   async function signIn(email: string, password: string): Promise<AuthResult> {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) return { ok: false, error: error.message };
-      return { ok: true };
+
+      // Check if user has 2FA (TOTP) enabled
+      try {
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (aalData && aalData.currentLevel === "aal1" && aalData.nextLevel === "aal2") {
+          const { data: factorsData } = await supabase.auth.mfa.listFactors();
+          const totpFactor = factorsData?.totp?.find((f) => f.status === "verified");
+          if (totpFactor) {
+            return {
+              ok: true,
+              mfaRequired: true,
+              factorId: totpFactor.id,
+            };
+          }
+        }
+      } catch {
+        // continue if MFA check fails
+      }
+
+      return { ok: true, mfaRequired: false };
     } catch (err) {
       return { ok: false, error: normalizeError(err, "Sign-in failed") };
+    }
+  }
+
+  async function verify2fa(factorId: string, code: string): Promise<AuthResult> {
+    try {
+      const cleanCode = code.trim().replace(/\D/g, "");
+      if (cleanCode.length !== 6) {
+        return {
+          ok: false,
+          error: lang === "ar" ? "يرجى إدخال رمز التحقق المكون من 6 أرقام" : "Please enter a valid 6-digit code",
+        };
+      }
+
+      const { error } = await supabase.auth.mfa.challengeAndVerify({
+        factorId,
+        code: cleanCode,
+      });
+
+      if (error) {
+        return {
+          ok: false,
+          error:
+            lang === "ar"
+              ? "رمز التحقق غير صحيح، يرجى المحاولة مجدداً"
+              : error.message || "Invalid verification code",
+        };
+      }
+
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: normalizeError(err, "2FA verification failed") };
+    }
+  }
+
+  async function cancel2fa(): Promise<void> {
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // noop
     }
   }
 
@@ -158,5 +221,5 @@ export function useAuthActions() {
     }
   }
 
-  return { signIn, signUp, resetPassword, signInWithGoogle };
+  return { signIn, signUp, resetPassword, signInWithGoogle, verify2fa, cancel2fa };
 }

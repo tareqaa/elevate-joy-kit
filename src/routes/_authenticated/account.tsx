@@ -706,6 +706,18 @@ function SecurityTab({ email }: { email: string }) {
 
 type MfaFactor = { id: string; status: string; friendly_name?: string | null };
 
+function formatQrCode(raw: string): string {
+  if (!raw) return "";
+  if (raw.startsWith("data:image/svg+xml;utf-8,")) {
+    const svg = raw.replace("data:image/svg+xml;utf-8,", "");
+    return `data:image/svg+xml;utf-8,${encodeURIComponent(svg)}`;
+  }
+  if (raw.startsWith("<svg")) {
+    return `data:image/svg+xml;utf-8,${encodeURIComponent(raw)}`;
+  }
+  return raw;
+}
+
 function TwoFactorCard() {
   const { t } = useLang();
   const [factors, setFactors] = useState<MfaFactor[]>([]);
@@ -713,6 +725,8 @@ function TwoFactorCard() {
   const [busy, setBusy] = useState(false);
   const [enroll, setEnroll] = useState<{ id: string; qr: string; secret: string } | null>(null);
   const [code, setCode] = useState("");
+  const [disabling, setDisabling] = useState(false);
+  const [disableCode, setDisableCode] = useState("");
 
   async function refresh() {
     const { data, error } = await supabase.auth.mfa.listFactors();
@@ -736,38 +750,69 @@ function TwoFactorCard() {
     });
     setBusy(false);
     if (error || !data) { toast.error(error?.message || "MFA error"); return; }
-    setEnroll({ id: data.id, qr: data.totp.qr_code, secret: data.totp.secret });
+    setEnroll({ id: data.id, qr: formatQrCode(data.totp.qr_code), secret: data.totp.secret });
     setCode("");
   }
 
   async function verify() {
     if (!enroll) return;
-    if (!/^\d{6}$/.test(code.trim())) { toast.error(t("acc.2fa_bad_code")); return; }
+    const cleanCode = code.trim().replace(/\D/g, "");
+    if (cleanCode.length !== 6) { toast.error(t("acc.2fa_bad_code")); return; }
     setBusy(true);
-    const { data: ch, error: chErr } = await supabase.auth.mfa.challenge({ factorId: enroll.id });
-    if (chErr || !ch) { setBusy(false); toast.error(chErr?.message || "MFA error"); return; }
-    const { error } = await supabase.auth.mfa.verify({
-      factorId: enroll.id, challengeId: ch.id, code: code.trim(),
+    const { error } = await supabase.auth.mfa.challengeAndVerify({
+      factorId: enroll.id,
+      code: cleanCode,
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    setEnroll(null); setCode("");
+    setEnroll(null);
+    setCode("");
     toast.success(t("acc.2fa_on"));
     void refresh();
   }
 
   async function cancelEnroll() {
     if (enroll) await supabase.auth.mfa.unenroll({ factorId: enroll.id });
-    setEnroll(null); setCode("");
+    setEnroll(null);
+    setCode("");
     void refresh();
   }
 
-  async function disable() {
+  async function confirmDisable() {
     if (!active) return;
+    const cleanCode = disableCode.trim().replace(/\D/g, "");
+    if (cleanCode.length !== 6) {
+      toast.error(t("acc.2fa_bad_code"));
+      return;
+    }
     setBusy(true);
+
+    // Check if elevation is needed to reach aal2 before unenroll
+    try {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.currentLevel !== "aal2") {
+        const { error: chErr } = await supabase.auth.mfa.challengeAndVerify({
+          factorId: active.id,
+          code: cleanCode,
+        });
+        if (chErr) {
+          setBusy(false);
+          toast.error(t("auth.2fa_invalid_code"));
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     const { error } = await supabase.auth.mfa.unenroll({ factorId: active.id });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setDisabling(false);
+    setDisableCode("");
     toast.success(t("acc.2fa_off"));
     void refresh();
   }
@@ -808,8 +853,33 @@ function TwoFactorCard() {
               <Button variant="outline" onClick={cancelEnroll} disabled={busy}>{t("acc.2fa_cancel")}</Button>
             </div>
           </div>
+        ) : disabling ? (
+          <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <p className="text-sm font-medium">{t("acc.2fa_disable_prompt")}</p>
+            <div className="space-y-2 max-w-xs">
+              <Input
+                id="mfa-disable-code"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={6}
+                autoFocus
+                placeholder="123456"
+                value={disableCode}
+                onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, ""))}
+                className="text-center font-mono text-base tracking-widest"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="destructive" onClick={confirmDisable} disabled={busy || disableCode.length !== 6}>
+                {t("acc.2fa_confirm_disable")}
+              </Button>
+              <Button variant="outline" onClick={() => { setDisabling(false); setDisableCode(""); }} disabled={busy}>
+                {t("acc.2fa_cancel")}
+              </Button>
+            </div>
+          </div>
         ) : active ? (
-          <Button variant="outline" onClick={disable} disabled={busy}>{t("acc.2fa_disable")}</Button>
+          <Button variant="outline" onClick={() => setDisabling(true)} disabled={busy}>{t("acc.2fa_disable")}</Button>
         ) : (
           <Button onClick={startEnroll} disabled={busy || loading}>{t("acc.2fa_enable")}</Button>
         )}

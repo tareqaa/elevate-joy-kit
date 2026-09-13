@@ -23,15 +23,22 @@ if (typeof window !== "undefined") {
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    if (cachedUser) {
-      // refresh in the background, don't block navigation
-      void supabase.auth.getSession().then(({ data }) => {
-        cachedUser = data.session?.user ?? null;
-      });
-      return { user: cachedUser };
-    }
     const { data } = await supabase.auth.getSession();
-    if (!data.session?.user) throw redirect({ to: "/auth" });
+    if (!data.session?.user) {
+      cachedUser = null;
+      throw redirect({ to: "/auth" });
+    }
+
+    try {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal && aal.currentLevel === "aal1" && aal.nextLevel === "aal2") {
+        cachedUser = null;
+        throw redirect({ to: "/auth" });
+      }
+    } catch (err) {
+      if ((err as any)?.to) throw err;
+    }
+
     cachedUser = data.session.user;
     return { user: data.session.user };
   },
