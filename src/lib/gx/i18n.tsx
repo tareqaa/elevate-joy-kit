@@ -64,6 +64,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
     // Hide content briefly to avoid an AR -> EN flash on first visit
     const html = document.documentElement;
+    const lift = () => {
+      html.removeAttribute("data-lang-pending");
+      document.getElementById("gx-lang-gate")?.remove();
+    };
     html.setAttribute("data-lang-pending", "1");
     if (!document.getElementById("gx-lang-gate")) {
       const st = document.createElement("style");
@@ -71,6 +75,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       st.textContent = "html[data-lang-pending] body{visibility:hidden!important}";
       document.head.appendChild(st);
     }
+    // Hard failsafe: never leave the page hidden, whatever happens below.
+    const failsafe = setTimeout(lift, 2500);
 
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 1500);
@@ -90,11 +96,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       } catch { /* silent — keep Arabic default */ }
       finally {
         clearTimeout(timer);
-        html.removeAttribute("data-lang-pending");
-        document.getElementById("gx-lang-gate")?.remove();
+        clearTimeout(failsafe);
+        lift();
       }
     })();
-    return () => { clearTimeout(timer); ctrl.abort(); };
+    return () => { clearTimeout(timer); clearTimeout(failsafe); ctrl.abort(); lift(); };
   }, []);
 
 
