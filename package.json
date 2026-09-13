@@ -59,10 +59,10 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
-    "fast-uri": "^3.1.5",
-    "hono": "^4.13.0",
+    "fast-uri": "^3.1.7",
+    "hono": "^4.13.6",
     "input-otp": "^1.4.2",
-    "js-yaml": "^4.3.1",
+    "js-yaml": "^4.3.2",
     "lucide-react": "^0.575.0",
     "qs": "^6.16.0",
     "react": "^19.2.0",
@@ -101,16 +101,16 @@
     "vitest": "^3.2.4"
   },
   "overrides": {
-    "js-yaml": "^4.3.1",
-    "hono": "^4.13.0",
-    "fast-uri": "^3.1.5",
+    "js-yaml": "^4.3.2",
+    "hono": "^4.13.6",
+    "fast-uri": "^3.1.7",
     "ip-address": "^10.4.0",
     "@hono/node-server": "^2.1.0"
   },
   "resolutions": {
-    "js-yaml": "^4.3.1",
-    "hono": "^4.13.0",
-    "fast-uri": "^3.1.5",
+    "js-yaml": "^4.3.2",
+    "hono": "^4.13.6",
+    "fast-uri": "^3.1.7",
     "ip-address": "^10.4.0",
     "@hono/node-server": "^2.1.0"
   }
