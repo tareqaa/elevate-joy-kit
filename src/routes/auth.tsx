@@ -50,6 +50,9 @@ function AuthPage() {
 
         // If user has 2FA enabled and hasn't verified yet:
         if (aal && aal.currentLevel === "aal1" && aal.nextLevel === "aal2") {
+          if (typeof window !== "undefined") {
+            try { sessionStorage.setItem("gx_2fa_pending", "true"); } catch { /* noop */ }
+          }
           try {
             const { data: factors } = await supabase.auth.mfa.listFactors();
             if (cancelled) return;
@@ -64,6 +67,9 @@ function AuthPage() {
           return;
         }
 
+        if (typeof window !== "undefined") {
+          try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
+        }
         // Only redirect if fully verified
         if (aal && (aal.currentLevel === "aal2" || (aal.currentLevel === "aal1" && aal.nextLevel === "aal1"))) {
           navigate({ to: getSafeRedirect() });
@@ -81,6 +87,9 @@ function AuthPage() {
       if (event === "SIGNED_IN" && session) {
         void checkSessionAndAal(session);
       } else if (event === "SIGNED_OUT") {
+        if (typeof window !== "undefined") {
+          try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
+        }
         setMode("signin");
         setMfaFactorId(null);
         setMfaCode("");
@@ -106,11 +115,17 @@ function AuthPage() {
     setLoading(false);
     if (!res.ok) return toast.error(res.error);
     if (res.mfaRequired && res.factorId) {
+      if (typeof window !== "undefined") {
+        try { sessionStorage.setItem("gx_2fa_pending", "true"); } catch { /* noop */ }
+      }
       setMfaFactorId(res.factorId);
       setMfaCode("");
       setMode("2fa");
       toast.info(t("auth.2fa_desc"));
       return;
+    }
+    if (typeof window !== "undefined") {
+      try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
     }
     toast.success(t("auth.hello"));
     navigate({ to: getSafeRedirect() });
@@ -123,11 +138,17 @@ function AuthPage() {
     const res = await verify2fa(mfaFactorId, mfaCode);
     setLoading(false);
     if (!res.ok) return toast.error(res.error || t("auth.2fa_invalid_code"));
+    if (typeof window !== "undefined") {
+      try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
+    }
     toast.success(t("auth.hello"));
     navigate({ to: getSafeRedirect() });
   }
 
   async function handleCancel2fa() {
+    if (typeof window !== "undefined") {
+      try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
+    }
     await cancel2fa();
     setMfaFactorId(null);
     setMfaCode("");

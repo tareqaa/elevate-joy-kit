@@ -357,7 +357,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           .eq("is_active", true),
         supabase
           .from("categories")
-          .select("id, slug, name_ar, name_en, parent_id, icon, icon_image_url"),
+          .select("id, slug, name_ar, name_en, parent_id, icon, icon_url"),
       ]);
 
     if (pErr) {
@@ -476,7 +476,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           categoryNameEn: "Category",
           categorySlug: c.slug,
           icon: c.icon || "📁",
-          iconImage: c.icon_image_url,
+          iconImage: c.icon_url,
           link: `/category/${c.slug}`,
         };
         item.normalizedHaystack = buildSearchHaystack(item);

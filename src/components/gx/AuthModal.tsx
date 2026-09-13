@@ -16,6 +16,9 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [msg, setMsg] = useState<{ text: string; ok?: boolean } | null>(null);
 
   const resetAll = useCallback(() => {
+    if (typeof window !== "undefined") {
+      try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
+    }
     setMode("signin");
     setMfaFactorId(null);
     setMfaCode("");
@@ -67,6 +70,9 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
       if (!res.ok) {
         return setMsg({ text: res.error ?? t("auth.2fa_invalid_code") });
       }
+      if (typeof window !== "undefined") {
+        try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
+      }
       setMsg({ text: t("auth.signed_in_ok"), ok: true });
       setTimeout(() => {
         resetAll();
@@ -85,11 +91,17 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
       const res = await signIn(email, pass);
       if (!res.ok) return setMsg({ text: res.error ?? "" });
       if (res.mfaRequired && res.factorId) {
+        if (typeof window !== "undefined") {
+          try { sessionStorage.setItem("gx_2fa_pending", "true"); } catch { /* noop */ }
+        }
         setMfaFactorId(res.factorId);
         setMfaCode("");
         setMode("2fa");
         setMsg({ text: t("auth.2fa_desc") });
         return;
+      }
+      if (typeof window !== "undefined") {
+        try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
       }
       setMsg({ text: t("auth.signed_in_ok"), ok: true });
       setTimeout(() => {
@@ -106,6 +118,9 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
   }
 
   async function handleCancel2fa() {
+    if (typeof window !== "undefined") {
+      try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
+    }
     await cancel2fa();
     resetAll();
   }

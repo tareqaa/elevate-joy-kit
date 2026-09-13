@@ -140,6 +140,7 @@ export function Navbar() {
     }
   }, [menuOpen, mounted]);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [session, setSession] = useState<{ userId: string; email?: string } | null>(null);
@@ -159,46 +160,44 @@ export function Navbar() {
     try { localStorage.removeItem("gx_is_admin"); } catch { /* noop */ }
   }, []);
 
-
   useEffect(() => {
     let active = true;
 
-    const handleSession = async (session: any) => {
+    const syncSessionUser = (u: any) => {
       if (!active) return;
-      const u = session?.user;
       if (!u) {
         setSession(null);
         setProfile(null);
-        return;
-      }
-
-      // Check if user requires 2FA and has not completed it yet
-      try {
-        const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-        if (aal && aal.currentLevel === "aal1" && aal.nextLevel === "aal2") {
-          // Incomplete 2FA: do NOT treat user as logged in in the Navbar
+        setIsAdmin(false);
+      } else {
+        // If 2FA verification is currently in progress, do not treat user as logged in yet
+        if (typeof window !== "undefined" && sessionStorage.getItem("gx_2fa_pending") === "true") {
           setSession(null);
           setProfile(null);
           return;
         }
-      } catch {
-        // ignore
+        setProfile(readCachedProfile(u.id) ?? profileFromUser(u));
+        setSession({ userId: u.id, email: u.email ?? undefined });
       }
-
-      setProfile(readCachedProfile(u.id) ?? profileFromUser(u));
-      setSession({ userId: u.id, email: u.email ?? undefined });
     };
 
     supabase.auth.getSession().then(({ data }) => {
-      void handleSession(data.session);
+      syncSessionUser(data.session?.user);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
-      if (event === "SIGNED_IN" || event === "USER_UPDATED" || event === "TOKEN_REFRESHED") {
-        void handleSession(s);
-      } else if (event === "SIGNED_OUT") {
-        setSession(null);
-        setProfile(null);
+      if (event === "SIGNED_OUT" || !s?.user) {
+        if (typeof window !== "undefined") {
+          try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
+        }
+        syncSessionUser(null);
+      } else if (
+        event === "SIGNED_IN" ||
+        event === "USER_UPDATED" ||
+        event === "TOKEN_REFRESHED" ||
+        event === "MFA_CHALLENGE_VERIFIED"
+      ) {
+        syncSessionUser(s.user);
       }
     });
 
@@ -281,7 +280,6 @@ export function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement | null>(null);
 
-  const queryClient = useQueryClient();
   const { data: liveCatalog } = useQuery({
     queryKey: ["store-search-catalog"],
     queryFn: fetchLiveSearchIndex,
@@ -708,7 +706,7 @@ export function Navbar() {
               aria-label={lang === "ar" ? "المفضلة" : "Wishlist"}
             >
               <Heart size={21} strokeWidth={1.8} />
-              {favCount > 0 && <span className="gx-floating-badge gx-wishlist-badge">{favCount}</span>}
+              {mounted && favCount > 0 && <span className="gx-floating-badge gx-wishlist-badge">{favCount}</span>}
             </Link>
 
             {/* 2. Shopping Cart Button (Clean borderless floating icon + Badge) */}
@@ -727,7 +725,7 @@ export function Navbar() {
               aria-label={t("nav.cart_title") || (lang === "ar" ? "السلة" : "Cart")}
             >
               <ShoppingCart size={21} strokeWidth={1.8} />
-              {cart.count > 0 && <span className="gx-floating-badge">{cart.count}</span>}
+              {mounted && cart.count > 0 && <span className="gx-floating-badge">{cart.count}</span>}
             </button>
 
             {/* 3. Play Arena Controller Icon (Clean borderless floating icon directly next to Cart) */}
