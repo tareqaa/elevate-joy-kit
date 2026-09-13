@@ -7,9 +7,6 @@ import { useAuthActions } from "@/lib/gx/use-auth-actions";
 import { ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
-    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
-  }),
   head: () => ({
     meta: [
       { title: "تسجيل الدخول | متجر GX Store" },
@@ -19,11 +16,23 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+function getSafeRedirect(): string {
+  if (typeof window === "undefined") return "/account";
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const r = params.get("redirect");
+    if (r && r.startsWith("/") && !r.startsWith("//") && !r.startsWith("/auth")) {
+      return r;
+    }
+  } catch {
+    // ignore
+  }
+  return "/account";
+}
+
 function AuthPage() {
   const { t } = useLang();
   const navigate = useNavigate();
-  const search = Route.useSearch();
-  const targetRedirect = search.redirect || "/account";
   const { signIn, signUp, resetPassword, signInWithGoogle, verify2fa, cancel2fa } = useAuthActions();
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup" | "reset" | "2fa">("signin");
@@ -39,18 +48,26 @@ function AuthPage() {
         const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
         if (cancelled) return;
 
+        // If user has 2FA enabled and hasn't verified yet:
         if (aal && aal.currentLevel === "aal1" && aal.nextLevel === "aal2") {
-          const { data: factors } = await supabase.auth.mfa.listFactors();
-          if (cancelled) return;
-          const totp = factors?.totp?.find((f) => f.status === "verified") || factors?.all?.find((f) => f.status === "verified");
-          if (totp) {
-            setMfaFactorId(totp.id);
-            setMode("2fa");
-            return;
+          try {
+            const { data: factors } = await supabase.auth.mfa.listFactors();
+            if (cancelled) return;
+            const totp = factors?.totp?.find((f) => f.status === "verified") || factors?.all?.find((f) => f.status === "verified");
+            if (totp) {
+              setMfaFactorId(totp.id);
+            }
+          } catch {
+            // ignore
           }
+          setMode("2fa");
+          return;
         }
 
-        navigate({ to: targetRedirect });
+        // Only redirect if fully verified
+        if (aal && (aal.currentLevel === "aal2" || (aal.currentLevel === "aal1" && aal.nextLevel === "aal1"))) {
+          navigate({ to: getSafeRedirect() });
+        }
       } catch {
         // noop
       }
@@ -74,7 +91,7 @@ function AuthPage() {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, [navigate, targetRedirect]);
+  }, [navigate]);
 
   const [siEmail, setSiEmail] = useState("");
   const [siPass, setSiPass] = useState("");
@@ -96,7 +113,7 @@ function AuthPage() {
       return;
     }
     toast.success(t("auth.hello"));
-    navigate({ to: targetRedirect });
+    navigate({ to: getSafeRedirect() });
   }
 
   async function handleVerify2fa(e: React.FormEvent) {
@@ -107,7 +124,7 @@ function AuthPage() {
     setLoading(false);
     if (!res.ok) return toast.error(res.error || t("auth.2fa_invalid_code"));
     toast.success(t("auth.hello"));
-    navigate({ to: targetRedirect });
+    navigate({ to: getSafeRedirect() });
   }
 
   async function handleCancel2fa() {
@@ -120,7 +137,7 @@ function AuthPage() {
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const res = await signUp(suEmail, suPass, suUsername, targetRedirect);
+    const res = await signUp(suEmail, suPass, suUsername, getSafeRedirect());
     setLoading(false);
     if (!res.ok) {
       return toast.error(res.error === "invalid_username" ? t("auth.username_pattern_err") : res.error);
@@ -139,7 +156,7 @@ function AuthPage() {
 
   async function handleGoogle() {
     setLoading(true);
-    const res = await signInWithGoogle(targetRedirect);
+    const res = await signInWithGoogle(getSafeRedirect());
     if (!res.ok) { setLoading(false); toast.error(res.error); }
   }
 

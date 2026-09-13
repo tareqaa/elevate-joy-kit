@@ -178,10 +178,6 @@ export function Navbar() {
           // Incomplete 2FA: do NOT treat user as logged in in the Navbar
           setSession(null);
           setProfile(null);
-          // If not currently on /auth, redirect to /auth so user completes 2FA
-          if (typeof window !== "undefined" && !window.location.pathname.startsWith("/auth")) {
-            navigate({ to: "/auth" });
-          }
           return;
         }
       } catch {
