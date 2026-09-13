@@ -139,6 +139,7 @@ export function Navbar() {
       };
     }
   }, [menuOpen, mounted]);
+  const navigate = useNavigate();
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [session, setSession] = useState<{ userId: string; email?: string } | null>(null);
@@ -202,7 +203,7 @@ export function Navbar() {
     });
 
     return () => { active = false; sub.subscription.unsubscribe(); };
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
     if (!session) {
@@ -276,7 +277,6 @@ export function Navbar() {
   };
 
   // ---- Search Engine ----
-  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement | null>(null);
