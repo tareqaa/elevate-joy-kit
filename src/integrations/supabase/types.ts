@@ -2118,6 +2118,7 @@ export type Database = {
       admin_unblock_ip: { Args: { _ip: string }; Returns: Json }
       auto_cancel_stale_orders: { Args: never; Returns: number }
       award_badges: { Args: { _user_id: string }; Returns: undefined }
+      check_password_reset_cooldown: { Args: { _email: string }; Returns: Json }
       create_store_order: {
         Args: {
           _client_total: number
@@ -2257,6 +2258,7 @@ export type Database = {
         Args: { _ip: string; _meta?: Json; _order_id: string; _ua: string }
         Returns: undefined
       }
+      record_password_reset_request: { Args: { _email: string }; Returns: Json }
       redeem_gx_coins: {
         Args: { _coins: number; _subtotal_jod: number }
         Returns: Json
