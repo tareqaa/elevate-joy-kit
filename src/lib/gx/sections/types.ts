@@ -124,7 +124,9 @@ export function activeCarouselSlides(items: CarouselSlide[] | undefined): Carous
 export type CategoryOverride = { name?: string; desc?: string; accent?: string; hidden?: boolean; sort?: number };
 export type CategoriesData = {
   title?: string;
+  title_en?: string;
   eyebrow?: string;
+  eyebrow_en?: string;
   overrides?: Record<string, CategoryOverride>;
 };
 

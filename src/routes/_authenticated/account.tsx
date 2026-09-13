@@ -105,10 +105,12 @@ function AccountPage() {
   const ordersQ = useQuery({
     queryKey: ["my-orders", user.id],
     refetchOnWindowFocus: true,
-    refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("orders").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+        .from("orders")
+        .select("id, order_number, status, created_at, total_jod, items, delivery_data, codes_revealed_at, codes_reveal_count")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },

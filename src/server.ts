@@ -44,18 +44,54 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+function applySecurityHeaders(res: Response, req: Request): Response {
+  if (res.status === 101) return res;
+
+  const isHttps =
+    req.url.startsWith("https://") ||
+    req.headers.get("x-forwarded-proto") === "https" ||
+    req.headers.get("cf-visitor")?.includes('"scheme":"https"');
+
+  try {
+    res.headers.set("X-Frame-Options", "SAMEORIGIN");
+    res.headers.set("X-Content-Type-Options", "nosniff");
+    res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    if (isHttps) {
+      res.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+    }
+    return res;
+  } catch {
+    const headers = new Headers(res.headers);
+    headers.set("X-Frame-Options", "SAMEORIGIN");
+    headers.set("X-Content-Type-Options", "nosniff");
+    headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    if (isHttps) {
+      headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+    }
+    return new Response(res.body, {
+      status: res.status,
+      statusText: res.statusText,
+      headers,
+    });
+  }
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+      return applySecurityHeaders(normalized, request);
     } catch (error) {
       console.error(error);
-      return new Response(renderErrorPage(), {
+      const errorResponse = new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
       });
+      return applySecurityHeaders(errorResponse, request);
     }
   },
 };

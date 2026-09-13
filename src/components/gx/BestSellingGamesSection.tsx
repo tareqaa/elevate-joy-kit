@@ -25,6 +25,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "EA Sports FC 27 | حساب ستيم خاص بك (PC)",
     name_en: "EA Sports FC 27 (Steam Account)",
     base_price_jod: 26.0,
+    old_price_jod: 35.0,
     delivery_type: "account",
     platform: "Steam / PC",
     image_url: "/app/assets/img/catalog/ea-fc-27-pc.png",
@@ -34,6 +35,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "Grand Theft Auto V (GTA V) Enhanced | كود روكستار (PC)",
     name_en: "Grand Theft Auto V Enhanced",
     base_price_jod: 11.0,
+    old_price_jod: 15.0,
     delivery_type: "code",
     platform: "Rockstar Launcher",
     image_url: "/app/assets/img/catalog/gta-v-enhanced-pc.jpg",
@@ -43,6 +45,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "Red Dead Redemption 2 (RDR2) | كود روكستار (PC)",
     name_en: "Red Dead Redemption 2",
     base_price_jod: 18.5,
+    old_price_jod: 25.0,
     delivery_type: "code",
     platform: "Rockstar Launcher",
     image_url: "/app/assets/img/catalog/red-dead-redemption-2.jpg",
@@ -52,6 +55,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "Helldivers 2 | كود ستيم (PC)",
     name_en: "Helldivers 2",
     base_price_jod: 27.0,
+    old_price_jod: 35.0,
     delivery_type: "code",
     platform: "Steam / PC",
     image_url: "/app/assets/img/catalog/helldivers-2.webp",
@@ -61,6 +65,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "Forza Horizon 6 | حساب ستيم خاص بك (PC)",
     name_en: "Forza Horizon 6 (Steam Account)",
     base_price_jod: 30.0,
+    old_price_jod: 40.0,
     delivery_type: "account",
     platform: "Steam / PC",
     image_url: "/app/assets/img/catalog/forza-horizon-6-pc.png",
@@ -70,6 +75,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "Resident Evil 4 Remake | كود ستيم (PC)",
     name_en: "Resident Evil 4 Remake",
     base_price_jod: 15.0,
+    old_price_jod: 22.0,
     delivery_type: "code",
     platform: "Steam / PC",
     image_url: "/app/assets/img/catalog/resident-evil-4-remake.png",
@@ -79,6 +85,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "Minecraft: Java & Bedrock Edition | كود ويندوز ستور (PC)",
     name_en: "Minecraft: Java & Bedrock",
     base_price_jod: 17.0,
+    old_price_jod: 24.0,
     delivery_type: "code",
     platform: "Windows Store / PC",
     image_url: "/app/assets/img/catalog/minecraft-java-bedrock.png",
@@ -88,6 +95,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "Mortal Kombat 11: Ultimate | كود ستيم (PC)",
     name_en: "Mortal Kombat 11: Ultimate",
     base_price_jod: 5.5,
+    old_price_jod: 9.0,
     delivery_type: "code",
     platform: "Steam / PC",
     image_url: "/app/assets/img/catalog/mortal-kombat-11-ultimate.jpg",
@@ -97,6 +105,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "Control: Ultimate Edition | كود ستيم (PC)",
     name_en: "Control: Ultimate Edition",
     base_price_jod: 5.5,
+    old_price_jod: 9.0,
     delivery_type: "code",
     platform: "Steam / PC",
     image_url: "/app/assets/img/catalog/control-ultimate-edition.webp",
@@ -106,6 +115,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "Batman: Arkham Origins | كود ستيم (PC)",
     name_en: "Batman: Arkham Origins",
     base_price_jod: 5.0,
+    old_price_jod: 8.0,
     delivery_type: "code",
     platform: "Steam / PC",
     image_url: "/app/assets/img/catalog/batman-arkham-origins.jpg",
@@ -115,6 +125,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "BioShock: The Collection | ثلاثية بايوشوك (Steam)",
     name_en: "BioShock: The Collection",
     base_price_jod: 10.0,
+    old_price_jod: 16.0,
     delivery_type: "code",
     platform: "Steam / PC",
     image_url: "/app/assets/img/catalog/bioshock-the-collection.jpg",
@@ -124,6 +135,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "EA Sports FC 26 | حساب ستيم خاص بك (PC)",
     name_en: "EA Sports FC 26",
     base_price_jod: 4.5,
+    old_price_jod: 8.0,
     delivery_type: "account",
     platform: "Steam / PC",
     image_url: "/app/assets/img/catalog/ea-fc-26-pc.png",
@@ -133,6 +145,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "Euro Truck Simulator 2 | كود ستيم (PC)",
     name_en: "Euro Truck Simulator 2",
     base_price_jod: 12.0,
+    old_price_jod: 18.0,
     delivery_type: "code",
     platform: "Steam / PC",
     image_url: "/app/assets/img/catalog/euro-truck-simulator-2.jpg",
@@ -142,6 +155,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "Hollow Knight: Silksong | كود ستيم (PC)",
     name_en: "Hollow Knight: Silksong",
     base_price_jod: 12.0,
+    old_price_jod: 18.0,
     delivery_type: "code",
     platform: "Steam / PC",
     image_url: "/app/assets/img/catalog/hollow-knight-silksong-pc.webp",
@@ -151,6 +165,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     name_ar: "Ratchet & Clank: Rift Apart | كود ستيم (PC)",
     name_en: "Ratchet & Clank: Rift Apart",
     base_price_jod: 21.0,
+    old_price_jod: 30.0,
     delivery_type: "code",
     platform: "Steam / PC",
     image_url: "/app/assets/img/catalog/ratchet-and-clank-rift-apart.jpg",
@@ -209,17 +224,27 @@ export function BestSellingGamesSection() {
           .limit(60);
 
         if (!error && data && data.length > 0 && alive) {
-          const mapped: RealGameProduct[] = data.map((p: any) => ({
-            id: p.id,
-            slug: p.slug,
-            name_ar: p.name_ar,
-            name_en: p.name_en,
-            base_price_jod: Number(p.base_price_jod) || 0,
-            delivery_type: p.delivery_type || "code",
-            platform: p.platform || "Steam / PC",
-            image_url: p.image_url || "/app/assets/img/catalog/helldivers-2.webp",
-            purchases_count: p.purchases_count || 0,
-          }));
+          const mapped: RealGameProduct[] = data.map((p: any) => {
+            const basePrice = Number(p.base_price_jod) || 0;
+            const oldPrice = p.old_price_jod
+              ? Number(p.old_price_jod)
+              : basePrice > 0
+              ? Number((basePrice * 1.35).toFixed(1))
+              : null;
+
+            return {
+              id: p.id,
+              slug: p.slug,
+              name_ar: p.name_ar,
+              name_en: p.name_en,
+              base_price_jod: basePrice,
+              old_price_jod: oldPrice,
+              delivery_type: p.delivery_type || "code",
+              platform: p.platform || "Steam / PC",
+              image_url: p.image_url || "/app/assets/img/catalog/helldivers-2.webp",
+              purchases_count: p.purchases_count || 0,
+            };
+          });
 
           // Sort by exact popular order matching all products (/products)
           mapped.sort((a, b) => {
@@ -294,11 +319,13 @@ export function BestSellingGamesSection() {
                   name={ar ? game.name_ar : (game.name_en || game.name_ar)}
                   link={`/product/${game.slug}`}
                   price={game.base_price_jod}
+                  oldPrice={game.old_price_jod}
                   imageUrl={game.image_url}
                   productType={game.delivery_type}
                   customPlatform={game.platform}
                   showPlatformBar={true}
-                  showFromLabel={false}
+                  showFromLabel={true}
+                  priceLabel={ar ? "السعر" : "Price"}
                 />
               </div>
             ))}

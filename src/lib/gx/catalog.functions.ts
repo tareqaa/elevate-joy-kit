@@ -8,7 +8,8 @@
    ============================================================ */
 
 import { createServerFn } from "@tanstack/react-start";
-import { getPublicClient } from "@/lib/gx/supabase-request";
+import { getPublicClient, getVerifiedCaller, getUserScopedClient } from "@/lib/gx/supabase-request";
+import { isAdminUser } from "@/lib/gx/pricing.server";
 
 export type CatalogVariant = {
   cartId: string;
@@ -57,6 +58,8 @@ export type CatalogProduct = {
   cardGradient: string | null;
   categoryNameAr: string | null;
   categoryNameEn: string | null;
+  categoryDescriptionAr?: string | null;
+  categoryDescriptionEn?: string | null;
   identifierLabelAr: string | null;
   identifierLabelEn: string | null;
   identifierPlaceholder: string | null;
@@ -143,6 +146,17 @@ export function invalidateCatalogCache(slug?: string) {
 export const purgeCatalogCacheFn = createServerFn({ method: "POST" })
   .inputValidator((data?: { slug?: string }) => ({ slug: data?.slug ? String(data.slug) : undefined }))
   .handler(async ({ data }) => {
+    const caller = await getVerifiedCaller();
+    if (!caller) {
+      throw new Error("Unauthorized: authentication required");
+    }
+
+    const client = getUserScopedClient(caller.token);
+    const isAdmin = await isAdminUser(client, caller.userId);
+    if (!isAdmin) {
+      throw new Error("Forbidden: admin role required");
+    }
+
     invalidateCatalogCache(data?.slug);
     return { ok: true };
   });
@@ -185,7 +199,7 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
     const { data: row } = await supabase
       .from("products")
       .select(
-        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, base_price_jod, image_url, icon, icon_image_url, thumb_bg, accent_color, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, requires_player_id, delivery_method_ar, delivery_method_en, delivery_details, delivery_instructions_ar, delivery_instructions_en, page_template, delivery_type, region, is_active, categories:category_id (name_ar, name_en)",
+        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, base_price_jod, image_url, icon, icon_image_url, thumb_bg, accent_color, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, requires_player_id, delivery_method_ar, delivery_method_en, delivery_details, delivery_instructions_ar, delivery_instructions_en, page_template, delivery_type, region, is_active, categories:category_id (name_ar, name_en, description_ar, description_en)",
       )
       .eq("slug", data.slug)
       .eq("is_active", true)
@@ -264,8 +278,8 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
       nameEn: p.name_en || p.name_ar,
       taglineAr: p.tagline_ar ?? null,
       taglineEn: p.tagline_en ?? null,
-      descriptionAr: p.description_ar ?? null,
-      descriptionEn: p.description_en ?? null,
+      descriptionAr: p.description_ar || (cat as any)?.description_ar || null,
+      descriptionEn: p.description_en || (cat as any)?.description_en || null,
       basePriceJod: rawBasePrice,
       oldPriceJod: rawOldPrice,
       icon: p.icon ?? null,
@@ -276,6 +290,8 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
       cardGradient: p.card_gradient ?? null,
       categoryNameAr: cat?.name_ar ?? null,
       categoryNameEn: cat?.name_en ?? cat?.name_ar ?? null,
+      categoryDescriptionAr: (cat as any)?.description_ar ?? null,
+      categoryDescriptionEn: (cat as any)?.description_en ?? null,
       identifierLabelAr: p.identifier_label_ar ?? null,
       identifierLabelEn: p.identifier_label_en ?? null,
       identifierPlaceholder: p.identifier_placeholder ?? null,
@@ -687,6 +703,7 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
         let snapDuration: string | null = null;
         let thumbBg = p.thumb_bg ?? p.card_gradient ?? null;
         let iconImage = p.icon_image_url ?? p.image_url ?? null;
+        let imageUrl = p.image_url ?? p.icon_image_url ?? null;
         let platform = p.platform || "GX Store";
         let productType: ProductDeliveryType = "activation";
 
@@ -720,7 +737,7 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
             taglineAr = "تفعيل أصلي لنسخة هوم يرتبط بحساب مايكروسوفت";
             taglineEn = "Official Home license linked to Microsoft account";
             badge = v.tag_ar || "Home Account";
-            productType = "account";
+            productType = "key";
           } else {
             nameAr = `Windows — ${v.label_ar}`;
             nameEn = `Windows — ${v.label_en || v.label_ar}`;
@@ -739,14 +756,15 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           platform = "Epic Games";
           const cid = (v.cart_id || "").toLowerCase();
           if (cid.startsWith("fn-crew")) {
-            const dur = cid === "fn-crew-3" ? "3 أشهر" : "شهر واحد";
+            const dur = cid === "fn-crew-3" ? "3 أشهر" : "شهر";
             const durEn = cid === "fn-crew-3" ? "3 Months" : "1 Month";
-            nameAr = `Fortnite Crew — ${dur}`;
+            nameAr = `فورت نايت كرو — ${dur}`;
             nameEn = `Fortnite Crew — ${durEn}`;
             taglineAr = "يشمل 1000 V-Bucks + Battle Pass + طقم Crew الحصري";
             taglineEn = "Includes 1000 V-Bucks + Battle Pass + Crew Pack";
             badge = cid === "fn-crew-3" ? "👑 الأفضل قيمة" : "⭐ اشتراك شهر";
-            productType = "subscription";
+            productType = "topup";
+            imageUrl = "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473";
           } else if (cid.startsWith("fn-vb")) {
             nameAr = `فورت نايت — ${v.label_ar}`;
             nameEn = `Fortnite — ${v.label_en || v.label_ar}`;
@@ -754,6 +772,15 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
             taglineEn = "Official V-Bucks top-up to Epic Games account";
             badge = v.tag_ar || (cid === "fn-vb-2400" ? "الأكثر طلبًا" : null);
             productType = "topup";
+            if (cid === "fn-vb-800") {
+              imageUrl = "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_800_EGS_Portrait_1200x1600_1200x1600-79529d8c20514e82ae2ebce58991b912";
+            } else if (cid === "fn-vb-2400") {
+              imageUrl = "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_2400_EGS_Landscape_2560x1440_2560x1440-e51d802c9d414431973ae3e2ba60528d";
+            } else if (cid === "fn-vb-4500") {
+              imageUrl = "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_4500_EGS_Landscape_2560x1440_2560x1440-799cfafb76bf4ae795fece5e4c0de4a3";
+            } else if (cid === "fn-vb-12500") {
+              imageUrl = "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_12500_EGS_Portrait_1200x1600_1200x1600-070f17d0f6a34e9180b2927c8c24c40e";
+            }
           } else {
             nameAr = `فورت نايت — ${v.label_ar}`;
             nameEn = `Fortnite — ${v.label_en || v.label_ar}`;
@@ -772,7 +799,7 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
         } else if (p.slug === "adobe") {
           platform = "Adobe";
           productType = "activation";
-          nameAr = `Adobe Creative Cloud — ${v.label_ar}`;
+          nameAr = `أدوبي كرييتف كلاود — ${v.label_ar}`;
           nameEn = `Adobe Creative Cloud — ${v.label_en || v.label_ar}`;
           taglineAr = "فوتوشوب، إليستريتور، بريمير وجميع تطبيقات أدوبي";
           taglineEn = "Photoshop, Illustrator, Premiere and all Adobe apps";
@@ -847,7 +874,7 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           nameEn,
           taglineAr,
           taglineEn,
-          imageUrl: p.image_url ?? p.icon_image_url ?? null,
+          imageUrl,
           icon: p.icon ?? "🎮",
           iconImage,
           thumbBg,

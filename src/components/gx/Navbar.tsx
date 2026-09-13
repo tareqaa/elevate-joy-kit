@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, useDeferredValue, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Search, Globe, Heart, ShoppingCart, User, ArrowLeft, ArrowRight, Gamepad2, X, History, TrendingUp } from "lucide-react";
@@ -284,6 +284,7 @@ export function Navbar() {
     queryKey: ["store-search-catalog"],
     queryFn: fetchLiveSearchIndex,
     staleTime: 1000 * 60 * 5,
+    enabled: searchOpen || query.trim().length > 0,
   });
 
   useEffect(() => {
@@ -298,23 +299,84 @@ export function Navbar() {
     const out: SearchableItem[] = [];
     for (const [slug, raw] of Object.entries(PRODUCTS_CATALOG)) {
       const p = localizedProduct(raw, lang);
-      out.push({
-        id: slug,
-        slug,
-        type: "product",
-        nameAr: raw.nameAr || raw.name,
-        nameEn: raw.name,
-        taglineAr: raw.taglineAr || raw.tagline,
-        taglineEn: raw.tagline,
-        categoryNameAr: raw.categoryAr || raw.category,
-        categoryNameEn: raw.category,
-        categorySlug: raw.category,
-        icon: raw.icon,
-        iconImage: raw.iconImg,
-        thumbBg: raw.thumbBg,
-        priceJod: raw.variants?.[0]?.price || 5,
-        link: getProductLink(slug),
-      });
+      if (slug !== "fortnite") {
+        out.push({
+          id: slug,
+          slug,
+          type: "product",
+          nameAr: raw.nameAr || raw.name,
+          nameEn: raw.name,
+          taglineAr: raw.taglineAr || raw.tagline,
+          taglineEn: raw.tagline,
+          categoryNameAr: raw.categoryAr || raw.category,
+          categoryNameEn: raw.category,
+          categorySlug: raw.category,
+          icon: raw.icon,
+          iconImage: raw.iconImg,
+          thumbBg: raw.thumbBg,
+          priceJod: raw.variants?.[0]?.price || 5,
+          link: getProductLink(slug),
+        });
+      }
+
+      if (slug === "fortnite") {
+        if (raw.vbucksPlans) {
+          for (const vb of raw.vbucksPlans) {
+            out.push({
+              id: vb.id,
+              slug: "fortnite",
+              type: "product",
+              nameAr: `فورت نايت — ${vb.label}`,
+              nameEn: `Fortnite — ${vb.label}`,
+              taglineAr: `شحن ${vb.label} فوري لحساب Epic Games`,
+              taglineEn: `Instant ${vb.label} top-up for Epic Games`,
+              categoryNameAr: "فورت نايت / V-Bucks",
+              categoryNameEn: "Fortnite / V-Bucks",
+              categorySlug: "fortnite",
+              parentCategorySlug: "games",
+              platform: "جميع المنصات (PC / Console)",
+              deliveryType: "topup",
+              badge: vb.tag || (vb.id === "fn-vb-2400" ? "الأكثر طلباً" : vb.id === "fn-vb-12500" ? "💎 أفضل قيمة" : undefined),
+              priceJod: vb.price,
+              oldPriceJod: vb.oldPrice,
+              imageUrl: vb.imageUrl || "/app/assets/img/vbucks.png",
+              iconImage: "/app/assets/img/vbucks.png",
+              icon: "🪂",
+              thumbBg: "linear-gradient(135deg,#0d2b45,#061524)",
+              variantLabels: ["فورتنايت", "فورت نايت", "fortnite", "vbucks", "v-bucks", "في بوكس", "فيبوكس", vb.label],
+              link: `/product/fortnite#${vb.id}`,
+            });
+          }
+        }
+        if (raw.crewPlans) {
+          for (const cp of raw.crewPlans) {
+            out.push({
+              id: cp.id,
+              slug: "fortnite",
+              type: "product",
+              nameAr: `فورت نايت — ${cp.label}`,
+              nameEn: `Fortnite — ${cp.label}`,
+              taglineAr: "اشتراك كرو شهري مع باتل باس و1000 فيبوكس",
+              taglineEn: "Fortnite Crew subscription with Battle Pass & 1,000 V-Bucks",
+              categoryNameAr: "فورت نايت / Crew",
+              categoryNameEn: "Fortnite / Crew",
+              categorySlug: "fortnite",
+              parentCategorySlug: "games",
+              platform: "جميع المنصات (PC / Console)",
+              deliveryType: "topup",
+              badge: cp.tag,
+              priceJod: cp.price,
+              oldPriceJod: cp.oldPrice,
+              imageUrl: cp.imageUrl || "/app/assets/img/fortnite-crew.jpg",
+              iconImage: "/app/assets/img/fortnite-crew-logo.png",
+              icon: "🪂",
+              thumbBg: "linear-gradient(135deg,#2e1065,#170736)",
+              variantLabels: ["فورتنايت", "فورت نايت", "fortnite", "crew", "كرو", "اشتراك كرو", cp.label],
+              link: `/product/fortnite#${cp.id}`,
+            });
+          }
+        }
+      }
     }
     for (const [slug, raw] of Object.entries(GIFT_CARDS_CATALOG)) {
       const g = localizedGiftCard(raw, lang);
@@ -333,43 +395,30 @@ export function Navbar() {
         link: getGiftCardLink(slug),
       });
     }
-    for (const raw of CATEGORY_LINKS) {
-      if (hiddenCats.has(raw.slug)) continue;
-      const c = localizedCategoryLink(raw, lang);
-      out.push({
-        id: `c-${c.slug}`,
-        slug: c.slug,
-        type: "category",
-        nameAr: c.name,
-        nameEn: raw.name,
-        categoryNameAr: "قسم",
-        categoryNameEn: "Category",
-        categorySlug: c.slug,
-        icon: c.icon,
-        link: getCategoryLink(c.slug),
-      });
-    }
+    // Categories are excluded as requested by user (only products in search)
     return out;
-  }, [lang, hiddenCats]);
+  }, [lang]);
 
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   useEffect(() => {
     setRecentSearches(getRecentSearches());
   }, []);
 
-  const trimmedQuery = query.trim();
-  const isSearching = trimmedQuery.length >= 3;
+  const deferredQuery = useDeferredValue(query);
+  const trimmedQuery = deferredQuery.trim();
+  const isSearching = trimmedQuery.length >= 2;
 
   const allCatalogItems = useMemo(() => {
-    return (liveCatalog && liveCatalog.length > 0) ? liveCatalog : searchIndexFallback;
+    const raw = (liveCatalog && liveCatalog.length > 0) ? liveCatalog : searchIndexFallback;
+    return raw.filter((item) => item.type !== "category");
   }, [liveCatalog, searchIndexFallback]);
 
   const matchResults = useMemo(() => {
     if (!isSearching) return [];
-    return matchSearchQuery(allCatalogItems, trimmedQuery, lang);
+    return matchSearchQuery(allCatalogItems, trimmedQuery, lang).filter((m) => m.item.type !== "category");
   }, [isSearching, allCatalogItems, trimmedQuery, lang]);
 
-  const results = useMemo(() => matchResults.slice(0, 6), [matchResults]);
+  const results = useMemo(() => matchResults.slice(0, 8), [matchResults]);
   const totalMatches = matchResults.length;
 
   const querySuggestions = useMemo(() => {
@@ -612,8 +661,30 @@ export function Navbar() {
                         <div className="gx-search-products-list">
                           {results.map(({ item }) => {
                             const title = lang === "en" ? item.nameEn : item.nameAr;
-                            const badgeText = item.badge || (lang === "ar" ? "منتج رقمي" : "Digital Product");
                             const thumb = item.imageUrl || item.iconImage;
+
+                            const platformName = item.platform || (
+                              item.type === "gift_card"
+                                ? (lang === "ar" ? "بطاقة رقمية" : "Gift Card")
+                                : (item.categoryNameAr || item.categoryNameEn || (lang === "ar" ? "ألعاب" : "Gaming"))
+                            );
+
+                            const deliveryText = item.deliveryType === "account"
+                              ? (lang === "ar" ? "حساب" : "Account")
+                              : (item.deliveryType === "code" || item.deliveryType === "key"
+                                  ? (lang === "ar" ? "مفتاح" : "Key")
+                                  : (item.deliveryType === "topup"
+                                      ? (lang === "ar" ? "شحن مباشر" : "Top-up")
+                                      : (item.deliveryType === "link"
+                                          ? (lang === "ar" ? "رابط" : "Link")
+                                          : (lang === "ar" ? "تفعيل فوري" : "Instant"))));
+
+                            const regionText = "GLOBAL";
+
+                            const discountPct =
+                              item.oldPriceJod && item.priceJod && item.oldPriceJod > item.priceJod
+                                ? Math.round(((item.oldPriceJod - item.priceJod) / item.oldPriceJod) * 100)
+                                : 0;
 
                             return (
                               <div
@@ -623,7 +694,7 @@ export function Navbar() {
                               >
                                 <div className="gx-search-card-thumb-wrap">
                                   {thumb ? (
-                                    <img src={thumb} alt="" className="gx-search-card-thumb" />
+                                    <img src={thumb} alt={title} className="gx-search-card-thumb" />
                                   ) : (
                                     <div className="gx-search-card-thumb-placeholder">
                                       {item.icon || "🎮"}
@@ -632,21 +703,33 @@ export function Navbar() {
                                 </div>
 
                                 <div className="gx-search-card-info">
-                                  <span className="gx-search-card-badge">{badgeText}</span>
                                   <div className="gx-search-card-title">{title}</div>
+                                  <div className="gx-search-card-meta">
+                                    <span className="gx-search-meta-platform">
+                                      <Gamepad2 size={13} className="gx-search-meta-icon" />
+                                      <span>{platformName}</span>
+                                    </span>
+                                    <span className="gx-search-meta-dot">•</span>
+                                    <span className="gx-search-meta-delivery">{deliveryText}</span>
+                                    <span className="gx-search-meta-dot">•</span>
+                                    <span className="gx-search-meta-region">{regionText}</span>
+                                  </div>
                                 </div>
 
                                 <div className="gx-search-card-pricing">
                                   {typeof item.priceJod === "number" && item.priceJod > 0 && (
                                     <>
                                       <div className="gx-search-card-price-main">
-                                        <span className="gx-search-card-from">{lang === "ar" ? "من" : "From"}</span>
                                         <span className="gx-search-card-price">{format(item.priceJod)}</span>
                                       </div>
                                       {item.oldPriceJod && item.oldPriceJod > item.priceJod ? (
                                         <div className="gx-search-card-price-old">
-                                          <span className="gx-search-card-from-old">{lang === "ar" ? "من" : "From"}</span>
                                           <span className="gx-search-card-old-val">{format(item.oldPriceJod)}</span>
+                                        </div>
+                                      ) : null}
+                                      {discountPct > 0 ? (
+                                        <div className="gx-search-card-discount-tag">
+                                          -{discountPct}%
                                         </div>
                                       ) : null}
                                     </>

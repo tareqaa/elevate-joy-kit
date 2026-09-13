@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useLocation } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { getAllCatalogProducts, type CatalogStoreProduct } from "@/lib/gx/catalog.functions";
 import { useLang } from "@/lib/gx/i18n";
@@ -194,10 +194,12 @@ function AllProductsPage() {
   const itemsPerPage = isMobile ? 10 : 25;
   const [currentPage, setCurrentPage] = useState<number>(1);
 
+  const location = useLocation();
+
   // Sync state with URL search query params on load and navigation
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
+    const searchStr = typeof location.search === "string" ? location.search : window.location.search;
+    const params = new URLSearchParams(searchStr);
     const catParam = params.get("category");
     const sortParam = params.get("sort");
     const searchParam = params.get("search");
@@ -207,14 +209,14 @@ function AllProductsPage() {
 
     if (catParam) setSelectedCat(catParam);
     if (sortParam) setSortBy(sortParam);
-    if (searchParam) setSearchQuery(searchParam);
+    setSearchQuery(searchParam || "");
     if (maxPriceParam) {
       setCustomMaxPrice(maxPriceParam);
       setSelectedPricePreset("all");
     }
     if (minPriceParam) setCustomMinPrice(minPriceParam);
     if (delivParam) setSelectedDeliveryType(delivParam);
-  }, []);
+  }, [location.search]);
 
   // Reset pagination on filter or sort change
   useEffect(() => {
@@ -626,6 +628,7 @@ function AllProductsPage() {
                       categoryName={p.categoryNameAr || undefined}
                       categorySlug={p.categorySlug || undefined}
                       customPlatform={p.platform || undefined}
+                      showPlatformBar={true}
                       showFromLabel={Boolean(p.isGiftCardMaster)}
                       isGiftCardMaster={Boolean(p.isGiftCardMaster)}
                     />

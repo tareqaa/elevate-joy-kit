@@ -37,6 +37,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { purgeCatalogCacheFn } from "@/lib/gx/catalog.functions";
+import { assertSafeImageUpload } from "@/lib/gx/safe-image";
 import { loadDbVariants, clearDbVariantsCache } from "@/lib/gx/db-variants";
 import { PRODUCTS_CATALOG } from "@/data/products";
 import { PRODUCTS_EN } from "@/lib/gx/product-locale";
@@ -1385,6 +1386,7 @@ function ProductModal({
   // File upload helper
   const handleFileUpload = async (file: File, setter: (url: string) => void) => {
     try {
+      await assertSafeImageUpload(file);
       const ext = file.name.split(".").pop() || "png";
       const path = `products/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const { error } = await supabase.storage.from("product-images").upload(path, file, { upsert: true });

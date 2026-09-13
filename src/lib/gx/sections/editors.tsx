@@ -16,6 +16,7 @@ import { CATEGORY_LINKS, getFeaturedItems } from "@/data/products";
 import { MediaPicker } from "./media-library";
 import { RichTextField } from "./rich-text";
 import { useSiteSettings } from "../site-settings";
+import { assertSafeImageUpload } from "@/lib/gx/safe-image";
 import type {
   HeroData, AnnouncementData, CarouselData, CarouselSlide, CategoriesData,
   BestsellersData, ProductsData, TrustData, ReviewsData, ReviewItem, FaqData, FaqItem, NewsletterData, CategoryOverride,
@@ -23,11 +24,17 @@ import type {
 
 
 async function uploadTo(folder: string, file: File): Promise<string | null> {
-  const path = `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-  const { error } = await supabase.storage.from("home-assets").upload(path, file, { upsert: true, contentType: file.type });
-  if (error) { toast.error(error.message); return null; }
-  const { data } = await supabase.storage.from("home-assets").createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
-  return data?.signedUrl ?? null;
+  try {
+    await assertSafeImageUpload(file);
+    const path = `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const { error } = await supabase.storage.from("home-assets").upload(path, file, { upsert: true, contentType: file.type });
+    if (error) { toast.error(error.message); return null; }
+    const { data } = await supabase.storage.from("home-assets").createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
+    return data?.signedUrl ?? null;
+  } catch (e: any) {
+    toast.error(e.message || "فشل التحقق من أمان الصورة");
+    return null;
+  }
 }
 
 function TextField({ label, value, onChange, placeholder }: { label: string; value: string | null | undefined; onChange: (v: string | null) => void; placeholder?: string }) {

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getPublicClient, getVerifiedCaller } from "@/lib/gx/supabase-request";
 
 export const validateCouponFn = createServerFn({ method: "POST" })
-  .validator((data) =>
+  .validator((data: unknown) =>
     z.object({
       code: z.string().trim().min(1).max(64),
       subtotal_jod: z.number().min(0).max(100000),

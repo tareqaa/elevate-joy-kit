@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 
 export interface RecentlyViewedItem {
   slug: string;
+  cartId?: string | null;
   nameAr: string;
   nameEn: string;
   taglineAr?: string | null;
@@ -11,6 +12,7 @@ export interface RecentlyViewedItem {
   imageUrl?: string | null;
   icon?: string | null;
   categorySlug?: string | null;
+  link?: string | null;
   viewedAt: number;
 }
 
@@ -47,16 +49,31 @@ export const DEFAULT_RECENT_ITEMS: RecentlyViewedItem[] = [
   },
   {
     slug: "fortnite",
-    nameAr: "فورت نايت — V-Bucks & Crew",
-    nameEn: "Fortnite — V-Bucks & Crew",
-    taglineAr: "شحن فيبوكس وحزم الطاقم على حسابك",
-    taglineEn: "V-Bucks & Crew Subscription",
+    cartId: "fn-crew",
+    nameAr: "فورت نايت كرو — شهر",
+    nameEn: "Fortnite Crew — 1 Month",
+    taglineAr: "اشتراك كرو شهري مع باتل باس و1000 فيبوكس",
+    taglineEn: "Fortnite Crew subscription with Battle Pass & 1,000 V-Bucks",
     price: 4.0,
     oldPrice: 6.0,
-    imageUrl: "/app/assets/img/fortnite-logo.png",
-    icon: "⚡",
-    categorySlug: "fortnite",
+    imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
+    icon: "🪂",
+    categorySlug: "games",
+    link: "/product/fortnite#fn-crew",
     viewedAt: Date.now() - 3000,
+  },
+  {
+    slug: "instagram-followers",
+    nameAr: "متابعين إنستقرام (1000 متابع)",
+    nameEn: "Instagram Followers (1,000 Followers)",
+    taglineAr: "زيادة 1000 متابع حقيقي لحسابك بضمان",
+    taglineEn: "1,000 Real Instagram Followers with guarantee",
+    price: 1.5,
+    oldPrice: 2.5,
+    imageUrl: "/app/assets/img/catalog/instagram-followers.jpg",
+    icon: "📱",
+    categorySlug: "social-media",
+    viewedAt: Date.now() - 3500,
   },
   {
     slug: "xbox-game-pass-ultimate",
@@ -142,7 +159,11 @@ export function getStoredRecentlyViewed(): RecentlyViewedItem[] {
 export function trackRecentlyViewed(item: Omit<RecentlyViewedItem, "viewedAt">) {
   if (typeof window === "undefined" || !item.slug) return;
   try {
-    const current = getStoredRecentlyViewed().filter((p) => p.slug !== item.slug);
+    const itemKey = item.cartId || item.slug;
+    const current = getStoredRecentlyViewed().filter((p) => {
+      const pKey = p.cartId || p.slug;
+      return pKey !== itemKey;
+    });
     const updated: RecentlyViewedItem[] = [
       {
         ...item,

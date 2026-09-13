@@ -64,7 +64,44 @@ export function resolveStrictDeliveryType(item: {
   const n = ((item.name || "") + " " + (item.nameAr || "")).toLowerCase();
   const pt = (item.productType || "").toLowerCase();
 
-  // 1. Activation Link (Canva, LinkedIn, Autodesk, or explicit link/invite)
+  // 1. Direct Top-up (Fortnite, Snapchat+, Social media followers/likes, direct topup items)
+  if (
+    pt === "topup" ||
+    s === "fortnite" ||
+    s.includes("fortnite") ||
+    c.includes("fn-") ||
+    c.includes("vb") ||
+    c.includes("crew") ||
+    c.includes("topup") ||
+    n.includes("فورت") ||
+    n.includes("fortnite") ||
+    n.includes("v-bucks") ||
+    n.includes("فيبوكس") ||
+    s === "snapchat" ||
+    s.includes("snapchat") ||
+    c.includes("snap") ||
+    n.includes("سناب") ||
+    s.includes("tiktok") ||
+    s.includes("instagram") ||
+    s.includes("facebook") ||
+    n.includes("شحن") ||
+    n.includes("متابعين") ||
+    n.includes("لايكات")
+  ) {
+    return "topup";
+  }
+
+  // 2. Windows & Office products are strictly official Keys / Activation Codes
+  if (
+    s === "windows" ||
+    s.includes("windows") ||
+    c.includes("win-") ||
+    n.includes("ويندوز")
+  ) {
+    return "code";
+  }
+
+  // 3. Activation Link (Canva, LinkedIn, Autodesk, or explicit link/invite)
   if (
     pt === "link" ||
     s === "canva" ||
@@ -77,37 +114,21 @@ export function resolveStrictDeliveryType(item: {
     return "link";
   }
 
-  // 2. Ready Account (Gemini, ChatGPT, accounts with email/pass, ms-acct)
+  // 4. Ready Account (Gemini, ChatGPT, accounts with email/pass)
   if (
     pt === "account" ||
     s === "gemini" ||
     s.includes("chatgpt") ||
     c.includes("acct") ||
     c.includes("acc-") ||
-    n.includes("حساب") ||
+    n.includes("حساب جاهز") ||
+    (n.includes("حساب") && !n.includes("حسابك")) ||
     n.includes("account")
   ) {
     return "account";
   }
 
-  // 3. Direct Top-up (Fortnite, Snapchat+, Social media, topup items)
-  if (
-    pt === "topup" ||
-    s === "fortnite" ||
-    s === "snapchat" ||
-    s.includes("tiktok") ||
-    s.includes("instagram") ||
-    c.includes("vb") ||
-    c.includes("crew") ||
-    c.includes("topup") ||
-    n.includes("شحن") ||
-    n.includes("v-bucks") ||
-    n.includes("crew")
-  ) {
-    return "topup";
-  }
-
-  // 4. Default: Activation Code (Windows OEM/Retail, Gift Cards, Games, Adobe, Software)
+  // 5. Default: Activation Code (Windows OEM/Retail, Gift Cards, Games, Adobe, Software)
   return "code";
 }
 

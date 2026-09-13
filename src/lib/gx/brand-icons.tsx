@@ -133,41 +133,81 @@ const BRAND_CFG: Record<string, Cfg> = {
 export function SnapchatPoster({ duration }: { duration?: string }) {
   return (
     <div
+      className="snapchat-poster-card"
       style={{
         position: "relative",
         width: "100%",
         height: "100%",
-        background: "#FFFC00",
+        background: "radial-gradient(circle at 50% 36%, #fffb00 0%, #ffdf00 55%, #f0c300 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         overflow: "hidden",
         userSelect: "none",
-        padding: "16px 12px 28px",
+        padding: "12px 10px",
+        boxSizing: "border-box",
       }}
     >
-      {/* Official Snapchat Logo uploaded by user */}
+      {/* Soft Specular Sheen */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.48) 0%, transparent 68%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Official Snapchat Logo */}
       <img
         src="/app/assets/img/snapchat-logo.png"
         alt="Snapchat+"
         style={{
-          width: 88,
-          height: 88,
+          width: 58,
+          height: 58,
+          maxWidth: "52%",
+          maxHeight: "52%",
           objectFit: "contain",
-          filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.2))",
+          filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.18))",
           marginBottom: 8,
+          position: "relative",
+          zIndex: 1,
         }}
       />
 
-      {/* Typography on Poster */}
-      <div style={{ textAlign: "center", lineHeight: 1.15 }}>
-        <div style={{ color: "#000000", fontWeight: 900, fontSize: 17, letterSpacing: 0.5, fontFamily: "'Tajawal', sans-serif" }}>
-          SNAPCHAT
-        </div>
-        <div style={{ color: "#111111", fontWeight: 900, fontSize: 13, letterSpacing: 1, marginTop: 2, fontFamily: "'Tajawal', sans-serif" }}>
-          PLUS {duration ? `• ${duration}` : ""}
-        </div>
+      {/* High-end Pill Badge */}
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 5,
+          padding: "4px 12px",
+          borderRadius: 99,
+          background: "#0c0f17",
+          color: "#FFFC00",
+          fontWeight: 900,
+          fontSize: 11,
+          letterSpacing: 0.6,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.28)",
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <span style={{ color: "#FFFC00", fontSize: 10 }}>✦</span>
+        <span>PLUS</span>
+        {duration && (
+          <span
+            style={{
+              opacity: 0.9,
+              fontSize: 10,
+              fontWeight: 700,
+              marginInlineStart: 2,
+            }}
+          >
+            • {duration}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -399,7 +439,6 @@ export function GiftCardPoster({
   slug,
   cartId,
   name,
-  region,
 }: {
   slug: string;
   cartId?: string;
@@ -407,38 +446,42 @@ export function GiftCardPoster({
   region?: string;
 }) {
   const denom = extractDenomination(name, cartId);
-  const reg = extractRegionInfo(name, cartId, region);
+  const showDenom = denom && denom !== "CARD";
 
   const isPlaystation = slug.includes("playstation") || (cartId || "").includes("psn") || slug.startsWith("gc-playstation");
   const isXbox = slug.includes("xbox") || (cartId || "").includes("xbox") || slug.startsWith("gc-xbox");
   const isItunes = slug.includes("itunes") || slug.includes("apple") || (cartId || "").includes("itunes") || slug.startsWith("gc-itunes");
   const isGooglePlay = slug.includes("google") || (cartId || "").startsWith("gp-") || slug.startsWith("gc-google");
+  const isSteam = slug.includes("steam") || (cartId || "").includes("steam") || slug.startsWith("gc-steam");
 
   let brandName = "GIFT CARD";
-  let brandLogo = "/app/assets/img/playstation-logo.svg";
-  let bgGradient = "linear-gradient(135deg, #003791 0%, #001f5c 55%, #000f30 100%)";
-  let ambientColor = "rgba(0, 112, 209, 0.4)";
+  let brandSub = "DIGITAL GIFT CARD • بطاقة رقمية";
+  let brandLogo = "/app/assets/img/cards-logo.svg";
+  let bgGradient = "linear-gradient(145deg, #1e293b 0%, #0f172a 60%, #020617 100%)";
+  let ambientColor = "rgba(0, 229, 255, 0.25)";
   let watermarkSymbols: React.ReactNode = null;
 
   if (isPlaystation) {
-    brandName = "PLAYSTATION";
+    brandName = "PLAYSTATION STORE";
+    brandSub = "DIGITAL GIFT CARD • بطاقة بلايستيشن";
     brandLogo = "/app/assets/img/playstation-logo.svg";
-    bgGradient = "linear-gradient(135deg, #003791 0%, #002366 50%, #001133 100%)";
+    bgGradient = "linear-gradient(145deg, #00439c 0%, #00266e 50%, #001238 100%)";
     ambientColor = "rgba(0, 112, 209, 0.45)";
     watermarkSymbols = (
       <div
         style={{
           position: "absolute",
-          top: 8,
-          right: 12,
-          display: "flex",
-          gap: 5,
-          opacity: 0.15,
-          fontSize: 14,
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          opacity: 0.06,
+          fontSize: 68,
           fontWeight: 900,
           color: "#ffffff",
-          letterSpacing: 2,
+          letterSpacing: 10,
           pointerEvents: "none",
+          whiteSpace: "nowrap",
+          userSelect: "none",
         }}
       >
         ▲ ● ✖ ■
@@ -446,18 +489,27 @@ export function GiftCardPoster({
     );
   } else if (isXbox) {
     brandName = "XBOX STORE";
+    brandSub = "DIGITAL GIFT CARD • بطاقة إكسبوكس";
     brandLogo = "/app/assets/img/xbox-logo.svg";
-    bgGradient = "linear-gradient(135deg, #107c10 0%, #0b540b 50%, #052605 100%)";
+    bgGradient = "linear-gradient(145deg, #107c10 0%, #0c590c 50%, #032b03 100%)";
     ambientColor = "rgba(16, 124, 65, 0.45)";
+  } else if (isSteam) {
+    brandName = "STEAM WALLET";
+    brandSub = "DIGITAL GIFT CARD • رصيد ستيم";
+    brandLogo = "/app/assets/img/steam-logo.svg";
+    bgGradient = "linear-gradient(145deg, #1e2837 0%, #171a21 55%, #0b0e14 100%)";
+    ambientColor = "rgba(0, 229, 255, 0.35)";
   } else if (isItunes) {
-    brandName = "APPLE & ITUNES";
+    brandName = "APPLE GIFT CARD";
+    brandSub = "DIGITAL GIFT CARD • بطاقة آبل";
     brandLogo = "/app/assets/img/itunes-logo.svg";
-    bgGradient = "linear-gradient(135deg, #3b0764 0%, #701a75 50%, #be185d 100%)";
+    bgGradient = "linear-gradient(145deg, #701a75 0%, #3b0764 55%, #180326 100%)";
     ambientColor = "rgba(241, 7, 163, 0.45)";
   } else if (isGooglePlay) {
     brandName = "GOOGLE PLAY";
+    brandSub = "DIGITAL GIFT CARD • بطاقة جوجل بلاي";
     brandLogo = "/app/assets/img/googleplay-logo.png";
-    bgGradient = "linear-gradient(135deg, #064e3b 0%, #047857 50%, #0f172a 100%)";
+    bgGradient = "linear-gradient(145deg, #047857 0%, #064e3b 55%, #022c22 100%)";
     ambientColor = "rgba(52, 168, 83, 0.45)";
   }
 
@@ -472,10 +524,11 @@ export function GiftCardPoster({
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        padding: "16px 14px",
+        padding: "16px 18px",
         overflow: "hidden",
         userSelect: "none",
         boxSizing: "border-box",
+        borderRadius: "inherit",
       }}
     >
       {/* Glossy Card Reflection Sweep */}
@@ -483,20 +536,20 @@ export function GiftCardPoster({
         style={{
           position: "absolute",
           inset: 0,
-          background: "linear-gradient(125deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.03) 38%, transparent 60%)",
+          background: "linear-gradient(125deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.03) 40%, transparent 65%)",
           pointerEvents: "none",
         }}
       />
 
-      {/* Ambient radial glow in center */}
+      {/* Ambient radial glow behind centered logo */}
       <div
         style={{
           position: "absolute",
-          top: "45%",
+          top: "48%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: 120,
-          height: 120,
+          width: 140,
+          height: 140,
           borderRadius: "50%",
           background: ambientColor,
           filter: "blur(32px)",
@@ -506,126 +559,26 @@ export function GiftCardPoster({
 
       {watermarkSymbols}
 
-      {/* Top Header: Brand Logo on Left, Flag Pill on Right */}
+      {/* Top Row: Micro Smart Chip on Left, Value or Gift Card on Right */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           position: "relative",
-          zIndex: 1,
+          zIndex: 2,
           width: "100%",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <img
-            src={brandLogo}
-            alt={brandName}
-            style={{
-              width: 24,
-              height: 24,
-              objectFit: "contain",
-              filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.5))",
-            }}
-          />
-          <span
-            style={{
-              color: "rgba(255,255,255,0.9)",
-              fontSize: 10,
-              fontWeight: 800,
-              letterSpacing: 0.8,
-              fontFamily: "'Tajawal', sans-serif",
-            }}
-          >
-            {brandName}
-          </span>
-        </div>
-
-        {/* Region Flag Badge */}
+        {/* Realistic Golden Microchip Graphic */}
         <div
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-            padding: "2px 7px",
-            borderRadius: 99,
-            background: "rgba(0, 0, 0, 0.45)",
-            border: "1px solid rgba(255, 255, 255, 0.22)",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-          }}
-        >
-          <span style={{ fontSize: 13, lineHeight: 1 }}>{reg.flag}</span>
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 800,
-              color: "#ffffff",
-              letterSpacing: 0.5,
-              fontFamily: "monospace",
-            }}
-          >
-            {reg.label}
-          </span>
-        </div>
-      </div>
-
-      {/* Center: Large High-Contrast Denomination */}
-      <div
-        style={{
-          textAlign: "center",
-          position: "relative",
-          zIndex: 1,
-          margin: "auto 0",
-        }}
-      >
-        <div
-          style={{
-            fontSize: denom.length > 6 ? 24 : denom.length > 4 ? 28 : 34,
-            fontWeight: 900,
-            color: "#ffffff",
-            letterSpacing: -0.5,
-            fontFamily: "'Tajawal', sans-serif",
-            textShadow: "0 4px 18px rgba(0, 0, 0, 0.65), 0 1px 2px rgba(0,0,0,0.8)",
-            lineHeight: 1,
-          }}
-        >
-          {denom}
-        </div>
-        <div
-          style={{
-            fontSize: 9.5,
-            fontWeight: 700,
-            color: "rgba(255, 255, 255, 0.85)",
-            letterSpacing: 0.8,
-            marginTop: 4,
-            textShadow: "0 1px 3px rgba(0,0,0,0.6)",
-          }}
-        >
-          STORE CREDIT • رصيد متجر
-        </div>
-      </div>
-
-      {/* Bottom Row: Micro Security Chip on Left, Instant Code on Right */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          position: "relative",
-          zIndex: 1,
-          width: "100%",
-          paddingTop: 4,
-        }}
-      >
-        {/* Micro Golden Smart Chip Graphic */}
-        <div
-          style={{
-            width: 22,
-            height: 16,
-            borderRadius: 3,
-            background: "linear-gradient(135deg, #f5d061 0%, #e6a117 50%, #c4830a 100%)",
-            border: "1px solid rgba(255,255,255,0.4)",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.35)",
+            width: 26,
+            height: 19,
+            borderRadius: 4,
+            background: "linear-gradient(135deg, #fce08a 0%, #e6a117 50%, #b87304 100%)",
+            border: "1px solid rgba(255,255,255,0.45)",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.4)",
             position: "relative",
             overflow: "hidden",
           }}
@@ -637,7 +590,7 @@ export function GiftCardPoster({
               left: 0,
               right: 0,
               height: 1,
-              background: "rgba(0,0,0,0.25)",
+              background: "rgba(0,0,0,0.3)",
             }}
           />
           <div
@@ -647,25 +600,130 @@ export function GiftCardPoster({
               top: 0,
               bottom: 0,
               width: 1,
-              background: "rgba(0,0,0,0.25)",
+              background: "rgba(0,0,0,0.3)",
             }}
           />
         </div>
 
-        {/* Verification watermark */}
+        {/* Top Right: Denomination Value or Official Badge */}
+        {showDenom ? (
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 900,
+              color: "#ffffff",
+              background: "rgba(0,0,0,0.38)",
+              border: "1px solid rgba(255,255,255,0.22)",
+              padding: "2px 8px",
+              borderRadius: 6,
+              fontFamily: "'Tajawal', sans-serif",
+              letterSpacing: -0.2,
+            }}
+          >
+            {denom}
+          </div>
+        ) : (
+          <div
+            style={{
+              fontSize: 9.5,
+              fontWeight: 800,
+              color: "rgba(255, 255, 255, 0.75)",
+              letterSpacing: 1.2,
+              textTransform: "uppercase",
+            }}
+          >
+            GIFT CARD
+          </div>
+        )}
+      </div>
+
+      {/* Center Hero: Brand Logo in Center + Clean Title */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          zIndex: 2,
+          textAlign: "center",
+          margin: "auto 0",
+        }}
+      >
+        <img
+          src={brandLogo}
+          alt={brandName}
+          style={{
+            width: 48,
+            height: 48,
+            objectFit: "contain",
+            filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.5))",
+            marginBottom: 8,
+          }}
+        />
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 900,
+            color: "#ffffff",
+            letterSpacing: 0.8,
+            fontFamily: "'Tajawal', sans-serif",
+            textShadow: "0 2px 10px rgba(0,0,0,0.6)",
+            lineHeight: 1.2,
+          }}
+        >
+          {brandName}
+        </div>
         <div
           style={{
             fontSize: 9.5,
-            fontWeight: 800,
-            color: "rgba(255, 255, 255, 0.9)",
-            display: "flex",
-            alignItems: "center",
-            gap: 3,
+            fontWeight: 700,
+            color: "rgba(255, 255, 255, 0.7)",
+            marginTop: 3,
             letterSpacing: 0.4,
           }}
         >
+          {brandSub}
+        </div>
+      </div>
+
+      {/* Bottom Row: Instant Delivery Tag & GX Store Authenticity */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          position: "relative",
+          zIndex: 2,
+          width: "100%",
+          paddingTop: 2,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 9,
+            fontWeight: 800,
+            color: "rgba(255, 255, 255, 0.85)",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            letterSpacing: 0.3,
+          }}
+        >
           <span style={{ color: "#00e5ff" }}>⚡</span>
-          <span>DIGITAL CODE</span>
+          <span>تفعيل فوري</span>
+        </div>
+
+        <div
+          style={{
+            fontSize: 9,
+            fontWeight: 800,
+            color: "rgba(255, 255, 255, 0.55)",
+            letterSpacing: 0.8,
+            textTransform: "uppercase",
+          }}
+        >
+          GX STORE
         </div>
       </div>
     </div>

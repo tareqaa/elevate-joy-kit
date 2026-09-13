@@ -124,12 +124,12 @@ export const DEFAULT_BESTSELLER_ITEMS: BestsellerItemSnapshot[] = [
   {
     cartId: "fn-crew",
     productSlug: "fortnite",
-    nameAr: "فورت نايت — Fortnite Crew — شهر",
-    nameEn: "Fortnite — Fortnite Crew — 1 month",
+    nameAr: "فورت نايت كرو — شهر",
+    nameEn: "Fortnite Crew — 1 Month",
     priceJod: 4,
     oldPriceJod: 6,
-    imageUrl: "/app/assets/img/fortnite-logo.png",
-    iconImage: "/app/assets/img/fortnite-logo.png",
+    imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
+    iconImage: "/app/assets/img/fortnite-crew-logo.png",
     icon: "🪂",
     thumbBg: "linear-gradient(145deg,#0d1a30,#080d18)",
   },
@@ -148,8 +148,8 @@ export const DEFAULT_BESTSELLER_ITEMS: BestsellerItemSnapshot[] = [
   {
     cartId: "adobe-1",
     productSlug: "adobe",
-    nameAr: "Adobe Creative Cloud — شهر واحد",
-    nameEn: "Adobe Creative Cloud — 1 month",
+    nameAr: "أدوبي كرييتف كلاود — اشتراك شهر",
+    nameEn: "Adobe Creative Cloud — 1 Month",
     priceJod: 10,
     oldPriceJod: 15,
     imageUrl: "/app/assets/img/adobe-cc.webp",
@@ -256,7 +256,7 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     const TS_KEY = "gx_site_settings_v2_ts";
-    const CACHE_VALID_MS = 10 * 60 * 1000; // 10 minutes cache
+    const CACHE_VALID_MS = 30 * 1000; // 30 seconds fresh cache (fast updates)
 
     async function load(force = false) {
       if (!force && typeof window !== "undefined") {

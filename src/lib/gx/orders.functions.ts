@@ -4,9 +4,10 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { createStoreOrder } from "./orders.server";
+import { resolveSafeClientIp } from "./ip";
 
 export const submitStoreOrder = createServerFn({ method: "POST" })
-  .validator((data) => z.object({
+  .validator((data: unknown) => z.object({
     items: z.array(z.object({
       cartId: z.string().min(1).max(120),
       product_slug: z.string().trim().min(1).max(120).nullable().optional(),
@@ -58,11 +59,12 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
     }
 
     // --- Client fingerprint (anti-abuse) -----------------------------------
-    const ip =
-      (getRequestHeader("cf-connecting-ip") ||
-        getRequestHeader("x-real-ip") ||
-        (getRequestHeader("x-forwarded-for") || "").split(",")[0] ||
-        "").trim() || null;
+    let ip: string | null = null;
+    try {
+      ip = resolveSafeClientIp(getRequestHeader);
+    } catch {
+      ip = null;
+    }
     const userAgent = (getRequestHeader("user-agent") || "").slice(0, 500) || null;
     const clientMeta = {
       country: getRequestHeader("cf-ipcountry") || null,

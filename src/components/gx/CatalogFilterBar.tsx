@@ -401,7 +401,7 @@ export function CatalogFilterBar({
             <option value="all">🌟 {ar ? "كل الأقسام" : "All Categories"}</option>
             {categoryOptions.map((c) => (
               <option key={c.slug} value={c.slug}>
-                {c.icon} {ar ? c.name : c.slug}
+                {c.icon} {ar ? c.name : (c.nameEn || c.name)}
               </option>
             ))}
           </select>

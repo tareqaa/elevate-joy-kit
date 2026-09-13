@@ -42,33 +42,109 @@
 .giftcard-hero-text h1{font-size:26px; font-weight:900; margin-bottom:8px;}
 .giftcard-hero-text p{color:var(--gray); font-size:14px; max-width:460px;}
 
+/* ---------- Region Filter Bar ---------- */
+.gc-region-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 14px;
+  margin-bottom: 24px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.gc-region-filter-bar::-webkit-scrollbar { display: none; }
+
+.gc-region-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.gc-region-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.gc-region-pill.active {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(124, 58, 237, 0.25));
+  border-color: #00e5ff;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.2);
+}
+.gc-pill-flag {
+  width: 20px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: block;
+}
+.gc-pill-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+}
+.gc-region-pill.active .gc-pill-badge {
+  background: rgba(0, 229, 255, 0.3);
+  color: #ffffff;
+}
+
 /* ---------- Region sections ---------- */
-.region-section{margin-bottom:8px;}
+.region-section{margin-bottom:28px;}
 .region-head{
-  display:flex; align-items:center; gap:14px; margin-bottom:20px;
+  display:flex; align-items:center; gap:12px; margin-bottom:16px;
 }
 .region-flag{
-  width:44px; height:32px; border-radius:6px; background:transparent; border:0; padding:0;
+  width:36px; height:26px; border-radius:6px; background:transparent; border:0; padding:0;
   display:block; overflow:hidden; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,0.3);
 }
 .region-flag img{width:100%; height:100%; object-fit:cover; display:block; border-radius:6px;}
-.region-name{font-weight:800; font-size:16px; line-height:1;}
+.region-name{font-weight:800; font-size:16px; line-height:1; color:#ffffff;}
 
-.denom-grid{display:flex; flex-wrap:wrap; gap:16px; margin-bottom:44px;}
-.denom-card{
-  flex:1 1 180px; max-width:220px;
-  background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius-md);
-  padding:20px 16px; text-align:center;
-  transition:border-color .2s var(--ease), transform .2s var(--ease);
+.denom-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));
+  gap:16px;
+  margin-bottom:32px;
 }
-.denom-card:hover{border-color:color-mix(in srgb, var(--gc-accent, var(--cyan)) 45%, var(--border)); transform:translateY(-3px);}
+.denom-card{
+  background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius-md);
+  padding:18px 14px; text-align:center;
+  transition:border-color .2s var(--ease), transform .2s var(--ease), box-shadow .2s var(--ease);
+  display:flex; flex-direction:column; justify-content:space-between;
+}
+.denom-card:hover{
+  border-color:color-mix(in srgb, var(--gc-accent, var(--cyan)) 45%, var(--border));
+  transform:translateY(-3px);
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+}
 .denom-card .dc-value{
-  font-family:'Tajawal',sans-serif; font-weight:900; font-size:19px; margin-bottom:6px;
+  font-family:'Tajawal',sans-serif; font-weight:900; font-size:18px; margin-bottom:4px;
   color:var(--gc-accent, var(--cyan));
 }
-.denom-card .dc-price{font-size:15px; font-weight:800; margin-bottom:14px;}
-.denom-card .buy-actions{display:flex; flex-direction:column; gap:10px;}
-.denom-card .add-cart-btn, .denom-card .buy-now-btn{width:100%; padding:9.5px 12px; font-size:12px; border-radius:6px;}
+.denom-card .dc-price{
+  font-size:14.5px; font-weight:800; margin-bottom:12px; color:#f8fafc;
+}
+.denom-card .buy-actions{
+  display:flex; flex-direction:column; gap:8px; margin-top:auto;
+}
+.denom-card .add-cart-btn, .denom-card .buy-now-btn{
+  width:100%; padding:9px 10px; font-size:12px; border-radius:7px;
+}
 
 /* ---------- Empty / no-prices-yet state ---------- */
 .giftcard-empty{
@@ -79,7 +155,78 @@
 .giftcard-empty h3{font-size:17px; font-weight:800; margin-bottom:8px;}
 .giftcard-empty p{color:var(--gray); font-size:13.5px; max-width:400px; margin:0 auto;}
 
-@media(max-width:700px){
-  .giftcard-hero-inner{flex-direction:column; text-align:center;}
-  .giftcard-mockup{width:100%; max-width:300px;}
+/* ---------- Tablet Responsive (769px - 1024px) ---------- */
+@media (max-width: 1024px) and (min-width: 641px) {
+  .giftcard-hero-inner { gap: 24px; }
+  .giftcard-mockup { width: 230px; height: 148px; }
+  .denom-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+}
+
+/* ---------- Mobile Responsive (<= 640px) ---------- */
+@media(max-width:640px){
+  .giftcard-hero{padding:24px 0 16px;}
+  .giftcard-hero-inner{flex-direction:column; text-align:center; gap:18px;}
+  .giftcard-mockup{width:100%; max-width:280px; height:150px; margin:0 auto;}
+  .giftcard-hero-text h1{font-size:22px;}
+  .giftcard-hero-text p{font-size:13px;}
+
+  .gc-region-filter-bar {
+    padding: 2px 2px 10px;
+    margin-bottom: 18px;
+  }
+  .gc-region-pill {
+    padding: 6.5px 12px;
+    font-size: 12.5px;
+    gap: 6px;
+  }
+
+  /* 2-column compact grid on phones */
+  .denom-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .denom-card {
+    padding: 13px 10px;
+    border-radius: 12px;
+  }
+  .denom-card .dc-value {
+    font-size: 15.5px;
+    margin-bottom: 3px;
+  }
+  .denom-card .dc-price {
+    font-size: 13.5px;
+    margin-bottom: 10px;
+  }
+  .denom-card .buy-actions {
+    gap: 6px;
+  }
+  .denom-card .add-cart-btn, .denom-card .buy-now-btn {
+    padding: 7px 8px;
+    font-size: 11px;
+    border-radius: 6px;
+  }
+}
+
+@media(max-width:380px){
+  .denom-grid {
+    gap: 8px;
+  }
+  .denom-card {
+    padding: 10px 7px;
+  }
+  .denom-card .dc-value {
+    font-size: 14.5px;
+  }
+  .denom-card .dc-price {
+    font-size: 12.5px;
+    margin-bottom: 8px;
+  }
+  .denom-card .add-cart-btn, .denom-card .buy-now-btn {
+    padding: 6px 6px;
+    font-size: 10px;
+  }
 }

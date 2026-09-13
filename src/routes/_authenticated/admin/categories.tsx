@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { FolderTree, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronUp, ChevronLeft, Home, Palette, Search, Package, Copy, ShoppingBag, MoreHorizontal, FolderPlus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CategoryProducts } from "@/components/gx/admin/ProductsManager";
+import { assertSafeImageUpload } from "@/lib/gx/safe-image";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
   head: () => ({ meta: [{ title: "الأقسام — لوحة التحكم" }] }),
@@ -616,13 +617,18 @@ function CategoryDialog({
   }
 
   async function upload(file: File) {
-    const ext = file.name.split(".").pop();
-    const path = `categories/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from("product-images").upload(path, file, { upsert: true });
-    if (error) { toast.error(error.message); return; }
-    const { data } = supabase.storage.from("product-images").getPublicUrl(path);
-    setIconUrl(data.publicUrl);
-    toast.success("تم رفع الأيقونة");
+    try {
+      await assertSafeImageUpload(file);
+      const ext = file.name.split(".").pop();
+      const path = `categories/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("product-images").upload(path, file, { upsert: true });
+      if (error) { toast.error(error.message); return; }
+      const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+      setIconUrl(data.publicUrl);
+      toast.success("تم رفع الأيقونة");
+    } catch (err: any) {
+      toast.error(err.message || "فشل التحقق من أمان الصورة");
+    }
   }
 
   return (

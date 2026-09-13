@@ -186,6 +186,12 @@ function Home() {
     const rawList = layout?.sections || [];
 
     const topSections = rawList.filter((s) => ["hero", "announcement", "carousel"].includes(s.type));
+    const recentlyViewedSection = rawList.find((s) => s.type === "recently_viewed") ?? {
+      id: "sec_recently_viewed",
+      type: "recently_viewed" as const,
+      enabled: true,
+      data: {},
+    };
     const bestsellersSection = rawList.find((s) => s.type === "bestsellers") ?? {
       id: "sec_bestsellers",
       type: "bestsellers" as const,
@@ -212,6 +218,7 @@ function Home() {
     const composed: Section[] = [
       ...topSections,
       { id: "sec_categories", type: "categories", enabled: true, data: {} },
+      recentlyViewedSection,
       bestsellersSection,
       { id: "sec_discover_genres", type: "discover_genres", enabled: true, data: {} },
       { id: "sec_best_selling_games", type: "best_selling_games", enabled: true, data: {} },

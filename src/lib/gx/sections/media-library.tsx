@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Upload, Image as ImageIcon, Search, Trash2, X } from "lucide-react";
+import { assertSafeImageUpload } from "@/lib/gx/safe-image";
 
 const BUCKET = "home-assets";
 const SIGNED_TTL = 60 * 60 * 24 * 365 * 5; // 5 years
@@ -35,11 +36,17 @@ async function listBucket(folder: string): Promise<MediaFile[]> {
 }
 
 async function uploadFile(folder: string, file: File): Promise<string | null> {
-  const path = `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-  const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true, contentType: file.type });
-  if (error) { toast.error(error.message); return null; }
-  const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, SIGNED_TTL);
-  return data?.signedUrl ?? null;
+  try {
+    await assertSafeImageUpload(file);
+    const path = `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true, contentType: file.type });
+    if (error) { toast.error(error.message); return null; }
+    const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, SIGNED_TTL);
+    return data?.signedUrl ?? null;
+  } catch (e: any) {
+    toast.error(e.message || "فشل التحقق من أمان الصورة");
+    return null;
+  }
 }
 
 export function MediaPicker({ value, onPick, folder = "misc", label = "اختر صورة", compact = false }: {

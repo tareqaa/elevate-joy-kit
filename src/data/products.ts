@@ -375,22 +375,24 @@ export const GIFT_CARDS_CATALOG: Record<string, GiftCard> = {
 export type CategoryLink = {
   slug: string;
   name: string;
+  nameEn?: string;
   icon: string;
   type: "direct" | "group";
   accent: string;
   bg: string;
   desc: string;
+  descEn?: string;
 };
 
 export const CATEGORY_LINKS: CategoryLink[] = [
-  { slug: "snapchat", name: "سناب بلس", icon: "👻", type: "direct", accent: "#ffd600", bg: "linear-gradient(145deg, rgba(255,214,0,0.18), rgba(255,214,0,0.04))", desc: "" },
-  { slug: "subscriptions", name: "الاشتراكات", icon: "⚡", type: "group", accent: "#8b5cf6", bg: "linear-gradient(145deg, rgba(139,92,246,0.18), rgba(139,92,246,0.04))", desc: "" },
-  { slug: "social-media", name: "السوشال ميديا", icon: "📱", type: "group", accent: "#0088ff", bg: "linear-gradient(145deg, rgba(0,136,255,0.18), rgba(0,136,255,0.04))", desc: "" },
-  { slug: "design", name: "البرامج والتطبيقات", icon: "🧩", type: "group", accent: "#00e5ff", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "" },
-  { slug: "services", name: "الخدمات", icon: "🛠️", type: "group", accent: "#3b82f6", bg: "linear-gradient(145deg, rgba(59,130,246,0.18), rgba(59,130,246,0.04))", desc: "" },
-  { slug: "games", name: "الألعاب", icon: "🎮", type: "group", accent: "#05df72", bg: "linear-gradient(145deg, rgba(5,223,114,0.18), rgba(5,223,114,0.04))", desc: "" },
-  { slug: "gift-cards", name: "بطاقات الهدايا", icon: "🎁", type: "group", accent: "#ff2d78", bg: "linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))", desc: "" },
-  { slug: "products", name: "عرض الكل", icon: "✨", type: "direct", accent: "#ff385c", bg: "linear-gradient(145deg, rgba(255,56,92,0.18), rgba(255,56,92,0.04))", desc: "" },
+  { slug: "snapchat", name: "سناب بلس", nameEn: "Snapchat Plus", icon: "👻", type: "direct", accent: "#ffd600", bg: "linear-gradient(145deg, rgba(255,214,0,0.18), rgba(255,214,0,0.04))", desc: "", descEn: "" },
+  { slug: "subscriptions", name: "الاشتراكات", nameEn: "Subscriptions", icon: "⚡", type: "group", accent: "#8b5cf6", bg: "linear-gradient(145deg, rgba(139,92,246,0.18), rgba(139,92,246,0.04))", desc: "", descEn: "" },
+  { slug: "social-media", name: "السوشال ميديا", nameEn: "Social Media", icon: "📱", type: "group", accent: "#0088ff", bg: "linear-gradient(145deg, rgba(0,136,255,0.18), rgba(0,136,255,0.04))", desc: "", descEn: "" },
+  { slug: "design", name: "البرامج والتطبيقات", nameEn: "Apps & Software", icon: "🧩", type: "group", accent: "#00e5ff", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "", descEn: "" },
+  { slug: "services", name: "الخدمات", nameEn: "Services", icon: "🛠️", type: "group", accent: "#3b82f6", bg: "linear-gradient(145deg, rgba(59,130,246,0.18), rgba(59,130,246,0.04))", desc: "", descEn: "" },
+  { slug: "games", name: "الألعاب", nameEn: "Games", icon: "🎮", type: "group", accent: "#05df72", bg: "linear-gradient(145deg, rgba(5,223,114,0.18), rgba(5,223,114,0.04))", desc: "", descEn: "" },
+  { slug: "gift-cards", name: "بطاقات الهدايا", nameEn: "Gift Cards", icon: "🎁", type: "group", accent: "#ff2d78", bg: "linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))", desc: "", descEn: "" },
+  { slug: "products", name: "عرض الكل", nameEn: "View All", icon: "✨", type: "direct", accent: "#ff385c", bg: "linear-gradient(145deg, rgba(255,56,92,0.18), rgba(255,56,92,0.04))", desc: "", descEn: "" },
 ];
 
 export type Subcategory = {
@@ -545,23 +547,23 @@ export function getFeaturedItems(): FeaturedItem[] {
     {
       cartId: "fn-crew",
       product: "fortnite",
-      name: "فورت نايت — Fortnite Crew — شهر",
+      name: "فورت نايت كرو — شهر",
       icon: "🪂",
       bg: "linear-gradient(145deg,#0d1a30,#080d18)",
       price: 4,
       oldPrice: 6,
-      link: "/product/fortnite",
-      imageUrl: "/app/assets/img/fortnite-logo.png",
-      iconImage: "/app/assets/img/fortnite-logo.png",
+      link: "/product/fortnite#fn-crew",
+      imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
+      iconImage: "/app/assets/img/fortnite-crew-logo.png",
     },
     {
       cartId: "adobe-1",
       product: "adobe",
-      name: "Adobe Creative Cloud — شهر واحد",
+      name: "أدوبي كرييتف كلاود — اشتراك شهر",
       icon: "🎨",
       bg: "linear-gradient(145deg,#2a0d30,#150818)",
       price: 10,
-      oldPrice: 8,
+      oldPrice: 15,
       link: "/product/adobe",
       imageUrl: "/app/assets/img/adobe-cc.webp",
       iconImage: "/app/assets/img/adobe-cc.webp",

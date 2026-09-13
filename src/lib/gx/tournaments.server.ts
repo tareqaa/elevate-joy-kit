@@ -22,7 +22,7 @@ const inputSchema = z.object({
 export type SubmitTournamentScoreResult = { ok: boolean; error?: string; best?: number };
 
 export const submitTournamentScoreServer = createServerFn({ method: "POST" })
-  .validator((data) => inputSchema.parse(data))
+  .validator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }): Promise<SubmitTournamentScoreResult> => {
     const caller = await getVerifiedCaller();
     if (!caller) return { ok: false, error: "auth_required" };

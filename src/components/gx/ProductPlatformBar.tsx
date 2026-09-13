@@ -48,6 +48,14 @@ export function FacebookPlatformIcon() {
   );
 }
 
+export function TikTokPlatformIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="#ffffff" style={{ display: "block", flexShrink: 0 }} aria-label="TikTok">
+      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-1.01-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.24 1.07-.14 1.61.24 1.14 1.19 2.06 2.34 2.23.95.16 1.96-.07 2.7-.68.65-.52 1.04-1.32 1.05-2.16.02-4.57 0-9.14.01-13.71.01-.54 0-1.07.01-1.61z"/>
+    </svg>
+  );
+}
+
 export function GooglePlayPlatformIcon() {
   return (
     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" style={{ display: "block", flexShrink: 0 }} aria-label="Google Play">
@@ -376,110 +384,83 @@ export function getProductPlatform(
     };
   }
 
+  const cp = (customPlatform || "").toLowerCase().trim();
+
+  // 1. Explicit Platform Priority: If a known platform is explicitly specified in customPlatform, respect it immediately
+  if (cp) {
+    if (cp.includes("steam")) return { name: "Steam", icon: <SteamPlatformIcon /> };
+    if (cp.includes("xbox")) return { name: "Xbox", icon: <XboxPlatformIcon /> };
+    if (cp.includes("playstation") || cp.includes("psn") || cp.includes("ps5") || cp.includes("ps4")) {
+      return { name: "PlayStation", icon: <PlayStationPlatformIcon /> };
+    }
+    if (cp.includes("rockstar")) return { name: "Rockstar Games", icon: <RockstarPlatformIcon /> };
+    if (cp.includes("epic")) return { name: "Epic Games", icon: <EpicPlatformIcon /> };
+    if (cp.includes("ubisoft") || cp.includes("uplay")) return { name: "Ubisoft", icon: <UbisoftPlatformIcon /> };
+    if (cp.includes("ea") || cp.includes("origin")) return { name: "EA Sports", icon: <EaPlatformIcon /> };
+    if (cp.includes("battle.net") || cp.includes("blizzard")) return { name: "Battle.net", icon: <BlizzardPlatformIcon /> };
+    if (cp.includes("nintendo") || cp.includes("switch")) return { name: "Nintendo Switch", icon: <NintendoPlatformIcon /> };
+    if (cp.includes("riot") || cp.includes("valorant")) return { name: "Riot Games", icon: <RiotPlatformIcon /> };
+    if (cp.includes("roblox")) return { name: "Roblox", icon: <RobloxPlatformIcon /> };
+    if (cp.includes("minecraft")) return { name: "Microsoft", icon: <MicrosoftPlatformIcon /> };
+    if (cp.includes("google play") || cp.includes("googleplay")) return { name: "Google Play", icon: <GooglePlayPlatformIcon /> };
+    if (cp.includes("apple") || cp.includes("itunes")) return { name: "Apple", icon: <ApplePlatformIcon /> };
+    if (cp.includes("discord")) return { name: "Discord", icon: <DiscordPlatformIcon /> };
+    if (cp.includes("spotify")) return { name: "Spotify", icon: <SpotifyPlatformIcon /> };
+    if (cp.includes("netflix")) return { name: "Netflix", icon: <NetflixPlatformIcon /> };
+    if (cp.includes("youtube")) return { name: "YouTube", icon: <YouTubePlatformIcon /> };
+    if (cp.includes("canva")) return { name: "Canva Pro", icon: <CanvaPlatformIcon /> };
+    if (cp.includes("adobe")) return { name: "Adobe", icon: <AdobePlatformIcon /> };
+    if (cp.includes("office") || cp.includes("windows") || cp.includes("microsoft") || cp.includes("365")) {
+      return { name: "Microsoft", icon: <MicrosoftPlatformIcon /> };
+    }
+    if (cp.includes("chatgpt") || cp.includes("openai")) return { name: "OpenAI", icon: <OpenAiPlatformIcon /> };
+    if (cp.includes("gemini") || cp.includes("google ai") || cp.includes("bard")) return { name: "Google AI", icon: <GeminiPlatformIcon /> };
+    if (cp.includes("autodesk") || cp.includes("autocad") || cp.includes("revit")) return { name: "Autodesk", icon: <AutodeskPlatformIcon /> };
+    if (cp.includes("snapchat") || cp.includes("سناب")) return { name: "Snapchat", icon: <SnapchatPlatformIcon /> };
+    if (cp.includes("tiktok") || cp.includes("تيك")) return { name: "TikTok", icon: <TikTokPlatformIcon /> };
+    if (cp.includes("instagram") || cp.includes("انستقرام") || cp.includes("انستا")) return { name: "Instagram", icon: <InstagramPlatformIcon /> };
+    if (cp.includes("facebook") || cp.includes("فيسبوك")) return { name: "Facebook", icon: <FacebookPlatformIcon /> };
+    if (cp.includes("linkedin")) return { name: "LinkedIn", icon: <LinkedInPlatformIcon /> };
+  }
+
   const k = (productKey || "").toLowerCase();
   const cid = (cartId || "").toLowerCase();
   const n = (name || "").toLowerCase();
-  const cp = (customPlatform || "").toLowerCase();
   const cat = (categoryName || "").toLowerCase();
   const catSlug = (categorySlug || "").toLowerCase();
 
-  // Helper to test if any candidate term is present in any signal
-  const has = (terms: string[]) => {
-    return terms.some((term) => {
-      const t = term.toLowerCase();
-      return (
-        k.includes(t) ||
-        cid.includes(t) ||
-        n.includes(t) ||
-        cp.includes(t) ||
-        cat.includes(t) ||
-        catSlug.includes(t)
-      );
-    });
+  const allText = `${k} ${cid} ${n} ${cp} ${cat} ${catSlug}`;
+
+  // Smart bounded matcher that prevents substring collisions
+  // E.g. "ig" inside "origins" won't match, "ابل" inside "قابل" won't match, "لول" inside "حلول" won't match
+  const matchTerm = (target: string, term: string) => {
+    const t = term.toLowerCase().trim();
+    if (!t) return false;
+    // Latin / ASCII words
+    if (/^[a-z0-9_\-]+$/i.test(t)) {
+      if (t.length <= 4) {
+        const regex = new RegExp(`\\b${t}\\b`, "i");
+        return regex.test(target);
+      }
+      return target.includes(t);
+    }
+    // Arabic words: ensure character before and after is not an Arabic letter
+    const isArabic = /[\u0600-\u06FF]/.test(t);
+    if (isArabic && t.length <= 4) {
+      const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`(^|[^\\u0621-\\u064A\\u0660-\\u0669])${escaped}([^\\u0621-\\u064A\\u0660-\\u0669]|$)`, "i");
+      return regex.test(target);
+    }
+    return target.includes(t);
   };
 
-  // 1. Google Play (checked before general Google)
-  if (has(["google play", "googleplay", "gplay", "جوجل بلاي", "قوقال بلاي", "بطاقات جوجل"])) {
-    return { name: "Google Play", icon: <GooglePlayPlatformIcon /> };
-  }
+  const has = (terms: string[]) => {
+    return terms.some((term) => matchTerm(allText, term));
+  };
 
-  // 2. Google AI / Gemini
-  if (has(["gemini", "جيمناي", "google ai", "bard", "بارد"])) {
-    return { name: "Google AI", icon: <GeminiPlatformIcon /> };
-  }
-
-  // 3. Canva
-  if (has(["canva", "كانفا"])) {
-    return { name: "Canva Pro", icon: <CanvaPlatformIcon /> };
-  }
-
-  // 4. Snapchat
-  if (has(["snapchat", "سناب"])) {
-    return { name: "Snapchat", icon: <SnapchatPlatformIcon /> };
-  }
-
-  // 4a. Instagram
-  if (has(["instagram", "انستقرام", "انستا", "insta", "ig"])) {
-    return { name: "Instagram", icon: <InstagramPlatformIcon /> };
-  }
-
-  // 4b. Facebook
-  if (has(["facebook", "فيسبوك", "فيس بوك", "fb"])) {
-    return { name: "Facebook", icon: <FacebookPlatformIcon /> };
-  }
-
-  // 5. Xbox (Checked BEFORE general game checks so console editions like GTA V Xbox or EA FC Xbox get Xbox)
+  // 1. Steam (Games activated on Steam PC)
   if (
-    cp.includes("xbox") ||
-    k.includes("xbox") ||
-    n.includes("xbox") ||
-    n.includes("اكسبوكس") ||
-    n.includes("إكسبوكس") ||
-    k.includes("game-pass") ||
-    n.includes("game pass") ||
-    n.includes("جيم باس")
-  ) {
-    return { name: "Xbox", icon: <XboxPlatformIcon /> };
-  }
-
-  // 6. PlayStation / Sony
-  if (
-    cp.includes("playstation") ||
-    cp.includes("psn") ||
-    cp.includes("ps5") ||
-    cp.includes("ps4") ||
-    k.includes("playstation") ||
-    k.includes("psn") ||
-    n.includes("playstation") ||
-    n.includes("بلايستيشن") ||
-    n.includes("psn") ||
-    n.includes("سوني")
-  ) {
-    return { name: "PlayStation", icon: <PlayStationPlatformIcon /> };
-  }
-
-  // 7. Rockstar Games / GTA / Red Dead (For PC Rockstar Launcher or Rockstar titles)
-  if (
-    cp.includes("rockstar") ||
-    k.includes("rockstar") ||
-    n.includes("rockstar") ||
-    n.includes("روكستار") ||
-    k.includes("gta") ||
-    n.includes("gta") ||
-    n.includes("جراند") ||
-    k.includes("red-dead") ||
-    k.includes("rdr2") ||
-    n.includes("red dead")
-  ) {
-    return { name: "Rockstar Games", icon: <RockstarPlatformIcon /> };
-  }
-
-  // 8. Steam (Games activated on Steam PC)
-  if (
-    cp.includes("steam") ||
-    k.includes("steam") ||
-    n.includes("steam") ||
-    n.includes("ستيم") ||
+    has(["steam", "ستيم", "كود ستيم", "حساب ستيم"]) ||
     has([
       "helldivers",
       "resident evil",
@@ -502,105 +483,163 @@ export function getProductPlatform(
       "mafia",
       "control:",
       "control ultimate",
+      "hollow knight",
+      "silksong",
     ])
   ) {
     return { name: "Steam", icon: <SteamPlatformIcon /> };
   }
 
-  // 9. Fortnite / Epic
-  if (has(["fortnite", "فورت", "v-bucks", "vbucks", "fn-vb", "fn-crew", "crew"])) {
+  // 2. Xbox (Checked before general console so Xbox game editions get Xbox)
+  if (
+    has(["xbox", "اكسبوكس", "إكسبوكس", "game pass", "game-pass", "جيم باس"])
+  ) {
+    return { name: "Xbox", icon: <XboxPlatformIcon /> };
+  }
+
+  // 3. PlayStation / Sony
+  if (
+    has(["playstation", "بلايستيشن", "سوني", "psn", "ps5", "ps4"])
+  ) {
+    return { name: "PlayStation", icon: <PlayStationPlatformIcon /> };
+  }
+
+  // 4. Rockstar Games / GTA / Red Dead
+  if (
+    has(["rockstar", "روكستار", "gta", "جراند", "red dead", "red-dead", "rdr2"])
+  ) {
+    return { name: "Rockstar Games", icon: <RockstarPlatformIcon /> };
+  }
+
+  // 5. Fortnite / Epic
+  if (has(["fortnite", "فورت نايت", "فورتنايت", "v-bucks", "vbucks", "fn-vb", "fn-crew"]) || (k.startsWith("fn-") && !k.includes("facebook"))) {
     return { name: "Fortnite", icon: <FortnitePlatformIcon /> };
   }
-  if (has(["epic", "إيبك", "ايبك"])) {
+  if (has(["epic games", "epic", "إيبك", "ايبك"])) {
     return { name: "Epic Games", icon: <EpicPlatformIcon /> };
   }
 
-  // 10. EA Sports / FIFA
-  if (has(["fifa", "فيفا", "fc 2", "fc2", "fc-2", "ea sports", "ea play", "origin"])) {
+  // 6. EA Sports / FIFA
+  if (has(["fifa", "فيفا", "ea sports", "ea fc", "ea play", "fc 24", "fc 25", "fc 26", "fc 27", "fc24", "fc25", "fc26", "fc27", "origin"])) {
     return { name: "EA Sports", icon: <EaPlatformIcon /> };
   }
 
-  // 11. Battle.net / Blizzard
+  // 7. Battle.net / Blizzard
   if (has(["battle.net", "blizzard", "بليزارد"])) {
     return { name: "Battle.net", icon: <BlizzardPlatformIcon /> };
   }
 
-  // 12. Ubisoft
-  if (has(["ubisoft", "يوبي سوفت", "يوبيسوفت"])) {
+  // 8. Ubisoft
+  if (has(["ubisoft", "يوبي سوفت", "يوبيسوفت", "uplay"])) {
     return { name: "Ubisoft", icon: <UbisoftPlatformIcon /> };
   }
 
-  // 13. Nintendo Switch
+  // 9. Nintendo Switch
   if (has(["nintendo", "switch", "نينتندو", "سويتش"])) {
     return { name: "Nintendo Switch", icon: <NintendoPlatformIcon /> };
   }
 
-  // 14. Riot Games
-  if (has(["riot", "valorant", "فالورانت", "league of legends", "لول"])) {
+  // 10. Riot Games
+  if (has(["riot games", "riot", "valorant", "فالورانت", "league of legends"])) {
     return { name: "Riot Games", icon: <RiotPlatformIcon /> };
   }
 
-  // 15. Roblox
+  // 11. Roblox
   if (has(["roblox", "روبلوكس", "robux", "روبوكس"])) {
     return { name: "Roblox", icon: <RobloxPlatformIcon /> };
   }
 
-  // 16. PUBG Mobile
+  // 12. PUBG Mobile
   if (has(["pubg", "ببجي"])) {
     return { name: "PUBG Mobile", icon: <PubgPlatformIcon /> };
   }
 
-  // 17. Adobe
-  if (has(["adobe", "أدوبي", "ادوبي", "photoshop", "فوتوشوب", "creative cloud"])) {
+  // 13. Google Play (checked before general Google)
+  if (has(["google play", "googleplay", "gplay", "جوجل بلاي", "قوقال بلاي", "بطاقات جوجل"])) {
+    return { name: "Google Play", icon: <GooglePlayPlatformIcon /> };
+  }
+
+  // 14. Google AI / Gemini
+  if (has(["gemini", "جيمناي", "google ai", "bard", "جوجل بارد"])) {
+    return { name: "Google AI", icon: <GeminiPlatformIcon /> };
+  }
+
+  // 15. Canva
+  if (has(["canva", "كانفا"])) {
+    return { name: "Canva Pro", icon: <CanvaPlatformIcon /> };
+  }
+
+  // 16. Snapchat
+  if (has(["snapchat", "سناب شات", "سناب بلس", "سناب"])) {
+    return { name: "Snapchat", icon: <SnapchatPlatformIcon /> };
+  }
+
+  // 17. Instagram (Strict words only, NO substring 'ig')
+  if (has(["instagram", "انستقرام", "انستغرام", "انستا", "insta"])) {
+    return { name: "Instagram", icon: <InstagramPlatformIcon /> };
+  }
+
+  // 18. Facebook (Strict words only, NO substring 'fb')
+  if (has(["facebook", "فيسبوك", "فيس بوك"])) {
+    return { name: "Facebook", icon: <FacebookPlatformIcon /> };
+  }
+
+  // 19. TikTok
+  if (has(["tiktok", "تيك توك", "تيكتوك"])) {
+    return { name: "TikTok", icon: <TikTokPlatformIcon /> };
+  }
+
+  // 20. Adobe
+  if (has(["adobe", "أدوبي", "ادوبي", "photoshop", "فوتوشوب", "creative cloud", "illustrator", "premiere"])) {
     return { name: "Adobe", icon: <AdobePlatformIcon /> };
   }
 
-  // 18. Microsoft / Windows / Office
-  if (has(["windows", "ويندوز", "office", "أوفيس", "اوفيس", "microsoft", "مايكروسوفت", "365", "minecraft", "ماينكرافت"])) {
+  // 21. Microsoft / Windows / Office
+  if (has(["windows", "ويندوز", "office", "أوفيس", "اوفيس", "microsoft", "مايكروسوفت", "minecraft", "ماينكرافت"])) {
     return { name: "Microsoft", icon: <MicrosoftPlatformIcon /> };
   }
 
-  // 19. Apple / iTunes
-  if (has(["apple", "أبل", "ابل", "itunes", "آيتونز", "ايتونز"])) {
+  // 22. Apple / iTunes
+  if (has(["apple", "أبل", "itunes", "آيتونز", "ايتونز"])) {
     return { name: "Apple", icon: <ApplePlatformIcon /> };
   }
 
-  // 20. Discord
+  // 23. Discord
   if (has(["discord", "دسكورد", "ديسكورد", "nitro", "نيترو"])) {
     return { name: "Discord", icon: <DiscordPlatformIcon /> };
   }
 
-  // 21. Spotify
+  // 24. Spotify
   if (has(["spotify", "سبوتيفاي"])) {
     return { name: "Spotify", icon: <SpotifyPlatformIcon /> };
   }
 
-  // 22. OpenAI / ChatGPT
+  // 25. OpenAI / ChatGPT
   if (has(["chatgpt", "openai", "شات جي بي تي", "أوبن إيه آي", "اوبن اي اي"])) {
     return { name: "OpenAI", icon: <OpenAiPlatformIcon /> };
   }
 
-  // 23. Autodesk
+  // 26. Autodesk
   if (has(["autodesk", "أوتوديسك", "اوتوديسك", "revit", "autocad", "أوتوكاد"])) {
     return { name: "Autodesk", icon: <AutodeskPlatformIcon /> };
   }
 
-  // 24. LinkedIn
+  // 27. LinkedIn
   if (has(["linkedin", "لينكد"])) {
     return { name: "LinkedIn", icon: <LinkedInPlatformIcon /> };
   }
 
-  // 25. Netflix
+  // 28. Netflix
   if (has(["netflix", "نتفلكس", "نتفليكس"])) {
     return { name: "Netflix", icon: <NetflixPlatformIcon /> };
   }
 
-  // 26. YouTube
+  // 29. YouTube
   if (has(["youtube", "يوتيوب"])) {
     return { name: "YouTube", icon: <YouTubePlatformIcon /> };
   }
 
-  // 27. VPNs & Creative Software
+  // 30. VPNs & Utilities
   if (has(["expressvpn"])) {
     return { name: "ExpressVPN", icon: <ExpressVpnPlatformIcon /> };
   }

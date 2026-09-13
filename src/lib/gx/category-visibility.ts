@@ -30,9 +30,9 @@ const INITIAL_STOREFRONT_CATEGORIES: StorefrontCategory[] = CATEGORY_LINKS.map((
   return {
     slug: c.slug,
     nameAr: c.name,
-    nameEn: c.name,
-    descriptionAr: "",
-    descriptionEn: "",
+    nameEn: c.nameEn || c.name,
+    descriptionAr: c.desc || "",
+    descriptionEn: c.descEn || "",
     icon: c.icon,
     iconImage: null,
     accent: theme.accent,
@@ -41,7 +41,7 @@ const INITIAL_STOREFRONT_CATEGORIES: StorefrontCategory[] = CATEGORY_LINKS.map((
   };
 });
 
-const CATS_CACHE_KEY = "gx_storefront_root_cats_v9";
+const CATS_CACHE_KEY = "gx_storefront_root_cats_v10";
 
 const DEFAULT_BY_SLUG = new Map(CATEGORY_LINKS.map((c) => [c.slug, { accent: c.accent, bg: c.bg }]));
 

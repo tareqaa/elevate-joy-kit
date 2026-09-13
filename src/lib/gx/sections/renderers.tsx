@@ -341,6 +341,24 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
     })
     .filter((x): x is NonNullable<typeof x> => !!x)
     .sort((a, b) => a._sort - b._sort);
+  const isDefaultEyebrow =
+    !data.eyebrow ||
+    data.eyebrow.trim() === "" ||
+    data.eyebrow === "تصفح حسب القسم" ||
+    data.eyebrow.toLowerCase() === "browse by category";
+  const displayEyebrow = isDefaultEyebrow
+    ? t("home.cat_eyebrow")
+    : (lang === "en" ? (data.eyebrow_en || data.eyebrow) : data.eyebrow);
+
+  const isDefaultTitle =
+    !data.title ||
+    data.title.trim() === "" ||
+    data.title === "وين بدك تبدأ؟" ||
+    data.title.toLowerCase().startsWith("where do you want");
+  const displayTitle = isDefaultTitle
+    ? t("home.cat_title")
+    : (lang === "en" ? (data.title_en || data.title) : data.title);
+
   return (
     <section className="section" id="categories" style={{ paddingTop: 28, paddingBottom: 28 }}>
       <div className="wrap">
@@ -348,15 +366,17 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
           <div>
             <span className="k" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
               <LayoutGrid size={14} style={{ color: "var(--cyan, #00e5ff)" }} />
-              {data.eyebrow || t("home.cat_eyebrow")}
+              {displayEyebrow}
             </span>
-            <h2 style={{ fontSize: 24, fontWeight: 900 }}>{data.title || t("home.cat_title")}</h2>
+            <h2 style={{ fontSize: 24, fontWeight: 900 }}>{displayTitle}</h2>
           </div>
         </div>
         <div className="cat-grid-big">
           {links.map((c0) => {
             const theme = getCategoryTheme(c0.slug);
-            const name = c0._o_name || (lang === "en" ? c0.nameEn || c0.nameAr : c0.nameAr || c0.nameEn);
+            const name = lang === "en"
+              ? (c0.nameEn || c0._o_name || c0.nameAr)
+              : (c0._o_name || c0.nameAr || c0.nameEn);
             const accent = c0._o_accent || theme.accent;
             const glow = theme.glow;
             const ambient = theme.ambient;
@@ -387,7 +407,7 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
                   <div className="cat-card-bottom-row">
                     <div className="cname-modern">{name}</div>
                     <div className="cat-browse-action">
-                      <span>{ar ? `تصفح ${name}` : t("home.browse_category")}</span>
+                      <span>{lang === "en" ? `Browse ${name}` : `تصفح ${name}`}</span>
                     </div>
                   </div>
                 </div>
@@ -599,7 +619,24 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
                   : undefined
                 : undefined;
 
-            const cardImageUrl = p.imageUrl || product?.imageUrl || product?.iconImg;
+            const isSpecificPlan =
+              p.cartId === "fn-crew" ||
+              p.cartId === "adobe-1" ||
+              p.cartId.startsWith("snap-") ||
+              p.cartId.startsWith("fn-vb-") ||
+              p.cartId.startsWith("gemini-");
+
+            let displayName = p.name;
+            if (p.cartId === "fn-crew" || (p.product === "fortnite" && p.cartId.startsWith("fn-crew"))) {
+              displayName = lang === "en" ? "Fortnite Crew — 1 Month" : "فورت نايت كرو — شهر";
+            } else if (p.cartId === "adobe-1" || p.product === "adobe") {
+              displayName = lang === "en" ? "Adobe Creative Cloud — 1 Month" : "أدوبي كرييتف كلاود — اشتراك شهر";
+            }
+
+            const cardImageUrl =
+              (p.cartId === "fn-crew" || p.cartId.startsWith("fn-crew"))
+                ? "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473"
+                : (p.imageUrl || product?.imageUrl || product?.iconImg);
             const cardIconImage = p.iconImage || product?.iconImg;
 
             return (
@@ -607,7 +644,7 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
                 key={p.cartId}
                 slug={p.product}
                 cartId={p.cartId}
-                name={p.name}
+                name={displayName}
                 link={p.link}
                 price={price}
                 oldPrice={oldPrice}
@@ -617,6 +654,7 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
                 snapDuration={snapDuration}
                 showPlatformBar={true}
                 showBadge={false}
+                showFromLabel={!isSpecificPlan}
                 disableTierTheme={true}
               />
             );
@@ -688,6 +726,7 @@ export function ProductsRenderer({ data }: { data: ProductsData }) {
                 oldPrice={p.oldPrice}
                 thumbBg={p.bg}
                 snapDuration={snapDuration}
+                showPlatformBar={true}
               />
             );
           })}

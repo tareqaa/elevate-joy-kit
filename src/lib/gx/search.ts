@@ -5,6 +5,8 @@
    ============================================================ */
 
 import { supabase } from "@/integrations/supabase/client";
+import { resolveStrictDeliveryType } from "@/lib/gx/delivery-types";
+import { PRODUCTS_CATALOG } from "@/data/products";
 
 export interface SearchableItem {
   id: string;
@@ -77,12 +79,16 @@ const SYNONYM_MAP: Record<string, string[]> = {
   fifa: ["فيفا", "fc", "ea sports", "كرة قدم"],
   fc: ["فيفا", "fifa", "ea fc", "ea sports"],
 
-  // Fortnite
-  فورتنايت: ["fortnite", "فورت نايت", "vbucks", "في بوكس", "كرو", "crew"],
-  "فورت نايت": ["fortnite", "فورتنايت", "vbucks", "في بوكس"],
-  fortnite: ["فورتنايت", "فورت نايت", "vbucks", "v bucks", "في بوكس"],
-  vbucks: ["fortnite", "فورت نايت", "في بوكس"],
-  "في بوكس": ["vbucks", "fortnite", "فورت نايت"],
+  // Fortnite & V-Bucks
+  فورتنايت: ["fortnite", "فورت نايت"],
+  "فورت نايت": ["fortnite", "فورتنايت"],
+  fortnite: ["فورتنايت", "فورت نايت"],
+  vbucks: ["v-bucks", "فيبوكس", "في بوكس", "fortnite"],
+  "v-bucks": ["vbucks", "فيبوكس", "في بوكس", "fortnite"],
+  "في بوكس": ["vbucks", "v-bucks", "فيبوكس", "fortnite"],
+  فيبوكس: ["vbucks", "v-bucks", "في بوكس", "fortnite"],
+  كرو: ["crew", "fortnite crew", "اشتراك كرو"],
+  crew: ["كرو", "fortnite crew", "اشتراك كرو"],
 
   // PlayStation & Sony
   بلايستيشن: ["playstation", "بلاي ستيشن", "سوني", "sony", "psn", "ps5", "ps4", "بلستيشن"],
@@ -108,11 +114,23 @@ const SYNONYM_MAP: Record<string, string[]> = {
   pc: ["بي سي", "steam", "ستيم"],
 
   // Snapchat
-  سناب: ["snapchat", "سناب شات", "سناب بلس", "بلس", "plus"],
+  سناب: ["snapchat", "سناب شات", "سناب بلس"],
   "سناب شات": ["snapchat", "سناب", "سناب بلس"],
-  "سناب بلس": ["snapchat", "snapchat plus", "سناب"],
+  "سناب بلس": ["snapchat", "snapchat plus", "سناب", "سناب شات"],
   snapchat: ["سناب", "سناب شات", "سناب بلس"],
   snap: ["سناب", "snapchat"],
+
+  // Social Media Followers & Likes
+  متابعين: ["followers", "فولورز", "متابعين انستقرام", "متابعين فيسبوك", "متابعين تيك توك", "متابعين سناب"],
+  followers: ["متابعين", "فولورز", "instagram followers", "facebook followers"],
+  انستقرام: ["instagram", "انستا", "انستغرام"],
+  انستا: ["instagram", "انستقرام", "انستغرام"],
+  instagram: ["انستقرام", "انستا", "انستغرام"],
+  فيسبوك: ["facebook", "فيس بوك"],
+  facebook: ["فيسبوك", "فيس بوك"],
+  تيكتوك: ["tiktok", "تيك توك"],
+  "تيك توك": ["tiktok", "تيكتوك"],
+  tiktok: ["تيك توك", "تيكتوك"],
 
   // Discord Nitro
   دسكورد: ["discord", "ديسكورد", "نيترو", "nitro"],
@@ -128,12 +146,12 @@ const SYNONYM_MAP: Record<string, string[]> = {
   فوتوشوب: ["photoshop", "adobe", "ادوبي"],
 
   // Canva
-  كانفا: ["canva", "كانفا برو", "canva pro", "تصميم"],
-  canva: ["كانفا", "canva pro", "برو"],
+  كانفا: ["canva", "كانفا برو", "canva pro"],
+  canva: ["كانفا", "canva pro"],
 
   // Windows & Microsoft
-  ويندوز: ["windows", "ويندوز 11", "ويندوز 10", "مفتاح", "تفعيل", "كود"],
-  windows: ["ويندوز", "windows 11", "windows 10", "key"],
+  ويندوز: ["windows", "ويندوز 11", "ويندوز 10", "windows 11", "windows 10", "win 10", "win 11", "win10", "win11"],
+  windows: ["ويندوز", "windows 11", "windows 10", "win 10", "win 11", "win10", "win11"],
   مايكروسوفت: ["microsoft", "اوفيس", "office", "365", "microsoft 365"],
   اوفيس: ["office", "microsoft", "مايكروسوفت", "365"],
   microsoft: ["مايكروسوفت", "office", "اوفيس", "365"],
@@ -201,6 +219,16 @@ export interface SearchMatchResult {
   score: number;
 }
 
+function hasTermInHaystack(haystack: string, term: string, words: Set<string>): boolean {
+  if (!term) return false;
+  // For short terms (<= 3 chars, e.g. "كرو", "v", "win", "pc"), require standalone word match to avoid matching inside other words (e.g. "مايكروسوفت")
+  if (term.length <= 3) {
+    if (words.has(term)) return true;
+    return (" " + haystack + " ").includes(" " + term + " ");
+  }
+  return haystack.includes(term);
+}
+
 /**
  * Searches a list of SearchableItems with high-precision ranking:
  * 1. Checks exact title match (highest score)
@@ -210,14 +238,13 @@ export interface SearchMatchResult {
  */
 export function matchSearchQuery(
   items: SearchableItem[],
-  rawQuery: string,
+  query: string,
   lang: "ar" | "en" = "ar"
 ): SearchMatchResult[] {
-  const cleanQ = normalizeSearchText(rawQuery);
-  if (!cleanQ) return [];
+  const cleanQ = normalizeSearchText(query);
+  if (!cleanQ || cleanQ.length < 2) return [];
 
-  const queryTerms = cleanQ.split(" ").filter(Boolean);
-  if (queryTerms.length === 0) return [];
+  const queryTerms = cleanQ.split(" ").filter((t) => t.length > 0);
 
   // Expand query with synonyms
   const expandedTerms = new Set<string>(queryTerms);
@@ -246,6 +273,7 @@ export function matchSearchQuery(
 
   for (const item of items) {
     const haystack = item.normalizedHaystack || buildSearchHaystack(item);
+    const words = new Set<string>(haystack.split(/\s+/));
     const normNameAr = normalizeSearchText(item.nameAr);
     const normNameEn = normalizeSearchText(item.nameEn);
     const normSlug = normalizeSearchText(item.slug);
@@ -275,12 +303,12 @@ export function matchSearchQuery(
     // 5. Check each term in original query
     let allOriginalTermsMatch = true;
     for (const term of queryTerms) {
-      if (haystack.includes(term)) {
+      if (hasTermInHaystack(haystack, term, words)) {
         score += 30;
       } else {
         // Check if any synonym of this term matches
         const syns = SYNONYM_MAP[term];
-        const synMatch = syns && syns.some((s) => haystack.includes(normalizeSearchText(s)));
+        const synMatch = syns && syns.some((s) => hasTermInHaystack(haystack, normalizeSearchText(s), words));
         if (synMatch) {
           score += 20;
         } else {
@@ -296,7 +324,7 @@ export function matchSearchQuery(
 
     // 6. Check expanded synonyms
     for (const synTerm of expandedTerms) {
-      if (haystack.includes(synTerm)) {
+      if (hasTermInHaystack(haystack, synTerm, words)) {
         score += 10;
       }
     }
@@ -315,8 +343,19 @@ export function matchSearchQuery(
     }
   }
 
-  // Sort descending by score
-  results.sort((a, b) => b.score - a.score);
+  // Sort descending by score; for variants of the same product with similar score, sort by price ascending
+  results.sort((a, b) => {
+    if (Math.abs(b.score - a.score) <= 50 && a.item.slug === b.item.slug) {
+      return (a.item.priceJod || 0) - (b.item.priceJod || 0);
+    }
+    return b.score - a.score;
+  });
+
+  // Relative quality filter: if best match has high-confidence score (>= 300), discard weak noise (< 35% of top score)
+  if (results.length > 0 && results[0].score >= 300) {
+    const minThreshold = results[0].score * 0.35;
+    return results.filter((r) => r.score >= minThreshold);
+  }
 
   return results;
 }
@@ -353,8 +392,9 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           .order("sort_order", { ascending: true }),
         supabase
           .from("product_variants")
-          .select("product_id, price_jod, old_price_jod, label_ar, label_en, tag_ar, tag_en, region")
-          .eq("is_active", true),
+          .select("id, product_id, price_jod, old_price_jod, label_ar, label_en, tag_ar, tag_en, region, cart_id, sort_order, delivery_type, plan_group")
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true }),
         supabase
           .from("categories")
           .select("id, slug, name_ar, name_en, parent_id, icon, icon_url"),
@@ -370,9 +410,15 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
       string,
       { labels: string[]; minPrice: number; oldPrice: number | null }
     >();
+    const variantsByProd = new Map<string, any[]>();
 
     if (variants) {
       for (const v of variants) {
+        if (!variantsByProd.has(v.product_id)) {
+          variantsByProd.set(v.product_id, []);
+        }
+        variantsByProd.get(v.product_id)!.push(v);
+
         if (!variantDataByProd.has(v.product_id)) {
           variantDataByProd.set(v.product_id, {
             labels: [],
@@ -421,6 +467,210 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           ["playstation", "xbox", "itunes", "google-play"].includes(p.slug) ||
           rootCategorySlug === "gift-cards";
 
+        const prodVariants = variantsByProd.get(p.id) || [];
+
+        // --- Special Case A: Fortnite (Only show specific purchasable packs, no vague generic item) ---
+        if (p.slug === "fortnite") {
+          const vbucksPacks = [
+            {
+              id: "fn-crew",
+              amount: 0,
+              nameAr: "فورت نايت — اشتراك كرو (شهر واحد)",
+              nameEn: "Fortnite Crew — 1 Month",
+              priceJod: 4,
+              oldPriceJod: 6,
+              imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
+              iconImage: "/app/assets/img/fortnite-crew-logo.png",
+              badge: "يشمل 1000 V-Bucks",
+            },
+            {
+              id: "fn-crew-3",
+              amount: 0,
+              nameAr: "فورت نايت — اشتراك كرو (3 أشهر)",
+              nameEn: "Fortnite Crew — 3 Months",
+              priceJod: 9,
+              oldPriceJod: 12,
+              imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
+              iconImage: "/app/assets/img/fortnite-crew-logo.png",
+              badge: "👑 أفضل قيمة",
+            },
+            {
+              id: "fn-vb-800",
+              amount: 800,
+              nameAr: "فورت نايت — 800 وحدة V-Bucks",
+              nameEn: "Fortnite — 800 V-Bucks",
+              priceJod: 5,
+              oldPriceJod: 7,
+              imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_800_EGS_Portrait_1200x1600_1200x1600-79529d8c20514e82ae2ebce58991b912",
+              iconImage: "/app/assets/img/vbucks.png",
+              badge: null,
+            },
+            {
+              id: "fn-vb-2400",
+              amount: 2400,
+              nameAr: "فورت نايت — 2400 وحدة V-Bucks",
+              nameEn: "Fortnite — 2400 V-Bucks",
+              priceJod: 12,
+              oldPriceJod: 16,
+              imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_2400_EGS_Landscape_2560x1440_2560x1440-e51d802c9d414431973ae3e2ba60528d",
+              iconImage: "/app/assets/img/vbucks.png",
+              badge: "الأكثر طلباً",
+            },
+            {
+              id: "fn-vb-4500",
+              amount: 4500,
+              nameAr: "فورت نايت — 4500 وحدة V-Bucks",
+              nameEn: "Fortnite — 4500 V-Bucks",
+              priceJod: 19,
+              oldPriceJod: 25,
+              imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_4500_EGS_Landscape_2560x1440_2560x1440-799cfafb76bf4ae795fece5e4c0de4a3",
+              iconImage: "/app/assets/img/vbucks.png",
+              badge: null,
+            },
+            {
+              id: "fn-vb-12500",
+              amount: 12500,
+              nameAr: "فورت نايت — 12500 وحدة V-Bucks",
+              nameEn: "Fortnite — 12500 V-Bucks",
+              priceJod: 38,
+              oldPriceJod: 49,
+              imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_12500_EGS_Portrait_1200x1600_1200x1600-070f17d0f6a34e9180b2927c8c24c40e",
+              iconImage: "/app/assets/img/vbucks.png",
+              badge: "💎 أفضل قيمة",
+            },
+          ];
+
+          for (const pack of vbucksPacks) {
+            const dbMatch = prodVariants.find((v: any) =>
+              (pack.amount > 0 && (v.label_ar?.includes(String(pack.amount)) || v.label_en?.includes(String(pack.amount)))) ||
+              (pack.id === "fn-crew" && v.label_ar?.includes("شهر") && !v.label_ar?.includes("3")) ||
+              (pack.id === "fn-crew-3" && (v.label_ar?.includes("3") || v.label_en?.includes("3")))
+            );
+            const finalPrice = dbMatch?.price_jod ? Number(dbMatch.price_jod) : pack.priceJod;
+            const finalOldPrice = dbMatch?.old_price_jod ? Number(dbMatch.old_price_jod) : pack.oldPriceJod;
+            const finalBadge = dbMatch?.tag_ar && dbMatch.tag_ar !== "none" ? dbMatch.tag_ar : pack.badge;
+
+            const packItem: SearchableItem = {
+              id: `${p.id}-${pack.id}`,
+              slug: "fortnite",
+              type: "product",
+              nameAr: pack.nameAr,
+              nameEn: pack.nameEn,
+              taglineAr: pack.amount > 0 ? `شحن ${pack.amount} فيبوكس فوري لحسابك` : "اشتراك كرو شهري مع باتل باس و1000 فيبوكس",
+              taglineEn: pack.amount > 0 ? `Instant ${pack.amount} V-Bucks top-up` : "Fortnite Crew monthly subscription with Battle Pass",
+              categoryNameAr: pack.amount > 0 ? "فورت نايت / V-Bucks" : "فورت نايت / كرو",
+              categoryNameEn: pack.amount > 0 ? "Fortnite / V-Bucks" : "Fortnite / Crew",
+              categorySlug: "fortnite",
+              parentCategorySlug: "games",
+              platform: "جميع المنصات (PC / Console)",
+              deliveryType: "topup", // Strictly topup as requested
+              badge: finalBadge,
+              priceJod: finalPrice,
+              oldPriceJod: finalOldPrice,
+              imageUrl: pack.imageUrl,
+              icon: "🪂",
+              iconImage: pack.iconImage,
+              thumbBg: pack.amount > 0 ? "linear-gradient(135deg,#0d2b45,#061524)" : "linear-gradient(135deg,#2e1065,#170736)",
+              variantLabels: [
+                "فورتنايت",
+                "فورت نايت",
+                "fortnite",
+                "vbucks",
+                "v-bucks",
+                "في بوكس",
+                "فيبوكس",
+                pack.amount ? String(pack.amount) : "crew",
+                pack.amount ? `${pack.amount} فيبوكس` : "كرو",
+              ],
+              link: `/product/fortnite#${pack.id}`,
+            };
+            packItem.normalizedHaystack = buildSearchHaystack(packItem);
+            items.push(packItem);
+          }
+          continue; // Skip generic container
+        }
+
+        // --- Special Case B: Windows (All products are digital keys / activation codes) ---
+        if (p.slug === "windows" && prodVariants.length > 0) {
+          for (const v of prodVariants) {
+            const variantItem: SearchableItem = {
+              id: `${p.id}-${v.cart_id || v.id}`,
+              slug: "windows",
+              type: "product",
+              nameAr: `تفعيل ويندوز — ${v.label_ar}`,
+              nameEn: `Windows Activation — ${v.label_en || v.label_ar}`,
+              taglineAr: "مفتاح تفعيل رقمي أصلي 100% مدى الحياة",
+              taglineEn: "Official digital activation key 100% lifetime",
+              categoryNameAr: categoryNameAr || "برامج وأنظمة",
+              categoryNameEn: categoryNameEn || "Software",
+              categorySlug,
+              parentCategorySlug: rootCategorySlug,
+              platform: "Microsoft Windows",
+              deliveryType: "code", // Strictly key / code
+              badge: v.tag_ar && v.tag_ar !== "none" ? v.tag_ar : null,
+              priceJod: Number(v.price_jod),
+              oldPriceJod: v.old_price_jod ? Number(v.old_price_jod) : null,
+              imageUrl: p.image_url,
+              icon: "🪟",
+              iconImage: p.icon_image_url || p.image_url,
+              thumbBg: p.thumb_bg || "linear-gradient(145deg,#0a2540,#04101c)",
+              variantLabels: ["windows", "ويندوز", "تفعيل ويندوز", "مفتاح", "key", "pro", "home", v.label_ar, v.label_en || ""],
+              link: `/product/windows#${v.cart_id || v.id}`,
+            };
+            variantItem.normalizedHaystack = buildSearchHaystack(variantItem);
+            items.push(variantItem);
+          }
+          continue; // Skip generic container
+        }
+
+        // --- Special Case C: Multi-variant services (Snapchat+, Followers, etc.) ---
+        if (prodVariants.length > 1 && !isGiftCard) {
+          for (const v of prodVariants) {
+            const strictDelivery = resolveStrictDeliveryType({
+              slug: p.slug,
+              cartId: v.cart_id,
+              name: `${p.name_ar} ${v.label_ar}`,
+              nameAr: `${p.name_ar} ${v.label_ar}`,
+              productType: v.delivery_type || p.delivery_type,
+            });
+
+            const isSnap = p.slug === "snapchat";
+            const variantNameAr = isSnap ? `سناب بلس — اشتراك ${v.label_ar}` : `${p.name_ar} — ${v.label_ar}`;
+            const variantNameEn = isSnap ? `Snapchat+ — ${v.label_en || v.label_ar}` : `${p.name_en || p.name_ar} — ${v.label_en || v.label_ar}`;
+
+            const variantItem: SearchableItem = {
+              id: `${p.id}-${v.cart_id || v.id}`,
+              slug: p.slug,
+              type: "product",
+              nameAr: variantNameAr,
+              nameEn: variantNameEn,
+              taglineAr: p.tagline_ar,
+              taglineEn: p.tagline_en,
+              descriptionAr: p.description_ar,
+              descriptionEn: p.description_en,
+              categoryNameAr,
+              categoryNameEn,
+              categorySlug,
+              parentCategorySlug: rootCategorySlug,
+              platform: p.platform,
+              deliveryType: strictDelivery,
+              badge: v.tag_ar && v.tag_ar !== "none" ? v.tag_ar : (isSnap && v.cart_id === "snap-6" ? "الأكثر طلباً" : null),
+              priceJod: Number(v.price_jod),
+              oldPriceJod: v.old_price_jod ? Number(v.old_price_jod) : null,
+              imageUrl: p.image_url,
+              icon: p.icon,
+              iconImage: p.icon_image_url || p.image_url,
+              thumbBg: p.thumb_bg || p.card_gradient,
+              variantLabels: [p.name_ar, p.name_en || "", v.label_ar, v.label_en || ""],
+              link: `/product/${p.slug}#${v.cart_id || v.id}`,
+            };
+            variantItem.normalizedHaystack = buildSearchHaystack(variantItem);
+            items.push(variantItem);
+          }
+          continue; // Skip generic container
+        }
+
+        // --- Single-variant product or Gift Card master ---
         const vData = variantDataByProd.get(p.id);
         const resolvedPrice =
           vData && vData.minPrice !== Infinity
@@ -445,7 +695,13 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           categorySlug,
           parentCategorySlug: rootCategorySlug,
           platform: p.platform,
-          deliveryType: p.delivery_type,
+          deliveryType: resolveStrictDeliveryType({
+            slug: p.slug,
+            name: p.name_ar,
+            nameAr: p.name_ar,
+            productType: p.delivery_type,
+            isGiftCardMaster: isGiftCard,
+          }),
           badge: p.badge,
           priceJod: resolvedPrice,
           oldPriceJod: resolvedOldPrice,
@@ -462,27 +718,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
       }
     }
 
-    // 2. Add Top Categories as Searchable Items
-    if (categories) {
-      for (const c of categories) {
-        // Only include primary/meaningful categories
-        const item: SearchableItem = {
-          id: `cat-${c.id}`,
-          slug: c.slug,
-          type: "category",
-          nameAr: c.name_ar,
-          nameEn: c.name_en || c.name_ar,
-          categoryNameAr: "قسم",
-          categoryNameEn: "Category",
-          categorySlug: c.slug,
-          icon: c.icon || "📁",
-          iconImage: c.icon_url,
-          link: `/category/${c.slug}`,
-        };
-        item.normalizedHaystack = buildSearchHaystack(item);
-        items.push(item);
-      }
-    }
+    // Note: Categories are excluded from search index as requested by user (only products)
 
     cachedSearchIndex = items;
     lastFetchTime = now;

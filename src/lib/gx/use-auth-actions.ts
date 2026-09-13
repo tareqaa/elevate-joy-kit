@@ -8,7 +8,7 @@
    ============================================================ */
 
 import { supabase } from "@/integrations/supabase/client";
-
+import { requestPasswordResetServer } from "@/lib/gx/auth.functions";
 import { useLang } from "@/lib/gx/i18n";
 
 export type AuthResult = {
@@ -139,7 +139,7 @@ export function useAuthActions() {
         };
       }
 
-      // 1. Instant local storage cooldown check (fast-path)
+      // 1. Instant local storage cooldown check (fast-path for UX)
       const localKey = `gx_pw_reset_${cleanEmail}`;
       try {
         const lastTimestamp = Number(localStorage.getItem(localKey));
@@ -159,49 +159,54 @@ export function useAuthActions() {
         // ignore localStorage access error
       }
 
-      // 2. Server & database cooldown check via Supabase RPC
+      // 2. Authoritative server-side reset (SEC-08):
+      //    - Server IP rate limiting
+      //    - Authoritative database cooldown check & request recording
+      //    - GoTrue dispatch
       try {
-        const { data: cooldown } = await (supabase.rpc as any)("check_password_reset_cooldown", {
-          _email: cleanEmail,
+        const redirectTo = `${window.location.origin}/reset-password`;
+        const res = await requestPasswordResetServer({
+          data: {
+            email: cleanEmail,
+            redirectTo,
+            lang: lang === "en" ? "en" : "ar",
+          },
         });
 
-        if (cooldown && cooldown.allowed === false) {
-          const msg =
-            (lang === "en" ? cooldown.message_en : cooldown.message_ar) ||
-            (lang === "ar"
-              ? `لا يمكنك إعادة إرسال رابط تعيين كلمة المرور إلا بعد مرور ساعة. يرجى الانتظار ${cooldown.remaining_minutes || 60} دقيقة.`
-              : `You can only request a password reset once per hour. Please wait ${cooldown.remaining_minutes || 60} minutes.`);
-          return { ok: false, error: msg };
+        if (!res.ok) {
+          return {
+            ok: false,
+            error:
+              res.message ||
+              (res as any).error ||
+              (lang === "ar" ? "فشل طلب استعادة كلمة المرور" : "Password reset failed"),
+          };
         }
-      } catch {
-        // continue if RPC is unreachable
+
+        try {
+          localStorage.setItem(localKey, String(Date.now()));
+        } catch {
+          // ignore localStorage write error
+        }
+
+        return { ok: true };
+      } catch (serverErr) {
+        return {
+          ok: false,
+          error:
+            lang === "ar"
+              ? "تعذّر إتمام طلب استعادة كلمة المرور حالياً. يرجى المحاولة بعد قليل."
+              : "Unable to process password reset at this time. Please try again in a few moments.",
+        };
       }
-
-      // 3. Request Supabase password reset email
-      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (error) {
-        return { ok: false, error: error.message };
-      }
-
-      // 4. Record successful reset request in Database and LocalStorage
-      try {
-        await (supabase.rpc as any)("record_password_reset_request", { _email: cleanEmail });
-      } catch {
-        // noop
-      }
-
-      try {
-        localStorage.setItem(localKey, String(Date.now()));
-      } catch {
-        // ignore localStorage write error
-      }
-
-      return { ok: true };
     } catch (err) {
-      return { ok: false, error: normalizeError(err, "Reset failed") };
+      return {
+        ok: false,
+        error:
+          lang === "ar"
+            ? "حدث خطأ غير متوقع. يرجى المحاولة لاحقاً."
+            : "An unexpected error occurred. Please try again later.",
+      };
     }
   }
 

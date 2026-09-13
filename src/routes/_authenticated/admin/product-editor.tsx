@@ -32,6 +32,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { purgeCatalogCacheFn } from "@/lib/gx/catalog.functions";
+import { assertSafeImageUpload } from "@/lib/gx/safe-image";
 import { clearDbVariantsCache } from "@/lib/gx/db-variants";
 import { useCurrency } from "@/lib/gx/currency";
 import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
@@ -440,6 +441,7 @@ function FullPageProductEditor() {
     setUploadingImage(true);
 
     try {
+      await assertSafeImageUpload(file);
       const ext = file.name.split(".").pop() || "png";
       const path = `products/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const { error } = await supabase.storage.from("product-images").upload(path, file, { upsert: true });
@@ -465,6 +467,7 @@ function FullPageProductEditor() {
     setUploadingImage(true);
 
     try {
+      await assertSafeImageUpload(file);
       const ext = file.name.split(".").pop() || "png";
       const path = `products/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const { error } = await supabase.storage.from("product-images").upload(path, file, { upsert: true });

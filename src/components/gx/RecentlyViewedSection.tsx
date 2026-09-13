@@ -53,13 +53,14 @@ export function RecentlyViewedSection() {
           {/* Cards Track using the standard unified StoreProductCard */}
           <div className="gx-cards-carousel-track" ref={scrollRef}>
             {items.map((item) => {
-              const productLink = `/product/${item.slug}`;
+              const productLink = item.link || (item.cartId && item.cartId !== item.slug ? `/product/${item.slug}#${item.cartId}` : `/product/${item.slug}`);
+              const isSpecificPack = Boolean(item.cartId && item.cartId !== item.slug) || item.price > 0;
 
               return (
-                <div key={item.slug} className="gx-carousel-product-col">
+                <div key={item.cartId ? `${item.slug}-${item.cartId}` : item.slug} className="gx-carousel-product-col">
                   <StoreProductCard
                     slug={item.slug}
-                    cartId={item.slug}
+                    cartId={item.cartId || item.slug}
                     name={ar ? item.nameAr : item.nameEn}
                     link={productLink}
                     price={item.price}
@@ -69,7 +70,8 @@ export function RecentlyViewedSection() {
                     icon={item.icon}
                     categorySlug={item.categorySlug || undefined}
                     showPlatformBar={true}
-                    showFromLabel={false}
+                    showFromLabel={!isSpecificPack}
+                    priceLabel={ar ? "السعر" : "Price"}
                   />
                 </div>
               );

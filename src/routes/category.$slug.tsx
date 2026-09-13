@@ -459,6 +459,7 @@ function CategoryPage() {
   const [customMinPrice, setCustomMinPrice] = useState<string>("");
   const [customMaxPrice, setCustomMaxPrice] = useState<string>("");
   const [isAllPlatformsModalOpen, setIsAllPlatformsModalOpen] = useState<boolean>(false);
+  const [fortniteFilter, setFortniteFilter] = useState<"all" | "crew" | "vbucks">("all");
 
   useEffect(() => {
     let initialPlatform = "all";
@@ -477,6 +478,7 @@ function CategoryPage() {
 
   // Gift Cards category state
   const isGiftCardCategory = category.slug === "gift-cards" || category.slug.startsWith("gc-");
+  const isCompactBrandCategory = category.slug === "snapchat" || category.slug === "fortnite";
 
   useEffect(() => {
     if (!isAllPlatformsModalOpen) return;
@@ -487,31 +489,7 @@ function CategoryPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isAllPlatformsModalOpen]);
 
-  // Track gift card categories in Recently Viewed with lowest variant price
-  useEffect(() => {
-    const GIFT_CARD_MAP: Record<string, { slug: string; nameAr: string; nameEn: string; price: number; iconImage: string }> = {
-      "gc-playstation": { slug: "playstation", nameAr: "بطاقات بلايستيشن", nameEn: "PlayStation Cards", price: 7.0, iconImage: "/app/assets/img/playstation-logo.svg" },
-      "playstation": { slug: "playstation", nameAr: "بطاقات بلايستيشن", nameEn: "PlayStation Cards", price: 7.0, iconImage: "/app/assets/img/playstation-logo.svg" },
-      "gc-xbox": { slug: "xbox", nameAr: "بطاقات إكسبوكس", nameEn: "Xbox Cards", price: 1.15, iconImage: "/app/assets/img/xbox-logo.svg" },
-      "xbox": { slug: "xbox", nameAr: "بطاقات إكسبوكس", nameEn: "Xbox Cards", price: 1.15, iconImage: "/app/assets/img/xbox-logo.svg" },
-      "gc-itunes": { slug: "itunes", nameAr: "بطاقات آبل وآيتونز", nameEn: "iTunes Cards", price: 2.22, iconImage: "/app/assets/img/itunes-logo.svg" },
-      "itunes": { slug: "itunes", nameAr: "بطاقات آبل وآيتونز", nameEn: "iTunes Cards", price: 2.22, iconImage: "/app/assets/img/itunes-logo.svg" },
-      "gc-google-play": { slug: "google-play", nameAr: "بطاقات جوجل بلاي", nameEn: "Google Play Cards", price: 4.5, iconImage: "/app/assets/img/googleplay-logo.png" },
-      "google-play": { slug: "google-play", nameAr: "بطاقات جوجل بلاي", nameEn: "Google Play Cards", price: 4.5, iconImage: "/app/assets/img/googleplay-logo.png" },
-    };
-
-    const matchedGc = GIFT_CARD_MAP[category.slug];
-    if (matchedGc) {
-      trackRecentlyViewed({
-        slug: matchedGc.slug,
-        nameAr: matchedGc.nameAr,
-        nameEn: matchedGc.nameEn,
-        price: matchedGc.price,
-        imageUrl: matchedGc.iconImage,
-        categorySlug: "gift-cards",
-      });
-    }
-  }, [category.slug]);
+  // Categories are not tracked in Recently Viewed as requested by user (only products viewed)
 
   // Platforms for software/design category
   const softwarePlatforms: CategoryPlatformItem[] = useMemo(() => {
@@ -1036,6 +1014,15 @@ function CategoryPage() {
   const displayedProducts = useMemo(() => {
     let list = [...products];
 
+    // Fortnite dedicated sub-filter (Crew vs V-Bucks)
+    if (category.slug === "fortnite" && fortniteFilter !== "all") {
+      if (fortniteFilter === "crew") {
+        list = list.filter((p) => (p.cartId || "").startsWith("fn-crew") || (p.nameAr || "").toLowerCase().includes("crew") || (p.nameAr || "").includes("كرو"));
+      } else if (fortniteFilter === "vbucks") {
+        list = list.filter((p) => (p.cartId || "").startsWith("fn-vb") || (p.nameAr || "").toLowerCase().includes("v-bucks") || (p.nameAr || "").includes("فيبوكس"));
+      }
+    }
+
     // 0. Subtype / Service / Genre filter (Social Media: follow vs likes | Gaming: RPG, Action, etc.)
     if (selectedSubtype !== "all") {
       if (isSocialCategory) {
@@ -1294,6 +1281,7 @@ function CategoryPage() {
     customMinPrice,
     customMaxPrice,
     sortBy,
+    fortniteFilter,
   ]);
 
   // 5x5 Pagination (25 items per page for lightning fast page loading)
@@ -1307,6 +1295,7 @@ function CategoryPage() {
     category.slug,
     selectedPlatform,
     selectedSubtype,
+    fortniteFilter,
     searchQuery,
     selectedDeliveryType,
     selectedPricePreset,
@@ -1389,16 +1378,41 @@ function CategoryPage() {
   };
 
   // Sibling switcher pills (when on subcategory like Canva or Windows)
+  // Sibling switcher pills (when on subcategory like Canva or Windows) or dedicated Fortnite tabs
   const navPills: Array<{
-    slug: string;
+    id?: string;
+    slug?: string;
     name: string;
     icon: React.ReactNode;
-    to: string;
-    params: { slug: string };
     active: boolean;
+    onClick?: () => void;
+    to?: string;
+    params?: { slug: string };
   }> = [];
 
-  if (category.parent && (category.siblings || []).length > 0) {
+  if (category.slug === "fortnite") {
+    navPills.push({
+      id: "all",
+      name: lang === "en" ? "All Packs (6)" : "كل الباقات (6)",
+      icon: <span className="pill-icon">🌟</span>,
+      active: fortniteFilter === "all",
+      onClick: () => setFortniteFilter("all"),
+    });
+    navPills.push({
+      id: "crew",
+      name: lang === "en" ? "Fortnite Crew (2)" : "اشتراك كرو 👑 (2)",
+      icon: <span className="pill-icon">👑</span>,
+      active: fortniteFilter === "crew",
+      onClick: () => setFortniteFilter("crew"),
+    });
+    navPills.push({
+      id: "vbucks",
+      name: lang === "en" ? "V-Bucks (4)" : "رصيد V-Bucks 💎 (4)",
+      icon: <span className="pill-icon">💎</span>,
+      active: fortniteFilter === "vbucks",
+      onClick: () => setFortniteFilter("vbucks"),
+    });
+  } else if (category.parent && (category.siblings || []).length > 0) {
     navPills.push({
       slug: category.parent.slug,
       name: pick(category.parent.nameAr, category.parent.nameEn),
@@ -1528,6 +1542,7 @@ function CategoryPage() {
         categoryName={category.nameAr}
         categorySlug={category.slug}
         customPlatform={p.platform || undefined}
+        showPlatformBar={true}
         showFromLabel={Boolean(p.isGiftCardMaster)}
         isGiftCardMaster={Boolean(p.isGiftCardMaster)}
       />
@@ -1672,21 +1687,34 @@ function CategoryPage() {
               )}
             </div>
 
-            {/* Sibling Switcher Bar for Subcategories (e.g. Canva, Windows) */}
+            {/* Sibling Switcher Bar for Subcategories or Fortnite sub-filters */}
             {navPills.length > 0 && (
               <div className="cat-pills-bar-wrap">
                 <div className="cat-pills-bar">
-                  {navPills.map((pill) => (
-                    <Link
-                      key={pill.slug}
-                      to={pill.to as any}
-                      params={pill.params as any}
-                      className={`cat-pill-item ${pill.active ? "active" : ""}`}
-                    >
-                      {pill.icon}
-                      <span>{pill.name}</span>
-                    </Link>
-                  ))}
+                  {navPills.map((pill, idx) =>
+                    pill.onClick ? (
+                      <button
+                        key={pill.id || idx}
+                        type="button"
+                        onClick={pill.onClick}
+                        className={`cat-pill-item ${pill.active ? "active" : ""}`}
+                        style={{ cursor: "pointer", border: pill.active ? "1px solid var(--cyan, #00e5ff)" : undefined }}
+                      >
+                        {pill.icon}
+                        <span>{pill.name}</span>
+                      </button>
+                    ) : (
+                      <Link
+                        key={pill.slug || idx}
+                        to={pill.to as any}
+                        params={pill.params as any}
+                        className={`cat-pill-item ${pill.active ? "active" : ""}`}
+                      >
+                        {pill.icon}
+                        <span>{pill.name}</span>
+                      </Link>
+                    )
+                  )}
                 </div>
               </div>
             )}
@@ -1833,57 +1861,63 @@ function CategoryPage() {
               )}
             </div>
 
-            <div className="cat-toolbar-end">
-              {/* Category-specific Subtype / Service / Genre Dropdown */}
-              {(isSocialCategory || isGamingCategory) && (
-                <CatSubtypeDropdown
-                  options={isSocialCategory ? SOCIAL_SUBTYPES : GAMING_GENRES}
-                  selectedId={selectedSubtype}
-                  onSelect={setSelectedSubtype}
+            {!isCompactBrandCategory && (
+              <div className="cat-toolbar-end">
+                {/* Category-specific Subtype / Service / Genre Dropdown */}
+                {(isSocialCategory || isGamingCategory) && (
+                  <CatSubtypeDropdown
+                    options={isSocialCategory ? SOCIAL_SUBTYPES : GAMING_GENRES}
+                    selectedId={selectedSubtype}
+                    onSelect={setSelectedSubtype}
+                    lang={lang}
+                    titleAr={isSocialCategory ? "نوع الخدمة" : "التصنيف"}
+                    titleEn={isSocialCategory ? "Service" : "Genre"}
+                  />
+                )}
+
+                {/* Product Delivery Type Filter Dropdown */}
+                <CatDeliveryTypeDropdown
+                  selectedType={selectedDeliveryType}
+                  onTypeChange={setSelectedDeliveryType}
                   lang={lang}
-                  titleAr={isSocialCategory ? "نوع الخدمة" : "التصنيف"}
-                  titleEn={isSocialCategory ? "Service" : "Genre"}
                 />
-              )}
 
-              {/* Product Delivery Type Filter Dropdown */}
-              <CatDeliveryTypeDropdown
-                selectedType={selectedDeliveryType}
-                onTypeChange={setSelectedDeliveryType}
-                lang={lang}
-              />
+                {/* Price Range Filter Dropdown */}
+                <CatPriceFilterDropdown
+                  selectedPreset={selectedPricePreset}
+                  customMin={customMinPrice}
+                  customMax={customMaxPrice}
+                  onSelectPreset={(p) => {
+                    setSelectedPricePreset(p);
+                    setCustomMinPrice("");
+                    setCustomMaxPrice("");
+                  }}
+                  onApplyCustom={(min, max) => {
+                    setSelectedPricePreset("custom");
+                    setCustomMinPrice(min);
+                    setCustomMaxPrice(max);
+                  }}
+                  lang={lang}
+                />
 
-              {/* Price Range Filter Dropdown */}
-              <CatPriceFilterDropdown
-                selectedPreset={selectedPricePreset}
-                customMin={customMinPrice}
-                customMax={customMaxPrice}
-                onSelectPreset={(p) => {
-                  setSelectedPricePreset(p);
-                  setCustomMinPrice("");
-                  setCustomMaxPrice("");
-                }}
-                onApplyCustom={(min, max) => {
-                  setSelectedPricePreset("custom");
-                  setCustomMinPrice(min);
-                  setCustomMaxPrice(max);
-                }}
-                lang={lang}
-              />
-
-              {/* Custom Sort Dropdown */}
-              <CatSortDropdown
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                lang={lang}
-              />
-            </div>
+                {/* Custom Sort Dropdown */}
+                <CatSortDropdown
+                  sortBy={sortBy}
+                  onSortChange={setSortBy}
+                  lang={lang}
+                />
+              </div>
+            )}
           </div>
 
-          {/* Product Cards Grid (5x5 Adaptive Grid with Pagination) */}
+          {/* Product Cards Grid (Adaptive Grid with Pagination) */}
           {displayedProducts.length > 0 ? (
             <>
-              <div className={`cat-adaptive-grid ${isGiftCardCategory ? "cat-giftcards-grid" : ""}`}>
+              <div
+                className={`cat-adaptive-grid ${
+                  isGiftCardCategory ? "cat-giftcards-grid" : ""
+                } ${displayedProducts.length === 3 ? "cat-grid-3-items" : ""}`}
+              >
                 {paginatedProducts.map((p) => renderProductCard(p))}
               </div>
 

@@ -45,6 +45,7 @@ export type StoreProductCardProps = {
   showPlatformBar?: boolean;
   showBadge?: boolean;
   showFromLabel?: boolean;
+  priceLabel?: string;
   disableTierTheme?: boolean;
   isGiftCardMaster?: boolean;
   tierTheme?: {
@@ -79,6 +80,7 @@ export function StoreProductCard({
   showPlatformBar = true,
   showBadge = false,
   showFromLabel = true,
+  priceLabel,
   disableTierTheme = true,
   isGiftCardMaster = false,
   tierTheme,
@@ -117,12 +119,66 @@ export function StoreProductCard({
   // Render thumbnail inner
   const renderThumbnail = () => {
     if (isCrew) return <CrewIcon />;
-    if (isVbucks) return <VbucksIcon tier={tier} />;
-    if (slug === "snapchat") return <SnapchatPoster duration={snapDuration} />;
+    if (isVbucks) {
+      if (imageUrl && !imageUrl.includes("fortnite-logo.png") && !imageUrl.endsWith("vbucks.png")) {
+        return (
+          <img
+            src={imageUrl}
+            alt={name}
+            loading="lazy"
+            decoding="async"
+            className="prod-thumb-img prod-card-img"
+            draggable={false}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        );
+      }
+      return <VbucksIcon tier={tier} />;
+    }
+    if (slug === "snapchat") {
+      let resolvedSnapDuration = snapDuration;
+      if (lang === "en" && resolvedSnapDuration) {
+        resolvedSnapDuration = resolvedSnapDuration
+          .replace(/3\s*أشهر/, "3 Months")
+          .replace(/6\s*أشهر/, "6 Months")
+          .replace(/12\s*شهر/, "12 Months")
+          .replace(/شهر/, "Month");
+      }
+      if (!resolvedSnapDuration) {
+        resolvedSnapDuration = name.includes("3")
+          ? lang === "en" ? "3 Months" : "3 أشهر"
+          : name.includes("6")
+          ? lang === "en" ? "6 Months" : "6 أشهر"
+          : name.includes("12")
+          ? lang === "en" ? "12 Months" : "12 شهر"
+          : name.includes("شهر") || name.toLowerCase().includes("1 month")
+          ? lang === "en" ? "1 Month" : "شهر واحد"
+          : undefined;
+      }
+      return <SnapchatPoster duration={resolvedSnapDuration} />;
+    }
     if (slug === "adobe") return <AdobePoster />;
     if (slug === "canva") return <CanvaPoster />;
     if (slug === "windows") return <WindowsPoster cartId={finalCartId} planLabel={name} />;
-    if (slug === "fortnite") return <FortniteIcon />;
+    if (slug === "fortnite") {
+      if (imageUrl && !imageUrl.includes("fortnite-logo.png") && !imageUrl.includes("fortnite-f-icon.jpg")) {
+        return (
+          <img
+            src={imageUrl}
+            alt={name}
+            loading="lazy"
+            decoding="async"
+            className="prod-thumb-img prod-card-img"
+            draggable={false}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        );
+      }
+      if (finalCartId.includes("crew") || name.toLowerCase().includes("crew") || name.includes("كرو")) {
+        return <CrewIcon />;
+      }
+      return <FortniteIcon />;
+    }
 
     if (
       slug === "playstation" ||
@@ -233,16 +289,24 @@ export function StoreProductCard({
   );
 
   const handleTrack = () => {
+    const isCrewPack = isCrew || finalCartId.startsWith("fn-crew") || name.includes("كرو");
+    const trackImage =
+      isCrewPack
+        ? "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473"
+        : (imageUrl || undefined);
+
     trackRecentlyViewed({
       slug,
+      cartId: finalCartId,
+      link: finalLink,
       nameAr: name,
       nameEn: name,
       taglineAr: tagline || undefined,
       taglineEn: tagline || undefined,
       price: finalDisplayPrice,
       oldPrice: numOldPrice || undefined,
-      imageUrl: imageUrl || undefined,
-      icon: icon || undefined,
+      imageUrl: trackImage,
+      icon: isCrewPack ? undefined : (icon || undefined),
       categorySlug: categorySlug || (isGiftCardMasterCard ? "gift-cards" : undefined),
     });
   };
@@ -383,13 +447,18 @@ export function StoreProductCard({
           {finalDisplayPrice > 0 ? (
             <>
               {(showFromLabel || isGiftCardMasterCard) && (
-                <span className="prod-from-label">{lang === "en" ? "From" : "من"}</span>
+                <span className="prod-from-label">{priceLabel || (lang === "en" ? "From" : "من")}</span>
               )}
               <div className="prod-price-row">
                 <span className="prod-new">
                   {format(finalDisplayPrice)}
                 </span>
-                {discount > 0 && <span className="prod-discount-pill">-{discount}%</span>}
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  {numOldPrice && numOldPrice > finalDisplayPrice && (
+                    <span className="prod-old">{format(numOldPrice)}</span>
+                  )}
+                  {discount > 0 && <span className="prod-discount-pill">-{discount}%</span>}
+                </div>
               </div>
             </>
           ) : (
