@@ -412,6 +412,10 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
   const { format } = useCurrency();
   const { t, lang } = useLang();
   const siteSettings = useSiteSettings();
+  // Items resolve from browser-side sources (site settings + live catalog), so the
+  // server HTML can never match. Render the skeleton until hydration completes.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
 
   const rawSettingsOrder = siteSettings.home_bestseller_order;
   const sanitizedSettingsOrder: string[] = Array.isArray(rawSettingsOrder)
