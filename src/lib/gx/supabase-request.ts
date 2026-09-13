@@ -31,32 +31,22 @@ export function supabaseFetch(key: string): typeof fetch {
   };
 }
 
-function supabaseEnv() {
-  // Static `import.meta.env.VITE_*` reads are the only ones Vite inlines at build
-  // time; dynamic indexing can come back undefined in the worker runtime.
-  const env = (import.meta.env ?? {}) as Record<string, string | undefined>;
-  const proc = (typeof process !== "undefined" ? process.env : {}) as Record<
-    string,
-    string | undefined
-  >;
-  const url =
-    proc["SUPABASE_URL"] ||
-    proc["VITE_SUPABASE_URL"] ||
-    import.meta.env.VITE_SUPABASE_URL ||
-    env["VITE_SUPABASE_URL"];
-  const key =
-    proc["SUPABASE_PUBLISHABLE_KEY"] ||
-    proc["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+import {
+  getSupabaseUrl,
+  getSupabasePublishableKey,
+  DEFAULT_SUPABASE_URL,
+  DEFAULT_SUPABASE_PUBLISHABLE_KEY,
+} from "@/integrations/supabase/config";
 
-  if (!url || !key) {
-    throw new Error(
-      "Backend is not configured: missing SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY in the server environment.",
-    );
-  }
-  return { url, key };
+export { DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_PUBLISHABLE_KEY };
+
+export function supabaseEnv() {
+  return {
+    url: getSupabaseUrl(),
+    key: getSupabasePublishableKey(),
+  };
 }
+
 
 
 /** Anon-key client for public, unauthenticated reads. No identity, no RLS bypass. */

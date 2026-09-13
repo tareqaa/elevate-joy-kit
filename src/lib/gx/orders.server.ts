@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { loadCatalogPriceOverrides, priceCartItems, isAdminUser, loadDbBasePrices } from "./pricing.server";
-import { supabaseFetch } from "@/lib/gx/supabase-request";
+import { supabaseFetch, supabaseEnv } from "@/lib/gx/supabase-request";
 
 
 type CreateOrderInput = {
@@ -46,21 +46,13 @@ type CreateOrderInput = {
  * `create_store_order` security-definer function still runs as the right user.
  */
 function getOrderClient(accessToken?: string | null) {
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const { url, key: defaultKey } = supabaseEnv();
   const serviceKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_SECRET_KEY ||
     process.env.SERVICE_ROLE_KEY;
-  const publishableKey =
-    process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const key = serviceKey || publishableKey;
-  if (!url || !key) {
-    throw new Error(
-      "Backend is not configured: missing " +
-        (!url ? "SUPABASE_URL" : "SUPABASE_PUBLISHABLE_KEY") +
-        " in the server environment.",
-    );
-  }
+  const key = serviceKey || defaultKey;
+
   const useUserToken = !serviceKey && !!accessToken;
   return createClient<Database>(url, key, {
     global: {

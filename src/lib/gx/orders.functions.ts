@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { createStoreOrder } from "./orders.server";
 import { resolveSafeClientIp } from "./ip";
+import { supabaseEnv } from "./supabase-request";
 
 export const submitStoreOrder = createServerFn({ method: "POST" })
   .validator((data: unknown) => z.object({
@@ -45,16 +46,13 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       const token = authHeader.slice(7).trim();
       if (token) {
         accessToken = token;
-        const url = process.env.SUPABASE_URL;
-        const key = process.env.SUPABASE_PUBLISHABLE_KEY;
-        if (url && key) {
-          const supabase = createClient<Database>(url, key, {
-            auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-          });
-          const { data: userData } = await supabase.auth.getUser(token);
-          userId = userData.user?.id ?? null;
-          if (!userId) accessToken = null;
-        }
+        const { url, key } = supabaseEnv();
+        const supabase = createClient<Database>(url, key, {
+          auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+        });
+        const { data: userData } = await supabase.auth.getUser(token);
+        userId = userData.user?.id ?? null;
+        if (!userId) accessToken = null;
       }
     }
 
