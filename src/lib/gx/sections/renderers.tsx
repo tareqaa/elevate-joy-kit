@@ -437,7 +437,7 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
   const hasSettingsOrder = sanitizedSettingsOrder.length > 0;
 
   // If site settings have not loaded from server yet and we don't have cached items, show luxury skeleton
-  if (!siteSettings.isLoaded && !hasSettingsItems && !hasSettingsOrder) {
+  if (!hydrated || (!siteSettings.isLoaded && !hasSettingsItems && !hasSettingsOrder)) {
     return <BestsellersSkeleton data={data} />;
   }
 
