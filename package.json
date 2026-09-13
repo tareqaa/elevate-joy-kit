@@ -105,6 +105,9 @@
     "hono": "^4.13.6",
     "fast-uri": "^3.1.7",
     "ip-address": "^10.4.0",
+    "qs": "^6.16.0",
+    "browserslist": "^4.28.9",
+    "baseline-browser-mapping": "^2.11.22",
     "@hono/node-server": "^2.1.0"
   },
   "resolutions": {
@@ -112,6 +115,9 @@
     "hono": "^4.13.6",
     "fast-uri": "^3.1.7",
     "ip-address": "^10.4.0",
+    "qs": "^6.16.0",
+    "browserslist": "^4.28.9",
+    "baseline-browser-mapping": "^2.11.22",
     "@hono/node-server": "^2.1.0"
   }
 }
