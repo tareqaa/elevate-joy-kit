@@ -1055,7 +1055,7 @@ function QuickPriceDialog({
       await clearDbVariantsCache();
 
       toast.success("تم تحديث السعر بنجاح ومزامنته في كل مكان (المتجر، الأكثر مبيعاً، والسلة)");
-      onSaved();
+      onSaved?.();
     } catch (e: any) {
       toast.error(e.message || "فشل التحديث");
     } finally {

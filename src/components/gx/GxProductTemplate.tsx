@@ -724,13 +724,13 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
     ];
   }, [deliveryInfo.type, ar]);
 
-  const categoryLink = useMemo(() => {
+  const categorySlug = useMemo<string | null>(() => {
     const c = (categoryName || "").toLowerCase();
-    if (c.includes("اشتراك") || c.includes("subscrip")) return "/category/subscriptions";
-    if (c.includes("لعب") || c.includes("game")) return "/category/games";
-    if (c.includes("برامج") || c.includes("soft") || c.includes("design")) return "/category/design";
-    if (c.includes("بطاق") || c.includes("card")) return "/category/gift-cards";
-    return "/products";
+    if (c.includes("اشتراك") || c.includes("subscrip")) return "subscriptions";
+    if (c.includes("لعب") || c.includes("game")) return "games";
+    if (c.includes("برامج") || c.includes("soft") || c.includes("design")) return "design";
+    if (c.includes("بطاق") || c.includes("card")) return "gift-cards";
+    return null;
   }, [categoryName]);
 
   return (
@@ -739,7 +739,13 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
       <nav className="driffle-breadcrumbs gx-breadcrumbs" aria-label="Breadcrumbs">
         <Link to="/">{ar ? "الرئيسية" : "Home"}</Link>
         <span className="sep">&gt;</span>
-        <Link to={categoryLink}>{categoryName}</Link>
+        {categorySlug ? (
+          <Link to="/category/$slug" params={{ slug: categorySlug }}>
+            {categoryName}
+          </Link>
+        ) : (
+          <Link to="/products">{categoryName}</Link>
+        )}
         <span className="sep">&gt;</span>
         <span className="cur">{name}</span>
       </nav>
