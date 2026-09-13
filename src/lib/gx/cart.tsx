@@ -11,7 +11,18 @@ import { supabase } from "@/integrations/supabase/client";
 type CartItem = {
   cartId: string;
   qty: number;
-  meta?: { usernames?: string[] };
+  meta?: {
+    usernames?: string[];
+    /** live price captured when the item was added (JOD) */
+    price?: number;
+    product?: string;
+    name?: string;
+    icon?: string;
+    iconImage?: string | null;
+    imageUrl?: string | null;
+    bg?: string;
+    [key: string]: unknown;
+  };
   custom?: { name: string; icon: string; bg: string; price: number };
 };
 
@@ -689,7 +700,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           if (customerName) updateData.full_name = customerName;
           if (contactValue) updateData.whatsapp = contactValue;
           if (Object.keys(updateData).length > 0) {
-            await supabase.from("profiles").update(updateData).eq("id", uid);
+            await supabase.from("profiles").update(updateData as never).eq("id", uid);
           }
         }
       } catch { /* noop */ }

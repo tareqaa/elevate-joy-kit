@@ -18,6 +18,10 @@ export type Feature = { icon: string; title: string; desc: string };
 export type Product = {
   slug: string;
   name: string;
+  nameAr?: string;
+  taglineAr?: string;
+  categoryAr?: string;
+  variants?: Plan[];
   icon: string;
   iconImg?: string;
   imageUrl?: string;
@@ -280,6 +284,7 @@ export type Denomination = { id: string; value: string; price: number };
 export type Region = { code: string; flag: string; name: string; denominations: Denomination[] };
 export type GiftCard = {
   name: string;
+  variants?: Plan[];
   icon: string;
   iconImg?: string;
   accent: string;

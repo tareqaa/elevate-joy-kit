@@ -201,6 +201,7 @@ function FullPageProductEditor() {
   // Initialize data once fetched
   useEffect(() => {
     if (rawProduct) {
+      const dd = (rawProduct.delivery_details ?? {}) as Record<string, any>;
       setProductId(rawProduct.id);
       setNameAr(rawProduct.name_ar || "");
       setNameEn(rawProduct.name_en || "");
@@ -222,7 +223,7 @@ function FullPageProductEditor() {
       setRequiresPlayerId(rawProduct.requires_player_id ?? false);
       setIdentifierLabelAr(rawProduct.identifier_label_ar || "");
       setIdentifierPlaceholder(rawProduct.identifier_placeholder || "");
-      setShowNoticeBox(rawProduct.delivery_details?.hide_important_notes !== true);
+      setShowNoticeBox(dd?.hide_important_notes !== true);
 
       // Parse redeem steps
       if (rawProduct.delivery_instructions_ar) {
@@ -233,15 +234,15 @@ function FullPageProductEditor() {
         } catch {
           setRedeemSteps(rawProduct.delivery_instructions_ar.split("\n").filter(Boolean));
         }
-      } else if (rawProduct.delivery_details?.redeem_steps) {
-        setRedeemSteps(rawProduct.delivery_details.redeem_steps);
+      } else if (dd?.redeem_steps) {
+        setRedeemSteps(dd.redeem_steps);
       } else {
         setRedeemSteps(getDefaultRedeemSteps(rawProduct.delivery_type || "code"));
       }
 
       // Parse important notes
-      if (rawProduct.delivery_details?.important_notes && Array.isArray(rawProduct.delivery_details.important_notes)) {
-        setImportantNotes(rawProduct.delivery_details.important_notes);
+      if (dd?.important_notes && Array.isArray(dd.important_notes)) {
+        setImportantNotes(dd.important_notes);
       } else if (rawProduct.delivery_instructions_en) {
         try {
           const parsed = JSON.parse(rawProduct.delivery_instructions_en);
@@ -622,7 +623,7 @@ function FullPageProductEditor() {
 
       if (currentId) {
         // Update product in database
-        const { error: updateErr } = await supabase.from("products").update(payload).eq("id", currentId);
+        const { error: updateErr } = await supabase.from("products").update(payload as never).eq("id", currentId);
         if (updateErr) throw updateErr;
       } else {
         // Insert new product
@@ -807,7 +808,7 @@ function FullPageProductEditor() {
   // Render poster artwork preview
   const renderVisualPoster = () => {
     if (slug === "windows") {
-      return <WindowsPoster cartId={activeVariant?.cart_id || slug} planLabel={activeVariant?.labelAr || nameAr} />;
+      return <WindowsPoster cartId={activeVariant?.cart_id || slug} planLabel={activeVariant?.label_ar || nameAr} />;
     }
     if (slug === "adobe") {
       return <AdobePoster />;
@@ -826,7 +827,7 @@ function FullPageProductEditor() {
             </div>
             {activeVariant && (
               <div className="driffle-cover-bottom">
-                <div className="driffle-cover-duration">{activeVariant.labelAr}</div>
+                <div className="driffle-cover-duration">{activeVariant.label_ar}</div>
                 <div className="driffle-cover-sub">{deliveryInfo.label}</div>
               </div>
             )}
@@ -874,7 +875,7 @@ function FullPageProductEditor() {
           </div>
         </div>
         <div className="driffle-poster-footer">
-          <div className="driffle-poster-duration">{activeVariant?.labelAr || "باقة قياسية"}</div>
+          <div className="driffle-poster-duration">{activeVariant?.label_ar || "باقة قياسية"}</div>
           <span className="driffle-poster-region-badge">{region}</span>
         </div>
       </div>
@@ -1698,7 +1699,7 @@ function FullPageProductEditor() {
               {/* Price Box */}
               <div className="driffle-price-box gx-price-box">
                 <span className="driffle-price-label gx-price-label">
-                  {activeVariant?.labelAr || nameAr || "الباقة المحددة"}
+                  {activeVariant?.label_ar || nameAr || "الباقة المحددة"}
                 </span>
 
                 <div className="driffle-price-main gx-price-main">

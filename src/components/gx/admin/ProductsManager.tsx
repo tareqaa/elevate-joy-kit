@@ -1055,7 +1055,7 @@ function QuickPriceDialog({
       await clearDbVariantsCache();
 
       toast.success("تم تحديث السعر بنجاح ومزامنته في كل مكان (المتجر، الأكثر مبيعاً، والسلة)");
-      onSaved();
+      onSaved?.();
     } catch (e: any) {
       toast.error(e.message || "فشل التحديث");
     } finally {
@@ -1143,6 +1143,7 @@ function ProductModal({
   product: Product | null;
   categories: Category[];
   onClose: () => void;
+  onSaved?: () => void;
 }) {
   const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
@@ -1619,7 +1620,7 @@ function ProductModal({
       }
 
       toast.success("تم حفظ المنتج والمميزات وخطوات التفعيل بنجاح في المتجر!");
-      onSaved();
+      onSaved?.();
     } catch (e: any) {
       toast.error(e.message || "حدث خطأ أثناء الحفظ");
     } finally {

@@ -1936,7 +1936,8 @@ function CategoryPage() {
                   : "يتم حالياً تجهيز وإضافة مكتبة أكواد وحسابات ألعاب بلايستيشن الرسمية بأفضل الأسعار. بإمكانك شحن حسابك مباشرة عبر بطاقات بلايستيشن المتوفرة بالتسليم الفوري!"}
               </p>
               <Link
-                to="/product/playstation"
+                to="/product/$slug"
+                params={{ slug: "playstation" }}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",

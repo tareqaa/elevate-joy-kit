@@ -447,6 +447,7 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
 export type ProductDeliveryType = "key" | "account" | "activation" | "link" | "topup" | "giftcard" | "subscription";
 
 export type CatalogStoreProduct = CatalogCategoryProductItem & {
+  variants?: CatalogVariant[];
   categorySlug?: string | null;
   parentCategorySlug?: string | null;
   categoryNameAr?: string | null;

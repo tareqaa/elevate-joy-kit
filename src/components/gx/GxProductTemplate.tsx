@@ -724,13 +724,13 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
     ];
   }, [deliveryInfo.type, ar]);
 
-  const categoryLink = useMemo(() => {
+  const categorySlug = useMemo<string | null>(() => {
     const c = (categoryName || "").toLowerCase();
-    if (c.includes("اشتراك") || c.includes("subscrip")) return "/category/subscriptions";
-    if (c.includes("لعب") || c.includes("game")) return "/category/games";
-    if (c.includes("برامج") || c.includes("soft") || c.includes("design")) return "/category/design";
-    if (c.includes("بطاق") || c.includes("card")) return "/category/gift-cards";
-    return "/products";
+    if (c.includes("اشتراك") || c.includes("subscrip")) return "subscriptions";
+    if (c.includes("لعب") || c.includes("game")) return "games";
+    if (c.includes("برامج") || c.includes("soft") || c.includes("design")) return "design";
+    if (c.includes("بطاق") || c.includes("card")) return "gift-cards";
+    return null;
   }, [categoryName]);
 
   return (
@@ -739,7 +739,13 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
       <nav className="driffle-breadcrumbs gx-breadcrumbs" aria-label="Breadcrumbs">
         <Link to="/">{ar ? "الرئيسية" : "Home"}</Link>
         <span className="sep">&gt;</span>
-        <Link to={categoryLink}>{categoryName}</Link>
+        {categorySlug ? (
+          <Link to="/category/$slug" params={{ slug: categorySlug }}>
+            {categoryName}
+          </Link>
+        ) : (
+          <Link to="/products">{categoryName}</Link>
+        )}
         <span className="sep">&gt;</span>
         <span className="cur">{name}</span>
       </nav>
@@ -1010,10 +1016,10 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
                 {(product.features && product.features.length > 0
                   ? product.features
                   : [
-                      { titleAr: "وصول غير محدود وسريع", titleEn: "Unlimited Fast Access", descAr: "استفادة كاملة بدون انقطاع طوال فترة الاشتراك.", descEn: "Full access without interruption." },
-                      { titleAr: "ضمان رسمي كامل 100%", titleEn: "100% Official Warranty", descAr: "ضمان حقيقي يشمل الدعم الفني والاستبدال.", descEn: "Comprehensive warranty with continuous support." },
-                      { titleAr: "تسليم فوري ومباشر", titleEn: "Instant Automated Delivery", descAr: "استلام بيانات التفعيل فور إتمام عملية الدفع.", descEn: "Receive credentials immediately upon checkout." },
-                      { titleAr: "تكامل مع مختلف الأجهزة", titleEn: "Multi-Platform Compatibility", descAr: "يعمل على الهاتف، الحاسوب، واللوحي بسلاسة.", descEn: "Works seamlessly across mobile, desktop, and web." },
+                      { icon: null as string | null, titleAr: "وصول غير محدود وسريع", titleEn: "Unlimited Fast Access", descAr: "استفادة كاملة بدون انقطاع طوال فترة الاشتراك.", descEn: "Full access without interruption." },
+                      { icon: null as string | null, titleAr: "ضمان رسمي كامل 100%", titleEn: "100% Official Warranty", descAr: "ضمان حقيقي يشمل الدعم الفني والاستبدال.", descEn: "Comprehensive warranty with continuous support." },
+                      { icon: null as string | null, titleAr: "تسليم فوري ومباشر", titleEn: "Instant Automated Delivery", descAr: "استلام بيانات التفعيل فور إتمام عملية الدفع.", descEn: "Receive credentials immediately upon checkout." },
+                      { icon: null as string | null, titleAr: "تكامل مع مختلف الأجهزة", titleEn: "Multi-Platform Compatibility", descAr: "يعمل على الهاتف، الحاسوب، واللوحي بسلاسة.", descEn: "Works seamlessly across mobile, desktop, and web." },
                     ]
                 ).map((f, i) => (
                   <div key={i} className="driffle-feature-item gx-feature-item">
