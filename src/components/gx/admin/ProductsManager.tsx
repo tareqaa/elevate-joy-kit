@@ -1620,7 +1620,7 @@ function ProductModal({
       }
 
       toast.success("تم حفظ المنتج والمميزات وخطوات التفعيل بنجاح في المتجر!");
-      onSaved();
+      onSaved?.();
     } catch (e: any) {
       toast.error(e.message || "حدث خطأ أثناء الحفظ");
     } finally {
