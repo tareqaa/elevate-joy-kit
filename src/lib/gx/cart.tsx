@@ -11,7 +11,18 @@ import { supabase } from "@/integrations/supabase/client";
 type CartItem = {
   cartId: string;
   qty: number;
-  meta?: { usernames?: string[] };
+  meta?: {
+    usernames?: string[];
+    /** live price captured when the item was added (JOD) */
+    price?: number;
+    product?: string;
+    name?: string;
+    icon?: string;
+    iconImage?: string | null;
+    imageUrl?: string | null;
+    bg?: string;
+    [key: string]: unknown;
+  };
   custom?: { name: string; icon: string; bg: string; price: number };
 };
 
