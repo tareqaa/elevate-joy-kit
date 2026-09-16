@@ -34,7 +34,10 @@ function isClientDisconnect(error: unknown): boolean {
 
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
-async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
+async function normalizeCatastrophicSsrResponse(
+  response: Response,
+  request: Request,
+): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) return response;
@@ -43,7 +46,9 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   if (!isH3SwallowedErrorBody(body)) return response;
 
   const captured = consumeLastCapturedError();
-  if (isClientDisconnect(captured)) {
+  // Either the abort reached our capture hook, or the socket is simply gone
+  // (h3 hides the cause, so an aborted signal with no captured error is one).
+  if (isClientDisconnect(captured) || (!captured && request.signal?.aborted)) {
     // Nothing to show — the client is already gone.
     return new Response(null, { status: 499 });
   }
@@ -104,7 +109,7 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      const normalized = await normalizeCatastrophicSsrResponse(response);
+      const normalized = await normalizeCatastrophicSsrResponse(response, request);
       return applySecurityHeaders(normalized, request);
     } catch (error) {
       if (isClientDisconnect(error) || request.signal?.aborted) {
