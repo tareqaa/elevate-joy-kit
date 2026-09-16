@@ -70,7 +70,7 @@ export const DEFAULT_RECENT_ITEMS: RecentlyViewedItem[] = [
     taglineEn: "1,000 Real Instagram Followers with guarantee",
     price: 1.5,
     oldPrice: 2.5,
-    imageUrl: "/app/assets/img/catalog/instagram-followers.jpg",
+    imageUrl: "/app/assets/img/instagram-logo.svg",
     icon: "📱",
     categorySlug: "social-media",
     viewedAt: Date.now() - 3500,

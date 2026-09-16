@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
 import { useCurrency } from "@/lib/gx/currency";
@@ -69,6 +69,44 @@ function CardProductImage({
 }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  // Sync ref and check if already complete in cache immediately on DOM attach
+  const setImgRef = useCallback((node: HTMLImageElement | null) => {
+    imgRef.current = node;
+    if (node && node.complete) {
+      if (node.naturalWidth > 0) {
+        setLoaded(true);
+      } else if (node.naturalWidth === 0 && node.src) {
+        setError(true);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!src || src.trim() === "") {
+      setError(true);
+      return;
+    }
+
+    setError(false);
+
+    // If image is already complete in DOM / cache, mark loaded instantly
+    if (imgRef.current && imgRef.current.complete) {
+      if (imgRef.current.naturalWidth > 0) {
+        setLoaded(true);
+        return;
+      }
+    }
+
+    // Safety timeout: Never spin infinitely under any circumstance.
+    // If the image hasn't reported loaded within 1200ms, fade out spinner and display image.
+    const timer = setTimeout(() => {
+      setLoaded(true);
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [src]);
 
   return (
     <div
@@ -92,8 +130,9 @@ function CardProductImage({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(255, 255, 255, 0.03)",
+            background: "radial-gradient(circle at center, rgba(168, 85, 247, 0.12) 0%, rgba(15, 23, 42, 0.4) 100%)",
             zIndex: 1,
+            pointerEvents: "none",
           }}
         >
           <div className="prod-spinner-ring" />
@@ -103,19 +142,21 @@ function CardProductImage({
         <span style={{ fontSize: 38 }}>🎮</span>
       ) : (
         <img
+          ref={setImgRef}
           src={src}
           alt={alt}
-          loading="lazy"
-          decoding="async"
           className={className}
           draggable={false}
           onLoad={() => setLoaded(true)}
-          onError={() => setError(true)}
+          onError={() => {
+            setError(true);
+            setLoaded(true);
+          }}
           onContextMenu={(e) => e.preventDefault()}
           style={{
             ...style,
             opacity: loaded ? 1 : 0,
-            transition: "opacity 0.28s ease-in-out",
+            transition: "opacity 0.22s ease-in-out",
           }}
         />
       )}
@@ -272,8 +313,6 @@ export function StoreProductCard({
           <img
             src={imgSrc!}
             alt={name}
-            loading="lazy"
-            decoding="async"
             style={{
               width: 76,
               height: 76,
