@@ -141,8 +141,8 @@ function ProductPage() {
             "fn-vb-12500": {
               nameAr: "فورت نايت — 12500 وحدة V-Bucks",
               nameEn: "Fortnite — 12500 V-Bucks",
-              price: 49,
-              oldPrice: 65,
+              price: 38,
+              oldPrice: 49,
               img: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_12500_EGS_Portrait_1200x1600_1200x1600-070f17d0f6a34e9180b2927c8c24c40e",
             },
           };
