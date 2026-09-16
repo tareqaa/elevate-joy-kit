@@ -42,6 +42,25 @@
 .delivery-list li::before{
   content:"›"; position:absolute; right:0; top:0; color:var(--cyan); font-weight:900;
 }
-@media(max-width:700px){
-  .delivery-cols{grid-template-columns:1fr;}
+
+@media(max-width:768px){
+  .vbucks-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .vbucks-grid .prod-card {
+    max-width: 100% !important;
+    flex: none !important;
+    min-width: 0 !important;
+  }
+  .custom-vb-card {
+    max-width: 100% !important;
+    flex: none !important;
+    padding: 16px 14px !important;
+  }
+  .delivery-cols {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
 }

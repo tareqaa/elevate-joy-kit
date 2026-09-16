@@ -66,6 +66,33 @@ interface CategoryFilterTab {
   match: (p: CatalogStoreProduct) => boolean;
 }
 
+const isGameCurrency = (p: CatalogStoreProduct) => {
+  const cat = (p.categorySlug || "").toLowerCase();
+  const slug = (p.slug || "").toLowerCase();
+  const name = (p.nameAr || "").toLowerCase();
+  return (
+    cat === "fortnite" ||
+    cat === "pubg-mobile" ||
+    cat === "free-fire" ||
+    cat === "roblox" ||
+    slug === "fortnite" ||
+    slug === "pubg-mobile-uc" ||
+    slug === "free-fire-diamonds" ||
+    slug === "roblox-robux" ||
+    slug.includes("pubg") ||
+    slug.includes("free-fire") ||
+    slug.includes("roblox") ||
+    slug.includes("fortnite") ||
+    slug.includes("vbucks") ||
+    slug.includes("robux") ||
+    slug.includes("uc") ||
+    name.includes("شدات") ||
+    name.includes("جواهر") ||
+    name.includes("روبوكس") ||
+    name.includes("v-bucks")
+  );
+};
+
 const CATEGORY_TABS: CategoryFilterTab[] = [
   {
     id: "all",
@@ -74,6 +101,37 @@ const CATEGORY_TABS: CategoryFilterTab[] = [
     icon: "🌟",
     color: "#00f5a0",
     match: () => true,
+  },
+  {
+    id: "currencies",
+    nameAr: "عملات وشحن الألعاب",
+    nameEn: "Game Currencies",
+    icon: "🪙",
+    color: "#00e5ff",
+    match: isGameCurrency,
+  },
+  {
+    id: "games",
+    nameAr: "ألعاب الفيديو",
+    nameEn: "Video Games",
+    icon: "🎮",
+    color: "#8b5cf6",
+    match: (p) =>
+      !isGameCurrency(p) &&
+      (p.parentCategorySlug === "games" ||
+        p.categorySlug === "games" ||
+        p.categorySlug === "pc-games" ||
+        p.categorySlug === "xbox-games" ||
+        p.categorySlug === "sony" ||
+        (p.slug || "").includes("fifa") ||
+        (p.slug || "").includes("fc-") ||
+        (p.slug || "").includes("gta") ||
+        (p.slug || "").includes("red-dead") ||
+        (p.slug || "").includes("minecraft") ||
+        (p.slug || "").includes("helldivers") ||
+        (p.slug || "").includes("forza") ||
+        (p.slug || "").includes("resident-evil") ||
+        (p.slug || "").includes("mortal-kombat")),
   },
   {
     id: "subscriptions",
@@ -87,27 +145,6 @@ const CATEGORY_TABS: CategoryFilterTab[] = [
       (p.slug || "").includes("game-pass") ||
       (p.slug || "").includes("nitro") ||
       (p.slug || "").includes("youtube"),
-  },
-  {
-    id: "games",
-    nameAr: "الألعاب",
-    nameEn: "Games",
-    icon: "🎮",
-    color: "#8b5cf6",
-    match: (p) =>
-      p.parentCategorySlug === "games" ||
-      p.categorySlug === "games" ||
-      p.categorySlug === "pc-games" ||
-      p.categorySlug === "fortnite" ||
-      p.categorySlug === "pubg-mobile" ||
-      p.categorySlug === "free-fire" ||
-      p.categorySlug === "roblox" ||
-      (p.slug || "").includes("pubg") ||
-      (p.slug || "").includes("free-fire") ||
-      (p.slug || "").includes("roblox") ||
-      (p.slug || "").includes("fortnite") ||
-      (p.slug || "").includes("fifa") ||
-      (p.slug || "").includes("fc-"),
   },
   {
     id: "design",
@@ -215,7 +252,13 @@ function AllProductsPage() {
     const minPriceParam = params.get("min_price");
     const delivParam = params.get("delivery_type");
 
-    if (catParam) setSelectedCat(catParam);
+    if (catParam) {
+      if (catParam === "game-currencies" || catParam === "currencies") {
+        setSelectedCat("currencies");
+      } else {
+        setSelectedCat(catParam);
+      }
+    }
     if (sortParam) setSortBy(sortParam);
     setSearchQuery(searchParam || "");
     if (maxPriceParam) {

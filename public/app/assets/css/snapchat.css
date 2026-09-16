@@ -84,6 +84,66 @@
 }
 
 @media(max-width:900px){
-  .order-box{grid-template-columns:1fr;}
-  .order-summary{position:static;}
+  .order-box{grid-template-columns:1fr; padding: 22px 18px; gap: 22px;}
+  .order-summary{position:static; padding: 18px 16px;}
+}
+
+@media(max-width:640px){
+  .snap-plan-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .snap-plan {
+    flex: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 14px 16px !important;
+    text-align: start !important;
+    border-radius: 12px !important;
+  }
+  .snap-plan .sp-icon {
+    margin: 0 !important;
+    width: 38px !important;
+    height: 38px !important;
+    flex-shrink: 0 !important;
+  }
+  .snap-plan .sp-label {
+    margin: 0 !important;
+    font-size: 14.5px !important;
+    flex: 1 !important;
+    padding: 0 10px !important;
+    text-align: start !important;
+  }
+  .snap-plan .sp-price {
+    font-size: 18px !important;
+    white-space: nowrap !important;
+  }
+  .snap-plan .sp-check {
+    position: static !important;
+    margin-inline-start: 10px !important;
+    flex-shrink: 0 !important;
+  }
+  .snap-plan .sp-discount {
+    position: static !important;
+    margin-inline-start: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .order-box {
+    padding: 18px 14px !important;
+    gap: 16px !important;
+    border-radius: 16px !important;
+  }
+  .order-summary {
+    padding: 16px 14px !important;
+    border-radius: 14px !important;
+  }
+  .username-field input {
+    font-size: 14px !important;
+    padding: 12px !important;
+  }
 }

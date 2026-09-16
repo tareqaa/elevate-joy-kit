@@ -250,14 +250,14 @@ export function BestSellingGameCurrenciesSection() {
         {/* View All Game Currencies Button - Exactly styled like Best Selling Games */}
         <div className="gx-view-all-games-row">
           <Link
-            to={"/products?category=games&sort=popular" as never}
+            to={"/products?category=currencies" as never}
             className="gx-view-all-games-btn"
           >
             <Sparkles size={18} className="gx-view-all-sparkle" />
             <span>
               {ar
-                ? "عرض الكل (عملات وشحن الألعاب)"
-                : "View All (Game Currencies)"}
+                ? "عرض كل عملات وشحن الألعاب"
+                : "View All Game Currencies"}
             </span>
             <span className="gx-view-all-arrow">{ar ? "‹" : "›"}</span>
           </Link>

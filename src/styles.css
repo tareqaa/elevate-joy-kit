@@ -4639,3 +4639,180 @@ html[dir="ltr"] .gx-nav-login-pill:hover svg {
   .topup-modal-footer { flex-direction: column-reverse; }
   .topup-action-row { flex-direction: column; }
 }
+
+/* ============================================================
+   RESPONSIVE PRODUCT HERO & TEMPLATES (Snapchat & Fortnite Mobile Fixes)
+   ============================================================ */
+.product-hero-badge-img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+  .product-hero {
+    padding: 16px 0 24px !important;
+  }
+  .product-hero-inner {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding: 24px 16px 20px !important;
+    gap: 14px !important;
+    border-radius: 16px !important;
+  }
+  .product-hero-inner::before {
+    background: radial-gradient(300px 200px at 50% 0%, rgba(0, 229, 255, 0.20), transparent 70%) !important;
+  }
+  .product-icon-badge {
+    width: 86px !important;
+    height: 86px !important;
+    margin: 0 auto !important;
+    flex-shrink: 0 !important;
+  }
+  .product-icon-badge .core {
+    width: 72px !important;
+    height: 72px !important;
+    font-size: 32px !important;
+  }
+  .product-hero-badge-img,
+  .product-icon-badge img {
+    width: 42px !important;
+    height: 42px !important;
+    max-width: 42px !important;
+    max-height: 42px !important;
+    border-radius: 10px !important;
+  }
+  .product-hero-text {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  .product-hero-text .cat-tag {
+    margin-bottom: 8px !important;
+    font-size: 11px !important;
+    padding: 4px 12px !important;
+  }
+  .product-hero-text h1 {
+    font-size: 24px !important;
+    font-weight: 900 !important;
+    line-height: 1.3 !important;
+    margin-bottom: 8px !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+  .product-hero-text .hero-sub {
+    font-size: 13.5px !important;
+    line-height: 1.5 !important;
+    color: var(--cyan, #00e5ff) !important;
+    margin-bottom: 6px !important;
+    text-align: center !important;
+  }
+  .product-hero-text p {
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+    color: var(--gray, #94a3b8) !important;
+    max-width: 100% !important;
+    text-align: center !important;
+    margin: 0 auto !important;
+  }
+
+  /* Fortnite Plans Grid on Mobile (2 columns, clean compact proportions) */
+  .plans-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .plans-grid .prod-card {
+    min-width: 0 !important;
+  }
+  .vbucks-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .vbucks-grid .prod-card {
+    max-width: 100% !important;
+    flex: none !important;
+    min-width: 0 !important;
+  }
+
+  /* Fortnite Delivery Details on Mobile */
+  .delivery-box {
+    padding: 16px 14px !important;
+    gap: 12px !important;
+    border-radius: 14px !important;
+  }
+  .delivery-box .dic {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 18px !important;
+  }
+  .delivery-cols {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  /* Snapchat Order Box & Plans on Mobile */
+  .snap-plan-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .snap-plan {
+    flex: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 14px 16px !important;
+    text-align: start !important;
+    border-radius: 12px !important;
+  }
+  .snap-plan .sp-icon {
+    margin: 0 !important;
+    width: 38px !important;
+    height: 38px !important;
+    flex-shrink: 0 !important;
+  }
+  .snap-plan .sp-label {
+    margin: 0 !important;
+    font-size: 14.5px !important;
+    flex: 1 !important;
+    padding: 0 10px !important;
+    text-align: start !important;
+  }
+  .snap-plan .sp-price {
+    font-size: 18px !important;
+    white-space: nowrap !important;
+  }
+  .snap-plan .sp-check {
+    position: static !important;
+    margin-inline-start: 10px !important;
+    flex-shrink: 0 !important;
+  }
+  .snap-plan .sp-discount {
+    position: static !important;
+    margin-inline-start: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .order-box {
+    grid-template-columns: 1fr !important;
+    padding: 18px 14px !important;
+    gap: 16px !important;
+    border-radius: 16px !important;
+  }
+  .order-summary {
+    position: static !important;
+    padding: 16px 14px !important;
+    border-radius: 14px !important;
+  }
+  .username-field input {
+    font-size: 14px !important;
+    padding: 12px !important;
+  }
+}

@@ -60,6 +60,13 @@ function ProductHero({ p, l }: { p: CatalogProduct; l: ReturnType<typeof useLoca
       : p.slug === "fortnite"
       ? "/app/assets/img/fortnite-f-icon.jpg"
       : p.imageUrl || p.iconImage;
+
+  // Avoid repeating identical text in both hero-sub and description
+  const cleanDescription =
+    l.description && l.tagline && l.description.startsWith(l.tagline)
+      ? l.description.slice(l.tagline.length).trim().replace(/^[-—،,.]\s*/, "")
+      : l.description;
+
   return (
     <section className="product-hero">
       <div className="wrap">
@@ -67,7 +74,11 @@ function ProductHero({ p, l }: { p: CatalogProduct; l: ReturnType<typeof useLoca
           <div className="product-icon-badge">
             <div className="core">
               {imgSrc ? (
-                <img src={imgSrc} alt={l.name} style={{ width: 56, height: 56, objectFit: "contain", borderRadius: 12 }} />
+                <img
+                  src={imgSrc}
+                  alt={l.name}
+                  className="product-hero-badge-img"
+                />
               ) : (
                 <span>{p.icon}</span>
               )}
@@ -77,7 +88,7 @@ function ProductHero({ p, l }: { p: CatalogProduct; l: ReturnType<typeof useLoca
             {l.category && <span className="cat-tag">{l.category}</span>}
             <h1>{l.name}</h1>
             {l.tagline && l.tagline !== l.name && <p className="hero-sub">{l.tagline}</p>}
-            {l.description && <p>{l.description}</p>}
+            {cleanDescription && <p>{cleanDescription}</p>}
           </div>
         </div>
       </div>
@@ -453,7 +464,7 @@ export function MultiAccountTemplate({ product }: { product: CatalogProduct }) {
                     )}
                   </div>
                   <div className="sp-label">{pl.label}</div>
-                  <div>
+                  <div className="sp-prices-wrap">
                     {pl.oldPrice && <span className="sp-old">{format(pl.oldPrice)}</span>}
                     <span className="sp-price">{format(pl.price)}</span>
                   </div>
