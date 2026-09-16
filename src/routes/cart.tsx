@@ -73,6 +73,7 @@ function CheckoutStepper({ stage, onStepClick }: { stage: 1 | 2; onStepClick: (s
 function CartPage() {
   const { t } = useLang();
   const cart = useCart();
+  const { currency } = useCurrency();
   const [stage, setStage] = useState<1 | 2>(1);
   const [confirmed, setConfirmed] = useState<{
     orderNumber: string;
@@ -80,14 +81,13 @@ function CartPage() {
     paymentMethod?: "cliq" | "card" | "gx_wallet";
   } | null>(null);
 
-  const isJordan = (cart.contact.countryCode || "+962") === "+962";
+  const isJordan =
+    !cart.contact.countryCode ||
+    cart.contact.countryCode.startsWith("+962") ||
+    cart.contact.countryCode === "JO" ||
+    cart.contact.countryCode === "962" ||
+    currency === "JOD";
   const [paymentMethod, setPaymentMethod] = useState<"cliq" | "card">(isJordan ? "cliq" : "card");
-
-  useEffect(() => {
-    if (!isJordan && paymentMethod === "cliq") {
-      setPaymentMethod("card");
-    }
-  }, [isJordan, paymentMethod]);
 
   return (
     <StoreShell>
@@ -839,7 +839,8 @@ function CartPaymentStage2({
   isJordan: boolean;
   onBack: () => void;
 }) {
-  const { t, dir } = useLang();
+  const { t, dir, lang } = useLang();
+  const isAr = lang !== "en";
 
   return (
     <div className="gx-payment-stage-wrapper">
@@ -856,32 +857,31 @@ function CartPaymentStage2({
 
       {/* Payment Selection List (Spacious & Cleanly Separated) */}
       <div className="gx-pm-tiles-list">
-        {/* CliQ Option - Jordan ONLY */}
-        {isJordan && (
-          <div
-            className={"gx-pm-tile " + (paymentMethod === "cliq" ? "active" : "")}
-            onClick={() => setPaymentMethod("cliq")}
-          >
-            <div className="gx-pm-radio">
-              <div className="gx-pm-radio-ring">
-                <div className="gx-pm-radio-inner" />
-              </div>
-            </div>
-
-            <div className="gx-pm-info">
-              <div className="gx-pm-name-row">
-                <span className="gx-pm-name">{t("cart.method_cliq")}</span>
-                <span className="gx-pm-tag cliq">{t("cart.badge_jordan_only")}</span>
-              </div>
-              <p className="gx-pm-desc">{t("cart.method_cliq_desc")}</p>
-            </div>
-
-            {/* Official CliQ Logo in pristine white container */}
-            <div className="gx-pm-logo cliq">
-              <img src="/app/assets/img/cliq-logo.png" alt="CliQ" />
+        {/* CliQ Option - Always Available */}
+        <div
+          className={"gx-pm-tile " + (paymentMethod === "cliq" ? "active" : "")}
+          onClick={() => setPaymentMethod("cliq")}
+        >
+          <div className="gx-pm-radio">
+            <div className="gx-pm-radio-ring">
+              <div className="gx-pm-radio-inner" />
             </div>
           </div>
-        )}
+
+          <div className="gx-pm-info">
+            <div className="gx-pm-name-row">
+              <span className="gx-pm-name">{t("cart.method_cliq")}</span>
+              <span className="gx-pm-tag cliq">{t("cart.badge_jordan_only")}</span>
+              <span className="gx-pm-fee-pill free">{isAr ? "بدون رسوم إضافية (0%)" : "0% Extra Fees"}</span>
+            </div>
+            <p className="gx-pm-desc">{t("cart.method_cliq_desc")}</p>
+          </div>
+
+          {/* Official CliQ Logo in pristine white container */}
+          <div className="gx-pm-logo cliq">
+            <img src="/app/assets/img/cliq-logo.png" alt="CliQ" />
+          </div>
+        </div>
 
         {/* Visa / Mastercard Option - Jordan & International */}
         <div
@@ -898,6 +898,7 @@ function CartPaymentStage2({
             <div className="gx-pm-name-row">
               <span className="gx-pm-name">{t("cart.method_card")}</span>
               <span className="gx-pm-tag card">{t("cart.badge_global_local")}</span>
+              <span className="gx-pm-fee-pill fee">{isAr ? "+4% + 0.30 د.أ رسوم خدمة" : "+4% + 0.30 JOD Fee"}</span>
             </div>
             <p className="gx-pm-desc">{t("cart.method_card_desc")}</p>
           </div>
@@ -924,9 +925,26 @@ function CartOrderRecapStage2({
 }) {
   const cart = useCart();
   const { format } = useCurrency();
-  const { t, lang } = useLang();
+  const { t, lang, dir } = useLang();
+  const isAr = lang !== "en";
   const [busy, setBusy] = useState(false);
+  const [showFeeInfo, setShowFeeInfo] = useState(false);
   const site = useSiteSettings();
+
+  const netBeforeFee = Math.max(
+    0,
+    cart.subtotalJOD -
+      (cart.coupon?.discount_jod ?? 0) -
+      (cart.coins?.discount_jod ?? 0) -
+      cart.creditJOD
+  );
+
+  const cardServiceFeeJOD =
+    paymentMethod === "card" && netBeforeFee > 0
+      ? Math.round(((netBeforeFee * 0.04) + 0.30) * 1000) / 1000
+      : 0;
+
+  const finalTotalJOD = Math.round((netBeforeFee + cardServiceFeeJOD) * 1000) / 1000;
 
   async function handleCheckout() {
     if (site.maintenance_mode) {
@@ -1019,6 +1037,26 @@ function CartOrderRecapStage2({
           <span>{t("cart.subtotal")}</span>
           <span>{format(cart.subtotalJOD)}</span>
         </div>
+
+        {/* Payment Gateway Processing Fee (Visa / Mastercard) */}
+        {paymentMethod === "card" && (
+          <div className="summary-line gx-fee-summary-line" style={{ color: "#38bdf8" }}>
+            <div className="gx-fee-label-col">
+              <span>{isAr ? "رسوم الخدمة" : "Service Fee"}</span>
+              <button
+                type="button"
+                className="gx-fee-q-btn"
+                onClick={() => setShowFeeInfo(true)}
+                aria-label={isAr ? "شرح رسوم الخدمة" : "Service fee info"}
+                title={isAr ? "اضغط لمعرفة سبب وتفاصيل رسوم معالجة بوابات الدفع" : "Click to view gateway fee details"}
+              >
+                ?
+              </button>
+            </div>
+            <span className="gx-fee-val">+{format(cardServiceFeeJOD)}</span>
+          </div>
+        )}
+
         {cart.coupon && (
           <div className="summary-line" style={{ color: "#00e5b0" }}>
             <span>{t("cart.discount")} ({cart.coupon.code})</span>
@@ -1039,7 +1077,7 @@ function CartOrderRecapStage2({
         )}
         <div className="summary-total">
           <span className="lbl">{t("cart.total")}</span>
-          <span className="val">{format(cart.totalJOD)}</span>
+          <span className="val">{format(finalTotalJOD)}</span>
         </div>
       </div>
 
@@ -1052,6 +1090,71 @@ function CartOrderRecapStage2({
       >
         {busy ? t("cart.checkout_saving") : t("cart.complete_payment") + " 💳"}
       </button>
+
+      {/* Fee Explanation Modal */}
+      {showFeeInfo && (
+        <div
+          className="gx-fee-modal-overlay"
+          onClick={() => setShowFeeInfo(false)}
+        >
+          <div
+            className="gx-fee-modal-card"
+            onClick={(e) => e.stopPropagation()}
+            dir={dir}
+          >
+            <div className="gx-fee-modal-head">
+              <div className="gx-fee-modal-title">
+                <span style={{ fontSize: 20 }}>💳</span>
+                <h4>{isAr ? "رسوم معالجة بوابات الدفع (Visa / Mastercard)" : "Payment Processing Fees"}</h4>
+              </div>
+              <button
+                type="button"
+                className="gx-fee-close-btn"
+                onClick={() => setShowFeeInfo(false)}
+                aria-label={isAr ? "إغلاق" : "Close"}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="gx-fee-modal-body">
+              <p>
+                {isAr
+                  ? "تُفرض هذه الرسوم لتغطية تكاليف الربط والمعالجة البنكية الآمنة التي تقتطعها بوابات الدفع الإلكتروني والشبكات المصرفية العالمية (Visa و Mastercard) عن كل عملية شراء، بنسبة 4% بالإضافة إلى 0.30 د.أ رسوم ثابتة."
+                  : "This fee covers the electronic gateway connection and secure banking processing charges applied by international card networks (Visa & Mastercard) at 4% + 0.30 JOD fixed per transaction."}
+              </p>
+              <div className="gx-fee-calc-box">
+                <div className="gx-fee-calc-row">
+                  <span>{isAr ? "نسبة المعالجة البنكية:" : "Processing Rate:"}</span>
+                  <strong>4%</strong>
+                </div>
+                <div className="gx-fee-calc-row">
+                  <span>{isAr ? "الرسوم الثابتة للعملية:" : "Fixed Gateway Fee:"}</span>
+                  <strong>{format(0.30)}</strong>
+                </div>
+              </div>
+              <div className="gx-fee-tip-box">
+                <span style={{ fontSize: 18, flexShrink: 0 }}>💡</span>
+                <p>
+                  {isAr
+                    ? "نصيحة للتوفير: يمكنك تجنب هذه الرسوم بالكامل بنسبة 100% باختيار طريقة الدفع كليك (CliQ) بدون أي رسوم إضافية 🇯🇴."
+                    : "Saving Tip: You can completely avoid this fee by paying via CliQ with 0% extra fees 🇯🇴."}
+                </p>
+              </div>
+            </div>
+
+            <div className="gx-fee-modal-footer">
+              <button
+                type="button"
+                className="gx-fee-confirm-btn"
+                onClick={() => setShowFeeInfo(false)}
+              >
+                {isAr ? "فهمت ذلك" : "Got it"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1543,6 +1646,188 @@ const checkoutCss = `
 .gx-coupon-msg{margin-top:6px;font-size:12px;font-weight:700;padding:6px 10px;border-radius:8px}
 .gx-coupon-msg.ok{background:rgba(0,229,176,.12);color:#00e5b0}
 .gx-coupon-msg.err{background:rgba(255,84,112,.1);color:#ff98a8}
+
+/* Service Fee Line & Info Tooltip / Modal */
+.gx-fee-summary-line {
+  background: rgba(56, 189, 248, 0.05);
+  border-radius: 8px;
+  padding: 4px 8px;
+  margin: 2px -8px;
+}
+.gx-fee-label-col {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.gx-fee-q-btn {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+.gx-fee-q-btn:hover {
+  background: rgba(0, 229, 255, 0.25);
+  border-color: #00e5ff;
+  color: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+  transform: scale(1.1);
+}
+.gx-fee-val {
+  font-weight: 800;
+}
+.gx-pm-fee-pill {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+}
+.gx-pm-fee-pill.free {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+.gx-pm-fee-pill.fee {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+.gx-fee-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10060;
+  background: rgba(3, 6, 15, 0.82);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: gxFadeIn 0.2s ease-out;
+}
+.gx-fee-modal-card {
+  background: linear-gradient(160deg, #131722 0%, #0b0e17 100%);
+  border: 1px solid rgba(0, 229, 255, 0.32);
+  border-radius: 20px;
+  padding: 24px;
+  max-width: 450px;
+  width: 100%;
+  color: #f1f5f9;
+  box-shadow: 0 25px 70px -15px rgba(0, 229, 255, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  font-family: inherit;
+  animation: gxPop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  box-sizing: border-box;
+}
+.gx-fee-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.gx-fee-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.gx-fee-modal-title h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+}
+.gx-fee-close-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.gx-fee-close-btn:hover {
+  background: rgba(255, 84, 112, 0.2);
+  color: #ff5470;
+  border-color: rgba(255, 84, 112, 0.4);
+}
+.gx-fee-modal-body p {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #cbd5e1;
+  margin: 0 0 14px;
+}
+.gx-fee-calc-box {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gx-fee-calc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #94a3b8;
+}
+.gx-fee-calc-row strong {
+  color: #00e5ff;
+  font-weight: 800;
+}
+.gx-fee-tip-box {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.gx-fee-tip-box p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #6ee7b7;
+  font-weight: 600;
+}
+.gx-fee-confirm-btn {
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #00e5ff, #3b82f6);
+  border: none;
+  color: #020817;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 6px 20px -4px rgba(0, 229, 255, 0.4);
+}
+.gx-fee-confirm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px -4px rgba(0, 229, 255, 0.6);
+}
 
 @media (max-width:900px){
   .gx-eneba-grid{grid-template-columns:1fr}

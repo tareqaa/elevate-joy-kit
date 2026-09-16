@@ -245,11 +245,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
           if (needsName && prof?.full_name) next.name = prof.full_name;
           if (needsEmail && emailVal) next.email = emailVal;
           if (needsPhone && prof?.whatsapp) {
-            // stored as "+962XXXXXXX" — split code from digits
             const raw = String(prof.whatsapp).trim();
-            const m = raw.match(/^(\+\d{1,4})(\d+)$/);
-            if (m) { next.countryCode = m[1]; next.phone = m[2]; next.type = "whatsapp"; }
-            else { next.phone = raw.replace(/^@+/, ""); }
+            if (/^(?:\+?962|00962)/.test(raw)) {
+              const digits = raw.replace(/^(?:\+962|00962|962)/, "").replace(/^0+/, "");
+              next.countryCode = "+962";
+              next.phone = digits;
+              next.type = "whatsapp";
+            } else if (/^07[789]\d{7}$/.test(raw)) {
+              next.countryCode = "+962";
+              next.phone = raw.replace(/^0+/, "");
+              next.type = "whatsapp";
+            } else {
+              const m = raw.match(/^(\+\d{1,3})(\d+)$/);
+              if (m) { next.countryCode = m[1]; next.phone = m[2]; next.type = "whatsapp"; }
+              else { next.phone = raw.replace(/^@+/, ""); }
+            }
           }
           try { localStorage.setItem(CONTACT_KEY, JSON.stringify(next)); } catch { /* noop */ }
           return next;
@@ -615,6 +625,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ? "فيزا / ماستركارد (Visa / Mastercard) 💳"
           : "محفظة GX (GX Wallet) 🌐";
 
+      const freshResolved = resolve(rawItems);
+      const freshSubtotal = freshResolved.reduce((s, i) => s + i.price * i.qty, 0);
+      const freshAfterCoupon = Math.max(0, freshSubtotal - (coupon?.discount_jod ?? 0));
+      const freshAfterCoins = Math.max(0, freshAfterCoupon - (coins?.discount_jod ?? 0));
+      const freshAppliedCredit = Math.min(creditJOD, freshAfterCoins);
+      const freshNet = Math.max(0, freshAfterCoins - freshAppliedCredit);
+      const serviceFeeJOD =
+        paymentMethod === "card" && freshNet > 0
+          ? Math.round(((freshNet * 0.04) + 0.30) * 1000) / 1000
+          : 0;
+      const finalTotalJOD = Math.round((freshNet + serviceFeeJOD) * 1000) / 1000;
+
       let msg = `مرحباً GX Store، أود تأكيد طلبي:
 🆔 *رقم الطلب:* ${orderId}
 💳 *طريقة الدفع:* ${pmLabel}`;
@@ -623,8 +645,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         msg += `\n\n📦 *تفاصيل المنتجات:*\n${lines}`;
       }
 
+      if (serviceFeeJOD > 0) {
+        msg += `\n\n⚙️ *رسوم الخدمة (بوابة الدفع 4% + 0.30 د.أ):* ${format(serviceFeeJOD)}`;
+      }
+
+      msg += `\n💰 *الإجمالي النهائي:* ${format(finalTotalJOD)}`;
+
       if (contact.email?.trim()) {
-        msg += `\n\n📧 *البريد:* ${contact.email.trim()}`;
+        msg += `\n📧 *البريد:* ${contact.email.trim()}`;
       }
 
       msg += `\n\n✅ بانتظار استكمال وتأكيد الطلب.`;
@@ -632,7 +660,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const encoded = encodeURIComponent(msg);
       return "https://wa.me/962776252313?text=" + encoded;
     },
-    [items, contact.email, format]
+    [items, contact.email, format, coupon, coins, creditJOD, rawItems]
   );
 
   const submitOrder = useCallback(async (paymentMethod?: "cliq" | "card" | "gx_wallet") => {
@@ -660,7 +688,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const freshAfterCoupon = Math.max(0, freshSubtotal - (coupon?.discount_jod ?? 0));
       const freshAfterCoins = Math.max(0, freshAfterCoupon - (coins?.discount_jod ?? 0));
       const freshAppliedCredit = Math.min(creditJOD, freshAfterCoins);
-      const freshTotalJOD = Math.round(Math.max(0, freshAfterCoins - freshAppliedCredit) * 1000) / 1000;
+      const freshNet = Math.max(0, freshAfterCoins - freshAppliedCredit);
+      const freshServiceFeeJOD =
+        paymentMethod === "card" && freshNet > 0
+          ? Math.round(((freshNet * 0.04) + 0.30) * 1000) / 1000
+          : 0;
+      const freshTotalJOD = Math.round((freshNet + freshServiceFeeJOD) * 1000) / 1000;
 
       const payloadItems = freshResolved.map((it) => ({
         cartId: it.cartId,
