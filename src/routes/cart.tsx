@@ -143,6 +143,7 @@ function CartPage() {
               <div className="gx-eneba-side">
                 <CartOrderRecapStage2
                   paymentMethod={paymentMethod}
+                  isJordan={isJordan}
                   onEditEmail={() => {
                     setStage(1);
                     window.scrollTo({ top: 80, behavior: "smooth" });
@@ -871,8 +872,6 @@ function CartPaymentStage2({
           <div className="gx-pm-info">
             <div className="gx-pm-name-row">
               <span className="gx-pm-name">{t("cart.method_cliq")}</span>
-              <span className="gx-pm-tag cliq">{t("cart.badge_jordan_only")}</span>
-              <span className="gx-pm-fee-pill free">{isAr ? "بدون رسوم إضافية (0%)" : "0% Extra Fees"}</span>
             </div>
             <p className="gx-pm-desc">{t("cart.method_cliq_desc")}</p>
           </div>
@@ -883,7 +882,7 @@ function CartPaymentStage2({
           </div>
         </div>
 
-        {/* Visa / Mastercard Option - Jordan & International */}
+        {/* Visa / Mastercard Option */}
         <div
           className={"gx-pm-tile " + (paymentMethod === "card" ? "active" : "")}
           onClick={() => setPaymentMethod("card")}
@@ -897,8 +896,6 @@ function CartPaymentStage2({
           <div className="gx-pm-info">
             <div className="gx-pm-name-row">
               <span className="gx-pm-name">{t("cart.method_card")}</span>
-              <span className="gx-pm-tag card">{t("cart.badge_global_local")}</span>
-              <span className="gx-pm-fee-pill fee">{isAr ? "+4% + 0.30 د.أ رسوم خدمة" : "+4% + 0.30 JOD Fee"}</span>
             </div>
             <p className="gx-pm-desc">{t("cart.method_card_desc")}</p>
           </div>
@@ -916,10 +913,12 @@ function CartPaymentStage2({
 /** Stage 2 Left Column: Order Recap & Complete Payment */
 function CartOrderRecapStage2({
   paymentMethod,
+  isJordan,
   onEditEmail,
   onConfirmed,
 }: {
   paymentMethod: "cliq" | "card";
+  isJordan: boolean;
   onEditEmail: () => void;
   onConfirmed: (data: { orderNumber: string; waUrl: string | null; paymentMethod?: "cliq" | "card" }) => void;
 }) {
@@ -1133,14 +1132,17 @@ function CartOrderRecapStage2({
                   <strong>{format(0.30)}</strong>
                 </div>
               </div>
-              <div className="gx-fee-tip-box">
-                <span style={{ fontSize: 18, flexShrink: 0 }}>💡</span>
-                <p>
-                  {isAr
-                    ? "نصيحة للتوفير: يمكنك تجنب هذه الرسوم بالكامل بنسبة 100% باختيار طريقة الدفع كليك (CliQ) بدون أي رسوم إضافية 🇯🇴."
-                    : "Saving Tip: You can completely avoid this fee by paying via CliQ with 0% extra fees 🇯🇴."}
-                </p>
-              </div>
+              {/* Saving Tip: Only shown for Jordan since CliQ is exclusive to Jordan */}
+              {isJordan && (
+                <div className="gx-fee-tip-box">
+                  <span style={{ fontSize: 18, flexShrink: 0 }}>💡</span>
+                  <p>
+                    {isAr
+                      ? "نصيحة للتوفير: يمكنك تجنب هذه الرسوم بالكامل بنسبة 100% باختيار طريقة الدفع كليك (CliQ) بدون أي رسوم إضافية 🇯🇴."
+                      : "Saving Tip: You can completely avoid this fee by paying via CliQ with 0% extra fees 🇯🇴."}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="gx-fee-modal-footer">
