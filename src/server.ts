@@ -18,6 +18,20 @@ async function getServerEntry(): Promise<ServerEntry> {
   return serverEntryPromise;
 }
 
+// A client that navigates away / reloads mid-response aborts the socket. That
+// surfaces as ECONNRESET / AbortError and must NOT be reported as an app error.
+function isClientDisconnect(error: unknown): boolean {
+  const seen = new Set<unknown>();
+  let cur: any = error;
+  while (cur && typeof cur === "object" && !seen.has(cur)) {
+    seen.add(cur);
+    if (cur.name === "AbortError" || cur.code === "ECONNRESET" || cur.code === "ABORT_ERR") return true;
+    if (typeof cur.message === "string" && /aborted|ECONNRESET|socket hang up/i.test(cur.message)) return true;
+    cur = cur.cause;
+  }
+  return false;
+}
+
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
@@ -28,12 +42,19 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   const body = await response.clone().text();
   if (!isH3SwallowedErrorBody(body)) return response;
 
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
+  const captured = consumeLastCapturedError();
+  if (isClientDisconnect(captured)) {
+    // Nothing to show — the client is already gone.
+    return new Response(null, { status: 499 });
+  }
+
+  console.error(captured ?? new Error(`h3 swallowed SSR error: ${body}`));
   return new Response(renderErrorPage(), {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
   });
 }
+
 
 function isH3SwallowedErrorBody(body: string): boolean {
   try {
@@ -86,7 +107,11 @@ export default {
       const normalized = await normalizeCatastrophicSsrResponse(response);
       return applySecurityHeaders(normalized, request);
     } catch (error) {
+      if (isClientDisconnect(error) || request.signal?.aborted) {
+        return new Response(null, { status: 499 });
+      }
       console.error(error);
+
       const errorResponse = new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
