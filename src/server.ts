@@ -107,7 +107,11 @@ export default {
       const normalized = await normalizeCatastrophicSsrResponse(response);
       return applySecurityHeaders(normalized, request);
     } catch (error) {
+      if (isClientDisconnect(error) || request.signal?.aborted) {
+        return new Response(null, { status: 499 });
+      }
       console.error(error);
+
       const errorResponse = new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
