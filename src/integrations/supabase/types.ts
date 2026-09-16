@@ -2341,7 +2341,7 @@ export type Database = {
         | "delivered"
         | "cancelled"
         | "refunded"
-      product_delivery_type: "code" | "account" | "topup" | "manual"
+      product_delivery_type: "code" | "account" | "topup" | "manual" | "link"
       product_page_template:
         | "standard"
         | "multi_account"
@@ -2495,7 +2495,7 @@ export const Constants = {
         "cancelled",
         "refunded",
       ],
-      product_delivery_type: ["code", "account", "topup", "manual"],
+      product_delivery_type: ["code", "account", "topup", "manual", "link"],
       product_page_template: [
         "standard",
         "multi_account",
