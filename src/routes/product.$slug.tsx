@@ -105,129 +105,135 @@ function ProductPage() {
     if (!product) return;
     if (typeof window === "undefined") return;
 
-    const hash = window.location.hash ? window.location.hash.replace("#", "") : "";
-    const searchParams = new URLSearchParams(window.location.search);
-    const planParam = searchParams.get("plan") || hash;
+    const timer = window.setTimeout(() => {
+      const hash = window.location.hash ? window.location.hash.replace("#", "") : "";
+      const searchParams = new URLSearchParams(window.location.search);
+      const planParam = searchParams.get("plan") || hash;
 
-    // 1. Fortnite specific handling (Crew vs V-Bucks packs)
-    if (product.slug === "fortnite") {
-      const isVb = planParam && planParam.startsWith("fn-vb");
-      const isCrew3 = planParam === "fn-crew-3";
+      // 1. Fortnite specific handling (Crew vs V-Bucks packs)
+      if (product.slug === "fortnite") {
+        const isVb = planParam && planParam.startsWith("fn-vb");
+        const isCrew3 = planParam === "fn-crew-3";
 
-      if (isVb) {
-        const vbMap: Record<string, { nameAr: string; nameEn: string; price: number; oldPrice: number; img: string }> = {
-          "fn-vb-800": {
-            nameAr: "فورت نايت — 800 وحدة V-Bucks",
-            nameEn: "Fortnite — 800 V-Bucks",
-            price: 5,
-            oldPrice: 7,
-            img: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_800_EGS_Portrait_1200x1600_1200x1600-79529d8c20514e82ae2ebce58991b912",
-          },
-          "fn-vb-2400": {
-            nameAr: "فورت نايت — 2400 وحدة V-Bucks",
-            nameEn: "Fortnite — 2400 V-Bucks",
-            price: 12,
-            oldPrice: 16,
-            img: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_2400_EGS_Landscape_2560x1440_2560x1440-e51d802c9d414431973ae3e2ba60528d",
-          },
-          "fn-vb-4500": {
-            nameAr: "فورت نايت — 4500 وحدة V-Bucks",
-            nameEn: "Fortnite — 4500 V-Bucks",
-            price: 19,
-            oldPrice: 25,
-            img: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_4500_EGS_Landscape_2560x1440_2560x1440-799cfafb76bf4ae795fece5e4c0de4a3",
-          },
-          "fn-vb-12500": {
-            nameAr: "فورت نايت — 12500 وحدة V-Bucks",
-            nameEn: "Fortnite — 12500 V-Bucks",
-            price: 49,
-            oldPrice: 65,
-            img: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_12500_EGS_Portrait_1200x1600_1200x1600-070f17d0f6a34e9180b2927c8c24c40e",
-          },
-        };
-        const selectedVb = vbMap[planParam] || vbMap["fn-vb-800"];
+        if (isVb) {
+          const vbMap: Record<string, { nameAr: string; nameEn: string; price: number; oldPrice: number; img: string }> = {
+            "fn-vb-800": {
+              nameAr: "فورت نايت — 800 وحدة V-Bucks",
+              nameEn: "Fortnite — 800 V-Bucks",
+              price: 5,
+              oldPrice: 7,
+              img: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_800_EGS_Portrait_1200x1600_1200x1600-79529d8c20514e82ae2ebce58991b912",
+            },
+            "fn-vb-2400": {
+              nameAr: "فورت نايت — 2400 وحدة V-Bucks",
+              nameEn: "Fortnite — 2400 V-Bucks",
+              price: 12,
+              oldPrice: 16,
+              img: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_2400_EGS_Landscape_2560x1440_2560x1440-e51d802c9d414431973ae3e2ba60528d",
+            },
+            "fn-vb-4500": {
+              nameAr: "فورت نايت — 4500 وحدة V-Bucks",
+              nameEn: "Fortnite — 4500 V-Bucks",
+              price: 19,
+              oldPrice: 25,
+              img: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_4500_EGS_Landscape_2560x1440_2560x1440-799cfafb76bf4ae795fece5e4c0de4a3",
+            },
+            "fn-vb-12500": {
+              nameAr: "فورت نايت — 12500 وحدة V-Bucks",
+              nameEn: "Fortnite — 12500 V-Bucks",
+              price: 49,
+              oldPrice: 65,
+              img: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_12500_EGS_Portrait_1200x1600_1200x1600-070f17d0f6a34e9180b2927c8c24c40e",
+            },
+          };
+          const selectedVb = vbMap[planParam] || vbMap["fn-vb-800"];
+          trackRecentlyViewed({
+            slug: "fortnite",
+            cartId: planParam,
+            link: `/product/fortnite#${planParam}`,
+            nameAr: selectedVb.nameAr,
+            nameEn: selectedVb.nameEn,
+            price: selectedVb.price,
+            oldPrice: selectedVb.oldPrice,
+            imageUrl: selectedVb.img,
+            categorySlug: "games",
+          });
+          return;
+        }
+
+        // Default or Crew
+        const is3m = isCrew3;
         trackRecentlyViewed({
           slug: "fortnite",
-          cartId: planParam,
-          link: `/product/fortnite#${planParam}`,
-          nameAr: selectedVb.nameAr,
-          nameEn: selectedVb.nameEn,
-          price: selectedVb.price,
-          oldPrice: selectedVb.oldPrice,
-          imageUrl: selectedVb.img,
+          cartId: is3m ? "fn-crew-3" : "fn-crew",
+          link: `/product/fortnite#${is3m ? "fn-crew-3" : "fn-crew"}`,
+          nameAr: is3m ? "فورت نايت كرو — 3 أشهر" : "فورت نايت كرو — شهر",
+          nameEn: is3m ? "Fortnite Crew — 3 Months" : "Fortnite Crew — 1 Month",
+          price: is3m ? 9 : 4,
+          oldPrice: is3m ? 12 : 6,
+          imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
           categorySlug: "games",
         });
         return;
       }
 
-      // Default or Crew
-      const is3m = isCrew3;
-      trackRecentlyViewed({
-        slug: "fortnite",
-        cartId: is3m ? "fn-crew-3" : "fn-crew",
-        link: `/product/fortnite#${is3m ? "fn-crew-3" : "fn-crew"}`,
-        nameAr: is3m ? "فورت نايت كرو — 3 أشهر" : "فورت نايت كرو — شهر",
-        nameEn: is3m ? "Fortnite Crew — 3 Months" : "Fortnite Crew — 1 Month",
-        price: is3m ? 9 : 4,
-        oldPrice: is3m ? 12 : 6,
-        imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
-        categorySlug: "games",
-      });
-      return;
-    }
+      // 2. Snapchat specific handling
+      if (product.slug === "snapchat") {
+        const snapDur = planParam || "snap-6";
+        const snapMap: Record<string, { nameAr: string; nameEn: string; price: number; oldPrice: number }> = {
+          "snap-3": { nameAr: "سناب بلس — 3 أشهر", nameEn: "Snapchat+ — 3 Months", price: 5, oldPrice: 7 },
+          "snap-6": { nameAr: "سناب بلس — 6 أشهر", nameEn: "Snapchat+ — 6 Months", price: 9, oldPrice: 14 },
+          "snap-12": { nameAr: "سناب بلس — 12 شهر", nameEn: "Snapchat+ — 12 Months", price: 17, oldPrice: 26 },
+        };
+        const selectedSnap = snapMap[snapDur] || snapMap["snap-6"];
+        trackRecentlyViewed({
+          slug: "snapchat",
+          cartId: snapDur,
+          link: `/product/snapchat?plan=${snapDur}`,
+          nameAr: selectedSnap.nameAr,
+          nameEn: selectedSnap.nameEn,
+          price: selectedSnap.price,
+          oldPrice: selectedSnap.oldPrice,
+          imageUrl: "/app/assets/img/snapchat-logo.png",
+          categorySlug: "social-media",
+        });
+        return;
+      }
 
-    // 2. Snapchat specific handling
-    if (product.slug === "snapchat") {
-      const snapDur = planParam || "snap-6";
-      const snapMap: Record<string, { nameAr: string; nameEn: string; price: number; oldPrice: number }> = {
-        "snap-3": { nameAr: "سناب بلس — 3 أشهر", nameEn: "Snapchat+ — 3 Months", price: 5, oldPrice: 7 },
-        "snap-6": { nameAr: "سناب بلس — 6 أشهر", nameEn: "Snapchat+ — 6 Months", price: 9, oldPrice: 14 },
-        "snap-12": { nameAr: "سناب بلس — 12 شهر", nameEn: "Snapchat+ — 12 Months", price: 17, oldPrice: 26 },
-      };
-      const selectedSnap = snapMap[snapDur] || snapMap["snap-6"];
-      trackRecentlyViewed({
-        slug: "snapchat",
-        cartId: snapDur,
-        link: `/product/snapchat?plan=${snapDur}`,
-        nameAr: selectedSnap.nameAr,
-        nameEn: selectedSnap.nameEn,
-        price: selectedSnap.price,
-        oldPrice: selectedSnap.oldPrice,
-        imageUrl: "/app/assets/img/snapchat-logo.png",
-        categorySlug: "social-media",
-      });
-      return;
-    }
+      // 3. Adobe specific handling
+      if (product.slug === "adobe") {
+        trackRecentlyViewed({
+          slug: "adobe",
+          cartId: "adobe-1",
+          link: "/product/adobe",
+          nameAr: "أدوبي كرييتف كلاود — اشتراك شهر",
+          nameEn: "Adobe Creative Cloud — 1 Month",
+          price: 10,
+          oldPrice: 15,
+          imageUrl: "/app/assets/img/adobe-cc.webp",
+          categorySlug: "design",
+        });
+        return;
+      }
 
-    // 3. Adobe specific handling
-    if (product.slug === "adobe") {
+      // 4. Default for other products
       trackRecentlyViewed({
-        slug: "adobe",
-        cartId: "adobe-1",
-        link: "/product/adobe",
-        nameAr: "أدوبي كرييتف كلاود — اشتراك شهر",
-        nameEn: "Adobe Creative Cloud — 1 Month",
-        price: 10,
-        oldPrice: 15,
-        imageUrl: "/app/assets/img/adobe-cc.webp",
-        categorySlug: "design",
+        slug: product.slug,
+        nameAr: resolvedNameAr,
+        nameEn: resolvedNameEn,
+        taglineAr: resolvedDescAr,
+        taglineEn: resolvedDescEn,
+        price: effectivePrice,
+        oldPrice: firstVariant?.oldPrice ? Number(firstVariant.oldPrice) : (product.oldPriceJod || undefined),
+        imageUrl: (firstVariant as any)?.imageUrl || product.imageUrl || undefined,
+        icon: product.icon || undefined,
+        categorySlug: product.categoryNameEn?.toLowerCase() || undefined,
       });
-      return;
-    }
+    }, 1000);
 
-    // 4. Default for other products
-    trackRecentlyViewed({
-      slug: product.slug,
-      nameAr: resolvedNameAr,
-      nameEn: resolvedNameEn,
-      taglineAr: resolvedDescAr,
-      taglineEn: resolvedDescEn,
-      price: effectivePrice,
-      oldPrice: firstVariant?.oldPrice ? Number(firstVariant.oldPrice) : (product.oldPriceJod || undefined),
-      imageUrl: (firstVariant as any)?.imageUrl || product.imageUrl || undefined,
-      icon: product.icon || undefined,
-      categorySlug: product.categoryNameEn?.toLowerCase() || undefined,
-    });
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [product, effectivePrice, resolvedNameAr, resolvedNameEn, resolvedDescAr, resolvedDescEn]);
 
   const productImageUrl = product.imageUrl

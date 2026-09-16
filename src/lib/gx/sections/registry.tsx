@@ -6,7 +6,7 @@ import type { ComponentType } from "react";
 import {
   Sparkles, Megaphone, GalleryHorizontal, LayoutGrid,
   Star, ShoppingBag, ShieldCheck, MessageSquare, HelpCircle, Mail,
-  Clock, Gamepad2, Compass, Tag, Zap,
+  Clock, Gamepad2, Compass, Tag, Zap, Coins, Gift,
 } from "lucide-react";
 import type { SectionType } from "./types";
 import {
@@ -22,6 +22,8 @@ import { BestSellingGamesSection } from "@/components/gx/BestSellingGamesSection
 import { DiscoverGamesCategorySection } from "@/components/gx/DiscoverGamesCategorySection";
 import { DiscoverByPriceSection } from "@/components/gx/DiscoverByPriceSection";
 import { BestSellingGamepointsSection } from "@/components/gx/BestSellingGamepointsSection";
+import { BestSellingGameCurrenciesSection } from "@/components/gx/BestSellingGameCurrenciesSection";
+import { BestSellingGiftCardsSection } from "@/components/gx/BestSellingGiftCardsSection";
 import { HomeCategoriesBar } from "@/components/gx/HomeCategoriesBar";
 
 export type SectionDef = {
@@ -120,9 +122,19 @@ export const SECTION_REGISTRY: Record<SectionType, SectionDef> = {
     Renderer: asRenderer(DiscoverByPriceSection), Editor: asEditor(() => null),
   },
   gamepoints: {
-    type: "gamepoints", label: "نقاط وشحن الألعاب", description: "بطاقات ونقاط الألعاب الأكثر مبيعاً", Icon: Zap,
+    type: "gamepoints", label: "نقاط وشحن الألعاب", description: "عملات ونقاط الألعاب الأكثر مبيعاً", Icon: Coins,
     defaultData: {},
-    Renderer: asRenderer(BestSellingGamepointsSection), Editor: asEditor(() => null),
+    Renderer: asRenderer(BestSellingGameCurrenciesSection), Editor: asEditor(() => null),
+  },
+  game_currencies: {
+    type: "game_currencies", label: "عملات الألعاب الأكثر مبيعاً", description: "شحن وعملات فورت نايت وببجي وفري فاير وروبلوكس", Icon: Coins,
+    defaultData: {},
+    Renderer: asRenderer(BestSellingGameCurrenciesSection), Editor: asEditor(() => null),
+  },
+  gift_cards: {
+    type: "gift_cards", label: "بطاقات الهدايا الأكثر مبيعاً", description: "بطاقات الهدايا الرقمية والإلكترونية", Icon: Gift,
+    defaultData: {},
+    Renderer: asRenderer(BestSellingGiftCardsSection), Editor: asEditor(() => null),
   },
 };
 

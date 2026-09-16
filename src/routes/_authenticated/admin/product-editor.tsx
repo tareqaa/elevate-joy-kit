@@ -1716,10 +1716,6 @@ function FullPageProductEditor() {
                     </span>
                   )}
                 </div>
-
-                <div className="driffle-price-note gx-price-note">
-                  السعر النهائي شامل الضريبة والتسليم الفوري ⓘ
-                </div>
               </div>
 
               {/* Simulated Purchase Buttons */}

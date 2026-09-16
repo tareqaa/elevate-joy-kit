@@ -20,7 +20,6 @@ import {
   CrewIcon,
 } from "@/lib/gx/brand-icons";
 import { VBUCKS_TIER_THEMES, CREW_TIER_THEMES } from "@/components/gx/ProductTemplates";
-import { trackRecentlyViewed } from "@/lib/gx/recently-viewed";
 
 export type StoreProductCardProps = {
   slug: string;
@@ -278,6 +277,9 @@ export function StoreProductCard({
     if (str.includes("بريطان") || str.includes("uk") || str.includes("gb") || str.includes("باوند")) {
       return lang === "en" ? "UK 🇬🇧" : "بريطاني 🇬🇧";
     }
+    if (str.includes("أردن") || str.includes("اردن") || str.includes("jordan") || str.includes("jo-") || str.includes("-jo") || r === "jo") {
+      return lang === "en" ? "Jordan 🇯🇴" : "الأردن 🇯🇴";
+    }
     return lang === "en" ? "Global" : "عالمي";
   };
 
@@ -287,29 +289,6 @@ export function StoreProductCard({
     { slug, cartId: finalCartId, name, productType, isGiftCardMaster },
     lang
   );
-
-  const handleTrack = () => {
-    const isCrewPack = isCrew || finalCartId.startsWith("fn-crew") || name.includes("كرو");
-    const trackImage =
-      isCrewPack
-        ? "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473"
-        : (imageUrl || undefined);
-
-    trackRecentlyViewed({
-      slug,
-      cartId: finalCartId,
-      link: finalLink,
-      nameAr: name,
-      nameEn: name,
-      taglineAr: tagline || undefined,
-      taglineEn: tagline || undefined,
-      price: finalDisplayPrice,
-      oldPrice: numOldPrice || undefined,
-      imageUrl: trackImage,
-      icon: isCrewPack ? undefined : (icon || undefined),
-      categorySlug: categorySlug || (isGiftCardMasterCard ? "gift-cards" : undefined),
-    });
-  };
 
   const handleFavClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -357,7 +336,7 @@ export function StoreProductCard({
         />
       </button>
 
-      <Link to={finalLink as never} style={{ display: "contents" }} onClick={handleTrack}>
+      <Link to={finalLink as never} style={{ display: "contents" }}>
         <div className="prod-thumb" style={{ background: bgStyle }}>
           {renderThumbnail()}
         </div>
@@ -379,7 +358,6 @@ export function StoreProductCard({
         <Link
           to={finalLink as never}
           style={{ textDecoration: "none", color: "inherit", display: "block" }}
-          onClick={handleTrack}
         >
           <div className="prod-name">{formattedTitle}</div>
         </Link>

@@ -306,9 +306,13 @@ export function MinecraftPlatformIcon() {
 
 export function PubgPlatformIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="#f3a808" style={{ display: "block", flexShrink: 0 }} aria-label="PUBG Mobile">
-      <path d="M12 2a9 9 0 0 0-9 9c0 3.5 2 6.5 5 8v3h8v-3c3-1.5 5-4.5 5-8a9 9 0 0 0-9-9zm-4 8h8v2H8v-2zm2 4h4v2h-4v-2z"/>
-    </svg>
+    <img
+      src="/app/assets/img/pubg-logo.svg"
+      alt="PUBG Mobile"
+      width={18}
+      height={14}
+      style={{ width: "auto", height: 14, objectFit: "contain", display: "block", flexShrink: 0 }}
+    />
   );
 }
 
@@ -358,6 +362,30 @@ export function CapCutPlatformIcon() {
       <path d="M2.5 5.5h19v3h-19zm0 5h19v3h-19zm0 5h19v3h-19z" fill="#000000" opacity="0"/>
       <path d="M6 3.5c-.8 0-1.5.7-1.5 1.5v3.2L7.3 11 4.5 13.8v3.2c0 .8.7 1.5 1.5 1.5h2.2l3.8-3.8 3.8 3.8H18c.8 0 1.5-.7 1.5-1.5v-3.2L16.7 11l2.8-2.8V5c0-.8-.7-1.5-1.5-1.5h-2.2L12 7.3 8.2 3.5H6z"/>
     </svg>
+  );
+}
+
+export function FreeFirePlatformIcon() {
+  return (
+    <img
+      src="/app/assets/img/freefire-icon.png"
+      alt="Free Fire"
+      width={14}
+      height={14}
+      style={{ width: 14, height: 14, objectFit: "contain", borderRadius: 3, display: "block", flexShrink: 0 }}
+    />
+  );
+}
+
+export function DuolingoPlatformIcon() {
+  return (
+    <img
+      src="/app/assets/img/catalog/duolingo-super.png"
+      alt="Duolingo"
+      width={14}
+      height={14}
+      style={{ width: 14, height: 14, objectFit: "contain", borderRadius: 3, display: "block", flexShrink: 0 }}
+    />
   );
 }
 
@@ -421,6 +449,9 @@ export function getProductPlatform(
     if (cp.includes("instagram") || cp.includes("انستقرام") || cp.includes("انستا")) return { name: "Instagram", icon: <InstagramPlatformIcon /> };
     if (cp.includes("facebook") || cp.includes("فيسبوك")) return { name: "Facebook", icon: <FacebookPlatformIcon /> };
     if (cp.includes("linkedin")) return { name: "LinkedIn", icon: <LinkedInPlatformIcon /> };
+    if (cp.includes("free fire") || cp.includes("freefire") || cp.includes("فري فاير")) return { name: "Free Fire", icon: <FreeFirePlatformIcon /> };
+    if (cp.includes("pubg") || cp.includes("ببجي")) return { name: "PUBG Mobile", icon: <PubgPlatformIcon /> };
+    if (cp.includes("duolingo") || cp.includes("دولينجو") || cp.includes("دولينغو")) return { name: "Duolingo", icon: <DuolingoPlatformIcon /> };
   }
 
   const k = (productKey || "").toLowerCase();
@@ -552,6 +583,16 @@ export function getProductPlatform(
   // 12. PUBG Mobile
   if (has(["pubg", "ببجي"])) {
     return { name: "PUBG Mobile", icon: <PubgPlatformIcon /> };
+  }
+
+  // 12.1 Free Fire
+  if (has(["free fire", "freefire", "فري فاير", "فاير", "garena"])) {
+    return { name: "Free Fire", icon: <FreeFirePlatformIcon /> };
+  }
+
+  // 12.2 Duolingo
+  if (has(["duolingo", "دولينجو", "دولينغو"])) {
+    return { name: "Duolingo", icon: <DuolingoPlatformIcon /> };
   }
 
   // 13. Google Play (checked before general Google)

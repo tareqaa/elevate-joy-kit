@@ -20,7 +20,9 @@ export type SectionType =
   | "best_selling_games"
   | "discover_genres"
   | "discover_price"
-  | "gamepoints";
+  | "gamepoints"
+  | "game_currencies"
+  | "gift_cards";
 
 // Per-section visual controls applied by the wrapper (no code editing).
 export type SectionAnimation = "none" | "fade" | "slide-up" | "slide-down" | "slide-left" | "slide-right" | "zoom-in";

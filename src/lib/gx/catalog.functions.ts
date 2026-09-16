@@ -10,6 +10,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getPublicClient, getVerifiedCaller, getUserScopedClient } from "@/lib/gx/supabase-request";
 import { isAdminUser } from "@/lib/gx/pricing.server";
+import { resolveStrictDeliveryType } from "@/lib/gx/delivery-types";
 
 export type CatalogVariant = {
   cartId: string;
@@ -60,6 +61,10 @@ export type CatalogProduct = {
   categoryNameEn: string | null;
   categoryDescriptionAr?: string | null;
   categoryDescriptionEn?: string | null;
+  /** Slug of the parent category (e.g. "games", "gift-cards", "subscriptions") */
+  categorySlug?: string | null;
+  /** Platform name (e.g. "Steam", "Xbox", "Rockstar") */
+  platform?: string | null;
   identifierLabelAr: string | null;
   identifierLabelEn: string | null;
   identifierPlaceholder: string | null;
@@ -248,8 +253,8 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
             tagAr: v.tag_ar ?? null,
             tagEn: v.tag_en ?? v.tag_ar ?? null,
             planGroup: v.plan_group ?? null,
-            region: v.region ?? null,
-            deliveryType: v.delivery_type ?? null,
+            region: v.region ?? p.region ?? null,
+            deliveryType: v.delivery_type ?? p.delivery_type ?? null,
           };
         })
         : rawBasePrice != null && rawBasePrice > 0
@@ -266,7 +271,7 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
               tagAr: null,
               tagEn: null,
               planGroup: null,
-              region: p.region ?? "GLOBAL",
+              region: p.region ?? "Global",
               deliveryType: p.delivery_type ?? "code",
             },
           ]
@@ -521,14 +526,14 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
         .select(`
           id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en,
           image_url, icon, icon_image_url, thumb_bg, card_gradient, accent_color, base_price_jod, badge, is_active, sort_order, created_at,
-          platform, delivery_type,
+          platform, delivery_type, region,
           categories:category_id (id, slug, name_ar, name_en, parent_id)
         `)
         .eq("is_active", true)
         .order("sort_order", { ascending: true }),
       supabase
         .from("product_variants")
-        .select("id, product_id, cart_id, label_ar, label_en, price_jod, old_price_jod, tag_ar, tag_en, region, plan_group, sort_order, is_active")
+        .select("id, product_id, cart_id, label_ar, label_en, price_jod, old_price_jod, tag_ar, tag_en, region, delivery_type, plan_group, sort_order, is_active")
         .eq("is_active", true)
         .order("sort_order", { ascending: true }),
       supabase
@@ -679,7 +684,13 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           categoryNameAr,
           categoryNameEn,
           platform,
-          productType: (p.delivery_type as ProductDeliveryType) || "key",
+          productType: resolveStrictDeliveryType({
+            slug: p.slug,
+            cartId: p.slug,
+            name: p.name_ar,
+            nameAr: p.name_ar,
+            productType: p.delivery_type,
+          }) as ProductDeliveryType,
           region: p.region || "Global",
           createdAt: p.created_at || null,
           sortOrder: p.sort_order ?? 9999,
@@ -845,6 +856,14 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           taglineAr = "شحن وتجديد مباشر على حساب مايكروسوفت";
           taglineEn = "Direct Microsoft account top-up";
           badge = v.tag_ar ?? (v.cart_id === "pcgp-3m-topup" ? "الأكثر طلبًا" : null);
+        } else if (p.slug === "youtube-premium" || p.slug === "youtube") {
+          platform = "YouTube";
+          productType = "link";
+          nameAr = `YouTube Premium — ${v.label_ar}`;
+          nameEn = `YouTube Premium — ${v.label_en || v.label_ar}`;
+          taglineAr = "دعوة عائلية على إيميلك (شرط عدم الانضمام لمجموعة عائلية سابقة)";
+          taglineEn = "Official family invite to your email (no prior family group)";
+          badge = v.tag_ar ?? "الأكثر طلبًا";
         } else {
           platform = p.platform || "GX Store";
           const labelAr = v.label_ar || "";
@@ -863,7 +882,13 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           taglineAr = p.tagline_ar ?? p.description_ar ?? null;
           taglineEn = p.tagline_en ?? p.description_en ?? null;
           badge = v.tag_ar ?? p.badge ?? null;
-          productType = (p.delivery_type as ProductDeliveryType) || "activation";
+          productType = resolveStrictDeliveryType({
+            slug: p.slug,
+            cartId: v.cart_id,
+            name: p.name_ar,
+            nameAr: p.name_ar,
+            productType: v.delivery_type || p.delivery_type,
+          }) as ProductDeliveryType;
         }
 
         items.push({

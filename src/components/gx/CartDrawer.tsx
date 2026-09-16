@@ -3,6 +3,7 @@ import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
+import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
 import { CartItemThumb } from "@/components/gx/CartThumb";
 import { Link } from "@tanstack/react-router";
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
@@ -85,6 +86,34 @@ export function CartDrawer() {
             <div className="gx-cart-cards-container">
               {cart.items.map((it) => {
                 const isSnap = it.cartId.startsWith("snap-");
+                const deliveryInfo = getDeliveryTypeInfo(
+                  {
+                    slug: it.product,
+                    cartId: it.cartId,
+                    name: it.name,
+                    productType: it.deliveryType,
+                  },
+                  lang
+                );
+                const cleanRegion = (() => {
+                  const r = (it.region || "").toLowerCase();
+                  const s = ((it.product || "") + " " + (it.name || "") + " " + (it.cartId || "") + " " + r).toLowerCase();
+                  if (s.includes("أردن") || s.includes("اردن") || s.includes("jordan") || r === "jo" || r.includes("jordan")) {
+                    return lang === "en" ? "Jordan 🇯🇴" : "الأردن 🇯🇴";
+                  } else if (s.includes("أمريك") || s.includes("usa") || s.includes("united states") || s.includes("us-") || s.includes("-us")) {
+                    return lang === "en" ? "USA 🇺🇸" : "أمريكي 🇺🇸";
+                  } else if (s.includes("سعود") || s.includes("ksa") || s.includes("saudi") || s.includes("sa-") || s.includes("-sa")) {
+                    return lang === "en" ? "Saudi 🇸🇦" : "سعودي 🇸🇦";
+                  } else if (s.includes("إمارات") || s.includes("uae") || s.includes("emirates") || s.includes("ae-") || s.includes("-ae")) {
+                    return lang === "en" ? "UAE 🇦🇪" : "إماراتي 🇦🇪";
+                  } else if (s.includes("ترك") || s.includes("turkey") || s.includes("try") || s.includes("tr-") || s.includes("-tr")) {
+                    return lang === "en" ? "Turkey 🇹🇷" : "تركي 🇹🇷";
+                  } else if (s.includes("بريطان") || s.includes("uk") || s.includes("gb")) {
+                    return lang === "en" ? "UK 🇬🇧" : "بريطاني 🇬🇧";
+                  }
+                  return lang === "en" ? "Global 🌐" : "عالمي 🌐";
+                })();
+
                 return (
                   <div key={it.cartId} className="gx-cart-item-card">
                     {/* Item Thumbnail */}
@@ -107,6 +136,15 @@ export function CartDrawer() {
                         >
                           <Trash2 size={15} strokeWidth={2} />
                         </button>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "3px", marginBottom: "4px", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: "10px", padding: "1px 6px", borderRadius: "4px", background: "rgba(0, 229, 255, 0.12)", color: "#00e5ff", fontWeight: 600 }}>
+                          {deliveryInfo.label}
+                        </span>
+                        <span style={{ fontSize: "10px", padding: "1px 6px", borderRadius: "4px", background: "rgba(255, 255, 255, 0.07)", color: "#cbd5e1", fontWeight: 500 }}>
+                          {cleanRegion}
+                        </span>
                       </div>
 
                       {/* Price & Stepper Row */}

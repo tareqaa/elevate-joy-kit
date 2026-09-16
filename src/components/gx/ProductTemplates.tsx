@@ -18,7 +18,6 @@ import { CrewIcon, VbucksIcon, SnapchatPoster, AdobePoster, CanvaPoster, Windows
 import { ProductPlatformBar } from "@/components/gx/ProductPlatformBar";
 import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
 import { GxProductTemplate } from "@/components/gx/GxProductTemplate";
-import { trackRecentlyViewed } from "@/lib/gx/recently-viewed";
 
 const pick = (lang: Lang, ar: string | null | undefined, en: string | null | undefined) =>
   (lang === "en" ? en || ar : ar || en) || "";
@@ -247,37 +246,11 @@ function VariantCard({
     if (str.includes("بريطان") || str.includes("uk") || str.includes("gb")) return lang === "en" ? "UK" : "بريطاني";
     return lang === "en" ? "Global" : "عالمي";
   };
-  const handleCardTrack = () => {
-    const isCrew = p.slug === "fortnite" && v.cartId.startsWith("fn-crew");
-    const isVb = p.slug === "fortnite" && v.cartId.startsWith("fn-vb");
-    let trackImg = imgSrc;
-    if (isCrew) {
-      trackImg = "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473";
-    } else if (isVb) {
-      if (v.cartId === "fn-vb-800") trackImg = "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_800_EGS_Portrait_1200x1600_1200x1600-79529d8c20514e82ae2ebce58991b912";
-      else if (v.cartId === "fn-vb-2400") trackImg = "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_2400_EGS_Landscape_2560x1440_2560x1440-e51d802c9d414431973ae3e2ba60528d";
-      else if (v.cartId === "fn-vb-4500") trackImg = "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_4500_EGS_Landscape_2560x1440_2560x1440-799cfafb76bf4ae795fece5e4c0de4a3";
-      else if (v.cartId === "fn-vb-12500") trackImg = "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_12500_EGS_Portrait_1200x1600_1200x1600-070f17d0f6a34e9180b2927c8c24c40e";
-    }
-    trackRecentlyViewed({
-      slug: p.slug,
-      cartId: v.cartId,
-      link: `/product/${p.slug}#${v.cartId}`,
-      nameAr: isCrew ? (v.cartId === "fn-crew-3" ? "فورت نايت كرو — 3 أشهر" : "فورت نايت كرو — شهر") : (isVb ? `فورت نايت — ${v.label}` : `${p.nameAr} — ${v.label}`),
-      nameEn: isCrew ? (v.cartId === "fn-crew-3" ? "Fortnite Crew — 3 Months" : "Fortnite Crew — 1 Month") : (isVb ? `Fortnite — ${v.label}` : `${p.nameEn} — ${v.label}`),
-      price: v.price,
-      oldPrice: v.oldPrice || undefined,
-      imageUrl: trackImg,
-      categorySlug: (p as any).categorySlug || undefined,
-    });
-  };
-
   const cleanRegion = getCleanRegion();
 
   return (
     <div
       className="prod-card"
-      onClick={handleCardTrack}
       style={theme ? { borderColor: theme.border, boxShadow: `0 8px 24px -6px ${theme.border}` } : undefined}
     >
       <div className="prod-thumb" style={{ background: theme?.bg || p.thumbBg || undefined }}>
@@ -466,17 +439,6 @@ export function MultiAccountTemplate({ product }: { product: CatalogProduct }) {
                   className={"snap-plan" + (pl.cartId === planId ? " selected" : "")}
                   onClick={() => {
                     setPlanId(pl.cartId);
-                    trackRecentlyViewed({
-                      slug: product.slug,
-                      cartId: pl.cartId,
-                      link: `/product/${product.slug}?plan=${pl.cartId}`,
-                      nameAr: `${product.nameAr} — ${pl.label}`,
-                      nameEn: `${product.nameEn} — ${pl.label}`,
-                      price: pl.price,
-                      oldPrice: pl.oldPrice || undefined,
-                      imageUrl: "/app/assets/img/snapchat-logo.png",
-                      categorySlug: "social-media",
-                    });
                   }}
                 >
                   <div className="sp-check">✓</div>

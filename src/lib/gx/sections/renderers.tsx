@@ -487,6 +487,8 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
         imageUrl: dbPlan?.imageUrl || snap.imageUrl || null,
         iconImage: dbPlan?.iconImage || snap.iconImage || null,
         badge: snap.badge || null,
+        region: dbPlan?.region || snap.region || null,
+        deliveryType: dbPlan?.deliveryType || snap.deliveryType || null,
         link: `/product/${snap.productSlug || dbPlan?.product || cartId}`,
       };
     }
@@ -503,6 +505,8 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
         imageUrl: dbPlan.imageUrl,
         iconImage: dbPlan.iconImage,
         badge: null,
+        region: dbPlan.region || null,
+        deliveryType: dbPlan.deliveryType || null,
         link: `/product/${dbPlan.product}`,
       };
     }
@@ -520,6 +524,8 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
         oldPrice: 0,
         imageUrl: plan.imageUrl,
         iconImage: plan.iconImage,
+        region: plan.region || null,
+        deliveryType: plan.deliveryType || null,
         link: `/product/${plan.product}`,
       };
     }
@@ -651,6 +657,8 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
                 imageUrl={cardImageUrl}
                 iconImage={cardIconImage}
                 thumbBg={p.bg}
+                region={p.region}
+                productType={p.deliveryType}
                 snapDuration={snapDuration}
                 showPlatformBar={true}
                 showBadge={false}

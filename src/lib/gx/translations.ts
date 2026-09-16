@@ -350,6 +350,37 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
    "cart.copy_number": "نسخ الرقم",
    "cart.continue_wa": "أكمل عبر واتساب",
    "cart.track_order": "تتبع الطلب من حسابي",
+   // Topup forms (Snap, Fortnite, PUBG, Roblox)
+   "topup.modal_title": "بيانات الشحن",
+   "topup.modal_sub": "أدخل بياناتك لنكمل عملية الشحن المباشر",
+   "topup.confirm": "تأكيد وإضافة للسلة",
+   "topup.buy_now_confirm": "شراء الآن",
+   // Snap
+   "topup.snap_username": "يوزر سنابشات",
+   "topup.snap_ph": "username (bz @)",
+   "topup.snap_err": "أدخل يوزر سنابشات",
+   // Fortnite
+   "topup.fn_email": "إيميل حساب فورت نايت (Epic Games)",
+   "topup.fn_email_ph": "example@email.com",
+   "topup.fn_password": "كلمة السر",
+   "topup.fn_password_ph": "كلمة سر الحساب",
+   "topup.fn_err": "أدخل الإيميل وكلمة السر",
+   "topup.fn_security_note": "بياناتك مشفرة ومحمية 100% — بنستخدمها بس لشحن رصيدك وبعدها بنغيّر كلمة السر مباشرة، أو بتغييرها أنت بعد الشحن",
+   // PUBG
+   "topup.pubg_id": "معرّف اللاعب (Player ID)",
+   "topup.pubg_id_ph": "مثال: 5123456789",
+   "topup.pubg_err": "أدخل معرّف اللاعب",
+   "topup.pubg_note": "تقدر تلاقي ID من صفحة اللاعب بالجوال أو داخل اللعبة",
+   // Roblox
+   "topup.roblox_method_title": "طريقة الشحن",
+   "topup.roblox_by_email": "شحن عبر الإيميل",
+   "topup.roblox_by_password": "شحن عبر كلمة السر (دخول مباشر)",
+   "topup.roblox_email": "إيميل حساب روبلوكس",
+   "topup.roblox_email_ph": "example@email.com",
+   "topup.roblox_password": "كلمة سر حساب روبلوكس",
+   "topup.roblox_password_ph": "كلمة سر الحساب",
+   "topup.roblox_err": "أدخل بياناتك",
+   "topup.roblox_verify_note": "سيتم التواصل معك في حال طلب كود تحقق لإكمال عملية الشحن",
 
   },
   en: {
@@ -681,6 +712,37 @@ export const UI_TRANSLATIONS: Record<"ar" | "en", Record<string, string>> = {
    "cart.copy_number": "Copy number",
    "cart.continue_wa": "Continue on WhatsApp",
    "cart.track_order": "Track order in my account",
+   // Topup forms (Snap, Fortnite, PUBG, Roblox)
+   "topup.modal_title": "Top-Up Details",
+   "topup.modal_sub": "Enter your info to complete the direct top-up",
+   "topup.confirm": "Confirm & Add to Cart",
+   "topup.buy_now_confirm": "Buy Now",
+   // Snap
+   "topup.snap_username": "Snapchat Username",
+   "topup.snap_ph": "username (without @)",
+   "topup.snap_err": "Enter your Snapchat username",
+   // Fortnite
+   "topup.fn_email": "Fortnite Account Email (Epic Games)",
+   "topup.fn_email_ph": "example@email.com",
+   "topup.fn_password": "Password",
+   "topup.fn_password_ph": "Account password",
+   "topup.fn_err": "Enter email and password",
+   "topup.fn_security_note": "Your data is 100% encrypted and secure — used only to top up your balance, then you can change your password right after.",
+   // PUBG
+   "topup.pubg_id": "Player ID",
+   "topup.pubg_id_ph": "e.g. 5123456789",
+   "topup.pubg_err": "Enter your Player ID",
+   "topup.pubg_note": "Find your Player ID on your in-game profile page",
+   // Roblox
+   "topup.roblox_method_title": "Top-Up Method",
+   "topup.roblox_by_email": "Top Up via Email",
+   "topup.roblox_by_password": "Top Up via Password (Direct Login)",
+   "topup.roblox_email": "Roblox Account Email",
+   "topup.roblox_email_ph": "example@email.com",
+   "topup.roblox_password": "Roblox Account Password",
+   "topup.roblox_password_ph": "Account password",
+   "topup.roblox_err": "Enter your details",
+   "topup.roblox_verify_note": "We will contact you if a verification code is needed to complete the top-up",
 
   },
 };

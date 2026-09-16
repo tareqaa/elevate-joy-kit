@@ -21,10 +21,12 @@ import { SpinWheelModal } from "./SpinWheel";
 import { useLang } from "@/lib/gx/i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GxIcon } from "@/components/gx/GxIcon";
+import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
 import { localizedCategoryLink, localizedProduct, localizedGiftCard } from "@/lib/gx/product-locale";
 import { useHiddenCategorySlugs } from "@/lib/gx/category-visibility";
 import {
   fetchLiveSearchIndex,
+  invalidateSearchCache,
   matchSearchQuery,
   getRecentSearches,
   saveRecentSearch,
@@ -289,6 +291,7 @@ export function Navbar() {
 
   useEffect(() => {
     const onCatalogUpdated = () => {
+      invalidateSearchCache();
       queryClient.invalidateQueries({ queryKey: ["store-search-catalog"] });
     };
     window.addEventListener("gx:catalog-updated", onCatalogUpdated);
@@ -669,17 +672,34 @@ export function Navbar() {
                                 : (item.categoryNameAr || item.categoryNameEn || (lang === "ar" ? "ألعاب" : "Gaming"))
                             );
 
-                            const deliveryText = item.deliveryType === "account"
-                              ? (lang === "ar" ? "حساب" : "Account")
-                              : (item.deliveryType === "code" || item.deliveryType === "key"
-                                  ? (lang === "ar" ? "مفتاح" : "Key")
-                                  : (item.deliveryType === "topup"
-                                      ? (lang === "ar" ? "شحن مباشر" : "Top-up")
-                                      : (item.deliveryType === "link"
-                                          ? (lang === "ar" ? "رابط" : "Link")
-                                          : (lang === "ar" ? "تفعيل فوري" : "Instant"))));
+                            const deliveryInfo = getDeliveryTypeInfo(
+                              {
+                                slug: item.slug,
+                                cartId: item.id,
+                                name: item.nameAr,
+                                nameAr: item.nameAr,
+                                productType: item.deliveryType,
+                              },
+                              lang
+                            );
+                            const deliveryText = deliveryInfo.label;
 
-                            const regionText = "GLOBAL";
+                            const r = (item.region || "").toLowerCase();
+                            const s = ((item.slug || "") + " " + (item.nameAr || "") + " " + (item.nameEn || "") + " " + r).toLowerCase();
+                            let regionText = lang === "ar" ? "عالمي 🌐" : "Global 🌐";
+                            if (s.includes("أردن") || s.includes("اردن") || s.includes("jordan") || r === "jo" || r.includes("jordan")) {
+                              regionText = lang === "ar" ? "الأردن 🇯🇴" : "Jordan 🇯🇴";
+                            } else if (s.includes("أمريك") || s.includes("usa") || s.includes("united states") || s.includes("us-") || s.includes("-us")) {
+                              regionText = lang === "ar" ? "أمريكي 🇺🇸" : "USA 🇺🇸";
+                            } else if (s.includes("سعود") || s.includes("ksa") || s.includes("saudi") || s.includes("sa-") || s.includes("-sa")) {
+                              regionText = lang === "ar" ? "سعودي 🇸🇦" : "Saudi 🇸🇦";
+                            } else if (s.includes("إمارات") || s.includes("uae") || s.includes("emirates") || s.includes("ae-") || s.includes("-ae")) {
+                              regionText = lang === "ar" ? "إماراتي 🇦🇪" : "UAE 🇦🇪";
+                            } else if (s.includes("ترك") || s.includes("turkey") || s.includes("try") || s.includes("tr-") || s.includes("-tr")) {
+                              regionText = lang === "ar" ? "تركي 🇹🇷" : "Turkey 🇹🇷";
+                            } else if (s.includes("بريطان") || s.includes("uk") || s.includes("gb")) {
+                              regionText = lang === "ar" ? "بريطاني 🇬🇧" : "UK 🇬🇧";
+                            }
 
                             const discountPct =
                               item.oldPriceJod && item.priceJod && item.oldPriceJod > item.priceJod

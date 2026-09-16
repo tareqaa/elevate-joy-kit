@@ -24,6 +24,7 @@ export interface SearchableItem {
   parentCategorySlug?: string | null;
   platform?: string | null;
   deliveryType?: string | null;
+  region?: string | null;
   badge?: string | null;
   priceJod?: number | null;
   oldPriceJod?: number | null;
@@ -91,25 +92,33 @@ const SYNONYM_MAP: Record<string, string[]> = {
   crew: ["كرو", "fortnite crew", "اشتراك كرو"],
 
   // PlayStation & Sony
-  بلايستيشن: ["playstation", "بلاي ستيشن", "سوني", "sony", "psn", "ps5", "ps4", "بلستيشن"],
-  "بلاي ستيشن": ["playstation", "بلايستيشن", "سوني", "sony", "psn", "ps5"],
-  سوني: ["playstation", "بلايستيشن", "sony", "psn"],
-  playstation: ["بلايستيشن", "بلاي ستيشن", "سوني", "psn", "ps5", "ps4"],
-  psn: ["بلايستيشن", "playstation", "سوني"],
+  بلايستيشن: ["playstation", "بلاي ستيشن", "سوني", "sony", "psn", "ps5", "ps4", "بلستيشن", "بطاقة بلاستيشن", "بطاقات بلاستيشن", "كروت بلايستيشن", "شحن بلايستيشن"],
+  "بلاي ستيشن": ["playstation", "بلايستيشن", "سوني", "sony", "psn", "ps5", "بطاقة بلاستيشن", "بطاقات بلاستيشن"],
+  "بطاقة بلاستيشن": ["playstation", "بلايستيشن", "سوني", "psn", "بطاقات بلاستيشن", "كروت بلايستيشن", "شحن سوني"],
+  "بطاقة بلايستيشن": ["playstation", "بلايستيشن", "سوني", "psn", "بطاقات بلايستيشن", "كروت بلايستيشن", "شحن سوني"],
+  "بطاقات بلاستيشن": ["playstation", "بلايستيشن", "سوني", "psn", "بطاقة بلاستيشن", "كروت بلايستيشن"],
+  "بطاقات بلايستيشن": ["playstation", "بلايستيشن", "سوني", "psn", "بطاقة بلايستيشن", "كروت بلايستيشن"],
+  سوني: ["playstation", "بلايستيشن", "sony", "psn", "بطاقة بلاستيشن", "بطاقات بلاستيشن"],
+  playstation: ["بلايستيشن", "بلاي ستيشن", "سوني", "psn", "ps5", "ps4", "بطاقة بلاستيشن", "بطاقات بلاستيشن"],
+  psn: ["بلايستيشن", "playstation", "سوني", "بطاقة بلاستيشن"],
   ps5: ["بلايستيشن", "playstation"],
   ps4: ["بلايستيشن", "playstation"],
 
   // Xbox & Game Pass
-  اكسبوكس: ["xbox", "اكس بوكس", "قيم باس", "جيم باس", "game pass", "ultimate", "التيمت"],
-  "اكس بوكس": ["xbox", "اكسبوكس", "قيم باس", "جيم باس", "game pass"],
-  xbox: ["اكسبوكس", "اكس بوكس", "game pass", "قيم باس", "جيم باس"],
+  اكسبوكس: ["xbox", "اكس بوكس", "قيم باس", "جيم باس", "game pass", "ultimate", "التيمت", "بطاقة اكسبوكس", "بطاقات اكسبوكس", "شحن اكسبوكس"],
+  "اكس بوكس": ["xbox", "اكسبوكس", "قيم باس", "جيم باس", "game pass", "بطاقة اكسبوكس", "بطاقات اكسبوكس"],
+  "بطاقة اكسبوكس": ["xbox", "اكسبوكس", "اكس بوكس", "بطاقات اكسبوكس", "كروت اكسبوكس", "شحن اكسبوكس"],
+  "بطاقة اكس بوكس": ["xbox", "اكسبوكس", "اكس بوكس", "بطاقات اكسبوكس", "كروت اكسبوكس"],
+  "بطاقات اكسبوكس": ["xbox", "اكسبوكس", "اكس بوكس", "بطاقة اكسبوكس", "كروت اكسبوكس"],
+  "بطاقات اكس بوكس": ["xbox", "اكسبوكس", "اكس بوكس", "بطاقة اكسبوكس"],
+  xbox: ["اكسبوكس", "اكس بوكس", "game pass", "قيم باس", "جيم باس", "بطاقة اكسبوكس", "بطاقات اكسبوكس"],
   "قيم باس": ["game pass", "xbox", "اكسبوكس", "جيم باس"],
   "جيم باس": ["game pass", "xbox", "اكسبوكس", "قيم باس"],
   "game pass": ["قيم باس", "جيم باس", "xbox", "اكسبوكس"],
 
   // Steam & PC Games
-  ستيم: ["steam", "بي سي", "pc", "العاب ستيم"],
-  steam: ["ستيم", "pc", "بي سي"],
+  ستيم: ["steam", "بي سي", "pc", "العاب ستيم", "حساب ستيم", "كود ستيم"],
+  steam: ["ستيم", "pc", "بي سي", "steam account", "steam key"],
   "بي سي": ["pc", "steam", "ستيم", "كمبيوتر"],
   pc: ["بي سي", "steam", "ستيم"],
 
@@ -161,6 +170,8 @@ const SYNONYM_MAP: Record<string, string[]> = {
   قراند: ["gta", "gta v", "grand theft auto", "روكستار", "rockstar"],
   "قراند 5": ["gta", "gta v", "gta 5"],
   gta: ["قراند", "قراند 5", "gta v", "rockstar"],
+  روكستار: ["rockstar", "gta", "red dead", "قراند"],
+  rockstar: ["روكستار", "gta", "red dead"],
 
   // Minecraft
   ماينكرافت: ["minecraft", "ماين كرافت"],
@@ -168,16 +179,26 @@ const SYNONYM_MAP: Record<string, string[]> = {
   minecraft: ["ماينكرافت", "ماين كرافت"],
 
   // Google Play
-  "جوجل بلاي": ["google play", "قوقل بلاي", "جوجل"],
-  "قوقل بلاي": ["google play", "جوجل بلاي"],
-  "google play": ["جوجل بلاي", "قوقل بلاي"],
+  "جوجل بلاي": ["google play", "قوقل بلاي", "جوجل", "بطاقة جوجل بلاي", "بطاقة قوقل بلاي", "بطاقات جوجل بلاي", "شحن جوجل بلاي"],
+  "قوقل بلاي": ["google play", "جوجل بلاي", "بطاقة قوقل بلاي", "بطاقة جوجل بلاي", "بطاقات قوقل بلاي", "شحن قوقل بلاي"],
+  "google play": ["جوجل بلاي", "قوقل بلاي", "بطاقة جوجل بلاي", "بطاقة قوقل بلاي", "بطاقات جوجل بلاي"],
+  "بطاقة جوجل بلاي": ["google play", "جوجل بلاي", "قوقل بلاي", "بطاقات جوجل بلاي", "شحن جوجل بلاي"],
+  "بطاقة قوقل بلاي": ["google play", "جوجل بلاي", "قوقل بلاي", "بطاقات قوقل بلاي", "شحن قوقل بلاي"],
+  "بطاقات جوجل بلاي": ["google play", "جوجل بلاي", "قوقل بلاي", "بطاقة جوجل بلاي"],
+  "بطاقات قوقل بلاي": ["google play", "جوجل بلاي", "قوقل بلاي", "بطاقة قوقل بلاي"],
 
   // Apple & iTunes
-  ابل: ["apple", "itunes", "ايتونز", "آبل", "ايفون"],
-  آبل: ["apple", "itunes", "ايتونز", "ابل"],
-  ايتونز: ["itunes", "apple", "ابل", "آيتونز"],
-  apple: ["ابل", "آبل", "itunes", "ايتونز"],
-  itunes: ["ايتونز", "apple", "ابل", "آبل"],
+  ابل: ["apple", "itunes", "ايتونز", "آبل", "ايفون", "بطاقة ابل", "بطاقة ايتونز"],
+  آبل: ["apple", "itunes", "ايتونز", "ابل", "بطاقة ابل", "بطاقة ايتونز"],
+  ايتونز: ["itunes", "apple", "ابل", "آيتونز", "بطاقة ايتونز", "بطاقات ايتونز", "شحن ايتونز"],
+  آيتونز: ["itunes", "apple", "ابل", "ايتونز", "بطاقة ايتونز", "بطاقات ايتونز"],
+  apple: ["ابل", "آبل", "itunes", "ايتونز", "apple gift card"],
+  itunes: ["ايتونز", "apple", "ابل", "آبل", "itunes card"],
+  "بطاقة ايتونز": ["itunes", "apple", "ايتونز", "آبل", "بطاقات ايتونز", "شحن ايتونز"],
+  "بطاقة آيتونز": ["itunes", "apple", "ايتونز", "آبل", "بطاقات ايتونز"],
+  "بطاقات ايتونز": ["itunes", "apple", "ايتونز", "آبل", "بطاقة ايتونز"],
+  "بطاقة ابل": ["apple", "itunes", "ايتونز", "آبل", "بطاقات ابل"],
+  "بطاقات ابل": ["apple", "itunes", "ايتونز", "آبل", "بطاقة ابل"],
 
   // General Categories
   اشتراك: ["subscriptions", "اشتراكات", "subscription"],
@@ -185,7 +206,8 @@ const SYNONYM_MAP: Record<string, string[]> = {
   العاب: ["games", "لعبة", "ألعاب", "game"],
   ألعاب: ["games", "العاب", "لعبة"],
   بطاقات: ["gift-cards", "بطاقة", "كروت", "شحن"],
-  شحن: ["cards", "عملات", "شحن"],
+  بطاقة: ["gift-cards", "بطاقات", "كروت", "شحن", "كرت"],
+  شحن: ["cards", "عملات", "شحن", "بطاقات"],
 };
 
 /**
@@ -204,6 +226,7 @@ export function buildSearchHaystack(item: SearchableItem): string {
     item.parentCategorySlug || "",
     item.platform || "",
     item.deliveryType || "",
+    item.region || "",
     item.badge || "",
     ...(item.variantLabels || []),
   ];
@@ -385,7 +408,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           .select(`
             id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en,
             image_url, icon, icon_image_url, thumb_bg, card_gradient, accent_color, base_price_jod, badge, is_active, sort_order,
-            platform, delivery_type,
+            platform, delivery_type, region,
             categories:category_id (id, slug, name_ar, name_en, parent_id)
           `)
           .eq("is_active", true)
@@ -564,6 +587,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
               parentCategorySlug: "games",
               platform: "جميع المنصات (PC / Console)",
               deliveryType: "topup", // Strictly topup as requested
+              region: "Global",
               badge: finalBadge,
               priceJod: finalPrice,
               oldPriceJod: finalOldPrice,
@@ -607,6 +631,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
               parentCategorySlug: rootCategorySlug,
               platform: "Microsoft Windows",
               deliveryType: "code", // Strictly key / code
+              region: "Global",
               badge: v.tag_ar && v.tag_ar !== "none" ? v.tag_ar : null,
               priceJod: Number(v.price_jod),
               oldPriceJod: v.old_price_jod ? Number(v.old_price_jod) : null,
@@ -623,8 +648,139 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           continue; // Skip generic container
         }
 
-        // --- Special Case C: Multi-variant services (Snapchat+, Followers, etc.) ---
-        if (prodVariants.length > 1 && !isGiftCard) {
+        // --- Special Case C: Gift Cards (PlayStation, Xbox, iTunes, Google Play) ---
+        if (isGiftCard) {
+          // 1. Add Master Brand Gift Card item (e.g. "بطاقات بلايستيشن (PSN)")
+          const vData = variantDataByProd.get(p.id);
+          const resolvedPrice =
+            vData && vData.minPrice !== Infinity
+              ? vData.minPrice
+              : typeof p.base_price_jod === "number"
+              ? p.base_price_jod
+              : null;
+          const resolvedOldPrice = vData?.oldPrice ?? null;
+
+          let masterBrandAr = p.name_ar;
+          let masterBrandEn = p.name_en || p.name_ar;
+          let masterPlatform = p.platform || "Gift Cards";
+
+          if (p.slug === "playstation") {
+            masterBrandAr = "بطاقات بلايستيشن (PSN)";
+            masterBrandEn = "PlayStation PSN Gift Cards";
+            masterPlatform = "PlayStation";
+          } else if (p.slug === "xbox") {
+            masterBrandAr = "بطاقات إكسبوكس (Xbox)";
+            masterBrandEn = "Xbox Gift Cards";
+            masterPlatform = "Xbox";
+          } else if (p.slug === "itunes") {
+            masterBrandAr = "بطاقات آبل وآيتونز (iTunes)";
+            masterBrandEn = "Apple iTunes Gift Cards";
+            masterPlatform = "Apple";
+          } else if (p.slug === "google-play") {
+            masterBrandAr = "بطاقات جوجل بلاي (Google Play)";
+            masterBrandEn = "Google Play Gift Cards";
+            masterPlatform = "Google Play";
+          }
+
+          const masterItem: SearchableItem = {
+            id: p.id,
+            slug: p.slug,
+            type: "gift_card",
+            nameAr: masterBrandAr,
+            nameEn: masterBrandEn,
+            taglineAr: p.tagline_ar || "بطاقات شحن رقمية رسمية معتمدة بتسليم فوري للأكواد",
+            taglineEn: p.tagline_en || "Official digital gift cards with instant code delivery",
+            descriptionAr: p.description_ar,
+            descriptionEn: p.description_en,
+            categoryNameAr: categoryNameAr || "بطاقات الهدايا",
+            categoryNameEn: categoryNameEn || "Gift Cards",
+            categorySlug: categorySlug || "gift-cards",
+            parentCategorySlug: rootCategorySlug || "gift-cards",
+            platform: masterPlatform,
+            deliveryType: "code",
+            region: "Global",
+            badge: p.badge || "كود تفعيل",
+            priceJod: resolvedPrice,
+            oldPriceJod: resolvedOldPrice,
+            imageUrl: p.image_url,
+            icon: p.icon || "🎁",
+            iconImage: p.icon_image_url || p.image_url,
+            thumbBg: p.thumb_bg || p.card_gradient,
+            variantLabels: [
+              "بطاقة", "بطاقات", "كروت", "شحن", "gift card",
+              p.slug, masterBrandAr, masterBrandEn, ...(vData?.labels || [])
+            ],
+            link: `/product/${p.slug}`,
+          };
+          masterItem.normalizedHaystack = buildSearchHaystack(masterItem);
+          items.push(masterItem);
+
+          // 2. Add each specific variant card offer (e.g. 10$ سعودي، 20$ أمريكي، 50$ إماراتي...)
+          if (prodVariants.length > 0) {
+            for (const v of prodVariants) {
+              const regionRaw = v.region || "";
+              const regParts = regionRaw.split("|").map((s: string) => s.trim());
+              const regAr = regParts[0] ? regParts[0].replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "").trim() : "عالمي";
+              const regEn = regParts[1] ? regParts[1].replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "").trim() : (regParts[0] || "Global");
+
+              let cardTitleAr = `${masterBrandAr} — ${v.label_ar}`;
+              let cardTitleEn = `${masterBrandEn} — ${v.label_en || v.label_ar}`;
+
+              if (p.slug === "playstation") {
+                cardTitleAr = `بطاقة بلايستيشن ${v.label_ar} (${regAr})`;
+                cardTitleEn = `PlayStation Card ${v.label_en || v.label_ar} (${regEn})`;
+              } else if (p.slug === "xbox") {
+                cardTitleAr = `بطاقة إكسبوكس ${v.label_ar} (${regAr})`;
+                cardTitleEn = `Xbox Card ${v.label_en || v.label_ar} (${regEn})`;
+              } else if (p.slug === "itunes") {
+                cardTitleAr = `بطاقة آبل وآيتونز ${v.label_ar} (${regAr})`;
+                cardTitleEn = `iTunes & Apple Card ${v.label_en || v.label_ar} (${regEn})`;
+              } else if (p.slug === "google-play") {
+                cardTitleAr = `بطاقة جوجل بلاي ${v.label_ar} (${regAr})`;
+                cardTitleEn = `Google Play Card ${v.label_en || v.label_ar} (${regEn})`;
+              }
+
+              const variantCardItem: SearchableItem = {
+                id: `${p.id}-${v.cart_id || v.id}`,
+                slug: p.slug,
+                type: "gift_card",
+                nameAr: cardTitleAr,
+                nameEn: cardTitleEn,
+                taglineAr: `كود شحن رصيد ${v.label_ar} رسمي بتسليم فوري`,
+                taglineEn: `Official digital gift code ${v.label_en || v.label_ar} instant delivery`,
+                descriptionAr: p.description_ar,
+                descriptionEn: p.description_en,
+                categoryNameAr: categoryNameAr || "بطاقات الهدايا",
+                categoryNameEn: categoryNameEn || "Gift Cards",
+                categorySlug: categorySlug || "gift-cards",
+                parentCategorySlug: rootCategorySlug || "gift-cards",
+                platform: masterPlatform,
+                deliveryType: "code",
+                region: v.region || "Global",
+                badge: v.tag_ar && v.tag_ar !== "none" ? v.tag_ar : null,
+                priceJod: Number(v.price_jod),
+                oldPriceJod: v.old_price_jod ? Number(v.old_price_jod) : null,
+                imageUrl: p.image_url,
+                icon: p.icon || "🎁",
+                iconImage: p.icon_image_url || p.image_url,
+                thumbBg: p.thumb_bg || p.card_gradient,
+                variantLabels: [
+                  "بطاقة", "بطاقات", "كروت", "شحن", "كرت", "gift card", "card",
+                  p.slug, masterBrandAr, v.label_ar, v.label_en || "", regAr, regEn,
+                  p.slug === "playstation" ? "بلايستيشن" : p.slug === "xbox" ? "اكسبوكس" : p.slug === "itunes" ? "ايتونز" : "قوقل بلاي",
+                ],
+                link: `/product/${p.slug}#${v.cart_id || v.id}`,
+              };
+
+              variantCardItem.normalizedHaystack = buildSearchHaystack(variantCardItem);
+              items.push(variantCardItem);
+            }
+          }
+          continue; // Done with gift cards
+        }
+
+        // --- Special Case D: Multi-variant services (Snapchat+, Followers, etc.) ---
+        if (prodVariants.length > 1) {
           for (const v of prodVariants) {
             const strictDelivery = resolveStrictDeliveryType({
               slug: p.slug,
@@ -654,6 +810,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
               parentCategorySlug: rootCategorySlug,
               platform: p.platform,
               deliveryType: strictDelivery,
+              region: v.region || p.region || null,
               badge: v.tag_ar && v.tag_ar !== "none" ? v.tag_ar : (isSnap && v.cart_id === "snap-6" ? "الأكثر طلباً" : null),
               priceJod: Number(v.price_jod),
               oldPriceJod: v.old_price_jod ? Number(v.old_price_jod) : null,
@@ -670,7 +827,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           continue; // Skip generic container
         }
 
-        // --- Single-variant product or Gift Card master ---
+        // --- Single-variant product ---
         const vData = variantDataByProd.get(p.id);
         const resolvedPrice =
           vData && vData.minPrice !== Infinity
@@ -680,10 +837,12 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
             : null;
         const resolvedOldPrice = vData?.oldPrice ?? null;
 
+        const firstVariant = prodVariants[0];
+
         const item: SearchableItem = {
           id: p.id,
           slug: p.slug,
-          type: isGiftCard ? "gift_card" : "product",
+          type: "product",
           nameAr: p.name_ar,
           nameEn: p.name_en || p.name_ar,
           taglineAr: p.tagline_ar,
@@ -699,9 +858,10 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
             slug: p.slug,
             name: p.name_ar,
             nameAr: p.name_ar,
-            productType: p.delivery_type,
-            isGiftCardMaster: isGiftCard,
+            productType: (firstVariant && firstVariant.delivery_type) || p.delivery_type,
+            isGiftCardMaster: false,
           }),
+          region: (firstVariant && firstVariant.region) || p.region || null,
           badge: p.badge,
           priceJod: resolvedPrice,
           oldPriceJod: resolvedOldPrice,

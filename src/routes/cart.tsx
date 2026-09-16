@@ -5,6 +5,7 @@ import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
 import { CartItemThumb } from "@/components/gx/CartThumb";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
+import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { OrderConfirmedModal } from "@/components/gx/OrderConfirmedModal";
@@ -201,12 +202,48 @@ function CartList() {
 
       {cart.items.map((it) => {
         const isSnap = it.cartId.startsWith("snap-");
+        const deliveryInfo = getDeliveryTypeInfo(
+          {
+            slug: it.product,
+            cartId: it.cartId,
+            name: it.name,
+            productType: it.deliveryType,
+          },
+          lang
+        );
+        const cleanRegion = (() => {
+          const r = (it.region || "").toLowerCase();
+          const s = ((it.product || "") + " " + (it.name || "") + " " + (it.cartId || "") + " " + r).toLowerCase();
+          if (s.includes("أردن") || s.includes("اردن") || s.includes("jordan") || r === "jo" || r.includes("jordan")) {
+            return lang === "en" ? "Jordan 🇯🇴" : "الأردن 🇯🇴";
+          } else if (s.includes("أمريك") || s.includes("usa") || s.includes("united states") || s.includes("us-") || s.includes("-us")) {
+            return lang === "en" ? "USA 🇺🇸" : "أمريكي 🇺🇸";
+          } else if (s.includes("سعود") || s.includes("ksa") || s.includes("saudi") || s.includes("sa-") || s.includes("-sa")) {
+            return lang === "en" ? "Saudi 🇸🇦" : "سعودي 🇸🇦";
+          } else if (s.includes("إمارات") || s.includes("uae") || s.includes("emirates") || s.includes("ae-") || s.includes("-ae")) {
+            return lang === "en" ? "UAE 🇦🇪" : "إماراتي 🇦🇪";
+          } else if (s.includes("ترك") || s.includes("turkey") || s.includes("try") || s.includes("tr-") || s.includes("-tr")) {
+            return lang === "en" ? "Turkey 🇹🇷" : "تركي 🇹🇷";
+          } else if (s.includes("بريطان") || s.includes("uk") || s.includes("gb")) {
+            return lang === "en" ? "UK 🇬🇧" : "بريطاني 🇬🇧";
+          }
+          return lang === "en" ? "Global 🌐" : "عالمي 🌐";
+        })();
+
         return (
           <div key={it.cartId} className="cart-row gx-eneba-row">
             <CartItemThumb item={it} size={70} />
 
             <div className="cr-info">
               <div className="cr-name">{localizeResolvedName(it.name, lang)}</div>
+              <div style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "3px", marginBottom: "4px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "11px", padding: "1px 7px", borderRadius: "4px", background: "rgba(0, 229, 255, 0.12)", color: "#00e5ff", fontWeight: 600 }}>
+                  {deliveryInfo.label}
+                </span>
+                <span style={{ fontSize: "11px", padding: "1px 7px", borderRadius: "4px", background: "rgba(255, 255, 255, 0.08)", color: "#cbd5e1", fontWeight: 500 }}>
+                  {cleanRegion}
+                </span>
+              </div>
               <div className="cr-unit">
                 {t("cart.unit_price")}: <span>{format(it.price)}</span>
               </div>
@@ -924,18 +961,32 @@ function CartOrderRecapStage2({
 
       {/* Compact items list in recap */}
       <div className="gx-recap-items">
-        {cart.items.map((it) => (
-          <div key={it.cartId} className="gx-recap-line">
-            <div className="gx-rl-thumb">
-              <CartItemThumb item={it} size={36} />
+        {cart.items.map((it) => {
+          const deliveryInfo = getDeliveryTypeInfo(
+            {
+              slug: it.product,
+              cartId: it.cartId,
+              name: it.name,
+              productType: it.deliveryType,
+            },
+            lang
+          );
+          return (
+            <div key={it.cartId} className="gx-recap-line">
+              <div className="gx-rl-thumb">
+                <CartItemThumb item={it} size={36} />
+              </div>
+              <div className="gx-rl-name">
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                  <span>{localizeResolvedName(it.name, lang)}</span>
+                  <small style={{ color: "#00e5ff", fontWeight: 600, fontSize: "11px" }}>• {deliveryInfo.label}</small>
+                </div>
+                <small>× {it.qty}</small>
+              </div>
+              <div className="gx-rl-price">{format(it.price * it.qty)}</div>
             </div>
-            <div className="gx-rl-name">
-              <span>{localizeResolvedName(it.name, lang)}</span>
-              <small>× {it.qty}</small>
-            </div>
-            <div className="gx-rl-price">{format(it.price * it.qty)}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Email recap with Edit button if entered */}

@@ -10,8 +10,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { CATALOG_PRICES_CACHE, type CatalogPrices } from "./catalog-prices";
 import type { ResolvedPlan } from "@/data/products";
+import { resolveStrictDeliveryType } from "./delivery-types";
 
-const CACHE_KEY = "gx_db_variants_v1";
+const CACHE_KEY = "gx_db_variants_v2";
 
 type Entry = ResolvedPlan;
 
@@ -68,13 +69,13 @@ export async function loadDbVariants(force = false): Promise<void> {
         supabase
           .from("product_variants")
           .select(
-            "cart_id, label_ar, label_en, price_jod, is_active, products:product_id (slug, name_ar, name_en, image_url, icon, icon_image_url, thumb_bg, is_active)",
+            "cart_id, label_ar, label_en, price_jod, old_price_jod, region, delivery_type, is_active, products:product_id (slug, name_ar, name_en, image_url, icon, icon_image_url, thumb_bg, region, delivery_type, is_active)",
           )
           .eq("is_active", true)
           .limit(2000),
         supabase
           .from("products")
-          .select("id, slug, name_ar, name_en, base_price_jod, image_url, icon, icon_image_url, thumb_bg, is_active")
+          .select("id, slug, name_ar, name_en, base_price_jod, image_url, icon, icon_image_url, thumb_bg, region, delivery_type, is_active")
           .eq("is_active", true)
           .limit(2000),
       ]);
@@ -84,6 +85,13 @@ export async function loadDbVariants(force = false): Promise<void> {
       for (const row of (variants ?? []) as Record<string, any>[]) {
         const p = row.products as Record<string, any> | null;
         if (!row.cart_id || !p || p.is_active === false) continue;
+        const strictDeliv = resolveStrictDeliveryType({
+          slug: p.slug,
+          cartId: row.cart_id,
+          name: `${p.name_ar || p.name_en} — ${row.label_ar || row.label_en}`,
+          productType: row.delivery_type || p.delivery_type,
+        });
+
         next[row.cart_id] = {
           cartId: row.cart_id,
           product: p.slug,
@@ -93,12 +101,22 @@ export async function loadDbVariants(force = false): Promise<void> {
           imageUrl: p.image_url || p.icon_image_url || null,
           bg: p.thumb_bg || "linear-gradient(145deg,#1a1e2a,#0a0c12)",
           price: Number(row.price_jod) || 0,
+          oldPrice: row.old_price_jod ? Number(row.old_price_jod) : null,
+          deliveryType: strictDeliv,
+          region: row.region || p.region || null,
         };
       }
 
       for (const p of (products ?? []) as Record<string, any>[]) {
         if (!p.slug) continue;
         if (!next[p.slug]) {
+          const strictDeliv = resolveStrictDeliveryType({
+            slug: p.slug,
+            cartId: p.slug,
+            name: p.name_ar || p.name_en,
+            productType: p.delivery_type,
+          });
+
           next[p.slug] = {
             cartId: p.slug,
             product: p.slug,
@@ -108,6 +126,8 @@ export async function loadDbVariants(force = false): Promise<void> {
             imageUrl: p.image_url || p.icon_image_url || null,
             bg: p.thumb_bg || "linear-gradient(145deg,#1a1e2a,#0a0c12)",
             price: Number(p.base_price_jod) || 0,
+            deliveryType: strictDeliv,
+            region: p.region || null,
           };
         }
       }

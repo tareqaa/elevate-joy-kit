@@ -63,6 +63,8 @@ export type BestsellerItemSnapshot = {
   badge?: string | null;
   bg?: string | null;
   thumbBg?: string | null;
+  region?: string | null;
+  deliveryType?: string | null;
 };
 
 export type SiteSettings = {

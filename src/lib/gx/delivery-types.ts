@@ -13,7 +13,7 @@ export const STRICT_DELIVERY_TYPES: Record<StrictDeliveryType, DeliveryTypeInfo>
   code: {
     type: "code",
     labelAr: "كود تفعيل",
-    labelEn: "Activation Code",
+    labelEn: "Key",
     descAr: "كود رقمي أصلي يتم إرساله لك فوراً لاستخدامه وتفعيله مباشرة على جهازك أو حسابك الرسمي.",
     descEn: "Official digital activation code sent instantly to redeem directly on your device or official account.",
     icon: "🔑",
@@ -21,7 +21,7 @@ export const STRICT_DELIVERY_TYPES: Record<StrictDeliveryType, DeliveryTypeInfo>
   account: {
     type: "account",
     labelAr: "حساب جاهز",
-    labelEn: "Ready Account",
+    labelEn: "Account",
     descAr: "حساب خاص وجاهز بالكامل نزودك بالإيميل وكلمة المرور الخاصة به، يمكنك تغيير بياناته والتمتع بالاشتراك فوراً.",
     descEn: "Fully prepared private account with email & password provided. You can customize credentials and use it immediately.",
     icon: "👤",
@@ -29,7 +29,7 @@ export const STRICT_DELIVERY_TYPES: Record<StrictDeliveryType, DeliveryTypeInfo>
   topup: {
     type: "topup",
     labelAr: "شحن مباشر",
-    labelEn: "Direct Top-up",
+    labelEn: "Top Up",
     descAr: "شحن مباشر لحسابك؛ نحتاج تزويدنا بمعلومات أو معرّف الحساب لندخل ونشحن لك الرصيد أو الاشتراك المطلوب بأمان.",
     descEn: "Direct top-up to your account. Account credentials or tag are needed to safely apply the balance or subscription.",
     icon: "💎",
@@ -59,10 +59,24 @@ export function resolveStrictDeliveryType(item: {
   productType?: string | null;
   isGiftCardMaster?: boolean;
 }): StrictDeliveryType {
+  const pt = (item.productType || "").toLowerCase().trim();
+
+  // Hard slug overrides — always top up regardless of DB value
+  const _s = (item.slug || "").toLowerCase();
+  if (_s === "roblox" || _s.includes("roblox")) return "topup";
+  if (_s === "snapchat" || _s.includes("snapchat")) return "topup";
+  if (_s === "youtube-premium" || _s.includes("youtube")) return "link";
+
+  // Priority 1: Explicit database delivery_type configured by admin
+  if (pt === "account" || pt === "حساب" || pt === "حساب جاهز") return "account";
+  if (pt === "code" || pt === "key" || pt === "مفتاح" || pt === "كود" || pt === "كود تفعيل" || pt === "digital_code") return "code";
+  if (pt === "link" || pt === "رابط" || pt === "رابط تفعيل") return "link";
+  if (pt === "topup" || pt === "شحن" || pt === "شحن مباشر" || pt === "direct_topup") return "topup";
+  if (pt === "manual") return "code";
+
   const s = (item.slug || "").toLowerCase();
   const c = (item.cartId || "").toLowerCase();
   const n = ((item.name || "") + " " + (item.nameAr || "")).toLowerCase();
-  const pt = (item.productType || "").toLowerCase();
 
   // 1. Direct Top-up (Fortnite, Snapchat+, Social media followers/likes, direct topup items)
   if (
@@ -81,6 +95,13 @@ export function resolveStrictDeliveryType(item: {
     s.includes("snapchat") ||
     c.includes("snap") ||
     n.includes("سناب") ||
+    s === "roblox" ||
+    s.includes("roblox") ||
+    n.includes("روبلوكس") ||
+    n.includes("roblox") ||
+    s.includes("pubg") ||
+    n.includes("ببجي") ||
+    n.includes("pubg") ||
     s.includes("tiktok") ||
     s.includes("instagram") ||
     s.includes("facebook") ||
@@ -101,15 +122,19 @@ export function resolveStrictDeliveryType(item: {
     return "code";
   }
 
-  // 3. Activation Link (Canva, LinkedIn, Autodesk, or explicit link/invite)
+  // 3. Activation Link (Canva, LinkedIn, Autodesk, YouTube Premium, or explicit link/invite)
   if (
     pt === "link" ||
     s === "canva" ||
     s === "linkedin" ||
     s === "autodesk" ||
+    s === "youtube-premium" ||
+    s.includes("youtube") ||
     n.includes("رابط") ||
     n.includes("دعوة") ||
-    c.includes("link")
+    n.includes("يوتيوب") ||
+    c.includes("link") ||
+    c.includes("youtube")
   ) {
     return "link";
   }

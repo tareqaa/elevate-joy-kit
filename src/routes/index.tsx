@@ -179,9 +179,10 @@ function Home() {
   // 4. Best Selling in Store (bestsellers)
   // 5. Discover Games By Category (discover_genres - auto-scrolling marquee)
   // 6. Best Selling Games (best_selling_games)
-  // 7. Best Selling Gift Cards (gamepoints)
-  // 8. Discover By Price (discover_price)
-  // 9. Categories Grid & Trust & Reviews
+  // 7. Best Selling Game Currencies (game_currencies)
+  // 8. Best Selling Gift Cards (gift_cards)
+  // 9. Discover By Price (discover_price)
+  // 10. Categories Grid & Trust & Reviews
   const sections = useMemo(() => {
     const rawList = layout?.sections || [];
 
@@ -210,6 +211,8 @@ function Home() {
           "discover_genres",
           "best_selling_games",
           "gamepoints",
+          "game_currencies",
+          "gift_cards",
           "discover_price",
           "categories",
         ].includes(s.type)
@@ -222,7 +225,8 @@ function Home() {
       bestsellersSection,
       { id: "sec_discover_genres", type: "discover_genres", enabled: true, data: {} },
       { id: "sec_best_selling_games", type: "best_selling_games", enabled: true, data: {} },
-      { id: "sec_gamepoints", type: "gamepoints", enabled: true, data: {} },
+      { id: "sec_game_currencies", type: "game_currencies", enabled: true, data: {} },
+      { id: "sec_gift_cards", type: "gift_cards", enabled: true, data: {} },
       { id: "sec_discover_price", type: "discover_price", enabled: true, data: {} },
       ...remainingSections,
     ];

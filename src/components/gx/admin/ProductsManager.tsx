@@ -441,6 +441,8 @@ export function CategoryProducts({ categoryId = "all", categoryName = "كل ال
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["admin-products"] });
+      qc.invalidateQueries({ queryKey: ["store-search-catalog"] });
+      window.dispatchEvent(new CustomEvent("gx:catalog-updated"));
       toast.success(vars.is_active ? "تم تفعيل المنتج وظهوره بالمتجر" : "تم إخفاء المنتج من المتجر");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -455,6 +457,8 @@ export function CategoryProducts({ categoryId = "all", categoryName = "كل ال
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["admin-products"] });
+      qc.invalidateQueries({ queryKey: ["store-search-catalog"] });
+      window.dispatchEvent(new CustomEvent("gx:catalog-updated"));
       toast.success(vars.is_featured ? "تم تمييز المنتج في الواجهة" : "تمت إزالة التمييز");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -471,6 +475,8 @@ export function CategoryProducts({ categoryId = "all", categoryName = "كل ال
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-products"] });
       qc.invalidateQueries({ queryKey: ["admin-all-variants"] });
+      qc.invalidateQueries({ queryKey: ["store-search-catalog"] });
+      window.dispatchEvent(new CustomEvent("gx:catalog-updated"));
       toast.success("تم حذف المنتج بنجاح");
       setDeletingProduct(null);
     },
@@ -1054,6 +1060,7 @@ function QuickPriceDialog({
       // 4. Invalidate server cache & reload client registry
       await purgeCatalogCacheFn({ data: { slug: product.slug } });
       await clearDbVariantsCache();
+      window.dispatchEvent(new CustomEvent("gx:catalog-updated"));
 
       toast.success("تم تحديث السعر بنجاح ومزامنته في كل مكان (المتجر، الأكثر مبيعاً، والسلة)");
       onSaved?.();

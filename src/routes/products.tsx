@@ -85,7 +85,8 @@ const CATEGORY_TABS: CategoryFilterTab[] = [
       p.parentCategorySlug === "subscriptions" ||
       p.categorySlug === "subscriptions" ||
       (p.slug || "").includes("game-pass") ||
-      (p.slug || "").includes("nitro"),
+      (p.slug || "").includes("nitro") ||
+      (p.slug || "").includes("youtube"),
   },
   {
     id: "games",
@@ -98,6 +99,12 @@ const CATEGORY_TABS: CategoryFilterTab[] = [
       p.categorySlug === "games" ||
       p.categorySlug === "pc-games" ||
       p.categorySlug === "fortnite" ||
+      p.categorySlug === "pubg-mobile" ||
+      p.categorySlug === "free-fire" ||
+      p.categorySlug === "roblox" ||
+      (p.slug || "").includes("pubg") ||
+      (p.slug || "").includes("free-fire") ||
+      (p.slug || "").includes("roblox") ||
       (p.slug || "").includes("fortnite") ||
       (p.slug || "").includes("fifa") ||
       (p.slug || "").includes("fc-"),
@@ -112,7 +119,8 @@ const CATEGORY_TABS: CategoryFilterTab[] = [
       p.parentCategorySlug === "design" ||
       p.categorySlug === "design" ||
       p.categorySlug === "windows-keys" ||
-      ["windows", "adobe", "canva", "microsoft365", "autodesk", "linkedin"].some((k) =>
+      p.categorySlug === "duolingo" ||
+      ["windows", "adobe", "canva", "microsoft365", "autodesk", "linkedin", "duolingo"].some((k) =>
         (p.slug || "").includes(k)
       ),
   },
@@ -246,6 +254,9 @@ function AllProductsPage() {
     "dark-souls-3-deluxe",
     "bioshock-the-collection",
     "fortnite",
+    "pubg-mobile-uc",
+    "free-fire-diamonds",
+    "roblox-robux",
   ];
 
   // Filter and sort products

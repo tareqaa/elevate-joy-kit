@@ -19,7 +19,6 @@ import { CatDeliveryTypeDropdown, DELIVERY_TYPE_OPTIONS } from "@/components/gx/
 import { CatPriceFilterDropdown, PRICE_PRESETS } from "@/components/gx/CatPriceFilterDropdown";
 import { CatSubtypeDropdown, type SubtypeOption } from "@/components/gx/CatSubtypeDropdown";
 import { resolveStrictDeliveryType } from "@/lib/gx/delivery-types";
-import { trackRecentlyViewed } from "@/lib/gx/recently-viewed";
 
 export const SOCIAL_SUBTYPES: SubtypeOption[] = [
   {
@@ -238,7 +237,8 @@ export const Route = createFileRoute("/category/$slug")({
         (p) =>
           p.categorySlug === "subscriptions" ||
           p.parentCategorySlug === "subscriptions" ||
-          (p.slug || "").includes("game-pass")
+          (p.slug || "").includes("game-pass") ||
+          (p.slug || "").includes("youtube")
       );
     } else {
       const matchingAll = allProducts.filter(
@@ -735,18 +735,64 @@ function CategoryPage() {
         color: "#a855f7",
         glow: "rgba(168, 85, 247, 0.45)",
         logoSrc: "/app/assets/img/fortnite-f-icon.jpg",
-        directLink: "/product/fortnite",
         match: (p: CatalogStoreProduct) =>
           p.categorySlug === "fortnite" ||
           (p.slug || "").includes("fortnite") ||
           (p.nameAr || "").includes("فورت نايت"),
+      },
+      {
+        id: "pubg-mobile",
+        nameAr: "ببجي موبايل",
+        nameEn: "PUBG Mobile",
+        color: "#f3a808",
+        glow: "rgba(243, 168, 8, 0.45)",
+        logoSrc: "/app/assets/img/pubg-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          p.categorySlug === "pubg-mobile" ||
+          p.parentCategorySlug === "pubg-mobile" ||
+          (p.slug || "").includes("pubg") ||
+          (p.nameAr || "").includes("ببجي"),
+      },
+      {
+        id: "free-fire",
+        nameAr: "فري فاير",
+        nameEn: "Free Fire",
+        color: "#ff6a00",
+        glow: "rgba(255, 106, 0, 0.45)",
+        logoSrc: "/app/assets/img/freefire-icon.png",
+        match: (p: CatalogStoreProduct) =>
+          p.categorySlug === "free-fire" ||
+          p.parentCategorySlug === "free-fire" ||
+          (p.slug || "").includes("free-fire") ||
+          (p.nameAr || "").includes("فري فاير"),
+      },
+      {
+        id: "roblox",
+        nameAr: "روبلوكس",
+        nameEn: "Roblox",
+        color: "#e1251b",
+        glow: "rgba(225, 37, 27, 0.45)",
+        logoSrc: "/app/assets/img/roblox-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          p.categorySlug === "roblox" ||
+          p.parentCategorySlug === "roblox" ||
+          (p.slug || "").includes("roblox") ||
+          (p.nameAr || "").includes("روبلوكس") ||
+          (p.nameAr || "").includes("روبوكس"),
       },
     ];
 
     return defs
       .map((d) => ({
         ...d,
-        count: d.id === "all" ? products.length : products.filter(d.match).length,
+        count:
+          d.id === "all"
+            ? products.length
+            : (() => {
+                const matched = products.filter(d.match);
+                const variantCount = matched.reduce((acc, p) => acc + (p.variants?.length || 0), 0);
+                return variantCount > matched.length ? variantCount : matched.length;
+              })(),
       }))
       .filter((d) => d.id === "all" || d.id === "sony" || d.count > 0);
   }, [products]);
@@ -848,14 +894,14 @@ function CategoryPage() {
       },
       {
         id: "entertainment",
-        nameAr: "اشتراكات ترفيه ومشاهدة",
-        nameEn: "Entertainment",
-        color: "#e50914",
-        glow: "rgba(229, 9, 20, 0.45)",
-        renderLogo: () => <span style={{ fontSize: 24 }}>🎬</span>,
+        nameAr: "اشتراكات المشاهدة",
+        nameEn: "Streaming & Movies",
+        color: "#ff2b54",
+        glow: "rgba(255, 43, 84, 0.45)",
+        logoSrc: "/app/assets/img/streaming-icon.png",
         match: (p: CatalogStoreProduct) =>
-          ["netflix", "shahid", "youtube", "spotify", "iptv", "disney", "osn", "watch"].some((k) =>
-            (p.slug || "").includes(k) || (p.nameAr || "").toLowerCase().includes(k)
+          ["netflix", "shahid", "youtube", "spotify", "iptv", "disney", "osn", "watch", "مشاهدة", "سينما", "بريميوم"].some((k) =>
+            (p.slug || "").toLowerCase().includes(k) || (p.nameAr || "").toLowerCase().includes(k)
           ),
       },
     ];
@@ -1003,6 +1049,7 @@ function CategoryPage() {
   }, [platformsList, selectedPlatform]);
 
   const handleSelectPlatform = (platId: string) => {
+    setCurrentPage(1);
     if (selectedPlatform === platId && platId !== "all") {
       setSelectedPlatform("all");
     } else {
@@ -1312,7 +1359,7 @@ function CategoryPage() {
   }, [displayedProducts, currentPage]);
 
   // Platform card rendering helper (renders a Link for directLink items like Fortnite, or a button for filtering)
-  const isStaticPlatforms = platformsList.length <= 6;
+  const isStaticPlatforms = platformsList.length <= 10;
 
   const renderPlatformCard = (plat: CategoryPlatformItem, key: string, inModal = false) => {
     const isActive = selectedPlatform === plat.id;
@@ -1454,19 +1501,6 @@ function CategoryPage() {
           style={{
             background: p.thumbBg || "linear-gradient(135deg, rgba(0, 112, 209, 0.22), rgba(0, 60, 150, 0.12))",
             textDecoration: "none",
-          }}
-          onClick={() => {
-            trackRecentlyViewed({
-              slug: p.slug,
-              nameAr: p.nameAr,
-              nameEn: p.nameEn,
-              taglineAr: p.taglineAr || undefined,
-              taglineEn: p.taglineEn || undefined,
-              price,
-              imageUrl: p.imageUrl || undefined,
-              icon: p.icon || undefined,
-              categorySlug: "gift-cards",
-            });
           }}
         >
           <div className="gx-gamepoint-card-top">

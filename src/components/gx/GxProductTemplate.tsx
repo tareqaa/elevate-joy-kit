@@ -8,6 +8,34 @@ import { CART_ADDED_EVENT } from "./AddedToCartModal";
 import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
 import { AdobePoster, CanvaPoster, WindowsPoster } from "@/lib/gx/brand-icons";
 
+function renderStepContent(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: "var(--cyan, #00e5ff)",
+            textDecoration: "underline",
+            fontWeight: 700,
+            wordBreak: "break-all",
+            margin: "0 4px",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part} ↗
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 /* ============================================================
    COUNTRY GEO DETECTION & LOCALIZATION
    ============================================================ */
@@ -288,6 +316,7 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
   const platform = useMemo(() => {
     const s = (product.slug || "").toLowerCase();
     const c = (categoryName || "").toLowerCase();
+    if (s.includes("youtube")) return "YouTube";
     if (s.includes("gemini") || s.includes("google")) return "Google Gemini";
     if (s.includes("windows") || s.includes("office") || s.includes("microsoft")) return "Microsoft";
     if (s.includes("adobe")) return "Adobe Creative Cloud";
@@ -304,6 +333,7 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
     if (r.includes("us") || r.includes("أمريك")) return ar ? "أمريكي (USA)" : "USA";
     if (r.includes("turkey") || r.includes("تركي")) return ar ? "تركي (Turkey)" : "Turkey";
     if (r.includes("ksa") || r.includes("سعود")) return ar ? "سعودي (KSA)" : "KSA";
+    if (r.includes("jordan") || r.includes("أردن") || r.includes("اردن") || r === "jo") return ar ? "الأردن (Jordan)" : "Jordan";
     return ar ? "عالمي (Global)" : "Global";
   }, [activeVariant.region, product.region, ar]);
 
@@ -555,8 +585,61 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
     navigate({ to: "/cart" });
   };
 
+  const categorySlug = useMemo<string | null>(() => {
+    const c = ((product.categorySlug || "") + " " + (categoryName || "")).toLowerCase();
+    if (c.includes("اشتراك") || c.includes("subscrip")) return "subscriptions";
+    if (c.includes("لعب") || c.includes("game")) return "games";
+    if (c.includes("برامج") || c.includes("soft") || c.includes("design")) return "design";
+    if (c.includes("بطاق") || c.includes("card")) return "gift-cards";
+    return null;
+  }, [categoryName, product.categorySlug]);
+
+  // Steam Game Account detection:
+  const isSteamGameAccount = useMemo(() => {
+    const pPlatform = ((product.platform || "") + " " + (product.categoryNameEn || "") + " " + (product.categoryNameAr || "")).toLowerCase();
+    const pName = ((product.nameAr || "") + " " + (product.nameEn || "")).toLowerCase();
+    const isSteam = pPlatform.includes("steam") || pName.includes("ستيم") || pName.includes("steam");
+    const isAccount = deliveryInfo.type === "account" || (product.deliveryType || "").toLowerCase() === "account";
+    const isGame = (product.categorySlug || "").includes("game") || (categorySlug || "").includes("game") || pPlatform.includes("game") || pPlatform.includes("لعب");
+    return isSteam && isAccount && isGame;
+  }, [product, deliveryInfo.type, categorySlug]);
+
+  // YouTube Family Invite detection:
+  const isYouTube = useMemo(() => {
+    return product.slug === "youtube-premium" || (product.slug || "").includes("youtube");
+  }, [product.slug]);
+
   // Contextual Notice Points
   const noticePoints = useMemo(() => {
+    if (isYouTube) {
+      return [
+        ar
+          ? "📧 دعوة رسمية على الإيميل: يصلك الاشتراك كدعوة رسمية من Google على بريدك الإلكتروني (Gmail) بدون الحاجة لكلمة المرور نهائياً."
+          : "📧 Official Email Invite: Delivered directly as an official Google invitation to your Gmail; no password needed.",
+        ar
+          ? "⚠️ شرط أساسي وإلزامي: يجب أن لا يكون حسابك منضماً حالياً إلى أي مجموعة عائلية أخرى في Google لتتمكن من قبول الدعوة بنجاح."
+          : "⚠️ Mandatory Requirement: Your Google account must NOT be part of any other Google family group to accept the invite.",
+        ar
+          ? "👥 الانضمام للمجموعة العائلية: بمجرد وصول الإيميل، تفتح الرسالة وتضغط على 'الانضمام للعائلة' ليتم تفعيل مزايا YouTube Premium فوراً."
+          : "👥 Join Family Group: Simply open the email and click to join the family group to activate your Premium benefits immediately.",
+        ar
+          ? "✨ مزايا بريميوم كاملة: مشاهدة بدون إعلانات نهائياً، تشغيل في الخلفية عند قفل الشاشة، تنزيل الفيديوهات بدون نت، واشتراك YouTube Music كامل."
+          : "✨ Full Premium Access: 100% ad-free videos, background playback, offline downloads, and full YouTube Music included.",
+      ];
+    }
+    if (isSteamGameAccount) {
+      return [
+        ar
+          ? "قد لا يتم تضمين مكافآت الطلب المسبق (Pre-order bonuses) أو قد تختلف عن العروض الأخرى. سيتم إرسال المفتاح/الحساب فور الإصدار الرسمي في حال كان المنتج طلباً مسبقاً."
+          : "Pre-order bonuses may not be included or differ from other offers. Your game key will be sent on the official release date.",
+        ar
+          ? "هذا ليس مفتاح منتج (Product Key). سيتم إنشاء وتجهيز حساب جديد مخصص لك، وسيكون المحتوى المشترى متاحاً من خلال هذا الحساب. يمكنك تسجيل الدخول باستخدام البيانات المرسلة لك في تفاصيل طلبك (Inventory)."
+          : "This is not a product key. A new account will be created for you, and the purchased content will be accessible through that account. You can log in using the credentials provided in your Inventory.",
+        ar
+          ? "يُرجى تجنب إجراء أي تغييرات على الحساب المشترى — مثل إضافة وسائل دفع أو تعديل منطقة الحساب (الريجون) — حيث قد يؤدي ذلك إلى حظر الحساب أو تعليقه. لن يتم استرداد أي مبالغ في مثل هذه الحالات (No refunds)."
+          : "Please avoid making any changes to the purchased account — such as adding payment methods or modifying the region — as this may lead to the account being suspended. No refunds will be issued in such cases.",
+      ];
+    }
     if (isSocialProduct || isFollowerProduct || isLikeProduct) {
       return [
         ar
@@ -623,7 +706,7 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
         ? "يتم التنفيذ السريع في غضون دقائق معدودة عبر فريق العمل المتخصص."
         : "Processed rapidly within minutes by our dedicated support agents.",
     ];
-  }, [deliveryInfo.type, isSocialProduct, isFollowerProduct, isLikeProduct, ar]);
+  }, [deliveryInfo.type, isSteamGameAccount, isSocialProduct, isFollowerProduct, isLikeProduct, ar]);
 
   const isNoticeHidden = useMemo(() => {
     return (
@@ -633,11 +716,14 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
   }, [product.deliveryDetails, product.importantNotes]);
 
   const displayNoticeList = useMemo(() => {
+    if (isSteamGameAccount) {
+      return noticePoints;
+    }
     if (product.importantNotes && product.importantNotes.length > 0) {
       return product.importantNotes;
     }
     return noticePoints;
-  }, [product.importantNotes, noticePoints]);
+  }, [isSteamGameAccount, product.importantNotes, noticePoints]);
 
   // Contextual Redeem Steps
   const redeemSteps = useMemo(() => {
@@ -672,6 +758,23 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
       ];
     }
 
+    if (isYouTube) {
+      return [
+        ar
+          ? "أدخل إيميل حسابك في Google / Gmail في خانة الطلب الجانبية لتصلك الدعوة عليه."
+          : "Enter your personal Google / Gmail email in the order field to receive your invitation.",
+        ar
+          ? "تأكد تماماً أن حسابك غير منضم لأي مجموعة عائلية أخرى في Google حتى نتمكن من إرسال الدعوة لك بدون أي عائق."
+          : "Make sure your Google account is not currently joined to any other family group.",
+        ar
+          ? "افتح بريدك الإلكتروني (Gmail)، ستصلك رسالة دعوة رسمية من Google، اضغط على زر 'قبول الدعوة' (Accept Invitation) وانضم للمجموعة العائلية."
+          : "Open your email inbox, find the official Google invitation, and click accept to join the family group.",
+        ar
+          ? "مبروك! يتم تفعيل اشتراك YouTube Premium و YouTube Music على حسابك الشخصي فوراً وبدون أي إعلانات."
+          : "Congratulations! YouTube Premium and YouTube Music are now fully active on your personal account.",
+      ];
+    }
+
     if (deliveryInfo.type === "link") {
       return [
         ar
@@ -688,7 +791,100 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
           : "Enjoy full premium access and advanced tools throughout the subscription period.",
       ];
     }
+
     if (deliveryInfo.type === "code") {
+      const platformLower = ((product.platform || "") + " " + (product.slug || "") + " " + (product.nameAr || "") + " " + (product.nameEn || "")).toLowerCase();
+      const isRockstar = platformLower.includes("rockstar") || platformLower.includes("روكستار") || platformLower.includes("gta") || platformLower.includes("red dead") || platformLower.includes("rdr");
+      const isSteam = platformLower.includes("steam") || platformLower.includes("ستيم");
+      const isXbox = platformLower.includes("xbox") || platformLower.includes("مايكروسوفت") || platformLower.includes("microsoft") || platformLower.includes("windows store");
+      const isPlaystation = platformLower.includes("playstation") || platformLower.includes("بلايستيشن") || platformLower.includes("psn") || platformLower.includes("سوني") || platformLower.includes("sony");
+      const isGooglePlay = platformLower.includes("google play") || platformLower.includes("جوجل بلاي") || platformLower.includes("قوقل بلاي");
+      const isApple = platformLower.includes("apple") || platformLower.includes("itunes") || platformLower.includes("ايتونز") || platformLower.includes("آبل");
+
+      if (isRockstar) {
+        return [
+          ar
+            ? "قم بتنزيل وتثبيت Rockstar Games Launcher، ثم سجّل الدخول عبر الرابط التالي: https://socialclub.rockstargames.com/rockstar-games-launcher"
+            : "Download and install Rockstar Games Launcher, then sign in at: https://socialclub.rockstargames.com/rockstar-games-launcher",
+          ar
+            ? "اضغط على زر القائمة الموجود في الزاوية العلوية اليمنى، ثم اختر استرداد الرمز (Redeem Code)."
+            : "Click the profile menu in the top right corner, then choose Redeem Code.",
+          ar
+            ? "أدخل الرمز الخاص بك، والذي يظهر في صفحة الطلب (Order) على موقع gxstore، ثم اتبع التعليمات لتفعيل الرمز وتنزيل اللعبة."
+            : "Enter your code shown on your GX Store order screen, then follow prompts to activate and install.",
+        ];
+      }
+
+      if (isSteam) {
+        return [
+          ar
+            ? "عبر المتصفح: سجل الدخول وفعّل الكود مباشرة عبر الرابط الرسمي: https://store.steampowered.com/account/registerkey"
+            : "Via Web Browser: Sign in and redeem your product code directly at: https://store.steampowered.com/account/registerkey",
+          ar
+            ? "أو عبر تطبيق Steam للكمبيوتر: افتح التطبيق، من القائمة العلوية اضغط Games ثم اختر Activate a Product on Steam..."
+            : "Or via Steam PC Client: Open Steam, click 'Games' from the top menu, then select 'Activate a Product on Steam...'",
+          ar
+            ? "أدخل كود اللعبة الرقمي واضغط متابعة (Next) لتتم إضافة اللعبة فوراً وبشكل دائم إلى مكتبتك (Library)."
+            : "Enter the product key and click Next to permanently add the game to your Steam Library.",
+        ];
+      }
+
+      if (isXbox) {
+        return [
+          ar
+            ? "عبر المتصفح: سجل الدخول بحساب مايكروسوفت عبر الرابط الرسمي: https://redeem.microsoft.com"
+            : "Via Web Browser: Sign in to your Microsoft account at: https://redeem.microsoft.com",
+          ar
+            ? "أو عبر جهاز Xbox: افتح متجر Store، اضغط زر القائمة (View) واختر استرداد (Redeem)."
+            : "Or via Xbox Console: Open the Store app, press the View button, and select Redeem.",
+          ar
+            ? "أدخل كود التفعيل المكون من 25 حرفاً واضغط تأكيد (Confirm) لإضافة اللعبة أو الاشتراك لحسابك فوراً."
+            : "Enter your 25-character code and select Confirm to add the game or subscription to your account.",
+        ];
+      }
+
+      if (isPlaystation) {
+        return [
+          ar
+            ? "عبر المتصفح: سجل الدخول عبر PlayStation Store على https://store.playstation.com واضغط على صورة حسابك ثم اختر استرداد الرمز (Redeem Code)."
+            : "Via Web Browser: Sign in to PlayStation Store at https://store.playstation.com click your avatar and select Redeem Code.",
+          ar
+            ? "أو عبر جهاز PS4 / PS5: ادخل إلى PlayStation Store، اضغط أيقونة الخيارات (...) في الزاوية العلوية ثم اختر استرداد الرمز (Redeem Code)."
+            : "Or via PS4/PS5: Open PlayStation Store, select the (...) menu icon at the top, and choose Redeem Code.",
+          ar
+            ? "أدخل الرمز المكون من 12 رقماً/حرفاً واضغط استرداد (Redeem) ليتم شحن الرصيد في محفظتك فوراً."
+            : "Enter your 12-digit voucher code and select Redeem to immediately credit your wallet balance.",
+        ];
+      }
+
+      if (isGooglePlay) {
+        return [
+          ar
+            ? "عبر المتصفح: توجه إلى الرابط المباشر لاسترداد بطاقات جوجل بلاي: https://play.google.com/redeem"
+            : "Via Web Browser: Go to the direct redemption portal at: https://play.google.com/redeem",
+          ar
+            ? "أو عبر الهاتف: افتح متجر Google Play، اضغط على صورة ملفك الشخصي > المدفوعات والاشتراكات > استخدام رمز الهدية."
+            : "Or via Phone App: Open Google Play, tap your profile icon > Payments & subscriptions > Redeem code.",
+          ar
+            ? "أدخل رمز البطاقة واضغط استرداد (Redeem) لشحن رصيد Google Play فوراً."
+            : "Enter your gift card code and tap Redeem to apply the balance to your Google Play account.",
+        ];
+      }
+
+      if (isApple) {
+        return [
+          ar
+            ? "افتح متجر App Store على جهاز iPhone أو iPad أو Mac، أو عبر الرابط: https://apps.apple.com/redeem"
+            : "Open App Store on iPhone, iPad, or Mac, or visit: https://apps.apple.com/redeem",
+          ar
+            ? "اضغط على صورة حسابك في أعلى الشاشة، ثم اختر تحصيل بطاقة هدية أو رمز (Redeem Gift Card or Code)."
+            : "Tap your account avatar at the top of the screen, then tap 'Redeem Gift Card or Code'.",
+          ar
+            ? "أدخل الرمز الرقمي واضغط تحصيل لإضافة الرصيد إلى رصيد حساب Apple الخاص بك فوراً."
+            : "Enter the code and tap Redeem to instantly add the balance to your Apple Account.",
+        ];
+      }
+
       return [
         ar
           ? "استلم كود التفعيل الرقمي فوراً في صفحة تأكيد الطلب وحسابك في الموقع."
@@ -722,16 +918,7 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
         ? "يقوم فريق العمل بتنفيذ الشحن لحسابك مباشرة خلال ثوانٍ معدودة."
         : "Our team executes the balance charge directly within moments.",
     ];
-  }, [deliveryInfo.type, ar]);
-
-  const categorySlug = useMemo<string | null>(() => {
-    const c = (categoryName || "").toLowerCase();
-    if (c.includes("اشتراك") || c.includes("subscrip")) return "subscriptions";
-    if (c.includes("لعب") || c.includes("game")) return "games";
-    if (c.includes("برامج") || c.includes("soft") || c.includes("design")) return "design";
-    if (c.includes("بطاق") || c.includes("card")) return "gift-cards";
-    return null;
-  }, [categoryName]);
+  }, [product, deliveryInfo.type, isSocialProduct, isFollowerProduct, isLikeProduct, ar]);
 
   return (
     <div className="wrap driffle-page-wrap gx-page-wrap">
@@ -915,7 +1102,7 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
 
           {/* Important Notice Box (Single top box, can be hidden from admin) */}
           {!isNoticeHidden && displayNoticeList.length > 0 && (
-            <section className="driffle-notice-box gx-notice-box">
+            <section className="driffle-notice-box gx-notice-box" style={isSteamGameAccount ? { borderColor: "rgba(0, 229, 255, 0.45)", background: "linear-gradient(135deg, rgba(23, 29, 43, 0.95), rgba(15, 23, 42, 0.92))" } : undefined}>
               <div className="driffle-notice-icon gx-notice-icon">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
@@ -925,8 +1112,10 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
               </div>
               <div className="driffle-notice-content gx-notice-content">
                 <div className="driffle-notice-title gx-notice-title">
-                  <span>{ar ? "تنبيه وتعليمات هامة" : "Important Notice"}</span>
-                  <span className="driffle-notice-badge">{ar ? "معلومات هامة" : "Verified Info"}</span>
+                  <span>{isSteamGameAccount ? (ar ? "تنبيه هام (حساب ستيم)" : "Important Notice") : (ar ? "تنبيه وتعليمات هامة" : "Important Notice")}</span>
+                  <span className="driffle-notice-badge" style={isSteamGameAccount ? { background: "rgba(0, 229, 255, 0.15)", color: "var(--cyan, #00e5ff)", borderColor: "rgba(0, 229, 255, 0.3)" } : isYouTube ? { background: "rgba(255, 0, 0, 0.15)", color: "#ff4b4b", borderColor: "rgba(255, 0, 0, 0.35)" } : undefined}>
+                    {isSteamGameAccount ? "Steam Account" : isYouTube ? (ar ? "دعوة عائلية على الإيميل" : "Email Family Invite") : (ar ? "معلومات هامة" : "Verified Info")}
+                  </span>
                 </div>
                 <div className="driffle-notice-items-grid">
                   {displayNoticeList.map((pt: string, idx: number) => (
@@ -936,6 +1125,15 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
                     </div>
                   ))}
                 </div>
+
+                {isSteamGameAccount && (
+                  <div style={{ marginTop: 14, padding: "12px 14px", background: "rgba(0,0,0,0.38)", borderRadius: 10, fontSize: 13, color: "#cbd5e1", lineHeight: 1.65, borderRight: ar ? "3px solid var(--cyan, #00e5ff)" : undefined, borderLeft: !ar ? "3px solid var(--cyan, #00e5ff)" : undefined }}>
+                    <strong style={{ color: "var(--cyan, #00e5ff)", display: "block", marginBottom: 6, fontSize: 13.5 }}>Important Notice:</strong>
+                    <p style={{ margin: "0 0 6px" }}>Pre-order bonuses may not be included or differ from other offers. Your game key will be sent on the official release date.</p>
+                    <p style={{ margin: "0 0 6px" }}>This is not a product key. A new account will be created for you, and the purchased content will be accessible through that account. You can log in using the credentials provided in your Inventory.</p>
+                    <p style={{ margin: 0 }}>Please avoid making any changes to the purchased account — such as adding payment methods or modifying the region — as this may lead to the account being suspended. No refunds will be issued in such cases.</p>
+                  </div>
+                )}
               </div>
             </section>
           )}
@@ -1042,7 +1240,7 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
                 {redeemSteps.map((step, idx) => (
                   <div key={idx} className="driffle-step-card gx-step-card">
                     <div className="driffle-step-num gx-step-num">{idx + 1}</div>
-                    <div className="driffle-step-body gx-step-body">{step}</div>
+                    <div className="driffle-step-body gx-step-body">{renderStepContent(step)}</div>
                   </div>
                 ))}
               </div>
@@ -1066,11 +1264,11 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
                   <span className="driffle-price-old gx-price-old">{format(activeVariant.oldPrice)}</span>
                 )}
               </div>
-              <div className="driffle-price-note gx-price-note">
-                {isSocialProduct || isFollowerProduct || isLikeProduct
-                  ? (ar ? "⚡ تنفيذ من ساعة إلى 24 ساعة • ضمان 30 يوماً ضد النقص ⓘ" : "⚡ 1-24h Delivery • 30-Day Drop Refill Guarantee ⓘ")
-                  : (ar ? "السعر النهائي شامل الضريبة والتسليم الفوري ⓘ" : "FINAL PRICE INCLUDES TAX & INSTANT DELIVERY ⓘ")}
-              </div>
+              {(isSocialProduct || isFollowerProduct || isLikeProduct) && (
+                <div className="driffle-price-note gx-price-note">
+                  {ar ? "⚡ تنفيذ من ساعة إلى 24 ساعة • ضمان 30 يوماً ضد النقص ⓘ" : "⚡ 1-24h Delivery • 30-Day Drop Refill Guarantee ⓘ"}
+                </div>
+              )}
             </div>
 
             {/* Target Link or Username Input Box */}

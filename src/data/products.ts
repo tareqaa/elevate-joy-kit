@@ -456,6 +456,9 @@ export type ResolvedPlan = {
   imageUrl?: string | null;
   bg: string;
   price: number;
+  deliveryType?: string | null;
+  region?: string | null;
+  oldPrice?: number | null;
 };
 
 export function findPlanByCartId(cartId: string): ResolvedPlan | null {
@@ -528,6 +531,8 @@ export type FeaturedItem = {
   imageUrl?: string | null;
   iconImage?: string | null;
   badge?: string | null;
+  region?: string | null;
+  deliveryType?: string | null;
 };
 
 export function getFeaturedItems(): FeaturedItem[] {
