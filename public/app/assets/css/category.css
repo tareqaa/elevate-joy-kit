@@ -157,6 +157,8 @@
   align-items: center;
   justify-content: center;
   position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
   border: 1.5px solid rgba(255, 255, 255, 0.16);
   box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.5), 0 0 30px var(--cat-glow, rgba(0, 229, 255, 0.25));
@@ -168,7 +170,7 @@
   box-shadow: 0 16px 32px -6px rgba(0, 0, 0, 0.6), 0 0 40px var(--cat-glow, rgba(0, 229, 255, 0.4));
 }
 
-.cat-stage-badge img {
+.cat-stage-badge > img {
   width: 44px;
   height: 44px;
   object-fit: contain;
@@ -629,14 +631,16 @@
     align-items: center !important;
   }
   .cat-stage-badge {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
     border-radius: 10px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
-  .cat-stage-badge img {
-    width: 24px !important;
-    height: 24px !important;
+  .cat-stage-badge > img {
+    width: 26px !important;
+    height: 26px !important;
   }
   .cat-stage-title-wrap h1 {
     font-size: 17px !important;
@@ -754,22 +758,33 @@
   }
   .cat-stage-platforms .platform-square-card {
     flex-shrink: 0 !important;
-    width: 80px !important;
-    height: 80px !important;
+    width: 90px !important;
+    min-width: 90px !important;
+    height: 90px !important;
     padding: 6px 4px !important;
     border-radius: 14px !important;
+    overflow: hidden !important;
   }
   .cat-stage-platforms .platform-square-logo {
-    width: 28px !important;
-    height: 28px !important;
-    margin-bottom: 2px !important;
+    width: 30px !important;
+    height: 30px !important;
+    margin-bottom: 3px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
   .cat-stage-platforms .platform-square-name {
     font-size: 10px !important;
-    max-width: 72px !important;
-    white-space: nowrap !important;
+    max-width: 82px !important;
+    white-space: normal !important;
+    line-height: 1.25 !important;
+    text-align: center !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
     overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    word-break: break-word !important;
   }
 }
 

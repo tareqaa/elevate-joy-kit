@@ -281,7 +281,21 @@ function RootComponent() {
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });
-    return () => sub.subscription.unsubscribe();
+
+    const onAuthChanged = () => {
+      router.invalidate();
+      queryClient.invalidateQueries();
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("gx-auth-changed", onAuthChanged);
+    }
+
+    return () => {
+      sub.subscription.unsubscribe();
+      if (typeof window !== "undefined") {
+        window.removeEventListener("gx-auth-changed", onAuthChanged);
+      }
+    };
   }, [router, queryClient]);
 
   return (

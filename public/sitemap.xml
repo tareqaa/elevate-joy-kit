@@ -205,12 +205,6 @@
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/youtube-premium</loc>
-    <lastmod>2026-09-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
     <loc>https://gxstore.me/product/instagram-followers</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>daily</changefreq>
@@ -223,13 +217,19 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/adobe</loc>
+    <loc>https://gxstore.me/product/youtube-premium</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://gxstore.me/product/instagram-likes</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://gxstore.me/product/adobe</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -247,13 +247,13 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/linkedin</loc>
+    <loc>https://gxstore.me/product/facebook-post-likes</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/facebook-post-likes</loc>
+    <loc>https://gxstore.me/product/linkedin</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -289,13 +289,13 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/free-fire-diamonds</loc>
+    <loc>https://gxstore.me/product/xbox-game-pass-ultimate</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/xbox-game-pass-ultimate</loc>
+    <loc>https://gxstore.me/product/free-fire-diamonds</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -307,13 +307,13 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/pubg-mobile-uc</loc>
+    <loc>https://gxstore.me/product/playstation</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/playstation</loc>
+    <loc>https://gxstore.me/product/pubg-mobile-uc</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -356,6 +356,12 @@
   </url>
   <url>
     <loc>https://gxstore.me/product/crimson-desert</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://gxstore.me/product/bioshock-the-collection</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -434,12 +440,6 @@
   </url>
   <url>
     <loc>https://gxstore.me/product/minecraft-xbox</loc>
-    <lastmod>2026-09-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://gxstore.me/product/minecraft-java-bedrock</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -649,6 +649,12 @@
     <priority>0.80</priority>
   </url>
   <url>
+    <loc>https://gxstore.me/product/minecraft-java-bedrock</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
     <loc>https://gxstore.me/product/batman-arkham-origins</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>daily</changefreq>
@@ -674,12 +680,6 @@
   </url>
   <url>
     <loc>https://gxstore.me/product/gta-iv-complete-edition</loc>
-    <lastmod>2026-09-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://gxstore.me/product/bioshock-the-collection</loc>
     <lastmod>2026-09-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>

@@ -4816,3 +4816,145 @@ html[dir="ltr"] .gx-nav-login-pill:hover svg {
     padding: 12px !important;
   }
 }
+
+/* ============================================================
+   CATEGORY BADGE & PLATFORM CARD RESPONSIVE POLISH
+   ============================================================ */
+.cat-stage-badge {
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+.cat-stage-badge > img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 12px;
+}
+.software-suite-grid-img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+
+@media (max-width: 768px) {
+  .cat-stage-badge {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+  .cat-stage-badge > img {
+    width: 26px !important;
+    height: 26px !important;
+  }
+  .cat-stage-platforms .platform-square-card {
+    flex-shrink: 0 !important;
+    width: 90px !important;
+    min-width: 90px !important;
+    height: 90px !important;
+    padding: 6px 4px !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+  }
+  .cat-stage-platforms .platform-square-logo {
+    width: 30px !important;
+    height: 30px !important;
+    margin-bottom: 3px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .cat-stage-platforms .platform-square-name {
+    font-size: 10px !important;
+    max-width: 82px !important;
+    white-space: normal !important;
+    line-height: 1.25 !important;
+    text-align: center !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    word-break: break-word !important;
+  }
+}
+
+/* ============================================================
+   ARABIC HERO TEXT GRADIENT & GLYPH CLIPPING FIX
+   Fixes dots and diacritics being cut off by background-clip: text on mobile
+   ============================================================ */
+.hero h1,
+.hg-title {
+  overflow: visible !important;
+  line-height: 1.35 !important;
+}
+
+.hero h1 span,
+.hg-title span {
+  display: inline-block !important;
+  padding: 0.12em 0.05em !important;
+  margin: -0.12em 0 !important;
+  vertical-align: baseline !important;
+  line-height: 1.35 !important;
+  overflow: visible !important;
+  -webkit-box-decoration-break: clone !important;
+  box-decoration-break: clone !important;
+}
+
+@media (max-width: 768px) {
+  .hero h1 {
+    font-size: 24px !important;
+    line-height: 1.4 !important;
+    overflow: visible !important;
+  }
+  .hg-title {
+    font-size: 22px !important;
+    line-height: 1.4 !important;
+    overflow: visible !important;
+  }
+  .hero h1 span,
+  .hg-title span {
+    padding: 0.14em 0.06em !important;
+    margin: -0.14em 0 !important;
+    line-height: 1.4 !important;
+    overflow: visible !important;
+  }
+}
+
+/* ============================================================
+   PRODUCT IMAGE LOADING SPINNER (Rotating Ring on Image Load)
+   ============================================================ */
+.prod-img-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.prod-img-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, rgba(168, 85, 247, 0.12) 0%, rgba(15, 23, 42, 0.4) 100%);
+  z-index: 1;
+}
+
+.prod-spinner-ring {
+  width: 26px;
+  height: 26px;
+  border: 2.5px solid rgba(255, 255, 255, 0.18);
+  border-top-color: var(--cyan, #00e5ff);
+  border-right-color: var(--cyan, #00e5ff);
+  border-radius: 50%;
+  animation: gx-img-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes gx-img-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

@@ -98,6 +98,13 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  display: inline-block;
+  padding: 0.12em 0.05em;
+  margin: -0.12em 0;
+  vertical-align: baseline;
+  overflow: visible;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 .hero p {
@@ -975,6 +982,13 @@ html[dir="rtl"] .car-nav svg {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  display: inline-block;
+  padding: 0.12em 0.05em;
+  margin: -0.12em 0;
+  vertical-align: baseline;
+  overflow: visible;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 .hg-sub {
@@ -1130,9 +1144,17 @@ html[dir="rtl"] .car-nav svg {
   }
   .hero h1 {
     font-size: 24px !important;
-    line-height: 1.35 !important;
+    line-height: 1.4 !important;
     margin-bottom: 12px !important;
     text-align: center !important;
+    overflow: visible !important;
+  }
+  .hero h1 span {
+    display: inline-block !important;
+    padding: 0.14em 0.06em !important;
+    margin: -0.14em 0 !important;
+    line-height: 1.4 !important;
+    overflow: visible !important;
   }
   .hero p {
     font-size: 13px !important;
@@ -1188,9 +1210,17 @@ html[dir="rtl"] .car-nav svg {
   }
   .hg-title {
     font-size: 22px !important;
-    line-height: 1.35 !important;
+    line-height: 1.4 !important;
     margin-bottom: 10px !important;
     text-align: center !important;
+    overflow: visible !important;
+  }
+  .hg-title span {
+    display: inline-block !important;
+    padding: 0.14em 0.06em !important;
+    margin: -0.14em 0 !important;
+    line-height: 1.4 !important;
+    overflow: visible !important;
   }
   .hg-sub {
     font-size: 12.5px !important;

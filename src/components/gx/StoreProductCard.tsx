@@ -56,6 +56,73 @@ export type StoreProductCardProps = {
   } | null;
 };
 
+function CardProductImage({
+  src,
+  alt,
+  className = "prod-thumb-img prod-card-img",
+  style,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  return (
+    <div
+      className="prod-img-wrap"
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+      }}
+    >
+      {!loaded && !error && (
+        <div
+          className="prod-img-skeleton"
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(255, 255, 255, 0.03)",
+            zIndex: 1,
+          }}
+        >
+          <div className="prod-spinner-ring" />
+        </div>
+      )}
+      {error ? (
+        <span style={{ fontSize: 38 }}>🎮</span>
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          className={className}
+          draggable={false}
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+          onContextMenu={(e) => e.preventDefault()}
+          style={{
+            ...style,
+            opacity: loaded ? 1 : 0,
+            transition: "opacity 0.28s ease-in-out",
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 export function StoreProductCard({
   slug,
   cartId,
@@ -121,13 +188,10 @@ export function StoreProductCard({
     if (isVbucks) {
       if (imageUrl && !imageUrl.includes("fortnite-logo.png") && !imageUrl.endsWith("vbucks.png")) {
         return (
-          <img
+          <CardProductImage
             src={imageUrl}
             alt={name}
-            loading="lazy"
-            decoding="async"
             className="prod-thumb-img prod-card-img"
-            draggable={false}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         );
@@ -162,13 +226,10 @@ export function StoreProductCard({
     if (slug === "fortnite") {
       if (imageUrl && !imageUrl.includes("fortnite-logo.png") && !imageUrl.includes("fortnite-f-icon.jpg")) {
         return (
-          <img
+          <CardProductImage
             src={imageUrl}
             alt={name}
-            loading="lazy"
-            decoding="async"
             className="prod-thumb-img prod-card-img"
-            draggable={false}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         );
@@ -229,14 +290,10 @@ export function StoreProductCard({
 
     if (imgSrc) {
       return (
-        <img
+        <CardProductImage
           src={imgSrc}
           alt={name}
-          loading="lazy"
-          decoding="async"
           className="prod-thumb-img prod-card-img"
-          draggable={false}
-          onContextMenu={(e) => e.preventDefault()}
         />
       );
     }

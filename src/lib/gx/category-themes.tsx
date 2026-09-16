@@ -172,13 +172,16 @@ export function SoftwareSuiteIcon({ size = 40 }: { size?: number }) {
       style={{
         width: size,
         height: size,
+        maxWidth: "100%",
+        maxHeight: "100%",
         borderRadius: 12,
         background: "linear-gradient(135deg, #00e5ff 0%, #0284c7 100%)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         boxSizing: "border-box",
-        padding: 3.5,
+        padding: 3,
+        overflow: "hidden",
         flexShrink: 0,
       }}
       title="Adobe, Canva, Windows, Microsoft 365"
@@ -190,20 +193,21 @@ export function SoftwareSuiteIcon({ size = 40 }: { size?: number }) {
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gridTemplateRows: "1fr 1fr",
-          gap: 2.5,
+          gap: 2,
+          overflow: "hidden",
         }}
       >
-        <div style={{ background: "rgba(0, 0, 0, 0.45)", borderRadius: 3.5, display: "flex", alignItems: "center", justifyContent: "center", padding: 1.5 }}>
-          <img src="/app/assets/img/adobe-cc.webp" alt="Adobe" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        <div style={{ background: "rgba(0, 0, 0, 0.45)", borderRadius: 3.5, display: "flex", alignItems: "center", justifyContent: "center", padding: 1, overflow: "hidden" }}>
+          <img src="/app/assets/img/adobe-cc.webp" alt="Adobe" className="software-suite-grid-img" style={{ width: "100%", height: "100%", maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" }} />
         </div>
-        <div style={{ background: "rgba(0, 0, 0, 0.45)", borderRadius: 3.5, display: "flex", alignItems: "center", justifyContent: "center", padding: 1.5 }}>
-          <img src="/app/assets/img/canva-logo.png" alt="Canva" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        <div style={{ background: "rgba(0, 0, 0, 0.45)", borderRadius: 3.5, display: "flex", alignItems: "center", justifyContent: "center", padding: 1, overflow: "hidden" }}>
+          <img src="/app/assets/img/canva-logo.png" alt="Canva" className="software-suite-grid-img" style={{ width: "100%", height: "100%", maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" }} />
         </div>
-        <div style={{ background: "rgba(0, 0, 0, 0.45)", borderRadius: 3.5, display: "flex", alignItems: "center", justifyContent: "center", padding: 1.5 }}>
-          <img src="/app/assets/img/windows-icon.svg" alt="Windows" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        <div style={{ background: "rgba(0, 0, 0, 0.45)", borderRadius: 3.5, display: "flex", alignItems: "center", justifyContent: "center", padding: 1, overflow: "hidden" }}>
+          <img src="/app/assets/img/windows-icon.svg" alt="Windows" className="software-suite-grid-img" style={{ width: "100%", height: "100%", maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" }} />
         </div>
-        <div style={{ background: "rgba(0, 0, 0, 0.45)", borderRadius: 3.5, display: "flex", alignItems: "center", justifyContent: "center", padding: 1.5 }}>
-          <img src="/app/assets/img/microsoft365-logo.svg" alt="Microsoft 365" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        <div style={{ background: "rgba(0, 0, 0, 0.45)", borderRadius: 3.5, display: "flex", alignItems: "center", justifyContent: "center", padding: 1, overflow: "hidden" }}>
+          <img src="/app/assets/img/microsoft365-logo.svg" alt="Microsoft 365" className="software-suite-grid-img" style={{ width: "100%", height: "100%", maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" }} />
         </div>
       </div>
     </div>

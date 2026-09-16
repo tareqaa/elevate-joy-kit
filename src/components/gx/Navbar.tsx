@@ -203,7 +203,25 @@ export function Navbar() {
       }
     });
 
-    return () => { active = false; sub.subscription.unsubscribe(); };
+    const onAuthEvent = (e: any) => {
+      const u = e?.detail;
+      if (u) {
+        syncSessionUser(u);
+      } else {
+        supabase.auth.getSession().then(({ data }) => syncSessionUser(data.session?.user));
+      }
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("gx-auth-changed", onAuthEvent);
+    }
+
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+      if (typeof window !== "undefined") {
+        window.removeEventListener("gx-auth-changed", onAuthEvent);
+      }
+    };
   }, []);
 
   useEffect(() => {

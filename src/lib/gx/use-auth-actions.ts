@@ -89,6 +89,21 @@ export function useAuthActions() {
         };
       }
 
+      if (typeof window !== "undefined") {
+        try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
+      }
+
+      // Refresh session to elevate to AAL2 and broadcast updated auth state across the app
+      try {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        const activeUser = refreshed.session?.user ?? (await supabase.auth.getUser()).data.user;
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("gx-auth-changed", { detail: activeUser }));
+        }
+      } catch {
+        // noop
+      }
+
       return { ok: true };
     } catch (err) {
       return { ok: false, error: normalizeError(err, "2FA verification failed") };

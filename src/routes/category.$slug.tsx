@@ -365,18 +365,26 @@ function AllPlatformsIcon() {
   return (
     <div
       style={{
-        width: 36,
-        height: 36,
-        borderRadius: 12,
+        width: "100%",
+        height: "100%",
+        maxWidth: 32,
+        maxHeight: 32,
+        borderRadius: 10,
         background: "linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(168, 85, 247, 0.25))",
         border: "1.5px solid rgba(0, 229, 255, 0.4)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontSize: 18,
+        overflow: "hidden",
+        flexShrink: 0,
       }}
     >
-      🌟
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#00e5ff" }}>
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      </svg>
     </div>
   );
 }
@@ -1358,8 +1366,8 @@ function CategoryPage() {
     return displayedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [displayedProducts, currentPage]);
 
-  // Platform card rendering helper (renders a Link for directLink items like Fortnite, or a button for filtering)
-  const isStaticPlatforms = platformsList.length <= 10;
+  // Platform card rendering helper (renders moving marquee when > 3 platforms, or static grid if <= 3)
+  const isStaticPlatforms = platformsList.length <= 3;
 
   const renderPlatformCard = (plat: CategoryPlatformItem, key: string, inModal = false) => {
     const isActive = selectedPlatform === plat.id;
@@ -1707,8 +1715,8 @@ function CategoryPage() {
                 </div>
               </div>
 
-              {/* View All Platforms Button in Header (if > 6 platforms) */}
-              {!isStaticPlatforms && platformsList.length > 1 && (
+              {/* View All Platforms Button in Header (accessible whenever multiple platforms exist) */}
+              {platformsList.length > 1 && (
                 <button
                   type="button"
                   className="platform-open-all-btn cat-stage-all-btn"
