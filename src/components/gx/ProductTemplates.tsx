@@ -1,3 +1,4 @@
+import { resolveRegionLabel } from "@/lib/gx/region";
 /* ============================================================
    GX STORE — DYNAMIC PRODUCT TEMPLATES
    One component per `products.page_template` value. All of them
@@ -244,19 +245,12 @@ function VariantCard({
     lang
   );
 
-  const getCleanRegion = () => {
-    const r = (p.region || "").toLowerCase();
-    const t = (p.taglineAr || "").toLowerCase();
-    const n = (v.label || "").toLowerCase();
-    const str = `${r} ${t} ${n}`;
-
-    if (str.includes("أمريك") || str.includes("usa") || str.includes("us")) return lang === "en" ? "USA" : "أمريكي";
-    if (str.includes("ترك") || str.includes("turkey") || str.includes("try")) return lang === "en" ? "Turkey" : "تركي";
-    if (str.includes("سعود") || str.includes("ksa") || str.includes("saudi")) return lang === "en" ? "KSA" : "سعودي";
-    if (str.includes("إمارات") || str.includes("uae") || str.includes("emirates")) return lang === "en" ? "UAE" : "إماراتي";
-    if (str.includes("بريطان") || str.includes("uk") || str.includes("gb")) return lang === "en" ? "UK" : "بريطاني";
-    return lang === "en" ? "Global" : "عالمي";
-  };
+  const getCleanRegion = () =>
+    resolveRegionLabel(
+      { region: p.region, tagline: p.taglineAr, name: v.label, cartId: v.cartId, slug: p.slug },
+      lang,
+      { flag: false },
+    );
   const cleanRegion = getCleanRegion();
 
   return (

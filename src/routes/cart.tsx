@@ -1,3 +1,4 @@
+import { resolveRegionLabel } from "@/lib/gx/region";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { useCart } from "@/lib/gx/cart";
@@ -212,24 +213,10 @@ function CartList() {
           },
           lang
         );
-        const cleanRegion = (() => {
-          const r = (it.region || "").toLowerCase();
-          const s = ((it.product || "") + " " + (it.name || "") + " " + (it.cartId || "") + " " + r).toLowerCase();
-          if (s.includes("أردن") || s.includes("اردن") || s.includes("jordan") || r === "jo" || r.includes("jordan")) {
-            return lang === "en" ? "Jordan 🇯🇴" : "الأردن 🇯🇴";
-          } else if (s.includes("أمريك") || s.includes("usa") || s.includes("united states") || s.includes("us-") || s.includes("-us")) {
-            return lang === "en" ? "USA 🇺🇸" : "أمريكي 🇺🇸";
-          } else if (s.includes("سعود") || s.includes("ksa") || s.includes("saudi") || s.includes("sa-") || s.includes("-sa")) {
-            return lang === "en" ? "Saudi 🇸🇦" : "سعودي 🇸🇦";
-          } else if (s.includes("إمارات") || s.includes("uae") || s.includes("emirates") || s.includes("ae-") || s.includes("-ae")) {
-            return lang === "en" ? "UAE 🇦🇪" : "إماراتي 🇦🇪";
-          } else if (s.includes("ترك") || s.includes("turkey") || s.includes("try") || s.includes("tr-") || s.includes("-tr")) {
-            return lang === "en" ? "Turkey 🇹🇷" : "تركي 🇹🇷";
-          } else if (s.includes("بريطان") || s.includes("uk") || s.includes("gb")) {
-            return lang === "en" ? "UK 🇬🇧" : "بريطاني 🇬🇧";
-          }
-          return lang === "en" ? "Global 🌐" : "عالمي 🌐";
-        })();
+        const cleanRegion = resolveRegionLabel(
+          { region: it.region, name: it.name, cartId: it.cartId, slug: it.product },
+          lang,
+        );
 
         return (
           <div key={it.cartId} className="cart-row gx-eneba-row">

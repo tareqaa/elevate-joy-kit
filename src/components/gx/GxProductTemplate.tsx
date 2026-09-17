@@ -1,3 +1,4 @@
+import { resolveRegionLabel } from "@/lib/gx/region";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CatalogProduct, CatalogVariant } from "@/lib/gx/catalog.functions";
@@ -328,14 +329,15 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
   }, [product.slug, categoryName]);
 
   // Region resolution
-  const cleanRegion = useMemo(() => {
-    const r = (activeVariant.region || product.region || "").toLowerCase();
-    if (r.includes("us") || r.includes("أمريك")) return ar ? "أمريكي (USA)" : "USA";
-    if (r.includes("turkey") || r.includes("تركي")) return ar ? "تركي (Turkey)" : "Turkey";
-    if (r.includes("ksa") || r.includes("سعود")) return ar ? "سعودي (KSA)" : "KSA";
-    if (r.includes("jordan") || r.includes("أردن") || r.includes("اردن") || r === "jo") return ar ? "الأردن (Jordan)" : "Jordan";
-    return ar ? "عالمي (Global)" : "Global";
-  }, [activeVariant.region, product.region, ar]);
+  const cleanRegion = useMemo(
+    () =>
+      resolveRegionLabel(
+        { region: activeVariant.region || product.region, slug: product.slug },
+        ar ? "ar" : "en",
+        { flag: false, parens: true },
+      ),
+    [activeVariant.region, product.region, product.slug, ar],
+  );
 
   // Dynamic Geo Detection for Activation Status
   const userCountry = useUserCountry();

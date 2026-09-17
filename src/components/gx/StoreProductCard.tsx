@@ -1,3 +1,4 @@
+import { resolveRegionLabel } from "@/lib/gx/region";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
@@ -350,34 +351,13 @@ export function StoreProductCard({
 
   const formattedTitle = formatTitle(localizeResolvedName(name, lang));
 
-  // 1. Clean Region Label
-  const getCleanRegion = () => {
-    const r = (region || "").toLowerCase();
-    const t = (tagline || "").toLowerCase();
-    const n = (name || "").toLowerCase();
-    const c = (finalCartId || "").toLowerCase();
-    const str = `${r} ${t} ${n} ${c}`;
-
-    if (str.includes("أمريك") || str.includes("usa") || str.includes("united states") || str.includes("us-") || str.includes("-us")) {
-      return lang === "en" ? "USA 🇺🇸" : "أمريكي 🇺🇸";
-    }
-    if (str.includes("ترك") || str.includes("turkey") || str.includes("try") || str.includes("tr-") || str.includes("-tr")) {
-      return lang === "en" ? "Turkey 🇹🇷" : "تركي 🇹🇷";
-    }
-    if (str.includes("سعود") || str.includes("ksa") || str.includes("saudi") || str.includes("sa-") || str.includes("-sa")) {
-      return lang === "en" ? "Saudi 🇸🇦" : "سعودي 🇸🇦";
-    }
-    if (str.includes("إمارات") || str.includes("uae") || str.includes("emirates") || str.includes("ae-") || str.includes("-ae")) {
-      return lang === "en" ? "UAE 🇦🇪" : "إماراتي 🇦🇪";
-    }
-    if (str.includes("بريطان") || str.includes("uk") || str.includes("gb") || str.includes("باوند")) {
-      return lang === "en" ? "UK 🇬🇧" : "بريطاني 🇬🇧";
-    }
-    if (str.includes("أردن") || str.includes("اردن") || str.includes("jordan") || str.includes("jo-") || str.includes("-jo") || r === "jo") {
-      return lang === "en" ? "Jordan 🇯🇴" : "الأردن 🇯🇴";
-    }
-    return lang === "en" ? "Global" : "عالمي";
-  };
+  // 1. Clean Region Label — DB region wins, strict fallback only
+  const getCleanRegion = () =>
+    resolveRegionLabel(
+      { region, tagline, name, cartId: finalCartId, slug },
+      lang,
+      { flag: false },
+    );
 
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const cleanRegion = getCleanRegion();
