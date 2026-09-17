@@ -1,3 +1,4 @@
+import { resolveRegionLabel } from "@/lib/gx/region";
 import { useEffect, useMemo, useRef, useState, useDeferredValue, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate } from "@tanstack/react-router";

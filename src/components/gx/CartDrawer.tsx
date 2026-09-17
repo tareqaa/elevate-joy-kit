@@ -1,3 +1,4 @@
+import { resolveRegionLabel } from "@/lib/gx/region";
 import { useEffect } from "react";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";

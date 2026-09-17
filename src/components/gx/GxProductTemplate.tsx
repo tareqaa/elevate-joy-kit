@@ -1,3 +1,4 @@
+import { resolveRegionLabel } from "@/lib/gx/region";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CatalogProduct, CatalogVariant } from "@/lib/gx/catalog.functions";

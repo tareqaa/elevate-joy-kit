@@ -1,3 +1,4 @@
+import { resolveRegionLabel } from "@/lib/gx/region";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Heart } from "lucide-react";

@@ -1,3 +1,4 @@
+import { resolveRegionLabel } from "@/lib/gx/region";
 /* ============================================================
    GX STORE — DYNAMIC PRODUCT TEMPLATES
    One component per `products.page_template` value. All of them

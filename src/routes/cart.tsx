@@ -1,3 +1,4 @@
+import { resolveRegionLabel } from "@/lib/gx/region";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { useCart } from "@/lib/gx/cart";

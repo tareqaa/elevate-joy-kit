@@ -1,3 +1,4 @@
+import { detectRegionCode, regionLabel, regionFlag } from "@/lib/gx/region";
 import type { Product } from "@/data/products";
 
 /* Brand icon renderers — ported from public/app/assets/js/brand-icons.js */
