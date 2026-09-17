@@ -18,6 +18,7 @@ import { SpinWheel } from "@/components/gx/SpinWheel";
 import { Pager, usePager } from "@/components/gx/Pager";
 import { OrderReviewInline } from "@/components/gx/OrderReviewInline";
 import { useAuthActions } from "@/lib/gx/use-auth-actions";
+import { linkMyPastOrders } from "@/lib/gx/loyalty";
 
 type AccountTab = "profile" | "orders" | "wheel" | "security";
 
@@ -106,6 +107,15 @@ function AccountPage() {
     queryKey: ["my-orders", user.id],
     refetchOnWindowFocus: true,
     queryFn: async () => {
+      try {
+        const linked = await linkMyPastOrders();
+        if (linked && (linked.linked_orders > 0 || linked.xp_credited > 0)) {
+          qc.invalidateQueries({ queryKey: ["my-profile", user.id] });
+          qc.invalidateQueries({ queryKey: ["my-loyalty", user.id] });
+        }
+      } catch {
+        // noop
+      }
       const { data, error } = await supabase
         .from("orders")
         .select("id, order_number, status, created_at, total_jod, items, delivery_data, codes_revealed_at, codes_reveal_count")

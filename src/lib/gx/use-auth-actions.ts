@@ -10,6 +10,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { requestPasswordResetServer } from "@/lib/gx/auth.functions";
 import { useLang } from "@/lib/gx/i18n";
+import { linkMyPastOrders } from "@/lib/gx/loyalty";
 
 export type AuthResult = {
   ok: boolean;
@@ -58,6 +59,7 @@ export function useAuthActions() {
         // continue if MFA check fails
       }
 
+      void linkMyPastOrders();
       return { ok: true, mfaRequired: false };
     } catch (err) {
       return { ok: false, error: normalizeError(err, "Sign-in failed") };
@@ -104,6 +106,7 @@ export function useAuthActions() {
         // noop
       }
 
+      void linkMyPastOrders();
       return { ok: true };
     } catch (err) {
       return { ok: false, error: normalizeError(err, "2FA verification failed") };

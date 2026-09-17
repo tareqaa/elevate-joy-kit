@@ -72,3 +72,14 @@ export function levelName(l: Pick<LevelRow, "name_ar" | "name_en"> | null | unde
   if (!l) return "";
   return lang === "ar" ? l.name_ar : l.name_en;
 }
+
+export async function linkMyPastOrders() {
+  try {
+    const { data, error } = await (supabase.rpc as any)("link_my_past_orders");
+    if (error) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
