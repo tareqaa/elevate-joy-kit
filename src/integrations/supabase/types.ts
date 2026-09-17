@@ -823,6 +823,7 @@ export type Database = {
           currency_snapshot: string | null
           customer_name: string | null
           customer_whatsapp: string | null
+          customer_email: string | null
           delivery_data: Json | null
           discount_jod: number
           id: string
@@ -863,6 +864,7 @@ export type Database = {
           currency_snapshot?: string | null
           customer_name?: string | null
           customer_whatsapp?: string | null
+          customer_email?: string | null
           delivery_data?: Json | null
           discount_jod?: number
           id?: string
@@ -903,6 +905,7 @@ export type Database = {
           currency_snapshot?: string | null
           customer_name?: string | null
           customer_whatsapp?: string | null
+          customer_email?: string | null
           delivery_data?: Json | null
           discount_jod?: number
           id?: string

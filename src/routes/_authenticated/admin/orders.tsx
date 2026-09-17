@@ -49,6 +49,7 @@ type OrderRow = {
   total_jod: number;
   status: string;
   admin_notes: string | null;
+  customer_email?: string | null;
   delivery_data: unknown;
   subtotal_jod?: number | null;
   paid_jod?: number | null;
@@ -174,11 +175,14 @@ function OrdersAdmin() {
         const { data: profs } = await supabase.from("profiles").select("id,email,username").in("id", userIds);
         profilesMap = Object.fromEntries((profs ?? []).map((p) => [p.id, { email: p.email, username: p.username }]));
       }
-      return rows.map<OrderWithEmail>((r) => ({
-        ...r,
-        user_email: r.user_id ? profilesMap[r.user_id]?.email ?? null : null,
-        user_username: r.user_id ? profilesMap[r.user_id]?.username ?? null : null,
-      }));
+      return rows.map<OrderWithEmail>((r) => {
+        const guestEmail = r.customer_email || ((r.delivery_data && typeof r.delivery_data === "object") ? (r.delivery_data as Record<string, unknown>).customer_email as string : null) || null;
+        return {
+          ...r,
+          user_email: r.user_id ? (profilesMap[r.user_id]?.email ?? guestEmail) : guestEmail,
+          user_username: r.user_id ? profilesMap[r.user_id]?.username ?? null : null,
+        };
+      });
     },
     refetchInterval: 30000,
   });
@@ -476,10 +480,11 @@ function QuickFulfill({ onPick }: { onPick: (o: OrderWithEmail) => void }) {
     setLoading(false);
     if (error || !data) { toast.error("لم يتم العثور على الطلب"); return; }
     const row = data as OrderRow;
-    let email: string | null = null; let uname: string | null = null;
+    let email: string | null = row.customer_email || ((row.delivery_data && typeof row.delivery_data === "object") ? (row.delivery_data as Record<string, unknown>).customer_email as string : null) || null;
+    let uname: string | null = null;
     if (row.user_id) {
       const { data: p } = await supabase.from("profiles").select("email,username").eq("id", row.user_id).maybeSingle();
-      email = p?.email ?? null; uname = p?.username ?? null;
+      email = p?.email ?? email; uname = p?.username ?? null;
     }
     onPick({ ...row, user_email: email, user_username: uname });
   }
@@ -551,7 +556,19 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
         region: kind === "code" ? ((c.region || "").trim() || "Global") : "",
       };
     }).filter((c) => c.label || c.value || c.email || c.password);
-    return { status: nextStatus, admin_notes: notes.trim() || null, delivery_data: { codes: cleanCodes } };
+
+    const existingDel = order.delivery_data && typeof order.delivery_data === "object"
+      ? (order.delivery_data as Record<string, unknown>)
+      : {};
+
+    return {
+      status: nextStatus,
+      admin_notes: notes.trim() || null,
+      delivery_data: {
+        ...existingDel,
+        codes: cleanCodes,
+      },
+    };
   }
 
   function save() { onSave(buildPatch(status)); }
