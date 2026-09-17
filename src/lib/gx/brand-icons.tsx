@@ -419,20 +419,9 @@ export function extractDenomination(name?: string, cartId?: string): string {
 }
 
 export function extractRegionInfo(name?: string, cartId?: string, region?: string): { flag: string; label: string } {
-  const str = `${name || ""} ${cartId || ""} ${region || ""}`.toLowerCase();
-  if (str.includes("tr") || str.includes("ترك") || str.includes("try")) {
-    return { flag: "🇹🇷", label: "TURKEY" };
-  }
-  if (str.includes("sa") || str.includes("سعود") || str.includes("ksa")) {
-    return { flag: "🇸🇦", label: "KSA" };
-  }
-  if (str.includes("ae") || str.includes("إمارات") || str.includes("uae")) {
-    return { flag: "🇦🇪", label: "UAE" };
-  }
-  if (str.includes("gb") || str.includes("uk") || str.includes("بريطان") || str.includes("باوند")) {
-    return { flag: "🇬🇧", label: "UK" };
-  }
-  return { flag: "🇺🇸", label: "USA" };
+  const code = detectRegionCode({ name, cartId, region });
+  const label = regionLabel(code, "en", { flag: false }).toUpperCase();
+  return { flag: regionFlag(code), label: label === "GLOBAL" ? "GLOBAL" : label };
 }
 
 export function GiftCardPoster({

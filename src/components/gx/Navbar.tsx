@@ -702,22 +702,14 @@ export function Navbar() {
                             );
                             const deliveryText = deliveryInfo.label;
 
-                            const r = (item.region || "").toLowerCase();
-                            const s = ((item.slug || "") + " " + (item.nameAr || "") + " " + (item.nameEn || "") + " " + r).toLowerCase();
-                            let regionText = lang === "ar" ? "عالمي 🌐" : "Global 🌐";
-                            if (s.includes("أردن") || s.includes("اردن") || s.includes("jordan") || r === "jo" || r.includes("jordan")) {
-                              regionText = lang === "ar" ? "الأردن 🇯🇴" : "Jordan 🇯🇴";
-                            } else if (s.includes("أمريك") || s.includes("usa") || s.includes("united states") || s.includes("us-") || s.includes("-us")) {
-                              regionText = lang === "ar" ? "أمريكي 🇺🇸" : "USA 🇺🇸";
-                            } else if (s.includes("سعود") || s.includes("ksa") || s.includes("saudi") || s.includes("sa-") || s.includes("-sa")) {
-                              regionText = lang === "ar" ? "سعودي 🇸🇦" : "Saudi 🇸🇦";
-                            } else if (s.includes("إمارات") || s.includes("uae") || s.includes("emirates") || s.includes("ae-") || s.includes("-ae")) {
-                              regionText = lang === "ar" ? "إماراتي 🇦🇪" : "UAE 🇦🇪";
-                            } else if (s.includes("ترك") || s.includes("turkey") || s.includes("try") || s.includes("tr-") || s.includes("-tr")) {
-                              regionText = lang === "ar" ? "تركي 🇹🇷" : "Turkey 🇹🇷";
-                            } else if (s.includes("بريطان") || s.includes("uk") || s.includes("gb")) {
-                              regionText = lang === "ar" ? "بريطاني 🇬🇧" : "UK 🇬🇧";
-                            }
+                            const regionText = resolveRegionLabel(
+                              {
+                                region: item.region,
+                                name: `${item.nameAr || ""} ${item.nameEn || ""}`,
+                                slug: item.slug,
+                              },
+                              lang,
+                            );
 
                             const discountPct =
                               item.oldPriceJod && item.priceJod && item.oldPriceJod > item.priceJod
