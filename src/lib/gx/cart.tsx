@@ -464,6 +464,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         next.push({ cartId, qty, meta });
       }
       persist(next);
+
     },
     [rawItems, persist]
   );
@@ -495,6 +496,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         });
       }
       persist(next);
+
     },
     [rawItems, persist]
   );
@@ -511,6 +513,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         next.push({ cartId, qty, meta });
       }
       persist(next);
+
     },
     [rawItems, persist]
   );
@@ -532,6 +535,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         },
       });
       persist(next);
+
     },
     [rawItems, persist]
   );
@@ -544,6 +548,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         { cartId, qty, custom: { name: data.name, icon: data.icon || "🎮", bg: data.bg || "linear-gradient(145deg,#1a1e2a,#0a0c12)", price: data.price } },
       ];
       persist(next);
+
     },
     [rawItems, persist]
   );
@@ -605,13 +610,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         lines = items
           .map((it, i) => {
             const lineTotal = it.price * it.qty;
-            let block = `${i + 1}) ${it.name}
-     • الكمية: ${it.qty}
-     • سعر الوحدة: ${format(it.price)}
-     • المجموع: ${format(lineTotal)}`;
+            let block = `🔹 *${it.name}*\n   • الكمية: ${it.qty} | السعر: ${format(lineTotal)}`;
             if (it.usernames?.length) {
-              const users = it.usernames.map((u, k) => `        ${k + 1}. ${u}`).join("\n");
-              block += `\n     • اليوزرات:\n${users}`;
+              const users = it.usernames.map((u, k) => `     - ${u}`).join("\n");
+              block += `\n   • بيانات الحساب:\n${users}`;
             }
             return block;
           })
@@ -637,25 +639,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
           : 0;
       const finalTotalJOD = Math.round((freshNet + serviceFeeJOD) * 1000) / 1000;
 
-      let msg = `مرحباً GX Store، أود تأكيد طلبي:
-🆔 *رقم الطلب:* ${orderId}
-💳 *طريقة الدفع:* ${pmLabel}`;
+      let msg = `🎮 *طلب جديد من متجر GX Store* 🎮
+━━━━━━━━━━━━━━━━━━━━
+📋 *رقم الطلب:* ${orderId}
+💳 *طريقة الدفع:* ${pmLabel}
+💰 *المجموع الإجمالي:* ${format(finalTotalJOD)}`;
 
-      if (lines) {
-        msg += `\n\n📦 *تفاصيل المنتجات:*\n${lines}`;
+      if (contact.email?.trim()) {
+        msg += `\n📧 *البريد الإلكتروني:* ${contact.email.trim()}`;
       }
 
       if (serviceFeeJOD > 0) {
-        msg += `\n\n⚙️ *رسوم الخدمة (بوابة الدفع 4% + 0.30 د.أ):* ${format(serviceFeeJOD)}`;
+        msg += `\n⚙️ *رسوم الخدمة:* ${format(serviceFeeJOD)}`;
       }
 
-      msg += `\n💰 *الإجمالي النهائي:* ${format(finalTotalJOD)}`;
-
-      if (contact.email?.trim()) {
-        msg += `\n📧 *البريد:* ${contact.email.trim()}`;
+      if (lines) {
+        msg += `\n\n📦 *المنتجات المطلوبة:*\n${lines}`;
       }
 
-      msg += `\n\n✅ بانتظار استكمال وتأكيد الطلب.`;
+      msg += `\n\n━━━━━━━━━━━━━━━━━━━━\n✨ *أرجو تأكيد الطلب وتزويدي بتفاصيل التفعيل.*\nشكراً لكم!`;
 
       const encoded = encodeURIComponent(msg);
       return "https://wa.me/962776252313?text=" + encoded;
@@ -703,6 +705,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         price: it.price,
         usernames: it.usernames || null,
       }));
+
       const result = await submitStoreOrderFn({
         data: {
           items: payloadItems,

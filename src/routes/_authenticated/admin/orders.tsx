@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pager, usePager } from "@/components/gx/Pager";
@@ -13,7 +14,7 @@ import { toast } from "sonner";
 import {
   Search, Download, Volume2, VolumeX, RefreshCw, Filter, Bell,
   CheckCircle2, XCircle, Clock, CreditCard, Package as PackageIcon,
-  Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor,
+  Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck,
 } from "lucide-react";
 
 
@@ -258,6 +259,7 @@ function OrdersAdmin() {
     mutationFn: async (payload: { id: string; patch: Record<string, unknown> }) => {
       const { error } = await supabase.from("orders").update(payload.patch as never).eq("id", payload.id);
       if (error) throw error;
+
     },
     onSuccess: () => {
       toast.success("تم تحديث الطلب");
@@ -508,7 +510,7 @@ function QuickFulfill({ onPick }: { onPick: (o: OrderWithEmail) => void }) {
 }
 
 type CodeKind = "code" | "account" | "topup";
-type DeliveryCode = { label: string; value: string; email?: string; password?: string; kind?: CodeKind; region?: string };
+type DeliveryCode = { label: string; value: string; email?: string; password?: string; kind?: CodeKind; region?: string; extra?: string };
 
 function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
   const [status, setStatus] = useState(order.status);
@@ -520,7 +522,11 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
     if (existingDelivery.codes && existingDelivery.codes.length > 0) {
       return existingDelivery.codes.map((c) => ({
         kind: (c.kind || (c.email ? "account" : "code")) as CodeKind,
-        label: c.label || "", value: c.value || "", email: c.email || "", password: c.password || "",
+        label: c.label || "",
+        value: c.value || "",
+        email: c.email || "",
+        password: c.password || "",
+        extra: (c as { extra?: string }).extra || (c.kind === "account" && c.value ? c.value : "") || "",
         region: c.region || "",
       }));
     }
@@ -531,31 +537,35 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
         seeded.push({
           kind: "code",
           label: qty > 1 ? `${it.name || "منتج"} (${k + 1}/${qty})` : (it.name || "منتج"),
-          value: "", email: "", password: "", region: "Global",
+          value: "", email: "", password: "", extra: "", region: "Global",
         });
       }
     });
-    return seeded.length > 0 ? seeded : [{ kind: "code" as const, label: "", value: "", email: "", password: "", region: "Global" }];
+    return seeded.length > 0 ? seeded : [{ kind: "code" as const, label: "", value: "", email: "", password: "", extra: "", region: "Global" }];
   })();
   const [codes, setCodes] = useState<DeliveryCode[]>(initialCodes);
 
-  function addCode() { setCodes([...codes, { kind: "code", label: "", value: "", email: "", password: "", region: "Global" }]); }
-  function addAccount() { setCodes([...codes, { kind: "account", label: "", value: "", email: "", password: "", region: "" }]); }
-  function addTopup() { setCodes([...codes, { kind: "topup", label: "", value: "", email: "", password: "", region: "" }]); }
+  function addCode() { setCodes([...codes, { kind: "code", label: "", value: "", email: "", password: "", extra: "", region: "Global" }]); }
+  function addAccount() { setCodes([...codes, { kind: "account", label: "", value: "", email: "", password: "", extra: "", region: "" }]); }
+  function addTopup() { setCodes([...codes, { kind: "topup", label: "", value: "", email: "", password: "", extra: "", region: "" }]); }
   function updateCode(i: number, patch: Partial<DeliveryCode>) { setCodes(codes.map((c, idx) => idx === i ? { ...c, ...patch } : c)); }
   function removeCode(i: number) { setCodes(codes.filter((_, idx) => idx !== i)); }
 
   function buildPatch(nextStatus: string) {
     const cleanCodes = codes.map((c) => {
       const kind = c.kind || "code";
+      const extra = (c.extra || "").trim();
       return {
         kind,
-        label: (c.label || "").trim(), value: (c.value || "").trim(),
-        email: (c.email || "").trim(), password: (c.password || "").trim(),
+        label: (c.label || "").trim(),
+        value: (c.value || (kind === "account" ? extra : "")).trim(),
+        email: (c.email || "").trim(),
+        password: (c.password || "").trim(),
+        extra,
         // Keys always carry a region; accounts and top-ups never do.
         region: kind === "code" ? ((c.region || "").trim() || "Global") : "",
       };
-    }).filter((c) => c.label || c.value || c.email || c.password);
+    }).filter((c) => c.label || c.value || c.email || c.password || c.extra);
 
     const existingDel = order.delivery_data && typeof order.delivery_data === "object"
       ? (order.delivery_data as Record<string, unknown>)
@@ -573,7 +583,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
 
   function save() { onSave(buildPatch(status)); }
   function markDelivered() {
-    const anyValue = codes.some((c) => (c.value || "").trim() || (c.email || "").trim() || (c.password || "").trim());
+    const anyValue = codes.some((c) => (c.value || "").trim() || (c.email || "").trim() || (c.password || "").trim() || (c.extra || "").trim());
     const missingRegion = codes.some((c) => (c.kind || "code") === "code" && (c.value || "").trim() && !(c.region || "").trim());
     if (missingRegion) { alert("في مفاتيح بدون ريجون. حدّد المنطقة لكل مفتاح قبل التسليم."); return; }
     if (!anyValue && !confirm("ما في أكواد/حسابات مدخلة. تأكد من تسليم الطلب بدون بيانات؟")) return;
@@ -748,9 +758,18 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                       </button>
                     </div>
                     {isAccount ? (
-                      <div className="grid sm:grid-cols-2 gap-2">
-                        <Input placeholder="الإيميل" dir="ltr" value={c.email || ""} onChange={(e) => updateCode(i, { email: e.target.value })} className="gx-adm-input h-9 text-sm" />
-                        <Input placeholder="كلمة السر" dir="ltr" value={c.password || ""} onChange={(e) => updateCode(i, { password: e.target.value })} className="gx-adm-input h-9 text-sm" />
+                      <div className="space-y-2">
+                        <div className="grid sm:grid-cols-2 gap-2">
+                          <Input placeholder="الإيميل / اسم المستخدم" dir="ltr" value={c.email || ""} onChange={(e) => updateCode(i, { email: e.target.value })} className="gx-adm-input h-9 text-sm" />
+                          <Input placeholder="كلمة السر" dir="ltr" value={c.password || ""} onChange={(e) => updateCode(i, { password: e.target.value })} className="gx-adm-input h-9 text-sm" />
+                        </div>
+                        <Textarea
+                          placeholder="معلومات وتفاصيل إضافية للحساب (اختياري: إيميل احتياطي، أكواد احتياطية، PIN، تعليمات تسجيل الدخول...)"
+                          value={c.extra ?? c.value ?? ""}
+                          onChange={(e) => updateCode(i, { extra: e.target.value, value: e.target.value })}
+                          rows={2}
+                          className="gx-adm-input text-xs leading-relaxed"
+                        />
                       </div>
                     ) : isTopup ? (
                       <div className="grid sm:grid-cols-2 gap-2">
@@ -799,11 +818,17 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
 
           {/* Notes */}
           <div className="gx-od-sec">
-            <div className="gx-od-sec-h"><div className="gx-od-sec-t">📝 ملاحظة للعميل</div></div>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="ملاحظة اختيارية تظهر للعميل عند التسليم..." className="gx-adm-input" />
+            <div className="gx-od-sec-h"><div className="gx-od-sec-t">📝 معلومات وملاحظات إضافية للطلب (تظهر للعميل)</div></div>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={4}
+              placeholder="معلومات أو ملاحظات إضافية تظهر للعميل في تفاصيل طلبه عند التسليم (مثل: إيميل وباسورد الحساب الأساسي، الإيميل الاحتياطي، تعليمات التأمين)..."
+              className="gx-adm-input font-sans leading-relaxed text-sm"
+            />
           </div>
 
-          {/* Refund */}
+          {/* Amounts */}
           <AmountsBlock order={order} />
 
           {/* Refund */}
@@ -840,6 +865,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
     </Dialog>
   );
 }
+
 
 
 /**

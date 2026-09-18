@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown, Eye, EyeOff, AlertTriangle, Globe, KeyRound, Lock, Wallet } from "lucide-react";
+import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown, Eye, EyeOff, AlertTriangle, Globe, KeyRound, Lock, Wallet, FileText } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 import { GxProfile } from "@/components/gx/GxProfile";
@@ -118,7 +118,7 @@ function AccountPage() {
       }
       const { data, error } = await supabase
         .from("orders")
-        .select("id, order_number, status, created_at, total_jod, items, delivery_data, codes_revealed_at, codes_reveal_count")
+        .select("id, order_number, status, created_at, total_jod, items, delivery_data, admin_notes, codes_revealed_at, codes_reveal_count")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -233,7 +233,7 @@ function AccountPage() {
 
 type OrderRow = {
   id: string; order_number: string; status: string; created_at: string; total_jod: number;
-  items: unknown; delivery_data: unknown;
+  items: unknown; delivery_data: unknown; admin_notes?: string | null;
   codes_revealed_at?: string | null; codes_reveal_count?: number | null;
 };
 
@@ -328,7 +328,7 @@ function OrderCard({ order: o, userId }: { order: OrderRow; userId: string }) {
   const currencyLabel = ar ? "د.أ" : "JOD";
   const itemsCount = items.reduce((n, it) => n + (it.qty ?? 1), 0);
 
-  type CodeData = { label?: string; value?: string; email?: string; password?: string; kind?: string; region?: string };
+  type CodeData = { label?: string; value?: string; email?: string; password?: string; kind?: string; region?: string; extra?: string; notes?: string };
   const showCodes = o.status === "delivered" && codes.length > 0;
   const hasCodes = showCodes;
   // Attach each delivery code to the product it belongs to (label match first,
@@ -404,11 +404,17 @@ function OrderCard({ order: o, userId }: { order: OrderRow; userId: string }) {
                 {ar ? `${codes.length} مفتاح` : `${codes.length} key${codes.length === 1 ? "" : "s"}`}
               </span>
             )}
+            {o.admin_notes && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-cyan-500/30 bg-cyan-500/15 px-2 py-0.5 text-[10px] font-bold text-cyan-300">
+                <FileText className="h-3 w-3" />
+                {t("acc.has_notes")}
+              </span>
+            )}
           </span>
           <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
         {open && (
-          <div className="mt-2 space-y-2 text-sm">
+          <div className="mt-2 space-y-2.5 text-sm">
             {groups.map((g, i) => (
               <div key={i} className="overflow-hidden rounded-xl border border-white/10 bg-muted/15">
                 <div className="flex justify-between gap-2 px-3 py-2.5">
@@ -442,6 +448,22 @@ function OrderCard({ order: o, userId }: { order: OrderRow; userId: string }) {
               </div>
             )}
 
+            {/* Admin notes / Additional order information */}
+            {o.admin_notes && (
+              <div className="overflow-hidden rounded-xl border border-cyan-500/30 bg-cyan-950/20 backdrop-blur mt-3">
+                <div className="flex items-center justify-between border-b border-cyan-500/20 bg-cyan-500/10 px-3.5 py-2.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-cyan-300">
+                    <FileText className="h-4 w-4 text-cyan-400 shrink-0" />
+                    <span>{t("acc.admin_notes_title")}</span>
+                  </div>
+                  <CopyNoteButton text={o.admin_notes} />
+                </div>
+                <div className="p-3.5 text-xs sm:text-sm text-cyan-100/90 whitespace-pre-wrap leading-relaxed select-all font-sans bg-black/20" dir="auto">
+                  {o.admin_notes}
+                </div>
+              </div>
+            )}
+
             {hasCodes && o.codes_revealed_at && (
               <p className="text-[11px] text-muted-foreground">
                 {ar ? `أول فتح: ${new Date(o.codes_revealed_at).toLocaleString(locale)}` : `First opened: ${new Date(o.codes_revealed_at).toLocaleString(locale)}`}
@@ -461,7 +483,7 @@ function OrderCard({ order: o, userId }: { order: OrderRow; userId: string }) {
 }
 
 function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
-  data: { label?: string; value?: string; email?: string; password?: string; kind?: string; region?: string };
+  data: { label?: string; value?: string; email?: string; password?: string; kind?: string; region?: string; extra?: string; notes?: string };
   index: number;
   onReveal: () => Promise<void> | void;
   revealing?: boolean;
@@ -475,6 +497,7 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
   const [open, setOpen] = useState(!isKey);
   const [confirming, setConfirming] = useState(false);
   const region = (data.region || "").trim();
+  const accountExtra = (data.extra || (data.value && data.value !== data.email && data.value !== data.password ? data.value : "") || data.notes || "").trim();
 
   // Once a key has been revealed it stays visible forever on this device.
   useEffect(() => {
@@ -604,10 +627,18 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
           </>
         ) : open ? (
           isAccount ? (
-            <>
+            <div className="space-y-2">
               {data.email && <CodeBox label="acc.your_email_label" value={data.email} />}
               {data.password && <CodeBox label="acc.your_password_label" value={data.password} />}
-            </>
+              {accountExtra && (
+                <CodeBox
+                  label="acc.your_extra_label"
+                  value={accountExtra}
+                  multiline
+                  dir="auto"
+                />
+              )}
+            </div>
           ) : (
             data.value && <CodeBox label="acc.your_code_label" value={data.value} />
           )
@@ -624,7 +655,17 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
   );
 }
 
-function CodeBox({ label, value }: { label?: string; value?: string }) {
+function CodeBox({
+  label,
+  value,
+  multiline = false,
+  dir = "ltr",
+}: {
+  label?: string;
+  value?: string;
+  multiline?: boolean;
+  dir?: "ltr" | "rtl" | "auto";
+}) {
   const { t } = useLang();
   const [copied, setCopied] = useState(false);
   async function copy() {
@@ -638,13 +679,44 @@ function CodeBox({ label, value }: { label?: string; value?: string }) {
   return (
     <div className="text-sm">
       {labelText && <div className="text-muted-foreground text-xs mb-1">{labelText}</div>}
-      <div className="flex items-center gap-2">
-        <div className="flex-1 font-mono bg-background border rounded p-2 select-all break-all" dir="ltr">{value}</div>
-        <Button size="icon" variant="outline" onClick={copy} className="shrink-0">
+      <div className="flex items-start gap-2">
+        <div
+          className={`flex-1 font-mono bg-background border rounded p-2 select-all ${
+            multiline ? "whitespace-pre-wrap break-words leading-relaxed text-xs sm:text-sm" : "break-all"
+          }`}
+          dir={dir}
+        >
+          {value}
+        </div>
+        <Button size="icon" variant="outline" onClick={copy} className="shrink-0 mt-0.5" title={t("cart.copy_number") || "نسخ"}>
           {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
         </Button>
       </div>
     </div>
+  );
+}
+
+function CopyNoteButton({ text }: { text: string }) {
+  const { t } = useLang();
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    if (!text) return;
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success(t("acc.copied"));
+    setTimeout(() => setCopied(false), 1500);
+  }
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      onClick={copy}
+      className="h-7 px-2.5 text-xs text-cyan-300 hover:text-cyan-200 hover:bg-cyan-500/20 gap-1.5"
+    >
+      {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+      <span>{copied ? (t("acc.copied") || "تم النسخ") : (t("acc.copy_all_notes") || "نسخ المعلومات")}</span>
+    </Button>
   );
 }
 

@@ -934,6 +934,9 @@ export function Navbar() {
                         <span className="ai">🛡️</span><span>{t("nav.admin_panel")}</span>
                       </Link>
                     )}
+                    <Link to="/support" className="acc-link" onClick={() => setAccountOpen(false)}>
+                      <span className="ai">🎧</span><span>{t("nav.support")}</span>
+                    </Link>
                   </div>
 
                   <div className="acc-divider" />
@@ -1002,6 +1005,7 @@ export function Navbar() {
               <MenuLink to="/" icon="🏠" label={t("nav.home")} onClick={() => setMenuOpen(false)} />
               <MenuLink to="/cart" icon="🛒" label={t("nav.cart")} onClick={() => setMenuOpen(false)} />
               <MenuLink to="/favorites" icon="🤍" label={lang === "ar" ? "المفضلة" : "Wishlist"} onClick={() => setMenuOpen(false)} />
+              <MenuLink to="/support" icon="🎧" label={t("nav.support")} onClick={() => setMenuOpen(false)} />
               <MenuLink to="/faq" icon="❓" label={t("nav.faq")} onClick={() => setMenuOpen(false)} />
               <MenuLink to="/policy" icon="🛡️" label={t("nav.policy")} onClick={() => setMenuOpen(false)} />
               <MenuLink to="/games" icon="🎮" label={lang === "en" ? "Play Arena" : "ساحة اللعب"} onClick={() => setMenuOpen(false)} />
