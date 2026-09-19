@@ -184,9 +184,8 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       const elapsedMs = frameGap;
       lastTime = now;
 
-      // Normalize to 60fps time unit (1.0 = 16.667ms).
-      // Capped to 1.35 to prevent physics/gravity spikes that cause sudden fatal drops during frame hitches.
-      const dt = Math.min(1.35, Math.max(0.1, elapsedMs / (1000 / 60)));
+      // Normalize to 60fps time unit (1.0 = 16.667ms). Clamp to prevent jump spikes on tab resume
+      const dt = Math.min(2.5, Math.max(0.1, elapsedMs / (1000 / 60)));
 
       const state = stateRef.current;
       const w = sizeRef.current.width;

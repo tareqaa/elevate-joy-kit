@@ -314,15 +314,6 @@ export class FlippyRenderer {
     this.spriteBudget = warmingUp ? 99 : FlippyRenderer.SPRITE_BUDGET_PER_FRAME;
     ctx.clearRect(0, 0, width, height);
 
-    // Lookahead pre-warm: while a portal pipe approaches the bird,
-    // pre-render the upcoming world's sky gradient so world switching is instantaneous.
-    const upcomingPortal = state.pipes.find((p) => p.isPortal && !p.passed && p.nextWorldObj);
-    if (upcomingPortal?.nextWorldObj) {
-      const nw = upcomingPortal.nextWorldObj;
-      if (!this.overlayCache.has(`sky-${nw.id}`)) {
-        this.drawSky(nw, height);
-      }
-    }
 
     this.renderTick += dt;
     if (state.status === "gameover") {
