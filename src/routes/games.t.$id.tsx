@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
@@ -75,49 +75,61 @@ function TournamentPage() {
   const [myUid, setMyUid] = useState<string | null>(null);
   const [prizesOpen, setPrizesOpen] = useState(false);
 
-  useEffect(() => {
-    let alive = true;
+  const loadBoard = useCallback(async () => {
+    try {
+      const [lb, mine, auth] = await Promise.all([
+        supabase.rpc("tournament_leaderboard", { _tournament_id: id, _limit: 20 }),
+        supabase.rpc("my_tournament_standing", { _tournament_id: id }),
+        supabase.auth.getSession(),
+      ]);
+      const uid = auth?.data?.session?.user?.id ?? null;
+      if (uid) setMyUid(uid);
+      setRows(((lb.data ?? []) as unknown as Row[]).map((r) => ({ ...r, rank: Number(r.rank) })));
+      setMe((mine.data ?? { played: false }) as unknown as Standing);
+    } catch (e) {
+      console.warn("Failed to load tournament leaderboard:", e);
+    }
+  }, [id]);
 
-    const loadAll = async () => {
+  const loadAll = useCallback(async () => {
+    try {
       const [list, lb, mine, auth] = await Promise.all([
         supabase.rpc("list_tournaments"),
         supabase.rpc("tournament_leaderboard", { _tournament_id: id, _limit: 20 }),
         supabase.rpc("my_tournament_standing", { _tournament_id: id }),
         supabase.auth.getSession(),
       ]);
-      if (!alive) return;
       const uid = auth?.data?.session?.user?.id ?? null;
       if (uid) setMyUid(uid);
       const found = ((list.data ?? []) as unknown as T[]).find((x) => x.id === id) ?? null;
       setT(found);
       setRows(((lb.data ?? []) as unknown as Row[]).map((r) => ({ ...r, rank: Number(r.rank) })));
       setMe((mine.data ?? { played: false }) as unknown as Standing);
-    };
+    } catch (e) {
+      console.warn("Failed to load tournament data:", e);
+    }
+  }, [id]);
 
-    const loadBoard = async () => {
-      const [lb, mine, auth] = await Promise.all([
-        supabase.rpc("tournament_leaderboard", { _tournament_id: id, _limit: 20 }),
-        supabase.rpc("my_tournament_standing", { _tournament_id: id }),
-        supabase.auth.getSession(),
-      ]);
-      if (!alive) return;
-      const uid = auth?.data?.session?.user?.id ?? null;
-      if (uid) setMyUid(uid);
-      setRows(((lb.data ?? []) as unknown as Row[]).map((r) => ({ ...r, rank: Number(r.rank) })));
-      setMe((mine.data ?? { played: false }) as unknown as Standing);
-    };
+  useEffect(() => {
+    let alive = true;
 
     void loadAll();
 
     // live ranking: refresh on an interval and whenever the tab regains focus
-    const iv = window.setInterval(() => { if (!document.hidden) void loadBoard(); }, 10000);
-    const onVis = () => { if (!document.hidden) void loadBoard(); };
+    const iv = window.setInterval(() => {
+      if (!document.hidden && alive) void loadBoard();
+    }, 10000);
+    const onVis = () => {
+      if (!document.hidden && alive) void loadBoard();
+    };
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("focus", onVis);
 
     const ch = supabase
       .channel(`tbs-${id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tournament_best_scores", filter: `tournament_id=eq.${id}` }, () => void loadBoard())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tournament_best_scores", filter: `tournament_id=eq.${id}` }, () => {
+        if (alive) void loadBoard();
+      })
       .subscribe();
 
     return () => {
@@ -127,44 +139,77 @@ function TournamentPage() {
       window.removeEventListener("focus", onVis);
       supabase.removeChannel(ch);
     };
-  }, [id]);
+  }, [id, loadAll, loadBoard]);
 
   // ---- tournament registration (must join before playing) ----
   const [registered, setRegistered] = useState<boolean | null>(null);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [joining, setJoining] = useState(false);
 
+  const checkRegistration = useCallback(
+    async (uid: string | null) => {
+      if (!uid) {
+        setRegistered(false);
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from("tournament_registrations")
+          .select("id")
+          .eq("tournament_id", id)
+          .eq("user_id", uid)
+          .maybeSingle();
+        setRegistered(!!data);
+      } catch {
+        // ignore
+      }
+    },
+    [id],
+  );
+
   useEffect(() => {
     let alive = true;
+
     (async () => {
-      const { data: s } = await supabase.auth.getSession();
-      const uid = s?.session?.user?.id ?? null;
-      if (!alive) return;
-      setMyUid(uid);
-      setSignedIn(!!uid);
-      if (!uid) { setRegistered(false); return; }
-      const { data } = await supabase
-        .from("tournament_registrations")
-        .select("id")
-        .eq("tournament_id", id)
-        .eq("user_id", uid)
-        .maybeSingle();
-      if (alive) setRegistered(!!data);
+      try {
+        const { data: s } = await supabase.auth.getSession();
+        const uid = s?.session?.user?.id ?? null;
+        if (!alive) return;
+        setMyUid(uid);
+        setSignedIn(!!uid);
+        if (!uid) {
+          setRegistered(false);
+          return;
+        }
+        await checkRegistration(uid);
+      } catch {
+        // ignore
+      }
     })();
 
     const { data: authSub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!alive) return;
-      const uid = session?.user?.id ?? null;
-      setMyUid(uid);
-      setSignedIn(!!uid);
-      if (uid) void loadBoard();
+      try {
+        const uid = session?.user?.id ?? null;
+        setMyUid(uid);
+        setSignedIn(!!uid);
+        if (uid) {
+          void loadBoard();
+          void checkRegistration(uid);
+        } else {
+          setRegistered(false);
+          setMe({ played: false });
+        }
+      } catch (err) {
+        console.error("Error in tournament onAuthStateChange:", err);
+      }
     });
 
     return () => {
       alive = false;
       authSub?.subscription?.unsubscribe();
     };
-  }, [id]);
+  }, [id, checkRegistration, loadBoard]);
 
   const register = async () => {
     const { data: s } = await supabase.auth.getSession();

@@ -62,6 +62,17 @@ export function useAuthActions() {
       void linkMyPastOrders();
       return { ok: true, mfaRequired: false };
     } catch (err) {
+      // Safety fallback: if an event subscriber threw an uncaught error during signIn,
+      // but the session was actually established successfully:
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.user) {
+          void linkMyPastOrders();
+          return { ok: true, mfaRequired: false };
+        }
+      } catch {
+        // continue
+      }
       return { ok: false, error: normalizeError(err, "Sign-in failed") };
     }
   }
