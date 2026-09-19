@@ -110,18 +110,14 @@ BEGIN
     END IF;
   END IF;
 
-  -- 8) Record best score
-  INSERT INTO public.tournament_best_scores (tournament_id, user_id, best_score, best_run_id, updated_at)
-  VALUES (_tournament_id, _uid, _score, _run.id, now())
+  -- 8) Record best score in tournament_best_scores (column is `score`)
+  INSERT INTO public.tournament_best_scores (tournament_id, user_id, score, is_valid, updated_at)
+  VALUES (_tournament_id, _uid, _score, true, now())
   ON CONFLICT (tournament_id, user_id)
   DO UPDATE SET
-    best_score = GREATEST(tournament_best_scores.best_score, EXCLUDED.best_score),
-    best_run_id = CASE
-      WHEN EXCLUDED.best_score >= tournament_best_scores.best_score THEN EXCLUDED.best_run_id
-      ELSE tournament_best_scores.best_run_id
-    END,
+    score = GREATEST(tournament_best_scores.score, EXCLUDED.score),
     updated_at = CASE
-      WHEN EXCLUDED.best_score >= tournament_best_scores.best_score THEN now()
+      WHEN EXCLUDED.score >= tournament_best_scores.score THEN now()
       ELSE tournament_best_scores.updated_at
     END;
 
@@ -133,7 +129,7 @@ BEGIN
     NULL;
   END;
 
-  SELECT best_score INTO _best FROM public.tournament_best_scores
+  SELECT score INTO _best FROM public.tournament_best_scores
    WHERE tournament_id = _tournament_id AND user_id = _uid;
 
   RETURN jsonb_build_object('ok', true, 'score', _score, 'best_score', COALESCE(_best, _score));
