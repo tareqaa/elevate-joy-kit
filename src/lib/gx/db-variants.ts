@@ -117,6 +117,21 @@ export async function loadDbVariants(force = false): Promise<void> {
             productType: p.delivery_type,
           });
 
+          // Fall back to the first active variant price if the product itself has base_price_jod = 0 / null
+          const pVariants = ((variants ?? []) as Record<string, any>[]).filter((v) => {
+            const vp = v.products as Record<string, any> | null;
+            return vp?.slug === p.slug && Number(v.price_jod) > 0;
+          });
+          const defaultPrice = Number(p.base_price_jod) > 0
+            ? Number(p.base_price_jod)
+            : pVariants.length > 0
+            ? Number(pVariants[0].price_jod)
+            : 0;
+          const defaultOldPrice = pVariants.length > 0 && pVariants[0].old_price_jod
+            ? Number(pVariants[0].old_price_jod)
+            : null;
+          const defaultRegion = p.region || (pVariants.length > 0 ? pVariants[0].region : null);
+
           next[p.slug] = {
             cartId: p.slug,
             product: p.slug,
@@ -125,9 +140,10 @@ export async function loadDbVariants(force = false): Promise<void> {
             iconImage: p.icon_image_url || p.image_url || null,
             imageUrl: p.image_url || p.icon_image_url || null,
             bg: p.thumb_bg || "linear-gradient(145deg,#1a1e2a,#0a0c12)",
-            price: Number(p.base_price_jod) || 0,
+            price: defaultPrice,
+            oldPrice: defaultOldPrice,
             deliveryType: strictDeliv,
-            region: p.region || null,
+            region: defaultRegion,
           };
         }
       }

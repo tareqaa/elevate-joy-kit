@@ -148,17 +148,23 @@ function resolve(items: CartItem[]): ResolvedItem[] {
       const staticPlan = findPlanByCartId(cId);
       const plan = dbPlan || staticPlan;
       if (plan) {
-        // If it's a DB plan, its price is the authoritative live price from Supabase.
-        // Otherwise, if item was added with a valid positive meta.price, prefer it over stale static prices.
-        const price = dbPlan
+        // If it's a DB plan with positive price, use it.
+        // If the plan has price <= 0 and item has a valid positive meta.price, prefer meta.price!
+        const price = dbPlan && dbPlan.price > 0
           ? dbPlan.price
           : typeof i.meta?.price === "number" && i.meta.price > 0
           ? i.meta.price
-          : plan.price;
+          : plan.price > 0
+          ? plan.price
+          : typeof i.meta?.price === "number"
+          ? i.meta.price
+          : 0;
         const iconImage = i.meta?.iconImage || plan.iconImage || plan.imageUrl || i.meta?.imageUrl || null;
         const imageUrl = i.meta?.imageUrl || plan.imageUrl || plan.iconImage || i.meta?.iconImage || null;
+        const name = i.meta?.name || plan.name;
         return { 
           ...plan, 
+          name,
           iconImage,
           imageUrl,
           price, 

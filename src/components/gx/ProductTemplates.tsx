@@ -340,7 +340,14 @@ function VariantCard({
             {discountOf(v) > 0 && <span className="prod-discount-pill">-{discountOf(v)}%</span>}
           </div>
         </div>
-        <BuyActions cartId={v.cartId} />
+        <BuyActions
+          cartId={v.cartId}
+          meta={{
+            price: v.price,
+            name: `${product.nameAr || product.nameEn} — ${v.labelAr || v.labelEn}`,
+            product: product.slug,
+          }}
+        />
       </div>
     </div>
   );
@@ -771,7 +778,14 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
                       <div key={d.cartId} className="denom-card">
                         <div className="dc-value">{d.label}</div>
                         <div className="dc-price"><span>{format(d.price)}</span></div>
-                        <BuyActions cartId={d.cartId} />
+                        <BuyActions
+                          cartId={d.cartId}
+                          meta={{
+                            price: d.price,
+                            name: `${product.nameAr || product.nameEn} (${d.label})`,
+                            product: product.slug,
+                          }}
+                        />
                       </div>
                     ))}
                   </div>

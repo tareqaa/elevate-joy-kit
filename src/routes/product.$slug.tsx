@@ -217,15 +217,22 @@ function ProductPage() {
       }
 
       // 4. Default for other products
+      const selectedVariant = (planParam && variants.find((v) => v.cartId === planParam)) || firstVariant;
+      const finalVarCartId = selectedVariant?.cartId || firstVariant?.cartId || product.slug;
+      const finalPrice = selectedVariant && Number(selectedVariant.price) > 0 ? Number(selectedVariant.price) : effectivePrice;
+      const finalOldPrice = selectedVariant?.oldPrice ? Number(selectedVariant.oldPrice) : (firstVariant?.oldPrice ? Number(firstVariant.oldPrice) : (product.oldPriceJod || undefined));
+
       trackRecentlyViewed({
         slug: product.slug,
+        cartId: finalVarCartId,
+        link: finalVarCartId && finalVarCartId !== product.slug ? `/product/${product.slug}#${finalVarCartId}` : `/product/${product.slug}`,
         nameAr: resolvedNameAr,
         nameEn: resolvedNameEn,
         taglineAr: resolvedDescAr,
         taglineEn: resolvedDescEn,
-        price: effectivePrice,
-        oldPrice: firstVariant?.oldPrice ? Number(firstVariant.oldPrice) : (product.oldPriceJod || undefined),
-        imageUrl: (firstVariant as any)?.imageUrl || product.imageUrl || undefined,
+        price: finalPrice,
+        oldPrice: finalOldPrice,
+        imageUrl: (selectedVariant as any)?.imageUrl || (firstVariant as any)?.imageUrl || product.imageUrl || undefined,
         icon: product.icon || undefined,
         categorySlug: product.categoryNameEn?.toLowerCase() || undefined,
       });

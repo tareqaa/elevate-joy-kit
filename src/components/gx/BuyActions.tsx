@@ -4,7 +4,7 @@ import { useCart } from "@/lib/gx/cart";
 import { useLang } from "@/lib/gx/i18n";
 import { CART_ADDED_EVENT } from "./AddedToCartModal";
 
-export function BuyActions({ cartId }: { cartId: string }) {
+export function BuyActions({ cartId, meta }: { cartId: string; meta?: Record<string, any> }) {
   const cart = useCart();
   const { t } = useLang();
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export function BuyActions({ cartId }: { cartId: string }) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          cart.add(cartId);
+          cart.add(cartId, 1, meta);
           setAdded(true);
           window.dispatchEvent(new CustomEvent(CART_ADDED_EVENT));
           setTimeout(() => setAdded(false), 1200);
@@ -40,7 +40,7 @@ export function BuyActions({ cartId }: { cartId: string }) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          cart.buyNow(cartId);
+          cart.buyNow(cartId, 1, meta);
           navigate({ to: "/cart" });
         }}
       >

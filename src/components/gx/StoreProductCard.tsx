@@ -541,7 +541,20 @@ export function StoreProductCard({
             </Link>
           </div>
         ) : (
-          <BuyActions cartId={finalCartId} />
+          <BuyActions
+            cartId={finalCartId}
+            meta={
+              finalDisplayPrice > 0
+                ? {
+                    price: finalDisplayPrice,
+                    name: formattedTitle || name,
+                    imageUrl: imageUrl || iconImage || null,
+                    icon: icon || null,
+                    product: slug,
+                  }
+                : undefined
+            }
+          />
         )}
       </div>
     </div>
