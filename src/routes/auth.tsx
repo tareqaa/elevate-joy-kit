@@ -7,6 +7,9 @@ import { useAuthActions } from "@/lib/gx/use-auth-actions";
 import { ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "تسجيل الدخول | متجر GX Store" },
@@ -16,7 +19,10 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-function getSafeRedirect(): string {
+function getSafeRedirect(customRedirect?: string): string {
+  if (customRedirect && customRedirect.startsWith("/") && !customRedirect.startsWith("//") && !customRedirect.startsWith("/auth")) {
+    return customRedirect;
+  }
   if (typeof window === "undefined") return "/account";
   try {
     const params = new URLSearchParams(window.location.search);
@@ -31,6 +37,8 @@ function getSafeRedirect(): string {
 }
 
 function AuthPage() {
+  const { redirect } = Route.useSearch();
+  const safeTarget = getSafeRedirect(redirect);
   const { t } = useLang();
   const navigate = useNavigate();
   const { signIn, signUp, resetPassword, signInWithGoogle, verify2fa, cancel2fa } = useAuthActions();
@@ -72,7 +80,7 @@ function AuthPage() {
         }
         // Only redirect if fully verified
         if (aal && (aal.currentLevel === "aal2" || (aal.currentLevel === "aal1" && aal.nextLevel === "aal1"))) {
-          navigate({ to: getSafeRedirect() });
+          navigate({ to: safeTarget });
         }
       } catch {
         // noop
@@ -100,7 +108,7 @@ function AuthPage() {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, safeTarget]);
 
   const [siEmail, setSiEmail] = useState("");
   const [siPass, setSiPass] = useState("");
@@ -128,7 +136,7 @@ function AuthPage() {
       try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
     }
     toast.success(t("auth.hello"));
-    navigate({ to: getSafeRedirect() });
+    navigate({ to: safeTarget });
   }
 
   async function handleVerify2fa(e: React.FormEvent) {
@@ -142,7 +150,7 @@ function AuthPage() {
       try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
     }
     toast.success(t("auth.hello"));
-    navigate({ to: getSafeRedirect() });
+    navigate({ to: safeTarget });
   }
 
   async function handleCancel2fa() {
@@ -158,7 +166,7 @@ function AuthPage() {
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const res = await signUp(suEmail, suPass, suUsername, getSafeRedirect());
+    const res = await signUp(suEmail, suPass, suUsername, safeTarget);
     setLoading(false);
     if (!res.ok) {
       return toast.error(res.error === "invalid_username" ? t("auth.username_pattern_err") : res.error);
@@ -177,7 +185,7 @@ function AuthPage() {
 
   async function handleGoogle() {
     setLoading(true);
-    const res = await signInWithGoogle(getSafeRedirect());
+    const res = await signInWithGoogle(safeTarget);
     if (!res.ok) { setLoading(false); toast.error(res.error); }
   }
 

@@ -169,7 +169,10 @@ function TournamentPage() {
   const register = async () => {
     const { data: s } = await supabase.auth.getSession();
     const uid = s?.session?.user?.id;
-    if (!uid) { navigate({ to: "/auth" }); return; }
+    if (!uid) {
+      navigate({ to: "/auth", search: { redirect: `/games/t/${id}` } as never });
+      return;
+    }
     setJoining(true);
     const { error } = await supabase
       .from("tournament_registrations")
@@ -400,7 +403,7 @@ function TournamentPage() {
                         </div>
                         <button
                           type="button"
-                          onClick={() => navigate({ to: "/auth" })}
+                          onClick={() => navigate({ to: "/auth", search: { redirect: `/games/t/${id}` } as never })}
                           className="lb-action-card-btn"
                         >
                           👤 {ar ? "تسجيل الدخول" : "Sign in"}
