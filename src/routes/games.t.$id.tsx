@@ -324,26 +324,45 @@ function TournamentPage() {
 
               {/* "you" row only when outside the visible list */}
               {me?.played && (rows ?? []).some((r) => r.rank === me.rank) ? null : (
-                <div className="lb-row me sticky">
-                  {me?.played ? (
-                    <>
-                      <span className="lb-r">{me.rank}</span>
-                      <span className="lb-avwrap">
-                        {me.avatar_url ? <img src={me.avatar_url} alt="" className="lb-av" /> : <span className="lb-av ph">{ar ? "أنا" : "Me"}</span>}
+                me?.played ? (
+                  <div className="lb-row me sticky">
+                    <span className="lb-r">{me.rank}</span>
+                    <span className="lb-avwrap">
+                      {me.avatar_url ? <img src={me.avatar_url} alt="" className="lb-av" /> : <span className="lb-av ph">{ar ? "أنا" : "Me"}</span>}
+                    </span>
+                    <span className="lb-who">
+                      <b className="lb-nm">
+                        {me.username ? `@${me.username}` : (ar ? "أنت" : "You")}
+                        <span className="lb-youtag">{ar ? "أنت" : "You"}</span>
+                      </b>
+                      {me.total ? <em className="lb-lvlname">{ar ? `من ${me.total} لاعب` : `of ${me.total} players`}</em> : null}
+                    </span>
+                    <b className="lb-sc" dir="ltr">{(me.score ?? 0).toLocaleString("en-US")}</b>
+                  </div>
+                ) : (
+                  status === "live" && t?.game_path ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate({ to: t.game_path!, search: { t: t.id } as never })}
+                      className="lb-row me sticky lb-unplayed"
+                    >
+                      <span className="lb-unplayed-txt">
+                        <span>🎮</span>
+                        <span>{ar ? "لم تلعب بعد — العب جولة الآن لتدخل في الترتيب!" : "Haven't played yet — play a round now to rank!"}</span>
                       </span>
-                      <span className="lb-who">
-                        <b className="lb-nm">
-                          {nameOf({ username: me.username ?? null, full_name: me.full_name ?? null })}
-                          <span className="lb-youtag">{ar ? "أنت" : "You"}</span>
-                        </b>
-                        {me.total ? <em className="lb-lvlname">{ar ? `من ${me.total} لاعب` : `of ${me.total} players`}</em> : null}
+                      <span className="lb-unplayed-btn">
+                        {ar ? "العب الآن ⚡" : "Play Now ⚡"}
                       </span>
-                      <b className="lb-sc" dir="ltr">{(me.score ?? 0).toLocaleString("en-US")}</b>
-                    </>
+                    </button>
                   ) : (
-                    <span className="lb-who"><b className="lb-nm">{ar ? "لم تلعب بعد — جولة واحدة تكفي لتدخل الترتيب 💪" : "Play one round to enter the ranking 💪"}</b></span>
-                  )}
-                </div>
+                    <div className="lb-row me sticky lb-unplayed">
+                      <span className="lb-unplayed-txt">
+                        <span>🎮</span>
+                        <span>{ar ? "لم تلعب بعد — جولة واحدة تكفي لتدخل الترتيب 💪" : "Haven't played yet — one round enters the ranking! 💪"}</span>
+                      </span>
+                    </div>
+                  )
+                )
               )}
 
             </div>
