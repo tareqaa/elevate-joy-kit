@@ -821,9 +821,9 @@ export type Database = {
           credit_refunded_jod: number
           credit_used_jod: number
           currency_snapshot: string | null
+          customer_email: string | null
           customer_name: string | null
           customer_whatsapp: string | null
-          customer_email: string | null
           delivery_data: Json | null
           discount_jod: number
           id: string
@@ -862,9 +862,9 @@ export type Database = {
           credit_refunded_jod?: number
           credit_used_jod?: number
           currency_snapshot?: string | null
+          customer_email?: string | null
           customer_name?: string | null
           customer_whatsapp?: string | null
-          customer_email?: string | null
           delivery_data?: Json | null
           discount_jod?: number
           id?: string
@@ -903,9 +903,9 @@ export type Database = {
           credit_refunded_jod?: number
           credit_used_jod?: number
           currency_snapshot?: string | null
+          customer_email?: string | null
           customer_name?: string | null
           customer_whatsapp?: string | null
-          customer_email?: string | null
           delivery_data?: Json | null
           discount_jod?: number
           id?: string
@@ -1591,6 +1591,118 @@ export type Database = {
         }
         Relationships: []
       }
+      support_ticket_messages: {
+        Row: {
+          attachments: Json | null
+          created_at: string
+          id: string
+          is_info_request: boolean | null
+          message: string
+          sender_id: string | null
+          sender_name: string | null
+          sender_role: string
+          ticket_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          created_at?: string
+          id?: string
+          is_info_request?: boolean | null
+          message: string
+          sender_id?: string | null
+          sender_name?: string | null
+          sender_role?: string
+          ticket_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          created_at?: string
+          id?: string
+          is_info_request?: boolean | null
+          message?: string
+          sender_id?: string | null
+          sender_name?: string | null
+          sender_role?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          category: string
+          closed_at: string | null
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          last_reply_at: string
+          last_reply_by: string | null
+          order_id: string | null
+          order_number: string | null
+          priority: string
+          status: string
+          subject: string
+          ticket_number: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          closed_at?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          last_reply_at?: string
+          last_reply_by?: string | null
+          order_id?: string | null
+          order_number?: string | null
+          priority?: string
+          status?: string
+          subject: string
+          ticket_number?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          closed_at?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          last_reply_at?: string
+          last_reply_by?: string | null
+          order_id?: string | null
+          order_number?: string | null
+          priority?: string
+          status?: string
+          subject?: string
+          ticket_number?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tournament_best_scores: {
         Row: {
           created_at: string
@@ -2140,6 +2252,7 @@ export type Database = {
         Returns: Json
       }
       generate_order_number: { Args: never; Returns: string }
+      generate_ticket_number: { Args: never; Returns: string }
       get_loyalty_leaderboard: {
         Args: { _limit?: number }
         Returns: {
@@ -2225,6 +2338,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      link_my_past_orders: { Args: never; Returns: Json }
+      link_past_orders_for_user: { Args: { _uid: string }; Returns: Json }
       list_tournaments: {
         Args: never
         Returns: {
