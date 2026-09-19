@@ -72,19 +72,22 @@ function TournamentPage() {
   const [t, setT] = useState<T | null | undefined>(undefined);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [me, setMe] = useState<Standing | null>(null);
-  
+  const [myUid, setMyUid] = useState<string | null>(null);
   const [prizesOpen, setPrizesOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
 
     const loadAll = async () => {
-      const [list, lb, mine] = await Promise.all([
+      const [list, lb, mine, auth] = await Promise.all([
         supabase.rpc("list_tournaments"),
         supabase.rpc("tournament_leaderboard", { _tournament_id: id, _limit: 20 }),
         supabase.rpc("my_tournament_standing", { _tournament_id: id }),
+        supabase.auth.getSession(),
       ]);
       if (!alive) return;
+      const uid = auth?.data?.session?.user?.id ?? null;
+      if (uid) setMyUid(uid);
       const found = ((list.data ?? []) as unknown as T[]).find((x) => x.id === id) ?? null;
       setT(found);
       setRows(((lb.data ?? []) as unknown as Row[]).map((r) => ({ ...r, rank: Number(r.rank) })));
@@ -92,11 +95,14 @@ function TournamentPage() {
     };
 
     const loadBoard = async () => {
-      const [lb, mine] = await Promise.all([
+      const [lb, mine, auth] = await Promise.all([
         supabase.rpc("tournament_leaderboard", { _tournament_id: id, _limit: 20 }),
         supabase.rpc("my_tournament_standing", { _tournament_id: id }),
+        supabase.auth.getSession(),
       ]);
       if (!alive) return;
+      const uid = auth?.data?.session?.user?.id ?? null;
+      if (uid) setMyUid(uid);
       setRows(((lb.data ?? []) as unknown as Row[]).map((r) => ({ ...r, rank: Number(r.rank) })));
       setMe((mine.data ?? { played: false }) as unknown as Standing);
     };
@@ -123,10 +129,6 @@ function TournamentPage() {
     };
   }, [id]);
 
-
-
-
-
   // ---- tournament registration (must join before playing) ----
   const [registered, setRegistered] = useState<boolean | null>(null);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
@@ -136,8 +138,9 @@ function TournamentPage() {
     let alive = true;
     (async () => {
       const { data: s } = await supabase.auth.getSession();
-      const uid = s.session?.user?.id ?? null;
+      const uid = s?.session?.user?.id ?? null;
       if (!alive) return;
+      setMyUid(uid);
       setSignedIn(!!uid);
       if (!uid) { setRegistered(false); return; }
       const { data } = await supabase
@@ -148,12 +151,24 @@ function TournamentPage() {
         .maybeSingle();
       if (alive) setRegistered(!!data);
     })();
-    return () => { alive = false; };
+
+    const { data: authSub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!alive) return;
+      const uid = session?.user?.id ?? null;
+      setMyUid(uid);
+      setSignedIn(!!uid);
+      if (uid) void loadBoard();
+    });
+
+    return () => {
+      alive = false;
+      authSub?.subscription?.unsubscribe();
+    };
   }, [id]);
 
   const register = async () => {
     const { data: s } = await supabase.auth.getSession();
-    const uid = s.session?.user?.id;
+    const uid = s?.session?.user?.id;
     if (!uid) { navigate({ to: "/auth" }); return; }
     setJoining(true);
     const { error } = await supabase
@@ -183,6 +198,29 @@ function TournamentPage() {
     () => [...(t?.prizes ?? [])].sort((a, b) => (a.place ?? 99) - (b.place ?? 99)),
     [t],
   );
+
+  // Player standing & rank calculations (Declared at top level before early returns)
+  const myRowInList = useMemo(() => {
+    if (!rows || !myUid) return null;
+    return rows.find((r) => r.user_id === myUid) ?? null;
+  }, [rows, myUid]);
+
+  const hasPlayed = useMemo(() => {
+    if (myRowInList) return true;
+    if (me?.played) return true;
+    if (typeof me?.score === "number" && me.score > 0) return true;
+    return false;
+  }, [me, myRowInList]);
+
+  const myRank = myRowInList?.rank ?? (me?.played ? me.rank : undefined);
+  const myScore = myRowInList?.score ?? (me?.played ? me.score : undefined);
+
+  const isInVisibleList = useMemo(() => {
+    if (!rows || rows.length === 0) return false;
+    if (myUid && rows.some((r) => r.user_id === myUid)) return true;
+    if (myRank && rows.some((r) => r.rank === myRank)) return true;
+    return false;
+  }, [rows, myUid, myRank]);
 
   if (t === undefined) {
     return (
@@ -284,7 +322,7 @@ function TournamentPage() {
               ) : (
                 <div className="lb-body">
                   {rows.map((r) => {
-                    const mine = me?.played && me.rank === r.rank;
+                    const mine = (myUid && r.user_id === myUid) || (myRank && myRank === r.rank);
                     const glow = r.level_color || "#4aa8ff";
                     const inner = (
                       <>
@@ -322,44 +360,100 @@ function TournamentPage() {
                 </div>
               )}
 
-              {/* "you" row only when outside the visible list */}
-              {me?.played && (rows ?? []).some((r) => r.rank === me.rank) ? null : (
-                me?.played ? (
-                  <div className="lb-row me sticky">
-                    <span className="lb-r">{me.rank}</span>
-                    <span className="lb-avwrap">
-                      {me.avatar_url ? <img src={me.avatar_url} alt="" className="lb-av" /> : <span className="lb-av ph">{ar ? "أنا" : "Me"}</span>}
-                    </span>
-                    <span className="lb-who">
-                      <b className="lb-nm">
-                        {me.username ? `@${me.username}` : (ar ? "أنت" : "You")}
-                        <span className="lb-youtag">{ar ? "أنت" : "You"}</span>
-                      </b>
-                      {me.total ? <em className="lb-lvlname">{ar ? `من ${me.total} لاعب` : `of ${me.total} players`}</em> : null}
-                    </span>
-                    <b className="lb-sc" dir="ltr">{(me.score ?? 0).toLocaleString("en-US")}</b>
-                  </div>
+              {/* Sticky row if player has played but is ranked OUTSIDE the visible top list */}
+              {rows !== null && (
+                hasPlayed ? (
+                  !isInVisibleList && myRank ? (
+                    <div className="lb-row me sticky">
+                      <span className="lb-r">{myRank}</span>
+                      <span className="lb-avwrap">
+                        {(myRowInList?.avatar_url || me?.avatar_url) ? (
+                          <img src={myRowInList?.avatar_url || me?.avatar_url || ""} alt="" className="lb-av" />
+                        ) : (
+                          <span className="lb-av ph">{ar ? "أنا" : "Me"}</span>
+                        )}
+                      </span>
+                      <span className="lb-who">
+                        <b className="lb-nm">
+                          {(myRowInList?.username || me?.username) ? `@${myRowInList?.username || me?.username}` : (ar ? "أنت" : "You")}
+                          <span className="lb-youtag">{ar ? "أنت" : "You"}</span>
+                        </b>
+                        {me?.total ? (
+                          <em className="lb-lvlname">{ar ? `من ${me.total} لاعب` : `of ${me.total} players`}</em>
+                        ) : null}
+                      </span>
+                      <b className="lb-sc" dir="ltr">{(myScore ?? 0).toLocaleString("en-US")}</b>
+                    </div>
+                  ) : null
                 ) : (
-                  status === "live" && t?.game_path ? (
-                    <button
-                      type="button"
-                      onClick={() => navigate({ to: t.game_path!, search: { t: t.id } as never })}
-                      className="lb-row me sticky lb-unplayed"
-                    >
-                      <span className="lb-unplayed-txt">
-                        <span>🎮</span>
-                        <span>{ar ? "لم تلعب بعد — العب جولة الآن لتدخل في الترتيب!" : "Haven't played yet — play a round now to rank!"}</span>
-                      </span>
-                      <span className="lb-unplayed-btn">
-                        {ar ? "العب الآن ⚡" : "Play Now ⚡"}
-                      </span>
-                    </button>
+                  /* Only show CTA card if user has NOT played yet */
+                  status === "live" && t.game_path ? (
+                    signedIn === false ? (
+                      /* Subcase B1: NOT SIGNED IN */
+                      <div className="lb-action-card">
+                        <div className="lb-action-card-info">
+                          <span className="lb-action-card-icon" aria-hidden>👤</span>
+                          <div className="lb-action-card-text">
+                            <b>{ar ? "سجّل دخولك للمشاركة في البطولة" : "Sign in to enter the tournament"}</b>
+                            <p>{ar ? "سجّل دخولك بحسابك لتتمكن من خوض التحدي واحتساب نقاطك في الترتيب المباشر!" : "Sign in to compete and record your score on the live leaderboard!"}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => navigate({ to: "/auth" })}
+                          className="lb-action-card-btn"
+                        >
+                          👤 {ar ? "تسجيل الدخول" : "Sign in"}
+                        </button>
+                      </div>
+                    ) : !registered ? (
+                      /* Subcase B2: SIGNED IN BUT NOT REGISTERED FOR THIS TOURNAMENT */
+                      <div className="lb-action-card">
+                        <div className="lb-action-card-info">
+                          <span className="lb-action-card-icon" aria-hidden>📝</span>
+                          <div className="lb-action-card-text">
+                            <b>{ar ? "اشترك في البطولة لتبدأ المنافسة" : "Register to start competing"}</b>
+                            <p>{ar ? "اشترك مجاناً في هذه البطولة لتفتح لك ساحة اللعب ويسجل سكورك رسمياً!" : "Join this tournament for free to enter the arena and submit scores!"}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={joining}
+                          onClick={register}
+                          className="lb-action-card-btn"
+                        >
+                          📝 {joining ? (ar ? "جارِ التسجيل…" : "Registering…") : (ar ? "سجّل في البطولة" : "Register")}
+                        </button>
+                      </div>
+                    ) : (
+                      /* Subcase B3: SIGNED IN & REGISTERED BUT HAS NOT PLAYED ANY ROUND YET */
+                      <div className="lb-action-card">
+                        <div className="lb-action-card-info">
+                          <span className="lb-action-card-icon" aria-hidden>🎮</span>
+                          <div className="lb-action-card-text">
+                            <b>{ar ? "جاهز للتحدي؟ العب جولتك الأولى!" : "Ready for the challenge? Play your first round!"}</b>
+                            <p>{ar ? "العب الآن ونافس على جوائز البطولة وضع اسمك في صدارة الترتيب!" : "Play now to compete for prizes and claim your spot on the leaderboard!"}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => navigate({ to: t.game_path!, search: { t: t.id } as never })}
+                          className="lb-action-card-btn"
+                        >
+                          ⚡ {ar ? "العب الآن" : "Play now"}
+                        </button>
+                      </div>
+                    )
                   ) : (
-                    <div className="lb-row me sticky lb-unplayed">
-                      <span className="lb-unplayed-txt">
-                        <span>🎮</span>
-                        <span>{ar ? "لم تلعب بعد — جولة واحدة تكفي لتدخل الترتيب 💪" : "Haven't played yet — one round enters the ranking! 💪"}</span>
-                      </span>
+                    /* Tournament ended and user did not play */
+                    <div className="lb-action-card">
+                      <div className="lb-action-card-info">
+                        <span className="lb-action-card-icon" aria-hidden>🏆</span>
+                        <div className="lb-action-card-text">
+                          <b>{ar ? "انتهت منافسات البطولة" : "Tournament has ended"}</b>
+                          <p>{ar ? "ترقب انطلاق البطولات القادمة للمنافسة على جوائز جديدة!" : "Stay tuned for upcoming tournaments to compete for new prizes!"}</p>
+                        </div>
+                      </div>
                     </div>
                   )
                 )
