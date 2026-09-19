@@ -251,7 +251,7 @@ function UsersAdmin() {
                 ))}
                 {pager.slice.map((u) => {
                   const isAdmin = u.roles.includes("admin");
-                  const initials = (u.full_name || u.email || "GX").trim().slice(0, 2).toUpperCase();
+                  const initials = (u.username || u.email || "GX").trim().slice(0, 2).toUpperCase();
                   return (
                     <tr key={u.id} className="border-b border-white/5 hover:bg-white/[0.03] transition">
                       <td className="p-2">
@@ -261,12 +261,12 @@ function UsersAdmin() {
                               <span className="text-xs font-bold text-cyan-300">{initials}</span>}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-medium truncate flex items-center gap-1.5">
-                              {u.full_name || "بدون اسم"}
+                            <div className="font-medium truncate flex items-center gap-1.5" dir="ltr">
+                              {u.username ? `@${u.username}` : (u.email?.split("@")[0] || "gamer")}
                               {isAdmin && <Crown size={12} className="text-amber-400" />}
                             </div>
                             <div className="text-[11px] text-muted-foreground truncate" dir="ltr">
-                              {u.username ? `@${u.username}` : u.email}
+                              {u.email}
                             </div>
                           </div>
                         </div>
@@ -432,7 +432,7 @@ function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: ()
               {user?.avatar_url ? <img src={user.avatar_url} alt="" className="w-full h-full object-cover" /> :
                 <span className="text-xs font-bold text-cyan-300">GX</span>}
             </div>
-            <span>{user?.full_name || user?.email}</span>
+            <span dir="ltr">{user?.username ? `@${user.username}` : user?.email}</span>
             {user?.roles.includes("admin") && <Crown size={14} className="text-amber-400" />}
             <Badge variant="outline" className="text-[10px] font-mono">{user?.level_code}</Badge>
           </DialogTitle>

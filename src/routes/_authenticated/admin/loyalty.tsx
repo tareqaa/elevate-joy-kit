@@ -56,7 +56,7 @@ function useProfiles() {
 
 function labelOf(p?: ProfileRow) {
   if (!p) return "—";
-  return p.full_name || p.username || p.email || "—";
+  return p.username ? `@${p.username}` : (p.email || "—");
 }
 
 function LoyaltyAdmin() {
@@ -355,8 +355,8 @@ function CustomersTab({ profiles, loading }: { profiles: ProfileRow[]; loading: 
                       ? <img src={r.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover border border-white/10" />
                       : <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10" />}
                     <div className="min-w-0">
-                      <div className="font-medium truncate">{labelOf(r)}</div>
-                      <div className="text-[11px] text-muted-foreground" dir="ltr">@{r.username}</div>
+                      <div className="font-medium truncate" dir="ltr">{labelOf(r)}</div>
+                      <div className="text-[11px] text-muted-foreground" dir="ltr">{r.email}</div>
                     </div>
                   </div>
                 </td>

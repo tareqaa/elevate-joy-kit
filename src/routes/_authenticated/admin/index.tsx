@@ -358,7 +358,7 @@ function AdminOverview() {
                 <div key={u.id} className="gx-recent-row">
                   <span className="gx-rank">{i + 1}</span>
                   <div className="gx-recent-main">
-                    <div className="gx-recent-name-strong">{u.full_name || u.username || "لاعب"}</div>
+                    <div className="gx-recent-name-strong" dir="ltr">{u.username ? `@${u.username}` : "لاعب"}</div>
                     <div className="gx-recent-name">{u.orders_count ?? 0} طلب • {u.level_code}</div>
                   </div>
                   <span className="gx-recent-amt">{Number(u.total_spent || 0).toFixed(2)} د.أ</span>

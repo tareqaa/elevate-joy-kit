@@ -20,7 +20,8 @@ export const Route = createFileRoute("/support")({
   component: SupportPage,
 });
 
-const WHATSAPP_NUMBER = "0776252313";
+const WHATSAPP_DISPLAY = "+962 7 7625 2313";
+const WHATSAPP_COPY = "+962776252313";
 const WHATSAPP_RAW = "962776252313";
 const DISCORD_INVITE = "https://discord.gg/DvkUd5PgqV";
 const DISCORD_SHORT = "discord.gg/DvkUd5PgqV";
@@ -41,9 +42,103 @@ function DiscordSvg() {
   );
 }
 
+function useLocalSupportHours(ar: boolean) {
+  const [info, setInfo] = useState<{ timeRange: string; locationName: string }>({
+    timeRange: ar ? "من 10:00 صباحاً حتى 2:00 بعد منتصف الليل" : "from 10:00 AM to 2:00 AM",
+    locationName: ar ? "الأردن 🇯🇴" : "Jordan 🇯🇴",
+  });
+
+  useEffect(() => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Amman";
+      const now = new Date();
+      // Baseline Jordan working hours: 10:00 AM to 02:00 AM next day (UTC+3)
+      // 10:00 AM Jordan = 07:00 UTC, 02:00 AM Jordan = 23:00 UTC
+      const startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 7, 0, 0));
+      const endDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 0, 0));
+
+      const fmt = (d: Date) =>
+        d.toLocaleTimeString(ar ? "ar-EG" : "en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+
+      const startTimeStr = fmt(startDate);
+      const endTimeStr = fmt(endDate);
+
+      const tzMapAr: Record<string, string> = {
+        "Asia/Amman": "الأردن 🇯🇴",
+        "Africa/Cairo": "مصر 🇪🇬",
+        "Asia/Riyadh": "السعودية 🇸🇦",
+        "Asia/Dubai": "الإمارات 🇦🇪",
+        "Asia/Kuwait": "الكويت 🇰🇼",
+        "Asia/Qatar": "قطر 🇶🇦",
+        "Asia/Bahrain": "البحرين 🇧🇭",
+        "Asia/Muscat": "عُمان 🇴🇲",
+        "Asia/Baghdad": "العراق 🇮🇶",
+        "Asia/Beirut": "لبنان 🇱🇧",
+        "Asia/Damascus": "سوريا 🇸🇾",
+        "Asia/Jerusalem": "فلسطين 🇵🇸",
+        "Asia/Gaza": "فلسطين 🇵🇸",
+        "Asia/Hebron": "فلسطين 🇵🇸",
+        "Africa/Tripoli": "ليبيا 🇱🇾",
+        "Africa/Tunis": "تونس 🇹🇳",
+        "Africa/Algiers": "الجزائر 🇩🇿",
+        "Africa/Casablanca": "المغرب 🇲🇦",
+        "Africa/Khartoum": "السودان 🇸🇩",
+        "Europe/Istanbul": "تركيا 🇹🇷",
+        "Europe/London": "بريطانيا 🇬🇧",
+        "Europe/Berlin": "ألمانيا 🇩🇪",
+        "America/New_York": "أمريكا (نيويورك)",
+      };
+
+      const tzMapEn: Record<string, string> = {
+        "Asia/Amman": "Jordan 🇯🇴",
+        "Africa/Cairo": "Egypt 🇪🇬",
+        "Asia/Riyadh": "Saudi Arabia 🇸🇦",
+        "Asia/Dubai": "UAE 🇦🇪",
+        "Asia/Kuwait": "Kuwait 🇰🇼",
+        "Asia/Qatar": "Qatar 🇶🇦",
+        "Asia/Bahrain": "Bahrain 🇧🇭",
+        "Asia/Muscat": "Oman 🇴🇲",
+        "Asia/Baghdad": "Iraq 🇮🇶",
+        "Asia/Beirut": "Lebanon 🇱🇧",
+        "Asia/Damascus": "Syria 🇸🇾",
+        "Asia/Jerusalem": "Palestine 🇵🇸",
+        "Asia/Gaza": "Palestine 🇵🇸",
+        "Asia/Hebron": "Palestine 🇵🇸",
+        "Africa/Tripoli": "Libya 🇱🇾",
+        "Africa/Tunis": "Tunisia 🇹🇳",
+        "Africa/Algiers": "Algeria 🇩🇿",
+        "Africa/Casablanca": "Morocco 🇲🇦",
+        "Africa/Khartoum": "Sudan 🇸🇩",
+        "Europe/Istanbul": "Turkey 🇹🇷",
+        "Europe/London": "UK 🇬🇧",
+        "Europe/Berlin": "Germany 🇩🇪",
+        "America/New_York": "USA (New York)",
+      };
+
+      const locationName = ar
+        ? (tzMapAr[tz] || "توقيتك المحلي")
+        : (tzMapEn[tz] || "Your local time");
+
+      setInfo({
+        timeRange: ar ? `من ${startTimeStr} حتى ${endTimeStr}` : `from ${startTimeStr} to ${endTimeStr}`,
+        locationName,
+      });
+    } catch {
+      // keep fallback
+    }
+  }, [ar]);
+
+  return info;
+}
+
 function SupportPage() {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
+  const hours = useLocalSupportHours(ar);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
@@ -53,7 +148,7 @@ function SupportPage() {
   const [copiedDiscord, setCopiedDiscord] = useState(false);
 
   const handleCopyPhone = () => {
-    navigator.clipboard.writeText(WHATSAPP_NUMBER);
+    navigator.clipboard.writeText(WHATSAPP_COPY);
     setCopiedPhone(true);
     toast.success(ar ? "تم نسخ رقم الواتساب" : "Phone number copied");
     setTimeout(() => setCopiedPhone(false), 2000);
@@ -128,8 +223,8 @@ function SupportPage() {
             }}
           >
             {ar
-              ? "فريق الدعم الفني متواجد لمساعدتك والإجابة على استفساراتك عبر واتساب أو ديسكورد."
-              : "Our support team is available to assist you via WhatsApp or Discord."}
+              ? "فريق الدعم الفني جاهز لمساعدتك مباشرة عبر واتساب أو سيرفر ديسكورد."
+              : "Our support team is ready to assist you directly via WhatsApp or Discord."}
           </p>
         </div>
 
@@ -183,26 +278,11 @@ function SupportPage() {
                 fontSize: 22,
                 fontWeight: 900,
                 color: "#ffffff",
-                margin: "0 0 10px",
-              }}
-            >
-              {ar ? "الدعم عبر واتساب" : "WhatsApp Support"}
-            </h2>
-
-            {/* Subtext */}
-            <p
-              style={{
-                fontSize: 14,
-                color: "#94a3b8",
                 margin: "0 0 24px",
-                lineHeight: 1.6,
-                maxWidth: 280,
               }}
             >
-              {ar
-                ? "محادثة فورية للطلبات، تأكيد الحوالات، وتفعيل الأكواد والحسابات."
-                : "Instant chat for orders, bank transfer confirmations, and activation."}
-            </p>
+              {ar ? "دعم عبر الواتس" : "WhatsApp Support"}
+            </h2>
 
             {/* Number Box with Copy */}
             <div
@@ -211,7 +291,7 @@ function SupportPage() {
                 background: "rgba(0, 0, 0, 0.45)",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
                 borderRadius: 14,
-                padding: "10px 16px",
+                padding: "12px 16px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -228,7 +308,7 @@ function SupportPage() {
                   letterSpacing: "0.5px",
                 }}
               >
-                {WHATSAPP_NUMBER}
+                {WHATSAPP_DISPLAY}
               </span>
               <button
                 type="button"
@@ -322,26 +402,11 @@ function SupportPage() {
                 fontSize: 22,
                 fontWeight: 900,
                 color: "#ffffff",
-                margin: "0 0 10px",
-              }}
-            >
-              {ar ? "سيرفر ديسكورد" : "Discord Server"}
-            </h2>
-
-            {/* Subtext */}
-            <p
-              style={{
-                fontSize: 14,
-                color: "#94a3b8",
                 margin: "0 0 24px",
-                lineHeight: 1.6,
-                maxWidth: 280,
               }}
             >
-              {ar
-                ? "تذاكر دعم فني خاصة، فعاليات ألعاب، ومجتمع اللاعبين."
-                : "Private support tickets, gaming tournaments, and community."}
-            </p>
+              {ar ? "دعم عبر الديسكورد" : "Discord Support"}
+            </h2>
 
             {/* Link Box with Copy */}
             <div
@@ -350,7 +415,7 @@ function SupportPage() {
                 background: "rgba(0, 0, 0, 0.45)",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
                 borderRadius: 14,
-                padding: "10px 16px",
+                padding: "12px 16px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -423,7 +488,7 @@ function SupportPage() {
           </div>
         </div>
 
-        {/* Footer info note */}
+        {/* Footer info note with dynamic visitor timezone */}
         <div
           style={{
             marginTop: 40,
@@ -431,8 +496,12 @@ function SupportPage() {
             alignItems: "center",
             gap: 8,
             fontSize: 13,
-            color: "#64748b",
+            color: "#94a3b8",
             fontWeight: 700,
+            background: "rgba(255, 255, 255, 0.03)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            padding: "8px 18px",
+            borderRadius: 999,
           }}
         >
           <span
@@ -447,8 +516,8 @@ function SupportPage() {
           />
           <span>
             {ar
-              ? "الدعم الفني متاح يومياً من 10:00 صباحاً حتى 2:00 بعد منتصف الليل"
-              : "Support is available daily from 10:00 AM to 2:00 AM"}
+              ? `الدعم الفني متاح يومياً ${hours.timeRange} (بتوقيت ${hours.locationName})`
+              : `Support is available daily ${hours.timeRange} (${hours.locationName})`}
           </span>
         </div>
       </div>

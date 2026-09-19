@@ -173,6 +173,8 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
   const { lang, dir } = useLang();
   const ar = lang === "ar";
   const qc = useQueryClient();
+  const [sessionUserId, setSessionUserId] = useState<string | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [angle, setAngle] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<SpinResult | null>(null);
@@ -180,6 +182,18 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
   const [remaining, setRemaining] = useState(0);
   const [celebrate, setCelebrate] = useState(false);
   const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSessionUserId(data.session?.user?.id ?? null);
+      setCheckingAuth(false);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSessionUserId(s?.user?.id ?? null);
+      setCheckingAuth(false);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   const prizesQ = useQuery({
     queryKey: ["wheel-prizes-active"],
@@ -196,7 +210,8 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
   });
 
   const statusQ = useQuery({
-    queryKey: ["wheel-status"],
+    queryKey: ["wheel-status", sessionUserId],
+    enabled: !!sessionUserId,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_wheel_status");
       if (error) throw error;
@@ -228,7 +243,7 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
 
   const prizes = prizesQ.data ?? [];
   const seg = prizes.length > 0 ? 360 / prizes.length : 360;
-  const canSpin = !!statusQ.data?.can_spin && prizes.length > 0 && !spinning;
+  const canSpin = !!sessionUserId && !!statusQ.data?.can_spin && prizes.length > 0 && !spinning;
 
   
   const confetti = useMemo(
@@ -243,6 +258,13 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
   );
 
   async function spin() {
+    if (!sessionUserId) {
+      toast.error(ar ? "يجب تسجيل الدخول أولاً للف عجلة الحظ" : "Please sign in first to spin the wheel");
+      if (typeof window !== "undefined") {
+        window.location.href = "/auth";
+      }
+      return;
+    }
     if (!canSpin) return;
     setSpinning(true);
     setResult(null);
@@ -434,9 +456,15 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
           {/* center hub / spin button */}
           <button
             type="button"
-            onClick={spin}
-            disabled={!canSpin}
-            aria-label={ar ? "لف الآن" : "Spin Now"}
+            onClick={() => {
+              if (!sessionUserId) {
+                if (typeof window !== "undefined") window.location.href = "/auth";
+                return;
+              }
+              spin();
+            }}
+            disabled={sessionUserId ? !canSpin : false}
+            aria-label={!sessionUserId ? (ar ? "تسجيل الدخول" : "Sign in") : (ar ? "لف الآن" : "Spin Now")}
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 grid place-items-center rounded-full border-[3px] border-amber-300/80 text-[13px] font-black tracking-wide transition-transform duration-200 hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
             style={{
               width: compact ? 76 : 84,
@@ -446,11 +474,39 @@ export function WheelCore({ compact = false }: { compact?: boolean }) {
               color: "#fde68a",
             }}
           >
-            {spinning ? <span className="text-[11px]">{ar ? "…يلف" : "…Spin"}</span> : canSpin ? "SPIN" : "🔒"}
+            {spinning ? (
+              <span className="text-[11px]">{ar ? "…يلف" : "…Spin"}</span>
+            ) : !sessionUserId ? (
+              <span className="text-[11px] font-bold">{ar ? "دخول" : "LOGIN"}</span>
+            ) : canSpin ? (
+              "SPIN"
+            ) : (
+              "🔒"
+            )}
           </button>
         </div>
 
-        {statusQ.isLoading ? (
+        {checkingAuth ? (
+          <p className="text-sm text-muted-foreground">{ar ? "جاري التحميل…" : "Loading…"}</p>
+        ) : !sessionUserId ? (
+          <div className="text-center space-y-3 p-4 rounded-2xl border border-primary/25 bg-gradient-to-b from-primary/10 to-transparent max-w-sm mx-auto">
+            <div className="flex items-center justify-center gap-2 text-primary font-bold">
+              <Sparkles className="w-4 h-4" />
+              <span>{ar ? "عجلة الحظ للمسجلين فقط" : "Members Only Lucky Wheel"}</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {ar
+                ? "سجّل دخولك الآن للحصول على لفة مجانية يومياً وكسب عملات GX Coins، نقاط XP، وكوبونات خصم حصرية!"
+                : "Sign in to unlock your free daily spin and win GX Coins, XP, and exclusive discount coupons!"}
+            </p>
+            <a
+              href="/auth"
+              className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-primary to-cyan-400 text-black font-black text-sm hover:opacity-90 transition shadow-lg shadow-cyan-500/20"
+            >
+              <span>{ar ? "تسجيل الدخول / حساب جديد" : "Sign In / Register"}</span>
+            </a>
+          </div>
+        ) : statusQ.isLoading ? (
           <p className="text-sm text-muted-foreground">{ar ? "جاري التحميل…" : "Loading…"}</p>
         ) : statusQ.data?.can_spin ? (
           <Button size="lg" onClick={spin} disabled={!canSpin} className="min-w-44 font-bold">

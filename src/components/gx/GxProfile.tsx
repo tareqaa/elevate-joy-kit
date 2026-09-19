@@ -150,15 +150,6 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
   const levelsQ = useQuery({ queryKey: ["levels"], queryFn: fetchLevels });
   const loyaltyQ = useQuery({ queryKey: ["my-loyalty", myId], queryFn: fetchMyLoyalty, enabled: isOwner });
 
-  const boardQ = useQuery({
-    queryKey: ["loyalty-leaderboard"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_loyalty_leaderboard", { _limit: 25 });
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
   const couponsQ = useQuery({
     enabled: isOwner,
     queryKey: ["my-level-coupons", myId],
@@ -232,17 +223,17 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
     <section className="section" dir={dir}>
       <div className="wrap gxp">
         <div className="gxp-grid">
-          {/* Mobile: search sits at the very top, not at the bottom of the page. */}
-          <div className="gxp-card gxp-search-mobile">
-            <h3 className="gxp-h"><GxIcon name="search" /> {isAr ? "ابحث عن لاعب" : "Find a player"}</h3>
-            <PlayerSearch isAr={isAr} />
-          </div>
           <div className="gxp-main">
 
-            {!username && (
-              <div className="gxp-card gxp-empty">
-                <h2>{isAr ? "ملفات اللاعبين" : "Player profiles"}</h2>
-                <p>{isAr ? "ابحث عن أي اسم مستخدم لعرض ملفه ومستواه." : "Search any username to open its profile."}</p>
+            {!username && !myId && (
+              <div className="gxp-card gxp-empty" style={{ padding: "48px 20px" }}>
+                <h2 style={{ fontSize: 24, marginBottom: 12 }}>{isAr ? "مكافآت وامتيازات اللاعبين" : "Player Rewards & Levels"}</h2>
+                <p style={{ maxWidth: 460, margin: "0 auto 22px", color: "#94a3b8", lineHeight: 1.6 }}>
+                  {isAr ? "سجّل دخولك بحسابك لاستعراض مستواك، كسب نقاط XP، والحصول على عملات GX Coins وكوبونات الخصم الحصرية." : "Sign in to view your profile, earn XP, unlock GX Coins and claim exclusive discount coupons."}
+                </p>
+                <Link to="/auth" className="btn btn-primary" style={{ display: "inline-flex", padding: "10px 24px", borderRadius: 12, fontWeight: 800 }}>
+                  {isAr ? "تسجيل الدخول / إنشاء حساب" : "Sign In / Register"}
+                </Link>
               </div>
             )}
 
@@ -433,37 +424,6 @@ export function GxProfile({ username: usernameProp }: { username?: string }) {
               </div>
             </div>
           </div>
-
-
-          {/* Sidebar: search + leaderboard */}
-          <aside className="gxp-side">
-            <div className="gxp-card gxp-search-desktop">
-
-              <h3 className="gxp-h">🔎 {isAr ? "ابحث عن لاعب" : "Find a player"}</h3>
-              <PlayerSearch isAr={isAr} />
-            </div>
-            <div className="gxp-card">
-              <h3 className="gxp-h">{isAr ? "المتصدرون" : "Leaderboard"}</h3>
-              <div className="gxp-board">
-                {(boardQ.data ?? []).map((r) => {
-                  const rank = Number(r.rank);
-                  const av = r.avatar_url || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(r.username || "gx")}&skinColor=f2d3b1&radius=50`;
-                  return (
-                    <Link key={r.user_id} to="/u/$username" params={{ username: r.username || "" }}
-                      className={`gxp-brow${r.username?.toLowerCase() === (username || "").toLowerCase() ? " me" : ""}`}>
-                      <span className="r">
-                        <b className={`rnum${rank <= 3 ? ` t${rank}` : ""}`}>{rank}</b>
-                      </span>
-                      <img src={av} alt="" loading="lazy" />
-                      <span className="n">{r.username}</span>
-                      <span className="x">{Number(r.xp).toLocaleString("en-US")}</span>
-                    </Link>
-                  );
-
-                })}
-              </div>
-            </div>
-          </aside>
         </div>
       </div>
       <style>{css}</style>
@@ -553,52 +513,9 @@ function IdentityEditor({ isAr, userId, currentUsername, onSaved }: {
   );
 }
 
-function PlayerSearch({ isAr }: { isAr: boolean }) {
-  const [q, setQ] = useState("");
-  const [results, setResults] = useState<Array<{ id: string; username: string; full_name: string | null; avatar_url: string | null; level: number | null }>>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const query = q.replace(/^@+/, "").trim();
-    if (query.length < 2) { setResults([]); return; }
-    setLoading(true);
-    const to = setTimeout(async () => {
-      const { data, error } = await supabase.rpc("search_public_profiles", { _q: query, _limit: 8 });
-      setLoading(false);
-      setResults(error ? [] : ((data as typeof results) ?? []));
-    }, 300);
-    return () => clearTimeout(to);
-  }, [q]);
-
-  return (
-    <div className="gxp-search">
-      <input dir="ltr" value={q} onChange={(e) => setQ(e.target.value)} placeholder="@game_tag" />
-      {loading && <p className="gxp-muted">{isAr ? "جاري البحث…" : "Searching…"}</p>}
-      {!loading && q.replace(/^@+/, "").trim().length >= 2 && results.length === 0 && (
-        <p className="gxp-muted">{isAr ? "لا نتائج" : "No results"}</p>
-      )}
-      <div className="gxp-results">
-        {results.map((r) => (
-          <Link key={r.id} to="/u/$username" params={{ username: r.username }} className="gxp-result" onClick={() => setQ("")}>
-            <img src={r.avatar_url || `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(r.username)}&skinColor=f2d3b1&radius=50`} alt="" />
-            <span><b>{r.username}</b><em dir="ltr">@{r.username}</em></span>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 const css = `
-.gxp-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
-.gxp-search-mobile{display:none}
-@media (max-width:980px){
-  .gxp-grid{grid-template-columns:1fr}
-  .gxp-search-mobile{display:block;order:-1}
-  .gxp-search-desktop{display:none}
-}
-
-.gxp-main,.gxp-side{display:grid;gap:14px;min-width:0}
+.gxp-grid{max-width:920px;margin:0 auto;width:100%}
+.gxp-main{display:grid;gap:14px;min-width:0}
 .gxp-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:18px;padding:16px;overflow:hidden}
 .gxp-h{margin:0 0 12px;font-size:15px;color:#e6f7ff;display:flex;align-items:center;gap:7px}
 .gxp-h svg{color:#00e5ff}
@@ -694,27 +611,6 @@ const css = `
 .gxp-badge .ico{font-size:22px}
 .gxp-badge b{display:block;font-size:12px;margin-top:4px}
 .gxp-badge em{font-style:normal;font-size:10.5px;color:#8b90a0;display:block;margin-top:2px}
-.gxp-search input{width:100%;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#e6f7ff;padding:0 12px;font-size:13px;outline:none}
-.gxp-search input:focus{border-color:#00e5ff}
-.gxp-results{display:grid;gap:6px;margin-top:8px}
-.gxp-result{display:flex;align-items:center;gap:9px;padding:7px;border-radius:12px;text-decoration:none;color:inherit;border:1px solid transparent}
-.gxp-result:hover{background:rgba(255,255,255,.04);border-color:rgba(0,229,255,.3)}
-.gxp-result img{width:34px;height:34px;border-radius:50%;background:#0b1220}
-.gxp-result b{display:block;font-size:12.5px;color:#e6f7ff}
-.gxp-result em{font-style:normal;font-size:11px;color:#00e5ff}
-.gxp-board{display:grid;gap:5px;max-height:520px;overflow:auto}
-.gxp-brow{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:12px;text-decoration:none;color:inherit;border:1px solid transparent}
-.gxp-brow:hover{background:rgba(255,255,255,.04)}
-.gxp-brow.me{border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.06)}
-.gxp-brow .r{width:32px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;color:#8b90a0}
-.gxp-brow .r .rnum{font-size:13px;color:#8b90a0;font-variant-numeric:tabular-nums}
-.gxp-brow .r .rnum.t1{color:#ffc53d}
-.gxp-brow .r .rnum.t2{color:#d9e2ee}
-.gxp-brow .r .rnum.t3{color:#ff7a45}
-
-.gxp-brow img{width:30px;height:30px;border-radius:50%;background:#0b1220}
-.gxp-brow .n{flex:1;min-width:0;font-size:12.5px;color:#e6f7ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gxp-brow .x{font-size:11.5px;font-weight:900;color:#00e5ff}
 .gxp-edit-card{border-color:rgba(0,229,255,.28);background:linear-gradient(180deg,rgba(0,229,255,.05),rgba(0,229,255,.01))}
 .gxp-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .gxp-fields label{display:block;font-size:12px;color:#8b90a0}
