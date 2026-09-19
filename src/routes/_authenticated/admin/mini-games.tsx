@@ -124,6 +124,37 @@ function MiniGamesAdmin() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const settingsQ = useQuery({
+    queryKey: ["admin-mini-games-enabled"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "mini_games_enabled")
+        .maybeSingle();
+      if (error) throw error;
+      return data?.value === true;
+    },
+  });
+
+  const toggleEnabledM = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const { error } = await supabase
+        .from("site_settings")
+        .upsert({ key: "mini_games_enabled", value: enabled }, { onConflict: "key" });
+      if (error) throw error;
+      if (enabled) {
+        await (supabase as any).from("mini_games").update({ is_active: true }).neq("id", "00000000-0000-0000-0000-000000000000");
+      }
+    },
+    onSuccess: (_, enabled) => {
+      toast.success(enabled ? "تم تفعيل وإظهار قسم الألعاب المصغّرة" : "تم إخفاء وتعطيل قسم الألعاب المصغّرة");
+      void qc.invalidateQueries({ queryKey: ["admin-mini-games-enabled"] });
+      void qc.invalidateQueries({ queryKey: ["admin-mini-games"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const rows = listQ.data ?? [];
 
   return (
@@ -134,7 +165,7 @@ function MiniGamesAdmin() {
           <Badge variant="secondary">{rows.length}</Badge>
         </h1>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => listQ.refetch()}>
+          <Button variant="outline" size="sm" onClick={() => { listQ.refetch(); settingsQ.refetch(); }}>
             <RefreshCcw className="w-4 h-4 ms-1" /> تحديث
           </Button>
           <Button size="sm" onClick={() => setEdit({ ...EMPTY })}>
@@ -142,6 +173,33 @@ function MiniGamesAdmin() {
           </Button>
         </div>
       </div>
+
+      {/* Master Section Toggle */}
+      <Card className={settingsQ.data ? "border-emerald-500/40 bg-emerald-500/5" : "border-amber-500/30 bg-amber-500/5"}>
+        <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+          <div className="space-y-1 max-w-xl">
+            <div className="font-bold text-base flex items-center gap-2">
+              <span>عرض قسم «الألعاب المصغّرة» في صفحة الألعاب (ساحة اللعب)</span>
+              <Badge variant={settingsQ.data ? "default" : "destructive"}>
+                {settingsQ.data ? "مفعّل وظاهر للزوار" : "معطّل ومخفي حالياً"}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              عند إيقاف هذا الخيار، سيتم إخفاء قسم الألعاب المصغرة بالكامل من صفحة الألعاب (ساحة اللعب) ولن يظهر لأي زائر حتى تقوم بإعادة تفعيله من هنا.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={settingsQ.data ?? false}
+              onCheckedChange={(checked) => toggleEnabledM.mutate(checked)}
+              disabled={toggleEnabledM.isPending || settingsQ.isLoading}
+            />
+            <span className="text-sm font-semibold">
+              {settingsQ.data ? "مفعّل" : "معطّل"}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
 
       <p className="text-sm text-muted-foreground">
         هذه الألعاب تظهر في قسم "الألعاب المصغّرة" وتُلعب دائمًا بوضع تسلية حر — بلا أي ارتباط بالبطولات

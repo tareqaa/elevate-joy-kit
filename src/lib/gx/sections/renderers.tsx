@@ -874,20 +874,32 @@ export function ReviewsRenderer({ data }: { data: ReviewsData }) {
     let loopWidth = grid.scrollWidth / 2; let pos = 0; grid.scrollLeft = 0;
     const onResize = () => { loopWidth = grid.scrollWidth / 2; };
     window.addEventListener("resize", onResize);
+    let raf = 0;
+    let lastTime = performance.now();
+    // Delta-time based scrolling (pixels per second) — perfectly consistent across 60Hz, 120Hz, 144Hz, 240Hz.
+    // Slightly slowed down to 65 px/sec (~1.08 px/frame at 60fps) for an elegant, calm, readable experience.
+    const SPEED_PX_PER_SEC = 65;
     const pause = () => { paused = true; resumeAt = Infinity; pos = grid.scrollLeft; };
-    const resumeNow = () => { pos = grid.scrollLeft; paused = false; resumeAt = Infinity; };
-    const resumeSoon = () => { pos = grid.scrollLeft; resumeAt = performance.now() + 1500; };
+    const resumeNow = () => { pos = grid.scrollLeft; paused = false; resumeAt = Infinity; lastTime = performance.now(); };
+    const resumeSoon = () => { pos = grid.scrollLeft; resumeAt = performance.now() + 1500; lastTime = performance.now(); };
     grid.addEventListener("mouseenter", pause);
     grid.addEventListener("mouseleave", resumeNow);
     grid.addEventListener("touchstart", pause, { passive: true });
     grid.addEventListener("touchend", resumeSoon, { passive: true });
-    let raf = 0; const SPEED = 2.5;
-    const step = () => {
-      const now = performance.now();
+
+    const step = (now: number) => {
+      const elapsed = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
       if (paused && now >= resumeAt) { paused = false; resumeAt = Infinity; pos = grid.scrollLeft; }
       if (!paused && loopWidth > 0) {
-        if (dir === "rtl") { pos -= SPEED; if (pos <= -loopWidth) pos += loopWidth; }
-        else { pos += SPEED; if (pos >= loopWidth) pos -= loopWidth; }
+        const delta = SPEED_PX_PER_SEC * elapsed;
+        if (dir === "rtl") {
+          pos -= delta;
+          if (pos <= -loopWidth) pos += loopWidth;
+        } else {
+          pos += delta;
+          if (pos >= loopWidth) pos += loopWidth;
+        }
         grid.scrollLeft = pos;
       }
       raf = requestAnimationFrame(step);

@@ -23,6 +23,17 @@ export type MiniGameRow = {
 export const listMiniGames = createServerFn({ method: "GET" }).handler(
   async (): Promise<MiniGameRow[]> => {
     const supabase = getPublicClient();
+    // Check global switch in site_settings
+    const { data: setting } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "mini_games_enabled")
+      .maybeSingle();
+
+    if (setting && setting.value === false) {
+      return [];
+    }
+
     // `mini_games` isn't in the generated Database types yet (new table) —
     // same (supabase as any) pattern already used elsewhere for this reason
     // (see admin/wheel.tsx's wheel_bonus_spins query).
