@@ -199,6 +199,29 @@ function TournamentPage() {
     [t],
   );
 
+  // Player standing & rank calculations (Declared at top level before early returns)
+  const myRowInList = useMemo(() => {
+    if (!rows || !myUid) return null;
+    return rows.find((r) => r.user_id === myUid) ?? null;
+  }, [rows, myUid]);
+
+  const hasPlayed = useMemo(() => {
+    if (myRowInList) return true;
+    if (me?.played) return true;
+    if (typeof me?.score === "number" && me.score > 0) return true;
+    return false;
+  }, [me, myRowInList]);
+
+  const myRank = myRowInList?.rank ?? (me?.played ? me.rank : undefined);
+  const myScore = myRowInList?.score ?? (me?.played ? me.score : undefined);
+
+  const isInVisibleList = useMemo(() => {
+    if (!rows || rows.length === 0) return false;
+    if (myUid && rows.some((r) => r.user_id === myUid)) return true;
+    if (myRank && rows.some((r) => r.rank === myRank)) return true;
+    return false;
+  }, [rows, myUid, myRank]);
+
   if (t === undefined) {
     return (
       <StoreShell>
@@ -335,58 +358,60 @@ function TournamentPage() {
               )}
 
               {/* Sticky row if player has played but is ranked OUTSIDE the visible top list */}
-              {hasPlayed ? (
-                !isInVisibleList && myRank ? (
-                  <div className="lb-row me sticky">
-                    <span className="lb-r">{myRank}</span>
-                    <span className="lb-avwrap">
-                      {me?.avatar_url ? (
-                        <img src={me.avatar_url} alt="" className="lb-av" />
-                      ) : (
-                        <span className="lb-av ph">{ar ? "أنا" : "Me"}</span>
-                      )}
-                    </span>
-                    <span className="lb-who">
-                      <b className="lb-nm">
-                        {me?.username ? `@${me.username}` : (ar ? "أنت" : "You")}
-                        <span className="lb-youtag">{ar ? "أنت" : "You"}</span>
-                      </b>
-                      {me?.total ? (
-                        <em className="lb-lvlname">{ar ? `من ${me.total} لاعب` : `of ${me.total} players`}</em>
-                      ) : null}
-                    </span>
-                    <b className="lb-sc" dir="ltr">{(myScore ?? 0).toLocaleString("en-US")}</b>
-                  </div>
-                ) : null
-              ) : (
-                /* Only show CTA card if user has NOT played yet */
-                status === "live" && t?.game_path ? (
-                  <div className="lb-cta-card">
-                    <div className="lb-cta-info">
-                      <span className="lb-cta-icon" aria-hidden>🎮</span>
-                      <div className="lb-cta-text">
-                        <b>{ar ? "لم تشارك في هذه البطولة بعد" : "Haven't entered this tournament yet"}</b>
-                        <p>{ar ? "العب جولة الآن ونافس على جوائز البطولة!" : "Play a round now to enter the leaderboard!"}</p>
-                      </div>
+              {rows !== null && (
+                hasPlayed ? (
+                  !isInVisibleList && myRank ? (
+                    <div className="lb-row me sticky">
+                      <span className="lb-r">{myRank}</span>
+                      <span className="lb-avwrap">
+                        {(myRowInList?.avatar_url || me?.avatar_url) ? (
+                          <img src={myRowInList?.avatar_url || me?.avatar_url || ""} alt="" className="lb-av" />
+                        ) : (
+                          <span className="lb-av ph">{ar ? "أنا" : "Me"}</span>
+                        )}
+                      </span>
+                      <span className="lb-who">
+                        <b className="lb-nm">
+                          {(myRowInList?.username || me?.username) ? `@${myRowInList?.username || me?.username}` : (ar ? "أنت" : "You")}
+                          <span className="lb-youtag">{ar ? "أنت" : "You"}</span>
+                        </b>
+                        {me?.total ? (
+                          <em className="lb-lvlname">{ar ? `من ${me.total} لاعب` : `of ${me.total} players`}</em>
+                        ) : null}
+                      </span>
+                      <b className="lb-sc" dir="ltr">{(myScore ?? 0).toLocaleString("en-US")}</b>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => navigate({ to: t.game_path!, search: { t: t.id } as never })}
-                      className="lb-cta-btn"
-                    >
-                      {ar ? "العب الآن ⚡" : "Play Now ⚡"}
-                    </button>
-                  </div>
+                  ) : null
                 ) : (
-                  <div className="lb-cta-card">
-                    <div className="lb-cta-info">
-                      <span className="lb-cta-icon" aria-hidden>🎮</span>
-                      <div className="lb-cta-text">
-                        <b>{ar ? "لم تسجّل أي نتيجة" : "No score recorded"}</b>
-                        <p>{ar ? "جولة واحدة كانت تكفي لتدخل الترتيب!" : "One round was needed to rank!"}</p>
+                  /* Only show CTA card if user has NOT played yet */
+                  status === "live" && t?.game_path ? (
+                    <div className="lb-cta-card">
+                      <div className="lb-cta-info">
+                        <span className="lb-cta-icon" aria-hidden>🎮</span>
+                        <div className="lb-cta-text">
+                          <b>{ar ? "لم تشارك في هذه البطولة بعد" : "Haven't entered this tournament yet"}</b>
+                          <p>{ar ? "العب جولة الآن ونافس على جوائز البطولة!" : "Play a round now to enter the leaderboard!"}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => navigate({ to: t.game_path!, search: { t: t.id } as never })}
+                        className="lb-cta-btn"
+                      >
+                        {ar ? "العب الآن ⚡" : "Play Now ⚡"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="lb-cta-card">
+                      <div className="lb-cta-info">
+                        <span className="lb-cta-icon" aria-hidden>🎮</span>
+                        <div className="lb-cta-text">
+                          <b>{ar ? "لم تسجّل أي نتيجة" : "No score recorded"}</b>
+                          <p>{ar ? "جولة واحدة كانت تكفي لتدخل الترتيب!" : "One round was needed to rank!"}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )
                 )
               )}
 
