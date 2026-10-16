@@ -406,9 +406,6 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
 
                   <div className="cat-card-bottom-row">
                     <div className="cname-modern">{name}</div>
-                    <div className="cat-browse-action">
-                      <span>{lang === "en" ? `Browse ${name}` : `تصفح ${name}`}</span>
-                    </div>
                   </div>
                 </div>
 
