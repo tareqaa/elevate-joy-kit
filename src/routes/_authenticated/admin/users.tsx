@@ -17,6 +17,7 @@ import {
   ArrowUpDown, Sparkles, Ticket, History, UserPlus, Mail, Clock,
   CheckCircle2, Trash2, AlertCircle,
 } from "lucide-react";
+import { sendCreditNotificationEmail } from "@/lib/gx/credit-email.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
   head: () => ({ meta: [{ title: "المستخدمون — لوحة التحكم" }] }),
@@ -461,6 +462,7 @@ function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: ()
   const [xpDelta, setXpDelta] = useState("");
   const [creditDelta, setCreditDelta] = useState("");
   const [reason, setReason] = useState("");
+  const [notifyEmail, setNotifyEmail] = useState(true);
 
   const ordersQ = useQuery({
     queryKey: ["admin-user-orders", user?.id],
@@ -526,6 +528,25 @@ function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: ()
         if (error) throw error;
         const res = data as { ok?: boolean; message?: string } | null;
         if (res && res.ok === false) throw new Error(res.message || "تعذّر تعديل الرصيد");
+
+        if (credit > 0 && user?.email && notifyEmail) {
+          try {
+            await sendCreditNotificationEmail({
+              data: {
+                email: user.email,
+                amountJod: credit,
+                reason: reason.trim() || "تعديل رصيد من الإدارة",
+                isRegistered: true,
+                username: user.username || undefined,
+                coins: coins || undefined,
+                xp: xp || undefined,
+              },
+            });
+            toast.success("تم إرسال إشعار الرصيد للعميل عبر support@gxstore.me");
+          } catch (mErr) {
+            console.error("User email notification error:", mErr);
+          }
+        }
       }
     },
     onSuccess: () => {
@@ -625,6 +646,17 @@ function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: ()
                   </div>
 
                   <Input placeholder="سبب التعديل (إلزامي)" value={reason} onChange={(e) => setReason(e.target.value)} />
+                  {user.email && (
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer pt-0.5">
+                      <input
+                        type="checkbox"
+                        checked={notifyEmail}
+                        onChange={(e) => setNotifyEmail(e.target.checked)}
+                        className="h-3.5 w-3.5 rounded border-cyan-500 text-cyan-500 accent-cyan-500 cursor-pointer"
+                      />
+                      <span>إرسال إشعار بريدي للعميل عند إضافة الرصيد (من support@gxstore.me)</span>
+                    </label>
+                  )}
                   <Button className="bg-cyan-500 hover:bg-cyan-400 text-black w-full"
                     onClick={() => adjust.mutate()} disabled={adjust.isPending}>
                     {adjust.isPending ? "جارٍ التطبيق…" : "تطبيق التعديل"}
@@ -793,6 +825,7 @@ function PreRegistrationCreditDialog({
   const [coins, setCoins] = useState("");
   const [xp, setXp] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [sendEmail, setSendEmail] = useState(true);
 
   const cleanEmail = email.trim().toLowerCase();
   const isRegistered = useMemo(() => {
@@ -822,6 +855,29 @@ function PreRegistrationCreditDialog({
       if (res && res.ok === false) {
         throw new Error(res.message || "فشلت العملية");
       }
+
+      if (sendEmail) {
+        try {
+          const emailRes = await sendCreditNotificationEmail({
+            data: {
+              email: cleanEmail,
+              amountJod: amt,
+              reason: reason.trim() || "رصيد مسبق قبل التسجيل",
+              isRegistered,
+              username: res?.username,
+              coins: c,
+              xp: x,
+            },
+          });
+          if (emailRes?.ok) {
+            toast.success("تم إرسال إشعار الرصيد للعميل عبر البريد (support@gxstore.me) بنجاح!");
+          }
+        } catch (mailErr) {
+          console.error("Email send failed:", mailErr);
+          toast.warning("تم حفظ الرصيد، لكن تعذر إرسال الإيميل للعميل");
+        }
+      }
+
       return res;
     },
     onSuccess: (res) => {
@@ -994,6 +1050,24 @@ function PreRegistrationCreditDialog({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Email notification toggle */}
+          <div className="flex items-center justify-between p-2.5 rounded-lg border border-cyan-500/20 bg-cyan-500/5">
+            <div className="flex items-center gap-2">
+              <Mail size={15} className="text-cyan-400" />
+              <div>
+                <div className="text-xs font-semibold text-foreground">إرسال إشعار بريدي فوري للعميل</div>
+                <div className="text-[11px] text-muted-foreground">المرسل الرسمي: support@gxstore.me</div>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              id="sendEmailCheck"
+              checked={sendEmail}
+              onChange={(e) => setSendEmail(e.target.checked)}
+              className="h-4 w-4 rounded border-cyan-500 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer"
+            />
           </div>
         </div>
 
