@@ -359,6 +359,57 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
     ? t("home.cat_title")
     : (lang === "en" ? (data.title_en || data.title) : data.title);
 
+  const CATEGORY_TAGLINES: Record<string, { ar: string; en: string }> = {
+    subscriptions: {
+      ar: "حسابات وباقات اشتراك رسمية",
+      en: "Official Accounts & Subscriptions",
+    },
+    games: {
+      ar: "ألعاب PC والكونسول الأصلية",
+      en: "Original PC & Console Games",
+    },
+    "pc-games": {
+      ar: "ألعاب PC والكونسول الأصلية",
+      en: "Original PC & Console Games",
+    },
+    design: {
+      ar: "برامج وتفعيلات التصميم الأصلية",
+      en: "Design Software & Official Keys",
+    },
+    apps: {
+      ar: "برامج وتفعيلات التصميم الأصلية",
+      en: "Design Software & Official Keys",
+    },
+    software: {
+      ar: "برامج وتفعيلات التصميم الأصلية",
+      en: "Design Software & Official Keys",
+    },
+    "social-media": {
+      ar: "خدمات المتابعين والتفاعل الحقيقي",
+      en: "Real Followers & Engagement",
+    },
+    social: {
+      ar: "خدمات المتابعين والتفاعل الحقيقي",
+      en: "Real Followers & Engagement",
+    },
+    "gift-cards": {
+      ar: "بطاقات شحن رقمية وتسليم فوري",
+      en: "Digital Gift Cards & Instant Top-ups",
+    },
+    cards: {
+      ar: "بطاقات شحن رقمية وتسليم فوري",
+      en: "Digital Gift Cards & Instant Top-ups",
+    },
+    products: {
+      ar: "عرض الكتالوج الكامل والعروض ←",
+      en: "View Full Store Catalog & Deals →",
+    },
+    all: {
+      ar: "عرض الكتالوج الكامل والعروض ←",
+      en: "View Full Store Catalog & Deals →",
+    },
+  };
+
   return (
     <section className="section" id="categories" style={{ paddingTop: 32, paddingBottom: 32 }}>
       <div className="wrap">
@@ -374,18 +425,28 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
         <div className="cat-grid-big">
           {links.map((c0) => {
             const theme = getCategoryTheme(c0.slug);
-            const name = lang === "en"
+            let name = lang === "en"
               ? (c0.nameEn || c0._o_name || c0.nameAr)
               : (c0._o_name || c0.nameAr || c0.nameEn);
+
+            if (c0.slug === "products" || c0.slug === "all" || name === "عرض الكل" || name === "View All") {
+              name = ar ? "جميع المنتجات" : "All Products";
+            }
+
             const accent = c0._o_accent || theme.accent;
             const glow = theme.glow;
             const ambient = theme.ambient;
+            const subtext = (ar ? CATEGORY_TAGLINES[c0.slug]?.ar : CATEGORY_TAGLINES[c0.slug]?.en)
+              || c0._o_desc
+              || (ar ? c0.descriptionAr || "تصفح المنتجات والعروض" : c0.descriptionEn || "Browse Products & Deals");
+
+            const isFeaturedAll = c0.slug === "products" || c0.slug === "all";
 
             return (
               <Link
                 key={c0.slug}
                 to={getCategoryLink(c0.slug) as never}
-                className="cat-card-big"
+                className={`cat-card-big ${isFeaturedAll ? "cat-card-featured-all" : ""}`}
                 aria-label={`${ar ? "قسم" : "Category"} ${name} - GX Store`}
                 style={{
                   ["--accent" as string]: accent,
@@ -407,6 +468,7 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
 
                   <div className="cat-card-bottom-row">
                     <div className="cname-modern">{name}</div>
+                    <div className="cat-sub-text">{subtext}</div>
                   </div>
                 </div>
 

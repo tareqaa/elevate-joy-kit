@@ -49,7 +49,7 @@ export function getCategoryTheme(slug: string): CategoryTheme {
 
     case "products":
     case "all":
-      return { glow: "rgba(255, 56, 92, 0.45)", ambient: "rgba(255, 56, 92, 0.15)", accent: "#ff385c" };
+      return { glow: "rgba(0, 229, 255, 0.65)", ambient: "rgba(0, 112, 240, 0.35)", accent: "#00e5ff" };
 
     // Specific sub-categories
     case "canva":
@@ -336,24 +336,26 @@ export function GiftCardCatIcon({ size = 40 }: { size?: number }) {
   );
 }
 
-/** 8. All Products: 4-Diamond Sparkle Constellation (The praised catalog grid) */
+/** 8. All Products: Shopping Cart in Store Cyan/Blue */
 export function AllProductsCatIcon({ size = 40 }: { size?: number }) {
   return (
     <svg viewBox="0 0 40 40" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
       <defs>
-        <linearGradient id="allG" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fb7185" />
-          <stop offset="100%" stopColor="#e11d48" />
+        <linearGradient id="allStoreG" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#0070f3" />
+          <stop offset="100%" stopColor="#00e5ff" />
         </linearGradient>
       </defs>
-      <rect width="40" height="40" rx="12" fill="url(#allG)" />
-      {/* 4 Sparkling Diamond Tiles */}
-      <rect x="9" y="9" width="9.5" height="9.5" rx="3" fill="#ffffff" />
-      <rect x="21.5" y="9" width="9.5" height="9.5" rx="3" fill="#ffffff" fillOpacity="0.75" />
-      <rect x="9" y="21.5" width="9.5" height="9.5" rx="3" fill="#ffffff" fillOpacity="0.75" />
-      <rect x="21.5" y="21.5" width="9.5" height="9.5" rx="3" fill="#ffffff" />
-      {/* Center 4-Point Star Sparkle */}
-      <path d="M20 14.5l1 4.5 4.5 1-4.5 1-1 4.5-1-4.5-4.5-1 4.5-1 1-4.5z" fill="#ffffff" />
+      <rect className="all-products-cat-rect" width="40" height="40" rx="12" fill="url(#allStoreG)" />
+      <path
+        d="M10.5 12.5h3.2l2.3 11c.15.7.75 1.2 1.45 1.2h10.8c.7 0 1.3-.5 1.45-1.2l1.6-7.8H15"
+        stroke="#ffffff"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="18.5" cy="28.5" r="1.8" fill="#ffffff" />
+      <circle cx="27.5" cy="28.5" r="1.8" fill="#ffffff" />
     </svg>
   );
 }

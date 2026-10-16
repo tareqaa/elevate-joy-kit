@@ -5474,6 +5474,82 @@ html[dir="ltr"] .cat-card-big:hover .arrow-ic {
   transform: scale(1.15) !important;
 }
 
+/* ========================================================
+   FEATURED "ALL PRODUCTS" (جميع المنتجات) CARD STYLING
+   Store theme cyan/blue electric gradient + glow (Reference UI)
+   ======================================================== */
+.cat-card-big.cat-card-featured-all {
+  background: linear-gradient(135deg, #0052cc 0%, #0070f3 48%, #00b4d8 100%) !important;
+  border: 1px solid rgba(0, 229, 255, 0.75) !important;
+  box-shadow: 
+    0 16px 40px -10px rgba(0, 112, 240, 0.65), 
+    0 0 32px -4px rgba(0, 229, 255, 0.45), 
+    inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+}
+
+.cat-card-big.cat-card-featured-all::after {
+  display: none !important;
+}
+
+.cat-card-big.cat-card-featured-all:hover {
+  background: linear-gradient(135deg, #005be3 0%, #007dfc 48%, #00e5ff 100%) !important;
+  border-color: #ffffff !important;
+  transform: translateY(-7px) scale(1.015) !important;
+  box-shadow: 
+    0 24px 50px -10px rgba(0, 112, 240, 0.85), 
+    0 0 45px rgba(0, 229, 255, 0.7), 
+    inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+}
+
+.cat-card-big.cat-card-featured-all .cat-ic {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+.cat-card-big.cat-card-featured-all .all-products-cat-rect {
+  fill: rgba(255, 255, 255, 0.22) !important;
+}
+
+.cat-card-big.cat-card-featured-all:hover .cat-ic {
+  background: rgba(255, 255, 255, 0.28) !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 22px rgba(255, 255, 255, 0.5) !important;
+}
+
+.cat-card-big.cat-card-featured-all .cname-modern {
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35) !important;
+}
+
+.cat-card-big.cat-card-featured-all .cat-sub-text {
+  color: #e0f2fe !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2) !important;
+  opacity: 0.95;
+}
+
+.cat-card-big.cat-card-featured-all .cat-explore-pill,
+.cat-card-big.cat-card-featured-all .carrow-circle {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  color: #ffffff !important;
+}
+
+.cat-card-big.cat-card-featured-all:hover .cat-explore-pill,
+.cat-card-big.cat-card-featured-all:hover .carrow-circle {
+  background: #ffffff !important;
+  color: #0070f3 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3) !important;
+}
+
+.cat-card-big.cat-card-featured-all .cat-card-line {
+  background: linear-gradient(90deg, transparent, #ffffff, transparent) !important;
+  box-shadow: 0 0 14px #ffffff !important;
+}
+
 @media (max-width: 960px) {
   .cat-grid-big {
     grid-template-columns: repeat(2, 1fr) !important;

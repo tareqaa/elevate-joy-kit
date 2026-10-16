@@ -389,8 +389,8 @@ export const CATEGORY_LINKS: CategoryLink[] = [
   { slug: "social-media", name: "السوشال ميديا", nameEn: "Social Media", icon: "📱", type: "group", accent: "#0088ff", bg: "linear-gradient(145deg, rgba(0,136,255,0.18), rgba(0,136,255,0.04))", desc: "", descEn: "" },
   { slug: "design", name: "البرامج والتطبيقات", nameEn: "Apps & Software", icon: "🧩", type: "group", accent: "#00e5ff", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "", descEn: "" },
   { slug: "games", name: "الألعاب", nameEn: "Games", icon: "🎮", type: "group", accent: "#05df72", bg: "linear-gradient(145deg, rgba(5,223,114,0.18), rgba(5,223,114,0.04))", desc: "", descEn: "" },
-  { slug: "gift-cards", name: "بطاقات الهدايا", nameEn: "Gift Cards", icon: "🎁", type: "group", accent: "#ff2d78", bg: "linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))", desc: "", descEn: "" },
-  { slug: "products", name: "عرض الكل", nameEn: "View All", icon: "✨", type: "direct", accent: "#ff385c", bg: "linear-gradient(145deg, rgba(255,56,92,0.18), rgba(255,56,92,0.04))", desc: "", descEn: "" },
+  { slug: "gift-cards", name: "بطاقات الهدايا", nameEn: "Gift Cards", icon: "🎁", type: "group", accent: "#ff2d78", bg: "linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))", desc: "بطاقات شحن رقمية وتسليم فوري", descEn: "Digital Gift Cards & Instant Top-ups" },
+  { slug: "products", name: "جميع المنتجات", nameEn: "All Products", icon: "🛍️", type: "direct", accent: "#00e5ff", bg: "linear-gradient(135deg, rgba(0, 112, 240, 0.95), rgba(0, 229, 255, 0.9))", desc: "عرض الكتالوج الكامل والعروض", descEn: "View Full Store Catalog & Deals" },
 ];
 
 export type Subcategory = {
@@ -437,7 +437,7 @@ export const CATEGORY_META: Record<string, { name: string; icon: string; tagline
   services: { name: "الخدمات", icon: "🛠️", tagline: "حلول وخدمات رقمية، تصاميم وإعلانات احترافية سريعة وموثوقة" },
   games: { name: "الألعاب", icon: "🎮", tagline: "اشتراكات، عملات، وكروت شحن لأشهر منصات الألعاب" },
   "gift-cards": { name: "بطاقات الهدايا", icon: "🎁", tagline: "بطاقات شحن رقمية رسمية معتمدة لأشهر المنصات والمتاجر العالمية بتسليم فوري للأكواد" },
-  products: { name: "عرض الكل", icon: "✨", tagline: "كل ما يقدمه متجر GX في مكان واحد" },
+  products: { name: "جميع المنتجات", icon: "🛍️", tagline: "عرض الكتالوج الكامل وعروض متجر GX Store" },
   ai: { name: "الذكاء الاصطناعي", icon: "🤖", tagline: "أقوى أدوات الذكاء الاصطناعي بأسعار حصرية" },
 };
 
