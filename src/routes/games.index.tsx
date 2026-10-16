@@ -33,7 +33,7 @@ export const Route = createFileRoute("/games/")({
   errorComponent: ({ error }) => (
     <StoreShell>
       <main className="wrap" style={{ padding: "60px 0" }} role="alert">
-        {error.message}
+        {(error as Error).message}
       </main>
     </StoreShell>
   ),

@@ -9,7 +9,7 @@ import { trackRecentlyViewed } from "@/lib/gx/recently-viewed";
 export const Route = createFileRoute("/product/$slug")({
   staleTime: 0,
   gcTime: 5000,
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { variant?: string; plan?: string; cartId?: string; id?: string } => ({
     variant: typeof search.variant === "string" ? search.variant : undefined,
     plan: typeof search.plan === "string" ? search.plan : undefined,
     cartId: typeof search.cartId === "string" ? search.cartId : undefined,
@@ -66,7 +66,7 @@ export const Route = createFileRoute("/product/$slug")({
   },
   errorComponent: ({ error }) => (
     <StoreShell>
-      <section className="section"><div className="wrap"><h1>{error.message}</h1></div></section>
+      <section className="section"><div className="wrap"><h1>{(error as Error).message}</h1></div></section>
     </StoreShell>
   ),
   notFoundComponent: () => (

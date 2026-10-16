@@ -305,7 +305,7 @@ export const Route = createFileRoute("/category/$slug")({
     };
   },
   errorComponent: ({ error }) => (
-    <StoreShell><section className="section"><div className="wrap"><h1>{error.message}</h1></div></section></StoreShell>
+    <StoreShell><section className="section"><div className="wrap"><h1>{(error as Error).message}</h1></div></section></StoreShell>
   ),
   notFoundComponent: () => (
     <StoreShell><section className="section"><div className="wrap"><h1>404</h1></div></section></StoreShell>
