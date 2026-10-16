@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import crypto from "node:crypto";
 import { getPublicClient } from "@/lib/gx/supabase-request";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseEnv, supabaseFetch } from "@/lib/gx/supabase-request";
@@ -7,6 +8,75 @@ import type { Database } from "@/integrations/supabase/types";
 
 const SENDER_EMAIL = "GX Store <noreply@gxstore.me>";
 const OFFICIAL_LOGO_URL = "https://gxstore.me/app/assets/img/gx-logo.png";
+
+const JWT_SECRET =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.VITE_SUPABASE_ANON_KEY ||
+  "gxstore_jwt_secret_salt_2026_unbreakable_gamivo_style";
+
+/**
+ * Generates an unguessable cryptographic token for an order (Gamivo style JWT).
+ * High entropy 256-bit signature prevents brute-force guessing of order numbers.
+ */
+export function generateOrderToken(orderNumber: string, email?: string | null, orderId?: string | null): string {
+  const header = Buffer.from(JSON.stringify({ typ: "JWT", alg: "HS256" })).toString("base64url");
+  const payload = Buffer.from(
+    JSON.stringify({
+      orderNumber: (orderNumber || "").trim().toUpperCase(),
+      orderId: orderId || null,
+      email: (email || "").toLowerCase().trim(),
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 180 * 24 * 60 * 60, // 180 days validity
+    })
+  ).toString("base64url");
+
+  const signature = crypto
+    .createHmac("sha256", JWT_SECRET)
+    .update(`${header}.${payload}`)
+    .digest("base64url");
+
+  return `${header}.${payload}.${signature}`;
+}
+
+/**
+ * Validates the cryptographic order token and extracts order details.
+ */
+export function verifyOrderToken(token: string): { valid: boolean; orderNumber?: string; email?: string; error?: string } {
+  try {
+    if (!token || typeof token !== "string") {
+      return { valid: false, error: "رمز الطلب مفقود" };
+    }
+    const clean = token.trim();
+    const parts = clean.split(".");
+    if (parts.length !== 3) {
+      return { valid: false, error: "صيغة رمز الطلب غير صحيحة" };
+    }
+    const [headerB64, payloadB64, signature] = parts;
+    const expectedSig = crypto
+      .createHmac("sha256", JWT_SECRET)
+      .update(`${headerB64}.${payloadB64}`)
+      .digest("base64url");
+
+    const sigBuf = Buffer.from(signature);
+    const expBuf = Buffer.from(expectedSig);
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+      return { valid: false, error: "رمز الطلب غير صحيح أو تم التلاعب به" };
+    }
+
+    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"));
+    if (!payload.orderNumber) {
+      return { valid: false, error: "الرمز لا يحتوي على رقم طلب صالح" };
+    }
+
+    return {
+      valid: true,
+      orderNumber: payload.orderNumber,
+      email: payload.email,
+    };
+  } catch (err: any) {
+    return { valid: false, error: err?.message || "فشل التحقق من صحة الرمز" };
+  }
+}
 
 async function getResendApiKey(): Promise<string> {
   const envKey = process.env.RESEND_API_KEY;
@@ -45,6 +115,162 @@ function toAbsoluteUrl(url?: string | null): string {
   if (clean.startsWith("http://") || clean.startsWith("https://")) return clean;
   if (clean.startsWith("/")) return `https://gxstore.me${clean}`;
   return `https://gxstore.me/${clean}`;
+}
+
+/**
+ * Resolves verified PNG/JPG cover images for emails.
+ * Gmail blocks .svg files completely, so this maps all SVGs and catalog items to high-res JPG/PNG artwork.
+ */
+export function sanitizeImageForEmail(url?: string | null, name?: string, slug?: string): string {
+  const cleanName = (name || "").toLowerCase();
+  const cleanSlug = (slug || "").toLowerCase();
+
+  if (
+    cleanSlug.includes("playstation") ||
+    cleanSlug.includes("psn") ||
+    cleanName.includes("playstation") ||
+    cleanName.includes("بلايستيشن") ||
+    cleanName.includes("سوني") ||
+    cleanName.includes("psn")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/playstation.jpg";
+  }
+
+  if (
+    cleanSlug.includes("xbox") ||
+    cleanName.includes("xbox") ||
+    cleanName.includes("اكس بوكس") ||
+    cleanName.includes("game pass")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/xbox.jpg";
+  }
+
+  if (
+    cleanSlug.includes("itunes") ||
+    cleanSlug.includes("apple") ||
+    cleanName.includes("itunes") ||
+    cleanName.includes("ايتونز") ||
+    cleanName.includes("apple")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/itunes.jpg";
+  }
+
+  if (
+    cleanSlug.includes("steam") ||
+    cleanName.includes("steam") ||
+    cleanName.includes("ستيم")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/steam.jpg";
+  }
+
+  if (
+    cleanSlug.includes("pubg") ||
+    cleanName.includes("pubg") ||
+    cleanName.includes("ببجي")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/pubg-mobile.webp";
+  }
+
+  if (
+    cleanSlug.includes("freefire") ||
+    cleanSlug.includes("free-fire") ||
+    cleanName.includes("freefire") ||
+    cleanName.includes("فري فاير")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/free-fire.png";
+  }
+
+  if (
+    cleanSlug.includes("fortnite") ||
+    cleanName.includes("fortnite") ||
+    cleanName.includes("فورتنايت") ||
+    cleanName.includes("فورت نايت") ||
+    cleanName.includes("v-bucks")
+  ) {
+    return "https://gxstore.me/app/assets/img/fortnite-logo.png";
+  }
+
+  if (
+    cleanSlug.includes("roblox") ||
+    cleanName.includes("roblox") ||
+    cleanName.includes("روبلوكس") ||
+    cleanName.includes("robux")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/roblox-robux.jpg";
+  }
+
+  if (
+    cleanSlug.includes("canva") ||
+    cleanName.includes("canva") ||
+    cleanName.includes("كانفا")
+  ) {
+    return "https://gxstore.me/app/assets/img/canva-logo.png";
+  }
+
+  if (
+    cleanSlug.includes("snapchat") ||
+    cleanName.includes("snapchat") ||
+    cleanName.includes("سناب")
+  ) {
+    return "https://gxstore.me/app/assets/img/snapchat-logo.png";
+  }
+
+  if (
+    cleanSlug.includes("nordvpn") ||
+    cleanName.includes("nordvpn") ||
+    cleanName.includes("نورد")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/nordvpn.jpg";
+  }
+
+  if (
+    cleanSlug.includes("headspace") ||
+    cleanName.includes("headspace") ||
+    cleanName.includes("هيد سبيس")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/headspace.jpg";
+  }
+
+  if (
+    cleanSlug.includes("notion") ||
+    cleanName.includes("notion") ||
+    cleanName.includes("نوشن")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/notion.jpg";
+  }
+
+  if (
+    cleanSlug.includes("adobe-acrobat") ||
+    cleanName.includes("acrobat") ||
+    cleanName.includes("اكروبات")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/adobe-acrobat.jpg";
+  }
+
+  if (
+    cleanSlug.includes("adobe-express") ||
+    cleanName.includes("express")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/adobe-express.jpg";
+  }
+
+  if (
+    cleanSlug.includes("adobe") ||
+    cleanName.includes("adobe") ||
+    cleanName.includes("ادوبي")
+  ) {
+    return "https://gxstore.me/app/assets/img/adobe-cc.webp";
+  }
+
+  if (url && url.trim()) {
+    const abs = toAbsoluteUrl(url);
+    if (abs.toLowerCase().endsWith(".svg")) {
+      return "https://gxstore.me/app/assets/img/catalog/playstation.jpg";
+    }
+    return abs;
+  }
+
+  return "";
 }
 
 export type OrderItemEmail = {
@@ -146,27 +372,32 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
         minute: "2-digit",
       });
 
-      const orderUrl = `https://gxstore.me/order/${encodeURIComponent(orderNumber)}`;
+      const orderToken = generateOrderToken(orderNumber, customerEmail);
+      const orderUrl = `https://gxstore.me/order/completed?order_token=${encodeURIComponent(orderToken)}`;
       const myOrdersUrl = `https://gxstore.me/account?tab=orders`;
 
-      // Resolve product images from database if missing
+      // Resolve product images from database if missing (Guaranteed JPG/PNG for Gmail)
       const resolvedItems: OrderItemEmail[] = [];
       const supabase = getServerServiceClient();
 
       for (const it of items) {
-        let finalImage = toAbsoluteUrl(it.image);
+        let finalImage = sanitizeImageForEmail(it.image, it.name, it.slug);
         if (!finalImage) {
           try {
+            const cleanName = it.name.replace(/\(.*?\)/g, "").trim();
             const { data: prod } = await (supabase as any)
               .from("products")
               .select("image_url, icon_image_url")
-              .or(`name_ar.eq.${it.name},name_en.eq.${it.name},slug.eq.${it.slug || ""}`)
+              .or(`slug.eq.${it.slug || ""},name_ar.ilike.%${cleanName}%,name_en.ilike.%${cleanName}%`)
               .limit(1)
               .maybeSingle();
             if (prod) {
-              finalImage = toAbsoluteUrl(prod.image_url || prod.icon_image_url);
+              finalImage = sanitizeImageForEmail(prod.image_url || prod.icon_image_url, it.name, it.slug);
             }
           } catch { /* noop */ }
+        }
+        if (!finalImage) {
+          finalImage = OFFICIAL_LOGO_URL;
         }
         resolvedItems.push({
           ...it,
@@ -310,9 +541,9 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
                   : ""
               }
 
-              <!-- Big Vibrant Action CTA Button (Driffle/Gamivo Style) -->
+              <!-- Big Vibrant Action CTA Button (GX Store Theme: Neon Cyan / Blue) -->
               <div style="text-align:center;margin:28px 0 14px;">
-                <a href="${orderUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#ff7700 0%,#ff5500 100%);background-color:#ff6600;color:#ffffff;text-decoration:none;font-size:16px;font-weight:900;padding:16px 42px;border-radius:12px;box-shadow:0 8px 25px rgba(255,102,0,0.45);letter-spacing:0.5px;">
+                <a href="${orderUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#00e5ff 0%,#0070f3 100%);background-color:#00e5ff;color:#040914;text-decoration:none;font-size:16px;font-weight:900;padding:16px 42px;border-radius:14px;box-shadow:0 10px 30px rgba(0,229,255,0.45);border:1px solid rgba(0,229,255,0.8);letter-spacing:0.5px;">
                   ${isDelivered ? "استلام وتفعيل الطلب كود / حساب 🎮" : "عرض تفاصيل الطلب"}
                 </a>
               </div>
@@ -499,9 +730,9 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
                   : ""
               }
 
-              <!-- Big Vibrant Action CTA Button (Driffle/Gamivo Style) -->
+              <!-- Big Vibrant Action CTA Button (GX Store Theme: Neon Cyan / Blue) -->
               <div style="text-align:center;margin:28px 0 14px;">
-                <a href="${orderUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#ff7700 0%,#ff5500 100%);background-color:#ff6600;color:#ffffff;text-decoration:none;font-size:16px;font-weight:900;padding:16px 42px;border-radius:12px;box-shadow:0 8px 25px rgba(255,102,0,0.45);letter-spacing:0.5px;">
+                <a href="${orderUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#00e5ff 0%,#0070f3 100%);background-color:#00e5ff;color:#040914;text-decoration:none;font-size:16px;font-weight:900;padding:16px 42px;border-radius:14px;box-shadow:0 10px 30px rgba(0,229,255,0.45);border:1px solid rgba(0,229,255,0.8);letter-spacing:0.5px;">
                   ${isDelivered ? "COLLECT YOUR ORDER 🎮" : "View Order Details"}
                 </a>
               </div>
@@ -661,14 +892,89 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
   });
 
 /**
+ * Server function to fetch an order using the unguessable cryptographic token (Gamivo style order_token).
+ * Validates HMAC signature before returning delivery data.
+ */
+export const getOrderByTokenFn = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z
+      .object({
+        orderToken: z.string().trim().min(5),
+      })
+      .parse(data)
+  )
+  .handler(async ({ data }) => {
+    try {
+      const verified = verifyOrderToken(data.orderToken);
+      if (!verified.valid || !verified.orderNumber) {
+        return {
+          ok: false,
+          error: verified.error || "رمز الوصول إلى الطلب غير صالح أو منتهي الصلاحية",
+        };
+      }
+
+      const supabase = getServerServiceClient();
+      const num = verified.orderNumber.trim().toUpperCase();
+
+      // RPC call (SECURITY DEFINER)
+      const { data: rpcData, error: rpcErr } = await (supabase as any).rpc("get_order_by_number", {
+        _order_number: num,
+      });
+
+      if (!rpcErr && rpcData) {
+        return { ok: true, order: rpcData, verifiedEmail: verified.email, isLocked: false };
+      }
+
+      const { data: order, error } = await (supabase as any)
+        .from("orders")
+        .select("*")
+        .or(`order_number.eq.${num},order_number.ilike.${num}`)
+        .maybeSingle();
+
+      if (error || !order) {
+        return { ok: false, error: "لم يتم العثور على بيانات هذا الطلب" };
+      }
+
+      return { ok: true, order, verifiedEmail: verified.email, isLocked: false };
+    } catch (err: any) {
+      return { ok: false, error: err?.message || "فشل التحقق من الطلب" };
+    }
+  });
+
+/**
+ * Server function to generate a secret Gamivo-style link for any order (used by admin to copy link).
+ */
+export const getOrderSecretLinkFn = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z
+      .object({
+        orderNumber: z.string().trim().min(1),
+        customerEmail: z.string().optional(),
+        orderId: z.string().optional(),
+      })
+      .parse(data)
+  )
+  .handler(async ({ data }) => {
+    try {
+      const token = generateOrderToken(data.orderNumber, data.customerEmail || "", data.orderId);
+      const secretUrl = `https://gxstore.me/order/completed?order_token=${encodeURIComponent(token)}`;
+      return { ok: true, token, secretUrl };
+    } catch (err: any) {
+      return { ok: false, error: err?.message || "Failed to generate link" };
+    }
+  });
+
+/**
  * Server function to fetch an order by its order_number for the public /order/$orderNumber page.
- * Uses the SECURITY DEFINER RPC `get_order_by_number` so guest buyers can see their order details without RLS issues.
+ * If orderToken is provided and valid, full access is granted.
+ * If no token is provided, delivery_data is stripped so attackers cannot brute-force codes.
  */
 export const getOrderByNumberFn = createServerFn({ method: "POST" })
   .validator((data: unknown) =>
     z
       .object({
         orderNumber: z.string().trim().min(1),
+        orderToken: z.string().optional(),
       })
       .parse(data)
   )
@@ -677,27 +983,40 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
       const supabase = getServerServiceClient();
       const num = data.orderNumber.trim().toUpperCase();
 
+      const tokenCheck = data.orderToken ? verifyOrderToken(data.orderToken) : null;
+      const hasValidToken = tokenCheck?.valid && tokenCheck.orderNumber?.toUpperCase() === num;
+
       // 1. Try our SECURITY DEFINER RPC function (guarantees access for guests)
       const { data: rpcData, error: rpcErr } = await (supabase as any).rpc("get_order_by_number", {
         _order_number: num,
       });
 
-      if (!rpcErr && rpcData) {
-        return { ok: true, order: rpcData };
+      const order = (!rpcErr && rpcData) ? rpcData : (
+        await (supabase as any)
+          .from("orders")
+          .select("*")
+          .or(`order_number.eq.${num},order_number.ilike.${num}`)
+          .maybeSingle()
+      ).data;
+
+      if (!order) {
+        return { ok: false, error: "لم يتم العثور على هذا الطلب" };
       }
 
-      // 2. Direct query fallback
-      const { data: order, error } = await (supabase as any)
-        .from("orders")
-        .select("*")
-        .or(`order_number.eq.${num},order_number.ilike.${num}`)
-        .maybeSingle();
-
-      if (error || !order) {
-        return { ok: false, error: "Order not found" };
+      // If valid token passed, return full order
+      if (hasValidToken) {
+        return { ok: true, order, isLocked: false };
       }
 
-      return { ok: true, order };
+      // If accessed without token, lock delivery keys to prevent unauthorized guessing!
+      return {
+        ok: true,
+        isLocked: true,
+        order: {
+          ...order,
+          delivery_data: null, // MASKED!
+        },
+      };
     } catch (err: any) {
       return { ok: false, error: err?.message || "Failed to load order" };
     }

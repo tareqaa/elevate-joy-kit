@@ -3,16 +3,20 @@ import { useEffect, useState, useMemo } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
-import { getOrderByNumberFn } from "@/lib/gx/order-email.functions";
+import { getOrderByNumberFn, sanitizeImageForEmail } from "@/lib/gx/order-email.functions";
+import { CloudflareTurnstile } from "@/components/gx/CloudflareTurnstile";
 import { toast } from "sonner";
 import {
   CheckCircle2, XCircle, Clock, Package, KeyRound, Copy, Check, Eye, ExternalLink,
   ShieldCheck, AlertTriangle, ArrowRight, MessageSquare, Mail, User, Wallet, Sparkles, Loader2,
-  ChevronRight, ArrowLeft, Star, ShoppingBag,
+  ChevronRight, ArrowLeft, Star, ShoppingBag, Lock, ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/order/$orderNumber")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    order_token: typeof search.order_token === "string" ? search.order_token : "",
+  }),
   head: ({ params }) => ({
     meta: [
       { title: `طلب #${params.orderNumber} | متجر GX Store` },
@@ -52,25 +56,34 @@ function DiscordSvg() {
 
 function OrderDetailsPage() {
   const { orderNumber } = Route.useParams();
+  const { order_token } = Route.useSearch();
   const { lang, dir } = useLang();
   const isAr = lang === "ar";
 
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<any>(null);
+  const [isLocked, setIsLocked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [revealedKeys, setRevealedKeys] = useState<Record<number, boolean>>({});
+  const [botVerified, setBotVerified] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     setLoading(true);
     setError(null);
 
-    getOrderByNumberFn({ data: { orderNumber } })
+    getOrderByNumberFn({
+      data: {
+        orderNumber,
+        orderToken: order_token || undefined,
+      },
+    })
       .then((res) => {
         if (!mounted) return;
         if (res.ok && res.order) {
           setOrder(res.order);
+          setIsLocked(Boolean(res.isLocked));
         } else {
           setError(res.error || (isAr ? "لم يتم العثور على هذا الطلب" : "Order not found"));
         }
@@ -85,7 +98,7 @@ function OrderDetailsPage() {
     return () => {
       mounted = false;
     };
-  }, [orderNumber, isAr]);
+  }, [orderNumber, order_token, isAr]);
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -312,83 +325,134 @@ function OrderDetailsPage() {
 
             {/* Delivered Product Keys & Credentials (DRIFFLE & GAMIVO REVEAL SECTION) */}
             {order.status === "delivered" && (
-              <div className="p-6 sm:p-8 rounded-2xl bg-[#0f1422] border border-emerald-500/35 shadow-2xl">
-                
-                {/* Header */}
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-6 border-b border-white/10 pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/30 grid place-items-center text-emerald-400">
-                      <KeyRound className="w-6 h-6" />
+              isLocked ? (
+                <div className="p-8 rounded-2xl bg-[#0f1422] border border-amber-500/40 text-center space-y-5 shadow-2xl">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mx-auto text-amber-400">
+                    <Lock className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-2 max-w-lg mx-auto">
+                    <h3 className="text-xl font-black text-white">
+                      {isAr ? "🔒 هذا الطلب محمي ببروتوكول تشفير متقدم" : "🔒 This Order is Protected"}
+                    </h3>
+                    <p className="text-sm text-slate-300 leading-relaxed">
+                      {isAr
+                        ? "حرصاً على سرية بياناتك ومنع تخمين أرقام الطلبات، تم تشفير مفاتيح التفعيل الرقمية. للوصول إليها يرجى استخدام الرابط السري المشفر المرسل إلى بريدك الإلكتروني، أو تسجيل الدخول بالحساب المستخدم في الطلب."
+                        : "To protect your digital keys from brute-force guessing, access requires the encrypted token link sent to your email or logging in with the buyer account."}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                    <Link
+                      to="/auth"
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-sm shadow-md hover:brightness-110"
+                    >
+                      <User className="w-4 h-4" />
+                      <span>{isAr ? "تسجيل الدخول إلى حسابي" : "Log In"}</span>
+                    </Link>
+                    <Link
+                      to="/account"
+                      search={{ tab: "orders" }}
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/40 text-sm font-bold"
+                    >
+                      <Package className="w-4 h-4" />
+                      <span>{isAr ? "صفحة طلباتي (My Orders)" : "My Orders"}</span>
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6 sm:p-8 rounded-2xl bg-[#0f1422] border border-emerald-500/35 shadow-2xl space-y-6">
+                  
+                  {/* Header */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/30 grid place-items-center text-emerald-400">
+                        <KeyRound className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg sm:text-xl font-black text-white">
+                          {isAr ? "استلام وتفعيل المنتج (Product Activation)" : "Product Activation Items"}
+                        </h2>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {isAr
+                            ? `عدد عناصر التفعيل: ${deliveryCodes.length || 1} • اضغط إظهار ونسخ المفتاح للاستخدام.`
+                            : `Activation items: ${deliveryCodes.length || 1} • Click Reveal and Copy to use.`}
+                        </p>
+                      </div>
                     </div>
+
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      {isAr ? "مضمون 100% من GX Store" : "100% Verified Key"}
+                    </span>
+                  </div>
+
+                  {/* USER EXPLICIT REQUIREMENT: Cloudflare I'm not a robot Challenge */}
+                  {!botVerified && (
+                    <CloudflareTurnstile
+                      lang={lang}
+                      onVerified={() => {
+                        setBotVerified(true);
+                        toast.success(isAr ? "تم التحقق بنجاح من Cloudflare!" : "Cloudflare verification passed!");
+                      }}
+                    />
+                  )}
+
+                  {/* Warning note (Gamivo style) */}
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs text-amber-200/90 leading-relaxed">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <h2 className="text-lg sm:text-xl font-black text-white">
-                        {isAr ? "استلام وتفعيل المنتج (Product Activation)" : "Product Activation Items"}
-                      </h2>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {isAr
-                          ? `عدد عناصر التفعيل: ${deliveryCodes.length || 1} • اضغط إظهار ونسخ المفتاح للاستخدام.`
-                          : `Activation items: ${deliveryCodes.length || 1} • Click Reveal and Copy to use.`}
-                      </p>
+                      <strong>{isAr ? "تنبيه هام قبل الإظهار:" : "Important Notice:"}</strong>{" "}
+                      {isAr
+                        ? "يرجى التأكد من توافق المنتج مع حسابك وجهازك. بمجرد إظهار مفتاح التفعيل أو استلام بيانات الحساب، يعتبر المنتج مستلماً ومكتملاً ولا يمكن استرجاعه أو إلغاؤه بسبب الطبيعة الرقمية الفورية."
+                        : "Please ensure your account/device is compatible. Once the activation item is displayed, it cannot be refunded or returned."}
                     </div>
                   </div>
 
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    {isAr ? "مضمون 100% من GX Store" : "100% Verified Key"}
-                  </span>
-                </div>
+                  {/* Digital keys loop */}
+                  {deliveryCodes.length > 0 ? (
+                    <div className="space-y-4">
+                      {deliveryCodes.map((code, idx) => {
+                        const isRevealed = botVerified && !!revealedKeys[idx];
+                        const isAccount = code.kind === "account";
+                        const isTopup = code.kind === "topup";
+                        const isUrl = (code.value || "").startsWith("http://") || (code.value || "").startsWith("https://");
 
-                {/* Warning note (Gamivo style) */}
-                <div className="mb-5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs text-amber-200/90 leading-relaxed">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <strong>{isAr ? "تنبيه هام قبل الإظهار:" : "Important Notice:"}</strong>{" "}
-                    {isAr
-                      ? "يرجى التأكد من توافق المنتج مع حسابك وجهازك. بمجرد إظهار مفتاح التفعيل أو استلام بيانات الحساب، يعتبر المنتج مستلماً ومكتملاً ولا يمكن استرجاعه أو إلغاؤه بسبب الطبيعة الرقمية الفورية."
-                      : "Please ensure your account/device is compatible. Once the activation item is displayed, it cannot be refunded or returned."}
-                  </div>
-                </div>
-
-                {/* Digital keys loop */}
-                {deliveryCodes.length > 0 ? (
-                  <div className="space-y-4">
-                    {deliveryCodes.map((code, idx) => {
-                      const isRevealed = !!revealedKeys[idx];
-                      const isAccount = code.kind === "account";
-                      const isTopup = code.kind === "topup";
-                      const isUrl = (code.value || "").startsWith("http://") || (code.value || "").startsWith("https://");
-
-                      return (
-                        <div
-                          key={idx}
-                          className="p-5 rounded-2xl bg-black/50 border border-white/10 hover:border-cyan-500/50 transition shadow-lg"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-extrabold text-sm text-white">
-                                {code.label || (isAr ? `عنصر التفعيل #${idx + 1}` : `Activation Item #${idx + 1}`)}
-                              </span>
-                              {code.region && (
-                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">
-                                  {code.region}
+                        return (
+                          <div
+                            key={idx}
+                            className="p-5 rounded-2xl bg-black/50 border border-white/10 hover:border-cyan-500/50 transition shadow-lg"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-extrabold text-sm text-white">
+                                  {code.label || (isAr ? `عنصر التفعيل #${idx + 1}` : `Activation Item #${idx + 1}`)}
                                 </span>
+                                {code.region && (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">
+                                    {code.region}
+                                  </span>
+                                )}
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 border border-white/10 text-slate-400">
+                                  {isTopup ? (isAr ? "شحن مباشر" : "Top-up") : isAccount ? (isAr ? "حساب جاهز" : "Account") : (isAr ? "مفتاح رقمي" : "Digital Key")}
+                                </span>
+                              </div>
+                              
+                              {!isTopup && !isRevealed && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    if (!botVerified) {
+                                      toast.warning(isAr ? "يرجى تأكيد أنك لست برنامج روبوت عبر Cloudflare أولاً" : "Please complete Cloudflare verification first");
+                                      return;
+                                    }
+                                    setRevealedKeys({ ...revealedKeys, [idx]: true });
+                                  }}
+                                  className="h-8 gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs shadow-md shadow-cyan-500/25"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  {isAr ? "إظهار مفتاح التفعيل (Reveal)" : "Reveal Product"}
+                                </Button>
                               )}
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 border border-white/10 text-slate-400">
-                                {isTopup ? (isAr ? "شحن مباشر" : "Top-up") : isAccount ? (isAr ? "حساب جاهز" : "Account") : (isAr ? "مفتاح رقمي" : "Digital Key")}
-                              </span>
                             </div>
-                            
-                            {!isTopup && !isRevealed && (
-                              <Button
-                                size="sm"
-                                onClick={() => setRevealedKeys({ ...revealedKeys, [idx]: true })}
-                                className="h-8 gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-xs shadow-md shadow-orange-500/25"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                                {isAr ? "إظهار مفتاح التفعيل (Reveal)" : "Reveal Product"}
-                              </Button>
-                            )}
-                          </div>
 
                           {/* Key content */}
                           {isTopup ? (
@@ -508,7 +572,7 @@ function OrderDetailsPage() {
                   </div>
                 )}
               </div>
-            )}
+            ))}
 
             {/* If Order is Cancelled */}
             {order.status === "cancelled" && (
@@ -541,12 +605,14 @@ function OrderDetailsPage() {
                 {items.map((it: any, idx: number) => {
                   const qty = it.qty || it.quantity || 1;
                   const price = it.price != null ? `${Number(it.price).toFixed(2)} ${isAr ? "د.أ" : "JOD"}` : "";
+                  const coverImg = sanitizeImageForEmail(it.image, it.name, it.product_slug || it.slug);
+
                   return (
                     <div key={idx} className="py-4 flex flex-wrap sm:flex-nowrap items-center justify-between gap-4">
                       <div className="flex items-center gap-3.5 min-w-0">
-                        {it.image ? (
+                        {coverImg ? (
                           <img
-                            src={it.image}
+                            src={coverImg}
                             alt={it.name}
                             className="w-14 h-14 rounded-xl object-cover border border-white/10 shrink-0 bg-[#121722]"
                           />

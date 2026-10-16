@@ -16,7 +16,7 @@ import {
   CheckCircle2, XCircle, Clock, CreditCard, Package as PackageIcon,
   Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor, Mail,
 } from "lucide-react";
-import { sendOrderStatusEmail } from "@/lib/gx/order-email.functions";
+import { sendOrderStatusEmail, getOrderSecretLinkFn } from "@/lib/gx/order-email.functions";
 
 
 export const Route = createFileRoute("/_authenticated/admin/orders")({
@@ -390,8 +390,8 @@ function OrdersAdmin() {
                 const contactLabel = isTg ? "تيليجرام" : "واتساب";
                 const contactHref = o.customer_whatsapp
                   ? (isTg
-                      ? `https://t.me/${o.customer_whatsapp.replace(/^@+/, "")}`
-                      : `https://wa.me/${o.customer_whatsapp.replace(/[^\d]/g, "")}`)
+                    ? `https://t.me/${o.customer_whatsapp.replace(/^@+/, "")}`
+                    : `https://wa.me/${o.customer_whatsapp.replace(/[^\d]/g, "")}`)
                   : null;
                 return (
                   <tr key={o.id} className={`gx-adm-row ${flashIds.has(o.id) ? "new" : ""}`}>
@@ -547,6 +547,31 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
     return seeded.length > 0 ? seeded : [{ kind: "code" as const, label: "", value: "", email: "", password: "", extra: "", region: "Global" }];
   })();
   const [codes, setCodes] = useState<DeliveryCode[]>(initialCodes);
+  const [copyingLink, setCopyingLink] = useState(false);
+
+  const handleCopySecretLink = async () => {
+    try {
+      setCopyingLink(true);
+      const targetEmail = order.user_email || order.customer_email || (order.delivery_data && typeof order.delivery_data === "object" ? (order.delivery_data as any).customer_email : null);
+      const res = await getOrderSecretLinkFn({
+        data: {
+          orderNumber: order.order_number,
+          customerEmail: targetEmail || "",
+          orderId: order.id,
+        },
+      });
+      if (res.ok && res.secretUrl) {
+        await navigator.clipboard.writeText(res.secretUrl);
+        toast.success("تم نسخ الرابط السري المشفر (Gamivo Token) بنجاح! يمكنك إرساله للعميل.");
+      } else {
+        toast.error("تعذر توليد الرابط السري للطلب");
+      }
+    } catch {
+      toast.error("حدث خطأ أثناء نسخ الرابط");
+    } finally {
+      setCopyingLink(false);
+    }
+  };
 
   function addCode() { setCodes([...codes, { kind: "code", label: "", value: "", email: "", password: "", extra: "", region: "Global" }]); }
   function addAccount() { setCodes([...codes, { kind: "account", label: "", value: "", email: "", password: "", extra: "", region: "" }]); }
@@ -591,7 +616,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
     const missingRegion = codes.some((c) => (c.kind || "code") === "code" && (c.value || "").trim() && !(c.region || "").trim());
     if (missingRegion) { alert("في مفاتيح بدون ريجون. حدّد المنطقة لكل مفتاح قبل التسليم."); return; }
     if (!anyValue && !confirm("ما في أكواد/حسابات مدخلة. تأكد من تسليم الطلب بدون بيانات؟")) return;
-    
+
     setStatus("delivered");
     onSave(buildPatch("delivered"));
 
@@ -602,9 +627,10 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           name: it.name || "منتج رقمي",
           qty: it.qty || it.quantity || 1,
           price: it.price != null ? Number(it.price) : undefined,
-          image: it.image || undefined,
+          image: it.image || it.image_url || undefined,
           region: it.region || undefined,
           variant: it.variant || undefined,
+          slug: it.product_slug || it.slug || it.cartId || it.id || undefined,
         }));
 
         await sendOrderStatusEmail({
@@ -712,7 +738,19 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                 <span className="text-sm text-cyan-100/60">طلب</span>
                 <span className="font-mono text-xl text-cyan-300" dir="ltr">{order.order_number}</span>
               </div>
-              <div className="text-xs text-cyan-100/60">{new Date(order.created_at).toLocaleString("ar-EG")}</div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopySecretLink}
+                  disabled={copyingLink}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 hover:text-cyan-200 text-xs font-bold transition-all shadow-sm"
+                  title="نسخ الرابط السري المشفر بـ Token غير قابل للتخمين (Gamivo Style)"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>{copyingLink ? "جارٍ التوليد..." : "نسخ رابط الطلب السري (Token)"}</span>
+                </button>
+                <div className="text-xs text-cyan-100/60">{new Date(order.created_at).toLocaleString("ar-EG")}</div>
+              </div>
             </DialogTitle>
           </DialogHeader>
         </div>
@@ -859,11 +897,10 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                               key={r}
                               type="button"
                               onClick={() => updateCode(i, { region: r })}
-                              className={`text-[10px] px-2 py-0.5 rounded-full border font-bold transition ${
-                                (c.region || "").trim().toLowerCase() === r.toLowerCase()
-                                  ? "bg-cyan-500/25 text-cyan-200 border-cyan-400/60"
-                                  : "bg-white/5 text-cyan-100/60 border-white/10 hover:bg-white/10"
-                              }`}
+                              className={`text-[10px] px-2 py-0.5 rounded-full border font-bold transition ${(c.region || "").trim().toLowerCase() === r.toLowerCase()
+                                ? "bg-cyan-500/25 text-cyan-200 border-cyan-400/60"
+                                : "bg-white/5 text-cyan-100/60 border-white/10 hover:bg-white/10"
+                                }`}
                             >
                               {r}
                             </button>
@@ -933,22 +970,20 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                   <button
                     type="button"
                     onClick={() => setEmailLang("ar")}
-                    className={`px-3 py-1 text-xs rounded-lg font-bold transition ${
-                      emailLang === "ar"
-                        ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30"
-                        : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
-                    }`}
+                    className={`px-3 py-1 text-xs rounded-lg font-bold transition ${emailLang === "ar"
+                      ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30"
+                      : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
+                      }`}
                   >
                     العربية (AR) 🇸🇦
                   </button>
                   <button
                     type="button"
                     onClick={() => setEmailLang("en")}
-                    className={`px-3 py-1 text-xs rounded-lg font-bold transition ${
-                      emailLang === "en"
-                        ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30"
-                        : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
-                    }`}
+                    className={`px-3 py-1 text-xs rounded-lg font-bold transition ${emailLang === "en"
+                      ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30"
+                      : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
+                      }`}
                   >
                     English (EN) 🇬🇧
                   </button>
@@ -1268,17 +1303,17 @@ function parseUa(ua: string | null | undefined) {
   if (!s) return { device: "—", os: "—", browser: "—" };
   const os =
     /Windows NT 10/.test(s) ? "Windows 10/11" :
-    /Windows/.test(s) ? "Windows" :
-    /iPhone|iPad|iPod/.test(s) ? "iOS" :
-    /Android/.test(s) ? "Android" :
-    /Mac OS X/.test(s) ? "macOS" :
-    /Linux/.test(s) ? "Linux" : "غير معروف";
+      /Windows/.test(s) ? "Windows" :
+        /iPhone|iPad|iPod/.test(s) ? "iOS" :
+          /Android/.test(s) ? "Android" :
+            /Mac OS X/.test(s) ? "macOS" :
+              /Linux/.test(s) ? "Linux" : "غير معروف";
   const browser =
     /Edg\//.test(s) ? "Edge" :
-    /OPR\//.test(s) ? "Opera" :
-    /Chrome\//.test(s) ? "Chrome" :
-    /Firefox\//.test(s) ? "Firefox" :
-    /Safari\//.test(s) ? "Safari" : "غير معروف";
+      /OPR\//.test(s) ? "Opera" :
+        /Chrome\//.test(s) ? "Chrome" :
+          /Firefox\//.test(s) ? "Firefox" :
+            /Safari\//.test(s) ? "Safari" : "غير معروف";
   const device = /Mobile|Android|iPhone/.test(s) ? "هاتف" : /iPad|Tablet/.test(s) ? "تابلت" : "كمبيوتر";
   return { device, os, browser };
 }

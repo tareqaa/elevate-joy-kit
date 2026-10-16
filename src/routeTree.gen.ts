@@ -36,6 +36,7 @@ import { Route as GamesBlastRouteImport } from './routes/games.blast'
 import { Route as GamesFlippyRouteImport } from './routes/games.flippy'
 import { Route as GiftCardsSlugRouteImport } from './routes/gift-cards.$slug'
 import { Route as OrderOrderNumberRouteImport } from './routes/order.$orderNumber'
+import { Route as OrderCompletedRouteImport } from './routes/order.completed'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -59,6 +60,7 @@ import { Route as AuthenticatedAdminTournamentsRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as AuthenticatedAdminWheelRouteImport } from './routes/_authenticated/admin/wheel'
 import { Route as GamesTIdRouteImport } from './routes/games.t.$id'
+import { Route as GuestOrderCompletedRouteImport } from './routes/guest.order.completed'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -196,6 +198,11 @@ const OrderOrderNumberRoute = OrderOrderNumberRouteImport.update({
   path: '/order/$orderNumber',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrderCompletedRoute = OrderCompletedRouteImport.update({
+  id: '/order/completed',
+  path: '/order/completed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductSlugRoute = ProductSlugRouteImport.update({
   id: '/product/$slug',
   path: '/product/$slug',
@@ -327,6 +334,11 @@ const GamesTIdRoute = GamesTIdRouteImport.update({
   path: '/games/t/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuestOrderCompletedRoute = GuestOrderCompletedRouteImport.update({
+  id: '/guest/order/completed',
+  path: '/guest/order/completed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -354,6 +366,7 @@ export interface FileRoutesByFullPath {
   '/games/flippy': typeof GamesFlippyRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/order/$orderNumber': typeof OrderOrderNumberRoute
+  '/order/completed': typeof OrderCompletedRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/games/': typeof GamesIndexRoute
@@ -377,6 +390,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/wheel': typeof AuthenticatedAdminWheelRoute
   '/games/t/$id': typeof GamesTIdRoute
+  '/guest/order/completed': typeof GuestOrderCompletedRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -404,6 +418,7 @@ export interface FileRoutesByTo {
   '/games/flippy': typeof GamesFlippyRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/order/$orderNumber': typeof OrderOrderNumberRoute
+  '/order/completed': typeof OrderCompletedRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/games': typeof GamesIndexRoute
@@ -427,6 +442,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/wheel': typeof AuthenticatedAdminWheelRoute
   '/games/t/$id': typeof GamesTIdRoute
+  '/guest/order/completed': typeof GuestOrderCompletedRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -457,6 +473,7 @@ export interface FileRoutesById {
   '/games/flippy': typeof GamesFlippyRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
   '/order/$orderNumber': typeof OrderOrderNumberRoute
+  '/order/completed': typeof OrderCompletedRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/games/': typeof GamesIndexRoute
@@ -480,6 +497,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/wheel': typeof AuthenticatedAdminWheelRoute
   '/games/t/$id': typeof GamesTIdRoute
+  '/guest/order/completed': typeof GuestOrderCompletedRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -510,6 +528,7 @@ export interface FileRouteTypes {
     | '/games/flippy'
     | '/gift-cards/$slug'
     | '/order/$orderNumber'
+    | '/order/completed'
     | '/product/$slug'
     | '/u/$username'
     | '/games/'
@@ -533,6 +552,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/wheel'
     | '/games/t/$id'
+    | '/guest/order/completed'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -560,6 +580,7 @@ export interface FileRouteTypes {
     | '/games/flippy'
     | '/gift-cards/$slug'
     | '/order/$orderNumber'
+    | '/order/completed'
     | '/product/$slug'
     | '/u/$username'
     | '/games'
@@ -583,6 +604,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/wheel'
     | '/games/t/$id'
+    | '/guest/order/completed'
     | '/admin'
   id:
     | '__root__'
@@ -612,6 +634,7 @@ export interface FileRouteTypes {
     | '/games/flippy'
     | '/gift-cards/$slug'
     | '/order/$orderNumber'
+    | '/order/completed'
     | '/product/$slug'
     | '/u/$username'
     | '/games/'
@@ -635,6 +658,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/users'
     | '/_authenticated/admin/wheel'
     | '/games/t/$id'
+    | '/guest/order/completed'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -663,11 +687,13 @@ export interface RootRouteChildren {
   GamesFlippyRoute: typeof GamesFlippyRoute
   GiftCardsSlugRoute: typeof GiftCardsSlugRoute
   OrderOrderNumberRoute: typeof OrderOrderNumberRoute
+  OrderCompletedRoute: typeof OrderCompletedRoute
   ProductSlugRoute: typeof ProductSlugRoute
   UUsernameRoute: typeof UUsernameRoute
   GamesIndexRoute: typeof GamesIndexRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   GamesTIdRoute: typeof GamesTIdRoute
+  GuestOrderCompletedRoute: typeof GuestOrderCompletedRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -861,6 +887,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrderOrderNumberRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/order/completed': {
+      id: '/order/completed'
+      path: '/order/completed'
+      fullPath: '/order/completed'
+      preLoaderRoute: typeof OrderCompletedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/product/$slug': {
       id: '/product/$slug'
       path: '/product/$slug'
@@ -1022,6 +1055,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesTIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guest/order/completed': {
+      id: '/guest/order/completed'
+      path: '/guest/order/completed'
+      fullPath: '/guest/order/completed'
+      preLoaderRoute: typeof GuestOrderCompletedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1111,11 +1151,13 @@ const rootRouteChildren: RootRouteChildren = {
   GamesFlippyRoute: GamesFlippyRoute,
   GiftCardsSlugRoute: GiftCardsSlugRoute,
   OrderOrderNumberRoute: OrderOrderNumberRoute,
+  OrderCompletedRoute: OrderCompletedRoute,
   ProductSlugRoute: ProductSlugRoute,
   UUsernameRoute: UUsernameRoute,
   GamesIndexRoute: GamesIndexRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   GamesTIdRoute: GamesTIdRoute,
+  GuestOrderCompletedRoute: GuestOrderCompletedRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
