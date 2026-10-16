@@ -232,24 +232,23 @@ export function useRecentlyViewed(): {
 
     // 2. Dynamically check active products in Supabase:
     // Any product deactivated or removed from database is pruned automatically from recently viewed!
-    supabase
-      .from("products")
-      .select("slug")
-      .eq("is_active", true)
-      .then(({ data }) => {
-        if (data && Array.isArray(data)) {
-          const activeSlugs = new Set(data.map((p) => p.slug));
-          const current = getStoredRecentlyViewed();
-          const valid = current.filter((item) => activeSlugs.has(item.slug));
-          if (valid.length !== current.length) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(valid));
-            setItems(valid.length > 0 ? valid : DEFAULT_RECENT_ITEMS);
-            setHasRealHistory(valid.length > 0);
-            window.dispatchEvent(new CustomEvent("gx_recently_viewed_updated", { detail: valid }));
-          }
+    void (async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("slug")
+        .eq("is_active", true);
+      if (data && Array.isArray(data)) {
+        const activeSlugs = new Set(data.map((p) => p.slug));
+        const current = getStoredRecentlyViewed();
+        const valid = current.filter((item) => activeSlugs.has(item.slug));
+        if (valid.length !== current.length) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(valid));
+          setItems(valid.length > 0 ? valid : DEFAULT_RECENT_ITEMS);
+          setHasRealHistory(valid.length > 0);
+          window.dispatchEvent(new CustomEvent("gx_recently_viewed_updated", { detail: valid }));
         }
-      })
-      .catch(() => {});
+      }
+    })().catch(() => {});
 
     const handler = (e: Event) => {
       const custom = e as CustomEvent<RecentlyViewedItem[]>;
