@@ -41,7 +41,7 @@ const INITIAL_STOREFRONT_CATEGORIES: StorefrontCategory[] = CATEGORY_LINKS.map((
   };
 });
 
-const CATS_CACHE_KEY = "gx_storefront_root_cats_v10";
+const CATS_CACHE_KEY = "gx_storefront_root_cats_v12";
 
 const DEFAULT_BY_SLUG = new Map(CATEGORY_LINKS.map((c) => [c.slug, { accent: c.accent, bg: c.bg }]));
 
@@ -51,7 +51,9 @@ function readCachedCategories(): StorefrontCategory[] {
     const raw = localStorage.getItem(CATS_CACHE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.filter((c: StorefrontCategory) => c.slug !== "snapchat" && c.slug !== "services");
+      }
     }
   } catch (e) {}
   return INITIAL_STOREFRONT_CATEGORIES;
@@ -59,10 +61,12 @@ function readCachedCategories(): StorefrontCategory[] {
 
 /** Active root categories used by the homepage. New admin categories appear here automatically. */
 export function useStorefrontCategories(): StorefrontCategory[] {
+  const hiddenSlugs = useHiddenCategorySlugs();
   const { data } = useQuery({
     queryKey: ["storefront-root-categories"],
     initialData: readCachedCategories(),
-    staleTime: 10 * 60_000, // 10 minutes fresh
+    initialDataUpdatedAt: 0,
+    staleTime: 60_000,
     queryFn: async () => {
       const { data: rows, error } = await supabase
         .from("categories")
@@ -72,28 +76,30 @@ export function useStorefrontCategories(): StorefrontCategory[] {
         .eq("is_active", true)
         .order("sort_order");
       if (error) throw error;
-      const mapped = (rows ?? []).map((row) => {
-        const def = DEFAULT_BY_SLUG.get(row.slug);
-        const theme = getCategoryTheme(row.slug);
-        const accent = theme.accent;
+      const mapped = (rows ?? [])
+        .filter((row) => row.slug !== "snapchat" && row.slug !== "services")
+        .map((row) => {
+          const def = DEFAULT_BY_SLUG.get(row.slug);
+          const theme = getCategoryTheme(row.slug);
+          const accent = theme.accent;
 
-        const background = (row.theme_gradient && row.theme_gradient.trim() !== "" && row.theme_gradient !== "var(--surface-2)")
-          ? row.theme_gradient
-          : (def?.bg || `linear-gradient(145deg, ${accent}28, ${accent}0a)`);
+          const background = (row.theme_gradient && row.theme_gradient.trim() !== "" && row.theme_gradient !== "var(--surface-2)")
+            ? row.theme_gradient
+            : (def?.bg || `linear-gradient(145deg, ${accent}28, ${accent}0a)`);
 
-        return {
-          slug: row.slug,
-          nameAr: row.name_ar,
-          nameEn: row.name_en,
-          descriptionAr: row.description_ar ?? "",
-          descriptionEn: row.description_en ?? "",
-          icon: row.icon || "◈",
-          iconImage: row.icon_url,
-          accent,
-          background,
-          sortOrder: row.sort_order,
-        };
-      }) as StorefrontCategory[];
+          return {
+            slug: row.slug,
+            nameAr: row.name_ar,
+            nameEn: row.name_en,
+            descriptionAr: row.description_ar ?? "",
+            descriptionEn: row.description_en ?? "",
+            icon: row.icon || "◈",
+            iconImage: row.icon_url,
+            accent,
+            background,
+            sortOrder: row.sort_order,
+          };
+        }) as StorefrontCategory[];
       if (typeof window !== "undefined") {
         localStorage.setItem(CATS_CACHE_KEY, JSON.stringify(mapped));
       }
@@ -101,7 +107,10 @@ export function useStorefrontCategories(): StorefrontCategory[] {
     },
   });
 
-  return data ?? [];
+  const rawList = data ?? [];
+  return useMemo(() => {
+    return rawList.filter((c) => !hiddenSlugs.has(c.slug) && c.slug !== "snapchat" && c.slug !== "services");
+  }, [rawList, hiddenSlugs]);
 }
 
 export function useHiddenCategorySlugs(): Set<string> {
