@@ -30,6 +30,9 @@ export type SendCreditEmailInput = {
   username?: string;
   coins?: number;
   xp?: number;
+  customSubject?: string;
+  customTitle?: string;
+  customMessage?: string;
 };
 
 export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
@@ -43,26 +46,69 @@ export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
         username: z.string().optional(),
         coins: z.number().optional(),
         xp: z.number().optional(),
+        customSubject: z.string().optional(),
+        customTitle: z.string().optional(),
+        customMessage: z.string().optional(),
       })
       .parse(data)
   )
   .handler(async ({ data }) => {
     try {
-      const { email, amountJod, reason, isRegistered, username, coins, xp } = data;
+      const {
+        email,
+        amountJod,
+        reason,
+        isRegistered,
+        username,
+        coins,
+        xp,
+        customSubject,
+        customTitle,
+        customMessage,
+      } = data;
       const formattedAmount = `${Number(amountJod).toFixed(2)} د.أ`;
-      const cleanReason = (reason || "").trim() || "رصيد مخصص من إدارة المتجر";
+      const cleanReason = (reason || "").trim() || "إيداع رصيد من إدارة المتجر";
 
-      const subject = isRegistered
-        ? `💰 تم إيداع رصيد بقيمة ${formattedAmount} في محفظتك — متجر GX Store`
-        : `🎁 مبروك! لديك رصيد بقيمة ${formattedAmount} بانتظارك في متجر GX Store`;
+      // Detect if the reason is compensation, refund, or general deposit vs a gift/reward
+      const isCompensation = /تعويض|استرجاع|إرجاع|بدل|حل مشكلة|شكوى|تأخير/i.test(cleanReason);
+      const isGift = /هدية|مكافأة|فوز|مسابقة|ترقية|بونص/i.test(cleanReason);
+
+      // Determine subject: prioritize explicit custom subject, then compensation/neutral, then general
+      const subject =
+        customSubject?.trim() ||
+        (isCompensation
+          ? `إشعار إيداع رصيد بقيمة ${formattedAmount} لحسابكم (${cleanReason}) — متجر GX Store`
+          : isGift
+          ? `🎁 مكافأة رصيد بقيمة ${formattedAmount} لحسابك — متجر GX Store`
+          : isRegistered
+          ? `إشعار إيداع رصيد بقيمة ${formattedAmount} في محفظتك — متجر GX Store`
+          : `إشعار تخصيص رصيد بقيمة ${formattedAmount} لبريدك الإلكتروني — متجر GX Store`);
+
+      const headerTitle =
+        customTitle?.trim() ||
+        (isCompensation
+          ? `إشعار إيداع رصيد (${cleanReason})`
+          : isGift
+          ? "تمت إضافة رصيد مكافأة لحسابك!"
+          : isRegistered
+          ? "إشعار إيداع رصيد جديد بالمحفظة"
+          : "إشعار إيداع وتخصيص رصيد لحسابك");
 
       const actionUrl = isRegistered
         ? "https://gxstore.me"
         : "https://gxstore.me/auth";
 
       const actionButtonText = isRegistered
-        ? "🛍️ تصفح المتجر واستخدم رصيدك"
-        : "✨ إنشاء حسابك وتفعيل الرصيد فوراً";
+        ? "🛍️ تصفح المتجر والمحفظة"
+        : "✨ تسجيل الدخول وتفعيل الرصيد فوراً";
+
+      const introText =
+        customMessage?.trim() ||
+        (isCompensation
+          ? `نحيطك علماً بأنه تم إيداع رصيد مالي بقيمة <strong>${formattedAmount}</strong> لحسابكم تقديراً لتعاملكم و${cleanReason}:`
+          : isRegistered
+          ? "يسرنا إعلامك بأنه تم شحن محفظتك في متجر <strong>GX Store</strong> برصيد جديد يمكنك استخدامه مباشرة عند الشراء:"
+          : `يسعدنا إعلامك بأنه تم تخصيص وإيداع رصيد بقيمة <strong>${formattedAmount}</strong> لبريدك الإلكتروني، وهو محجوز لك حالياً وبانتظار تسجيلك بالموقع:`);
 
       const html = `
 <!DOCTYPE html>
@@ -86,7 +132,7 @@ export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
                 <span style="font-size:12px;font-weight:700;letter-spacing:1px;color:#00e5ff;text-transform:uppercase;">⚡ GX STORE</span>
               </div>
               <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:800;line-height:1.4;">
-                ${isRegistered ? "إشعار إيداع رصيد جديد بالمحفظة" : "لديك رصيد رقمي بانتظار استلامك!"}
+                ${headerTitle}
               </h1>
             </td>
           </tr>
@@ -97,11 +143,7 @@ export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
               <p style="margin:0 0 18px;font-size:15px;line-height:1.8;color:#cbd5e1;">
                 مرحباً بك${username ? ` <strong style="color:#00e5ff;">@${username}</strong>` : ""}،
                 <br>
-                ${
-                  isRegistered
-                    ? "يسرنا إعلامك بأنه تم شحن محفظتك في متجر <strong>GX Store</strong> برصيد جديد يمكنك استخدامه مباشرة عند الشراء:"
-                    : "يسعدنا إعلامك بأن إدارة متجر <strong>GX Store</strong> قامت بتخصيص رصيد محفظة لبريدك الإلكتروني، وهو محجوز لك حالياً وبانتظار تسجيلك بالموقع:"
-                }
+                ${introText}
               </p>
 
               <!-- Amount Highlight Box -->
@@ -135,10 +177,10 @@ export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
               <!-- Notice Box for Unregistered -->
               ${
                 !isRegistered
-                  ? `<div style="background:rgba(245,158,11,0.08);border:1px dashed rgba(245,158,11,0.3);border-radius:10px;padding:14px 16px;margin-bottom:24px;">
-                      <div style="font-size:13px;font-weight:700;color:#fbbf24;margin-bottom:4px;">💡 كيف تستلم الرصيد؟</div>
+                  ? `<div style="background:rgba(0,229,255,0.05);border:1px dashed rgba(0,229,255,0.3);border-radius:10px;padding:14px 16px;margin-bottom:24px;">
+                      <div style="font-size:13px;font-weight:700;color:#00e5ff;margin-bottom:4px;">💡 كيف تستفيد من الرصيد؟</div>
                       <div style="font-size:12px;color:#cbd5e1;line-height:1.6;">
-                        بكل بساطة، افتح الرابط أدناه وأنشئ حسابك في المتجر بنفس هذا البريد الإلكتروني. فور فتح حسابك ستجد الرصيد نزل في محفظتك تلقائياً وجاهزاً لشراء أي منتج أو اشتراك!
+                        تم ربط هذا الرصيد ببريدك الإلكتروني (<strong>${email}</strong>). إذا لم يكن لديك حساب مسجل بعد، يمكنك فتح حساب جديد بنفس هذا البريد لتجد الرصيد متاحاً في محفظتك تلقائياً وجاهزاً للاستخدام عند الشراء فوراً!
                       </div>
                     </div>`
                   : ""

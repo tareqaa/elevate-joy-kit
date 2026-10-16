@@ -645,7 +645,29 @@ function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: ()
                     </Button>
                   </div>
 
-                  <Input placeholder="سبب التعديل (إلزامي)" value={reason} onChange={(e) => setReason(e.target.value)} />
+                  <Input placeholder="سبب التعديل (إلزامي) — مثال: تعويض، استرجاع، مكافأة..." value={reason} onChange={(e) => setReason(e.target.value)} />
+                  <div className="flex flex-wrap gap-1">
+                    {[
+                      "تعويض عن تأخير طلب",
+                      "تعويض مشكلة منتج",
+                      "استرجاع رصيد طلب",
+                      "مكافأة ولاء",
+                      "هدية خاصة",
+                    ].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setReason(preset)}
+                        className={`px-2 py-0.5 text-[11px] rounded-md border transition ${
+                          reason === preset
+                            ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300 font-bold"
+                            : "bg-white/5 border-white/10 text-muted-foreground hover:text-white"
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
                   {user.email && (
                     <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer pt-0.5">
                       <input
@@ -1005,11 +1027,33 @@ function PreRegistrationCreditDialog({
               سبب الإيداع / ملاحظة إدارية
             </label>
             <Input
-              placeholder="مثال: تعويض طلب رقم #1234، هدية عميل، رصيد ترحيبي..."
+              placeholder="مثال: تعويض طلب رقم #1234، استرجاع رصيد، هدية..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               className="text-xs"
             />
+            <div className="flex flex-wrap gap-1 pt-0.5">
+              {[
+                "تعويض عن تأخير طلب",
+                "تعويض مشكلة منتج",
+                "استرجاع رصيد طلب",
+                "رصيد مسبق قبل التسجيل",
+                "هدية عميل",
+              ].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setReason(preset)}
+                  className={`px-2 py-0.5 text-[11px] rounded-md border transition ${
+                    reason === preset
+                      ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300 font-bold"
+                      : "bg-white/5 border-white/10 text-muted-foreground hover:text-white"
+                  }`}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Optional extra loyalty rewards toggle */}

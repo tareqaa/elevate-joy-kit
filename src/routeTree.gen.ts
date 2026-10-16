@@ -35,6 +35,7 @@ import { Route as GamesSlugRouteImport } from './routes/games.$slug'
 import { Route as GamesBlastRouteImport } from './routes/games.blast'
 import { Route as GamesFlippyRouteImport } from './routes/games.flippy'
 import { Route as GiftCardsSlugRouteImport } from './routes/gift-cards.$slug'
+import { Route as OrderOrderNumberRouteImport } from './routes/order.$orderNumber'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -188,6 +189,11 @@ const GamesFlippyRoute = GamesFlippyRouteImport.update({
 const GiftCardsSlugRoute = GiftCardsSlugRouteImport.update({
   id: '/gift-cards/$slug',
   path: '/gift-cards/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrderOrderNumberRoute = OrderOrderNumberRouteImport.update({
+  id: '/order/$orderNumber',
+  path: '/order/$orderNumber',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductSlugRoute = ProductSlugRouteImport.update({
@@ -347,6 +353,7 @@ export interface FileRoutesByFullPath {
   '/games/blast': typeof GamesBlastRoute
   '/games/flippy': typeof GamesFlippyRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
+  '/order/$orderNumber': typeof OrderOrderNumberRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/games/': typeof GamesIndexRoute
@@ -396,6 +403,7 @@ export interface FileRoutesByTo {
   '/games/blast': typeof GamesBlastRoute
   '/games/flippy': typeof GamesFlippyRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
+  '/order/$orderNumber': typeof OrderOrderNumberRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/games': typeof GamesIndexRoute
@@ -448,6 +456,7 @@ export interface FileRoutesById {
   '/games/blast': typeof GamesBlastRoute
   '/games/flippy': typeof GamesFlippyRoute
   '/gift-cards/$slug': typeof GiftCardsSlugRoute
+  '/order/$orderNumber': typeof OrderOrderNumberRoute
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/games/': typeof GamesIndexRoute
@@ -500,6 +509,7 @@ export interface FileRouteTypes {
     | '/games/blast'
     | '/games/flippy'
     | '/gift-cards/$slug'
+    | '/order/$orderNumber'
     | '/product/$slug'
     | '/u/$username'
     | '/games/'
@@ -549,6 +559,7 @@ export interface FileRouteTypes {
     | '/games/blast'
     | '/games/flippy'
     | '/gift-cards/$slug'
+    | '/order/$orderNumber'
     | '/product/$slug'
     | '/u/$username'
     | '/games'
@@ -600,6 +611,7 @@ export interface FileRouteTypes {
     | '/games/blast'
     | '/games/flippy'
     | '/gift-cards/$slug'
+    | '/order/$orderNumber'
     | '/product/$slug'
     | '/u/$username'
     | '/games/'
@@ -650,6 +662,7 @@ export interface RootRouteChildren {
   GamesBlastRoute: typeof GamesBlastRoute
   GamesFlippyRoute: typeof GamesFlippyRoute
   GiftCardsSlugRoute: typeof GiftCardsSlugRoute
+  OrderOrderNumberRoute: typeof OrderOrderNumberRoute
   ProductSlugRoute: typeof ProductSlugRoute
   UUsernameRoute: typeof UUsernameRoute
   GamesIndexRoute: typeof GamesIndexRoute
@@ -839,6 +852,13 @@ declare module '@tanstack/react-router' {
       path: '/gift-cards/$slug'
       fullPath: '/gift-cards/$slug'
       preLoaderRoute: typeof GiftCardsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/order/$orderNumber': {
+      id: '/order/$orderNumber'
+      path: '/order/$orderNumber'
+      fullPath: '/order/$orderNumber'
+      preLoaderRoute: typeof OrderOrderNumberRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/product/$slug': {
@@ -1090,6 +1110,7 @@ const rootRouteChildren: RootRouteChildren = {
   GamesBlastRoute: GamesBlastRoute,
   GamesFlippyRoute: GamesFlippyRoute,
   GiftCardsSlugRoute: GiftCardsSlugRoute,
+  OrderOrderNumberRoute: OrderOrderNumberRoute,
   ProductSlugRoute: ProductSlugRoute,
   UUsernameRoute: UUsernameRoute,
   GamesIndexRoute: GamesIndexRoute,

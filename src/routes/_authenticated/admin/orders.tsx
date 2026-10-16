@@ -14,8 +14,9 @@ import { toast } from "sonner";
 import {
   Search, Download, Volume2, VolumeX, RefreshCw, Filter, Bell,
   CheckCircle2, XCircle, Clock, CreditCard, Package as PackageIcon,
-  Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor,
+  Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor, Mail,
 } from "lucide-react";
+import { sendOrderStatusEmail } from "@/lib/gx/order-email.functions";
 
 
 export const Route = createFileRoute("/_authenticated/admin/orders")({
@@ -515,6 +516,7 @@ type DeliveryCode = { label: string; value: string; email?: string; password?: s
 function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
   const [status, setStatus] = useState(order.status);
   const [notes, setNotes] = useState(order.admin_notes ?? "");
+  const [notifyCustomer, setNotifyCustomer] = useState(true);
   const items = Array.isArray(order.items) ? order.items : [];
   const existingDelivery = order.delivery_data && typeof order.delivery_data === "object" ? order.delivery_data as { codes?: DeliveryCode[] } : {};
 
@@ -582,17 +584,83 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
   }
 
   function save() { onSave(buildPatch(status)); }
-  function markDelivered() {
+
+  async function markDelivered() {
     const anyValue = codes.some((c) => (c.value || "").trim() || (c.email || "").trim() || (c.password || "").trim() || (c.extra || "").trim());
     const missingRegion = codes.some((c) => (c.kind || "code") === "code" && (c.value || "").trim() && !(c.region || "").trim());
     if (missingRegion) { alert("في مفاتيح بدون ريجون. حدّد المنطقة لكل مفتاح قبل التسليم."); return; }
     if (!anyValue && !confirm("ما في أكواد/حسابات مدخلة. تأكد من تسليم الطلب بدون بيانات؟")) return;
-    setStatus("delivered"); onSave(buildPatch("delivered"));
+    
+    setStatus("delivered");
+    onSave(buildPatch("delivered"));
+
+    const targetEmail = order.user_email || order.customer_email || (order.delivery_data && typeof order.delivery_data === "object" ? (order.delivery_data as any).customer_email : null);
+    if (notifyCustomer && targetEmail && targetEmail.includes("@")) {
+      try {
+        const emailItems = (Array.isArray(order.items) ? order.items : []).map((it: any) => ({
+          name: it.name || "منتج رقمي",
+          qty: it.qty || it.quantity || 1,
+          price: it.price != null ? Number(it.price) : undefined,
+          image: it.image || undefined,
+          region: it.region || undefined,
+          variant: it.variant || undefined,
+        }));
+
+        await sendOrderStatusEmail({
+          data: {
+            orderNumber: order.order_number,
+            status: "delivered",
+            customerEmail: targetEmail.trim(),
+            customerName: order.customer_name || undefined,
+            totalJod: Number(order.total_jod || 0),
+            subtotalJod: Number(order.subtotal_jod ?? order.total_jod ?? 0),
+            discountJod: Number(order.discount_jod || 0),
+            paymentMethod: (order.delivery_data as any)?.payment_method || "",
+            items: emailItems,
+            notes: notes.trim() || undefined,
+            createdAt: order.created_at,
+          },
+        });
+        toast.success(`تم تسليم الطلب وإرسال إشعار للعميل (${targetEmail}) عبر noreply@gxstore.me!`);
+      } catch (err) {
+        console.error("Order delivery email failed:", err);
+        toast.warning("تم تسليم الطلب، لكن تعذر إرسال الإيميل للعميل.");
+      }
+    }
   }
 
-  function cancelOrder() {
+  async function cancelOrder() {
+    const cancelReason = prompt("سبب إلغاء الطلب (اختياري، يظهر للعميل في الإيميل وصفحة الطلب):", "") ?? "";
     if (!confirm("متأكد إنك بدك تلغي هالطلب؟")) return;
-    setStatus("cancelled"); onSave(buildPatch("cancelled"));
+    setStatus("cancelled");
+    const patch = buildPatch("cancelled");
+    if (cancelReason.trim()) {
+      patch.admin_notes = cancelReason.trim();
+    }
+    onSave(patch);
+
+    const targetEmail = order.user_email || order.customer_email || (order.delivery_data && typeof order.delivery_data === "object" ? (order.delivery_data as any).customer_email : null);
+    if (notifyCustomer && targetEmail && targetEmail.includes("@")) {
+      try {
+        await sendOrderStatusEmail({
+          data: {
+            orderNumber: order.order_number,
+            status: "cancelled",
+            customerEmail: targetEmail.trim(),
+            customerName: order.customer_name || undefined,
+            totalJod: Number(order.total_jod || 0),
+            subtotalJod: Number(order.subtotal_jod ?? order.total_jod ?? 0),
+            discountJod: Number(order.discount_jod || 0),
+            paymentMethod: (order.delivery_data as any)?.payment_method || "",
+            notes: cancelReason.trim() || undefined,
+            createdAt: order.created_at,
+          },
+        });
+        toast.success(`تم إلغاء الطلب وإرسال إشعار للعميل عبر noreply@gxstore.me.`);
+      } catch (err) {
+        console.error("Cancel email error:", err);
+      }
+    }
   }
 
   const contactHref = order.customer_whatsapp
@@ -834,7 +902,25 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           {/* Refund */}
           <RefundBlock order={order} onDone={onClose} />
 
-
+          {/* Email Notification Toggle */}
+          <div className="flex items-center justify-between p-3 rounded-xl border border-cyan-500/25 bg-cyan-500/5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 grid place-items-center text-cyan-300">
+                <Mail size={16} />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-foreground">إرسال إشعار بريدي فوري للعميل عند التسليم أو الإلغاء</div>
+                <div className="text-[11px] text-muted-foreground">المرسل الرسمي: <span className="font-mono text-cyan-400">noreply@gxstore.me</span> (يحتوي زر مباشر لصفحة الطلب)</div>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              id="notifyCustomerCheck"
+              checked={notifyCustomer}
+              onChange={(e) => setNotifyCustomer(e.target.checked)}
+              className="h-4 w-4 rounded border-cyan-500 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer"
+            />
+          </div>
 
           {/* Actions */}
           <div className="gx-od-actions flex justify-between items-center gap-2 flex-wrap border-t border-white/10 pt-4">
