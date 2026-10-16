@@ -137,7 +137,13 @@ function useUserCountry() {
   return geo;
 }
 
-export function GxProductTemplate({ product }: { product: CatalogProduct }) {
+export function GxProductTemplate({
+  product,
+  initialVariant,
+}: {
+  product: CatalogProduct;
+  initialVariant?: string;
+}) {
   const { lang, t } = useLang();
   const ar = lang === "ar";
   const { format } = useCurrency();
@@ -188,24 +194,101 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
     ];
   }, [product, ar]);
 
-  const initialVariantId = useMemo(() => {
-    if (typeof window !== "undefined") {
-      const p = new URLSearchParams(window.location.search).get("plan");
-      if (p && variants.some((v) => v.cartId === p)) return p;
+  const resolveTargetVariantId = (target?: string | null): string | null => {
+    if (!target) return null;
+    const clean = decodeURIComponent(target).trim().replace(/^#/, "");
+    if (!clean) return null;
+
+    // 1. Exact cartId match
+    const exact = variants.find((v) => v.cartId === clean);
+    if (exact) return exact.cartId;
+
+    // 2. Case-insensitive cartId match
+    const lower = clean.toLowerCase();
+    const caseMatch = variants.find((v) => v.cartId.toLowerCase() === lower);
+    if (caseMatch) return caseMatch.cartId;
+
+    // 3. Substring match (e.g. "gpu-2m" matches "gpu-2m-acct")
+    const subMatch = variants.find(
+      (v) =>
+        v.cartId.toLowerCase().includes(lower) ||
+        lower.includes(v.cartId.toLowerCase()),
+    );
+    if (subMatch) return subMatch.cartId;
+
+    // 4. Label match (e.g. "شهرين" or "2 months")
+    const labelMatch = variants.find((v) => {
+      const la = (v.labelAr || "").toLowerCase();
+      const le = (v.labelEn || "").toLowerCase();
+      return (
+        (la && (la.includes(lower) || lower.includes(la))) ||
+        (le && (le.includes(lower) || lower.includes(le)))
+      );
+    });
+    if (labelMatch) return labelMatch.cartId;
+
+    return null;
+  };
+
+  const getUrlTargetVariant = (): string | null => {
+    if (initialVariant) {
+      const match = resolveTargetVariantId(initialVariant);
+      if (match) return match;
     }
-    return variants[0]?.cartId || "";
-  }, [variants]);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const candidates = [
+        params.get("variant"),
+        params.get("cartId"),
+        params.get("plan"),
+        params.get("id"),
+        params.get("v"),
+        window.location.hash ? window.location.hash.replace("#", "") : null,
+      ];
+      for (const cand of candidates) {
+        const match = resolveTargetVariantId(cand);
+        if (match) return match;
+      }
+    }
+    return null;
+  };
+
+  const initialVariantId = useMemo(() => {
+    return getUrlTargetVariant() || variants[0]?.cartId || "";
+  }, [variants, initialVariant]);
 
   const [selectedVariantId, setSelectedVariantId] = useState<string>(initialVariantId);
 
+  // Keep state in sync with URL and initialVariant
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const p = new URLSearchParams(window.location.search).get("plan");
-      if (p && variants.some((v) => v.cartId === p)) {
-        setSelectedVariantId(p);
-      }
+    const target = getUrlTargetVariant();
+    if (target && target !== selectedVariantId) {
+      setSelectedVariantId(target);
     }
-  }, [variants]);
+
+    const handleUrlChange = () => {
+      const nextTarget = getUrlTargetVariant();
+      if (nextTarget) {
+        setSelectedVariantId(nextTarget);
+      }
+    };
+
+    window.addEventListener("popstate", handleUrlChange);
+    window.addEventListener("hashchange", handleUrlChange);
+    return () => {
+      window.removeEventListener("popstate", handleUrlChange);
+      window.removeEventListener("hashchange", handleUrlChange);
+    };
+  }, [variants, initialVariant]);
+
+  const handleSelectVariant = (cartId: string) => {
+    setSelectedVariantId(cartId);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("variant", cartId);
+      window.history.replaceState(null, "", url.toString());
+    }
+  };
   const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
   const [addedCart, setAddedCart] = useState<boolean>(false);
@@ -1324,7 +1407,7 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
                       key={v.cartId}
                       type="button"
                       className={`driffle-var-card gx-var-card ${isActive ? "is-active" : ""}`}
-                      onClick={() => setSelectedVariantId(v.cartId)}
+                      onClick={() => handleSelectVariant(v.cartId)}
                     >
                       <div className="driffle-var-top gx-var-top">
                         <span className="driffle-var-name gx-var-name">{vLabel}</span>

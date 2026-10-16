@@ -9,6 +9,12 @@ import { trackRecentlyViewed } from "@/lib/gx/recently-viewed";
 export const Route = createFileRoute("/product/$slug")({
   staleTime: 0,
   gcTime: 5000,
+  validateSearch: (search: Record<string, unknown>) => ({
+    variant: typeof search.variant === "string" ? search.variant : undefined,
+    plan: typeof search.plan === "string" ? search.plan : undefined,
+    cartId: typeof search.cartId === "string" ? search.cartId : undefined,
+    id: typeof search.id === "string" ? search.id : undefined,
+  }),
   loader: async ({ params }) => {
     const product = await getCatalogProduct({ data: { slug: params.slug, bypassCache: true } });
     if (!product) throw notFound();
@@ -73,6 +79,8 @@ export const Route = createFileRoute("/product/$slug")({
 
 function ProductPage() {
   const { product } = Route.useLoaderData();
+  const search = Route.useSearch();
+  const preselectedVariant = search.variant || search.plan || search.cartId || search.id;
 
   const variants = product?.variants || [];
   const firstVariant = variants.length > 0 ? variants[0] : null;
@@ -302,7 +310,7 @@ function ProductPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
-      <ProductTemplate product={product} />
+      <ProductTemplate product={product} initialVariant={preselectedVariant} />
     </StoreShell>
   );
 }

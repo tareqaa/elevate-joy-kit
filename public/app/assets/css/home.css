@@ -175,7 +175,7 @@
   background: linear-gradient(150deg, rgba(16, 23, 40, 0.94) 0%, rgba(10, 14, 26, 0.98) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 22px;
-  padding: 24px;
+  padding: 20px 22px;
   cursor: pointer;
   transition: all .32s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
@@ -185,7 +185,7 @@
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   text-decoration: none;
-  min-height: 160px;
+  min-height: 135px;
   box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 

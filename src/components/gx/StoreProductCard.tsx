@@ -21,6 +21,8 @@ import {
   CrewIcon,
 } from "@/lib/gx/brand-icons";
 import { VBUCKS_TIER_THEMES, CREW_TIER_THEMES } from "@/components/gx/ProductTemplates";
+import { getGiftCardLiveStartingPrice } from "@/components/gx/BestSellingGiftCardsSection";
+import { useSiteSettings } from "@/lib/gx/site-settings";
 
 export type StoreProductCardProps = {
   slug: string;
@@ -198,21 +200,30 @@ export function StoreProductCard({
   const navigate = useNavigate();
   const { isFav, toggle } = useFavorites();
   const isFavorited = isFav(slug);
+  const siteSettings = useSiteSettings();
 
   const finalCartId = cartId || slug;
-  const finalLink = link || `/product/${slug}`;
+
+  const computeFinalLink = () => {
+    if (link) {
+      if (finalCartId && finalCartId !== slug && !link.includes("?") && !link.includes("#")) {
+        return `${link}?variant=${encodeURIComponent(finalCartId)}`;
+      }
+      return link;
+    }
+    return finalCartId && finalCartId !== slug
+      ? `/product/${slug}?variant=${encodeURIComponent(finalCartId)}`
+      : `/product/${slug}`;
+  };
+
+  const finalLink = computeFinalLink();
 
   // Calculate discount percentage
   const numPrice = typeof price === "number" ? price : 0;
   const isGiftCardMasterCard = Boolean(isGiftCardMaster);
 
   const getGiftCardMinPrice = (s: string) => {
-    const l = s.toLowerCase();
-    if (l.includes("xbox")) return 1.15;
-    if (l.includes("itunes") || l.includes("apple")) return 2.22;
-    if (l.includes("google")) return 4.5;
-    if (l.includes("playstation") || l.includes("psn") || l.includes("sony")) return 7.0;
-    return 5.0;
+    return getGiftCardLiveStartingPrice(s, 5.0, siteSettings?.catalog_prices);
   };
 
   const finalDisplayPrice = numPrice > 0 ? numPrice : (isGiftCardMasterCard ? getGiftCardMinPrice(slug) : 0);

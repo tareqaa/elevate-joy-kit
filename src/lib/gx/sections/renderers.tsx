@@ -359,15 +359,6 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
     ? t("home.cat_title")
     : (lang === "en" ? (data.title_en || data.title) : data.title);
 
-  const CATEGORY_TAGLINES: Record<string, { ar: string; en: string }> = {
-    subscriptions: { ar: "حسابات وباقات اشتراك رسمية", en: "Official Subscriptions & Accounts" },
-    games: { ar: "أكواد وحسابات ألعاب أصلية", en: "Original Game Keys & Accounts" },
-    design: { ar: "برامج التصميم والتطبيقات الأصلية", en: "Design Software & Creative Apps" },
-    "social-media": { ar: "خدمات زيادة التفاعل والمتابعين", en: "Social Media Growth & Engagement" },
-    "gift-cards": { ar: "بطاقات شحن رقمية مع تسليم فوري", en: "Digital Gift Cards & Top-ups" },
-    products: { ar: "استكشف كامل عروض ومنتجات المتجر", en: "Browse All Store Products & Deals" },
-  };
-
   return (
     <section className="section" id="categories" style={{ paddingTop: 32, paddingBottom: 32 }}>
       <div className="wrap">
@@ -389,9 +380,6 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
             const accent = c0._o_accent || theme.accent;
             const glow = theme.glow;
             const ambient = theme.ambient;
-            const subtext = ar
-              ? (CATEGORY_TAGLINES[c0.slug]?.ar || "تصفح المنتجات والعروض")
-              : (CATEGORY_TAGLINES[c0.slug]?.en || "Browse Products & Deals");
 
             return (
               <Link
@@ -419,7 +407,6 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
 
                   <div className="cat-card-bottom-row">
                     <div className="cname-modern">{name}</div>
-                    <div className="cat-sub-text">{subtext}</div>
                   </div>
                 </div>
 
@@ -478,6 +465,19 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
         ? data.order
         : (hasSettingsItems ? cachedSettingsItems.map((it) => it.cartId) : DEFAULT_BESTSELLER_ORDER));
 
+  const makeBestsellerLink = (prodSlug: string, cId?: string | null) => {
+    if (!prodSlug) return "/products";
+    if (!cId || cId === prodSlug) return `/product/${prodSlug}`;
+    return `/product/${prodSlug}?variant=${encodeURIComponent(cId)}`;
+  };
+
+  const getLivePrice = (cId: string, fallbackPrice: number, fallbackOld?: number | null) => {
+    const override = siteSettings.catalog_prices?.[cId];
+    const p = typeof override?.price === "number" && override.price > 0 ? override.price : fallbackPrice;
+    const op = override && "oldPrice" in override ? (override.oldPrice ?? 0) : (fallbackOld ?? 0);
+    return { price: p, oldPrice: op };
+  };
+
   const items: FeaturedItem[] = order.map((cartId: string) => {
     // 0. Live database variant has highest priority for live price and assets
     const dbPlan = findDbPlanByCartId(cartId);
@@ -487,73 +487,80 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
     if (snap && snap.nameAr && (snap.priceJod > 0 || dbPlan)) {
       const isEn = lang === "en";
       const name = isEn ? (snap.nameEn || snap.nameAr) : (snap.nameAr || snap.nameEn);
+      const prodSlug = snap.productSlug || (dbPlan?.product ?? "product");
+      const basePrice = dbPlan && typeof dbPlan.price === "number" && dbPlan.price > 0 ? dbPlan.price : snap.priceJod;
+      const { price, oldPrice } = getLivePrice(snap.cartId, basePrice, snap.oldPriceJod);
+
       return {
         cartId: snap.cartId,
-        product: snap.productSlug || (dbPlan?.product ?? "product"),
+        product: prodSlug,
         name: name || dbPlan?.name || cartId,
         icon: snap.icon || dbPlan?.icon || "🎮",
         bg: snap.thumbBg || dbPlan?.bg || "linear-gradient(145deg,#12151e,#0b0d14)",
-        price: dbPlan && typeof dbPlan.price === "number" && dbPlan.price > 0 ? dbPlan.price : snap.priceJod,
-        oldPrice: snap.oldPriceJod || 0,
+        price,
+        oldPrice,
         imageUrl: dbPlan?.imageUrl || snap.imageUrl || null,
         iconImage: dbPlan?.iconImage || snap.iconImage || null,
         badge: snap.badge || null,
         region: dbPlan?.region || snap.region || null,
         deliveryType: dbPlan?.deliveryType || snap.deliveryType || null,
-        link: `/product/${snap.productSlug || dbPlan?.product || cartId}`,
+        link: makeBestsellerLink(prodSlug, snap.cartId),
       };
     }
 
     if (dbPlan) {
+      const { price, oldPrice } = getLivePrice(dbPlan.cartId, dbPlan.price, 0);
       return {
         cartId: dbPlan.cartId,
         product: dbPlan.product,
         name: dbPlan.name,
         icon: dbPlan.icon,
         bg: dbPlan.bg,
-        price: dbPlan.price,
-        oldPrice: 0,
+        price,
+        oldPrice,
         imageUrl: dbPlan.imageUrl,
         iconImage: dbPlan.iconImage,
         badge: null,
         region: dbPlan.region || null,
         deliveryType: dbPlan.deliveryType || null,
-        link: `/product/${dbPlan.product}`,
+        link: makeBestsellerLink(dbPlan.product, dbPlan.cartId),
       };
     }
 
     // 2. Check static plan catalog via findPlanByCartId(cartId)
     const plan = findPlanByCartId(cartId);
     if (plan) {
+      const { price, oldPrice } = getLivePrice(plan.cartId, plan.price, 0);
       return {
         cartId: plan.cartId,
         product: plan.product,
         name: plan.name,
         icon: plan.icon,
         bg: plan.bg,
-        price: plan.price,
-        oldPrice: 0,
+        price,
+        oldPrice,
         imageUrl: plan.imageUrl,
         iconImage: plan.iconImage,
         region: plan.region || null,
         deliveryType: plan.deliveryType || null,
-        link: `/product/${plan.product}`,
+        link: makeBestsellerLink(plan.product, plan.cartId),
       };
     }
 
     // 3. Check INITIAL_REAL_GAMES
     const game = INITIAL_REAL_GAMES.find((g) => g.slug === cartId);
     if (game) {
+      const { price, oldPrice } = getLivePrice(game.slug, game.base_price_jod, game.old_price_jod);
       return {
         cartId: game.slug,
         product: game.slug,
         name: lang === "en" ? (game.name_en || game.name_ar) : game.name_ar,
         icon: "🎮",
         bg: "linear-gradient(145deg,#10141f,#090c14)",
-        price: game.base_price_jod,
-        oldPrice: game.old_price_jod || 0,
+        price,
+        oldPrice,
         imageUrl: game.image_url,
-        link: `/product/${game.slug}`,
+        link: makeBestsellerLink(game.slug),
       };
     }
 
@@ -565,18 +572,20 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
     if (snap) {
       const isEn = lang === "en";
       const name = isEn ? (snap.nameEn || snap.nameAr) : (snap.nameAr || snap.nameEn);
+      const prodSlug = snap.productSlug || cartId;
+      const { price, oldPrice } = getLivePrice(snap.cartId, snap.priceJod, snap.oldPriceJod);
       return {
         cartId: snap.cartId,
-        product: snap.productSlug || "product",
+        product: prodSlug,
         name: name || cartId,
         icon: snap.icon || "🎮",
         bg: snap.thumbBg || "linear-gradient(145deg,#12151e,#0b0d14)",
-        price: snap.priceJod,
-        oldPrice: snap.oldPriceJod || 0,
+        price,
+        oldPrice,
         imageUrl: snap.imageUrl || null,
         iconImage: snap.iconImage || null,
         badge: snap.badge || null,
-        link: `/product/${snap.productSlug || cartId}`,
+        link: makeBestsellerLink(prodSlug, snap.cartId),
       };
     }
 
@@ -590,7 +599,7 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
       oldPrice: 0,
       imageUrl: null,
       iconImage: null,
-      link: `/product/${cartId}`,
+      link: makeBestsellerLink(cartId),
     };
   });
 

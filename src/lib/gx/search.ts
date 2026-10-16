@@ -606,7 +606,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
                 pack.amount ? String(pack.amount) : "crew",
                 pack.amount ? `${pack.amount} فيبوكس` : "كرو",
               ],
-              link: `/product/fortnite#${pack.id}`,
+              link: `/product/fortnite?variant=${encodeURIComponent(pack.id)}#${pack.id}`,
             };
             packItem.normalizedHaystack = buildSearchHaystack(packItem);
             items.push(packItem);
@@ -640,7 +640,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
               iconImage: p.icon_image_url || p.image_url,
               thumbBg: p.thumb_bg || "linear-gradient(145deg,#0a2540,#04101c)",
               variantLabels: ["windows", "ويندوز", "تفعيل ويندوز", "مفتاح", "key", "pro", "home", v.label_ar, v.label_en || ""],
-              link: `/product/windows#${v.cart_id || v.id}`,
+              link: `/product/windows?variant=${encodeURIComponent(v.cart_id || v.id)}#${v.cart_id || v.id}`,
             };
             variantItem.normalizedHaystack = buildSearchHaystack(variantItem);
             items.push(variantItem);
@@ -769,7 +769,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
                   p.slug, masterBrandAr, v.label_ar, v.label_en || "", regAr, regEn,
                   p.slug === "playstation" ? "بلايستيشن" : p.slug === "xbox" ? "اكسبوكس" : p.slug === "itunes" ? "ايتونز" : "قوقل بلاي",
                 ],
-                link: `/product/${p.slug}#${v.cart_id || v.id}`,
+                link: `/product/${p.slug}?variant=${encodeURIComponent(v.cart_id || v.id)}#${v.cart_id || v.id}`,
               };
 
               variantCardItem.normalizedHaystack = buildSearchHaystack(variantCardItem);
@@ -819,7 +819,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
               iconImage: p.icon_image_url || p.image_url,
               thumbBg: p.thumb_bg || p.card_gradient,
               variantLabels: [p.name_ar, p.name_en || "", v.label_ar, v.label_en || ""],
-              link: `/product/${p.slug}#${v.cart_id || v.id}`,
+              link: `/product/${p.slug}?variant=${encodeURIComponent(v.cart_id || v.id)}#${v.cart_id || v.id}`,
             };
             variantItem.normalizedHaystack = buildSearchHaystack(variantItem);
             items.push(variantItem);

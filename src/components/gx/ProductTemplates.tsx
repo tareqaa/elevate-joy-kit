@@ -635,7 +635,7 @@ export function DualPlansTemplate({ product }: { product: CatalogProduct }) {
 }
 
 /* -------------------------------------------------------- gift_card */
-export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
+export function GiftCardTemplate({ product, initialVariant }: { product: CatalogProduct; initialVariant?: string }) {
   const { lang, t } = useLang();
   const l = useLocalized(product);
   const { format } = useCurrency();
@@ -672,7 +672,20 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
     return Array.from(map.values());
   }, [l.variants, lang]);
 
-  const [selectedRegion, setSelectedRegion] = useState<string>("all");
+  const initialRegion = useMemo(() => {
+    const target = initialVariant || (typeof window !== "undefined" ? (new URLSearchParams(window.location.search).get("variant") || window.location.hash.replace("#", "")) : "");
+    if (target) {
+      const clean = target.toLowerCase();
+      for (const r of regions) {
+        if (r.code.toLowerCase() === clean || r.items.some((it) => it.cartId?.toLowerCase() === clean || it.cartId?.toLowerCase().includes(clean))) {
+          return r.code;
+        }
+      }
+    }
+    return "all";
+  }, [regions, initialVariant]);
+
+  const [selectedRegion, setSelectedRegion] = useState<string>(initialRegion);
 
   const visibleRegions = useMemo(() => {
     if (selectedRegion === "all") return regions;
@@ -799,7 +812,7 @@ export function GiftCardTemplate({ product }: { product: CatalogProduct }) {
   );
 }
 
-export function ProductTemplate({ product }: { product: CatalogProduct }) {
+export function ProductTemplate({ product, initialVariant }: { product: CatalogProduct; initialVariant?: string }) {
   // منتجات فورت نايت تبقى بقالبها المخصص (Crew + V-Bucks)
   if (product.slug === "fortnite" || product.pageTemplate === "dual_plans") {
     return <DualPlansTemplate product={product} />;
@@ -812,9 +825,9 @@ export function ProductTemplate({ product }: { product: CatalogProduct }) {
 
   // بطاقات الهدايا الرقمية تبقى بقالبها المخصص (اختيار الدول والفئات)
   if (product.pageTemplate === "gift_card") {
-    return <GiftCardTemplate product={product} />;
+    return <GiftCardTemplate product={product} initialVariant={initialVariant} />;
   }
 
   // جميع المنتجات الأخرى (Gemini, Windows, Adobe, Canva, Steam, Games, etc.) تستخدم تصميم GX Store الشامل الموحد
-  return <GxProductTemplate product={product} />;
+  return <GxProductTemplate product={product} initialVariant={initialVariant} />;
 }

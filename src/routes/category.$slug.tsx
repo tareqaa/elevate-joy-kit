@@ -1526,9 +1526,8 @@ function CategoryPage() {
             </span>
           </div>
 
-          <div className="gx-gamepoint-card-body">
-            <h3 className="gx-gamepoint-title">{name}</h3>
-            <p className="gx-gamepoint-desc">{desc}</p>
+          <div className="gx-gamepoint-card-body" style={{ minHeight: "auto", margin: "14px 0 18px" }}>
+            <h3 className="gx-gamepoint-title" style={{ minHeight: "auto", margin: 0, fontSize: 18 }}>{name}</h3>
           </div>
 
           <div className="gx-gamepoint-card-footer">
