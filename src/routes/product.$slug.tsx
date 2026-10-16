@@ -177,30 +177,7 @@ function ProductPage() {
         return;
       }
 
-      // 2. Snapchat specific handling
-      if (product.slug === "snapchat") {
-        const snapDur = planParam || "snap-6";
-        const snapMap: Record<string, { nameAr: string; nameEn: string; price: number; oldPrice: number }> = {
-          "snap-3": { nameAr: "سناب بلس — 3 أشهر", nameEn: "Snapchat+ — 3 Months", price: 5, oldPrice: 7 },
-          "snap-6": { nameAr: "سناب بلس — 6 أشهر", nameEn: "Snapchat+ — 6 Months", price: 9, oldPrice: 14 },
-          "snap-12": { nameAr: "سناب بلس — 12 شهر", nameEn: "Snapchat+ — 12 Months", price: 17, oldPrice: 26 },
-        };
-        const selectedSnap = snapMap[snapDur] || snapMap["snap-6"];
-        trackRecentlyViewed({
-          slug: "snapchat",
-          cartId: snapDur,
-          link: `/product/snapchat?plan=${snapDur}`,
-          nameAr: selectedSnap.nameAr,
-          nameEn: selectedSnap.nameEn,
-          price: selectedSnap.price,
-          oldPrice: selectedSnap.oldPrice,
-          imageUrl: "/app/assets/img/snapchat-logo.png",
-          categorySlug: "social-media",
-        });
-        return;
-      }
-
-      // 3. Adobe specific handling
+      // 2. Adobe specific handling
       if (product.slug === "adobe") {
         trackRecentlyViewed({
           slug: "adobe",

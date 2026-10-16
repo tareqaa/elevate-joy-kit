@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
-import { useRecentlyViewed } from "@/lib/gx/recently-viewed";
+import { useRecentlyViewed, KNOWN_INACTIVE_SLUGS } from "@/lib/gx/recently-viewed";
 import { useLang } from "@/lib/gx/i18n";
 import { StoreProductCard } from "@/components/gx/StoreProductCard";
 
@@ -10,7 +10,11 @@ export function RecentlyViewedSection() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const ar = lang === "ar";
 
-  if (!hasRealHistory || !items || items.length === 0) return null;
+  const validItems = (items || []).filter(
+    (item) => item && item.slug && !KNOWN_INACTIVE_SLUGS.has(item.slug) && (!item.cartId || !KNOWN_INACTIVE_SLUGS.has(item.cartId))
+  );
+
+  if (!hasRealHistory || validItems.length === 0) return null;
 
   const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
@@ -52,7 +56,7 @@ export function RecentlyViewedSection() {
 
           {/* Cards Track using the standard unified StoreProductCard */}
           <div className="gx-cards-carousel-track" ref={scrollRef}>
-            {items.map((item) => {
+            {validItems.map((item) => {
               const productLink = item.link || (item.cartId && item.cartId !== item.slug ? `/product/${item.slug}#${item.cartId}` : `/product/${item.slug}`);
               const isSpecificPack = Boolean(item.cartId && item.cartId !== item.slug) || item.price > 0;
 

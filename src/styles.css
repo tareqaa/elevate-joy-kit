@@ -958,9 +958,50 @@ input[type="number"] {
 }
 
 @media (max-width: 1024px) {
-  .driffle-layout {
-    grid-template-columns: 1fr;
-    gap: 28px;
+  .driffle-layout,
+  .gx-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .driffle-main,
+  .gx-main {
+    display: contents;
+  }
+
+  .driffle-hero-card,
+  .gx-hero-card {
+    order: 1;
+  }
+
+  .driffle-variations-box,
+  .gx-variations-box {
+    order: 2;
+  }
+
+  .driffle-sidebar,
+  .gx-sidebar {
+    order: 3;
+    position: static;
+    top: auto;
+    width: 100%;
+    margin: 0;
+  }
+
+  .driffle-notice-box,
+  .gx-notice-box {
+    order: 4;
+  }
+
+  .driffle-bundle-box,
+  .gx-bundle-box {
+    order: 5;
+  }
+
+  .driffle-desc-box,
+  .gx-desc-box {
+    order: 6;
   }
 }
 
@@ -983,7 +1024,13 @@ input[type="number"] {
 @media (max-width: 680px) {
   .driffle-hero-card {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 16px;
+  }
+
+  .driffle-poster-box {
+    max-height: 250px;
+    aspect-ratio: 16 / 9;
+    border-radius: 16px;
   }
 }
 

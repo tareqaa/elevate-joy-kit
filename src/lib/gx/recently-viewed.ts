@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface RecentlyViewedItem {
   slug: string;
@@ -18,6 +19,12 @@ export interface RecentlyViewedItem {
 
 const STORAGE_KEY = "gx_recently_viewed_v1";
 const MAX_ITEMS = 12;
+
+export const KNOWN_INACTIVE_SLUGS = new Set([
+  "snapchat",
+  "duolingo-super-12-months",
+  "duolingo",
+]);
 
 // Curated starter items if user has not browsed anything yet
 export const DEFAULT_RECENT_ITEMS: RecentlyViewedItem[] = [
@@ -149,7 +156,13 @@ export function getStoredRecentlyViewed(): RecentlyViewedItem[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item) => {
+      if (!item || !item.slug) return false;
+      if (KNOWN_INACTIVE_SLUGS.has(item.slug)) return false;
+      if (item.cartId && KNOWN_INACTIVE_SLUGS.has(item.cartId)) return false;
+      return true;
+    });
   } catch {
     return [];
   }
@@ -158,6 +171,8 @@ export function getStoredRecentlyViewed(): RecentlyViewedItem[] {
 /** Track a product view */
 export function trackRecentlyViewed(item: Omit<RecentlyViewedItem, "viewedAt">) {
   if (typeof window === "undefined" || !item.slug) return;
+  if (KNOWN_INACTIVE_SLUGS.has(item.slug)) return;
+  if (item.cartId && KNOWN_INACTIVE_SLUGS.has(item.cartId)) return;
   try {
     const itemKey = item.cartId || item.slug;
     const current = getStoredRecentlyViewed().filter((p) => {
@@ -189,20 +204,59 @@ export function useRecentlyViewed(): {
   const [hasRealHistory, setHasRealHistory] = useState(false);
 
   useEffect(() => {
-    const stored = getStoredRecentlyViewed();
-    if (stored.length > 0) {
-      setItems(stored);
+    // 1. Synchronously read from localStorage and immediately prune known inactive items
+    const rawStorage = (() => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    })();
+    const cleanStored = getStoredRecentlyViewed();
+
+    // If any inactive items were pruned, persist clean list to localStorage immediately
+    if (Array.isArray(rawStorage) && rawStorage.length !== cleanStored.length) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanStored));
+      } catch {}
+    }
+
+    if (cleanStored.length > 0) {
+      setItems(cleanStored);
       setHasRealHistory(true);
     } else {
       setItems(DEFAULT_RECENT_ITEMS);
       setHasRealHistory(false);
     }
 
+    // 2. Dynamically check active products in Supabase:
+    // Any product deactivated or removed from database is pruned automatically from recently viewed!
+    supabase
+      .from("products")
+      .select("slug")
+      .eq("is_active", true)
+      .then(({ data }) => {
+        if (data && Array.isArray(data)) {
+          const activeSlugs = new Set(data.map((p) => p.slug));
+          const current = getStoredRecentlyViewed();
+          const valid = current.filter((item) => activeSlugs.has(item.slug));
+          if (valid.length !== current.length) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(valid));
+            setItems(valid.length > 0 ? valid : DEFAULT_RECENT_ITEMS);
+            setHasRealHistory(valid.length > 0);
+            window.dispatchEvent(new CustomEvent("gx_recently_viewed_updated", { detail: valid }));
+          }
+        }
+      })
+      .catch(() => {});
+
     const handler = (e: Event) => {
       const custom = e as CustomEvent<RecentlyViewedItem[]>;
       if (custom.detail && Array.isArray(custom.detail) && custom.detail.length > 0) {
-        setItems(custom.detail);
-        setHasRealHistory(true);
+        const valid = custom.detail.filter((item) => item?.slug && !KNOWN_INACTIVE_SLUGS.has(item.slug));
+        setItems(valid);
+        setHasRealHistory(valid.length > 0);
       }
     };
 

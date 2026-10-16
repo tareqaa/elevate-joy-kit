@@ -70,13 +70,6 @@ const SITE_NAVIGATION_SCHEMA = {
     {
       "@type": "SiteNavigationElement",
       position: 4,
-      name: "اشتراك سناب بلس",
-      description: "اشتراكات وتفعيل سناب شات بلس رسمي",
-      url: "https://gxstore.me/category/snapchat",
-    },
-    {
-      "@type": "SiteNavigationElement",
-      position: 5,
       name: "شحن فورت نايت",
       description: "شحن فورت نايت في بوكس وحزم فورت نايت كرو",
       url: "https://gxstore.me/category/fortnite",

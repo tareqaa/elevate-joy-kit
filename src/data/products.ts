@@ -385,7 +385,6 @@ export type CategoryLink = {
 };
 
 export const CATEGORY_LINKS: CategoryLink[] = [
-  { slug: "snapchat", name: "سناب بلس", nameEn: "Snapchat Plus", icon: "👻", type: "direct", accent: "#ffd600", bg: "linear-gradient(145deg, rgba(255,214,0,0.18), rgba(255,214,0,0.04))", desc: "", descEn: "" },
   { slug: "subscriptions", name: "الاشتراكات", nameEn: "Subscriptions", icon: "⚡", type: "group", accent: "#8b5cf6", bg: "linear-gradient(145deg, rgba(139,92,246,0.18), rgba(139,92,246,0.04))", desc: "", descEn: "" },
   { slug: "social-media", name: "السوشال ميديا", nameEn: "Social Media", icon: "📱", type: "group", accent: "#0088ff", bg: "linear-gradient(145deg, rgba(0,136,255,0.18), rgba(0,136,255,0.04))", desc: "", descEn: "" },
   { slug: "design", name: "البرامج والتطبيقات", nameEn: "Apps & Software", icon: "🧩", type: "group", accent: "#00e5ff", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "", descEn: "" },

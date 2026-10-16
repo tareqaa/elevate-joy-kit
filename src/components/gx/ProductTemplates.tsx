@@ -344,8 +344,8 @@ function VariantCard({
           cartId={v.cartId}
           meta={{
             price: v.price,
-            name: `${product.nameAr || product.nameEn} — ${v.labelAr || v.labelEn}`,
-            product: product.slug,
+            name: `${p.nameAr || p.nameEn} — ${v.labelAr || v.labelEn}`,
+            product: p.slug,
           }}
         />
       </div>
