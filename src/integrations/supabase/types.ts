@@ -953,6 +953,65 @@ export type Database = {
         }
         Relationships: []
       }
+      paypal_payments: {
+        Row: {
+          amount_jod: number
+          amount_usd: number
+          created_at: string
+          custom_id: string | null
+          exchange_rate: number
+          id: string
+          order_id: string | null
+          order_number: string
+          paypal_capture_id: string | null
+          paypal_order_id: string
+          paypal_request_id: string | null
+          raw_details: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_jod: number
+          amount_usd: number
+          created_at?: string
+          custom_id?: string | null
+          exchange_rate: number
+          id?: string
+          order_id?: string | null
+          order_number: string
+          paypal_capture_id?: string | null
+          paypal_order_id: string
+          paypal_request_id?: string | null
+          raw_details?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_jod?: number
+          amount_usd?: number
+          created_at?: string
+          custom_id?: string | null
+          exchange_rate?: number
+          id?: string
+          order_id?: string | null
+          order_number?: string
+          paypal_capture_id?: string | null
+          paypal_order_id?: string
+          paypal_request_id?: string | null
+          raw_details?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paypal_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_boosts: {
         Row: {
           boost_type: Database["public"]["Enums"]["boost_type"]
@@ -2233,24 +2292,48 @@ export type Database = {
       admin_unblock_ip: { Args: { _ip: string }; Returns: Json }
       auto_cancel_stale_orders: { Args: never; Returns: number }
       award_badges: { Args: { _user_id: string }; Returns: undefined }
-      check_password_reset_cooldown: { Args: { _email: string }; Returns: Json }
-      create_store_order: {
-        Args: {
-          _client_total: number
-          _coins_used: number
-          _contact_type: string
-          _coupon_code: string
-          _credit_jod: number
-          _currency: string
-          _customer_name: string
-          _customer_whatsapp: string
-          _delivery_data: Json
-          _items: Json
-          _subtotal: number
-          _user_id: string
-        }
+      cancel_pending_order_and_refund: {
+        Args: { _order_number: string; _reason?: string }
         Returns: Json
       }
+      check_password_reset_cooldown: { Args: { _email: string }; Returns: Json }
+      create_store_order:
+        | {
+            Args: {
+              _client_total?: number
+              _coins_used?: number
+              _contact_type?: string
+              _coupon_code?: string
+              _credit_jod?: number
+              _currency: string
+              _customer_email?: string
+              _customer_name?: string
+              _customer_whatsapp?: string
+              _delivery_data?: Json
+              _items: Json
+              _subtotal?: number
+              _total_jod: number
+              _user_id?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _client_total?: number
+              _coins_used?: number
+              _contact_type?: string
+              _coupon_code?: string
+              _credit_jod?: number
+              _currency: string
+              _customer_name: string
+              _customer_whatsapp: string
+              _delivery_data?: Json
+              _items: Json
+              _subtotal: number
+              _user_id: string
+            }
+            Returns: Json
+          }
       generate_order_number: { Args: never; Returns: string }
       generate_ticket_number: { Args: never; Returns: string }
       get_loyalty_leaderboard: {
@@ -2266,6 +2349,10 @@ export type Database = {
         }[]
       }
       get_my_loyalty: { Args: never; Returns: Json }
+      get_order_for_paypal_checkout: {
+        Args: { _order_number: string }
+        Returns: Json
+      }
       get_public_profile: {
         Args: { _username: string }
         Returns: {
@@ -2367,6 +2454,16 @@ export type Database = {
         }
         Returns: string
       }
+      mark_order_paid_from_paypal: {
+        Args: {
+          _amount_usd: number
+          _order_number: string
+          _paypal_capture_id: string
+          _paypal_order_id: string
+          _raw_details?: Json
+        }
+        Returns: Json
+      }
       my_tournament_standing: {
         Args: { _tournament_id: string }
         Returns: Json
@@ -2377,6 +2474,17 @@ export type Database = {
         Returns: undefined
       }
       record_password_reset_request: { Args: { _email: string }; Returns: Json }
+      record_paypal_order_created: {
+        Args: {
+          _amount_usd: number
+          _exchange_rate: number
+          _order_number: string
+          _paypal_order_id: string
+          _raw_details: Json
+          _request_id: string
+        }
+        Returns: Json
+      }
       redeem_gx_coins: {
         Args: { _coins: number; _subtotal_jod: number }
         Returns: Json
