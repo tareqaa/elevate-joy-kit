@@ -2200,11 +2200,79 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_email_credits: {
+        Row: {
+          amount_jod: number
+          claimed_at: string | null
+          claimed_by_user_id: string | null
+          coins: number
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          reason: string
+          status: "pending" | "claimed" | "cancelled"
+          updated_at: string
+          xp: number
+        }
+        Insert: {
+          amount_jod: number
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          coins?: number
+          created_at?: string
+          created_by?: string | null
+          email: string
+          id?: string
+          reason?: string
+          status?: "pending" | "claimed" | "cancelled"
+          updated_at?: string
+          xp?: number
+        }
+        Update: {
+          amount_jod?: number
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          coins?: number
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          reason?: string
+          status?: "pending" | "claimed" | "cancelled"
+          updated_at?: string
+          xp?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_add_unregistered_email_credit: {
+        Args: {
+          _amount_jod: number
+          _email: string
+          _coins?: number
+          _reason?: string
+          _xp?: number
+        }
+        Returns: Json
+      }
+      admin_cancel_unregistered_email_credit: {
+        Args: {
+          _cancel_reason?: string
+          _credit_id: string
+        }
+        Returns: Json
+      }
+      claim_unregistered_credits_for_user: {
+        Args: {
+          _user_id: string
+        }
+        Returns: Json
+      }
       admin_adjust_loyalty: {
         Args: { _coins: number; _reason: string; _user_id: string; _xp: number }
         Returns: Json

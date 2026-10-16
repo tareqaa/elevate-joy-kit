@@ -298,14 +298,34 @@ function RootComponent() {
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setAuthReady(true);
+      if (session?.user?.id) {
+        supabase.rpc("claim_unregistered_credits_for_user", { _user_id: session.user.id })
+          .then((res) => {
+            if ((res.data as any)?.claimed_count > 0) {
+              queryClient.invalidateQueries();
+            }
+          })
+          .catch(() => {});
+      }
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
-      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+      if (event !== "SIGNED_OUT") {
+        queryClient.invalidateQueries();
+        if (event === "SIGNED_IN" && session?.user?.id) {
+          supabase.rpc("claim_unregistered_credits_for_user", { _user_id: session.user.id })
+            .then((res) => {
+              if ((res.data as any)?.claimed_count > 0) {
+                queryClient.invalidateQueries();
+              }
+            })
+            .catch(() => {});
+        }
+      }
     });
 
     const onAuthChanged = () => {

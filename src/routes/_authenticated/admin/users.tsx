@@ -14,7 +14,8 @@ import { toast } from "sonner";
 import {
   Users as UsersIcon, Search, ShieldCheck, ShieldOff, Package,
   RefreshCcw, Crown, Download, Coins, Wallet, Star, Copy, ExternalLink,
-  ArrowUpDown, Sparkles, Ticket, History,
+  ArrowUpDown, Sparkles, Ticket, History, UserPlus, Mail, Clock,
+  CheckCircle2, Trash2, AlertCircle,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
@@ -40,6 +41,19 @@ type UserRow = {
   orders_count: number;
 };
 
+type PendingEmailCredit = {
+  id: string;
+  email: string;
+  amount_jod: number;
+  coins: number;
+  xp: number;
+  reason: string;
+  status: "pending" | "claimed" | "cancelled";
+  claimed_by_user_id: string | null;
+  claimed_at: string | null;
+  created_at: string;
+};
+
 type SortKey = "recent" | "spent" | "orders" | "xp" | "coins" | "credit";
 
 function norm(s: string) {
@@ -53,6 +67,37 @@ function UsersAdmin() {
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [sort, setSort] = useState<SortKey>("recent");
   const [detailUser, setDetailUser] = useState<UserRow | null>(null);
+  const [showPreCreditModal, setShowPreCreditModal] = useState(false);
+
+  const pendingCreditsQ = useQuery({
+    queryKey: ["admin-pending-email-credits"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pending_email_credits")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as PendingEmailCredit[];
+    },
+  });
+
+  const cancelPreCredit = useMutation({
+    mutationFn: async (creditId: string) => {
+      const { data, error } = await supabase.rpc("admin_cancel_unregistered_email_credit", {
+        _credit_id: creditId,
+        _cancel_reason: "إلغاء يدوي من لوحة التحكم",
+      });
+      if (error) throw error;
+      const res = data as any;
+      if (res && res.ok === false) throw new Error(res.message || "تعذر إلغاء الرصيد");
+      return res;
+    },
+    onSuccess: () => {
+      toast.success("تم إلغاء الرصيد المعلق بنجاح");
+      qc.invalidateQueries({ queryKey: ["admin-pending-email-credits"] });
+    },
+    onError: (err: any) => toast.error(err.message || "فشل إلغاء الرصيد"),
+  });
 
   const usersQ = useQuery({
     queryKey: ["admin-users"],
@@ -134,6 +179,24 @@ function UsersAdmin() {
 
   const pager = usePager(filtered, 10, `${q}|${filter}|${levelFilter}|${sort}`);
 
+  const pendingCredits = pendingCreditsQ.data ?? [];
+  const pendingCount = useMemo(
+    () => pendingCredits.filter((c) => c.status === "pending").length,
+    [pendingCredits],
+  );
+  const pendingTotalJod = useMemo(
+    () => pendingCredits.filter((c) => c.status === "pending").reduce((s, c) => s + Number(c.amount_jod || 0), 0),
+    [pendingCredits],
+  );
+
+  const existingEmails = useMemo(() => {
+    const s = new Set<string>();
+    (usersQ.data ?? []).forEach((u) => {
+      if (u.email) s.add(u.email.toLowerCase().trim());
+    });
+    return s;
+  }, [usersQ.data]);
+
   const stats = useMemo(() => {
     const rows = usersQ.data ?? [];
     return {
@@ -175,8 +238,15 @@ function UsersAdmin() {
             <p className="text-xs text-muted-foreground">الحسابات، الصلاحيات، الولاء والرصيد</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => usersQ.refetch()}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            size="sm"
+            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-semibold shadow-md shadow-cyan-500/20"
+            onClick={() => setShowPreCreditModal(true)}
+          >
+            <UserPlus size={14} className="ml-1" /> إضافة رصيد لإيميل غير مسجل
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => { usersQ.refetch(); pendingCreditsQ.refetch(); }}>
             <RefreshCcw size={14} className="ml-1" /> تحديث
           </Button>
           <Button variant="outline" size="sm" onClick={exportCsv}>
@@ -185,13 +255,18 @@ function UsersAdmin() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
         <StatCard label="إجمالي المستخدمين" value={stats.total} color="cyan" />
         <StatCard label="المدراء" value={stats.admins} color="amber" />
         <StatCard label="مشترون فعليون" value={stats.buyers} color="emerald" />
         <StatCard label="إجمالي الإنفاق (د.أ)" value={stats.revenue.toFixed(2)} color="violet" />
         <StatCard label="GX Coins" value={stats.coins.toLocaleString("en-US")} color="amber" />
         <StatCard label="رصيد المتجر (د.أ)" value={stats.credit.toFixed(2)} color="cyan" />
+        <StatCard
+          label="رصيد معلق لم يسجل (د.أ)"
+          value={`${pendingTotalJod.toFixed(2)} (${pendingCount})`}
+          color="amber"
+        />
       </div>
 
       <Card>
@@ -311,7 +386,53 @@ function UsersAdmin() {
         </CardContent>
       </Card>
 
+      {/* Bottom Action Card for Unregistered Customers as requested */}
+      <div className="rounded-2xl border border-cyan-500/25 bg-gradient-to-r from-cyan-950/40 via-blue-950/20 to-transparent p-4 md:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg shadow-cyan-950/20">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/30 grid place-items-center flex-shrink-0 text-cyan-300">
+            <UserPlus size={22} />
+          </div>
+          <div>
+            <div className="font-bold text-sm md:text-base text-foreground flex items-center gap-2">
+              <span>إضافة وتخصيص رصيد لعميل مش مسجل بالموقع</span>
+              {pendingCount > 0 && (
+                <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px]">
+                  {pendingCount} رصيد معلق بانتظار التسجيل
+                </Badge>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+              تستطيع إضافة رصيد لأي إيميل حتى لو ما كان مسجل، ومجرد ما العميل يدخل الموقع ويسجل حساب (Register) بلاقي الرصيد نازل بحسابه فوراً وبشكل تلقائي.
+            </div>
+          </div>
+        </div>
+        <Button
+          className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-semibold text-xs h-10 px-4 w-full md:w-auto whitespace-nowrap shadow-md shadow-cyan-500/20"
+          onClick={() => setShowPreCreditModal(true)}
+        >
+          <UserPlus size={15} className="ml-1.5" /> إضافة رصيد لعميل غير مسجل
+        </Button>
+      </div>
+
+      {/* Pending Pre-Registration Credits Table */}
+      <PendingCreditsSection
+        credits={pendingCredits}
+        isLoading={pendingCreditsQ.isLoading}
+        onCancel={(id) => cancelPreCredit.mutate(id)}
+        isCancelling={cancelPreCredit.isPending}
+      />
+
       <UserDetailDialog user={detailUser} onClose={() => setDetailUser(null)} />
+
+      <PreRegistrationCreditDialog
+        open={showPreCreditModal}
+        onClose={() => setShowPreCreditModal(false)}
+        existingEmails={existingEmails}
+        onSuccess={() => {
+          usersQ.refetch();
+          pendingCreditsQ.refetch();
+        }}
+      />
     </div>
   );
 }
@@ -654,3 +775,414 @@ function MiniStat({ label, value, icon }: { label: string; value: number | strin
     </div>
   );
 }
+
+function PreRegistrationCreditDialog({
+  open,
+  onClose,
+  existingEmails,
+  onSuccess,
+}: {
+  open: boolean;
+  onClose: () => void;
+  existingEmails: Set<string>;
+  onSuccess: () => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [amountJod, setAmountJod] = useState("");
+  const [reason, setReason] = useState("رصيد مسبق قبل التسجيل");
+  const [coins, setCoins] = useState("");
+  const [xp, setXp] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const cleanEmail = email.trim().toLowerCase();
+  const isRegistered = useMemo(() => {
+    return cleanEmail ? existingEmails.has(cleanEmail) : false;
+  }, [cleanEmail, existingEmails]);
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      if (!cleanEmail || !cleanEmail.includes("@")) {
+        throw new Error("يرجى إدخال بريد إلكتروني صالح");
+      }
+      const amt = parseFloat(amountJod);
+      if (!amt || amt <= 0) {
+        throw new Error("يرجى إدخال مبلغ رصيد أكبر من 0 د.أ");
+      }
+      const c = parseInt(coins || "0", 10) || 0;
+      const x = parseInt(xp || "0", 10) || 0;
+      const { data, error } = await supabase.rpc("admin_add_unregistered_email_credit", {
+        _email: cleanEmail,
+        _amount_jod: amt,
+        _reason: reason.trim() || "رصيد مسبق قبل التسجيل",
+        _coins: c,
+        _xp: x,
+      });
+      if (error) throw error;
+      const res = data as any;
+      if (res && res.ok === false) {
+        throw new Error(res.message || "فشلت العملية");
+      }
+      return res;
+    },
+    onSuccess: (res) => {
+      toast.success(res?.message || "تمت إضافة وتخصيص الرصيد بنجاح!");
+      setEmail("");
+      setAmountJod("");
+      setReason("رصيد مسبق قبل التسجيل");
+      setCoins("");
+      setXp("");
+      setShowAdvanced(false);
+      onSuccess();
+      onClose();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "حدث خطأ أثناء إضافة الرصيد");
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md" dir="rtl">
+        <DialogHeader>
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 grid place-items-center text-cyan-300">
+              <UserPlus size={20} />
+            </div>
+            <div>
+              <DialogTitle className="text-base font-bold">
+                إضافة رصيد لإيميل غير مسجل
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                تخصيص رصيد محفظة ينزل تلقائياً فور قيام العميل بالتسجيل في الموقع
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-3.5 py-2">
+          {/* Email input */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+              <span>البريد الإلكتروني للعميل <span className="text-rose-400">*</span></span>
+              {cleanEmail && (
+                <span className={`text-[11px] font-normal ${isRegistered ? "text-emerald-400" : "text-amber-400"}`}>
+                  {isRegistered ? "مسجل بالموقع" : "غير مسجل حالياً"}
+                </span>
+              )}
+            </label>
+            <div className="relative">
+              <Mail size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="email"
+                placeholder="customer@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                dir="ltr"
+                className="pr-9 font-mono text-sm"
+              />
+            </div>
+
+            {/* Smart dynamic detection indicator */}
+            {cleanEmail && cleanEmail.includes("@") && (
+              <div
+                className={`p-2.5 rounded-lg border text-xs leading-relaxed flex items-start gap-2 ${
+                  isRegistered
+                    ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-200"
+                    : "bg-cyan-500/10 border-cyan-500/25 text-cyan-200"
+                }`}
+              >
+                {isRegistered ? (
+                  <>
+                    <CheckCircle2 size={15} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <strong>هذا البريد مسجل بالفعل في الموقع:</strong> ستتم إضافة الرصيد إلى محفظته الحالية مباشرة فور الضغط على تأكيد.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={15} className="text-cyan-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <strong>هذا البريد غير مسجل بعد:</strong> سيتم حفظ الرصيد كـ (رصيد معلق)، ومجرد قيام العميل بالتسجيل أو فتح حساب على الموقع سيجد الرصيد في حسابه فوراً!
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Amount input */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">
+              مبلغ الرصيد (بالدينار الأردني د.أ) <span className="text-rose-400">*</span>
+            </label>
+            <div className="relative">
+              <Wallet size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="number"
+                step="0.01"
+                min="0.1"
+                placeholder="0.00"
+                value={amountJod}
+                onChange={(e) => setAmountJod(e.target.value)}
+                dir="ltr"
+                className="pr-9 font-mono text-sm font-bold text-cyan-300"
+              />
+            </div>
+            {/* Amount presets */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {[1, 3, 5, 10, 15, 20, 50].map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setAmountJod(String(amt))}
+                  className="px-2.5 py-1 text-xs rounded-md bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-300 border border-white/10 transition"
+                >
+                  +{amt} د.أ
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Reason input */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">
+              سبب الإيداع / ملاحظة إدارية
+            </label>
+            <Input
+              placeholder="مثال: تعويض طلب رقم #1234، هدية عميل، رصيد ترحيبي..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="text-xs"
+            />
+          </div>
+
+          {/* Optional extra loyalty rewards toggle */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1"
+            >
+              <Coins size={12} />
+              {showAdvanced ? "إخفاء مكافآت الولاء الإضافية" : "+ إضافة عملات GX أو XP ترحيبية (اختياري)"}
+            </button>
+            {showAdvanced && (
+              <div className="mt-2 p-2.5 rounded-lg border border-white/10 bg-white/[0.02] grid grid-cols-2 gap-2">
+                <div>
+                  <div className="text-[10px] text-muted-foreground mb-1">عملات GX Coins إضافية</div>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={coins}
+                    onChange={(e) => setCoins(e.target.value)}
+                    dir="ltr"
+                    className="text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <div className="text-[10px] text-muted-foreground mb-1">نقاط خبرة XP إضافية</div>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={xp}
+                    onChange={(e) => setXp(e.target.value)}
+                    dir="ltr"
+                    className="text-xs font-mono"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={addMutation.isPending}>
+            إلغاء
+          </Button>
+          <Button
+            size="sm"
+            className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold"
+            onClick={() => addMutation.mutate()}
+            disabled={addMutation.isPending}
+          >
+            {addMutation.isPending ? "جارٍ الحفظ والتخصيص…" : "تأكيد وحفظ الرصيد"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PendingCreditsSection({
+  credits,
+  isLoading,
+  onCancel,
+  isCancelling,
+}: {
+  credits: PendingEmailCredit[];
+  isLoading: boolean;
+  onCancel: (id: string) => void;
+  isCancelling: boolean;
+}) {
+  const [filter, setFilter] = useState<"all" | "pending" | "claimed" | "cancelled">("all");
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    return credits.filter((c) => {
+      if (filter !== "all" && c.status !== filter) return false;
+      if (search.trim()) {
+        const s = search.toLowerCase().trim();
+        return c.email.toLowerCase().includes(s) || (c.reason || "").toLowerCase().includes(s);
+      }
+      return true;
+    });
+  }, [credits, filter, search]);
+
+  return (
+    <Card className="border-white/10 bg-gradient-to-b from-white/[0.02] to-transparent">
+      <CardHeader className="pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 grid place-items-center text-amber-300">
+              <Clock size={16} />
+            </div>
+            <div>
+              <div className="font-bold text-sm text-foreground flex items-center gap-2">
+                <span>سجل الأرصدة المعلقة قبل التسجيل</span>
+                <Badge variant="outline" className="text-[10px] font-mono">
+                  {credits.length}
+                </Badge>
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                الأرصدة المخصصة لإيميلات بانتظار قيام أصحابها بإنشاء حسابات في الموقع
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative w-48">
+              <Search size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="بحث بالإيميل أو السبب…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-8 text-xs pr-8"
+              />
+            </div>
+            <div className="flex gap-1 bg-white/5 rounded-lg p-0.5 border border-white/10">
+              {(["all", "pending", "claimed", "cancelled"] as const).map((st) => (
+                <button
+                  key={st}
+                  onClick={() => setFilter(st)}
+                  className={`px-2.5 py-1 rounded text-[11px] font-medium transition ${
+                    filter === st ? "bg-cyan-500 text-black font-semibold" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {st === "all" ? "الكل" : st === "pending" ? "معلق" : st === "claimed" ? "تم التحصيل" : "ملغى"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="text-muted-foreground border-b border-white/10 bg-white/[0.02]">
+              <tr className="text-right">
+                <th className="p-2.5 font-medium">البريد الإلكتروني</th>
+                <th className="p-2.5 font-medium">الرصيد المخصص</th>
+                <th className="p-2.5 font-medium">السبب / الملاحظة</th>
+                <th className="p-2.5 font-medium">تاريخ الإضافة</th>
+                <th className="p-2.5 font-medium">الحالة</th>
+                <th className="p-2.5 font-medium text-left">إجراء</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {isLoading && (
+                <tr>
+                  <td colSpan={6} className="p-6 text-center text-muted-foreground">
+                    جارٍ تحميل الأرصدة المعلقة…
+                  </td>
+                </tr>
+              )}
+              {!isLoading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-6 text-center text-muted-foreground">
+                    لا توجد أرصدة مطابقة
+                  </td>
+                </tr>
+              )}
+              {filtered.map((c) => {
+                return (
+                  <tr key={c.id} className="hover:bg-white/[0.02] transition">
+                    <td className="p-2.5 font-mono text-cyan-300 select-all" dir="ltr">
+                      {c.email}
+                    </td>
+                    <td className="p-2.5 font-bold text-sky-300">
+                      {Number(c.amount_jod).toFixed(2)} د.أ
+                      {(c.coins > 0 || c.xp > 0) && (
+                        <div className="text-[10px] text-muted-foreground font-normal">
+                          {c.coins > 0 ? `+${c.coins} عملة ` : ""}
+                          {c.xp > 0 ? `+${c.xp} XP` : ""}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-2.5 text-muted-foreground max-w-[200px] truncate" title={c.reason}>
+                      {c.reason || "—"}
+                    </td>
+                    <td className="p-2.5 text-muted-foreground whitespace-nowrap">
+                      {new Date(c.created_at).toLocaleDateString("ar-JO", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="p-2.5 whitespace-nowrap">
+                      {c.status === "pending" && (
+                        <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-[10px]">
+                          <Clock size={10} className="ml-1" /> معلق بانتظار التسجيل
+                        </Badge>
+                      )}
+                      {c.status === "claimed" && (
+                        <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 text-[10px]">
+                          <CheckCircle2 size={10} className="ml-1" /> تم التحصيل (سجّل العميل)
+                        </Badge>
+                      )}
+                      {c.status === "cancelled" && (
+                        <Badge variant="outline" className="text-muted-foreground text-[10px]">
+                          ملغى
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="p-2.5 text-left whitespace-nowrap">
+                      {c.status === "pending" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 h-7 text-xs px-2"
+                          onClick={() => {
+                            if (window.confirm(`هل أنت متأكد من إلغاء الرصيد المعلق (${c.amount_jod} د.أ) للإيميل: ${c.email}؟`)) {
+                              onCancel(c.id);
+                            }
+                          }}
+                          disabled={isCancelling}
+                        >
+                          <Trash2 size={12} className="ml-1" /> إلغاء
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
