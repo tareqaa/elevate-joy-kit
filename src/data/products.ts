@@ -364,8 +364,8 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
     iconImg: "/app/assets/img/catalog/headspace.svg",
     imageUrl: "/app/assets/img/catalog/headspace.png",
     thumbBg: "linear-gradient(145deg, #1e2340, #0f1122)",
-    category: "الاشتراكات",
-    categoryAr: "الاشتراكات",
+    category: "البرامج والتطبيقات",
+    categoryAr: "البرامج والتطبيقات",
     tagline: "تطبيق التأمل والنوم والتركيز الرائد عالمياً — 4 أشهر كاملة",
     description:
       "تطبيق رائد عالمياً في مجال التأمل والنوم والاسترخاء والصحة النفسية. يقدم جلسات صوتية وتمارين تنفس موجهة لتقليل التوتر وتصفية الذهن، ومقاطع صوتية تساعد على النوم العميق والاسترخاء، بالإضافة إلى موسيقى مخصصة لرفع مستوى التركيز أثناء العمل والدراسة.\n\nالمواصفات والشروط:\n• اشتراك بريميوم كامل لمدة 4 أشهر.\n• طريقة التسليم: رابط تفعيل رسمي مباشر يربط بحسابك.\n• متوافق مع هواتف آيفون وأندرويد وأجهزة الكمبيوتر والمتصفح.\n• لا يتطلب إضافة أي بطاقة بنكية للتفعيل.",
@@ -390,8 +390,8 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
     iconImg: "/app/assets/img/catalog/nordvpn.svg",
     imageUrl: "/app/assets/img/catalog/nordvpn.jpg",
     thumbBg: "linear-gradient(145deg, #0f2b5c, #071329)",
-    category: "الاشتراكات",
-    categoryAr: "الاشتراكات",
+    category: "البرامج والتطبيقات",
+    categoryAr: "البرامج والتطبيقات",
     tagline: "خدمة التصفح الآمن وحماية الخصوصية الرائدة عالمياً لـ 10 أجهزة",
     description:
       "أقوى خدمة شبكة افتراضية خاصة لحماية خصوصيتك وأمان بياناتك على الإنترنت. تمنحك تصفحاً مشفراً وسريعاً مع إمكانية تغيير موقعك الجغرافي للوصول إلى المحتوى والمواقع المفضلة، وتأمين اتصالك على شبكات الواي فاي العامة.\n\nالمواصفات والشروط:\n• اشتراك كامل لمدة 3 أشهر.\n• يدعم تشغيل حتى 10 أجهزة في الوقت نفسه.\n• متوافق مع أنظمة ويندوز، ماك، آيفون، أندرويد والشاشات الذكية.\n• تسليم فوري لحساب جاهز للاستخدام مباشرة بدون الحاجة لبطاقة دفع.",
@@ -536,12 +536,11 @@ export type Subcategory = {
 };
 
 export const SUBCATEGORIES: Record<string, Subcategory[]> = {
-  subscriptions: [
-    { slug: "headspace", product: "headspace", name: "Headspace", icon: "🧘", iconImg: "/app/assets/img/catalog/headspace.svg", bg: "linear-gradient(145deg,#1e2340,#0f1122)" },
-    { slug: "nordvpn", product: "nordvpn", name: "NordVPN", icon: "🌐", iconImg: "/app/assets/img/catalog/nordvpn.svg", bg: "linear-gradient(145deg,#0f2b5c,#071329)" },
-  ],
+  subscriptions: [],
   "social-media": [],
   design: [
+    { slug: "nordvpn", product: "nordvpn", name: "NordVPN", icon: "🌐", iconImg: "/app/assets/img/catalog/nordvpn.svg", bg: "linear-gradient(145deg,#0f2b5c,#071329)" },
+    { slug: "headspace", product: "headspace", name: "Headspace", icon: "🧘", iconImg: "/app/assets/img/catalog/headspace.svg", bg: "linear-gradient(145deg,#1e2340,#0f1122)" },
     { slug: "adobe-express", product: "adobe-express", name: "Adobe Express", icon: "🎨", iconImg: "/app/assets/img/catalog/adobe-express.svg", bg: "linear-gradient(145deg,#2b1145,#12061f)" },
     { slug: "notion-business", product: "notion-business", name: "Notion Business", icon: "📝", iconImg: "/app/assets/img/catalog/notion.svg", bg: "linear-gradient(145deg,#1f232b,#0f1115)" },
     { slug: "adobe-acrobat-standard", product: "adobe-acrobat-standard", name: "Adobe Acrobat Standard 2026", icon: "📕", iconImg: "/app/assets/img/catalog/adobe-acrobat.svg", bg: "linear-gradient(145deg,#3a000d,#1a0005)" },

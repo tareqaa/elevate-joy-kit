@@ -532,6 +532,39 @@ function CategoryPage() {
           (p.slug || "").includes("adobe") || (p.categorySlug || "") === "adobe",
       },
       {
+        id: "nordvpn",
+        nameAr: "NordVPN",
+        nameEn: "NordVPN",
+        color: "#2563eb",
+        glow: "rgba(37, 99, 235, 0.45)",
+        logoSrc: "/app/assets/img/catalog/nordvpn.svg",
+        directLink: "/product/nordvpn",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("nordvpn") || (p.nameAr || "").toLowerCase().includes("nordvpn"),
+      },
+      {
+        id: "headspace",
+        nameAr: "Headspace",
+        nameEn: "Headspace",
+        color: "#f47d15",
+        glow: "rgba(244, 125, 21, 0.45)",
+        logoSrc: "/app/assets/img/catalog/headspace.svg",
+        directLink: "/product/headspace",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("headspace") || (p.nameAr || "").toLowerCase().includes("headspace"),
+      },
+      {
+        id: "notion",
+        nameAr: "Notion",
+        nameEn: "Notion",
+        color: "#ffffff",
+        glow: "rgba(255, 255, 255, 0.4)",
+        logoSrc: "/app/assets/img/catalog/notion.svg",
+        directLink: "/product/notion-business",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("notion") || (p.nameAr || "").toLowerCase().includes("notion"),
+      },
+      {
         id: "windows",
         nameAr: "Windows",
         nameEn: "Windows",

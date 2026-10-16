@@ -389,6 +389,42 @@ export function DuolingoPlatformIcon() {
   );
 }
 
+export function NordVpnPlatformIcon() {
+  return (
+    <img
+      src="/app/assets/img/catalog/nordvpn.svg"
+      alt="NordVPN"
+      width={14}
+      height={14}
+      style={{ width: 14, height: 14, objectFit: "contain", borderRadius: 3, display: "block", flexShrink: 0 }}
+    />
+  );
+}
+
+export function HeadspacePlatformIcon() {
+  return (
+    <img
+      src="/app/assets/img/catalog/headspace.svg"
+      alt="Headspace"
+      width={14}
+      height={14}
+      style={{ width: 14, height: 14, objectFit: "contain", borderRadius: 3, display: "block", flexShrink: 0 }}
+    />
+  );
+}
+
+export function NotionPlatformIcon() {
+  return (
+    <img
+      src="/app/assets/img/catalog/notion.svg"
+      alt="Notion"
+      width={14}
+      height={14}
+      style={{ width: 14, height: 14, objectFit: "contain", borderRadius: 3, display: "block", flexShrink: 0 }}
+    />
+  );
+}
+
 export function getProductPlatform(
   productKey?: string,
   cartId?: string,
@@ -452,6 +488,9 @@ export function getProductPlatform(
     if (cp.includes("free fire") || cp.includes("freefire") || cp.includes("فري فاير")) return { name: "Free Fire", icon: <FreeFirePlatformIcon /> };
     if (cp.includes("pubg") || cp.includes("ببجي")) return { name: "PUBG Mobile", icon: <PubgPlatformIcon /> };
     if (cp.includes("duolingo") || cp.includes("دولينجو") || cp.includes("دولينغو")) return { name: "Duolingo", icon: <DuolingoPlatformIcon /> };
+    if (cp.includes("nordvpn") || cp.includes("nord vpn") || cp.includes("نورد")) return { name: "NordVPN", icon: <NordVpnPlatformIcon /> };
+    if (cp.includes("headspace") || cp.includes("هيدسبيس")) return { name: "Headspace", icon: <HeadspacePlatformIcon /> };
+    if (cp.includes("notion") || cp.includes("نوشن")) return { name: "Notion", icon: <NotionPlatformIcon /> };
   }
 
   const k = (productKey || "").toLowerCase();
@@ -680,7 +719,16 @@ export function getProductPlatform(
     return { name: "YouTube", icon: <YouTubePlatformIcon /> };
   }
 
-  // 30. VPNs & Utilities
+  // 30. VPNs, Productivity & Utilities
+  if (has(["nordvpn", "nord vpn", "نورد"])) {
+    return { name: "NordVPN", icon: <NordVpnPlatformIcon /> };
+  }
+  if (has(["headspace", "هيدسبيس", "هيد سبيس"])) {
+    return { name: "Headspace", icon: <HeadspacePlatformIcon /> };
+  }
+  if (has(["notion", "نوشن"])) {
+    return { name: "Notion", icon: <NotionPlatformIcon /> };
+  }
   if (has(["expressvpn"])) {
     return { name: "ExpressVPN", icon: <ExpressVpnPlatformIcon /> };
   }
