@@ -517,6 +517,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
   const [status, setStatus] = useState(order.status);
   const [notes, setNotes] = useState(order.admin_notes ?? "");
   const [notifyCustomer, setNotifyCustomer] = useState(true);
+  const [emailLang, setEmailLang] = useState<"ar" | "en">("ar");
   const items = Array.isArray(order.items) ? order.items : [];
   const existingDelivery = order.delivery_data && typeof order.delivery_data === "object" ? order.delivery_data as { codes?: DeliveryCode[] } : {};
 
@@ -619,9 +620,10 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             items: emailItems,
             notes: notes.trim() || undefined,
             createdAt: order.created_at,
+            lang: emailLang,
           },
         });
-        toast.success(`تم تسليم الطلب وإرسال إشعار للعميل (${targetEmail}) عبر noreply@gxstore.me!`);
+        toast.success(`تم تسليم الطلب وإرسال إشعار (${emailLang === "ar" ? "بالعربية" : "بالإنجليزية"}) للعميل (${targetEmail}) عبر noreply@gxstore.me!`);
       } catch (err) {
         console.error("Order delivery email failed:", err);
         toast.warning("تم تسليم الطلب، لكن تعذر إرسال الإيميل للعميل.");
@@ -654,6 +656,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             paymentMethod: (order.delivery_data as any)?.payment_method || "",
             notes: cancelReason.trim() || undefined,
             createdAt: order.created_at,
+            lang: emailLang,
           },
         });
         toast.success(`تم إلغاء الطلب وإرسال إشعار للعميل عبر noreply@gxstore.me.`);
@@ -902,24 +905,56 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           {/* Refund */}
           <RefundBlock order={order} onDone={onClose} />
 
-          {/* Email Notification Toggle */}
-          <div className="flex items-center justify-between p-3 rounded-xl border border-cyan-500/25 bg-cyan-500/5">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 grid place-items-center text-cyan-300">
-                <Mail size={16} />
+          {/* Email Notification Toggle & Language Selection */}
+          <div className="p-3.5 rounded-xl border border-cyan-500/25 bg-cyan-500/5 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 grid place-items-center text-cyan-300">
+                  <Mail size={16} />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-foreground">إرسال إشعار بريدي فوري للعميل عند التسليم أو الإلغاء</div>
+                  <div className="text-[11px] text-muted-foreground">المرسل الرسمي: <span className="font-mono text-cyan-400">noreply@gxstore.me</span> (يحتوي زر مباشر لصفحة الطلب وشعار المتجر)</div>
+                </div>
               </div>
-              <div>
-                <div className="text-xs font-bold text-foreground">إرسال إشعار بريدي فوري للعميل عند التسليم أو الإلغاء</div>
-                <div className="text-[11px] text-muted-foreground">المرسل الرسمي: <span className="font-mono text-cyan-400">noreply@gxstore.me</span> (يحتوي زر مباشر لصفحة الطلب)</div>
-              </div>
+              <input
+                type="checkbox"
+                id="notifyCustomerCheck"
+                checked={notifyCustomer}
+                onChange={(e) => setNotifyCustomer(e.target.checked)}
+                className="h-4 w-4 rounded border-cyan-500 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer"
+              />
             </div>
-            <input
-              type="checkbox"
-              id="notifyCustomerCheck"
-              checked={notifyCustomer}
-              onChange={(e) => setNotifyCustomer(e.target.checked)}
-              className="h-4 w-4 rounded border-cyan-500 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer"
-            />
+
+            {notifyCustomer && (
+              <div className="flex items-center justify-between pt-2 border-t border-cyan-500/15">
+                <span className="text-[11px] font-bold text-cyan-300">لغة الإشعار البريدي للعميل:</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setEmailLang("ar")}
+                    className={`px-3 py-1 text-xs rounded-lg font-bold transition ${
+                      emailLang === "ar"
+                        ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30"
+                        : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
+                    }`}
+                  >
+                    العربية (AR) 🇸🇦
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEmailLang("en")}
+                    className={`px-3 py-1 text-xs rounded-lg font-bold transition ${
+                      emailLang === "en"
+                        ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30"
+                        : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
+                    }`}
+                  >
+                    English (EN) 🇬🇧
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Actions */}

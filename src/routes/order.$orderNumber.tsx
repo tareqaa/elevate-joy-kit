@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   CheckCircle2, XCircle, Clock, Package, KeyRound, Copy, Check, Eye, ExternalLink,
   ShieldCheck, AlertTriangle, ArrowRight, MessageSquare, Mail, User, Wallet, Sparkles, Loader2,
+  ChevronRight, ArrowLeft, Star, ShoppingBag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -15,7 +16,7 @@ export const Route = createFileRoute("/order/$orderNumber")({
   head: ({ params }) => ({
     meta: [
       { title: `طلب #${params.orderNumber} | متجر GX Store` },
-      { name: "description", content: `تفاصيل واستلام الطلب #${params.orderNumber} من متجر GX Store` },
+      { name: "description", content: `استلام وتفعيل الطلب #${params.orderNumber} من متجر GX Store` },
       { name: "robots", content: "noindex, nofollow" },
     ],
     links: STORE_HEAD_LINKS,
@@ -63,17 +64,19 @@ function OrderDetailsPage() {
   useEffect(() => {
     let mounted = true;
     setLoading(true);
+    setError(null);
+
     getOrderByNumberFn({ data: { orderNumber } })
       .then((res) => {
         if (!mounted) return;
         if (res.ok && res.order) {
           setOrder(res.order);
         } else {
-          setError(res.error || "لم يتم العثور على الطلب");
+          setError(res.error || (isAr ? "لم يتم العثور على هذا الطلب" : "Order not found"));
         }
       })
       .catch((err) => {
-        if (mounted) setError(err.message || "حدث خطأ أثناء تحميل الطلب");
+        if (mounted) setError(err.message || (isAr ? "حدث خطأ أثناء تحميل الطلب" : "Failed to load order"));
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -82,13 +85,13 @@ function OrderDetailsPage() {
     return () => {
       mounted = false;
     };
-  }, [orderNumber]);
+  }, [orderNumber, isAr]);
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(id);
-    toast.success(isAr ? "تم النسخ بنجاح!" : "Copied to clipboard!");
-    setTimeout(() => setCopiedKey(null), 2000);
+    toast.success(isAr ? "تم النسخ إلى الحافظة بنجاح!" : "Copied to clipboard!");
+    setTimeout(() => setCopiedKey(null), 2200);
   };
 
   const deliveryCodes: DeliveryCode[] = useMemo(() => {
@@ -101,32 +104,32 @@ function OrderDetailsPage() {
     const s = order?.status || "pending";
     if (s === "delivered") {
       return {
-        labelAr: "تم التسليم بنجاح",
-        labelEn: "Delivered",
-        color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+        labelAr: "مُسلَّم ومكتمل 100%",
+        labelEn: "Completed & Delivered",
+        color: "text-emerald-400 bg-emerald-500/15 border-emerald-500/40",
         icon: <CheckCircle2 className="w-5 h-5 text-emerald-400" />,
       };
     }
     if (s === "cancelled") {
       return {
-        labelAr: "ملغى",
-        labelEn: "Cancelled",
-        color: "text-rose-400 bg-rose-500/10 border-rose-500/30",
+        labelAr: "تم إلغاء الطلب",
+        labelEn: "Order Cancelled",
+        color: "text-rose-400 bg-rose-500/15 border-rose-500/40",
         icon: <XCircle className="w-5 h-5 text-rose-400" />,
       };
     }
     if (s === "paid" || s === "processing") {
       return {
         labelAr: "قيد التجهيز والتسليم",
-        labelEn: "Processing",
-        color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/30",
+        labelEn: "Processing Delivery",
+        color: "text-cyan-400 bg-cyan-500/15 border-cyan-500/40",
         icon: <Package className="w-5 h-5 text-cyan-400 animate-pulse" />,
       };
     }
     return {
-      labelAr: "قيد المراجعة والدفع",
+      labelAr: "بانتظار تأكيد الدفع",
       labelEn: "Pending Payment",
-      color: "text-amber-400 bg-amber-500/10 border-amber-500/30",
+      color: "text-amber-400 bg-amber-500/15 border-amber-500/40",
       icon: <Clock className="w-5 h-5 text-amber-400" />,
     };
   }, [order?.status]);
@@ -136,38 +139,46 @@ function OrderDetailsPage() {
   }, [order]);
 
   const supportMsg = useMemo(() => {
-    return `مرحباً، أود الاستفسار بشأن طلبي رقم #${orderNumber} في متجر GX Store.`;
+    return `مرحباً، أود المساعدة بخصوص طلبي رقم #${orderNumber} في متجر GX Store.`;
   }, [orderNumber]);
 
   return (
     <StoreShell>
-      <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto" dir={dir}>
+      <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto" dir={dir}>
         
         {/* Loading State */}
         {loading && (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <Loader2 className="w-10 h-10 text-cyan-400 animate-spin mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">جاري تحميل بيانات الطلب...</h2>
-            <p className="text-slate-400 text-sm">لحظات ويتم عرض معلومات طلبك ورموز التفعيل.</p>
+          <div className="flex flex-col items-center justify-center py-28 text-center">
+            <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mb-4" />
+            <h2 className="text-xl font-black text-white mb-2">
+              {isAr ? "جاري تحميل تفاصيل الطلب والمفاتيح..." : "Loading order details..."}
+            </h2>
+            <p className="text-slate-400 text-sm">
+              {isAr ? "يرجى الانتظار بضع ثوانٍ لعرض رموز التفعيل وبيانات طلبك." : "Please wait a moment."}
+            </p>
           </div>
         )}
 
         {/* Error / Not Found */}
         {!loading && error && (
-          <div className="p-8 rounded-2xl bg-[#111622] border border-rose-500/30 text-center max-w-lg mx-auto shadow-2xl">
+          <div className="p-8 sm:p-10 rounded-2xl bg-[#111622] border border-rose-500/30 text-center max-w-lg mx-auto shadow-2xl mt-10">
             <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 grid place-items-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-black text-white mb-2">تعذر العثور على الطلب</h2>
+            <h2 className="text-xl font-black text-white mb-2">
+              {isAr ? "تعذر العثور على هذا الطلب" : "Order Not Found"}
+            </h2>
             <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-              تأكد من صحة رقم الطلب المكتوب في الرابط. إذا كنت متأكداً من إتمام الطلب، يمكنك التواصل فوراً مع الدعم الفني لحل الأمر.
+              {isAr
+                ? "تأكد من صحة رقم الطلب المدخل في الرابط، أو تواصل فوراً مع الدعم الفني لمساعدتك."
+                : "Please check the order number or contact our support team."}
             </p>
-            <div className="flex justify-center gap-3">
+            <div className="flex justify-center gap-3 flex-wrap">
               <Link
                 to="/"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-bold hover:bg-white/10 transition"
               >
-                العودة للرئيسية
+                {isAr ? "العودة للمتجر" : "Back to Home"}
               </Link>
               <a
                 href={`https://wa.me/962776252313?text=${encodeURIComponent(supportMsg)}`}
@@ -176,7 +187,7 @@ function OrderDetailsPage() {
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-bold shadow-lg shadow-emerald-500/20 hover:brightness-110 transition"
               >
                 <WhatsAppSvg />
-                تواصل مع الدعم
+                {isAr ? "تواصل مع الدعم الفني" : "Contact Support"}
               </a>
             </div>
           </div>
@@ -186,8 +197,26 @@ function OrderDetailsPage() {
         {!loading && order && (
           <div className="space-y-6">
             
+            {/* 3-Step Horizontal Stepper (Driffle Style) */}
+            <div className="p-4 rounded-2xl bg-[#101522] border border-white/10 flex items-center justify-between text-xs sm:text-sm font-bold text-slate-400 overflow-x-auto gap-2">
+              <div className="flex items-center gap-2 text-emerald-400 shrink-0">
+                <span className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 grid place-items-center text-xs">✓</span>
+                <span>{isAr ? "السلة (Cart)" : "Cart"}</span>
+              </div>
+              <div className="h-0.5 flex-1 bg-emerald-500/30 min-w-[30px]" />
+              <div className="flex items-center gap-2 text-emerald-400 shrink-0">
+                <span className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 grid place-items-center text-xs">✓</span>
+                <span>{isAr ? "تأكيد الدفع (Checkout)" : "Checkout"}</span>
+              </div>
+              <div className="h-0.5 flex-1 bg-cyan-500/50 min-w-[30px]" />
+              <div className="flex items-center gap-2 text-cyan-300 font-extrabold shrink-0">
+                <span className="w-6 h-6 rounded-full bg-cyan-500/20 border border-cyan-400 grid place-items-center text-xs text-cyan-300 animate-pulse">3</span>
+                <span>{isAr ? "الاستلام والتفعيل (Reveal)" : "Reveal Product"}</span>
+              </div>
+            </div>
+
             {/* Hero Header Card */}
-            <div className="p-6 sm:p-8 rounded-2xl bg-gradient-to-b from-[#141b2b] to-[#0d121c] border border-cyan-500/20 shadow-2xl relative overflow-hidden">
+            <div className="p-6 sm:p-8 rounded-2xl bg-gradient-to-b from-[#141b2b] to-[#0c1018] border border-cyan-500/25 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl -z-10 pointer-events-none" />
               
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6 mb-6">
@@ -209,12 +238,12 @@ function OrderDetailsPage() {
                     </button>
                   </div>
                   <div className="text-xs text-slate-400 mt-2">
-                    تاريخ الطلب: {new Date(order.created_at).toLocaleString("ar-EG", { dateStyle: "long", timeStyle: "short" })}
+                    {isAr ? "تاريخ الطلب:" : "Order Date:"} {new Date(order.created_at).toLocaleString(isAr ? "ar-JO" : "en-GB", { dateStyle: "long", timeStyle: "short" })}
                   </div>
                 </div>
 
                 {/* Status Badge */}
-                <div className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-xl border text-sm font-extrabold ${statusInfo.color}`}>
+                <div className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-extrabold ${statusInfo.color}`}>
                   {statusInfo.icon}
                   <span>{isAr ? statusInfo.labelAr : statusInfo.labelEn}</span>
                 </div>
@@ -223,27 +252,27 @@ function OrderDetailsPage() {
               {/* Quick Customer Info Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                  <div className="text-slate-400 mb-1">اسم العميل</div>
-                  <div className="font-bold text-white truncate">{order.customer_name || "عميل GX Store"}</div>
+                  <div className="text-slate-400 mb-1">{isAr ? "اسم العميل" : "Customer"}</div>
+                  <div className="font-bold text-white truncate">{order.customer_name || (isAr ? "عميل GX Store" : "Customer")}</div>
                 </div>
                 <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                  <div className="text-slate-400 mb-1">طريقة الدفع</div>
+                  <div className="text-slate-400 mb-1">{isAr ? "طريقة الدفع" : "Payment"}</div>
                   <div className="font-bold text-cyan-300">
                     {order.delivery_data?.payment_method === "cliq"
-                      ? "خدمة كليك (CliQ) 🇯🇴"
+                      ? (isAr ? "كليك (CliQ) 🇯🇴" : "CliQ 🇯🇴")
                       : order.delivery_data?.payment_method === "gx_wallet"
-                      ? "محفظة GX Wallet 🌐"
-                      : "دفع إلكتروني"}
+                      ? "GX Wallet 🌐"
+                      : (isAr ? "دفع إلكتروني" : "Card / Electronic")}
                   </div>
                 </div>
                 <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                  <div className="text-slate-400 mb-1">إجمالي المبلغ</div>
+                  <div className="text-slate-400 mb-1">{isAr ? "إجمالي المبلغ" : "Total Paid"}</div>
                   <div className="font-bold text-emerald-400 font-mono text-sm">
-                    {Number(order.total_jod).toFixed(2)} د.أ
+                    {Number(order.total_jod).toFixed(2)} {isAr ? "د.أ" : "JOD"}
                   </div>
                 </div>
                 <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                  <div className="text-slate-400 mb-1">البريد الإلكتروني</div>
+                  <div className="text-slate-400 mb-1">{isAr ? "البريد الإلكتروني" : "Email"}</div>
                   <div className="font-semibold text-slate-300 truncate" dir="ltr">
                     {order.customer_email || order.delivery_data?.customer_email || "—"}
                   </div>
@@ -251,27 +280,73 @@ function OrderDetailsPage() {
               </div>
             </div>
 
-            {/* Delivered Product Keys & Credentials (Redeem Section) */}
+            {/* CRITICAL REASSURANCE BANNER (USER REQUEST: يمكنك رؤية المنتج دوماً في صفحة طلباتي) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-[#101726] to-[#0c1018] border border-cyan-500/30 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 grid place-items-center text-cyan-300 shrink-0">
+                  <Package className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-white">
+                    {isAr
+                      ? "✨ يمكنك دائماً رؤية هذا المنتج ورموز التفعيل والوصول إليها دوماً في صفحة طلباتي"
+                      : "✨ You can reveal and view your product at any time in My Orders page"}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    {isAr
+                      ? "جميع أكوادك واشتراكاتك تبقى محفوظة في حسابك دائماً دون انقطاع."
+                      : "All your digital keys and credentials remain safely stored in your account."}
+                  </div>
+                </div>
+              </div>
+
+              <Link
+                to="/account"
+                search={{ tab: "orders" }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold transition"
+              >
+                <span>{isAr ? "الانتقال لصفحة طلباتي" : "Go to My Orders"}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            {/* Delivered Product Keys & Credentials (DRIFFLE & GAMIVO REVEAL SECTION) */}
             {order.status === "delivered" && (
-              <div className="p-6 sm:p-8 rounded-2xl bg-[#0f1420] border border-emerald-500/30 shadow-2xl">
-                <div className="flex items-center justify-between gap-3 mb-6 border-b border-white/10 pb-4">
+              <div className="p-6 sm:p-8 rounded-2xl bg-[#0f1422] border border-emerald-500/35 shadow-2xl">
+                
+                {/* Header */}
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-6 border-b border-white/10 pb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 grid place-items-center text-emerald-400">
-                      <KeyRound className="w-5 h-5" />
+                    <div className="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/30 grid place-items-center text-emerald-400">
+                      <KeyRound className="w-6 h-6" />
                     </div>
                     <div>
                       <h2 className="text-lg sm:text-xl font-black text-white">
-                        {isAr ? "مفاتيح وبيانات التفعيل (جاهزة للاستلام)" : "Activation Keys & Credentials"}
+                        {isAr ? "استلام وتفعيل المنتج (Product Activation)" : "Product Activation Items"}
                       </h2>
-                      <p className="text-xs text-slate-400">
-                        {isAr ? "انقر على زر الإظهار والنسخ لتفعيل منتجك فوراً." : "Click Reveal & Copy to use your keys."}
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {isAr
+                          ? `عدد عناصر التفعيل: ${deliveryCodes.length || 1} • اضغط إظهار ونسخ المفتاح للاستخدام.`
+                          : `Activation items: ${deliveryCodes.length || 1} • Click Reveal and Copy to use.`}
                       </p>
                     </div>
                   </div>
-                  <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/25 text-emerald-300">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    مُسلَّم ومضمون 100%
+
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    {isAr ? "مضمون 100% من GX Store" : "100% Verified Key"}
                   </span>
+                </div>
+
+                {/* Warning note (Gamivo style) */}
+                <div className="mb-5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs text-amber-200/90 leading-relaxed">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong>{isAr ? "تنبيه هام قبل الإظهار:" : "Important Notice:"}</strong>{" "}
+                    {isAr
+                      ? "يرجى التأكد من توافق المنتج مع حسابك وجهازك. بمجرد إظهار مفتاح التفعيل أو استلام بيانات الحساب، يعتبر المنتج مستلماً ومكتملاً ولا يمكن استرجاعه أو إلغاؤه بسبب الطبيعة الرقمية الفورية."
+                      : "Please ensure your account/device is compatible. Once the activation item is displayed, it cannot be refunded or returned."}
+                  </div>
                 </div>
 
                 {/* Digital keys loop */}
@@ -281,107 +356,135 @@ function OrderDetailsPage() {
                       const isRevealed = !!revealedKeys[idx];
                       const isAccount = code.kind === "account";
                       const isTopup = code.kind === "topup";
+                      const isUrl = (code.value || "").startsWith("http://") || (code.value || "").startsWith("https://");
 
                       return (
                         <div
                           key={idx}
-                          className="p-4 sm:p-5 rounded-xl bg-black/40 border border-white/10 hover:border-cyan-500/40 transition"
+                          className="p-5 rounded-2xl bg-black/50 border border-white/10 hover:border-cyan-500/50 transition shadow-lg"
                         >
                           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm text-white">
-                                {code.label || `المفتاح رقم ${idx + 1}`}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-extrabold text-sm text-white">
+                                {code.label || (isAr ? `عنصر التفعيل #${idx + 1}` : `Activation Item #${idx + 1}`)}
                               </span>
                               {code.region && (
-                                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/10 border border-cyan-500/25 text-cyan-300">
+                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">
                                   {code.region}
                                 </span>
                               )}
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 border border-white/10 text-slate-400">
+                                {isTopup ? (isAr ? "شحن مباشر" : "Top-up") : isAccount ? (isAr ? "حساب جاهز" : "Account") : (isAr ? "مفتاح رقمي" : "Digital Key")}
+                              </span>
                             </div>
                             
                             {!isTopup && !isRevealed && (
                               <Button
                                 size="sm"
                                 onClick={() => setRevealedKeys({ ...revealedKeys, [idx]: true })}
-                                className="h-8 gap-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs"
+                                className="h-8 gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-xs shadow-md shadow-orange-500/25"
                               >
                                 <Eye className="w-3.5 h-3.5" />
-                                {isAr ? "إظهار المفتاح" : "Reveal Key"}
+                                {isAr ? "إظهار مفتاح التفعيل (Reveal)" : "Reveal Product"}
                               </Button>
                             )}
                           </div>
 
                           {/* Key content */}
                           {isTopup ? (
-                            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
+                            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs flex items-center gap-2">
                               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                              <span>تمت تعبئة الرصيد والاشتراك على حسابك بنجاح.</span>
+                              <span>{isAr ? "تم شحن الرصيد والاشتراك مباشرة على حسابك بنجاح." : "The top-up was processed directly on your account."}</span>
                             </div>
                           ) : isRevealed ? (
-                            <div className="space-y-2 mt-2">
+                            <div className="space-y-3 mt-3">
                               {isAccount ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                                   {code.email && (
-                                    <div className="p-2.5 rounded-lg bg-white/[0.04] border border-white/10 flex items-center justify-between">
+                                    <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-between">
                                       <div>
-                                        <span className="text-slate-400 block text-[10px]">الإيميل / المستخدم:</span>
-                                        <span className="font-mono text-cyan-300 font-bold" dir="ltr">{code.email}</span>
+                                        <span className="text-slate-400 block text-[10px]">{isAr ? "البريد / اسم المستخدم:" : "Username / Email:"}</span>
+                                        <span className="font-mono text-cyan-300 font-bold text-sm" dir="ltr">{code.email}</span>
                                       </div>
                                       <button
                                         onClick={() => copyToClipboard(code.email || "", `email_${idx}`)}
-                                        className="p-1 rounded hover:bg-white/10 text-slate-300"
+                                        className="p-1.5 rounded-lg hover:bg-white/10 text-slate-300"
                                       >
-                                        {copiedKey === `email_${idx}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                        {copiedKey === `email_${idx}` ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                                       </button>
                                     </div>
                                   )}
                                   {code.password && (
-                                    <div className="p-2.5 rounded-lg bg-white/[0.04] border border-white/10 flex items-center justify-between">
+                                    <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-between">
                                       <div>
-                                        <span className="text-slate-400 block text-[10px]">كلمة المرور:</span>
-                                        <span className="font-mono text-cyan-300 font-bold" dir="ltr">{code.password}</span>
+                                        <span className="text-slate-400 block text-[10px]">{isAr ? "كلمة المرور:" : "Password:"}</span>
+                                        <span className="font-mono text-cyan-300 font-bold text-sm" dir="ltr">{code.password}</span>
                                       </div>
                                       <button
                                         onClick={() => copyToClipboard(code.password || "", `pwd_${idx}`)}
-                                        className="p-1 rounded hover:bg-white/10 text-slate-300"
+                                        className="p-1.5 rounded-lg hover:bg-white/10 text-slate-300"
                                       >
-                                        {copiedKey === `pwd_${idx}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                        {copiedKey === `pwd_${idx}` ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                                       </button>
                                     </div>
                                   )}
                                 </div>
                               ) : (
-                                <div className="p-3 rounded-lg bg-black/60 border border-cyan-500/30 flex items-center justify-between gap-3">
-                                  <span className="font-mono font-black text-cyan-300 tracking-wider text-sm sm:text-base break-all" dir="ltr">
-                                    {code.value}
-                                  </span>
-                                  <button
-                                    onClick={() => copyToClipboard(code.value || "", `key_${idx}`)}
-                                    className="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold inline-flex items-center gap-1.5 shrink-0 transition"
-                                  >
-                                    {copiedKey === `key_${idx}` ? (
-                                      <>
-                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                        <span>تم النسخ</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Copy className="w-3.5 h-3.5" />
-                                        <span>نسخ</span>
-                                      </>
+                                <div className="p-4 rounded-xl bg-black/80 border border-cyan-500/40">
+                                  <div className="text-[11px] text-slate-400 mb-1.5 font-bold">
+                                    {isAr ? "رمز أو رابط التفعيل الرقمي:" : "Activation Key / Link:"}
+                                  </div>
+                                  <div className="font-mono font-black text-cyan-300 text-sm sm:text-base break-all tracking-wider mb-3 select-all bg-white/[0.03] p-2.5 rounded-lg border border-white/5" dir="ltr">
+                                    {code.value || "—"}
+                                  </div>
+                                  
+                                  {/* Driffle & Gamivo Action Buttons */}
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => copyToClipboard(code.value || "", `key_${idx}`)}
+                                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-blue-500/20 transition"
+                                    >
+                                      {copiedKey === `key_${idx}` ? (
+                                        <>
+                                          <Check className="w-4 h-4 text-emerald-300" />
+                                          <span>{isAr ? "تم النسخ بنجاح" : "Copied!"}</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy className="w-4 h-4" />
+                                          <span>{isAr ? "نسخ إلى الحافظة (Copy)" : "Copy to clipboard"}</span>
+                                        </>
+                                      )}
+                                    </button>
+
+                                    {isUrl && (
+                                      <a
+                                        href={code.value}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-bold inline-flex items-center gap-2 transition"
+                                      >
+                                        <ExternalLink className="w-4 h-4 text-cyan-400" />
+                                        <span>{isAr ? "دليل ورابط التفعيل المباشر" : "Activation Guide / Open Link"}</span>
+                                      </a>
                                     )}
-                                  </button>
+                                  </div>
                                 </div>
                               )}
 
                               {code.extra && (
-                                <div className="text-[11px] text-slate-400 p-2 rounded bg-white/[0.02] border border-white/5">
-                                  {code.extra}
+                                <div className="text-xs text-slate-300 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                                  <strong>{isAr ? "معلومات إضافية:" : "Extra Info:"}</strong> {code.extra}
                                 </div>
                               )}
+
+                              <div className="text-[11px] text-slate-500 pt-1">
+                                {isAr ? "✓ تم إظهار المفتاح وتجهيزه بنجاح" : "✓ Key revealed and ready to use"}
+                              </div>
                             </div>
                           ) : (
-                            <div className="p-3 rounded-lg bg-white/[0.02] border border-dashed border-white/10 text-center text-slate-500 font-mono text-sm tracking-widest" dir="ltr">
+                            <div className="p-3.5 rounded-xl bg-white/[0.02] border border-dashed border-white/15 text-center text-slate-500 font-mono text-sm tracking-widest select-none" dir="ltr">
                               ••••-••••-••••-••••
                             </div>
                           )}
@@ -390,16 +493,16 @@ function OrderDetailsPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 text-center text-slate-400 text-sm">
-                    تم تسليم الطلب. تحقق من الملاحظات أدناه أو تواصل مع الدعم لأي استفسار.
+                  <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 text-center text-slate-400 text-sm">
+                    {isAr ? "تم تسليم الطلب بنجاح. راجع الملاحظات أو تواصل مع الدعم لأي استفسار." : "Order delivered. Contact support if you need assistance."}
                   </div>
                 )}
 
                 {/* Admin notes & instructions */}
                 {order.admin_notes && (
-                  <div className="mt-5 p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs leading-relaxed text-cyan-100">
+                  <div className="mt-5 p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/25 text-xs leading-relaxed text-cyan-100">
                     <div className="font-bold text-cyan-300 mb-1 flex items-center gap-1.5">
-                      <span>💡 تعليمات وملاحظات الطلب:</span>
+                      <span>💡 {isAr ? "تعليمات وملاحظات الطلب والتفعيل:" : "Order Instructions & Notes:"}</span>
                     </div>
                     <div className="whitespace-pre-wrap">{order.admin_notes}</div>
                   </div>
@@ -410,54 +513,60 @@ function OrderDetailsPage() {
             {/* If Order is Cancelled */}
             {order.status === "cancelled" && (
               <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-200">
-                <div className="flex items-center gap-2 font-bold text-lg text-rose-300 mb-2">
+                <div className="flex items-center gap-2 font-black text-lg text-rose-300 mb-2">
                   <XCircle className="w-6 h-6" />
-                  <span>تم إلغاء هذا الطلب</span>
+                  <span>{isAr ? "تم إلغاء هذا الطلب" : "This order has been cancelled"}</span>
                 </div>
                 <p className="text-sm leading-relaxed text-rose-100/80 mb-4">
-                  نحيطك علماً بأنه تم إلغاء الطلب من قِبل إدارة المتجر. إذا كان لديك استفسار أو قمت بالدفع مسبقاً، يمكنك التواصل فوراً مع الدعم الفني لحل المشكلة أو استرجاع الرصيد.
+                  {isAr
+                    ? "نحيطك علماً بأنه تم إلغاء الطلب من قِبل إدارة المتجر. إذا كان لديك استفسار أو قمت بالدفع مسبقاً، يمكنك التواصل فوراً مع الدعم الفني لحل الأمر أو استرجاع الرصيد."
+                    : "This order was cancelled by store administration. Please contact support if you need a refund or assistance."}
                 </p>
                 {order.admin_notes && (
-                  <div className="p-3 rounded-xl bg-black/30 border border-rose-500/20 text-xs text-rose-200">
-                    <strong>سبب الإلغاء / ملاحظة:</strong> {order.admin_notes}
+                  <div className="p-3.5 rounded-xl bg-black/40 border border-rose-500/25 text-xs text-rose-200">
+                    <strong>{isAr ? "سبب الإلغاء / ملاحظة:" : "Cancellation Reason:"}</strong> {order.admin_notes}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Order Items & Financial Summary */}
-            <div className="p-6 sm:p-8 rounded-2xl bg-[#0e131d] border border-white/10 shadow-xl">
+            {/* Order Items & Financial Summary (DRIFFLE STYLE) */}
+            <div className="p-6 sm:p-8 rounded-2xl bg-[#0e131e] border border-white/10 shadow-xl">
               <h3 className="text-base font-extrabold text-white mb-4 flex items-center gap-2">
                 <Package className="w-4 h-4 text-cyan-400" />
-                <span>المنتجات المشمولة في الطلب ({items.length})</span>
+                <span>{isAr ? `المنتجات المشمولة في الطلب (${items.length})` : `Your Order Items (${items.length})`}</span>
               </h3>
 
               <div className="divide-y divide-white/5 mb-6">
                 {items.map((it: any, idx: number) => {
                   const qty = it.qty || it.quantity || 1;
-                  const price = it.price != null ? `${Number(it.price).toFixed(2)} د.أ` : "";
+                  const price = it.price != null ? `${Number(it.price).toFixed(2)} ${isAr ? "د.أ" : "JOD"}` : "";
                   return (
-                    <div key={idx} className="py-3 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
+                    <div key={idx} className="py-4 flex flex-wrap sm:flex-nowrap items-center justify-between gap-4">
+                      <div className="flex items-center gap-3.5 min-w-0">
                         {it.image ? (
                           <img
                             src={it.image}
                             alt={it.name}
-                            className="w-12 h-12 rounded-lg object-cover border border-white/10 shrink-0"
+                            className="w-14 h-14 rounded-xl object-cover border border-white/10 shrink-0 bg-[#121722]"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 grid place-items-center text-cyan-400 text-lg shrink-0">
+                          <div className="w-14 h-14 rounded-xl bg-white/5 border border-white/10 grid place-items-center text-cyan-400 text-xl shrink-0">
                             🎮
                           </div>
                         )}
-                        <div>
-                          <div className="text-sm font-bold text-white leading-snug">{it.name}</div>
-                          <div className="text-xs text-slate-400 mt-0.5">
-                            {it.region ? `المنطقة: ${it.region}` : "منتج رقمي"} {qty > 1 ? `• الكمية: ${qty}` : ""}
+                        <div className="min-w-0">
+                          <div className="text-sm font-extrabold text-white leading-snug">{it.name}</div>
+                          <div className="text-xs text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+                            <span className="px-2 py-0.5 rounded-md bg-white/5 text-[11px] text-cyan-300 font-semibold">
+                              {it.region ? (isAr ? `المنطقة: ${it.region}` : `Region: ${it.region}`) : (isAr ? "عالمي (Global)" : "Global")}
+                            </span>
+                            {qty > 1 && <span>• {isAr ? `الكمية: x${qty}` : `Qty: x${qty}`}</span>}
                           </div>
                         </div>
                       </div>
-                      <div className="font-mono font-bold text-white text-sm shrink-0">
+
+                      <div className="font-mono font-black text-cyan-300 text-base shrink-0">
                         {price}
                       </div>
                     </div>
@@ -469,65 +578,65 @@ function OrderDetailsPage() {
               <div className="border-t border-white/10 pt-4 space-y-2 text-xs">
                 {order.subtotal_jod && Number(order.subtotal_jod) !== Number(order.total_jod) && (
                   <div className="flex justify-between text-slate-400">
-                    <span>المجموع الفرعي:</span>
-                    <span className="font-mono">{Number(order.subtotal_jod).toFixed(2)} د.أ</span>
+                    <span>{isAr ? "المجموع الفرعي:" : "Subtotal:"}</span>
+                    <span className="font-mono">{Number(order.subtotal_jod).toFixed(2)} {isAr ? "د.أ" : "JOD"}</span>
                   </div>
                 )}
                 {order.discount_jod && Number(order.discount_jod) > 0 && (
                   <div className="flex justify-between text-emerald-400 font-semibold">
-                    <span>الخصم المطبق:</span>
-                    <span className="font-mono">-{Number(order.discount_jod).toFixed(2)} د.أ</span>
+                    <span>{isAr ? "الخصم المطبق:" : "Discount:"}</span>
+                    <span className="font-mono">-{Number(order.discount_jod).toFixed(2)} {isAr ? "د.أ" : "JOD"}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center text-base font-black text-white pt-2 border-t border-white/5">
-                  <span>المبلغ الإجمالي المدفوع:</span>
-                  <span className="font-mono text-cyan-300 text-lg">{Number(order.total_jod).toFixed(2)} د.أ</span>
+                  <span>{isAr ? "المبلغ الإجمالي المدفوع:" : "ORDER TOTAL:"}</span>
+                  <span className="font-mono text-cyan-300 text-xl font-black">{Number(order.total_jod).toFixed(2)} {isAr ? "د.أ" : "JOD"}</span>
                 </div>
               </div>
             </div>
 
-            {/* Support & Quick Contact */}
-            <div className="p-6 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-blue-950/30 to-[#0e131d] border border-cyan-500/20 flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h4 className="font-extrabold text-white text-sm mb-1 flex items-center gap-1.5">
-                  <MessageSquare className="w-4 h-4 text-cyan-400" />
-                  <span>هل تحتاج إلى مساعدة بشأن هذا الطلب؟</span>
-                </h4>
-                <p className="text-xs text-slate-400">
-                  فريق دعم GX Store متواجد دائماً لخدمتك على مدار الساعة عبر واتساب أو ديسكورد.
-                </p>
-              </div>
+            {/* Facing Issues? Support Section (DRIFFLE SCREENSHOT 2 STYLE) */}
+            <div className="p-6 sm:p-7 rounded-2xl bg-[#0f1422] border border-white/10 shadow-lg">
+              <h4 className="font-black text-white text-base mb-1.5 flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-cyan-400" />
+                <span>{isAr ? "هل تواجه أي مشكلة أو استفسار؟" : "Facing issues?"}</span>
+              </h4>
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                {isAr
+                  ? "فريق دعم GX Store سعيد بمساعدتك في أي وقت. تواصل معنا مباشرة عبر واتساب أو ديسكورد وسنقوم بالرد عليك فوراً."
+                  : "If you experience any inconvenience, our Support Team is happy to help. Contact us and we will get back to you as soon as possible."}
+              </p>
 
-              <div className="flex items-center gap-2.5">
+              <div className="flex flex-wrap items-center gap-3">
                 <a
                   href={`https://wa.me/962776252313?text=${encodeURIComponent(supportMsg)}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition"
                 >
                   <WhatsAppSvg />
-                  واتساب
+                  {isAr ? "محادثة الدعم الفني عبر واتساب" : "WhatsApp Support"}
                 </a>
                 <a
                   href="https://discord.gg/DvkUd5PgqV"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#5865F2] hover:bg-[#4752c4] text-white font-bold text-xs shadow-lg shadow-[#5865F2]/20 transition"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5865F2] hover:bg-[#4752c4] text-white font-bold text-xs shadow-lg shadow-[#5865F2]/20 transition"
                 >
                   <DiscordSvg />
-                  ديسكورد
+                  {isAr ? "سيرفر الدعم ديسكورد" : "Discord Support"}
                 </a>
               </div>
             </div>
 
-            {/* Back to store navigation */}
-            <div className="text-center pt-4">
+            {/* Continue Shopping Button */}
+            <div className="text-center pt-2">
               <Link
                 to="/"
-                className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-cyan-300 transition"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold transition"
               >
-                <ArrowRight className="w-3.5 h-3.5" />
-                <span>العودة لمتجر GX Store</span>
+                <ShoppingBag className="w-4 h-4 text-cyan-400" />
+                <span>{isAr ? "متابعة التسوق في المتجر (Continue Shopping)" : "Continue Shopping"}</span>
               </Link>
             </div>
 
