@@ -186,16 +186,6 @@ const CATEGORY_TABS: CategoryFilterTab[] = [
       p.categorySlug?.startsWith("gc-") ||
       p.productType === "giftcard",
   },
-  {
-    id: "services",
-    nameAr: "الخدمات",
-    nameEn: "Services",
-    icon: "🛠️",
-    color: "#3b82f6",
-    match: (p) =>
-      p.parentCategorySlug === "services" ||
-      p.categorySlug === "services",
-  },
 ];
 
 function formatOfferCount(count: number, lang: string): string {

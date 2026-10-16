@@ -67,7 +67,7 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/category/pc-games</loc>
+    <loc>https://gxstore.me/category/gc-playstation</loc>
     <lastmod>2026-10-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -79,13 +79,7 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/category/gemini</loc>
-    <lastmod>2026-10-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://gxstore.me/category/gc-playstation</loc>
+    <loc>https://gxstore.me/category/pc-games</loc>
     <lastmod>2026-10-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -163,12 +157,6 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/category/services</loc>
-    <lastmod>2026-10-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.90</priority>
-  </url>
-  <url>
     <loc>https://gxstore.me/category/linkedin-premium</loc>
     <lastmod>2026-10-16</lastmod>
     <changefreq>daily</changefreq>
@@ -187,12 +175,6 @@
     <priority>0.90</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/category/ai</loc>
-    <lastmod>2026-10-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.90</priority>
-  </url>
-  <url>
     <loc>https://gxstore.me/product/instagram-followers</loc>
     <lastmod>2026-10-16</lastmod>
     <changefreq>daily</changefreq>
@@ -205,13 +187,13 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/instagram-likes</loc>
+    <loc>https://gxstore.me/product/adobe</loc>
     <lastmod>2026-10-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/adobe</loc>
+    <loc>https://gxstore.me/product/instagram-likes</loc>
     <lastmod>2026-10-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -248,12 +230,6 @@
   </url>
   <url>
     <loc>https://gxstore.me/product/autodesk</loc>
-    <lastmod>2026-10-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://gxstore.me/product/gemini</loc>
     <lastmod>2026-10-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -332,6 +308,12 @@
   </url>
   <url>
     <loc>https://gxstore.me/product/crimson-desert</loc>
+    <lastmod>2026-10-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://gxstore.me/product/avg-secure-vpn</loc>
     <lastmod>2026-10-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -650,12 +632,6 @@
   </url>
   <url>
     <loc>https://gxstore.me/product/avast-secureline-vpn</loc>
-    <lastmod>2026-10-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://gxstore.me/product/avg-secure-vpn</loc>
     <lastmod>2026-10-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>

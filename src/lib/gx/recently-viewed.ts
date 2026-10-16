@@ -24,6 +24,7 @@ export const KNOWN_INACTIVE_SLUGS = new Set([
   "snapchat",
   "duolingo-super-12-months",
   "duolingo",
+  "gemini",
 ]);
 
 // Curated starter items if user has not browsed anything yet

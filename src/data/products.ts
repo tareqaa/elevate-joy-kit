@@ -388,7 +388,6 @@ export const CATEGORY_LINKS: CategoryLink[] = [
   { slug: "subscriptions", name: "الاشتراكات", nameEn: "Subscriptions", icon: "⚡", type: "group", accent: "#8b5cf6", bg: "linear-gradient(145deg, rgba(139,92,246,0.18), rgba(139,92,246,0.04))", desc: "", descEn: "" },
   { slug: "social-media", name: "السوشال ميديا", nameEn: "Social Media", icon: "📱", type: "group", accent: "#0088ff", bg: "linear-gradient(145deg, rgba(0,136,255,0.18), rgba(0,136,255,0.04))", desc: "", descEn: "" },
   { slug: "design", name: "البرامج والتطبيقات", nameEn: "Apps & Software", icon: "🧩", type: "group", accent: "#00e5ff", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "", descEn: "" },
-  { slug: "services", name: "الخدمات", nameEn: "Services", icon: "🛠️", type: "group", accent: "#3b82f6", bg: "linear-gradient(145deg, rgba(59,130,246,0.18), rgba(59,130,246,0.04))", desc: "", descEn: "" },
   { slug: "games", name: "الألعاب", nameEn: "Games", icon: "🎮", type: "group", accent: "#05df72", bg: "linear-gradient(145deg, rgba(5,223,114,0.18), rgba(5,223,114,0.04))", desc: "", descEn: "" },
   { slug: "gift-cards", name: "بطاقات الهدايا", nameEn: "Gift Cards", icon: "🎁", type: "group", accent: "#ff2d78", bg: "linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))", desc: "", descEn: "" },
   { slug: "products", name: "عرض الكل", nameEn: "View All", icon: "✨", type: "direct", accent: "#ff385c", bg: "linear-gradient(145deg, rgba(255,56,92,0.18), rgba(255,56,92,0.04))", desc: "", descEn: "" },
@@ -416,10 +415,6 @@ export const SUBCATEGORIES: Record<string, Subcategory[]> = {
     { slug: "windows", product: "windows", name: "تفعيل ويندوز", icon: "🪟", iconImg: "/app/assets/img/windows-icon.svg", bg: "linear-gradient(145deg,#0a2540,#04101c)" },
     { slug: "autodesk", product: "autodesk", name: "Autodesk", icon: "📐", iconImg: "/app/assets/img/autodesk-logo.svg", bg: "linear-gradient(145deg,#2a1a10,#140a05)" },
     { slug: "linkedin", product: "linkedin", name: "LinkedIn Premium", icon: "💼", iconImg: "/app/assets/img/linkedin-logo.svg", bg: "linear-gradient(145deg,#3a2b08,#1a1305)" },
-  ],
-  services: [],
-  ai: [
-    { slug: "gemini", product: "gemini", name: "Gemini Pro", icon: "✨", iconImg: "/app/assets/img/gemini-logo.svg", bg: "linear-gradient(145deg,#2a1a4a,#0e0820)" },
   ],
   games: [
     { slug: "fortnite", product: "fortnite", name: "فورت نايت", icon: "🪂", iconImg: "/app/assets/img/fortnite-logo.png", bg: "linear-gradient(145deg,#0d1a30,#080d18)" },

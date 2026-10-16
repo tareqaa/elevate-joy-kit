@@ -206,8 +206,8 @@ function formatOfferCount(count: number, lang: "ar" | "en") {
 
 export const Route = createFileRoute("/category/$slug")({
   loader: async ({ params }) => {
-    if (params.slug === "products" || params.slug === "all") {
-      throw redirect({ to: "/products" });
+    if (params.slug === "products" || params.slug === "all" || params.slug === "services" || params.slug === "snapchat" || params.slug === "duolingo" || params.slug === "ai") {
+      throw redirect({ to: "/products", replace: true });
     }
     if (params.slug === "game-pass" || params.slug === "gamepass" || params.slug === "xbox-game-pass") {
       throw redirect({ to: "/category/$slug", params: { slug: "subscriptions" }, replace: true });

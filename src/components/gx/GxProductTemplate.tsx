@@ -505,8 +505,11 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
       const trimmed = targetInput.trim();
       if (!trimmed) {
         setInputError(true);
-        inputRef.current?.focus();
-        inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        const mobileEl = typeof document !== "undefined" ? document.getElementById("driffle-target-input-mobile") : null;
+        const desktopEl = typeof document !== "undefined" ? document.getElementById("driffle-target-input-desktop") : null;
+        const targetEl = (typeof window !== "undefined" && window.innerWidth <= 1024 ? mobileEl : desktopEl) || inputRef.current || mobileEl || desktopEl;
+        targetEl?.focus();
+        targetEl?.scrollIntoView({ behavior: "smooth", block: "center" });
         return false;
       }
     }
@@ -729,14 +732,25 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
 
   // Contextual Redeem Steps
   const redeemSteps = useMemo(() => {
-    if (product.deliveryInstructionsAr) {
-      try {
-        const parsed = JSON.parse(product.deliveryInstructionsAr);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {
-        const lines = product.deliveryInstructionsAr.split("\n").map((l: string) => l.trim()).filter(Boolean);
-        if (lines.length > 0) return lines;
-      }
+    // 1. Steam Game Account has top priority to guarantee dedicated 5-step guidance:
+    if (isSteamGameAccount) {
+      return [
+        ar
+          ? "استلم بيانات حساب Steam المخصص لك (اسم المستخدم، كلمة المرور، وبيانات البريد الإلكتروني الأساسي للحساب) فوراً في صفحة تفاصيل طلبك."
+          : "Receive your dedicated Steam account credentials (username, password, and linked email access) instantly on your order page.",
+        ar
+          ? "افتح تطبيق Steam على جهاز الكمبيوتر (PC) وسجّل الدخول باستخدام اسم المستخدم وكلمة المرور المستلمة."
+          : "Open the Steam desktop client on PC and log in using the provided username and password.",
+        ar
+          ? "أدخل رمز التحقق (Steam Guard Code) المرسل إلى بريد الحساب المستلم لتأكيد الدخول بنجاح."
+          : "Enter the verification code sent to the provided account email to confirm login.",
+        ar
+          ? "قم بتغيير كلمة المرور وتفعيل حماية Steam Guard على هاتفك الشخصي لضمان أمان حسابك 100% (مع تجنب تغيير الريجون أو إضافة وسائل دفع بنكية مختلفة لمنع تعليق الحساب)."
+          : "Update the password and enable Steam Guard on your mobile device for full personal security (avoid changing region or adding external payment methods).",
+        ar
+          ? "توجه إلى مكتبة ألعابك (Library) في Steam وابدأ بتحميل اللعبة والاستمتاع بكافة ميزات اللعب الفردي والجماعي والتحديثات الرسمية."
+          : "Go to your Steam Library, install the game, and enjoy full online and single-player features.",
+      ];
     }
 
     if (isSocialProduct || isFollowerProduct || isLikeProduct) {
@@ -749,13 +763,13 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
               ? "Copy the link to your public post or reel."
               : "Copy your public profile link or username."),
         ar
-          ? "ضع الرابط في خانة الطلب الجانبية ثم اضغط على زر 'شراء الآن' أو إضافة للسلة."
+          ? "ضع الرابط في خانة الطلب ثم اضغط على زر 'شراء الآن' أو إضافة للسلة."
           : "Paste the link into the order box and click 'Buy now'.",
         ar
           ? "أكمل عملية الدفع الآمنة عبر وسيلة الدفع التي تناسبك."
           : "Complete your secure payment via your preferred method.",
         ar
-          ? "تبدأ المعالجة مباشرة ويتم الإنجاز بالكامل خلال مدة من ساعة إلى 24 ساعة مع ضمان 30 يوماً ضد أي Drop."
+          ? "تبدأ المعالجة مباشرة ويتم الإنجاز بالكامل خلال مدة من ساعة إلى 24 ساعة مع ضمان 30 يوماً ضد أي انخفاض."
           : "Processing starts immediately; completed within 1 to 24 hours with a 30-day refill guarantee.",
       ];
     }
@@ -763,7 +777,7 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
     if (isYouTube) {
       return [
         ar
-          ? "أدخل إيميل حسابك في Google / Gmail في خانة الطلب الجانبية لتصلك الدعوة عليه."
+          ? "أدخل إيميل حسابك في Google / Gmail في خانة الطلب لتصلك الدعوة عليه."
           : "Enter your personal Google / Gmail email in the order field to receive your invitation.",
         ar
           ? "تأكد تماماً أن حسابك غير منضم لأي مجموعة عائلية أخرى في Google حتى نتمكن من إرسال الدعوة لك بدون أي عائق."
@@ -775,6 +789,17 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
           ? "مبروك! يتم تفعيل اشتراك YouTube Premium و YouTube Music على حسابك الشخصي فوراً وبدون أي إعلانات."
           : "Congratulations! YouTube Premium and YouTube Music are now fully active on your personal account.",
       ];
+    }
+
+    // Custom instructions from DB (if not generic placeholder):
+    if (product.deliveryInstructionsAr && !product.deliveryInstructionsAr.includes("إعدادات النظام")) {
+      try {
+        const parsed = JSON.parse(product.deliveryInstructionsAr);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {
+        const lines = product.deliveryInstructionsAr.split("\n").map((l: string) => l.trim()).filter(Boolean);
+        if (lines.length > 0) return lines;
+      }
     }
 
     if (deliveryInfo.type === "link") {
@@ -802,6 +827,9 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
       const isPlaystation = platformLower.includes("playstation") || platformLower.includes("بلايستيشن") || platformLower.includes("psn") || platformLower.includes("سوني") || platformLower.includes("sony");
       const isGooglePlay = platformLower.includes("google play") || platformLower.includes("جوجل بلاي") || platformLower.includes("قوقل بلاي");
       const isApple = platformLower.includes("apple") || platformLower.includes("itunes") || platformLower.includes("ايتونز") || platformLower.includes("آبل");
+      const isWindowsKey = (product.slug === "windows" || platformLower.includes("windows")) && !platformLower.includes("store");
+      const isOffice = product.slug === "microsoft365" || platformLower.includes("office") || platformLower.includes("365");
+      const isDiscord = platformLower.includes("discord") || product.slug.includes("discord");
 
       if (isRockstar) {
         return [
@@ -887,23 +915,84 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
         ];
       }
 
+      if (isWindowsKey) {
+        return [
+          ar
+            ? "استلم مفتاح التفعيل الرقمي الأصلي (Windows Product Key) المكون من 25 حرفاً فور إتمام الشراء."
+            : "Receive your genuine 25-character Windows product key instantly on your order page.",
+          ar
+            ? "على جهاز الكمبيوتر: افتح الإعدادات (Settings) > النظام (System) > التنشيط (Activation)."
+            : "On your PC, open Settings > System > Activation.",
+          ar
+            ? "اضغط على خيار 'تغيير مفتاح المنتج' (Change product key) وأدخل الكود المكوّن من 25 خانة."
+            : "Click 'Change product key' and enter the 25-character key.",
+          ar
+            ? "اضغط تنشيط (Activate) ليتم التحقق عبر خوادم مايكروسوفت وتأكيد التنشيط الأصلي الدائم مدى الحياة."
+            : "Click Activate to authenticate with official Microsoft servers for lifetime genuine activation.",
+        ];
+      }
+
+      if (isOffice) {
+        return [
+          ar
+            ? "استلم بيانات الحساب أو مفتاح التفعيل الرسمي المعتمد فور إتمام الدفع."
+            : "Receive your official Microsoft 365 credentials or license key immediately after payment.",
+          ar
+            ? "توجه إلى بوابة مايكروسوفت الرسمية: https://setup.office.com أو https://account.microsoft.com"
+            : "Visit the official Microsoft portal at: https://setup.office.com or https://account.microsoft.com",
+          ar
+            ? "سجّل الدخول وقم بتنزيل حزمة تطبيقات Office الأصلية (Word, Excel, PowerPoint, Outlook) وتفعيل مساحة 1TB سحابية على OneDrive."
+            : "Sign in, download the authentic Office suite (Word, Excel, PowerPoint, Outlook), and activate your 1TB OneDrive cloud storage.",
+        ];
+      }
+
+      if (isDiscord) {
+        return [
+          ar
+            ? "استلم رابط أو كود التفعيل الرقمي فوراً في صفحة الطلب وحسابك في الموقع."
+            : "Receive your digital activation link or promo code instantly on your order page.",
+          ar
+            ? "افتح الرابط عبر المتصفح أو تطبيق Discord وسجّل الدخول بحسابك الشخصي."
+            : "Open the link in your browser or Discord app and sign in with your personal account.",
+          ar
+            ? "اضغط على زر 'قبول الهدية' أو 'تأكيد التفعيل' ليتم تطبيق مزايا Discord Nitro أو البوست (Boost) فوراً على حسابك."
+            : "Click 'Accept Gift' or 'Confirm' to apply Nitro benefits or Server Boosts instantly to your account.",
+        ];
+      }
+
       return [
         ar
           ? "استلم كود التفعيل الرقمي فوراً في صفحة تأكيد الطلب وحسابك في الموقع."
           : "Receive the digital key instantly on the order confirmation screen.",
         ar
-          ? "توجه إلى إعدادات النظام أو الموقع الرسمي وأدخل الكود في خانة التفعيل (Change product key)."
+          ? "توجه إلى إعدادات النظام أو الموقع الرسمي وأدخل الكود في خانة التفعيل (Redeem / Product Key)."
           : "Go to system settings or the official portal and enter the key.",
         ar
           ? "اضغط تفعيل (Activate) ليتم التحقق من الكود وتأكيد التفعيل الأصلي."
           : "Click Activate to verify and permanently license your software.",
       ];
     }
+
     if (deliveryInfo.type === "account") {
+      const isAdobe = (product.slug || "").includes("adobe") || (product.nameAr || "").includes("Adobe");
+      if (isAdobe) {
+        return [
+          ar
+            ? "استلم بيانات الحساب (الإيميل وكلمة المرور) فور إتمام عملية الشراء في صفحة تفاصيل طلبك."
+            : "Receive account credentials (email and password) instantly on your order page.",
+          ar
+            ? "سجّل الدخول عبر موقع أدوبي الرسمي: https://creativecloud.adobe.com أو تطبيق Creative Cloud للكمبيوتر."
+            : "Log in via the official Adobe website at https://creativecloud.adobe.com or the Creative Cloud desktop client.",
+          ar
+            ? "استمتع بالوصول الكامل لجميع برامج أدوبي الأصلية (Photoshop, Illustrator, Premiere Pro والمزيد) مع التحديثات الرسمية."
+            : "Enjoy full access to all official Adobe apps (Photoshop, Illustrator, Premiere Pro, etc.) with official updates.",
+        ];
+      }
+
       return [
         ar
-          ? "استلم بيانات الحساب (الإيميل وكلمة المرور) فور إتمام عملية الشراء."
-          : "Receive account credentials (email and password) instantly.",
+          ? "استلم بيانات الحساب (الإيميل وكلمة المرور) فور إتمام عملية الشراء في تفاصيل طلبك."
+          : "Receive account credentials (email and password) instantly on your order page.",
         ar
           ? "سجل الدخول عبر التطبيق أو الموقع الرسمي للمنصة."
           : "Log in via the official website or client application.",
@@ -912,15 +1001,165 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
           : "Update credentials to your preferences and enjoy full access.",
       ];
     }
+
     return [
       ar
         ? "أدخل معرّف أو بيانات حسابك أثناء الطلب لتوجيه الشحن بدقة."
         : "Provide your account ID/tag at checkout for accurate top-up.",
       ar
-        ? "يقوم فريق العمل بتنفيذ الشحن لحسابك مباشرة خلال ثوانٍ معدودة."
+        ? "يقوم فريق العمل بتنفيذ الشحن لحسابك مباشرة وتأكيد العملية فوراً."
         : "Our team executes the balance charge directly within moments.",
     ];
-  }, [product, deliveryInfo.type, isSocialProduct, isFollowerProduct, isLikeProduct, ar]);
+  }, [product, deliveryInfo.type, isSocialProduct, isFollowerProduct, isLikeProduct, isSteamGameAccount, isYouTube, ar]);
+
+  const renderBuyCard = (isDesktop: boolean) => {
+    const inputId = isDesktop ? "driffle-target-input-desktop" : "driffle-target-input-mobile";
+    return (
+      <div className={`driffle-buy-card gx-buy-card ${isDesktop ? "is-desktop" : "is-mobile"}`}>
+        {/* Clean, Direct Price Box */}
+        <div className="driffle-price-box gx-price-box">
+          <span className="driffle-price-label gx-price-label">
+            {pick(activeVariant.labelAr, activeVariant.labelEn)}
+          </span>
+          <div className="driffle-price-main gx-price-main">
+            <span className="driffle-price-val gx-price-val">{format(activePrice)}</span>
+            {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
+              <span className="driffle-price-old gx-price-old">{format(activeVariant.oldPrice)}</span>
+            )}
+          </div>
+          {(isSocialProduct || isFollowerProduct || isLikeProduct) && (
+            <div className="driffle-price-note gx-price-note">
+              {ar ? "⚡ تنفيذ من ساعة إلى 24 ساعة • ضمان 30 يوماً ضد النقص ⓘ" : "⚡ 1-24h Delivery • 30-Day Drop Refill Guarantee ⓘ"}
+            </div>
+          )}
+        </div>
+
+        {/* Target Link or Username Input Box */}
+        {requiresCustomerInput && (
+          <div className={`driffle-target-input-box ${inputError ? "has-error" : ""}`}>
+            <label className="driffle-target-label" htmlFor={inputId}>
+              <span className="driffle-target-label-icon">{isLikeProduct ? "❤️" : "🔗"}</span>
+              <span>{targetLabel}</span>
+            </label>
+            <div className="driffle-target-field-wrap">
+              <input
+                ref={isDesktop ? inputRef : undefined}
+                id={inputId}
+                type="text"
+                dir="auto"
+                className="driffle-target-input"
+                placeholder={targetPlaceholder}
+                value={targetInput}
+                onChange={(e) => {
+                  setTargetInput(e.target.value);
+                  if (inputError && e.target.value.trim()) {
+                    setInputError(false);
+                  }
+                }}
+              />
+              {targetInput && (
+                <button
+                  type="button"
+                  className="driffle-target-clear-btn"
+                  onClick={() => setTargetInput("")}
+                  title={ar ? "مسح" : "Clear"}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            {inputError && (
+              <div className="driffle-input-error-msg">
+                <span>⚠️</span>
+                <span>
+                  {isLikeProduct
+                    ? (ar ? "يرجى وضع رابط المنشور أو الريلز قبل إتمام الشراء" : "Please provide the post link before purchasing")
+                    : (ar ? "يرجى وضع رابط الحساب أو اسم المستخدم للمتابعة" : "Please provide the profile link or username to proceed")}
+                </span>
+              </div>
+            )}
+            {targetHint && !inputError && (
+              <div className="driffle-target-hint">{targetHint}</div>
+            )}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="driffle-cta-row gx-cta-row">
+          <button
+            type="button"
+            className="driffle-cart-btn gx-cart-btn"
+            onClick={handleAddToCart}
+            title={ar ? "إضافة إلى السلة" : "Add to Cart"}
+            aria-label={ar ? "إضافة إلى السلة" : "Add to Cart"}
+          >
+            {addedCart ? "✓" : "🛒"}
+          </button>
+
+          <button
+            type="button"
+            className="driffle-buy-now-btn gx-buy-now-btn"
+            onClick={handleBuyNow}
+          >
+            <span>🛍️</span>
+            <span>{ar ? "شراء الآن" : "Buy now"}</span>
+          </button>
+        </div>
+
+        {/* Trust Highlights */}
+        <div className="driffle-trust-box gx-trust-box">
+          {isSocialProduct || isFollowerProduct || isLikeProduct ? (
+            <>
+              <div className="driffle-trust-item gx-trust-item" style={{ color: "#00e5ff" }}>
+                <span className="driffle-trust-icon gx-trust-icon">⚡</span>
+                <span>{ar ? "تنفيذ وتسليم خلال ساعة إلى 24 ساعة" : "Delivery within 1 to 24 hours"}</span>
+              </div>
+              <div className="driffle-trust-item gx-trust-item" style={{ color: "#10b981" }}>
+                <span className="driffle-trust-icon gx-trust-icon">🛡️</span>
+                <span>{ar ? "ضمان 30 يوماً تعويض كامل لأي Drop أو نقص" : "30-Day Guarantee: Free Refill for Any Drop"}</span>
+              </div>
+              <div className="driffle-trust-item gx-trust-item" style={{ color: "#f59e0b" }}>
+                <span className="driffle-trust-icon gx-trust-icon">⚠️</span>
+                <span>{ar ? "قد يطرأ انخفاض طبيعي (Drop) ونضمن تعويضه" : "Natural Drop May Occur & Is 100% Compensated"}</span>
+              </div>
+              <div className="driffle-trust-item gx-trust-item">
+                <span className="driffle-trust-icon gx-trust-icon">🔒</span>
+                <span>{ar ? "أمان 100% بدون الحاجة لكلمة المرور" : "100% Safe — No Password Needed"}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="driffle-trust-item gx-trust-item">
+                <span className="driffle-trust-icon gx-trust-icon">⚡</span>
+                <span>{ar ? "تسليم فوري ومباشر بعد الدفع" : "Instant Delivery within seconds"}</span>
+              </div>
+              <div className="driffle-trust-item gx-trust-item">
+                <span className="driffle-trust-icon gx-trust-icon">🎧</span>
+                <span>{ar ? "دعم فني وخدمة عملاء 24/7" : "24/7 Support & Live Assistance"}</span>
+              </div>
+              <div className="driffle-trust-item gx-trust-item">
+                <span className="driffle-trust-icon gx-trust-icon">🛡️</span>
+                <span>{ar ? "بائع موثوق وضمان رسمي 100%" : "Verified Seller & Official Warranty"}</span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Only show other-offers-hint when multiple variants exist (> 1) and in desktop */}
+        {variants.length > 1 && (
+          <div
+            className="driffle-other-offers-hint gx-other-offers-hint"
+            onClick={() => {
+              const el = document.querySelector(".driffle-variations-box, .gx-variations-box");
+              el?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            +{variants.length - 1} {ar ? "خيارات وفئات إضافية متاحة لهذا المنتج" : "more options available"}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="wrap driffle-page-wrap gx-page-wrap">
@@ -1102,6 +1341,11 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
             </section>
           )}
 
+          {/* Mobile-Only Purchase Card: Placed directly at the top of the mobile screen under Hero/Variations */}
+          <div className="gx-mobile-buy-box">
+            {renderBuyCard(false)}
+          </div>
+
           {/* Important Notice Box (Single top box, can be hidden from admin) */}
           {!isNoticeHidden && displayNoticeList.length > 0 && (
             <section className="driffle-notice-box gx-notice-box" style={isSteamGameAccount ? { borderColor: "rgba(0, 229, 255, 0.45)", background: "linear-gradient(135deg, rgba(23, 29, 43, 0.95), rgba(15, 23, 42, 0.92))" } : undefined}>
@@ -1128,8 +1372,8 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
                   ))}
                 </div>
 
-                {isSteamGameAccount && (
-                  <div style={{ marginTop: 14, padding: "12px 14px", background: "rgba(0,0,0,0.38)", borderRadius: 10, fontSize: 13, color: "#cbd5e1", lineHeight: 1.65, borderRight: ar ? "3px solid var(--cyan, #00e5ff)" : undefined, borderLeft: !ar ? "3px solid var(--cyan, #00e5ff)" : undefined }}>
+                {isSteamGameAccount && !ar && (
+                  <div style={{ marginTop: 14, padding: "12px 14px", background: "rgba(0,0,0,0.38)", borderRadius: 10, fontSize: 13, color: "#cbd5e1", lineHeight: 1.65, borderLeft: "3px solid var(--cyan, #00e5ff)" }}>
                     <strong style={{ color: "var(--cyan, #00e5ff)", display: "block", marginBottom: 6, fontSize: 13.5 }}>Important Notice:</strong>
                     <p style={{ margin: "0 0 6px" }}>Pre-order bonuses may not be included or differ from other offers. Your game key will be sent on the official release date.</p>
                     <p style={{ margin: "0 0 6px" }}>This is not a product key. A new account will be created for you, and the purchased content will be accessible through that account. You can log in using the credentials provided in your Inventory.</p>
@@ -1252,151 +1496,47 @@ export function GxProductTemplate({ product }: { product: CatalogProduct }) {
           </section>
         </main>
 
-        {/* Right Column: Sticky Purchase Sidebar */}
-        <aside className="driffle-sidebar gx-sidebar">
-          <div className="driffle-buy-card gx-buy-card">
-            {/* Clean, Direct Price Box */}
-            <div className="driffle-price-box gx-price-box">
-              <span className="driffle-price-label gx-price-label">
-                {pick(activeVariant.labelAr, activeVariant.labelEn)}
-              </span>
-              <div className="driffle-price-main gx-price-main">
-                <span className="driffle-price-val gx-price-val">{format(activePrice)}</span>
-                {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
-                  <span className="driffle-price-old gx-price-old">{format(activeVariant.oldPrice)}</span>
-                )}
-              </div>
-              {(isSocialProduct || isFollowerProduct || isLikeProduct) && (
-                <div className="driffle-price-note gx-price-note">
-                  {ar ? "⚡ تنفيذ من ساعة إلى 24 ساعة • ضمان 30 يوماً ضد النقص ⓘ" : "⚡ 1-24h Delivery • 30-Day Drop Refill Guarantee ⓘ"}
-                </div>
-              )}
-            </div>
+        {/* Right Column: Sticky Purchase Sidebar (Desktop Only) */}
+        <aside className="driffle-sidebar gx-sidebar gx-desktop-sidebar">
+          {renderBuyCard(true)}
+        </aside>
+      </div>
 
-            {/* Target Link or Username Input Box */}
-            {requiresCustomerInput && (
-              <div className={`driffle-target-input-box ${inputError ? "has-error" : ""}`}>
-                <label className="driffle-target-label" htmlFor="driffle-target-input">
-                  <span className="driffle-target-label-icon">{isLikeProduct ? "❤️" : "🔗"}</span>
-                  <span>{targetLabel}</span>
-                </label>
-                <div className="driffle-target-field-wrap">
-                  <input
-                    ref={inputRef}
-                    id="driffle-target-input"
-                    type="text"
-                    dir="auto"
-                    className="driffle-target-input"
-                    placeholder={targetPlaceholder}
-                    value={targetInput}
-                    onChange={(e) => {
-                      setTargetInput(e.target.value);
-                      if (inputError && e.target.value.trim()) {
-                        setInputError(false);
-                      }
-                    }}
-                  />
-                  {targetInput && (
-                    <button
-                      type="button"
-                      className="driffle-target-clear-btn"
-                      onClick={() => setTargetInput("")}
-                      title={ar ? "مسح" : "Clear"}
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-                {inputError && (
-                  <div className="driffle-input-error-msg">
-                    <span>⚠️</span>
-                    <span>
-                      {isLikeProduct
-                        ? (ar ? "يرجى وضع رابط المنشور أو الريلز قبل إتمام الشراء" : "Please provide the post link before purchasing")
-                        : (ar ? "يرجى وضع رابط الحساب أو اسم المستخدم للمتابعة" : "Please provide the profile link or username to proceed")}
-                    </span>
-                  </div>
-                )}
-                {targetHint && !inputError && (
-                  <div className="driffle-target-hint">{targetHint}</div>
-                )}
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="driffle-cta-row gx-cta-row">
-              <button
-                type="button"
-                className="driffle-cart-btn gx-cart-btn"
-                onClick={handleAddToCart}
-                title={ar ? "إضافة إلى السلة" : "Add to Cart"}
-              >
-                {addedCart ? "✓" : "🛒"}
-              </button>
-
-              <button
-                type="button"
-                className="driffle-buy-now-btn gx-buy-now-btn"
-                onClick={handleBuyNow}
-              >
-                <span>🛍️</span>
-                <span>{ar ? "شراء الآن" : "Buy now"}</span>
-              </button>
-            </div>
-
-            {/* Trust Highlights */}
-            <div className="driffle-trust-box gx-trust-box">
-              {isSocialProduct || isFollowerProduct || isLikeProduct ? (
-                <>
-                  <div className="driffle-trust-item gx-trust-item" style={{ color: "#00e5ff" }}>
-                    <span className="driffle-trust-icon gx-trust-icon">⚡</span>
-                    <span>{ar ? "تنفيذ وتسليم خلال ساعة إلى 24 ساعة" : "Delivery within 1 to 24 hours"}</span>
-                  </div>
-                  <div className="driffle-trust-item gx-trust-item" style={{ color: "#10b981" }}>
-                    <span className="driffle-trust-icon gx-trust-icon">🛡️</span>
-                    <span>{ar ? "ضمان 30 يوماً تعويض كامل لأي Drop أو نقص" : "30-Day Guarantee: Free Refill for Any Drop"}</span>
-                  </div>
-                  <div className="driffle-trust-item gx-trust-item" style={{ color: "#f59e0b" }}>
-                    <span className="driffle-trust-icon gx-trust-icon">⚠️</span>
-                    <span>{ar ? "قد يطرأ انخفاض طبيعي (Drop) ونضمن تعويضه" : "Natural Drop May Occur & Is 100% Compensated"}</span>
-                  </div>
-                  <div className="driffle-trust-item gx-trust-item">
-                    <span className="driffle-trust-icon gx-trust-icon">🔒</span>
-                    <span>{ar ? "أمان 100% بدون الحاجة لكلمة المرور" : "100% Safe — No Password Needed"}</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="driffle-trust-item gx-trust-item">
-                    <span className="driffle-trust-icon gx-trust-icon">⚡</span>
-                    <span>{ar ? "تسليم فوري ومباشر بعد الدفع" : "Instant Delivery within seconds"}</span>
-                  </div>
-                  <div className="driffle-trust-item gx-trust-item">
-                    <span className="driffle-trust-icon gx-trust-icon">🎧</span>
-                    <span>{ar ? "دعم فني وخدمة عملاء 24/7" : "24/7 Support & Live Assistance"}</span>
-                  </div>
-                  <div className="driffle-trust-item gx-trust-item">
-                    <span className="driffle-trust-icon gx-trust-icon">🛡️</span>
-                    <span>{ar ? "بائع موثوق وضمان رسمي 100%" : "Verified Seller & Official Warranty"}</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Only show other-offers-hint when multiple variants exist (> 1) */}
-            {variants.length > 1 && (
-              <div
-                className="driffle-other-offers-hint gx-other-offers-hint"
-                onClick={() => {
-                  const el = document.querySelector(".driffle-variations-box, .gx-variations-box");
-                  el?.scrollIntoView({ behavior: "smooth" });
-                }}
-              >
-                +{variants.length - 1} {ar ? "خيارات وفئات إضافية متاحة لهذا المنتج" : "more options available"}
-              </div>
+      {/* 3. Sticky Mobile Bottom Floating Action Bar */}
+      <div className="gx-mobile-sticky-buy-bar">
+        <div className="gx-sticky-bar-info">
+          <div className="gx-sticky-bar-title">
+            {name}
+            {product.variants.length > 1 && pick(activeVariant.labelAr, activeVariant.labelEn) && (
+              <span className="gx-sticky-bar-variant"> • {pick(activeVariant.labelAr, activeVariant.labelEn)}</span>
             )}
           </div>
-        </aside>
+          <div className="gx-sticky-bar-price">
+            <strong>{format(activePrice)}</strong>
+            {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
+              <span className="gx-sticky-bar-old">{format(activeVariant.oldPrice)}</span>
+            )}
+          </div>
+        </div>
+        <div className="gx-sticky-bar-actions">
+          <button
+            type="button"
+            className="gx-sticky-cart-btn"
+            onClick={handleAddToCart}
+            title={ar ? "إضافة إلى السلة" : "Add to Cart"}
+            aria-label={ar ? "إضافة إلى السلة" : "Add to Cart"}
+          >
+            {addedCart ? "✓" : "🛒"}
+          </button>
+          <button
+            type="button"
+            className="gx-sticky-buy-btn"
+            onClick={handleBuyNow}
+          >
+            <span>🛍️</span>
+            <span>{ar ? "شراء الآن" : "Buy now"}</span>
+          </button>
+        </div>
       </div>
     </div>
   );
