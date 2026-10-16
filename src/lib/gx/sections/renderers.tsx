@@ -359,16 +359,25 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
     ? t("home.cat_title")
     : (lang === "en" ? (data.title_en || data.title) : data.title);
 
+  const CATEGORY_TAGLINES: Record<string, { ar: string; en: string }> = {
+    subscriptions: { ar: "حسابات وباقات اشتراك رسمية", en: "Official Subscriptions & Accounts" },
+    games: { ar: "أكواد وحسابات ألعاب أصلية", en: "Original Game Keys & Accounts" },
+    design: { ar: "برامج التصميم والتطبيقات الأصلية", en: "Design Software & Creative Apps" },
+    "social-media": { ar: "خدمات زيادة التفاعل والمتابعين", en: "Social Media Growth & Engagement" },
+    "gift-cards": { ar: "بطاقات شحن رقمية مع تسليم فوري", en: "Digital Gift Cards & Top-ups" },
+    products: { ar: "استكشف كامل عروض ومنتجات المتجر", en: "Browse All Store Products & Deals" },
+  };
+
   return (
-    <section className="section" id="categories" style={{ paddingTop: 28, paddingBottom: 28 }}>
+    <section className="section" id="categories" style={{ paddingTop: 32, paddingBottom: 32 }}>
       <div className="wrap">
-        <div className="section-head" style={{ marginBottom: 20 }}>
+        <div className="section-head" style={{ marginBottom: 24 }}>
           <div>
             <span className="k" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
               <LayoutGrid size={14} style={{ color: "var(--cyan, #00e5ff)" }} />
               {displayEyebrow}
             </span>
-            <h2 style={{ fontSize: 24, fontWeight: 900 }}>{displayTitle}</h2>
+            <h2 style={{ fontSize: 26, fontWeight: 900, letterSpacing: "-0.3px" }}>{displayTitle}</h2>
           </div>
         </div>
         <div className="cat-grid-big">
@@ -380,6 +389,9 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
             const accent = c0._o_accent || theme.accent;
             const glow = theme.glow;
             const ambient = theme.ambient;
+            const subtext = ar
+              ? (CATEGORY_TAGLINES[c0.slug]?.ar || "تصفح المنتجات والعروض")
+              : (CATEGORY_TAGLINES[c0.slug]?.en || "Browse Products & Deals");
 
             return (
               <Link
@@ -396,16 +408,18 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
                 <div className="cat-card-body">
                   <div className="cat-card-top-row">
                     <div className="cat-ic">
-                      {renderCategoryVectorIcon(c0.slug, 40)}
+                      {renderCategoryVectorIcon(c0.slug, 42)}
                     </div>
 
-                    <div className="carrow-circle" aria-hidden="true">
+                    <div className="cat-explore-pill carrow-circle" aria-hidden="true">
+                      <span className="cat-explore-label">{ar ? "تصفح" : "Explore"}</span>
                       <span className="arrow-ic">{ar ? "←" : "→"}</span>
                     </div>
                   </div>
 
                   <div className="cat-card-bottom-row">
                     <div className="cname-modern">{name}</div>
+                    <div className="cat-sub-text">{subtext}</div>
                   </div>
                 </div>
 
