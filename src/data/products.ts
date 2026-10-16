@@ -278,6 +278,136 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
       { icon: "💰", title: "1000 وحدة V-Bucks شهريًا", desc: "رصيد V-Bucks بينضاف لحسابك كل شهر طول فترة الاشتراك، تصرفه على أي شي بالمتجر." },
     ],
   },
+  "adobe-express": {
+    slug: "adobe-express",
+    name: "Adobe Express Premium",
+    nameAr: "Adobe Express Premium | اشتراك 3 أشهر (كود رقمي)",
+    icon: "🎨",
+    iconImg: "/app/assets/img/catalog/adobe-express.svg",
+    imageUrl: "/app/assets/img/catalog/adobe-express.jpg",
+    thumbBg: "linear-gradient(145deg, #2b1145, #12061f)",
+    category: "البرامج والتطبيقات",
+    categoryAr: "البرامج والتطبيقات",
+    tagline: "اشتراك أدوبي إكسبرس بريميوم 3 أشهر — كود رقمي أصلي وتفعيل رسمي بدون فيزا",
+    description:
+      "احصل على اشتراك Adobe Express Premium لمدة 3 أشهر عبر كود تفعيل رقمي أصلي 100%. يتيح لك تصميم منشورات السوشال ميديا، الفيديوهات، واستخدام أدوات الذكاء الاصطناعي بكل سهولة.\n\nالمواصفات والشروط:\n• كود رقمي أصلي (Digital Key).\n• مدة الاشتراك: 3 أشهر.\n• لا يتطلب أي وسيلة دفع أو بطاقة بنكية للتفعيل (No payment method required).\n• رابط التفعيل الرسمي: redeem.adobe.com\n• يعمل فقط على الحسابات التي لا تحتوي على أي اشتراك أدوبي نشط أو سابق.\n• يجب تفعيل الكود خلال 3 أيام من الشراء لضمان صلاحيته.",
+    identifierLabel: "حساب أدوبي",
+    identifierPlaceholder: "example@gmail.com",
+    deliveryMethod: "يوصلك كود رقمي أصلي فوراً مع رابط التفعيل الرسمي redeem.adobe.com، وتفعله بدون الحاجة لأي بطاقة دفع.",
+    plans: [
+      { id: "adobe-express-3m", label: "3 أشهر (كود رقمي)", price: 4, oldPrice: 15, tag: "عرض خاص" },
+    ],
+    features: [
+      { icon: "🎨", title: "تصاميم وفيديوهات احترافية", desc: "آلاف القوالب الحصرية لمنشورات السوشال ميديا، الفيديوهات والشعارات." },
+      { icon: "✨", title: "Adobe Firefly AI", desc: "أقوى أدوات الذكاء الاصطناعي لتوليد الصور وتعديل العناصر بضغطة زر." },
+      { icon: "🔑", title: "كود رقمي بدون فيزا", desc: "تفعيل مباشر عبر redeem.adobe.com دون الحاجة لإدخال أي بطاقة بنكية." },
+      { icon: "⏳", title: "صلاحية 3 أيام", desc: "يجب استخدام الكود وتفعيله خلال 3 أيام من الشراء على حساب جديد." },
+    ],
+  },
+  "notion-business": {
+    slug: "notion-business",
+    name: "Notion Business",
+    nameAr: "Notion Business | اشتراك 3 أشهر مع 300 رصيد شهرياً (كود رقمي)",
+    icon: "📝",
+    iconImg: "/app/assets/img/catalog/notion.svg",
+    imageUrl: "/app/assets/img/catalog/notion.jpg",
+    thumbBg: "linear-gradient(145deg, #1f232b, #0f1115)",
+    category: "البرامج والتطبيقات",
+    categoryAr: "البرامج والتطبيقات",
+    tagline: "نوشن بزنس 3 أشهر مع 300 رصيد شهرياً — كود رسمي لإدارة الفرق والمشاريع",
+    description:
+      "اشتراك Notion Business المتقدم لمدة 3 أشهر مع 300 رصيد (Credits) شهرياً عبر كود رسمي. يساعدك في تنظيم المشاريع، إدارة مهام العمل والفرق، وتوثيق الملاحظات وقواعد البيانات باحترافية وسرعة فائقة.\n\nالمواصفات والشروط:\n• كود رسمي (Key) أصلي ومضمون.\n• مدة الاشتراك: 3 أشهر مع 300 رصيد شهرياً (300 Credits per month).\n• يتطلب إضافة بطاقة دفع صالحة (فيزا / ماستركارد) في حسابك لإتمام التفعيل.\n• يجب استخدام الكود خلال 24 ساعة من تاريخ الشراء لضمان سريانه.",
+    identifierLabel: "حساب Notion",
+    identifierPlaceholder: "user@notion.so",
+    deliveryMethod: "يوصلك الكود الرقمي لتطبيقه في إعدادات مساحة العمل في Notion مع ربط بطاقة بنكية صالحة لإتمام التفعيل.",
+    plans: [
+      { id: "notion-biz-3m", label: "3 أشهر (300 كريدت شهرياً)", price: 9, oldPrice: 30, tag: "300 رصيد شهرياً" },
+    ],
+    features: [
+      { icon: "👥", title: "مساحات عمل جماعية متقدمة", desc: "أدوات مخصصة للفرق، صلاحيات متقدمة، وتحليلات المشاريع." },
+      { icon: "💎", title: "300 رصيد شهرياً", desc: "يشمل 300 كريدت كل شهر لاستخدام الذكاء الاصطناعي والمميزات المتقدمة." },
+      { icon: "💳", title: "يتطلب بطاقة صالحة", desc: "يلزم ربط بطاقة بنكية نشطة بالحساب لإتمام وتأكيد تفعيل الكود." },
+      { icon: "⚡", title: "استخدام خلال 24 ساعة", desc: "يجب تفعيل الكود واستخدامه خلال 24 ساعة من استلامه." },
+    ],
+  },
+  "adobe-acrobat-standard": {
+    slug: "adobe-acrobat-standard",
+    name: "Adobe Acrobat Standard 2026",
+    nameAr: "Adobe Acrobat Standard 2026 (Global) | جهازين 3 أشهر (كود رقمي)",
+    icon: "📕",
+    iconImg: "/app/assets/img/catalog/adobe-acrobat.svg",
+    imageUrl: "/app/assets/img/catalog/adobe-acrobat.jpg",
+    thumbBg: "linear-gradient(145deg, #3a000d, #1a0005)",
+    category: "البرامج والتطبيقات",
+    categoryAr: "البرامج والتطبيقات",
+    tagline: "أدوبي أكروبات ستاندرد 2026 لجهازين 3 أشهر — كود أصلي بدون فيزا",
+    description:
+      "برنامج Adobe Acrobat Standard 2026 العالمي الرسمي للتعامل مع ملفات PDF وتعديلها وتحويلها وتوقيعها إلكترونياً باحترافية.\n\nالمواصفات والشروط:\n• كود رقمي أصلي (Digital Key).\n• مدة الاشتراك: 3 أشهر كاملة.\n• يعمل على جهازين بالتزامن (2 Devices): PC / Mac / Android / iOS.\n• تفعيل رسمي ومباشر عبر صفحة أدوبي: redeem.adobe.com\n• لا يتطلب أي بطاقة دفع أو بيانات بنكية للتفعيل.\n• نسخة عالمية (Global) صالحة لكافة الدول.",
+    identifierLabel: "حساب أدوبي",
+    identifierPlaceholder: "example@gmail.com",
+    deliveryMethod: "كود رقمي يوصلك فوراً وتفعله على حسابك في redeem.adobe.com ويعمل على جهازين بدون أي فيزا.",
+    plans: [
+      { id: "acrobat-std-3m", label: "3 أشهر (جهازين PC/Mac/Mobile)", price: 12, oldPrice: 40, tag: "جهازين" },
+    ],
+    features: [
+      { icon: "📑", title: "تعديل وتحويل PDF كامل", desc: "تعديل النصوص والصور في ملفات PDF وتحويلها إلى Word وإكسل بدقة عالية." },
+      { icon: "💻", title: "يعمل على جهازين", desc: "تفعيل رسمي يدعم جهازين بنفس الوقت على ويندوز، ماك، آيفون، وأندرويد." },
+      { icon: "🔒", title: "بدون بطاقة بنكية", desc: "تفعيل مباشر عبر redeem.adobe.com لا يحتاج لإدخال بطاقة فيزا نهائياً." },
+      { icon: "🌍", title: "عالمي Global", desc: "نسخة رسمية عالمية صالحة للعمل في كافة البلدان بدون قيود." },
+    ],
+  },
+  headspace: {
+    slug: "headspace",
+    name: "Headspace",
+    nameAr: "Headspace | اشتراك 4 أشهر بريميوم (رابط تفعيل رسمي)",
+    icon: "🧘",
+    iconImg: "/app/assets/img/catalog/headspace.svg",
+    imageUrl: "/app/assets/img/catalog/headspace.jpg",
+    thumbBg: "linear-gradient(145deg, #1e2340, #0f1122)",
+    category: "الاشتراكات",
+    categoryAr: "الاشتراكات",
+    tagline: "تطبيق التأمل والنوم الشهير 4 أشهر بريميوم — بدينار واحد فقط عبر رابط تفعيل",
+    description:
+      "تطبيق التأمل والنوم والتركيز العالمي الشهير Headspace باشتراك 4 أشهر كاملة بريميوم بسعر دينار واحد فقط!\n\nالمواصفات والشروط:\n• مدة الاشتراك: 4 أشهر كاملة بريميوم.\n• طريقة التسليم: رابط تفعيل رسمي ومباشر (Redeem Link).\n• السعر الخيالي: 1 دينار فقط.\n• يدعم كافة الأجهزة: iOS / Android / Web.\n• يتيح الوصول الكامل لكافة جلسات التأمل، تمارين النوم، والموسيقى المركزة.",
+    identifierLabel: "البريد الإلكتروني",
+    identifierPlaceholder: "name@example.com",
+    deliveryMethod: "يوصلك رابط تفعيل رسمي مباشر، تفتحه وتسجل دخول بحسابك ويتفعل الـ 4 أشهر بريميوم فوراً.",
+    plans: [
+      { id: "headspace-4m", label: "4 أشهر بريميوم (رابط تفعيل)", price: 1, oldPrice: 18, tag: "صيد اليوم (1 د.أ)" },
+    ],
+    features: [
+      { icon: "🌙", title: "تمارين نوم واسترخاء Sleepcasts", desc: "أصوات طبيعية وقصص مهدئة تساعدك على النوم العميق والسريع." },
+      { icon: "🧘‍♂️", title: "مئات جلسات التأمل", desc: "جلسات تأمل يومية لتقليل التوتر والقلق وتحسين الصحة النفسية." },
+      { icon: "🎧", title: "موسيقى تركيز Focus Music", desc: "موسيقى علمية مصممة لمساعدتك على العمل والدراسة بتركيز عالي." },
+      { icon: "🔗", title: "تفعيل فوري برابط", desc: "رابط تفعيل رسمي مباشر بدون تعقيدات وبدينار واحد فقط." },
+    ],
+  },
+  nordvpn: {
+    slug: "nordvpn",
+    name: "NordVPN",
+    nameAr: "NordVPN | اشتراك 3 أشهر لـ 10 أجهزة بدون بطاقة دفع",
+    icon: "🌐",
+    iconImg: "/app/assets/img/catalog/nordvpn.svg",
+    imageUrl: "/app/assets/img/catalog/nordvpn.jpg",
+    thumbBg: "linear-gradient(145deg, #0f2b5c, #071329)",
+    category: "الاشتراكات",
+    categoryAr: "الاشتراكات",
+    tagline: "نورد في بي ان 3 أشهر لـ 10 أجهزة — أسرع VPN عالمي بدون بطاقة دفع",
+    description:
+      "اشتراك NordVPN الرسمي الأقوى عالمياً في الأمان والسرعة والتشفير لمدة 3 أشهر، يعمل على 10 أجهزة وبدون أي حاجة لبطاقة بنكية!\n\nالمواصفات والشروط:\n• مدة الاشتراك: 3 أشهر كاملة.\n• يعمل على 10 أجهزة في وقت واحد (10 Simultaneous Devices).\n• لا حاجة لبطاقة دفع أو فيزا للتفعيل (No payment methods required).\n• متوافق مع: Windows / Mac / iOS / Android / Linux / Android TV.\n• سيرفرات فائقة السرعة مع حماية من التتبع والإعلانات (Threat Protection).",
+    identifierLabel: "البريد الإلكتروني",
+    identifierPlaceholder: "user@gmail.com",
+    deliveryMethod: "بيانات تفعيل رسمية توصلك فوراً لتسجيل الدخول في تطبيق NordVPN على حتى 10 أجهزة دون الحاجة لفيزا.",
+    plans: [
+      { id: "nordvpn-3m", label: "3 أشهر (10 أجهزة)", price: 6, oldPrice: 24, tag: "10 أجهزة بالتزامن" },
+    ],
+    features: [
+      { icon: "🚀", title: "سرعات فائقة وثبات عالي", desc: "أكثر من 6000 سيرفر سريع ومستقر حول العالم لتصفح بدون أي بطء." },
+      { icon: "📱", title: "حماية 10 أجهزة", desc: "استخدم الاشتراك على الكمبيوتر، اللابتوب، التلفزيون، والموبايلات بنفس الوقت." },
+      { icon: "🛡️", title: "Threat Protection", desc: "حجب الإعلانات المزعجة، المواقع المشبوهة، والبرمجيات الخبيثة تلقائياً." },
+      { icon: "💳", title: "بدون أي بطاقة بنكية", desc: "لا حاجة لربط فيزا أو بطاقة دفع، استمتع بالحماية مباشرة." },
+    ],
+  },
 };
 
 export type Denomination = { id: string; value: string; price: number };
@@ -406,9 +536,15 @@ export type Subcategory = {
 };
 
 export const SUBCATEGORIES: Record<string, Subcategory[]> = {
-  subscriptions: [],
+  subscriptions: [
+    { slug: "headspace", product: "headspace", name: "Headspace", icon: "🧘", iconImg: "/app/assets/img/catalog/headspace.svg", bg: "linear-gradient(145deg,#1e2340,#0f1122)" },
+    { slug: "nordvpn", product: "nordvpn", name: "NordVPN", icon: "🌐", iconImg: "/app/assets/img/catalog/nordvpn.svg", bg: "linear-gradient(145deg,#0f2b5c,#071329)" },
+  ],
   "social-media": [],
   design: [
+    { slug: "adobe-express", product: "adobe-express", name: "Adobe Express", icon: "🎨", iconImg: "/app/assets/img/catalog/adobe-express.svg", bg: "linear-gradient(145deg,#2b1145,#12061f)" },
+    { slug: "notion-business", product: "notion-business", name: "Notion Business", icon: "📝", iconImg: "/app/assets/img/catalog/notion.svg", bg: "linear-gradient(145deg,#1f232b,#0f1115)" },
+    { slug: "adobe-acrobat-standard", product: "adobe-acrobat-standard", name: "Adobe Acrobat Standard 2026", icon: "📕", iconImg: "/app/assets/img/catalog/adobe-acrobat.svg", bg: "linear-gradient(145deg,#3a000d,#1a0005)" },
     { slug: "adobe", product: "adobe", name: "Adobe Creative Cloud", icon: "🎨", iconImg: "/app/assets/img/adobe-cc.webp", bg: "#12151e" },
     { slug: "canva", product: "canva", name: "Canva Pro", icon: "🎨", iconImg: "/app/assets/img/canva-logo.png", bg: "linear-gradient(145deg,#1a2f6b,#0a1230)" },
     { slug: "microsoft365", product: "microsoft365", name: "Microsoft 365", icon: "🅼", iconImg: "/app/assets/img/microsoft365-logo.svg", bg: "linear-gradient(145deg,#3a1208,#180804)" },

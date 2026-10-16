@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="aeBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#1e1035"/>
+      <stop offset="100%" stopColor="#0d0618"/>
+    </linearGradient>
+    <linearGradient id="aeLoop1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#FA1C46"/>
+      <stop offset="50%" stopColor="#FF7700"/>
+      <stop offset="100%" stopColor="#FFB300"/>
+    </linearGradient>
+    <linearGradient id="aeLoop2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stopColor="#6C2BD9"/>
+      <stop offset="50%" stopColor="#C026D3"/>
+      <stop offset="100%" stopColor="#FF007A"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#aeBg)"/>
+  <rect width="504" height="504" x="4" y="4" rx="108" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="8"/>
+  <g transform="translate(256, 256)">
+    <!-- Adobe Express Double Ribbon Infinity Symbol -->
+    <path d="M-60 -90 C-10  -90, 40 -40, 80 10 C120 60, 150 90, 180 80 C210 70, 220 30, 195 -10 C165 -60, 100 -120, -10 -130 C-90 -140, -150 -100, -170 -40 C-185 5, -170 55, -135 85 C-95 115, -45 110, 0 80 C50 50, 90 0, 120 -50" fill="none" stroke="url(#aeLoop1)" stroke-width="48" stroke-linecap="round"/>
+    <path d="M60 90 C10 90, -40 40, -80 -10 C-120 -60, -150 -90, -180 -80 C-210 -70, -220 -30, -195 10 C-165 60, -100 120, 10 130 C90 140, 150 100, 170 40 C185 -5, 170 -55, 135 -85 C95 -115, 45 -110, 0 -80 C-50 -50, -90 0, -120 50" fill="none" stroke="url(#aeLoop2)" stroke-width="44" stroke-linecap="round" opacity="0.9"/>
+  </g>
+</svg>

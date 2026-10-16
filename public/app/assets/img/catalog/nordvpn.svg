@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="nvBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#1E40AF"/>
+      <stop offset="50%" stopColor="#2563EB"/>
+      <stop offset="100%" stopColor="#3B82F6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#nvBg)"/>
+  <rect width="504" height="504" x="4" y="4" rx="108" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="8"/>
+  <g transform="translate(106, 120) scale(0.58)">
+    <!-- NordVPN Signature Mountain Peak -->
+    <path fill="#ffffff" d="M260.6 62.7c-3.1-6.1-11.8-6.1-14.9 0L171 209.5l67.2 46.5c8.9 6.2 20.8 6.2 29.7 0l67.2-46.5L260.6 62.7z"/>
+    <path fill="#ffffff" d="M141.2 230.3L67.1 375.9c-3.1 6.1 1.3 13.5 8.2 13.5h77.8l63.5-124.6l-75.4-34.5z"/>
+    <path fill="#ffffff" d="M365.1 230.3l-75.4 34.5l63.5 124.6h77.8c6.9 0 11.3-7.4 8.2-13.5l-74.1-145.6z"/>
+    <path fill="#ffffff" opacity="0.9" d="M253.1 278.4L188 406.8c-3.1 6.1 1.3 13.5 8.2 13.5h114.1c6.9 0 11.3-7.4 8.2-13.5l-65.4-128.4c-1.4-2.8-5.3-2.8-6.8 0z"/>
+  </g>
+</svg>
