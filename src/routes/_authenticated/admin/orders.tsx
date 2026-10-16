@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import {
   Search, Download, Volume2, VolumeX, RefreshCw, Filter, Bell,
   CheckCircle2, XCircle, Clock, CreditCard, Package as PackageIcon,
-  Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor, Mail,
+  Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor, Mail, Copy,
 } from "lucide-react";
 import { sendOrderStatusEmail, getOrderSecretLinkFn } from "@/lib/gx/order-email.functions";
 
@@ -561,7 +561,18 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
         },
       });
       if (res.ok && res.secretUrl) {
-        await navigator.clipboard.writeText(res.secretUrl);
+        if (navigator?.clipboard?.writeText) {
+          await navigator.clipboard.writeText(res.secretUrl);
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = res.secretUrl;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+        }
         toast.success("تم نسخ الرابط السري المشفر (Gamivo Token) بنجاح! يمكنك إرساله للعميل.");
       } else {
         toast.error("تعذر توليد الرابط السري للطلب");
