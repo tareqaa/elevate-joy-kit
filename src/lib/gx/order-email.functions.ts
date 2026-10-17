@@ -1021,3 +1021,38 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
       return { ok: false, error: err?.message || "Failed to load order" };
     }
   });
+
+/**
+ * Server function to record that customer revealed / opened the activation code.
+ */
+export const markCodeRevealedFn = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z
+      .object({
+        orderToken: z.string().trim().min(5),
+      })
+      .parse(data)
+  )
+  .handler(async ({ data }) => {
+    try {
+      const verified = verifyOrderToken(data.orderToken);
+      if (!verified.valid || !verified.orderNumber) {
+        return { ok: false };
+      }
+      const supabase = getServerServiceClient();
+      const num = verified.orderNumber.trim().toUpperCase();
+      const now = new Date().toISOString();
+      await (supabase as any)
+        .from("orders")
+        .update({
+          codes_revealed_at: now,
+        })
+        .or(`order_number.eq.${num},order_number.ilike.${num}`)
+        .is("codes_revealed_at", null);
+
+      return { ok: true };
+    } catch {
+      return { ok: false };
+    }
+  });
+
