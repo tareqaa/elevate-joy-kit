@@ -302,12 +302,14 @@ function RootComponent() {
       setAuthReady(true);
       if (session?.user?.id) {
         supabase.rpc("claim_unregistered_credits_for_user", { _user_id: session.user.id })
-          .then((res) => {
-            if ((res.data as any)?.claimed_count > 0) {
-              queryClient.invalidateQueries();
-            }
-          })
-          .catch(() => {});
+          .then(
+            (res) => {
+              if ((res.data as any)?.claimed_count > 0) {
+                queryClient.invalidateQueries();
+              }
+            },
+            () => {}
+          );
       }
     });
 
@@ -318,12 +320,14 @@ function RootComponent() {
         queryClient.invalidateQueries();
         if (event === "SIGNED_IN" && session?.user?.id) {
           supabase.rpc("claim_unregistered_credits_for_user", { _user_id: session.user.id })
-            .then((res) => {
-              if ((res.data as any)?.claimed_count > 0) {
-                queryClient.invalidateQueries();
-              }
-            })
-            .catch(() => {});
+            .then(
+              (res) => {
+                if ((res.data as any)?.claimed_count > 0) {
+                  queryClient.invalidateQueries();
+                }
+              },
+              () => {}
+            );
         }
       }
     });

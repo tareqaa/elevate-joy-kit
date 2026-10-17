@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import {
   Search, Download, Volume2, VolumeX, RefreshCw, Filter, Bell,
   CheckCircle2, XCircle, Clock, CreditCard, Package as PackageIcon,
-  Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor, Mail, Copy,
+  Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor, Mail, Copy, Eye, Lock,
 } from "lucide-react";
 import { sendOrderStatusEmail, getOrderSecretLinkFn } from "@/lib/gx/order-email.functions";
 
@@ -64,11 +64,46 @@ type OrderRow = {
   user_agent?: string | null;
   client_meta?: Record<string, unknown> | null;
   codes_revealed_at?: string | null;
+  codes_last_revealed_at?: string | null;
   codes_reveal_count?: number | null;
 
   created_at: string;
 };
 
+function formatOrderFullDateTime(isoStr?: string | null): string {
+  if (!isoStr) return "—";
+  try {
+    const d = new Date(isoStr);
+    const datePart = d.toLocaleDateString("ar-EG", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+    const timePart = d.toLocaleTimeString("ar-EG", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+    return `${timePart} (${datePart})`;
+  } catch {
+    return isoStr;
+  }
+}
+
+function formatOrderTime(isoStr?: string | null): string {
+  if (!isoStr) return "—";
+  try {
+    const d = new Date(isoStr);
+    return d.toLocaleTimeString("ar-EG", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return isoStr;
+  }
+}
 
 type OrderWithEmail = OrderRow & { user_email: string | null; user_username: string | null };
 
@@ -380,6 +415,7 @@ function OrdersAdmin() {
                 <th>التواصل</th>
                 <th>الإجمالي</th>
                 <th>الحالة</th>
+                <th>كشف واستلام الكود</th>
                 <th></th>
               </tr>
             </thead>
@@ -439,13 +475,37 @@ function OrdersAdmin() {
                       </span>
                     </td>
                     <td>
+                      {o.codes_revealed_at ? (
+                        <div className="flex flex-col gap-1 items-start">
+                          <span
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-300 bg-emerald-500/15 px-2.5 py-1 rounded-lg border border-emerald-500/35 whitespace-nowrap shadow-sm"
+                            title={`أول فتح: ${new Date(o.codes_revealed_at).toLocaleString("ar-EG")} • مرات الكشف: ${o.codes_reveal_count ?? 1}`}
+                          >
+                            <Eye size={12} className="text-emerald-400 shrink-0" />
+                            <span>انفتح: {formatOrderTime(o.codes_revealed_at)}</span>
+                          </span>
+                          <span className="text-[10.5px] text-cyan-200/70 font-mono">
+                            {new Date(o.codes_revealed_at).toLocaleDateString("ar-EG", { month: "numeric", day: "numeric" })}
+                            {o.codes_reveal_count && o.codes_reveal_count > 1 ? ` (${o.codes_reveal_count}x مرات)` : " (مرة واحدة)"}
+                          </span>
+                        </div>
+                      ) : o.status === "delivered" ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300/80 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 whitespace-nowrap">
+                          <Lock size={11} className="text-amber-400/80" />
+                          <span>لم يُفتح بعد</span>
+                        </span>
+                      ) : (
+                        <span className="text-cyan-100/30 text-xs">—</span>
+                      )}
+                    </td>
+                    <td>
                       <button className="gx-adm-btn-primary" onClick={() => setSelected(o)}>إكمال / تعديل</button>
                     </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="gx-adm-empty">لا يوجد طلبات ضمن الفلاتر الحالية</td></tr>
+                <tr><td colSpan={9} className="gx-adm-empty">لا يوجد طلبات ضمن الفلاتر الحالية</td></tr>
               )}
 
             </tbody>
@@ -457,7 +517,7 @@ function OrdersAdmin() {
 
         {selected && (
           <OrderDialog
-            order={selected}
+            order={ordersQ.data?.find((x) => x.id === selected.id) || selected}
             onClose={() => setSelected(null)}
             onSave={(patch) => updateMut.mutate({ id: selected.id, patch }, { onSuccess: () => setSelected(null) })}
           />
@@ -548,6 +608,51 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
   })();
   const [codes, setCodes] = useState<DeliveryCode[]>(initialCodes);
   const [copyingLink, setCopyingLink] = useState(false);
+
+  const [revealInfo, setRevealInfo] = useState<{
+    revealed_at: string | null;
+    last_revealed_at: string | null;
+    count: number;
+    loading: boolean;
+  }>({
+    revealed_at: order.codes_revealed_at ?? null,
+    last_revealed_at: order.codes_last_revealed_at ?? null,
+    count: order.codes_reveal_count ?? 0,
+    loading: false,
+  });
+
+  useEffect(() => {
+    setRevealInfo({
+      revealed_at: order.codes_revealed_at ?? null,
+      last_revealed_at: order.codes_last_revealed_at ?? null,
+      count: order.codes_reveal_count ?? 0,
+      loading: false,
+    });
+  }, [order.codes_revealed_at, order.codes_last_revealed_at, order.codes_reveal_count]);
+
+  const refreshRevealStatus = async () => {
+    try {
+      setRevealInfo((prev) => ({ ...prev, loading: true }));
+      const { data, error } = await (supabase as any)
+        .from("orders")
+        .select("codes_revealed_at, codes_last_revealed_at, codes_reveal_count")
+        .eq("id", order.id)
+        .maybeSingle();
+      if (!error && data) {
+        setRevealInfo({
+          revealed_at: data.codes_revealed_at,
+          last_revealed_at: data.codes_last_revealed_at,
+          count: data.codes_reveal_count ?? 0,
+          loading: false,
+        });
+        toast.success("تم تحديث حالة استلام وكشف الكود");
+      } else {
+        setRevealInfo((prev) => ({ ...prev, loading: false }));
+      }
+    } catch {
+      setRevealInfo((prev) => ({ ...prev, loading: false }));
+    }
+  };
 
   const handleCopySecretLink = async () => {
     try {
@@ -798,19 +903,82 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             </div>
           </div>
 
-          {order.status === "delivered" && (
-            <div className={`gx-od-reveal ${order.codes_revealed_at ? "on" : "off"}`}>
-              <span className="dot" />
-              <div>
-                <div className="t">{order.codes_revealed_at ? "العميل فتح الكود" : "العميل لم يفتح الكود بعد"}</div>
-                <div className="s">
-                  {order.codes_revealed_at
-                    ? `أول فتح: ${new Date(order.codes_revealed_at).toLocaleString("ar-EG")} • عدد مرات العرض: ${order.codes_reveal_count ?? 1}`
-                    : "بمجرد ضغط العميل على زر إظهار الكود في صفحة طلباتي سيظهر التوقيت هنا"}
+          {/* Code Reveal Status Banner */}
+          <div
+            className={`border rounded-xl p-4 transition-all shadow-md ${
+              revealInfo.revealed_at
+                ? "bg-gradient-to-r from-emerald-950/70 via-emerald-900/40 to-cyan-950/60 border-emerald-500/40 shadow-emerald-950/30"
+                : "bg-amber-950/30 border-amber-500/30 shadow-amber-950/20"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${
+                    revealInfo.revealed_at
+                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.25)]"
+                      : "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                  }`}
+                >
+                  {revealInfo.revealed_at ? <Eye size={22} /> : <Lock size={20} />}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`text-sm font-extrabold ${
+                        revealInfo.revealed_at ? "text-emerald-300" : "text-amber-300"
+                      }`}
+                    >
+                      {revealInfo.revealed_at
+                        ? "🔓 العميل فتح وكشف الكود الرقمي"
+                        : "🔒 لم يتم فتح أو كشف الكود من قبل العميل حتى الآن"}
+                    </span>
+                    {revealInfo.revealed_at && (
+                      <span className="text-[11px] font-mono font-bold bg-emerald-500/25 px-2 py-0.5 rounded text-emerald-200 border border-emerald-500/35">
+                        عدد مرات الفتح: {revealInfo.count || 1}
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className={`text-xs mt-1 leading-relaxed ${
+                      revealInfo.revealed_at ? "text-emerald-100/90" : "text-amber-200/80"
+                    }`}
+                  >
+                    {revealInfo.revealed_at ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span>وقت أول فتح:</span>
+                        <strong className="text-white font-mono bg-black/45 px-2 py-0.5 rounded border border-white/10" dir="ltr">
+                          {formatOrderFullDateTime(revealInfo.revealed_at)}
+                        </strong>
+                        {revealInfo.last_revealed_at && revealInfo.last_revealed_at !== revealInfo.revealed_at && (
+                          <>
+                            <span className="text-emerald-400/60">•</span>
+                            <span>آخر فتح:</span>
+                            <strong className="text-cyan-200 font-mono bg-black/45 px-2 py-0.5 rounded border border-white/10" dir="ltr">
+                              {formatOrderFullDateTime(revealInfo.last_revealed_at)}
+                            </strong>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      "بمجرد قيام العميل بالدخول إلى رابط الطلب أو النقر على كشف المفتاح الرقمي، سيتم تسجيل وتثبيت التوقيت فوراً."
+                    )}
+                  </div>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={refreshRevealStatus}
+                disabled={revealInfo.loading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/40 hover:bg-black/60 border border-white/10 text-cyan-300 hover:text-cyan-200 text-xs font-semibold transition-all shrink-0 cursor-pointer"
+                title="تحديث حالة فتح الكود مباشرة من قاعدة البيانات"
+              >
+                <RefreshCw size={13} className={revealInfo.loading ? "animate-spin text-cyan-400" : ""} />
+                <span>{revealInfo.loading ? "جارٍ التحقق..." : "تحديث حالة الكود"}</span>
+              </button>
             </div>
-          )}
+          </div>
 
           <SecurityBlock order={order} />
 

@@ -1029,20 +1029,44 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
   .validator((data: unknown) =>
     z
       .object({
-        orderToken: z.string().trim().min(5),
+        orderToken: z.string().trim().optional(),
+        orderNumber: z.string().trim().optional(),
+      })
+      .refine((d) => Boolean(d.orderToken || d.orderNumber), {
+        message: "orderToken or orderNumber required",
       })
       .parse(data)
   )
   .handler(async ({ data }) => {
     try {
-      const verified = verifyOrderToken(data.orderToken);
-      if (!verified.valid || !verified.orderNumber) {
+      let num = "";
+      if (data.orderToken) {
+        const verified = verifyOrderToken(data.orderToken);
+        if (verified.valid && verified.orderNumber) {
+          num = verified.orderNumber.trim().toUpperCase();
+        }
+      }
+      if (!num && data.orderNumber) {
+        num = data.orderNumber.trim().toUpperCase();
+      }
+      if (!num) {
         return { ok: false };
       }
-      const supabase = getServerServiceClient();
-      const num = verified.orderNumber.trim().toUpperCase();
-      const now = new Date().toISOString();
 
+      const supabase = getServerServiceClient();
+
+      // Primary: call SECURITY DEFINER RPC to bypass RLS update restriction
+      try {
+        const { data: rpcRes, error: rpcErr } = await (supabase.rpc as any)("mark_order_code_revealed", {
+          p_order_number: num,
+        });
+        if (!rpcErr && rpcRes && rpcRes.ok) {
+          return { ok: true, revealed_at: rpcRes.revealed_at, count: rpcRes.reveal_count };
+        }
+      } catch {}
+
+      // Fallback: direct update
+      const now = new Date().toISOString();
       const { data: current } = await (supabase as any)
         .from("orders")
         .select("id, codes_revealed_at, codes_reveal_count")
