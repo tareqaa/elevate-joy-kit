@@ -342,7 +342,7 @@ function CartDeliveryCard() {
       if (data.session?.user) {
         const uEmail = data.session.user.email || "";
         setSignedInUser({ id: data.session.user.id, email: uEmail });
-        if (!cart.contact.email && uEmail) {
+        if (uEmail && cart.contact.email !== uEmail) {
           cart.setContact({ email: uEmail });
         }
       }
@@ -916,6 +916,19 @@ function CartOrderRecapStage2({
   const [busy, setBusy] = useState(false);
   const [showFeeInfo, setShowFeeInfo] = useState(false);
   const site = useSiteSettings();
+  const [signedInUser, setSignedInUser] = useState<{ id: string; email: string } | null>(() => readStoredUser());
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) {
+        const uEmail = data.session.user.email || "";
+        setSignedInUser({ id: data.session.user.id, email: uEmail });
+        if (uEmail && cart.contact.email !== uEmail) {
+          cart.setContact({ email: uEmail });
+        }
+      }
+    });
+  }, [cart]);
 
   const netBeforeFee = Math.max(
     0,
@@ -993,16 +1006,18 @@ function CartOrderRecapStage2({
         })}
       </div>
 
-      {/* Email recap with Edit button if entered */}
-      {cart.contact.email && (
+      {/* Email recap: signed in user's email takes top priority */}
+      {(signedInUser?.email || cart.contact.email) && (
         <div className="gx-recap-email-box">
           <div className="gx-reb-left">
             <span className="gx-reb-lbl">{t("cart.email_label")}:</span>
-            <span className="gx-reb-val" dir="ltr">{cart.contact.email}</span>
+            <span className="gx-reb-val" dir="ltr">{signedInUser?.email || cart.contact.email}</span>
           </div>
-          <button type="button" className="gx-reb-edit" onClick={onEditEmail}>
-            {t("cart.edit")}
-          </button>
+          {!signedInUser && (
+            <button type="button" className="gx-reb-edit" onClick={onEditEmail}>
+              {t("cart.edit")}
+            </button>
+          )}
         </div>
       )}
 

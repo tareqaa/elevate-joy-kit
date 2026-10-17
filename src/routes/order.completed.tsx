@@ -6,11 +6,10 @@ import { useLang } from "@/lib/gx/i18n";
 import { getOrderByTokenFn, markCodeRevealedFn, sanitizeImageForEmail } from "@/lib/gx/order-email.functions";
 import { toast } from "sonner";
 import {
-  CheckCircle2, XCircle, Clock, Package, KeyRound, Copy, Check, Eye, EyeOff,
-  ExternalLink, Sparkles, Loader2, ShoppingBag, MessageSquare, AlertCircle,
-  HelpCircle,
+  CheckCircle2, XCircle, Clock, Package, KeyRound, Copy, Check, Eye,
+  ExternalLink, Sparkles, Loader2, ShoppingBag, AlertTriangle, ShieldCheck,
+  ChevronDown, ChevronUp, User, Lock, Mail, HelpCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/order/completed")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -19,7 +18,7 @@ export const Route = createFileRoute("/order/completed")({
   head: () => ({
     meta: [
       { title: "استلام وتفعيل الطلب | متجر GX Store" },
-      { name: "description", content: "استلام وتفعيل طلبك الرقمي بسهولة عبر متجر GX Store" },
+      { name: "description", content: "استلام وتفعيل طلبك الرقمي بسهولة وأمان عبر متجر GX Store" },
       { name: "robots", content: "noindex, nofollow" },
     ],
     links: STORE_HEAD_LINKS,
@@ -55,6 +54,7 @@ export function OrderCompletedPage() {
   const [error, setError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [revealedKeys, setRevealedKeys] = useState<Record<number, boolean>>({});
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -62,7 +62,7 @@ export function OrderCompletedPage() {
       setLoading(false);
       setError(
         isAr
-          ? "الرابط غير صحيح أو منتهي الصلاحية. يرجى فتح الرابط المرسل إلى بريدك الإلكتروني."
+          ? "الرابط غير صحيح أو منتهي الصلاحية. يرجى فتح الرابط السري المرسل إلى بريدك الإلكتروني."
           : "Invalid or expired link. Please open the link sent to your email address."
       );
       return;
@@ -76,6 +76,10 @@ export function OrderCompletedPage() {
         if (!mounted) return;
         if (res.ok && res.order) {
           setOrder(res.order);
+          // If already previously revealed, initialize state as revealed
+          if (res.order.codes_revealed_at) {
+            setRevealedKeys({ 0: true, 1: true, 2: true, 3: true, 4: true });
+          }
         } else {
           setError(res.error || (isAr ? "الرابط غير صالح أو منتهي الصلاحية" : "Invalid or expired link"));
         }
@@ -110,19 +114,23 @@ export function OrderCompletedPage() {
       toast.success(isAr ? "تم نسخ الكود بنجاح!" : "Copied to clipboard!");
       setTimeout(() => setCopiedKey(null), 2500);
 
-      // Record reveal timestamp in database silently
+      // Track reveal
       if (order_token) {
         markCodeRevealedFn({ data: { orderToken: order_token.trim() } }).catch(() => {});
       }
     } catch {
-      toast.error(isAr ? "فشل النسخ تلقائياً، يمكنك تحديد الكود ونسخه يدوياً" : "Failed to copy automatically");
+      toast.error(isAr ? "فشل النسخ تلقائياً" : "Failed to copy");
     }
   };
 
-  const handleReveal = (idx: number) => {
-    setRevealedKeys((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  const handleRevealKey = async (idx: number) => {
+    setRevealedKeys((prev) => ({ ...prev, [idx]: true }));
     if (order_token) {
-      markCodeRevealedFn({ data: { orderToken: order_token.trim() } }).catch(() => {});
+      try {
+        await markCodeRevealedFn({ data: { orderToken: order_token.trim() } });
+      } catch {
+        // silent
+      }
     }
   };
 
@@ -136,9 +144,9 @@ export function OrderCompletedPage() {
     const s = order?.status || "pending";
     if (s === "delivered") {
       return {
-        labelAr: "مُسلَّم ومكتمل",
-        labelEn: "Delivered & Ready",
-        badgeBg: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+        labelAr: "مُسلَّم ومكتمل 100%",
+        labelEn: "Completed & Delivered",
+        badgeBg: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
         icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
       };
     }
@@ -146,41 +154,55 @@ export function OrderCompletedPage() {
       return {
         labelAr: "تم إلغاء الطلب",
         labelEn: "Cancelled",
-        badgeBg: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+        badgeBg: "bg-rose-500/15 text-rose-400 border-rose-500/30",
         icon: <XCircle className="w-4 h-4 text-rose-400" />,
       };
     }
     return {
-      labelAr: "قيد التجهيز",
+      labelAr: "قيد التجهيز والتسليم",
       labelEn: "Processing",
-      badgeBg: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+      badgeBg: "bg-amber-500/15 text-amber-400 border-amber-500/30",
       icon: <Clock className="w-4 h-4 text-amber-400" />,
     };
   }, [order?.status]);
 
+  const items = useMemo(() => {
+    return Array.isArray(order?.items) ? order.items : [];
+  }, [order]);
+
   return (
     <StoreShell>
-      <div className="min-h-[85vh] bg-[#07090e] text-slate-100 py-12 px-4 sm:px-6 flex flex-col justify-center items-center" dir={dir}>
-        <div className="w-full max-w-xl space-y-5">
+      <div className="min-h-screen bg-[#07090e] text-slate-100 py-8 sm:py-12 px-4 sm:px-6 lg:px-8 selection:bg-cyan-500 selection:text-black" dir={dir}>
+        <div className="max-w-4xl mx-auto space-y-6">
+
+          {/* Gamivo/Driffle Top Purchase Notice */}
+          <div className="rounded-xl border border-amber-500/25 bg-amber-950/20 px-4 py-3 text-xs sm:text-sm text-amber-200/90 flex items-center gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              {isAr
+                ? "يرجى التأكد من أنك قمت بشراء المنتج الصحيح. بمجرد الضغط على «عرض الكود»، يعتبر المفتاح الرقمي مستلماً ولا يمكن استرجاعه."
+                : "Please make sure you've purchased the correct product. Once the activation item is displayed, it cannot be returned."}
+            </span>
+          </div>
 
           {/* Loading State */}
           {loading && (
-            <div className="rounded-2xl border border-white/5 bg-[#0e1320] p-12 text-center space-y-4 shadow-xl">
-              <Loader2 className="w-8 h-8 text-cyan-400 animate-spin mx-auto" />
-              <div className="text-sm font-semibold text-slate-300">
-                {isAr ? "جارٍ استرجاع بيانات الطلب..." : "Loading order details..."}
+            <div className="rounded-2xl border border-white/10 bg-[#0e1422] p-16 text-center space-y-4 shadow-xl">
+              <Loader2 className="w-10 h-10 text-cyan-400 animate-spin mx-auto" />
+              <div className="text-base font-bold text-slate-200">
+                {isAr ? "جارٍ استرجاع بيانات الطلب ومفاتيح التفعيل..." : "Loading order details..."}
               </div>
             </div>
           )}
 
           {/* Error State */}
           {!loading && error && (
-            <div className="rounded-2xl border border-white/10 bg-[#0e1320] p-8 text-center space-y-5 shadow-xl">
-              <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto text-rose-400">
-                <AlertCircle className="w-6 h-6" />
+            <div className="rounded-2xl border border-rose-500/30 bg-[#0e1422] p-8 sm:p-12 text-center space-y-5 shadow-2xl">
+              <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-400">
+                <AlertTriangle className="w-7 h-7" />
               </div>
-              <div className="space-y-1.5 max-w-md mx-auto">
-                <h2 className="text-lg font-bold text-white">
+              <div className="space-y-2 max-w-md mx-auto">
+                <h2 className="text-xl font-bold text-white">
                   {isAr ? "تعذر فتح الطلب" : "Unable to Open Order"}
                 </h2>
                 <p className="text-sm text-slate-400 leading-relaxed">
@@ -190,7 +212,7 @@ export function OrderCompletedPage() {
               <div className="pt-2">
                 <Link
                   to="/"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-white/10 transition-all"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-white/10 transition-all"
                 >
                   <ShoppingBag className="w-4 h-4" />
                   <span>{isAr ? "العودة للمتجر" : "Back to Store"}</span>
@@ -199,278 +221,359 @@ export function OrderCompletedPage() {
             </div>
           )}
 
-          {/* Success Loaded Order */}
+          {/* Order Details Loaded */}
           {!loading && order && (
-            <div className="rounded-2xl border border-white/10 bg-[#0d121c] p-5 sm:p-7 shadow-2xl space-y-6">
+            <div className="space-y-6">
 
-              {/* Order Header */}
-              <div className="text-center space-y-2 pb-5 border-b border-white/5">
-                {order.status === "delivered" ? (
-                  <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 mx-auto mb-2">
-                    <CheckCircle2 className="w-6 h-6" />
+              {/* Order Details Top Bar (Gamivo Style) */}
+              <div className="rounded-2xl border border-white/10 bg-[#0d121c] p-5 sm:p-6 shadow-xl">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      {isAr ? "رقم الطلب (ORDER ID)" : "ORDER ID"}
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="text-xl sm:text-2xl font-black font-mono text-white select-all" dir="ltr">
+                        #{order.order_number}
+                      </span>
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold ${statusInfo.badgeBg}`}>
+                        {statusInfo.icon}
+                        <span>{isAr ? statusInfo.labelAr : statusInfo.labelEn}</span>
+                      </span>
+                    </div>
                   </div>
-                ) : order.status === "cancelled" ? (
-                  <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-400 mx-auto mb-2">
-                    <XCircle className="w-6 h-6" />
+
+                  <div className="text-right sm:text-left space-y-1">
+                    <div className="text-xs font-bold text-slate-400">
+                      {isAr ? "تاريخ الطلب" : "Order Date"}
+                    </div>
+                    <div className="text-xs sm:text-sm font-semibold text-slate-300">
+                      {new Date(order.created_at).toLocaleDateString(isAr ? "ar-JO" : "en-US", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
                   </div>
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 mx-auto mb-2">
-                    <Clock className="w-6 h-6" />
+                </div>
+
+                {/* Collapsible Order Summary Bar */}
+                <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <span>{isAr ? "المجموع المدفوع:" : "Total Paid:"}</span>
+                    <strong className="text-cyan-400 text-sm font-mono font-bold">
+                      {Number(order.total_jod || 0).toFixed(2)} د.أ
+                    </strong>
+                    {order.delivery_data?.payment_method && (
+                      <span className="text-slate-500">• {String(order.delivery_data.payment_method).toUpperCase()}</span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowOrderDetails(!showOrderDetails)}
+                    className="inline-flex items-center gap-1 text-slate-300 hover:text-cyan-300 font-bold transition-colors"
+                  >
+                    <span>{showOrderDetails ? (isAr ? "إخفاء التفاصيل" : "Hide Details") : (isAr ? "تفاصيل الطلب والفاتورة" : "Order Details")}</span>
+                    {showOrderDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* Expanded Invoice & Details */}
+                {showOrderDetails && (
+                  <div className="mt-4 pt-4 border-t border-white/5 space-y-3 text-xs animate-in fade-in-50 duration-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-black/30 rounded-xl p-4 border border-white/5">
+                      <div>
+                        <span className="text-slate-400">{isAr ? "اسم العميل:" : "Customer:"} </span>
+                        <strong className="text-slate-200">{order.customer_name || "عميل GX"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">{isAr ? "البريد الإلكتروني:" : "Email:"} </span>
+                        <strong className="text-slate-200 font-mono">{order.customer_email || order.user_email || "—"}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">{isAr ? "المجموع الفرعي:" : "Subtotal:"} </span>
+                        <strong className="text-slate-200 font-mono">{Number(order.subtotal_jod ?? order.total_jod).toFixed(2)} د.أ</strong>
+                      </div>
+                      {order.discount_jod && Number(order.discount_jod) > 0 ? (
+                        <div>
+                          <span className="text-emerald-400">{isAr ? "الخصم المطبق:" : "Discount:"} </span>
+                          <strong className="text-emerald-300 font-mono">-{Number(order.discount_jod).toFixed(2)} د.أ</strong>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 )}
-
-                <h1 className="text-xl sm:text-2xl font-bold text-white">
-                  {order.status === "delivered"
-                    ? (isAr ? "تم تسليم طلبك بنجاح" : "Your Order is Ready!")
-                    : order.status === "cancelled"
-                    ? (isAr ? "تم إلغاء الطلب" : "Order Cancelled")
-                    : (isAr ? "طلبك قيد التجهيز" : "Order is Processing")}
-                </h1>
-
-                <div className="flex items-center justify-center gap-2 text-xs text-slate-400 flex-wrap">
-                  <span>{isAr ? "طلب رقم" : "Order"} <strong className="text-slate-200 font-mono">#{order.order_number}</strong></span>
-                  <span>•</span>
-                  <span>
-                    {new Date(order.created_at).toLocaleDateString(isAr ? "ar-JO" : "en-US", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                  <span>•</span>
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-medium ${statusInfo.badgeBg}`}>
-                    {statusInfo.icon}
-                    <span>{isAr ? statusInfo.labelAr : statusInfo.labelEn}</span>
-                  </span>
-                </div>
               </div>
 
-              {/* HERO: Digital Code / Activation Box */}
-              {order.status === "delivered" && (
-                <div className="space-y-3.5">
-                  <div className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <KeyRound className="w-4 h-4 text-cyan-400" />
-                    <span>{isAr ? "بيانات الكود والتفعيل" : "Activation Details"}</span>
-                  </div>
-
-                  {deliveryCodes.length === 0 ? (
-                    <div className="rounded-xl border border-white/5 bg-slate-900/50 p-5 text-center text-sm text-slate-300">
-                      {isAr ? "تم إتمام الطلب وتفعيله لحسابك مباشرة." : "Your order has been completed and activated."}
-                    </div>
-                  ) : (
-                    deliveryCodes.map((code, idx) => {
-                      const displayValue = code.value || code.extra || "";
-                      const isRevealed = revealedKeys[idx] ?? true; // Default revealed or easily toggled
-                      const kind = code.kind || "code";
-
-                      return (
-                        <div
-                          key={idx}
-                          className="rounded-xl border border-cyan-500/20 bg-slate-950/70 p-4 sm:p-5 space-y-3.5"
-                        >
-                          {/* Item Label & Region */}
-                          <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
-                            <span className="font-bold text-white">
-                              {code.label || (isAr ? `كود المنتج #${idx + 1}` : `Product Code #${idx + 1}`)}
-                            </span>
-
-                            <div className="flex items-center gap-1.5">
-                              {code.region && (
-                                <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[11px] font-medium border border-white/5">
-                                  {code.region}
-                                </span>
-                              )}
-                              {kind === "account" && (
-                                <span className="px-2 py-0.5 rounded bg-purple-950/70 text-purple-300 text-[11px] font-medium border border-purple-800/40">
-                                  {isAr ? "حساب" : "Account"}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Code Value Box & Copy Button */}
-                          <div className="rounded-lg border border-white/10 bg-[#06080d] p-3 flex items-center justify-between gap-3">
-                            <div className="font-mono text-base sm:text-lg font-bold tracking-wider text-cyan-300 select-all break-all">
-                              {isRevealed ? displayValue : "••••••••••••••••"}
-                            </div>
-
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => handleReveal(idx)}
-                                title={isRevealed ? (isAr ? "إخفاء" : "Hide") : (isAr ? "إظهار" : "Reveal")}
-                                className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-xs"
-                              >
-                                {isRevealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => copyToClipboard(displayValue, `code-${idx}`)}
-                                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shadow-sm ${
-                                  copiedKey === `code-${idx}`
-                                    ? "bg-emerald-500 text-slate-950"
-                                    : "bg-cyan-500 hover:bg-cyan-400 text-slate-950"
-                                }`}
-                              >
-                                {copiedKey === `code-${idx}` ? (
-                                  <>
-                                    <Check className="w-3.5 h-3.5" />
-                                    <span>{isAr ? "تم النسخ" : "Copied"}</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-3.5 h-3.5" />
-                                    <span>{isAr ? "نسخ الكود" : "Copy Code"}</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Account fields if account */}
-                          {kind === "account" && (code.email || code.password) && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                              {code.email && (
-                                <div className="rounded-lg bg-slate-900/60 border border-white/5 p-2.5 flex items-center justify-between text-xs">
-                                  <div>
-                                    <div className="text-[10px] text-slate-400 font-bold">{isAr ? "الإيميل" : "Email"}</div>
-                                    <div className="font-mono text-white mt-0.5 break-all">{code.email}</div>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(code.email!, `email-${idx}`)}
-                                    className="text-cyan-400 hover:text-cyan-300 p-1"
-                                    title={isAr ? "نسخ" : "Copy"}
-                                  >
-                                    <Copy className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              )}
-                              {code.password && (
-                                <div className="rounded-lg bg-slate-900/60 border border-white/5 p-2.5 flex items-center justify-between text-xs">
-                                  <div>
-                                    <div className="text-[10px] text-slate-400 font-bold">{isAr ? "كلمة المرور" : "Password"}</div>
-                                    <div className="font-mono text-white mt-0.5 break-all">{code.password}</div>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(code.password!, `pass-${idx}`)}
-                                    className="text-cyan-400 hover:text-cyan-300 p-1"
-                                    title={isAr ? "نسخ" : "Copy"}
-                                  >
-                                    <Copy className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {code.extra && kind !== "account" && (
-                            <div className="text-xs text-slate-300 bg-slate-900/40 rounded-lg p-2 border border-white/5">
-                              {code.extra}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-
-              {/* Reassurance Banner: Permanent access in My Orders */}
-              <div className="rounded-xl border border-cyan-500/20 bg-cyan-950/20 p-3.5 flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5 text-slate-300">
-                  <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
-                  <span>
-                    {isAr
-                      ? "يمكنك دائماً رؤية هذا المنتج والوصول لرموز التفعيل في صفحة طلباتي."
-                      : "You can always access your activation codes anytime in My Orders."}
+              {/* PRODUCTS & ACTIVATION SECTION (Gamivo Hero Card) */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                    <Package className="w-5 h-5 text-cyan-400" />
+                    <span>{isAr ? "المنتجات ومفاتيح التفعيل الرقمية" : "Products & Digital Keys"}</span>
+                  </h2>
+                  <span className="text-xs text-slate-400 font-mono font-bold">
+                    {deliveryCodes.length > 0 ? `${deliveryCodes.length} ${isAr ? "مفاتيح" : "Items"}` : ""}
                   </span>
                 </div>
+
+                {/* Each Ordered Product Card */}
+                {items.map((it: any, itemIdx: number) => {
+                  const coverImg = sanitizeImageForEmail(it.image, it.name, it.product_slug || it.slug);
+                  const qty = it.qty || it.quantity || 1;
+
+                  return (
+                    <div
+                      key={itemIdx}
+                      className="rounded-2xl border border-white/10 bg-[#0e1422] p-5 sm:p-6 shadow-xl space-y-5"
+                    >
+                      {/* Product Top Header (Image + Title + Tags) */}
+                      <div className="flex items-start gap-4 flex-wrap sm:flex-nowrap">
+                        {coverImg ? (
+                          <img
+                            src={coverImg}
+                            alt={it.name}
+                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-cover border border-white/10 shrink-0 bg-slate-900 shadow-md"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center text-3xl shrink-0">
+                            🎮
+                          </div>
+                        )}
+
+                        <div className="flex-1 min-w-[200px] space-y-2">
+                          <h3 className="text-base sm:text-lg font-black text-white leading-tight">
+                            {it.name}
+                          </h3>
+
+                          {/* Gamivo Attributes Row */}
+                          <div className="flex flex-wrap items-center gap-2 text-xs">
+                            <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-white/5 font-semibold">
+                              {isAr ? "المنصة:" : "Platform:"} {it.platform || "Digital Code"}
+                            </span>
+
+                            {it.region && (
+                              <span className="px-2.5 py-1 rounded-lg bg-cyan-950/60 text-cyan-300 border border-cyan-800/40 font-semibold">
+                                {isAr ? "المنطقة:" : "Region:"} {it.region}
+                              </span>
+                            )}
+
+                            <span className="px-2.5 py-1 rounded-lg bg-emerald-950/60 text-emerald-300 border border-emerald-800/40 font-semibold">
+                              {isAr ? "الكمية:" : "Qty:"} {qty}
+                            </span>
+
+                            <span className="font-mono font-bold text-slate-200 ml-auto">
+                              {it.price != null ? `${(Number(it.price) * qty).toFixed(2)} د.أ` : ""}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Divider */}
+                      <div className="border-t border-white/5" />
+
+                      {/* THE ACTIVATION ITEM HERO (Gamivo Style) */}
+                      {order.status === "delivered" && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider">
+                            <span className="flex items-center gap-1.5 text-cyan-300">
+                              <KeyRound className="w-4 h-4 text-cyan-400" />
+                              <span>{isAr ? "كود التفعيل الرقمي (Digital Activation Item)" : "Digital Activation Item"}</span>
+                            </span>
+                          </div>
+
+                          {deliveryCodes.length === 0 ? (
+                            <div className="rounded-xl border border-white/5 bg-black/40 p-5 text-center text-xs text-slate-300">
+                              {isAr ? "تم إكمال الطلب وتفعيله لحسابك مباشرة." : "Delivered and activated to your account."}
+                            </div>
+                          ) : (
+                            deliveryCodes.map((code, codeIdx) => {
+                              const isRevealed = revealedKeys[codeIdx];
+                              const displayValue = code.value || code.extra || "";
+                              const kind = code.kind || "code";
+
+                              return (
+                                <div key={codeIdx} className="space-y-3">
+                                  {/* Code Box: Masked or Revealed */}
+                                  {!isRevealed ? (
+                                    /* GAMIVO STATE 1: Display Key Button */
+                                    <div className="rounded-xl border border-cyan-500/30 bg-[#06080d] p-5 sm:p-6 text-center space-y-3 shadow-inner">
+                                      <div className="font-mono text-xl sm:text-2xl font-bold tracking-widest text-slate-600 select-none">
+                                        ••••-••••-••••-••••-••••
+                                      </div>
+                                      <div>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRevealKey(codeIdx)}
+                                          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:brightness-110 text-slate-950 font-black text-sm shadow-lg shadow-cyan-500/25 transition-all transform hover:-translate-y-0.5"
+                                        >
+                                          <Eye className="w-4 h-4" />
+                                          <span>{isAr ? "عرض كود التفعيل (Display Key)" : "Display Activation Key"}</span>
+                                        </button>
+                                      </div>
+                                      <p className="text-[11px] text-slate-400 max-w-md mx-auto leading-relaxed">
+                                        {isAr
+                                          ? "الضغط على «عرض كود التفعيل» سيكشف الكود ويسجل استلامك له في لوحة التحكم."
+                                          : "Clicking display will reveal your key and record delivery in the system."}
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    /* GAMIVO STATE 2: Revealed Key with Copy Button */
+                                    <div className="rounded-xl border border-cyan-500/40 bg-[#06080d] p-4 sm:p-5 space-y-3 shadow-lg">
+                                      <div className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+                                        <div className="font-mono text-lg sm:text-2xl font-bold tracking-widest text-cyan-300 select-all break-all bg-black/40 px-4 py-3 rounded-lg border border-white/5 flex-1 min-w-[200px]">
+                                          {displayValue}
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => copyToClipboard(displayValue, `code-${codeIdx}`)}
+                                          className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl text-xs sm:text-sm font-black transition-all shrink-0 shadow-md ${
+                                            copiedKey === `code-${codeIdx}`
+                                              ? "bg-emerald-500 text-slate-950"
+                                              : "bg-cyan-500 hover:bg-cyan-400 text-slate-950"
+                                          }`}
+                                        >
+                                          {copiedKey === `code-${codeIdx}` ? (
+                                            <>
+                                              <Check className="w-4 h-4 text-emerald-950" />
+                                              <span>{isAr ? "تم النسخ بنجاح!" : "Copied!"}</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Copy className="w-4 h-4" />
+                                              <span>{isAr ? "نسخ الكود (Copy)" : "Copy Key"}</span>
+                                            </>
+                                          )}
+                                        </button>
+                                      </div>
+
+                                      {/* Account details if account */}
+                                      {kind === "account" && (code.email || code.password) && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                                          {code.email && (
+                                            <div className="rounded-xl bg-slate-900/80 border border-white/5 p-3 flex items-center justify-between">
+                                              <div>
+                                                <div className="text-[10px] text-slate-400 font-bold uppercase">{isAr ? "الإيميل" : "Email"}</div>
+                                                <div className="font-mono text-xs sm:text-sm text-white break-all mt-0.5">{code.email}</div>
+                                              </div>
+                                              <button
+                                                type="button"
+                                                onClick={() => copyToClipboard(code.email!, `email-${codeIdx}`)}
+                                                className="text-cyan-400 hover:text-cyan-300 p-1.5"
+                                                title={isAr ? "نسخ" : "Copy"}
+                                              >
+                                                <Copy className="w-4 h-4" />
+                                              </button>
+                                            </div>
+                                          )}
+                                          {code.password && (
+                                            <div className="rounded-xl bg-slate-900/80 border border-white/5 p-3 flex items-center justify-between">
+                                              <div>
+                                                <div className="text-[10px] text-slate-400 font-bold uppercase">{isAr ? "كلمة المرور" : "Password"}</div>
+                                                <div className="font-mono text-xs sm:text-sm text-white break-all mt-0.5">{code.password}</div>
+                                              </div>
+                                              <button
+                                                type="button"
+                                                onClick={() => copyToClipboard(code.password!, `pass-${codeIdx}`)}
+                                                className="text-cyan-400 hover:text-cyan-300 p-1.5"
+                                                title={isAr ? "نسخ" : "Copy"}
+                                              >
+                                                <Copy className="w-4 h-4" />
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {code.extra && kind !== "account" && (
+                                        <div className="text-xs text-slate-300 bg-slate-900/50 rounded-lg p-2.5 border border-white/5">
+                                          {code.extra}
+                                        </div>
+                                      )}
+
+                                      <p className="text-[11px] text-emerald-400/80 flex items-center gap-1.5 pt-1">
+                                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                                        <span>{isAr ? "تم إظهار الكود بنجاح وتسجيل الاستلام. يرجى تفعيله على حسابك." : "Key revealed and delivered successfully."}</span>
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+
+                      {/* Cancelled notice if cancelled */}
+                      {order.status === "cancelled" && (
+                        <div className="rounded-xl border border-rose-500/25 bg-rose-950/20 p-4 text-xs text-rose-200 space-y-1">
+                          <strong className="text-rose-300">{isAr ? "ملاحظة الإلغاء من الإدارة:" : "Cancellation Notice:"}</strong>
+                          <p className="text-slate-300 leading-relaxed">{order.admin_notes || (isAr ? "تم إلغاء هذا الطلب من قبل الإدارة." : "Order cancelled.")}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Reassurance Banner: Permanent Access in My Orders */}
+              <div className="rounded-2xl border border-cyan-500/25 bg-gradient-to-r from-cyan-950/30 via-slate-900/60 to-slate-950 p-4 sm:p-5 flex items-center justify-between gap-4 shadow-lg flex-wrap sm:flex-nowrap">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-cyan-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs sm:text-sm font-bold text-white">
+                      {isAr
+                        ? "✨ يمكنك دائماً الرجوع لهذا الكود والوصول إليه دوماً في صفحة طلباتي."
+                        : "✨ You can always access your activation codes anytime in your My Orders page."}
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      {isAr
+                        ? "سجل الدخول بنفس هذا الإيميل لتجد جميع مشترياتك محفوظة بشكل دائم في حسابك."
+                        : "Log in with this email anytime to view your order history."}
+                    </div>
+                  </div>
+                </div>
+
                 <Link
                   to="/_authenticated/account"
                   search={{ tab: "orders" }}
-                  className="text-cyan-400 hover:text-cyan-300 font-bold shrink-0 underline underline-offset-4"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 font-bold text-xs shrink-0 transition-all"
                 >
-                  {isAr ? "طلباتي" : "My Orders"}
+                  <span>{isAr ? "صفحة طلباتي" : "My Orders"}</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
                 </Link>
               </div>
 
-              {/* Order Cancellation note if cancelled */}
-              {order.status === "cancelled" && order.admin_notes && (
-                <div className="rounded-xl border border-rose-500/20 bg-rose-950/20 p-4 text-xs text-rose-200 space-y-1">
-                  <div className="font-bold">{isAr ? "ملاحظة الإلغاء:" : "Cancellation Note:"}</div>
-                  <div className="text-slate-300 leading-relaxed">{order.admin_notes}</div>
-                </div>
-              )}
-
-              {/* Simple Products Summary */}
-              <div className="pt-3 border-t border-white/5 space-y-2.5">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  {isAr ? "المنتجات المطلوبة" : "Ordered Items"}
-                </div>
-
-                <div className="space-y-2">
-                  {Array.isArray(order.items) &&
-                    order.items.map((it: any, i: number) => {
-                      const qty = it.qty || it.quantity || 1;
-                      const coverImg = sanitizeImageForEmail(it.image, it.name, it.product_slug || it.slug);
-
-                      return (
-                        <div
-                          key={i}
-                          className="rounded-xl bg-slate-950/50 border border-white/5 p-3 flex items-center justify-between gap-3 text-xs"
-                        >
-                          <div className="flex items-center gap-3">
-                            {coverImg ? (
-                              <img
-                                src={coverImg}
-                                alt={it.name}
-                                className="w-10 h-10 rounded-lg object-cover border border-white/10 shrink-0"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-lg bg-slate-800 border border-white/5 flex items-center justify-center text-sm shrink-0">
-                                🎮
-                              </div>
-                            )}
-                            <div>
-                              <div className="font-semibold text-white">{it.name}</div>
-                              <div className="text-slate-400 text-[11px] mt-0.5">
-                                {isAr ? "الكمية:" : "Qty:"} {qty} {it.region ? `• ${it.region}` : ""}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="font-mono font-bold text-slate-200">
-                            {it.price != null ? `${(Number(it.price) * qty).toFixed(2)} د.أ` : "—"}
-                          </div>
-                        </div>
-                      );
-                    })}
+              {/* Support & Assistance Card */}
+              <div className="rounded-2xl border border-white/10 bg-[#0d121c] p-5 flex flex-wrap items-center justify-between gap-4 text-xs">
+                <div className="space-y-0.5">
+                  <div className="font-bold text-white flex items-center gap-1.5">
+                    <HelpCircle className="w-4 h-4 text-cyan-400" />
+                    <span>{isAr ? "تحتاج مساعدة في تفعيل الكود؟" : "Need help activating your code?"}</span>
+                  </div>
+                  <div className="text-slate-400">
+                    {isAr
+                      ? "فريق دعم GX Store متواجد لمساعدتك خطوة بخطوة عبر واتساب."
+                      : "Our support team is available on WhatsApp to guide you."}
+                  </div>
                 </div>
 
-                {/* Total Paid */}
-                <div className="flex justify-between items-center pt-2 text-xs">
-                  <span className="text-slate-400">{isAr ? "المبلغ الإجمالي المدفوع:" : "Total Paid:"}</span>
-                  <span className="font-mono text-sm font-bold text-cyan-400">
-                    {Number(order.total_jod || 0).toFixed(2)} د.أ
-                  </span>
-                </div>
-              </div>
-
-              {/* Support Button (WhatsApp) */}
-              <div className="pt-2 text-center">
                 <a
                   href={`https://wa.me/962776252313?text=${encodeURIComponent(
                     `مرحباً GX Store، أود المساعدة بشأن طلبي رقم #${order.order_number}`
                   )}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-emerald-400 transition-colors py-1 px-3"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all shadow-md shrink-0"
                 >
                   <WhatsAppSvg />
-                  <span>{isAr ? "تحتاج مساعدة في التفعيل؟ تواصل مع الدعم عبر واتساب" : "Need help? Contact support on WhatsApp"}</span>
+                  <span>{isAr ? "واتساب الدعم الفني" : "WhatsApp Support"}</span>
                 </a>
               </div>
 

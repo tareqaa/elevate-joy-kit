@@ -229,7 +229,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener("storage", onStorage);
 
-    // Prefill from the signed-in user's profile when local contact is empty.
+    // Prefill and sync from the signed-in user's profile.
+    // If the user is signed in, their account email MUST ALWAYS overwrite any stale guest email!
     (async () => {
       try {
         const { data: sess } = await supabase.auth.getSession();
@@ -241,16 +242,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
           .select("full_name, whatsapp, email")
           .eq("id", uid)
           .maybeSingle();
+        const emailVal = prof?.email || userEmail;
+
         setContactState((prev) => {
-          const emailVal = prof?.email || userEmail;
-          const needsName = !prev.name.trim();
-          const needsPhone = !prev.phone.trim();
-          const needsEmail = !prev.email?.trim();
-          if (!needsName && !needsPhone && !needsEmail) return prev;
           const next = { ...prev };
-          if (needsName && prof?.full_name) next.name = prof.full_name;
-          if (needsEmail && emailVal) next.email = emailVal;
-          if (needsPhone && prof?.whatsapp) {
+          // Authenticated account email ALWAYS takes priority over stale guest email
+          if (emailVal) {
+            next.email = emailVal;
+          }
+          if (!prev.name.trim() && prof?.full_name) next.name = prof.full_name;
+          if (prof?.whatsapp) {
             const raw = String(prof.whatsapp).trim();
             if (/^(?:\+?962|00962)/.test(raw)) {
               const digits = raw.replace(/^(?:\+962|00962|962)/, "").replace(/^0+/, "");
@@ -273,7 +274,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
       } catch { /* noop */ }
     })();
 
-    return () => window.removeEventListener("storage", onStorage);
+    // Listen to auth state changes (login / switch account)
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user?.email) {
+        const uEmail = session.user.email;
+        setContactState((prev) => {
+          if (prev.email === uEmail) return prev;
+          const next = { ...prev, email: uEmail };
+          try { localStorage.setItem(CONTACT_KEY, JSON.stringify(next)); } catch { /* noop */ }
+          return next;
+        });
+      }
+    });
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      authListener?.subscription?.unsubscribe();
+    };
   }, []);
 
 
@@ -675,7 +692,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (items.length === 0) return null;
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
-    const email = contact.email?.trim() || sess.session?.user?.email || "";
+    const userAccountEmail = sess.session?.user?.email?.trim();
+    // If user is authenticated, ALWAYS use their authenticated account email!
+    const email = (uid && userAccountEmail) ? userAccountEmail : (contact.email?.trim() || "");
     if (!uid && (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
       const { toast } = await import("sonner");
       toast.error("عبّي البريد الإلكتروني بشكل صحيح قبل إتمام الطلب");

@@ -1042,15 +1042,24 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
       const supabase = getServerServiceClient();
       const num = verified.orderNumber.trim().toUpperCase();
       const now = new Date().toISOString();
-      await (supabase as any)
-        .from("orders")
-        .update({
-          codes_revealed_at: now,
-        })
-        .or(`order_number.eq.${num},order_number.ilike.${num}`)
-        .is("codes_revealed_at", null);
 
-      return { ok: true };
+      const { data: current } = await (supabase as any)
+        .from("orders")
+        .select("id, codes_revealed_at, codes_reveal_count")
+        .or(`order_number.eq.${num},order_number.ilike.${num}`)
+        .maybeSingle();
+
+      if (current) {
+        await (supabase as any)
+          .from("orders")
+          .update({
+            codes_revealed_at: current.codes_revealed_at || now,
+            codes_reveal_count: (current.codes_reveal_count || 0) + 1,
+          })
+          .eq("id", current.id);
+      }
+
+      return { ok: true, revealed_at: current?.codes_revealed_at || now };
     } catch {
       return { ok: false };
     }
