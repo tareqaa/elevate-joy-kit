@@ -8,6 +8,15 @@ import { useLang } from "@/lib/gx/i18n";
 import { CART_ADDED_EVENT } from "./AddedToCartModal";
 import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
 import { AdobePoster, CanvaPoster, WindowsPoster } from "@/lib/gx/brand-icons";
+import {
+  resolveProductRequirementType,
+  getRememberedWhatsApp,
+  setRememberedWhatsApp,
+  getRememberedEmail,
+  setRememberedEmail,
+  isRememberContactEnabled,
+  setRememberContactEnabled,
+} from "@/lib/gx/contact-storage";
 
 function renderStepContent(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -292,9 +301,46 @@ export function GxProductTemplate({
   const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
   const [addedCart, setAddedCart] = useState<boolean>(false);
-  const [targetInput, setTargetInput] = useState<string>("");
+  const requirementType = useMemo(() => {
+    return resolveProductRequirementType({
+      slug: product.slug,
+      name: product.nameEn,
+      nameAr: product.nameAr,
+      deliveryType: product.deliveryType,
+      identifierLabelAr: product.identifierLabelAr,
+      requiresPlayerId: product.requiresPlayerId,
+    });
+  }, [product.slug, product.nameEn, product.nameAr, product.deliveryType, product.identifierLabelAr, product.requiresPlayerId]);
+
+  const [rememberMe, setRememberMe] = useState<boolean>(() => isRememberContactEnabled());
+  const [targetInput, setTargetInput] = useState<string>(() => {
+    const req = resolveProductRequirementType({
+      slug: product.slug,
+      name: product.nameEn,
+      nameAr: product.nameAr,
+      deliveryType: product.deliveryType,
+      identifierLabelAr: product.identifierLabelAr,
+      requiresPlayerId: product.requiresPlayerId,
+    });
+    if (req === "whatsapp") return getRememberedWhatsApp();
+    if (req === "email") return getRememberedEmail();
+    return "";
+  });
   const [inputError, setInputError] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Keep targetInput in sync if remembered contact updates
+  useEffect(() => {
+    if (!targetInput) {
+      if (requirementType === "whatsapp") {
+        const ph = getRememberedWhatsApp();
+        if (ph) setTargetInput(ph);
+      } else if (requirementType === "email") {
+        const em = getRememberedEmail();
+        if (em) setTargetInput(em);
+      }
+    }
+  }, [requirementType]);
 
   // Social & Link Input Detection
   const isLikeProduct = useMemo(() => {
@@ -325,14 +371,27 @@ export function GxProductTemplate({
   }, [product.slug, categoryName, isLikeProduct, isFollowerProduct]);
 
   const requiresCustomerInput = useMemo(() => {
-    return Boolean(
-      product.requiresPlayerId ||
-      product.identifierLabelAr ||
-      isSocialProduct
+    return (
+      requirementType !== "none" ||
+      Boolean(
+        product.requiresPlayerId ||
+        product.identifierLabelAr ||
+        isSocialProduct
+      )
     );
-  }, [product.requiresPlayerId, product.identifierLabelAr, isSocialProduct]);
+  }, [requirementType, product.requiresPlayerId, product.identifierLabelAr, isSocialProduct]);
 
   const targetLabel = useMemo(() => {
+    if (requirementType === "whatsapp") {
+      return ar
+        ? "رقم الواتساب للتواصل والتفعيل *"
+        : "WhatsApp Phone Number *";
+    }
+    if (requirementType === "email") {
+      return ar
+        ? "البريد الإلكتروني لتفعيل الاشتراك *"
+        : "Account Email for Activation *";
+    }
     if (isLikeProduct) {
       return ar
         ? "رابط المنشور أو الريلز (Post / Reel Link) *"
@@ -347,9 +406,25 @@ export function GxProductTemplate({
       pick(product.identifierLabelAr, product.identifierLabelEn) ||
       (ar ? "معرّف الحساب أو الرابط المطلوب *" : "Account ID or Link *")
     );
-  }, [isLikeProduct, isFollowerProduct, isSocialProduct, product.identifierLabelAr, product.identifierLabelEn, ar]);
+  }, [requirementType, isLikeProduct, isFollowerProduct, isSocialProduct, product.identifierLabelAr, product.identifierLabelEn, ar]);
 
   const targetPlaceholder = useMemo(() => {
+    if (requirementType === "whatsapp") {
+      return (
+        product.identifierPlaceholder ||
+        (ar
+          ? "ضع رقم الواتس اب الخاص بك لسهولة التواصل والتفعيل (مثال: 0791234567)"
+          : "Enter your WhatsApp phone number (e.g. 0791234567)")
+      );
+    }
+    if (requirementType === "email") {
+      return (
+        product.identifierPlaceholder ||
+        (ar
+          ? "أدخل إيميلك لتصلك الدعوة والتفعيل (بدون باسورد)"
+          : "Enter your email for invite (no password)")
+      );
+    }
     if (isLikeProduct) {
       return ar
         ? "https://www.instagram.com/p/... أو رابط المنشور العام"
@@ -364,9 +439,19 @@ export function GxProductTemplate({
       product.identifierPlaceholder ||
       (ar ? "أدخل المعرّف أو الرابط المطلوب هنا" : "Enter requested identifier or link")
     );
-  }, [isLikeProduct, isFollowerProduct, isSocialProduct, product.identifierPlaceholder, ar]);
+  }, [requirementType, isLikeProduct, isFollowerProduct, isSocialProduct, product.identifierPlaceholder, ar]);
 
   const targetHint = useMemo(() => {
+    if (requirementType === "whatsapp") {
+      return ar
+        ? "💬 ضع رقم الواتس اب الخاص بك لسهولة التواصل والتفعيل المباشر — لا نطلب كلمة مرور حسابك أبداً."
+        : "💬 Enter your WhatsApp number for easy communication and activation — no password required.";
+    }
+    if (requirementType === "email") {
+      return ar
+        ? "✉️ أدخل بريدك الإلكتروني الشخصي فقط لتصلك الدعوة والتفعيل الرسمي — بدون أي كلمة سر."
+        : "✉️ Enter your personal email only to receive the official invitation — no password needed.";
+    }
     if (isLikeProduct) {
       return ar
         ? "⚠️ تأكد أن الحساب والمنشور عام (Public) لتصل اللايكات بنجاح ودون أي تأخير."
@@ -378,7 +463,7 @@ export function GxProductTemplate({
         : "⚠️ Profile must be Public. Do not change username during processing.";
     }
     return null;
-  }, [isLikeProduct, isFollowerProduct, isSocialProduct, ar]);
+  }, [requirementType, isLikeProduct, isFollowerProduct, isSocialProduct, ar]);
 
   const activeVariant: CatalogVariant =
     variants.find((v) => v.cartId === selectedVariantId) || variants[0];
@@ -602,6 +687,15 @@ export function GxProductTemplate({
   const handleAddToCart = () => {
     if (!validateTargetInput()) return;
     setInputError(false);
+    const trimmedInput = targetInput.trim();
+    if (trimmedInput) {
+      if (requirementType === "whatsapp") {
+        setRememberedWhatsApp(trimmedInput, rememberMe);
+      } else if (requirementType === "email") {
+        setRememberedEmail(trimmedInput, rememberMe);
+      }
+      setRememberContactEnabled(rememberMe);
+    }
     const variantLabel = pick(activeVariant.labelAr, activeVariant.labelEn);
     const itemName = variantLabel && !name.includes(variantLabel) ? `${name} — ${variantLabel}` : name;
     cart.add(activeVariant.cartId, 1, {
@@ -612,7 +706,7 @@ export function GxProductTemplate({
       iconImage: product.iconImage || product.imageUrl,
       imageUrl: product.imageUrl || product.iconImage,
       bg: product.thumbBg,
-      usernames: targetInput.trim() ? [targetInput.trim()] : undefined,
+      usernames: trimmedInput ? [trimmedInput] : undefined,
     });
     setAddedCart(true);
     window.dispatchEvent(new CustomEvent(CART_ADDED_EVENT));
@@ -622,6 +716,15 @@ export function GxProductTemplate({
   const handleBuyNow = () => {
     if (!validateTargetInput()) return;
     setInputError(false);
+    const trimmedInput = targetInput.trim();
+    if (trimmedInput) {
+      if (requirementType === "whatsapp") {
+        setRememberedWhatsApp(trimmedInput, rememberMe);
+      } else if (requirementType === "email") {
+        setRememberedEmail(trimmedInput, rememberMe);
+      }
+      setRememberContactEnabled(rememberMe);
+    }
     const variantLabel = pick(activeVariant.labelAr, activeVariant.labelEn);
     const itemName = variantLabel && !name.includes(variantLabel) ? `${name} — ${variantLabel}` : name;
     cart.buyNow(activeVariant.cartId, 1, {
@@ -632,7 +735,7 @@ export function GxProductTemplate({
       iconImage: product.iconImage || product.imageUrl,
       imageUrl: product.imageUrl || product.iconImage,
       bg: product.thumbBg,
-      usernames: targetInput.trim() ? [targetInput.trim()] : undefined,
+      usernames: trimmedInput ? [trimmedInput] : undefined,
     });
     navigate({ to: "/cart" });
   };
@@ -1121,14 +1224,16 @@ export function GxProductTemplate({
         {requiresCustomerInput && (
           <div className={`driffle-target-input-box ${inputError ? "has-error" : ""}`}>
             <label className="driffle-target-label" htmlFor={inputId}>
-              <span className="driffle-target-label-icon">{isLikeProduct ? "❤️" : "🔗"}</span>
+              <span className="driffle-target-label-icon">
+                {requirementType === "whatsapp" ? "💬" : requirementType === "email" ? "✉️" : isLikeProduct ? "❤️" : "🔗"}
+              </span>
               <span>{targetLabel}</span>
             </label>
             <div className="driffle-target-field-wrap">
               <input
                 ref={isDesktop ? inputRef : undefined}
                 id={inputId}
-                type="text"
+                type={requirementType === "email" ? "email" : "text"}
                 dir="auto"
                 className="driffle-target-input"
                 placeholder={targetPlaceholder}
@@ -1155,7 +1260,11 @@ export function GxProductTemplate({
               <div className="driffle-input-error-msg">
                 <span>⚠️</span>
                 <span>
-                  {isLikeProduct
+                  {requirementType === "whatsapp"
+                    ? (ar ? "يرجى وضع رقم الواتساب الخاص بك للمتابعة" : "Please provide your WhatsApp number to proceed")
+                    : requirementType === "email"
+                    ? (ar ? "يرجى وضع البريد الإلكتروني للمتابعة" : "Please provide your email to proceed")
+                    : isLikeProduct
                     ? (ar ? "يرجى وضع رابط المنشور أو الريلز قبل إتمام الشراء" : "Please provide the post link before purchasing")
                     : (ar ? "يرجى وضع رابط الحساب أو اسم المستخدم للمتابعة" : "Please provide the profile link or username to proceed")}
                 </span>
@@ -1163,6 +1272,45 @@ export function GxProductTemplate({
             )}
             {targetHint && !inputError && (
               <div className="driffle-target-hint">{targetHint}</div>
+            )}
+            {(requirementType === "whatsapp" || requirementType === "email") && (
+              <label
+                className="driffle-remember-contact-row"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginTop: 10,
+                  fontSize: "0.82rem",
+                  color: "#cbd5e1",
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => {
+                    setRememberMe(e.target.checked);
+                    setRememberContactEnabled(e.target.checked);
+                  }}
+                  style={{
+                    accentColor: requirementType === "whatsapp" ? "#10b981" : "#00e5ff",
+                    width: 15,
+                    height: 15,
+                    cursor: "pointer",
+                  }}
+                />
+                <span>
+                  {requirementType === "whatsapp"
+                    ? (ar
+                        ? "تذكر رقمي للطلبات القادمة (حفظ تلقائي لعدم إدخاله كل مرة)"
+                        : "Remember my number for future orders")
+                    : (ar
+                        ? "تذكر إيميلي للطلبات القادمة (حفظ تلقائي)"
+                        : "Remember my email for future orders")}
+                </span>
+              </label>
             )}
           </div>
         )}

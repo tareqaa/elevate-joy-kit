@@ -32,6 +32,8 @@ function MaintenanceBanner() {
   );
 }
 
+import { QuickRequirementModal } from "./QuickRequirementModal";
+
 export function StoreShell({ children, bare = false }: { children: ReactNode; bare?: boolean }) {
   ensureStoreStyles();
   // `bare` = immersive full-screen mode (mini games): no header, no footer,
@@ -45,6 +47,7 @@ export function StoreShell({ children, bare = false }: { children: ReactNode; ba
       <Footer />
       <CartDrawer />
       <AddedToCartModal />
+      <QuickRequirementModal />
       <AdminFab />
     </>
   );

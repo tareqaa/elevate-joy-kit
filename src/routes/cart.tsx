@@ -12,7 +12,16 @@ import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { OrderConfirmedModal } from "@/components/gx/OrderConfirmedModal";
 import { coinsToJod, jodToCoins, MAX_COINS_DISCOUNT_RATIO } from "@/lib/gx/loyalty";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import {
+  getRememberedWhatsApp,
+  setRememberedWhatsApp,
+  getRememberedEmail,
+  setRememberedEmail,
+  isRememberContactEnabled,
+  setRememberContactEnabled,
+  resolveProductRequirementType,
+} from "@/lib/gx/contact-storage";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -116,7 +125,7 @@ function CartPage() {
 
               {/* Left column in RTL: Delivery & Summary */}
               <div className="gx-eneba-side">
-                <CartDeliveryCard />
+                <CartCustomerContactCard />
                 <CartSummaryStage1
                   onContinue={() => {
                     setStage(2);
@@ -169,6 +178,172 @@ function CartPage() {
         />
       )}
     </StoreShell>
+  );
+}
+
+function CartItemTargetEditor({ item }: { item: any }) {
+  const cart = useCart();
+  const { lang } = useLang();
+  const isAr = lang !== "en";
+  const reqType = resolveProductRequirementType(item);
+  const isSnap = item.cartId?.startsWith("snap-");
+  const currentTarget = item.usernames?.[0] || "";
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [val, setVal] = useState(currentTarget);
+
+  // If no requirement type and no usernames, don't show
+  if (reqType === "none" && (!item.usernames || item.usernames.length === 0)) {
+    return null;
+  }
+
+  const label =
+    reqType === "whatsapp"
+      ? (isAr ? "🟢 رقم الواتساب:" : "🟢 WhatsApp:")
+      : reqType === "email"
+      ? (isAr ? "✉️ إيميل التفعيل:" : "✉️ Activation Email:")
+      : isSnap
+      ? (isAr ? "👻 يوزرات سناب:" : "👻 Snapchat:")
+      : reqType === "link"
+      ? (isAr ? "🔗 رابط الحساب:" : "🔗 Link:")
+      : (isAr ? "المعرّف:" : "Target:");
+
+  const placeholder =
+    reqType === "whatsapp"
+      ? (isAr ? "ضع رقم الواتس اب للتواصل (مثال: 0791234567)" : "WhatsApp Phone")
+      : reqType === "email"
+      ? (isAr ? "اكتب الإيميل المراد تفعيله" : "Activation Email")
+      : (isAr ? "أدخل المعرف أو الرابط" : "Enter target");
+
+  function handleSave() {
+    const clean = val.trim();
+    cart.updateItemTarget(item.cartId, clean);
+    if (reqType === "whatsapp" && clean) {
+      cart.setContact({ phone: clean, type: "whatsapp" });
+      setRememberedWhatsApp(clean, true);
+    } else if (reqType === "email" && clean) {
+      cart.setContact({ email: clean });
+      setRememberedEmail(clean, true);
+    }
+    setIsEditing(false);
+  }
+
+  if (isEditing) {
+    return (
+      <div className="cr-edit-target-box" style={{ marginTop: 6, display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
+        <input
+          type={reqType === "email" ? "email" : "text"}
+          className="gx-cb-input"
+          style={{ height: "30px", fontSize: "12px", padding: "4px 8px", width: "190px" }}
+          placeholder={placeholder}
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleSave();
+            } else if (e.key === "Escape") {
+              setIsEditing(false);
+            }
+          }}
+        />
+        <button
+          type="button"
+          className="btn btn-primary"
+          style={{ height: "30px", fontSize: "11.5px", padding: "0 10px", lineHeight: "30px" }}
+          onClick={handleSave}
+        >
+          {isAr ? "✓ حفظ" : "Save"}
+        </button>
+        <button
+          type="button"
+          style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "12px" }}
+          onClick={() => setIsEditing(false)}
+        >
+          {isAr ? "إلغاء" : "Cancel"}
+        </button>
+      </div>
+    );
+  }
+
+  if (!currentTarget && (reqType === "whatsapp" || reqType === "email")) {
+    return (
+      <div style={{ marginTop: 4 }}>
+        <button
+          type="button"
+          onClick={() => {
+            const fallback = reqType === "whatsapp" ? (cart.contact.phone || getRememberedWhatsApp()) : (cart.contact.email || getRememberedEmail());
+            setVal(fallback || "");
+            setIsEditing(true);
+          }}
+          style={{
+            background: "rgba(239, 68, 68, 0.12)",
+            border: "1px dashed rgba(239, 68, 68, 0.5)",
+            color: "#fca5a5",
+            fontSize: "11.5px",
+            padding: "2px 8px",
+            borderRadius: "6px",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "4px",
+          }}
+        >
+          <span>⚠️ {reqType === "whatsapp" ? (isAr ? "اضغط لإضافة رقم الواتساب للتفعيل" : "Add WhatsApp number") : (isAr ? "اضغط لإضافة إيميل التفعيل" : "Add activation email")}</span>
+          <span style={{ textDecoration: "underline" }}>{isAr ? "إضافة" : "Add"}</span>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="cr-users" style={{ marginTop: 4, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+      <span className="cr-users-label" style={{ fontSize: 12, color: "#94a3b8" }}>
+        {label}
+      </span>{" "}
+      <span
+        className="cr-user-chip"
+        style={{
+          display: "inline-block",
+          fontSize: 11.5,
+          color: reqType === "whatsapp" ? "#00e5b0" : "#00e5ff",
+          background: reqType === "whatsapp" ? "rgba(0, 229, 176, 0.12)" : "rgba(0, 229, 255, 0.12)",
+          border: reqType === "whatsapp" ? "1px solid rgba(0, 229, 176, 0.25)" : "1px solid rgba(0, 229, 255, 0.2)",
+          padding: "2px 8px",
+          borderRadius: 6,
+          maxWidth: "100%",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          verticalAlign: "middle",
+        }}
+        title={currentTarget}
+      >
+        {isSnap ? `@${currentTarget}` : (currentTarget.length > 35 ? `${currentTarget.slice(0, 32)}...` : currentTarget)}
+      </span>
+      {!isSnap && (
+        <button
+          type="button"
+          onClick={() => {
+            setVal(currentTarget);
+            setIsEditing(true);
+          }}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#94a3b8",
+            fontSize: "11px",
+            cursor: "pointer",
+            padding: "1px 4px",
+            textDecoration: "underline",
+          }}
+          title={isAr ? "تعديل هذا المعرف أو الرقم" : "Edit target"}
+        >
+          {isAr ? "تعديل" : "Edit"}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -236,35 +411,7 @@ function CartList() {
                 {t("cart.unit_price")}: <span>{format(it.price)}</span>
               </div>
 
-              {it.usernames && it.usernames.length > 0 && (
-                <div className="cr-users" style={{ marginTop: 4 }}>
-                  <span className="cr-users-label" style={{ fontSize: 12, color: "#94a3b8" }}>
-                    {isSnap ? t("cart.users_label") : (lang === "ar" ? "الرابط / المعرّف:" : "Link / Target:")}
-                  </span>{" "}
-                  {it.usernames.map((u, i) => (
-                    <span
-                      key={i}
-                      className="cr-user-chip"
-                      style={{
-                        display: "inline-block",
-                        fontSize: 11.5,
-                        color: "#00e5ff",
-                        background: "rgba(0, 229, 255, 0.12)",
-                        padding: "2px 8px",
-                        borderRadius: 6,
-                        maxWidth: "100%",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        verticalAlign: "middle",
-                      }}
-                      title={u}
-                    >
-                      {isSnap ? `@${u}` : (u.length > 35 ? `${u.slice(0, 32)}...` : u)}
-                    </span>
-                  ))}
-                </div>
-              )}
+              <CartItemTargetEditor item={it} />
 
               {isSnap && (
                 <div className="cr-lock-hint">
@@ -330,56 +477,168 @@ function readCachedBalances(): { coins: number; credit: number } | null {
   return null;
 }
 
-/** Card: "البريد الإلكتروني" - Hidden completely if user is signed in */
-function CartDeliveryCard() {
+/** Card: "بيانات التواصل والتفعيل" (Customer Contact & Activation Card) */
+function CartCustomerContactCard() {
   const cart = useCart();
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const isAr = lang !== "en";
   const [signedInUser, setSignedInUser] = useState<{ id: string; email: string } | null>(() => readStoredUser());
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(() => isRememberContactEnabled());
+  const [phoneVal, setPhoneVal] = useState(() => cart.contact.phone || getRememberedWhatsApp() || "");
+
+  // Detect requirements across cart items
+  const hasWhatsAppProducts = cart.items.some(
+    (it) => resolveProductRequirementType(it) === "whatsapp" || it.deliveryType === "topup"
+  );
+  const hasEmailProducts = cart.items.some(
+    (it) => resolveProductRequirementType(it) === "email"
+  );
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (data.session?.user) {
         const uEmail = data.session.user.email || "";
-        setSignedInUser({ id: data.session.user.id, email: uEmail });
+        const uid = data.session.user.id;
+        setSignedInUser({ id: uid, email: uEmail });
         if (uEmail && cart.contact.email !== uEmail) {
           cart.setContact({ email: uEmail });
         }
+        // Also fetch profile whatsapp if phone is empty
+        try {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("whatsapp")
+            .eq("id", uid)
+            .maybeSingle();
+          if (prof?.whatsapp && !phoneVal) {
+            const raw = String(prof.whatsapp).trim();
+            const cleanDigits = raw.replace(/\D/g, "");
+            setPhoneVal(raw);
+            cart.setContact({ phone: cleanDigits, type: "whatsapp" });
+          }
+        } catch { /* noop */ }
       }
     });
-  }, [cart]);
+  }, [cart, phoneVal]);
 
-  if (signedInUser) {
-    return null;
-  }
+  const handlePhoneChange = (val: string) => {
+    setPhoneVal(val);
+    cart.setContact({ phone: val, type: "whatsapp" });
+    if (rememberMe) {
+      setRememberedWhatsApp(val, true);
+    }
+    // Auto-update any cart items that require WhatsApp
+    cart.items.forEach((it) => {
+      if (resolveProductRequirementType(it) === "whatsapp" || it.deliveryType === "topup") {
+        cart.updateItemTarget(it.cartId, val);
+      }
+    });
+  };
+
+  const handleRememberToggle = (checked: boolean) => {
+    setRememberMe(checked);
+    setRememberContactEnabled(checked);
+    if (checked) {
+      if (phoneVal) setRememberedWhatsApp(phoneVal, true);
+      if (cart.contact.email) setRememberedEmail(cart.contact.email, true);
+    }
+  };
 
   return (
-    <div className="gx-delivery-card">
-      <div className="gx-dc-title">
-        <span>✉️</span>
-        <h3>{t("cart.email_label")}</h3>
+    <div className="gx-delivery-card gx-contact-card">
+      <div className="gx-dc-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span>📱</span>
+          <h3>{isAr ? "بيانات التواصل والتفعيل" : "Contact & Activation Info"}</h3>
+        </div>
+        {hasWhatsAppProducts && (
+          <span className="gx-badge-req" style={{ fontSize: "11px", fontWeight: 700, background: "rgba(0, 229, 176, 0.15)", color: "#00e5b0", border: "1px solid rgba(0, 229, 176, 0.3)", borderRadius: "6px", padding: "2px 8px" }}>
+            {isAr ? "🟢 للتواصل والتفعيل" : "🟢 Fast Activation"}
+          </span>
+        )}
       </div>
 
-      <div className="gx-email-box">
-        <input
-          className="gx-cb-input"
-          type="email"
-          autoComplete="email"
-          placeholder={t("cart.email_ph")}
-          value={cart.contact.email || ""}
-          onChange={(e) => cart.setContact({ email: e.target.value })}
-          style={{ direction: "ltr", textAlign: "left" }}
-        />
+      {/* WhatsApp Phone Section */}
+      <div className="gx-contact-group" style={{ marginBottom: signedInUser && !hasEmailProducts ? 0 : 14 }}>
+        <label className="gx-contact-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12.5px", fontWeight: 700, color: "#e2e8f0", marginBottom: 6 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span>🟢</span>
+            <span>{isAr ? "رقم الواتساب الخاص بك" : "Your WhatsApp Number"}</span>
+            {hasWhatsAppProducts && <span style={{ color: "#00e5b0", fontSize: "11px" }}>({isAr ? "مطلوب لتفعيل طلبك" : "Required"})</span>}
+          </span>
+        </label>
 
-        <label className="gx-remember-row">
+        <div className="gx-phone-input-wrap">
+          <input
+            className="gx-cb-input"
+            type="tel"
+            autoComplete="tel"
+            placeholder={isAr ? "ضع رقم الواتس اب الخاص بك لسهولة التواصل والتفعيل (مثال: 0791234567)" : "Enter your WhatsApp phone number"}
+            value={phoneVal}
+            onChange={(e) => handlePhoneChange(e.target.value)}
+            style={{ direction: "ltr", textAlign: "left", fontSize: "13px" }}
+          />
+        </div>
+
+        <p className="gx-contact-hint" style={{ fontSize: "11.5px", color: "#94a3b8", marginTop: 5, lineHeight: 1.45 }}>
+          {isAr
+            ? "ضع رقم الواتس اب الخاص بك لسهولة التواصل والتفعيل السريع لطلبك — لا نطلب كلمة سر حسابك نهائياً 🔒"
+            : "Enter your WhatsApp number for easy coordination & fast activation — no account password is ever requested."}
+        </p>
+
+        {/* Remember Me Checkbox */}
+        <label className="gx-remember-row" style={{ marginTop: 8 }}>
           <input
             type="checkbox"
             checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
+            onChange={(e) => handleRememberToggle(e.target.checked)}
           />
-          <span>{t("cart.remember_me")}</span>
+          <span>{isAr ? "تذكرني (حفظ رقم الواتساب لطلباتي القادمة)" : "Remember me for future orders"}</span>
         </label>
       </div>
+
+      {/* Email Section */}
+      {signedInUser ? (
+        <div className="gx-signedin-email-row" style={{ marginTop: 12, padding: "8px 12px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "12px", color: "#94a3b8" }}>
+            <span>✉️</span>
+            <span>{isAr ? "الحساب المسجل:" : "Signed in as:"}</span>
+            <strong style={{ color: "#f1f5f9" }} dir="ltr">{signedInUser.email}</strong>
+          </div>
+          <span style={{ fontSize: "11px", color: "#00e5b0", fontWeight: 700 }}>✓ {isAr ? "موثق" : "Verified"}</span>
+        </div>
+      ) : (
+        <div className="gx-contact-group" style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+          <label className="gx-contact-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12.5px", fontWeight: 700, color: "#e2e8f0", marginBottom: 6 }}>
+            <span>✉️ {isAr ? "البريد الإلكتروني" : "Email Address"} {hasEmailProducts && <span style={{ color: "#00e5ff", fontSize: "11px" }}>({isAr ? "مطلوب لتفعيل الاشتراك" : "Required"})</span>}</span>
+          </label>
+          <input
+            className="gx-cb-input"
+            type="email"
+            autoComplete="email"
+            placeholder={t("cart.email_ph")}
+            value={cart.contact.email || ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              cart.setContact({ email: val });
+              if (rememberMe) setRememberedEmail(val, true);
+              cart.items.forEach((it) => {
+                if (resolveProductRequirementType(it) === "email") {
+                  cart.updateItemTarget(it.cartId, val);
+                }
+              });
+            }}
+            style={{ direction: "ltr", textAlign: "left" }}
+          />
+          {hasEmailProducts && (
+            <p className="gx-contact-hint" style={{ fontSize: "11.5px", color: "#38bdf8", marginTop: 5, lineHeight: 1.45 }}>
+              {isAr
+                ? "يتم استخدام هذا الإيميل لإرسال دعوة التفعيل الرسمية (مثل YouTube Premium أو Canva Pro) — بدون كلمة سر."
+                : "This email will be used to send your official activation invite — no password needed."}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -467,15 +726,46 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
   async function handleAdvance() {
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
+    const { toast } = await import("sonner");
+
+    // 1. WhatsApp validation if cart contains topup or WhatsApp items
+    const hasWhatsAppProducts = cart.items.some(
+      (it) => resolveProductRequirementType(it) === "whatsapp" || it.deliveryType === "topup"
+    );
+    if (hasWhatsAppProducts) {
+      const phone = (cart.contact.phone || "").trim();
+      const cleanDigits = phone.replace(/\D/g, "");
+      if (!phone || cleanDigits.length < 7) {
+        toast.error(
+          isAr
+            ? "ضع رقم الواتس اب الخاص بك لسهولة التواصل والتفعيل"
+            : "Please enter your WhatsApp phone number for easy contact & activation"
+        );
+        return;
+      }
+    }
+
+    // 2. Email validation for guests
     if (!uid) {
       const email = (cart.contact.email || "").trim();
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!email || !emailRegex.test(email)) {
-        const { toast } = await import("sonner");
         toast.error(t("cart.fill_email"));
         return;
       }
     }
+
+    // 3. Email-specific product check
+    const hasEmailProducts = cart.items.some((it) => resolveProductRequirementType(it) === "email");
+    if (hasEmailProducts && !cart.contact.email?.trim() && !uid) {
+      toast.error(
+        isAr
+          ? "يرجى إدخال إيميل الحساب المراد تفعيل الاشتراك عليه (بدون كلمة سر)"
+          : "Please enter your activation email (no password needed)"
+      );
+      return;
+    }
+
     onContinue();
   }
 
@@ -1021,6 +1311,19 @@ function CartOrderRecapStage2({
         </div>
       )}
 
+      {/* WhatsApp phone recap */}
+      {cart.contact.phone && (
+        <div className="gx-recap-email-box" style={{ marginTop: 6 }}>
+          <div className="gx-reb-left">
+            <span className="gx-reb-lbl">🟢 {isAr ? "رقم الواتساب:" : "WhatsApp:"}</span>
+            <span className="gx-reb-val" dir="ltr">{cart.contact.countryCode || "+962"} {cart.contact.phone}</span>
+          </div>
+          <button type="button" className="gx-reb-edit" onClick={onEditEmail}>
+            {t("cart.edit")}
+          </button>
+        </div>
+      )}
+
       {/* Order Notes */}
       <div className="notes-field" style={{ marginTop: 12 }}>
         <label>{t("cart.notes_label")}</label>
@@ -1450,11 +1753,14 @@ const checkoutCss = `
 }
 
 /* Delivery Card (Where to deliver) */
-.gx-delivery-card{border-radius:18px;padding:18px;border:1px solid rgba(0,229,255,.16);background:linear-gradient(180deg,rgba(18,22,34,.7),rgba(10,13,22,.85))}
+.gx-delivery-card{border-radius:18px;padding:18px;border:1px solid rgba(0,229,255,.16);background:linear-gradient(180deg,rgba(18,22,34,.7),rgba(10,13,22,.85));box-shadow:0 10px 30px -8px rgba(0,0,0,.45)}
 .gx-dc-title{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.06)}
 .gx-dc-title h3{margin:0;font-size:15px;font-weight:900;color:#f1f5f9}
 .gx-remember-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#cbd5e1;cursor:pointer;margin-top:8px}
 .gx-remember-row input{width:16px;height:16px;accent-color:#00e5ff;cursor:pointer}
+.gx-signedin-email-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px}
+.cr-edit-target-box input{background:rgba(255,255,255,.05);border:1px solid rgba(0,229,255,.3);border-radius:6px;color:#f1f5f9}
+.cr-edit-target-box input:focus{border-color:#00e5ff;outline:none}
 
 /* Summary Card */
 .gx-eneba-summary-card{border-radius:18px;padding:18px;border:1px solid rgba(0,229,255,.16);background:linear-gradient(180deg,rgba(18,22,34,.7),rgba(10,13,22,.85))}

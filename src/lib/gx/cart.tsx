@@ -85,6 +85,7 @@ type Ctx = {
   buyNowSnap: (cartId: string, usernames: string[]) => void;
   addCustom: (data: { name: string; icon?: string; bg?: string; price: number }, qty?: number) => void;
   changeQty: (cartId: string, delta: number) => void;
+  updateItemTarget: (cartId: string, target: string) => void;
   remove: (cartId: string) => void;
   clear: () => void;
   isDrawerOpen: boolean;
@@ -113,7 +114,17 @@ function loadRaw(): CartItem[] {
 function loadContact(): ContactInfo {
   try {
     const raw = JSON.parse(localStorage.getItem(CONTACT_KEY) || "null");
-    if (raw && typeof raw === "object") return { ...DEFAULT_CONTACT, ...raw };
+    const rememberedPhone = localStorage.getItem("gx_customer_whatsapp") || "";
+    const rememberedEmail = localStorage.getItem("gx_customer_email") || "";
+    const base = raw && typeof raw === "object" ? { ...DEFAULT_CONTACT, ...raw } : { ...DEFAULT_CONTACT };
+    if (!base.phone && rememberedPhone) {
+      base.phone = rememberedPhone;
+      base.type = "whatsapp";
+    }
+    if (!base.email && rememberedEmail) {
+      base.email = rememberedEmail;
+    }
+    return base;
   } catch { /* noop */ }
   return { ...DEFAULT_CONTACT };
 }
@@ -597,6 +608,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [rawItems, persist, persistCoupon]
   );
 
+  const updateItemTarget = useCallback(
+    (cartId: string, target: string) => {
+      const clean = (target || "").trim();
+      const next = rawItems.map((i) => {
+        if (i.cartId !== cartId) return i;
+        const meta = { ...(i.meta || {}) };
+        if (clean) {
+          meta.usernames = [clean];
+        } else {
+          delete meta.usernames;
+        }
+        return { ...i, meta };
+      });
+      persist(next);
+    },
+    [rawItems, persist]
+  );
+
   const remove = useCallback(
     (cartId: string) => {
       const next = rawItems.filter((i) => i.cartId !== cartId);
@@ -672,6 +701,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         msg += `\n📧 *البريد الإلكتروني:* ${contact.email.trim()}`;
       }
 
+      if (contact.phone?.trim()) {
+        msg += `\n📱 *رقم الواتساب للتواصل:* ${contact.countryCode || "+962"} ${contact.phone.trim()}`;
+      }
+
       if (serviceFeeJOD > 0) {
         msg += `\n⚙️ *رسوم الخدمة:* ${format(serviceFeeJOD)}`;
       }
@@ -685,7 +718,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const encoded = encodeURIComponent(msg);
       return "https://wa.me/962776252313?text=" + encoded;
     },
-    [items, contact.email, format, coupon, coins, creditJOD, rawItems]
+    [items, contact.email, contact.phone, contact.countryCode, format, coupon, coins, creditJOD, rawItems]
   );
 
   const submitOrder = useCallback(async (paymentMethod?: "cliq" | "card" | "gx_wallet") => {
@@ -790,11 +823,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       contact, setContact, coupon, applyCoupon, removeCoupon,
       coins, applyCoins, removeCoins,
       creditJOD: appliedCredit, applyCredit, removeCredit,
-      add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear,
+      add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, updateItemTarget, remove, clear,
       isDrawerOpen, openDrawer, closeDrawer,
       submitOrder, buildWhatsAppUrl,
     }),
-    [items, count, subtotalJOD, totalJOD, notes, setNotes, contact, setContact, coupon, applyCoupon, removeCoupon, coins, applyCoins, removeCoins, appliedCredit, applyCredit, removeCredit, add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, remove, clear, isDrawerOpen, openDrawer, closeDrawer, submitOrder, buildWhatsAppUrl]
+    [items, count, subtotalJOD, totalJOD, notes, setNotes, contact, setContact, coupon, applyCoupon, removeCoupon, coins, applyCoins, removeCoins, appliedCredit, applyCredit, removeCredit, add, addSnap, buyNow, buyNowSnap, addCustom, changeQty, updateItemTarget, remove, clear, isDrawerOpen, openDrawer, closeDrawer, submitOrder, buildWhatsAppUrl]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
