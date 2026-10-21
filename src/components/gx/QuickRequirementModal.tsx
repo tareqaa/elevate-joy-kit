@@ -52,12 +52,10 @@ export function QuickRequirementModal() {
       const d = customEvent.detail;
       setData(d);
 
-      // Pre-fill remembered contact if available
+      // Pre-fill remembered WhatsApp contact if available (activation email is always entered fresh)
       let initialVal = "";
       if (d.requirementType === "whatsapp") {
         initialVal = getRememberedWhatsApp();
-      } else if (d.requirementType === "email") {
-        initialVal = getRememberedEmail();
       }
 
       setValue(initialVal);
@@ -145,13 +143,11 @@ export function QuickRequirementModal() {
       return;
     }
 
-    // Persist if requested
+    // Persist WhatsApp phone if requested
     if (isWhatsApp) {
       setRememberedWhatsApp(clean, rememberMe);
-    } else if (isEmail) {
-      setRememberedEmail(clean, rememberMe);
+      setRememberContactEnabled(rememberMe);
     }
-    setRememberContactEnabled(rememberMe);
 
     const mergedMeta = {
       ...(data.meta || {}),
@@ -345,8 +341,8 @@ export function QuickRequirementModal() {
             </div>
           )}
 
-          {/* Remember Me Checkbox */}
-          {(isWhatsApp || isEmail) && (
+          {/* Remember Me Checkbox - Exclusively for WhatsApp */}
+          {isWhatsApp && (
             <label
               style={{
                 display: "flex",
@@ -364,20 +360,16 @@ export function QuickRequirementModal() {
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 style={{
-                  accentColor: isWhatsApp ? "#10b981" : "#00e5ff",
+                  accentColor: "#10b981",
                   width: 16,
                   height: 16,
                   cursor: "pointer",
                 }}
               />
               <span>
-                {isWhatsApp
-                  ? ar
-                    ? "تذكر رقمي للطلبات القادمة (حفظ تلقائي لعدم إدخاله كل مرة)"
-                    : "Remember my number for future orders"
-                  : ar
-                  ? "تذكر إيميلي للطلبات القادمة (حفظ تلقائي)"
-                  : "Remember my email for future orders"}
+                {ar
+                  ? "تذكر رقمي للطلبات القادمة (حفظ تلقائي لعدم إدخاله كل مرة)"
+                  : "Remember my number for future orders"}
               </span>
             </label>
           )}

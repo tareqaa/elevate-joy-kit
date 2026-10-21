@@ -223,7 +223,6 @@ function CartItemTargetEditor({ item }: { item: any }) {
       setRememberedWhatsApp(clean, true);
     } else if (reqType === "email" && clean) {
       cart.setContact({ email: clean });
-      setRememberedEmail(clean, true);
     }
     setIsEditing(false);
   }
@@ -477,22 +476,12 @@ function readCachedBalances(): { coins: number; credit: number } | null {
   return null;
 }
 
-/** Card: "بيانات التواصل والتفعيل" (Customer Contact & Activation Card) */
+/** Card: "أين تريد استلام الطلب؟" (Order Delivery & Activation Email Card) */
 function CartCustomerContactCard() {
   const cart = useCart();
-  const { t, lang } = useLang();
+  const { lang } = useLang();
   const isAr = lang !== "en";
   const [signedInUser, setSignedInUser] = useState<{ id: string; email: string } | null>(() => readStoredUser());
-  const [rememberMe, setRememberMe] = useState(() => isRememberContactEnabled());
-  const [phoneVal, setPhoneVal] = useState(() => cart.contact.phone || getRememberedWhatsApp() || "");
-
-  // Detect requirements across cart items
-  const hasWhatsAppProducts = cart.items.some(
-    (it) => resolveProductRequirementType(it) === "whatsapp" || it.deliveryType === "topup"
-  );
-  const hasEmailProducts = cart.items.some(
-    (it) => resolveProductRequirementType(it) === "email"
-  );
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -500,155 +489,137 @@ function CartCustomerContactCard() {
         const uEmail = data.session.user.email || "";
         const uid = data.session.user.id;
         setSignedInUser({ id: uid, email: uEmail });
-        if (uEmail && cart.contact.email !== uEmail) {
+        // Only set default if cart email is currently empty
+        if (uEmail && !cart.contact.email) {
           cart.setContact({ email: uEmail });
         }
-        // Also fetch profile whatsapp if phone is empty
+        // Also fetch profile whatsapp if phone is empty (for contact/communication)
         try {
           const { data: prof } = await supabase
             .from("profiles")
             .select("whatsapp")
             .eq("id", uid)
             .maybeSingle();
-          if (prof?.whatsapp && !phoneVal) {
+          if (prof?.whatsapp && !cart.contact.phone) {
             const raw = String(prof.whatsapp).trim();
             const cleanDigits = raw.replace(/\D/g, "");
-            setPhoneVal(raw);
             cart.setContact({ phone: cleanDigits, type: "whatsapp" });
           }
         } catch { /* noop */ }
       }
     });
-  }, [cart, phoneVal]);
+  }, [cart]);
 
-  const handlePhoneChange = (val: string) => {
-    setPhoneVal(val);
-    cart.setContact({ phone: val, type: "whatsapp" });
-    if (val.trim()) {
-      setRememberedWhatsApp(val, true);
-    }
-    // Auto-update any cart items that require WhatsApp
-    cart.items.forEach((it) => {
-      if (resolveProductRequirementType(it) === "whatsapp" || it.deliveryType === "topup") {
-        cart.updateItemTarget(it.cartId, val);
+  // Keep phone populated from localStorage if empty, for communication
+  useEffect(() => {
+    if (!cart.contact.phone) {
+      const remembered = getRememberedWhatsApp();
+      if (remembered) {
+        cart.setContact({ phone: remembered, type: "whatsapp" });
       }
-    });
-  };
+    }
+  }, [cart]);
 
   return (
     <div className="gx-delivery-card gx-contact-card">
-      <div className="gx-dc-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span>📱</span>
-          <h3>{isAr ? "بيانات التواصل والتفعيل" : "Contact & Activation Info"}</h3>
+      {/* Top Header: Where to deliver the order? */}
+      <div className="gx-dc-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span style={{ fontSize: "18px" }}>✉️</span>
+          <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#f8fafc" }}>
+            {isAr ? "أين تريد استلام الطلب؟" : "Where to deliver the order?"}
+          </h3>
+          <div className="gx-help-tooltip-wrap" tabIndex={0} role="button" aria-label="تفاصيل عنوان التسليم">
+            <span
+              className="gx-help-icon"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 3,
+                padding: "2px 7px",
+                borderRadius: "6px",
+                background: "rgba(0, 229, 255, 0.12)",
+                border: "1px solid rgba(0, 229, 255, 0.3)",
+                color: "#00e5ff",
+                fontSize: "11px",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              <span>تفاصيل</span>
+              <span style={{ fontSize: "9px" }}>▼</span>
+            </span>
+            <div className="gx-help-tooltip-popover">
+              <span className="gx-popover-arrow" />
+              {isAr
+                ? "يرجى كتابة بريدك الإلكتروني الحقيقي والصحيح، حيث سيصلك كود التفعيل وتفاصيل الطلب مباشرة إلى هذا العنوان."
+                : "Please write your real and valid email address. The activation code and order details will be delivered directly to this address."}
+            </div>
+          </div>
         </div>
-        {hasWhatsAppProducts && (
-          <span className="gx-badge-req" style={{ fontSize: "11px", fontWeight: 700, background: "rgba(0, 229, 176, 0.15)", color: "#00e5b0", border: "1px solid rgba(0, 229, 176, 0.3)", borderRadius: "6px", padding: "2px 8px" }}>
-            {isAr ? "🟢 للتواصل والتفعيل" : "🟢 Fast Activation"}
+        {signedInUser && (
+          <span style={{ fontSize: "11px", color: "#00e5b0", fontWeight: 700 }}>
+            ✓ {isAr ? "حسابك المسجل" : "Registered"}
           </span>
         )}
       </div>
 
-      {/* WhatsApp Phone Section */}
-      <div className="gx-contact-group" style={{ marginBottom: signedInUser && !hasEmailProducts ? 0 : 14 }}>
-        <label className="gx-contact-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12.5px", fontWeight: 700, color: "#e2e8f0", marginBottom: 6 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span>🟢</span>
-            <span>{isAr ? "رقم الواتساب الخاص بك" : "Your WhatsApp Number"}</span>
-            {hasWhatsAppProducts && <span style={{ color: "#00e5b0", fontSize: "11px" }}>({isAr ? "مطلوب لتفعيل طلبك" : "Required"})</span>}
-          </span>
-        </label>
+      {/* Email Input directly underneath */}
+      <div className="gx-contact-group" style={{ position: "relative", zIndex: 10 }}>
+        <input
+          className="gx-cb-input"
+          type="email"
+          autoComplete="email"
+          placeholder={isAr ? "أدخل البريد الإلكتروني لتلقي التفعيل والطلب..." : "Enter your email for order delivery & activation"}
+          value={cart.contact.email || ""}
+          onChange={(e) => {
+            const val = e.target.value;
+            cart.setContact({ email: val });
+            cart.items.forEach((it) => {
+              if (resolveProductRequirementType(it) === "email") {
+                cart.updateItemTarget(it.cartId, val);
+              }
+            });
+          }}
+          style={{ direction: "ltr", textAlign: "left", fontSize: "14px" }}
+        />
 
-        <div className="gx-phone-input-wrap">
-          <input
-            className="gx-cb-input"
-            type="tel"
-            autoComplete="tel"
-            placeholder="07XXXXXXXX"
-            value={phoneVal}
-            onChange={(e) => handlePhoneChange(e.target.value)}
-            style={{ direction: "ltr", textAlign: "left", fontSize: "14px", letterSpacing: "0.5px" }}
-          />
-        </div>
-
-        <p className="gx-contact-hint" style={{ fontSize: "12px", color: "#00e5ff", marginTop: 6, lineHeight: 1.45, fontWeight: 600 }}>
-          {isAr
-            ? "سيتواصل معك فريقنا لتفعيل اشتراكك بأسرع وقت"
-            : "Our team will contact you to activate your subscription as soon as possible."}
-        </p>
-      </div>
-
-      {/* Email Section: Where to deliver the order? */}
-      {signedInUser ? (
-        <div className="gx-signedin-email-row" style={{ position: "relative", zIndex: 30, marginTop: 14, padding: "12px 14px", background: "rgba(255,255,255,0.03)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "12.5px", color: "#e2e8f0" }}>
-              <span>✉️</span>
-              <span style={{ fontWeight: 800 }}>{isAr ? "أين تريد استلام الطلب؟ (البريد الإلكتروني)" : "Where to deliver the order? (Email)"}</span>
-              <div className="gx-help-tooltip-wrap" tabIndex={0} role="button" aria-label="تفاصيل عنوان التسليم">
-                <span className="gx-help-icon" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: "6px", background: "rgba(0, 229, 255, 0.12)", border: "1px solid rgba(0, 229, 255, 0.3)", color: "#00e5ff", fontSize: "11px", fontWeight: 700 }}>
-                  <span>تفاصيل</span>
-                  <span style={{ fontSize: "9px" }}>▼</span>
-                </span>
-                <div className="gx-help-tooltip-popover">
-                  <span className="gx-popover-arrow" />
-                  {isAr
-                    ? "يرجى كتابة عنوان بريدك الإلكتروني الحقيقي والصحيح؛ حيث سيصلك كود التفعيل وتفاصيل طلبك مباشرة على هذا العنوان."
-                    : "Please ensure this email is valid; codes/invites are delivered directly to this address."}
-                </div>
-              </div>
-            </div>
-            <span style={{ fontSize: "11px", color: "#00e5b0", fontWeight: 700 }}>✓ {isAr ? "حسابك المسجل" : "Registered"}</span>
-          </div>
-          <div style={{ fontSize: "12.5px", color: "#94a3b8" }} dir="ltr">
-            <strong style={{ color: "#00e5ff" }}>{signedInUser.email}</strong>
-          </div>
-        </div>
-      ) : (
-        <div className="gx-contact-group" style={{ position: "relative", zIndex: 30, marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-          <div className="gx-contact-label" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "12.5px", fontWeight: 800, color: "#e2e8f0" }}>
-              <span>✉️</span>
-              <span>{isAr ? "أين تريد استلام الطلب؟ (البريد الإلكتروني)" : "Where to deliver the order? (Email)"}</span>
-              <div className="gx-help-tooltip-wrap" tabIndex={0} role="button" aria-label="تفاصيل عنوان التسليم">
-                <span className="gx-help-icon" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: "6px", background: "rgba(0, 229, 255, 0.12)", border: "1px solid rgba(0, 229, 255, 0.3)", color: "#00e5ff", fontSize: "11px", fontWeight: 700 }}>
-                  <span>تفاصيل</span>
-                  <span style={{ fontSize: "9px" }}>▼</span>
-                </span>
-                <div className="gx-help-tooltip-popover">
-                  <span className="gx-popover-arrow" />
-                  {isAr
-                    ? "يرجى كتابة بريدك الإلكتروني الحقيقي والصحيح، حيث سيصلك كود التفعيل وتفاصيل الطلب مباشرة إلى هذا العنوان."
-                    : "Please write your real and valid email address. The activation code and order details will be delivered directly to this address."}
-                </div>
-              </div>
-            </div>
-          </div>
-          <input
-            className="gx-cb-input"
-            type="email"
-            autoComplete="email"
-            placeholder={t("cart.email_ph")}
-            value={cart.contact.email || ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              cart.setContact({ email: val });
-              if (val.trim()) setRememberedEmail(val, true);
+        {signedInUser?.email && cart.contact.email !== signedInUser.email && (
+          <button
+            type="button"
+            onClick={() => {
+              cart.setContact({ email: signedInUser.email });
               cart.items.forEach((it) => {
                 if (resolveProductRequirementType(it) === "email") {
-                  cart.updateItemTarget(it.cartId, val);
+                  cart.updateItemTarget(it.cartId, signedInUser.email);
                 }
               });
             }}
-            style={{ direction: "ltr", textAlign: "left" }}
-          />
-          <p className="gx-contact-hint" style={{ fontSize: "11.5px", color: "#38bdf8", marginTop: 5, lineHeight: 1.45 }}>
-            {isAr
-              ? "يصلك كود التفعيل أو رابط ودعوة الطلب مباشرة إلى هذا العنوان."
-              : "Your activation code or invite link will be delivered directly to this address."}
-          </p>
-        </div>
-      )}
+            style={{
+              marginTop: 6,
+              background: "rgba(0, 229, 255, 0.08)",
+              border: "1px dashed rgba(0, 229, 255, 0.3)",
+              color: "#00e5ff",
+              borderRadius: 6,
+              padding: "4px 8px",
+              fontSize: "11.5px",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            <span>✓</span>
+            <span>{isAr ? `استخدام بريد حسابي (${signedInUser.email})` : `Use account email (${signedInUser.email})`}</span>
+          </button>
+        )}
+
+        <p className="gx-contact-hint" style={{ fontSize: "11.5px", color: "#38bdf8", marginTop: 6, lineHeight: 1.45 }}>
+          {isAr
+            ? "يصلك كود التفعيل أو رابط ودعوة الطلب مباشرة إلى هذا العنوان."
+            : "Your activation code or invite link will be delivered directly to this address."}
+        </p>
+      </div>
     </div>
   );
 }
@@ -743,7 +714,12 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
       (it) => resolveProductRequirementType(it) === "whatsapp" || it.deliveryType === "topup"
     );
     if (hasWhatsAppProducts) {
-      const phone = (cart.contact.phone || "").trim();
+      const phone = (
+        cart.contact.phone ||
+        getRememberedWhatsApp() ||
+        cart.items.find((it) => resolveProductRequirementType(it) === "whatsapp" || it.deliveryType === "topup")?.usernames?.[0] ||
+        ""
+      ).trim();
       const cleanDigits = phone.replace(/\D/g, "");
       if (!phone || cleanDigits.length < 7) {
         toast.error(
@@ -753,25 +729,19 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
         );
         return;
       }
-    }
-
-    // 2. Email validation for guests
-    if (!uid) {
-      const email = (cart.contact.email || "").trim();
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!email || !emailRegex.test(email)) {
-        toast.error(t("cart.fill_email"));
-        return;
+      if (!cart.contact.phone) {
+        cart.setContact({ phone: cleanDigits, type: "whatsapp" });
       }
     }
 
-    // 3. Email-specific product check
-    const hasEmailProducts = cart.items.some((it) => resolveProductRequirementType(it) === "email");
-    if (hasEmailProducts && !cart.contact.email?.trim() && !uid) {
+    // 2. Email validation for all orders
+    const email = (cart.contact.email || "").trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
       toast.error(
         isAr
-          ? "يرجى إدخال إيميل الحساب المراد تفعيل الاشتراك عليه"
-          : "Please enter your activation email"
+          ? "يرجى كتابة البريد الإلكتروني لتلقي التفعيل والطلب"
+          : "Please enter your email to receive order delivery & activation"
       );
       return;
     }
@@ -1223,7 +1193,7 @@ function CartOrderRecapStage2({
       if (data.session?.user) {
         const uEmail = data.session.user.email || "";
         setSignedInUser({ id: data.session.user.id, email: uEmail });
-        if (uEmail && cart.contact.email !== uEmail) {
+        if (uEmail && !cart.contact.email) {
           cart.setContact({ email: uEmail });
         }
       }

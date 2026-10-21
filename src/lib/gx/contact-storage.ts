@@ -57,44 +57,19 @@ export function setRememberedWhatsApp(phone: string, remember = true): void {
 }
 
 /**
- * Gets the remembered customer Email.
+ * Activation email is never cached or auto-filled across orders so customers always explicitly enter the target account (Canva, YouTube, etc.).
  */
 export function getRememberedEmail(): string {
-  if (typeof window === "undefined") return "";
-  try {
-    const saved = localStorage.getItem(EMAIL_STORAGE_KEY);
-    if (saved && saved.trim()) return saved.trim();
-
-    const cartContact = localStorage.getItem(CART_CONTACT_KEY);
-    if (cartContact) {
-      const parsed = JSON.parse(cartContact);
-      if (parsed?.email && String(parsed.email).trim()) {
-        return String(parsed.email).trim();
-      }
-    }
-  } catch {
-    /* noop */
-  }
   return "";
 }
 
 /**
- * Saves or clears the remembered email.
+ * Saves or clears the remembered email (no-op for activation email safety).
  */
-export function setRememberedEmail(email: string, remember = true): void {
+export function setRememberedEmail(_email: string, _remember = true): void {
   if (typeof window === "undefined") return;
   try {
-    const clean = email.trim();
-    if (clean && remember) {
-      localStorage.setItem(EMAIL_STORAGE_KEY, clean);
-      const raw = localStorage.getItem(CART_CONTACT_KEY);
-      const parsed = raw ? JSON.parse(raw) : {};
-      parsed.email = clean;
-      localStorage.setItem(CART_CONTACT_KEY, JSON.stringify(parsed));
-      window.dispatchEvent(new CustomEvent("gx:contact-updated", { detail: { email: clean } }));
-    } else if (!remember) {
-      localStorage.removeItem(EMAIL_STORAGE_KEY);
-    }
+    localStorage.removeItem(EMAIL_STORAGE_KEY);
   } catch {
     /* noop */
   }

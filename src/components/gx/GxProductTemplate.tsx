@@ -323,22 +323,16 @@ export function GxProductTemplate({
       requiresPlayerId: product.requiresPlayerId,
     });
     if (req === "whatsapp") return getRememberedWhatsApp();
-    if (req === "email") return getRememberedEmail();
     return "";
   });
   const [inputError, setInputError] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Keep targetInput in sync if remembered contact updates
+  // Keep targetInput in sync if remembered WhatsApp updates
   useEffect(() => {
-    if (!targetInput) {
-      if (requirementType === "whatsapp") {
-        const ph = getRememberedWhatsApp();
-        if (ph) setTargetInput(ph);
-      } else if (requirementType === "email") {
-        const em = getRememberedEmail();
-        if (em) setTargetInput(em);
-      }
+    if (!targetInput && requirementType === "whatsapp") {
+      const ph = getRememberedWhatsApp();
+      if (ph) setTargetInput(ph);
     }
   }, [requirementType]);
 
@@ -681,10 +675,8 @@ export function GxProductTemplate({
     if (trimmedInput) {
       if (requirementType === "whatsapp") {
         setRememberedWhatsApp(trimmedInput, rememberMe);
-      } else if (requirementType === "email") {
-        setRememberedEmail(trimmedInput, rememberMe);
+        setRememberContactEnabled(rememberMe);
       }
-      setRememberContactEnabled(rememberMe);
     }
     const variantLabel = pick(activeVariant.labelAr, activeVariant.labelEn);
     const itemName = variantLabel && !name.includes(variantLabel) ? `${name} — ${variantLabel}` : name;
@@ -710,10 +702,8 @@ export function GxProductTemplate({
     if (trimmedInput) {
       if (requirementType === "whatsapp") {
         setRememberedWhatsApp(trimmedInput, rememberMe);
-      } else if (requirementType === "email") {
-        setRememberedEmail(trimmedInput, rememberMe);
+        setRememberContactEnabled(rememberMe);
       }
-      setRememberContactEnabled(rememberMe);
     }
     const variantLabel = pick(activeVariant.labelAr, activeVariant.labelEn);
     const itemName = variantLabel && !name.includes(variantLabel) ? `${name} — ${variantLabel}` : name;
@@ -1263,7 +1253,7 @@ export function GxProductTemplate({
             {targetHint && !inputError && (
               <div className="driffle-target-hint">{targetHint}</div>
             )}
-            {(requirementType === "whatsapp" || requirementType === "email") && (
+            {requirementType === "whatsapp" && (
               <label
                 className="driffle-remember-contact-row"
                 style={{
@@ -1285,20 +1275,16 @@ export function GxProductTemplate({
                     setRememberContactEnabled(e.target.checked);
                   }}
                   style={{
-                    accentColor: requirementType === "whatsapp" ? "#10b981" : "#00e5ff",
+                    accentColor: "#10b981",
                     width: 15,
                     height: 15,
                     cursor: "pointer",
                   }}
                 />
                 <span>
-                  {requirementType === "whatsapp"
-                    ? (ar
-                        ? "تذكر رقمي للطلبات القادمة (حفظ تلقائي لعدم إدخاله كل مرة)"
-                        : "Remember my number for future orders")
-                    : (ar
-                        ? "تذكر إيميلي للطلبات القادمة (حفظ تلقائي)"
-                        : "Remember my email for future orders")}
+                  {ar
+                    ? "تذكر رقمي للطلبات القادمة (حفظ تلقائي لعدم إدخاله كل مرة)"
+                    : "Remember my number for future orders"}
                 </span>
               </label>
             )}

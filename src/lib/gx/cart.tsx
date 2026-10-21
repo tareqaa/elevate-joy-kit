@@ -115,15 +115,13 @@ function loadContact(): ContactInfo {
   try {
     const raw = JSON.parse(localStorage.getItem(CONTACT_KEY) || "null");
     const rememberedPhone = localStorage.getItem("gx_customer_whatsapp") || "";
-    const rememberedEmail = localStorage.getItem("gx_customer_email") || "";
     const base = raw && typeof raw === "object" ? { ...DEFAULT_CONTACT, ...raw } : { ...DEFAULT_CONTACT };
     if (!base.phone && rememberedPhone) {
       base.phone = rememberedPhone;
       base.type = "whatsapp";
     }
-    if (!base.email && rememberedEmail) {
-      base.email = rememberedEmail;
-    }
+    // Activation email is never remembered across orders - always requested fresh
+    base.email = "";
     return base;
   } catch { /* noop */ }
   return { ...DEFAULT_CONTACT };
