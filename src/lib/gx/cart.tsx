@@ -7,6 +7,7 @@ import { submitStoreOrder } from "./orders.functions";
 import { validateCouponFn } from "./coupons.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { getFormattedInternationalPhone } from "./country-phone";
+import { isRememberContactEnabled } from "./contact-storage";
 
 
 type CartItem = {
@@ -114,10 +115,13 @@ function loadRaw(): CartItem[] {
 
 function loadContact(): ContactInfo {
   try {
+    const isRemembered = isRememberContactEnabled();
     const raw = JSON.parse(localStorage.getItem(CONTACT_KEY) || "null");
-    const rememberedPhone = localStorage.getItem("gx_customer_whatsapp") || "";
+    const rememberedPhone = isRemembered ? (localStorage.getItem("gx_customer_whatsapp") || "") : "";
     const base = raw && typeof raw === "object" ? { ...DEFAULT_CONTACT, ...raw } : { ...DEFAULT_CONTACT };
-    if (!base.phone && rememberedPhone) {
+    if (!isRemembered) {
+      base.phone = "";
+    } else if (!base.phone && rememberedPhone) {
       base.phone = rememberedPhone;
       base.type = "whatsapp";
     }
@@ -645,6 +649,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // Discounts belong to the cart contents — never carry them to the next order.
     setCoinsState(null);
     setCreditState(0);
+    if (!isRememberContactEnabled()) {
+      setContactState(DEFAULT_CONTACT);
+      try {
+        localStorage.removeItem(CONTACT_KEY);
+        localStorage.removeItem("gx_customer_whatsapp");
+      } catch { /* noop */ }
+    }
     persist([]);
   }, [persist, persistCoupon]);
 

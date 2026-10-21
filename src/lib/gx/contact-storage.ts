@@ -16,6 +16,7 @@ export type ProductRequirementType = "whatsapp" | "email" | "link" | "id" | "non
 export function getRememberedWhatsApp(): string {
   if (typeof window === "undefined") return "";
   try {
+    if (!isRememberContactEnabled()) return "";
     const saved = localStorage.getItem(WHATSAPP_STORAGE_KEY);
     if (saved && saved.trim()) return saved.trim();
 
@@ -36,20 +37,24 @@ export function getRememberedWhatsApp(): string {
 /**
  * Saves or clears the remembered WhatsApp phone number based on user preference.
  */
-export function setRememberedWhatsApp(phone: string, remember = true): void {
+export function setRememberedWhatsApp(phone: string, remember = false): void {
   if (typeof window === "undefined") return;
   try {
     const clean = phone.trim();
     if (clean && remember) {
       localStorage.setItem(WHATSAPP_STORAGE_KEY, clean);
+      setRememberContactEnabled(true);
       // Also update gx_cart_contact so checkout is in sync
       const raw = localStorage.getItem(CART_CONTACT_KEY);
       const parsed = raw ? JSON.parse(raw) : {};
       parsed.phone = clean;
       localStorage.setItem(CART_CONTACT_KEY, JSON.stringify(parsed));
       window.dispatchEvent(new CustomEvent("gx:contact-updated", { detail: { phone: clean } }));
-    } else if (!remember) {
+    } else {
       localStorage.removeItem(WHATSAPP_STORAGE_KEY);
+      if (!remember) {
+        setRememberContactEnabled(false);
+      }
     }
   } catch {
     /* noop */
@@ -66,7 +71,7 @@ export function getRememberedEmail(): string {
 /**
  * Saves or clears the remembered email (no-op for activation email safety).
  */
-export function setRememberedEmail(_email: string, _remember = true): void {
+export function setRememberedEmail(_email: string, _remember = false): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.removeItem(EMAIL_STORAGE_KEY);
@@ -76,16 +81,16 @@ export function setRememberedEmail(_email: string, _remember = true): void {
 }
 
 /**
- * Checks whether "remember me" is enabled (defaults to true for smooth repeat orders).
+ * Checks whether "remember me" is enabled (defaults to false so guest orders aren't automatically remembered without consent).
  */
 export function isRememberContactEnabled(): boolean {
-  if (typeof window === "undefined") return true;
+  if (typeof window === "undefined") return false;
   try {
     const val = localStorage.getItem(REMEMBER_ENABLED_KEY);
-    if (val === null) return true;
+    if (val === null) return false;
     return val === "true";
   } catch {
-    return true;
+    return false;
   }
 }
 

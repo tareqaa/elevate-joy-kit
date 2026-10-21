@@ -26,6 +26,8 @@ import {
   detectUserCountry,
   formatInternationalWhatsApp,
   getFormattedInternationalPhone,
+  resolveCountryFromPhone,
+  COUNTRIES,
   CountryPhoneInput,
   CountryInfo,
 } from "@/lib/gx/country-phone";
@@ -98,13 +100,18 @@ function CartPage() {
     paymentMethod?: "cliq" | "card" | "gx_wallet";
   } | null>(null);
 
-  const isJordan =
-    !cart.contact.countryCode ||
-    cart.contact.countryCode.startsWith("+962") ||
-    cart.contact.countryCode === "JO" ||
-    cart.contact.countryCode === "962" ||
-    currency === "JOD";
+  const detectedCountry = resolveCountryFromPhone(cart.contact.phone);
+  const isForeign =
+    (detectedCountry && detectedCountry.code !== "JO") ||
+    (cart.contact.countryCode && !["+962", "JO", "962"].includes(cart.contact.countryCode));
+  const isJordan = !isForeign && (cart.contact.countryCode === "+962" || currency === "JOD" || !cart.contact.countryCode);
   const [paymentMethod, setPaymentMethod] = useState<"cliq" | "card">(isJordan ? "cliq" : "card");
+
+  useEffect(() => {
+    if (!isJordan && paymentMethod === "cliq") {
+      setPaymentMethod("card");
+    }
+  }, [isJordan, paymentMethod]);
 
   return (
     <StoreShell>
@@ -215,7 +222,15 @@ function CartItemTargetEditor({ item }: { item: any }) {
       ? (isAr ? "🔗 رابط الحساب:" : "🔗 Link:")
       : (isAr ? "المعرّف:" : "Target:");
 
-  const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(() => detectUserCountry());
+  const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(() => {
+    const fromPhone = resolveCountryFromPhone(currentTarget || cart.contact.phone);
+    if (fromPhone) return fromPhone;
+    if (cart.contact.countryCode) {
+      const match = COUNTRIES.find((c) => c.dialCode === cart.contact.countryCode || c.code === cart.contact.countryCode);
+      if (match) return match;
+    }
+    return detectUserCountry();
+  });
   const placeholder =
     reqType === "whatsapp"
       ? selectedCountry.placeholder
@@ -230,7 +245,8 @@ function CartItemTargetEditor({ item }: { item: any }) {
       const finalPhone = formatted.fullInternational || clean;
       cart.updateItemTarget(item.cartId, finalPhone);
       cart.setContact({ phone: finalPhone, countryCode: selectedCountry.dialCode, type: "whatsapp" });
-      setRememberedWhatsApp(finalPhone, true);
+      const remember = isRememberContactEnabled();
+      setRememberedWhatsApp(finalPhone, remember);
     } else {
       cart.updateItemTarget(item.cartId, clean);
       if (reqType === "email" && clean) {
@@ -243,9 +259,10 @@ function CartItemTargetEditor({ item }: { item: any }) {
   if (isEditing) {
     if (reqType === "whatsapp") {
       return (
-        <div style={{ marginTop: 8, maxWidth: 360 }}>
+        <div style={{ marginTop: 8, maxWidth: 360, position: "relative", zIndex: 50 }}>
           <CountryPhoneInput
             value={val}
+            country={selectedCountry}
             onChange={(raw, _full, c) => {
               setVal(raw);
               if (c) setSelectedCountry(c);
@@ -610,11 +627,15 @@ function CartCustomerContactCard() {
 
   const handleRememberToggle = (checked: boolean) => {
     setRememberEmail(checked);
+    setRememberContactEnabled(checked);
     try {
-      if (checked && cart.contact.email?.trim()) {
-        localStorage.setItem("gx_customer_email", cart.contact.email.trim());
+      if (checked) {
+        if (cart.contact.email?.trim()) localStorage.setItem("gx_customer_email", cart.contact.email.trim());
+        if (cart.contact.phone?.trim()) setRememberedWhatsApp(cart.contact.phone.trim(), true);
       } else {
         localStorage.removeItem("gx_customer_email");
+        localStorage.removeItem("gx_customer_whatsapp");
+        localStorage.removeItem("gx_cart_contact");
       }
     } catch { /* noop */ }
   };
@@ -691,72 +712,36 @@ function CartCustomerContactCard() {
           }}
         />
 
-        {/* Bottom row: تذكرني (i) [ ] */}
-        <div
+        {/* Bottom row: Unified Remember Me matching QuickRequirementModal */}
+        <label
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "flex-start",
             gap: 8,
             marginTop: 10,
+            fontSize: "0.82rem",
+            color: "#cbd5e1",
+            cursor: "pointer",
             userSelect: "none",
           }}
         >
-          <label
+          <input
+            type="checkbox"
+            checked={rememberEmail}
+            onChange={(e) => handleRememberToggle(e.target.checked)}
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
+              accentColor: "#10b981",
+              width: 16,
+              height: 16,
               cursor: "pointer",
-              fontSize: "12.5px",
-              color: "#cbd5e1",
-              fontWeight: 600,
             }}
-          >
-            <input
-              type="checkbox"
-              checked={rememberEmail}
-              onChange={(e) => handleRememberToggle(e.target.checked)}
-              style={{
-                width: 17,
-                height: 17,
-                cursor: "pointer",
-                accentColor: "#00e5ff",
-                borderRadius: "4px",
-                margin: 0,
-              }}
-            />
-            <span>{isAr ? "تذكّرني" : "Remember me"}</span>
-          </label>
-
-          <div className="gx-help-tooltip-wrap" tabIndex={0} role="button" aria-label="شرح تذكرني">
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 17,
-                height: 17,
-                borderRadius: "50%",
-                background: "rgba(255, 255, 255, 0.08)",
-                border: "1px solid rgba(255, 255, 255, 0.22)",
-                color: "#cbd5e1",
-                fontSize: "11px",
-                fontWeight: 700,
-                cursor: "pointer",
-                lineHeight: 1,
-              }}
-            >
-              ⓘ
-            </span>
-            <div className="gx-help-tooltip-popover">
-              <span className="gx-popover-arrow" />
-              {isAr
-                ? "حفظ هذا البريد الإلكتروني على هذا المتصفح لتعبئته تلقائياً في طلباتك القادمة."
-                : "Save this email on this browser to auto-fill in your upcoming orders."}
-            </div>
-          </div>
-        </div>
+          />
+          <span>
+            {isAr
+              ? "تذكر بياناتي للطلبات القادمة (حفظ تلقائي لعدم إدخالها كل مرة)"
+              : "Remember my details for future orders"}
+          </span>
+        </label>
       </div>
     </div>
   );
@@ -848,15 +833,23 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
     const { toast } = await import("sonner");
 
     // 1. WhatsApp validation if cart contains topup or WhatsApp items
-    const hasWhatsAppProducts = cart.items.some(
+    const whatsappItems = cart.items.filter(
       (it) => resolveProductRequirementType(it) === "whatsapp" || it.deliveryType === "topup"
     );
-    if (hasWhatsAppProducts) {
+    if (whatsappItems.length > 0) {
+      const missingTarget = whatsappItems.find((it) => !it.usernames?.[0]?.trim());
+      if (missingTarget) {
+        toast.error(
+          isAr
+            ? "يرجى إدخال وحفظ رقم الواتساب لمنتج التفعيل في السلة"
+            : "Please enter and save the WhatsApp number for items in your cart"
+        );
+        return;
+      }
       const phone = (
         cart.contact.phone ||
-        getRememberedWhatsApp() ||
-        cart.items.find((it) => resolveProductRequirementType(it) === "whatsapp" || it.deliveryType === "topup")?.usernames?.[0] ||
-        ""
+        whatsappItems[0]?.usernames?.[0] ||
+        (isRememberContactEnabled() ? getRememberedWhatsApp() : "")
       ).trim();
       const cleanDigits = phone.replace(/\D/g, "");
       if (!phone || cleanDigits.length < 7) {
@@ -867,9 +860,9 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
         );
         return;
       }
-      if (!cart.contact.phone) {
-        cart.setContact({ phone: cleanDigits, type: "whatsapp" });
-      }
+      const detected = resolveCountryFromPhone(phone);
+      const code = detected?.dialCode || cart.contact.countryCode || "+962";
+      cart.setContact({ phone, countryCode: code, type: "whatsapp" });
     }
 
     // 2. Email validation for all orders
@@ -1253,29 +1246,31 @@ function CartPaymentStage2({
 
       {/* Payment Selection List (Spacious & Cleanly Separated) */}
       <div className="gx-pm-tiles-list">
-        {/* CliQ Option - Always Available */}
-        <div
-          className={"gx-pm-tile " + (paymentMethod === "cliq" ? "active" : "")}
-          onClick={() => setPaymentMethod("cliq")}
-        >
-          <div className="gx-pm-radio">
-            <div className="gx-pm-radio-ring">
-              <div className="gx-pm-radio-inner" />
+        {/* CliQ Option - Available for Jordan orders */}
+        {isJordan && (
+          <div
+            className={"gx-pm-tile " + (paymentMethod === "cliq" ? "active" : "")}
+            onClick={() => setPaymentMethod("cliq")}
+          >
+            <div className="gx-pm-radio">
+              <div className="gx-pm-radio-ring">
+                <div className="gx-pm-radio-inner" />
+              </div>
+            </div>
+
+            <div className="gx-pm-info">
+              <div className="gx-pm-name-row">
+                <span className="gx-pm-name">{t("cart.method_cliq")}</span>
+              </div>
+              <p className="gx-pm-desc">{t("cart.method_cliq_desc")}</p>
+            </div>
+
+            {/* Official CliQ Logo in pristine white container */}
+            <div className="gx-pm-logo cliq">
+              <img src="/app/assets/img/cliq-logo.png" alt="CliQ" />
             </div>
           </div>
-
-          <div className="gx-pm-info">
-            <div className="gx-pm-name-row">
-              <span className="gx-pm-name">{t("cart.method_cliq")}</span>
-            </div>
-            <p className="gx-pm-desc">{t("cart.method_cliq_desc")}</p>
-          </div>
-
-          {/* Official CliQ Logo in pristine white container */}
-          <div className="gx-pm-logo cliq">
-            <img src="/app/assets/img/cliq-logo.png" alt="CliQ" />
-          </div>
-        </div>
+        )}
 
         {/* Visa / Mastercard Option */}
         <div
@@ -2262,6 +2257,10 @@ const checkoutCss = `
 .gx-fee-confirm-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 25px -4px rgba(0, 229, 255, 0.6);
+}
+
+.cart-list-card, .gx-eneba-cart-card, .cart-row, .gx-eneba-row {
+  overflow: visible !important;
 }
 
 @media (max-width:900px){

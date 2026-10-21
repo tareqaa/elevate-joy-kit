@@ -394,7 +394,7 @@ export function warmUpCountryDetection(): void {
 /**
  * Normalizes an international phone number cleanly and deterministically.
  * Prevents double country codes (e.g. "+962 +962797192051", "+962+962...", "+962 079...")
- * and returns a standardized, valid international phone number.
+ * and preserves explicitly selected non-Jordan dial codes (e.g. +970, +966, +971).
  */
 export function getFormattedInternationalPhone(
   phone?: string | null,
@@ -404,37 +404,102 @@ export function getFormattedInternationalPhone(
   const raw = String(phone).trim();
   if (!raw) return "";
 
-  const dial = (countryCode || "").trim();
-  const dialDigits = dial.replace(/\D/g, "");
-
-  // Extract all numeric digits
   let digits = raw.replace(/\D/g, "");
   if (!digits) return "";
 
-  // If dialDigits present, strip repeated duplicate dial code at start
-  // e.g. "962962797192051" -> "962797192051"
-  if (dialDigits) {
-    while (digits.startsWith(dialDigits + dialDigits)) {
-      digits = digits.slice(dialDigits.length);
+  const dial = (countryCode || "").trim();
+  const dialDigits = dial.replace(/\D/g, "");
+
+  // Strip accidental 962 prefix before another country's code (e.g. 962970... -> 970...)
+  if (digits.startsWith("962") && digits.length > 7) {
+    const afterJordan = digits.slice(3);
+    for (const c of COUNTRIES) {
+      const cd = c.dialCode.replace(/\D/g, "");
+      if (c.code !== "JO" && cd && afterJordan.startsWith(cd)) {
+        digits = afterJordan;
+        break;
+      }
     }
   }
 
-  // If already starts with dialDigits
-  if (dialDigits && digits.startsWith(dialDigits)) {
-    // Strip accidental leading zero right after dialDigits (e.g. 962079... -> 96279...)
-    const after = digits.slice(dialDigits.length).replace(/^0+/, "");
-    return `+${dialDigits}${after}`;
-  }
-
-  // If no dialDigits provided but phone originally started with '+'
-  if (!dialDigits && raw.startsWith("+")) {
+  // 1. If phone originally started with '+', it ALREADY has its own international dial code!
+  // We must preserve it and not let a default countryCode overwrite it (e.g. +97052... should stay +970)
+  if (raw.startsWith("+")) {
+    // Strip accidental duplicate dial code at start if any
+    if (dialDigits && digits.startsWith(dialDigits + dialDigits)) {
+      while (digits.startsWith(dialDigits + dialDigits)) {
+        digits = digits.slice(dialDigits.length);
+      }
+    }
+    // Also check against all registered country dial codes
+    for (const c of COUNTRIES) {
+      const cd = c.dialCode.replace(/\D/g, "");
+      if (cd && digits.startsWith(cd + cd)) {
+        while (digits.startsWith(cd + cd)) {
+          digits = digits.slice(cd.length);
+        }
+      }
+    }
     return `+${digits}`;
   }
 
-  // Local phone without dial code: strip leading zeros and attach dialDigits (or default +962)
+  // 2. If phone did not start with '+', check if digits already start with a known country dial code
+  for (const c of COUNTRIES) {
+    const cd = c.dialCode.replace(/\D/g, "");
+    if (cd && digits.startsWith(cd)) {
+      if (digits.startsWith(cd + cd)) {
+        while (digits.startsWith(cd + cd)) {
+          digits = digits.slice(cd.length);
+        }
+      }
+      return `+${digits}`;
+    }
+  }
+
+  // 3. If phone is a local number without dial code, strip leading zeros and attach dialDigits (or default +962)
   const localDigits = digits.replace(/^0+/, "");
   const prefix = dialDigits ? `+${dialDigits}` : "+962";
   return `${prefix}${localDigits}`;
+}
+
+/**
+ * Resolves CountryInfo from a phone number string by checking international prefixes and known dial codes.
+ */
+export function resolveCountryFromPhone(phone?: string | null): CountryInfo | null {
+  if (!phone) return null;
+  let clean = String(phone).trim().replace(/[^\d+]/g, "");
+  if (!clean) return null;
+
+  // Accidental Jordan 962 prepended to another country (e.g. +962970... -> Palestine)
+  if (clean.startsWith("+962") && clean.length > 7) {
+    const sub = clean.slice(4);
+    for (const c of COUNTRIES) {
+      const cd = c.dialCode.replace(/\D/g, "");
+      if (c.code !== "JO" && cd && sub.startsWith(cd)) {
+        return c;
+      }
+    }
+  } else if (clean.startsWith("962") && clean.length > 7) {
+    const sub = clean.slice(3);
+    for (const c of COUNTRIES) {
+      const cd = c.dialCode.replace(/\D/g, "");
+      if (c.code !== "JO" && cd && sub.startsWith(cd)) {
+        return c;
+      }
+    }
+  }
+
+  const digits = clean.replace(/\D/g, "");
+  for (const c of COUNTRIES) {
+    const cd = c.dialCode.replace(/\D/g, "");
+    if (cd && (clean.startsWith(`+${cd}`) || digits.startsWith(cd))) {
+      return c;
+    }
+  }
+  if (clean.startsWith("07") || digits.startsWith("07")) {
+    return COUNTRIES.find((c) => c.code === "JO") || null;
+  }
+  return null;
 }
 
 /**
@@ -497,6 +562,7 @@ export function formatInternationalWhatsApp(
 
 export type CountryPhoneInputProps = {
   value: string;
+  country?: CountryInfo;
   onChange: (value: string, fullInternational: string, country: CountryInfo) => void;
   onCountryChange?: (country: CountryInfo) => void;
   placeholder?: string;
@@ -514,6 +580,7 @@ export type CountryPhoneInputProps = {
  */
 export function CountryPhoneInput({
   value,
+  country,
   onChange,
   onCountryChange,
   placeholder,
@@ -524,7 +591,19 @@ export function CountryPhoneInput({
   autoFocus = false,
   error = false,
 }: CountryPhoneInputProps) {
-  const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(() => detectUserCountry());
+  const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(() => {
+    if (country) return country;
+    const fromVal = resolveCountryFromPhone(value);
+    if (fromVal) return fromVal;
+    return detectUserCountry();
+  });
+
+  useEffect(() => {
+    if (country && country.code !== selectedCountry.code) {
+      setSelectedCountry(country);
+    }
+  }, [country]);
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -709,12 +788,11 @@ export function CountryPhoneInput({
             top: "calc(100% + 6px)",
             left: 0,
             width: "min(320px, 100%)",
-            maxHeight: "280px",
             background: "#0c121e",
             border: "1.5px solid rgba(0, 229, 255, 0.35)",
             borderRadius: "14px",
-            boxShadow: "0 20px 45px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 229, 255, 0.15)",
-            zIndex: 9999,
+            boxShadow: "0 20px 45px rgba(0, 0, 0, 0.85), 0 0 20px rgba(0, 229, 255, 0.2)",
+            zIndex: 99999,
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
@@ -723,7 +801,7 @@ export function CountryPhoneInput({
           }}
         >
           {/* Search box */}
-          <div style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(0,0,0,0.25)" }}>
+          <div style={{ flex: "0 0 auto", padding: "8px 10px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(0,0,0,0.35)" }}>
             <input
               type="text"
               autoFocus
@@ -746,23 +824,28 @@ export function CountryPhoneInput({
           </div>
 
           {/* List of countries */}
-          <div style={{ overflowY: "auto", flex: 1, padding: "4px 0" }}>
-            {filteredCountries.map((c) => {
-              const isSelected = c.code === selectedCountry.code;
-              return (
-                <button
-                  key={c.code}
-                  type="button"
-                  onClick={() => handleSelectCountry(c)}
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "8px 12px",
-                    background: isSelected ? "rgba(0, 229, 255, 0.12)" : "transparent",
-                    border: "none",
-                    color: isSelected ? "#00e5ff" : "#e2e8f0",
+          <div style={{ height: "220px", maxHeight: "240px", overflowY: "auto", flex: "1 1 auto", padding: "4px 0" }}>
+            {filteredCountries.length === 0 ? (
+              <div style={{ padding: "20px 12px", textAlign: "center", color: "#94a3b8", fontSize: "12px" }}>
+                {isAr ? "لم يتم العثور على نتائج" : "No countries found"}
+              </div>
+            ) : (
+              filteredCountries.map((c) => {
+                const isSelected = c.code === selectedCountry.code;
+                return (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onClick={() => handleSelectCountry(c)}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "8px 12px",
+                      background: isSelected ? "rgba(0, 229, 255, 0.12)" : "transparent",
+                      border: "none",
+                      color: isSelected ? "#00e5ff" : "#e2e8f0",
                     cursor: "pointer",
                     fontSize: "12.5px",
                     fontWeight: isSelected ? 800 : 600,
@@ -793,7 +876,7 @@ export function CountryPhoneInput({
                   </span>
                 </button>
               );
-            })}
+            }))}
           </div>
         </div>
       )}

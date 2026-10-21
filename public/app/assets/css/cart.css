@@ -7,7 +7,7 @@
 
 .cart-list-card{
   background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius-lg);
-  overflow:hidden;
+  overflow:visible;
 }
 .cart-list-head{padding:22px 26px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;}
 .cart-list-head h2{font-size:17px; font-weight:800;}
