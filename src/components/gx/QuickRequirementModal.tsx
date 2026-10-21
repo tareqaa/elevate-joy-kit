@@ -94,7 +94,7 @@ export function QuickRequirementModal() {
         : "Contact & Activation Info"
       : isEmail
       ? ar
-        ? "بيانات تفعيل الاشتراك"
+        ? "دعوة تفعيل رسمية على إيميلك"
         : "Subscription Activation Email"
       : ar
       ? "بيانات الطلب والتفعيل"
@@ -108,7 +108,7 @@ export function QuickRequirementModal() {
         : "WhatsApp Number *"
       : isEmail
       ? ar
-        ? "البريد الإلكتروني لتفعيل الاشتراك *"
+        ? "الإيميل المراد تفعيل الاشتراك عليه *"
         : "Email for Activation *"
       : ar
       ? "المعرّف أو الرابط المطلوب *"
@@ -117,13 +117,9 @@ export function QuickRequirementModal() {
   const placeholder =
     data.placeholder ||
     (isWhatsApp
-      ? ar
-        ? "ضع رقم الواتس اب الخاص بك لسهولة التواصل والتفعيل (مثال: 0791234567)"
-        : "Enter WhatsApp phone number (e.g. 0791234567)"
+      ? "07XXXXXXXX"
       : isEmail
-      ? ar
-        ? "أدخل إيميلك لتصلك الدعوة والتفعيل (بدون باسورد)"
-        : "Enter your email for invite (no password)"
+      ? "name@example.com"
       : ar
       ? "أدخل الرابط أو اسم الحساب"
       : "Enter profile link or identifier");
@@ -132,12 +128,12 @@ export function QuickRequirementModal() {
     data.hint ||
     (isWhatsApp
       ? ar
-        ? "💬 سنتواصل معك عبر الواتساب لتأكيد وشحن وتفعيل طلبك بأسرع وقت وأمان كامل — لا نحتاج كلمة سر حسابك نهائياً."
-        : "💬 We will contact you on WhatsApp to safely complete your activation — no password needed."
+        ? "سيتواصل معك فريقنا لتفعيل اشتراكك بأسرع وقت."
+        : "Our team will contact you to activate your subscription as soon as possible."
       : isEmail
       ? ar
-        ? "✉️ أدخل بريدك الإلكتروني الشخصي لتصلك الدعوة والتفعيل الرسمي — بدون كلمة سر."
-        : "✉️ Enter your personal email to receive the official invitation — no password needed."
+        ? "اكتب الإيميل الذي ترغب بتفعيل الاشتراك عليه، حيث ستصلك دعوة تفعيل رسمية."
+        : "Enter the email to receive the official activation invitation."
       : null);
 
   const handleSubmit = (e?: React.FormEvent) => {

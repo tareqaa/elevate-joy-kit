@@ -118,7 +118,7 @@ function AccountPage() {
       }
       const { data, error } = await supabase
         .from("orders")
-        .select("id, order_number, status, created_at, total_jod, items, delivery_data, admin_notes, codes_revealed_at, codes_reveal_count")
+        .select("id, order_number, status, created_at, total_jod, items, delivery_data, admin_notes, customer_whatsapp, customer_email, codes_revealed_at, codes_reveal_count")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -234,6 +234,7 @@ function AccountPage() {
 type OrderRow = {
   id: string; order_number: string; status: string; created_at: string; total_jod: number;
   items: unknown; delivery_data: unknown; admin_notes?: string | null;
+  customer_whatsapp?: string | null; customer_email?: string | null;
   codes_revealed_at?: string | null; codes_reveal_count?: number | null;
 };
 
@@ -390,6 +391,25 @@ function OrderCard({ order: o, userId }: { order: OrderRow; userId: string }) {
           </div>
         </div>
 
+        {/* Customer contact phone */}
+        {o.customer_whatsapp && (
+          <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs">
+            <span className="flex items-center gap-1.5 font-bold text-emerald-400">
+              <span>💬</span>
+              <span>{ar ? "رقم الواتساب للتواصل:" : "WhatsApp Contact:"}</span>
+            </span>
+            <a
+              href={`https://wa.me/${o.customer_whatsapp.replace(/\D/g, "")}`}
+              target="_blank"
+              rel="noreferrer"
+              dir="ltr"
+              className="font-mono font-bold text-emerald-300 hover:text-emerald-100 hover:underline"
+            >
+              {o.customer_whatsapp}
+            </a>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -415,6 +435,35 @@ function OrderCard({ order: o, userId }: { order: OrderRow; userId: string }) {
         </button>
         {open && (
           <div className="mt-2 space-y-2.5 text-sm">
+            {/* Contact / Delivery info */}
+            {(o.customer_whatsapp || o.customer_email) && (
+              <div className="rounded-xl border border-white/10 bg-muted/20 p-2.5 space-y-1.5 text-xs">
+                <div className="font-bold text-foreground flex items-center gap-1.5">
+                  <span>📱</span>
+                  <span>{ar ? "بيانات التواصل والتسليم للطلب" : "Contact & Delivery Info"}</span>
+                </div>
+                {o.customer_whatsapp && (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">{ar ? "واتساب للتواصل:" : "WhatsApp:"}</span>
+                    <a
+                      href={`https://wa.me/${o.customer_whatsapp.replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      dir="ltr"
+                      className="font-mono font-bold text-emerald-400 hover:underline"
+                    >
+                      {o.customer_whatsapp}
+                    </a>
+                  </div>
+                )}
+                {o.customer_email && (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">{ar ? "بريد استلام الطلب:" : "Delivery Email:"}</span>
+                    <span dir="ltr" className="font-mono text-cyan-300">{o.customer_email}</span>
+                  </div>
+                )}
+              </div>
+            )}
             {groups.map((g, i) => (
               <div key={i} className="overflow-hidden rounded-xl border border-white/10 bg-muted/15">
                 <div className="flex justify-between gap-2 px-3 py-2.5">

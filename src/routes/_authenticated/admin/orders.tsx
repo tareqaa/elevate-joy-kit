@@ -443,24 +443,25 @@ function OrdersAdmin() {
                       {o.user_username && <div className="text-xs text-cyan-400/70">@{o.user_username}</div>}
                     </td>
                     <td className="text-xs" dir="ltr">
-                      {o.user_email ? (
-                        <a href={`mailto:${o.user_email}`} className="text-cyan-300 hover:text-cyan-100 hover:underline">{o.user_email}</a>
+                      {o.user_email || o.customer_email ? (
+                        <a href={`mailto:${o.user_email || o.customer_email}`} className="text-cyan-300 hover:text-cyan-100 hover:underline">{o.user_email || o.customer_email}</a>
                       ) : (
                         <span className="text-cyan-100/40">—</span>
                       )}
                     </td>
                     <td className="text-xs whitespace-nowrap">
                       {o.customer_whatsapp ? (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] uppercase text-cyan-400/60">{contactLabel}</span>
+                        <div className="flex flex-col gap-1 items-start">
                           <a
                             href={contactHref ?? "#"}
                             target="_blank"
                             rel="noreferrer"
                             dir="ltr"
-                            className="text-cyan-300 hover:text-cyan-100 hover:underline font-mono"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 hover:text-emerald-100 font-mono font-bold transition shadow-sm"
+                            title={`فتح محادثة ${contactLabel} مع العميل`}
                           >
-                            {o.customer_whatsapp}
+                            <span>{isTg ? "✈️" : "💬"}</span>
+                            <span>{o.customer_whatsapp}</span>
                           </a>
                         </div>
                       ) : (
@@ -883,8 +884,9 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
               <div className="k">{contactLabel}</div>
               <div className="v">
                 {contactHref ? (
-                  <a href={contactHref} target="_blank" rel="noreferrer" dir="ltr" className="text-cyan-300 hover:underline font-mono text-sm">
-                    {order.customer_whatsapp}
+                  <a href={contactHref} target="_blank" rel="noreferrer" dir="ltr" className="inline-flex items-center gap-1 text-emerald-300 hover:text-emerald-100 hover:underline font-mono text-sm font-bold">
+                    <span>💬</span>
+                    <span>{order.customer_whatsapp}</span>
                   </a>
                 ) : <span className="text-cyan-100/40">—</span>}
               </div>
@@ -892,8 +894,8 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             <div className="gx-od-tile">
               <div className="k">الإيميل</div>
               <div className="v text-sm">
-                {order.user_email ? (
-                  <a href={`mailto:${order.user_email}`} dir="ltr" className="text-cyan-300 hover:underline">{order.user_email}</a>
+                {order.user_email || order.customer_email ? (
+                  <a href={`mailto:${order.user_email || order.customer_email}`} dir="ltr" className="text-cyan-300 hover:underline">{order.user_email || order.customer_email}</a>
                 ) : <span className="text-cyan-100/40">—</span>}
               </div>
             </div>

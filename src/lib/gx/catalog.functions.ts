@@ -761,8 +761,8 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           productType = "topup";
           nameAr = `سناب بلس — ${v.label_ar}`;
           nameEn = `Snapchat+ — ${v.label_en || v.label_ar}`;
-          taglineAr = "تفعيل رسمي عبر يوزر السناب بدون كلمة مرور";
-          taglineEn = "Official gift delivery via username, no password";
+          taglineAr = "تفعيل رسمي ومباشر عبر يوزر السناب";
+          taglineEn = "Official gift delivery via username";
           snapDuration = v.label_ar;
           badge = v.tag_ar || (v.cart_id === "snap-6" ? "الأكثر طلبًا" : null);
         } else if (p.slug === "fortnite") {

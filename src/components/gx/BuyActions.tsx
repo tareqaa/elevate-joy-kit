@@ -56,22 +56,7 @@ export function BuyActions({ cartId, meta }: { cartId: string; meta?: Record<str
     }
 
     if (req === "email") {
-      const savedEmail = getRememberedEmail();
-      if (savedEmail) {
-        const mergedMeta = { ...(meta || {}), usernames: [savedEmail] };
-        if (action === "buy") {
-          cart.buyNow(cartId, 1, mergedMeta);
-          navigate({ to: "/cart" });
-        } else {
-          cart.add(cartId, 1, mergedMeta);
-          setAdded(true);
-          window.dispatchEvent(new CustomEvent(CART_ADDED_EVENT));
-          setTimeout(() => setAdded(false), 1200);
-        }
-        return;
-      }
-
-      // Prompt for Email
+      // Always prompt for Email so the user explicitly enters/confirms which account to receive the invite
       triggerRequirementPrompt({
         cartId,
         meta,

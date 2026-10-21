@@ -210,9 +210,9 @@ function CartItemTargetEditor({ item }: { item: any }) {
 
   const placeholder =
     reqType === "whatsapp"
-      ? (isAr ? "ضع رقم الواتس اب للتواصل (مثال: 0791234567)" : "WhatsApp Phone")
+      ? (isAr ? "07XXXXXXXX" : "07XXXXXXXX")
       : reqType === "email"
-      ? (isAr ? "اكتب الإيميل المراد تفعيله" : "Activation Email")
+      ? (isAr ? "name@example.com" : "name@example.com")
       : (isAr ? "أدخل المعرف أو الرابط" : "Enter target");
 
   function handleSave() {
@@ -524,7 +524,7 @@ function CartCustomerContactCard() {
   const handlePhoneChange = (val: string) => {
     setPhoneVal(val);
     cart.setContact({ phone: val, type: "whatsapp" });
-    if (rememberMe) {
+    if (val.trim()) {
       setRememberedWhatsApp(val, true);
     }
     // Auto-update any cart items that require WhatsApp
@@ -533,15 +533,6 @@ function CartCustomerContactCard() {
         cart.updateItemTarget(it.cartId, val);
       }
     });
-  };
-
-  const handleRememberToggle = (checked: boolean) => {
-    setRememberMe(checked);
-    setRememberContactEnabled(checked);
-    if (checked) {
-      if (phoneVal) setRememberedWhatsApp(phoneVal, true);
-      if (cart.contact.email) setRememberedEmail(cart.contact.email, true);
-    }
   };
 
   return (
@@ -573,45 +564,66 @@ function CartCustomerContactCard() {
             className="gx-cb-input"
             type="tel"
             autoComplete="tel"
-            placeholder={isAr ? "ضع رقم الواتس اب الخاص بك لسهولة التواصل والتفعيل (مثال: 0791234567)" : "Enter your WhatsApp phone number"}
+            placeholder="07XXXXXXXX"
             value={phoneVal}
             onChange={(e) => handlePhoneChange(e.target.value)}
-            style={{ direction: "ltr", textAlign: "left", fontSize: "13px" }}
+            style={{ direction: "ltr", textAlign: "left", fontSize: "14px", letterSpacing: "0.5px" }}
           />
         </div>
 
-        <p className="gx-contact-hint" style={{ fontSize: "11.5px", color: "#94a3b8", marginTop: 5, lineHeight: 1.45 }}>
+        <p className="gx-contact-hint" style={{ fontSize: "12px", color: "#00e5ff", marginTop: 6, lineHeight: 1.45, fontWeight: 600 }}>
           {isAr
-            ? "ضع رقم الواتس اب الخاص بك لسهولة التواصل والتفعيل السريع لطلبك — لا نطلب كلمة سر حسابك نهائياً 🔒"
-            : "Enter your WhatsApp number for easy coordination & fast activation — no account password is ever requested."}
+            ? "سيتواصل معك فريقنا لتفعيل اشتراكك بأسرع وقت"
+            : "Our team will contact you to activate your subscription as soon as possible."}
         </p>
-
-        {/* Remember Me Checkbox */}
-        <label className="gx-remember-row" style={{ marginTop: 8 }}>
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(e) => handleRememberToggle(e.target.checked)}
-          />
-          <span>{isAr ? "تذكرني (حفظ رقم الواتساب لطلباتي القادمة)" : "Remember me for future orders"}</span>
-        </label>
       </div>
 
-      {/* Email Section */}
+      {/* Email Section: Where to deliver the order? */}
       {signedInUser ? (
-        <div className="gx-signedin-email-row" style={{ marginTop: 12, padding: "8px 12px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "12px", color: "#94a3b8" }}>
-            <span>✉️</span>
-            <span>{isAr ? "الحساب المسجل:" : "Signed in as:"}</span>
-            <strong style={{ color: "#f1f5f9" }} dir="ltr">{signedInUser.email}</strong>
+        <div className="gx-signedin-email-row" style={{ position: "relative", zIndex: 30, marginTop: 14, padding: "12px 14px", background: "rgba(255,255,255,0.03)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "12.5px", color: "#e2e8f0" }}>
+              <span>✉️</span>
+              <span style={{ fontWeight: 800 }}>{isAr ? "أين تريد استلام الطلب؟ (البريد الإلكتروني)" : "Where to deliver the order? (Email)"}</span>
+              <div className="gx-help-tooltip-wrap" tabIndex={0} role="button" aria-label="تفاصيل عنوان التسليم">
+                <span className="gx-help-icon" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: "6px", background: "rgba(0, 229, 255, 0.12)", border: "1px solid rgba(0, 229, 255, 0.3)", color: "#00e5ff", fontSize: "11px", fontWeight: 700 }}>
+                  <span>تفاصيل</span>
+                  <span style={{ fontSize: "9px" }}>▼</span>
+                </span>
+                <div className="gx-help-tooltip-popover">
+                  <span className="gx-popover-arrow" />
+                  {isAr
+                    ? "يرجى كتابة عنوان بريدك الإلكتروني الحقيقي والصحيح؛ حيث سيصلك كود التفعيل وتفاصيل طلبك مباشرة على هذا العنوان."
+                    : "Please ensure this email is valid; codes/invites are delivered directly to this address."}
+                </div>
+              </div>
+            </div>
+            <span style={{ fontSize: "11px", color: "#00e5b0", fontWeight: 700 }}>✓ {isAr ? "حسابك المسجل" : "Registered"}</span>
           </div>
-          <span style={{ fontSize: "11px", color: "#00e5b0", fontWeight: 700 }}>✓ {isAr ? "موثق" : "Verified"}</span>
+          <div style={{ fontSize: "12.5px", color: "#94a3b8" }} dir="ltr">
+            <strong style={{ color: "#00e5ff" }}>{signedInUser.email}</strong>
+          </div>
         </div>
       ) : (
-        <div className="gx-contact-group" style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-          <label className="gx-contact-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12.5px", fontWeight: 700, color: "#e2e8f0", marginBottom: 6 }}>
-            <span>✉️ {isAr ? "البريد الإلكتروني" : "Email Address"} {hasEmailProducts && <span style={{ color: "#00e5ff", fontSize: "11px" }}>({isAr ? "مطلوب لتفعيل الاشتراك" : "Required"})</span>}</span>
-          </label>
+        <div className="gx-contact-group" style={{ position: "relative", zIndex: 30, marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+          <div className="gx-contact-label" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "12.5px", fontWeight: 800, color: "#e2e8f0" }}>
+              <span>✉️</span>
+              <span>{isAr ? "أين تريد استلام الطلب؟ (البريد الإلكتروني)" : "Where to deliver the order? (Email)"}</span>
+              <div className="gx-help-tooltip-wrap" tabIndex={0} role="button" aria-label="تفاصيل عنوان التسليم">
+                <span className="gx-help-icon" style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: "6px", background: "rgba(0, 229, 255, 0.12)", border: "1px solid rgba(0, 229, 255, 0.3)", color: "#00e5ff", fontSize: "11px", fontWeight: 700 }}>
+                  <span>تفاصيل</span>
+                  <span style={{ fontSize: "9px" }}>▼</span>
+                </span>
+                <div className="gx-help-tooltip-popover">
+                  <span className="gx-popover-arrow" />
+                  {isAr
+                    ? "يرجى كتابة بريدك الإلكتروني الحقيقي والصحيح، حيث سيصلك كود التفعيل وتفاصيل الطلب مباشرة إلى هذا العنوان."
+                    : "Please write your real and valid email address. The activation code and order details will be delivered directly to this address."}
+                </div>
+              </div>
+            </div>
+          </div>
           <input
             className="gx-cb-input"
             type="email"
@@ -621,7 +633,7 @@ function CartCustomerContactCard() {
             onChange={(e) => {
               const val = e.target.value;
               cart.setContact({ email: val });
-              if (rememberMe) setRememberedEmail(val, true);
+              if (val.trim()) setRememberedEmail(val, true);
               cart.items.forEach((it) => {
                 if (resolveProductRequirementType(it) === "email") {
                   cart.updateItemTarget(it.cartId, val);
@@ -630,13 +642,11 @@ function CartCustomerContactCard() {
             }}
             style={{ direction: "ltr", textAlign: "left" }}
           />
-          {hasEmailProducts && (
-            <p className="gx-contact-hint" style={{ fontSize: "11.5px", color: "#38bdf8", marginTop: 5, lineHeight: 1.45 }}>
-              {isAr
-                ? "يتم استخدام هذا الإيميل لإرسال دعوة التفعيل الرسمية (مثل YouTube Premium أو Canva Pro) — بدون كلمة سر."
-                : "This email will be used to send your official activation invite — no password needed."}
-            </p>
-          )}
+          <p className="gx-contact-hint" style={{ fontSize: "11.5px", color: "#38bdf8", marginTop: 5, lineHeight: 1.45 }}>
+            {isAr
+              ? "يصلك كود التفعيل أو رابط ودعوة الطلب مباشرة إلى هذا العنوان."
+              : "Your activation code or invite link will be delivered directly to this address."}
+          </p>
         </div>
       )}
     </div>
@@ -760,8 +770,8 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
     if (hasEmailProducts && !cart.contact.email?.trim() && !uid) {
       toast.error(
         isAr
-          ? "يرجى إدخال إيميل الحساب المراد تفعيل الاشتراك عليه (بدون كلمة سر)"
-          : "Please enter your activation email (no password needed)"
+          ? "يرجى إدخال إيميل الحساب المراد تفعيل الاشتراك عليه"
+          : "Please enter your activation email"
       );
       return;
     }
@@ -1761,6 +1771,13 @@ const checkoutCss = `
 .gx-signedin-email-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px}
 .cr-edit-target-box input{background:rgba(255,255,255,.05);border:1px solid rgba(0,229,255,.3);border-radius:6px;color:#f1f5f9}
 .cr-edit-target-box input:focus{border-color:#00e5ff;outline:none}
+.gx-contact-label{position:relative;z-index:100}
+.gx-help-tooltip-wrap{position:relative;display:inline-flex;align-items:center;cursor:pointer;z-index:100}
+.gx-help-icon{font-size:13px;line-height:1;opacity:.9;transition:transform .2s,opacity .2s;display:inline-block}
+.gx-help-tooltip-wrap:hover .gx-help-icon{opacity:1;transform:scale(1.15)}
+.gx-help-tooltip-popover{position:absolute;bottom:calc(100% + 8px);left:0;width:270px;background:#0b1120!important;background-color:#0b1120!important;border:1px solid #00e5ff!important;box-shadow:0 14px 35px rgba(0,0,0,.95);color:#f8fafc;font-size:11.5px;font-weight:600;line-height:1.55;padding:10px 14px;border-radius:10px;pointer-events:none;opacity:0;visibility:hidden;transition:all .2s cubic-bezier(.16,1,.3,1);z-index:99999;text-align:right}
+.gx-popover-arrow{position:absolute;top:100%;left:20px;border-width:6px;border-style:solid;border-color:#00e5ff transparent transparent transparent}
+.gx-help-tooltip-wrap:hover .gx-help-tooltip-popover{opacity:1!important;visibility:visible;bottom:calc(100% + 6px)}
 
 /* Summary Card */
 .gx-eneba-summary-card{border-radius:18px;padding:18px;border:1px solid rgba(0,229,255,.16);background:linear-gradient(180deg,rgba(18,22,34,.7),rgba(10,13,22,.85))}

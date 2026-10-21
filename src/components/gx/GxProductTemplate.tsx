@@ -389,8 +389,8 @@ export function GxProductTemplate({
     }
     if (requirementType === "email") {
       return ar
-        ? "البريد الإلكتروني لتفعيل الاشتراك *"
-        : "Account Email for Activation *";
+        ? "الإيميل المراد تفعيل الاشتراك عليه *"
+        : "Email for Activation *";
     }
     if (isLikeProduct) {
       return ar
@@ -410,20 +410,10 @@ export function GxProductTemplate({
 
   const targetPlaceholder = useMemo(() => {
     if (requirementType === "whatsapp") {
-      return (
-        product.identifierPlaceholder ||
-        (ar
-          ? "ضع رقم الواتس اب الخاص بك لسهولة التواصل والتفعيل (مثال: 0791234567)"
-          : "Enter your WhatsApp phone number (e.g. 0791234567)")
-      );
+      return "07XXXXXXXX";
     }
     if (requirementType === "email") {
-      return (
-        product.identifierPlaceholder ||
-        (ar
-          ? "أدخل إيميلك لتصلك الدعوة والتفعيل (بدون باسورد)"
-          : "Enter your email for invite (no password)")
-      );
+      return "name@example.com";
     }
     if (isLikeProduct) {
       return ar
@@ -444,13 +434,13 @@ export function GxProductTemplate({
   const targetHint = useMemo(() => {
     if (requirementType === "whatsapp") {
       return ar
-        ? "💬 ضع رقم الواتس اب الخاص بك لسهولة التواصل والتفعيل المباشر — لا نطلب كلمة مرور حسابك أبداً."
-        : "💬 Enter your WhatsApp number for easy communication and activation — no password required.";
+        ? "سيتواصل معك فريقنا لتفعيل اشتراكك بأسرع وقت."
+        : "Our team will contact you to activate your subscription as soon as possible.";
     }
     if (requirementType === "email") {
       return ar
-        ? "✉️ أدخل بريدك الإلكتروني الشخصي فقط لتصلك الدعوة والتفعيل الرسمي — بدون أي كلمة سر."
-        : "✉️ Enter your personal email only to receive the official invitation — no password needed.";
+        ? "اكتب الإيميل الذي ترغب بتفعيل الاشتراك عليه، حيث ستصلك دعوة تفعيل رسمية."
+        : "Enter the email to receive the official activation invitation.";
     }
     if (isLikeProduct) {
       return ar
@@ -805,8 +795,8 @@ export function GxProductTemplate({
     if (isYouTube) {
       return [
         ar
-          ? "📧 دعوة رسمية على الإيميل: يصلك الاشتراك كدعوة رسمية من Google على بريدك الإلكتروني (Gmail) بدون الحاجة لكلمة المرور نهائياً."
-          : "📧 Official Email Invite: Delivered directly as an official Google invitation to your Gmail; no password needed.",
+          ? "📧 دعوة رسمية على الإيميل: يصلك الاشتراك كدعوة رسمية من Google على بريدك الإلكتروني (Gmail)."
+          : "📧 Official Email Invite: Delivered directly as an official Google invitation to your Gmail.",
         ar
           ? "⚠️ شرط أساسي وإلزامي: يجب أن لا يكون حسابك منضماً حالياً إلى أي مجموعة عائلية أخرى في Google لتتمكن من قبول الدعوة بنجاح."
           : "⚠️ Mandatory Requirement: Your Google account must NOT be part of any other Google family group to accept the invite.",
@@ -843,15 +833,15 @@ export function GxProductTemplate({
           ? "🛡️ ضمان ذهبي لمدة 30 يوماً: نضمن لك الخدمة لمدة 30 يوماً كاملة؛ أي انخفاض أو Drop يحدث خلال هذه الفترة نقوم بتعويضه فوراً وبشكل مجاني."
           : "🛡️ 30-Day Golden Guarantee: We guarantee 30 full days; any drop occurring during this period is refilled immediately and freely.",
         ar
-          ? "🔒 أمان وخصوصية تامة: لا نطلب كلمة مرور حسابك إطلاقاً؛ نحتاج فقط رابط الحساب أو المنشور العام (Public)."
-          : "🔒 100% Safe & Private: We never ask for your password; only your public profile or post link is required.",
+          ? "🔒 أمان وخصوصية تامة: نحتاج فقط رابط الحساب أو المنشور العام (Public) لتنفيذ الخدمة بأعلى معايير الأمان."
+          : "🔒 100% Safe & Private: Only your public profile or post link is required to complete the service safely.",
       ];
     }
     if (deliveryInfo.type === "link") {
       return [
         ar
-          ? "هذا المنتج مخصص للتفعيل الفوري عبر رابط رسمي معتمد؛ لن تحتاج لمشاركة أي كلمات مرور حساسة."
-          : "This product is activated directly via an official activation link; no sensitive passwords required.",
+          ? "هذا المنتج مخصص للتفعيل الفوري عبر رابط رسمي معتمد ومباشر."
+          : "This product is activated directly via an official and direct activation link.",
         ar
           ? "لا يُستخدم هذا المنتج لتمديد اشتراك قائم؛ يُشترط التفعيل عند انتهاء اشتراكك الحالي أو على حساب مؤهل."
           : "Cannot be used to extend an active subscription. Redeem after current plan expires.",
@@ -1355,7 +1345,7 @@ export function GxProductTemplate({
               </div>
               <div className="driffle-trust-item gx-trust-item">
                 <span className="driffle-trust-icon gx-trust-icon">🔒</span>
-                <span>{ar ? "أمان 100% بدون الحاجة لكلمة المرور" : "100% Safe — No Password Needed"}</span>
+                <span>{ar ? "أمان وتفعيل رسمي 100%" : "100% Safe & Official"}</span>
               </div>
             </>
           ) : (
