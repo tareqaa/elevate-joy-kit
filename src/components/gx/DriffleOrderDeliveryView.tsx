@@ -185,8 +185,14 @@ export function getProductCoverImage(
   if (cleanSlug.includes("fortnite") || cleanName.includes("fortnite") || cleanName.includes("فورتنايت") || cleanName.includes("v-bucks")) {
     return "/app/assets/img/fortnite-crew.jpg";
   }
+  if (cleanSlug.includes("realms")) {
+    return "/app/assets/img/catalog/minecraft-realms-plus.png";
+  }
   if (cleanSlug.includes("minecraft") || cleanName.includes("minecraft") || cleanName.includes("ماين كرافت")) {
     return "/app/assets/img/catalog/minecraft-java-bedrock.png";
+  }
+  if (cleanSlug.includes("lovable") || cleanName.includes("lovable") || cleanName.includes("لوفابل")) {
+    return "/app/assets/img/catalog/lovable.webp";
   }
   if (cleanSlug.includes("gta") || cleanName.includes("gta") || cleanName.includes("جراند")) {
     return "/app/assets/img/catalog/gta-v-enhanced-pc.jpg";

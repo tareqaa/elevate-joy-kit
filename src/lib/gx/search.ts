@@ -200,6 +200,15 @@ const SYNONYM_MAP: Record<string, string[]> = {
   "بطاقة ابل": ["apple", "itunes", "ايتونز", "آبل", "بطاقات ابل"],
   "بطاقات ابل": ["apple", "itunes", "ايتونز", "آبل", "بطاقة ابل"],
 
+  // LinkedIn
+  لينكدان: ["linkedin", "لينكدإن", "لينكد ان", "لينكد", "كرير", "بزنس", "بريميوم"],
+  لينكدإن: ["linkedin", "لينكدان", "لينكد ان", "لينكد", "كرير", "بزنس", "بريميوم"],
+  "لينكد ان": ["linkedin", "لينكدإن", "لينكدان", "لينكد", "كرير", "بزنس", "بريميوم"],
+  لينكد: ["linkedin", "لينكدإن", "لينكدان", "كرير", "بزنس"],
+  linkedin: ["لينكدإن", "لينكدان", "لينكد ان", "لينكد", "career", "business", "كرير", "بزنس"],
+  كرير: ["career", "linkedin", "لينكدإن"],
+  بزنس: ["business", "linkedin", "لينكدإن"],
+
   // General Categories
   اشتراك: ["subscriptions", "اشتراكات", "subscription"],
   اشتراكات: ["subscriptions", "اشتراك", "subscription"],
@@ -839,6 +848,11 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
 
         const firstVariant = prodVariants[0];
 
+        const isLinkedIn = p.slug.includes("linkedin") || (p.name_ar && (p.name_ar.includes("لينكد") || p.name_ar.includes("linkedin")));
+        const extraLabels = isLinkedIn
+          ? ["لينكدإن", "لينكد ان", "لينكدان", "لينكد", "linkedin", "بريميوم", "كرير", "بزنس", "career", "business"]
+          : [];
+
         const item: SearchableItem = {
           id: p.id,
           slug: p.slug,
@@ -869,7 +883,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           icon: p.icon,
           iconImage: p.icon_image_url || p.image_url,
           thumbBg: p.thumb_bg || p.card_gradient,
-          variantLabels: vData?.labels || [],
+          variantLabels: [...(vData?.labels || []), ...extraLabels],
           link: `/product/${p.slug}`,
         };
 

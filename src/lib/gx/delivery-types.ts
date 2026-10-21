@@ -60,12 +60,22 @@ export function resolveStrictDeliveryType(item: {
   isGiftCardMaster?: boolean;
 }): StrictDeliveryType {
   const pt = (item.productType || "").toLowerCase().trim();
+  const s = (item.slug || "").toLowerCase();
+  const c = (item.cartId || "").toLowerCase();
+  const n = ((item.name || "") + " " + (item.nameAr || "")).toLowerCase();
 
-  // Hard slug overrides — always top up regardless of DB value
-  const _s = (item.slug || "").toLowerCase();
-  if (_s === "roblox" || _s.includes("roblox")) return "topup";
-  if (_s === "snapchat" || _s.includes("snapchat")) return "topup";
-  if (_s === "youtube-premium" || _s.includes("youtube")) return "link";
+  // Hard slug & cartId overrides for exact store products
+  if (s === "roblox" || s.includes("roblox")) return "topup";
+  if (s === "snapchat" || s.includes("snapchat")) return "topup";
+  if (s === "youtube-premium" || s.includes("youtube")) return "link";
+  if (s === "adobe" || c === "adobe-1") return "code";
+  if (s === "nordvpn" || c.startsWith("nordvpn")) return "link";
+  if (s === "canva" || c.startsWith("canva")) return "link";
+  if (s === "linkedin-career-3m" || c === "linkedin-career-3m") return "link";
+  if (s === "linkedin-career-12m" || s === "linkedin-business-12m" || c === "linkedin-career-12m" || c === "linkedin-business-12m") return "topup";
+  if (s.includes("discord")) return "code";
+  if (s.includes("minecraft-realms")) return "code";
+  if (s.includes("lovable")) return "link";
 
   // Priority 1: Explicit database delivery_type configured by admin
   if (pt === "account" || pt === "حساب" || pt === "حساب جاهز") return "account";
@@ -73,10 +83,6 @@ export function resolveStrictDeliveryType(item: {
   if (pt === "link" || pt === "رابط" || pt === "رابط تفعيل") return "link";
   if (pt === "topup" || pt === "شحن" || pt === "شحن مباشر" || pt === "direct_topup") return "topup";
   if (pt === "manual") return "code";
-
-  const s = (item.slug || "").toLowerCase();
-  const c = (item.cartId || "").toLowerCase();
-  const n = ((item.name || "") + " " + (item.nameAr || "")).toLowerCase();
 
   // 1. Direct Top-up (Fortnite, Snapchat+, Social media followers/likes, direct topup items)
   if (
@@ -122,10 +128,12 @@ export function resolveStrictDeliveryType(item: {
     return "code";
   }
 
-  // 3. Activation Link (Canva, LinkedIn, Autodesk, YouTube Premium, or explicit link/invite)
+  // 3. Activation Link (Canva, NordVPN, Lovable, LinkedIn, Autodesk, YouTube Premium, or explicit link/invite)
   if (
     pt === "link" ||
     s === "canva" ||
+    s === "nordvpn" ||
+    s.includes("lovable") ||
     s === "linkedin" ||
     s === "autodesk" ||
     s === "youtube-premium" ||

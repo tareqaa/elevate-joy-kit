@@ -200,13 +200,15 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
       }
     }
 
+    const querySlug = data.slug === "linkedin" ? "linkedin-career-3m" : data.slug;
+
     const supabase = getPublicClient();
     const { data: row } = await supabase
       .from("products")
       .select(
         "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, base_price_jod, image_url, icon, icon_image_url, thumb_bg, accent_color, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, requires_player_id, delivery_method_ar, delivery_method_en, delivery_details, delivery_instructions_ar, delivery_instructions_en, page_template, delivery_type, region, is_active, categories:category_id (name_ar, name_en, description_ar, description_en)",
       )
-      .eq("slug", data.slug)
+      .eq("slug", querySlug)
       .eq("is_active", true)
       .maybeSingle();
     if (!row) {
@@ -820,11 +822,11 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           productType = "link";
           nameAr = `Canva Pro — ${v.label_ar}`;
           nameEn = `Canva Pro — ${v.label_en || v.label_ar}`;
-        } else if (p.slug === "linkedin") {
+        } else if (p.slug === "linkedin" || p.slug.startsWith("linkedin-")) {
           platform = "LinkedIn";
-          productType = "activation";
-          nameAr = `LinkedIn Premium — ${v.label_ar}`;
-          nameEn = `LinkedIn Premium — ${v.label_en || v.label_ar}`;
+          productType = p.slug.includes("3m") ? "link" : "topup";
+          nameAr = p.name_ar;
+          nameEn = p.name_en || p.name_ar;
         } else if (p.slug === "autodesk") {
           platform = "Autodesk";
           productType = "activation";

@@ -239,6 +239,14 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     return "https://gxstore.me/app/assets/img/catalog/notion.jpg";
   }
 
+  if (cleanSlug.includes("realms")) {
+    return "https://gxstore.me/app/assets/img/catalog/minecraft-realms-plus.png";
+  }
+
+  if (cleanSlug.includes("lovable") || cleanName.includes("lovable") || cleanName.includes("لوفابل")) {
+    return "https://gxstore.me/app/assets/img/catalog/lovable.webp";
+  }
+
   if (
     cleanSlug.includes("adobe-acrobat") ||
     cleanName.includes("acrobat") ||
