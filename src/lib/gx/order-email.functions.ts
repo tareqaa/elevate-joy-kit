@@ -637,14 +637,11 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
                   هل تحتاج لمساعدة أو لديك استفسار بشأن التفعيل؟
                 </p>
                 <p style="margin:0 0 12px;font-size:12.5px;color:#94a3b8;">
-                  فريق دعم <strong>GX Store</strong> جاهز لخدمتك عبر واتساب أو ديسكورد لحل أي مشكلة فوراً.
+                  فريق دعم <strong>GX Store</strong> جاهز لخدمتك عبر واتساب لحل أي مشكلة فوراً.
                 </p>
                 <div style="margin-top:10px;">
-                  <a href="https://wa.me/962776252313?text=${encodeURIComponent(`مرحباً، أود المساعدة بشأن طلبي رقم #${orderNumber}`)}" target="_blank" style="display:inline-block;background:#25D366;color:#051c14;padding:8px 16px;border-radius:8px;font-weight:800;font-size:12px;text-decoration:none;margin-left:8px;">
+                  <a href="https://wa.me/962776252313?text=${encodeURIComponent(`مرحباً، أود المساعدة بشأن طلبي رقم #${orderNumber}`)}" target="_blank" style="display:inline-block;background:#25D366;color:#051c14;padding:8px 16px;border-radius:8px;font-weight:800;font-size:12px;text-decoration:none;">
                     واتساب الدعم الفني
-                  </a>
-                  <a href="https://discord.gg/DvkUd5PgqV" target="_blank" style="display:inline-block;background:#5865F2;color:#ffffff;padding:8px 16px;border-radius:8px;font-weight:800;font-size:12px;text-decoration:none;">
-                    سيرفر ديسكورد
                   </a>
                 </div>
               </div>
@@ -829,11 +826,8 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
                   The <strong>GX Store</strong> Support Team is available around the clock to help you through our official channels.
                 </p>
                 <div style="margin-top:10px;">
-                  <a href="https://wa.me/962776252313?text=${encodeURIComponent(`Hello, I need help with my order #${orderNumber}`)}" target="_blank" style="display:inline-block;background:#25D366;color:#051c14;padding:8px 16px;border-radius:8px;font-weight:800;font-size:12px;text-decoration:none;margin-right:8px;">
+                  <a href="https://wa.me/962776252313?text=${encodeURIComponent(`Hello, I need help with my order #${orderNumber}`)}" target="_blank" style="display:inline-block;background:#25D366;color:#051c14;padding:8px 16px;border-radius:8px;font-weight:800;font-size:12px;text-decoration:none;">
                     WhatsApp Support
-                  </a>
-                  <a href="https://discord.gg/DvkUd5PgqV" target="_blank" style="display:inline-block;background:#5865F2;color:#ffffff;padding:8px 16px;border-radius:8px;font-weight:800;font-size:12px;text-decoration:none;">
-                    Discord Server
                   </a>
                 </div>
               </div>

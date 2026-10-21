@@ -22,6 +22,12 @@ import {
   setRememberContactEnabled,
   resolveProductRequirementType,
 } from "@/lib/gx/contact-storage";
+import {
+  detectUserCountry,
+  formatInternationalWhatsApp,
+  CountryPhoneInput,
+  CountryInfo,
+} from "@/lib/gx/country-phone";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -208,26 +214,67 @@ function CartItemTargetEditor({ item }: { item: any }) {
       ? (isAr ? "🔗 رابط الحساب:" : "🔗 Link:")
       : (isAr ? "المعرّف:" : "Target:");
 
+  const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(() => detectUserCountry());
   const placeholder =
     reqType === "whatsapp"
-      ? (isAr ? "07XXXXXXXX" : "07XXXXXXXX")
+      ? selectedCountry.placeholder
       : reqType === "email"
       ? (isAr ? "name@example.com" : "name@example.com")
       : (isAr ? "أدخل المعرف أو الرابط" : "Enter target");
 
   function handleSave() {
     const clean = val.trim();
-    cart.updateItemTarget(item.cartId, clean);
     if (reqType === "whatsapp" && clean) {
-      cart.setContact({ phone: clean, type: "whatsapp" });
-      setRememberedWhatsApp(clean, true);
-    } else if (reqType === "email" && clean) {
-      cart.setContact({ email: clean });
+      const formatted = formatInternationalWhatsApp(clean, selectedCountry);
+      const finalPhone = formatted.fullInternational || clean;
+      cart.updateItemTarget(item.cartId, finalPhone);
+      cart.setContact({ phone: finalPhone, countryCode: selectedCountry.dialCode, type: "whatsapp" });
+      setRememberedWhatsApp(finalPhone, true);
+    } else {
+      cart.updateItemTarget(item.cartId, clean);
+      if (reqType === "email" && clean) {
+        cart.setContact({ email: clean });
+      }
     }
     setIsEditing(false);
   }
 
   if (isEditing) {
+    if (reqType === "whatsapp") {
+      return (
+        <div style={{ marginTop: 8, maxWidth: 360 }}>
+          <CountryPhoneInput
+            value={val}
+            onChange={(raw, _full, c) => {
+              setVal(raw);
+              if (c) setSelectedCountry(c);
+            }}
+            onCountryChange={setSelectedCountry}
+            autoFocus
+            isAr={isAr}
+            inputStyle={{ height: "36px", fontSize: "13px" }}
+          />
+          <div style={{ display: "flex", gap: "8px", marginTop: 8 }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ height: "28px", fontSize: "11.5px", padding: "0 12px", lineHeight: "28px" }}
+              onClick={handleSave}
+            >
+              {isAr ? "✓ حفظ الرقم" : "Save"}
+            </button>
+            <button
+              type="button"
+              style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "12px" }}
+              onClick={() => setIsEditing(false)}
+            >
+              {isAr ? "إلغاء" : "Cancel"}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="cr-edit-target-box" style={{ marginTop: 6, display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
         <input

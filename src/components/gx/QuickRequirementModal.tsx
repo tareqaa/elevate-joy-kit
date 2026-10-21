@@ -13,6 +13,7 @@ import {
   type ProductRequirementType,
 } from "@/lib/gx/contact-storage";
 import { MessageCircle, Mail, Link as LinkIcon, Check, X, ShieldCheck } from "lucide-react";
+import { CountryPhoneInput } from "@/lib/gx/country-phone";
 
 export const PROMPT_REQUIREMENT_EVENT = "gx:prompt-requirement";
 
@@ -134,6 +135,8 @@ export function QuickRequirementModal() {
         : "Enter the email to receive the official activation invitation."
       : null);
 
+  const [formattedWhatsApp, setFormattedWhatsApp] = useState("");
+
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const clean = value.trim();
@@ -143,15 +146,17 @@ export function QuickRequirementModal() {
       return;
     }
 
-    // Persist WhatsApp phone if requested
+    // Persist WhatsApp phone with international dial code
+    const finalVal = isWhatsApp ? (formattedWhatsApp || clean) : clean;
     if (isWhatsApp) {
-      setRememberedWhatsApp(clean, rememberMe);
+      setRememberedWhatsApp(finalVal, rememberMe);
       setRememberContactEnabled(rememberMe);
+      cart.setContact({ phone: finalVal, type: "whatsapp" });
     }
 
     const mergedMeta = {
       ...(data.meta || {}),
-      usernames: [clean],
+      usernames: [finalVal],
     };
 
     if (data.action === "buy") {
@@ -272,50 +277,64 @@ export function QuickRequirementModal() {
             >
               {label}
             </label>
-            <div style={{ position: "relative" }}>
-              <input
-                ref={inputRef}
-                type={isEmail ? "email" : "text"}
-                dir="auto"
+            {isWhatsApp ? (
+              <CountryPhoneInput
                 value={value}
-                placeholder={placeholder}
-                onChange={(e) => {
-                  setValue(e.target.value);
-                  if (error && e.target.value.trim()) setError(false);
+                onChange={(val, fullInt) => {
+                  setValue(val);
+                  setFormattedWhatsApp(fullInt);
+                  if (error && val.trim()) setError(false);
                 }}
-                style={{
-                  width: "100%",
-                  padding: "12px 14px",
-                  borderRadius: 12,
-                  background: "rgba(255, 255, 255, 0.05)",
-                  border: error ? "1.5px solid #ef4444" : "1.5px solid rgba(255, 255, 255, 0.12)",
-                  color: "#ffffff",
-                  fontSize: "0.92rem",
-                  fontFamily: "inherit",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
+                isAr={ar}
+                error={error}
+                autoFocus
               />
-              {value && (
-                <button
-                  type="button"
-                  onClick={() => setValue("")}
-                  style={{
-                    position: "absolute",
-                    insetInlineEnd: 10,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "transparent",
-                    border: "none",
-                    color: "#94a3b8",
-                    cursor: "pointer",
-                    padding: 4,
+            ) : (
+              <div style={{ position: "relative" }}>
+                <input
+                  ref={inputRef}
+                  type={isEmail ? "email" : "text"}
+                  dir="auto"
+                  value={value}
+                  placeholder={placeholder}
+                  onChange={(e) => {
+                    setValue(e.target.value);
+                    if (error && e.target.value.trim()) setError(false);
                   }}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+                  style={{
+                    width: "100%",
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    background: "rgba(255, 255, 255, 0.05)",
+                    border: error ? "1.5px solid #ef4444" : "1.5px solid rgba(255, 255, 255, 0.12)",
+                    color: "#ffffff",
+                    fontSize: "0.92rem",
+                    fontFamily: "inherit",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+                {value && (
+                  <button
+                    type="button"
+                    onClick={() => setValue("")}
+                    style={{
+                      position: "absolute",
+                      insetInlineEnd: 10,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "transparent",
+                      border: "none",
+                      color: "#94a3b8",
+                      cursor: "pointer",
+                      padding: 4,
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
             {error && (
               <div style={{ fontSize: "0.78rem", color: "#f87171", marginTop: 5 }}>
                 ⚠️ {ar ? "يرجى تعبئة الحقل للمتابعة" : "Please fill this field to proceed"}

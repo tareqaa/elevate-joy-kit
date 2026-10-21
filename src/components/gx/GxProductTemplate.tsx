@@ -17,6 +17,7 @@ import {
   isRememberContactEnabled,
   setRememberContactEnabled,
 } from "@/lib/gx/contact-storage";
+import { CountryPhoneInput } from "@/lib/gx/country-phone";
 
 function renderStepContent(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -326,6 +327,7 @@ export function GxProductTemplate({
     return "";
   });
   const [inputError, setInputError] = useState<boolean>(false);
+  const [formattedWhatsApp, setFormattedWhatsApp] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Keep targetInput in sync if remembered WhatsApp updates
@@ -672,10 +674,12 @@ export function GxProductTemplate({
     if (!validateTargetInput()) return;
     setInputError(false);
     const trimmedInput = targetInput.trim();
-    if (trimmedInput) {
+    const finalVal = requirementType === "whatsapp" ? (formattedWhatsApp || trimmedInput) : trimmedInput;
+    if (finalVal) {
       if (requirementType === "whatsapp") {
-        setRememberedWhatsApp(trimmedInput, rememberMe);
+        setRememberedWhatsApp(finalVal, rememberMe);
         setRememberContactEnabled(rememberMe);
+        cart.setContact({ phone: finalVal, type: "whatsapp" });
       }
     }
     const variantLabel = pick(activeVariant.labelAr, activeVariant.labelEn);
@@ -688,7 +692,7 @@ export function GxProductTemplate({
       iconImage: product.iconImage || product.imageUrl,
       imageUrl: product.imageUrl || product.iconImage,
       bg: product.thumbBg,
-      usernames: trimmedInput ? [trimmedInput] : undefined,
+      usernames: finalVal ? [finalVal] : undefined,
     });
     setAddedCart(true);
     window.dispatchEvent(new CustomEvent(CART_ADDED_EVENT));
@@ -699,10 +703,12 @@ export function GxProductTemplate({
     if (!validateTargetInput()) return;
     setInputError(false);
     const trimmedInput = targetInput.trim();
-    if (trimmedInput) {
+    const finalVal = requirementType === "whatsapp" ? (formattedWhatsApp || trimmedInput) : trimmedInput;
+    if (finalVal) {
       if (requirementType === "whatsapp") {
-        setRememberedWhatsApp(trimmedInput, rememberMe);
+        setRememberedWhatsApp(finalVal, rememberMe);
         setRememberContactEnabled(rememberMe);
+        cart.setContact({ phone: finalVal, type: "whatsapp" });
       }
     }
     const variantLabel = pick(activeVariant.labelAr, activeVariant.labelEn);
@@ -715,7 +721,7 @@ export function GxProductTemplate({
       iconImage: product.iconImage || product.imageUrl,
       imageUrl: product.imageUrl || product.iconImage,
       bg: product.thumbBg,
-      usernames: trimmedInput ? [trimmedInput] : undefined,
+      usernames: finalVal ? [finalVal] : undefined,
     });
     navigate({ to: "/cart" });
   };
@@ -1209,33 +1215,47 @@ export function GxProductTemplate({
               </span>
               <span>{targetLabel}</span>
             </label>
-            <div className="driffle-target-field-wrap">
-              <input
-                ref={isDesktop ? inputRef : undefined}
-                id={inputId}
-                type={requirementType === "email" ? "email" : "text"}
-                dir="auto"
-                className="driffle-target-input"
-                placeholder={targetPlaceholder}
+            {requirementType === "whatsapp" ? (
+              <CountryPhoneInput
                 value={targetInput}
-                onChange={(e) => {
-                  setTargetInput(e.target.value);
-                  if (inputError && e.target.value.trim()) {
-                    setInputError(false);
-                  }
+                onChange={(val, fullInt) => {
+                  setTargetInput(val);
+                  setFormattedWhatsApp(fullInt);
+                  if (inputError && val.trim()) setInputError(false);
                 }}
+                isAr={ar}
+                error={inputError}
+                autoFocus={false}
               />
-              {targetInput && (
-                <button
-                  type="button"
-                  className="driffle-target-clear-btn"
-                  onClick={() => setTargetInput("")}
-                  title={ar ? "مسح" : "Clear"}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+            ) : (
+              <div className="driffle-target-field-wrap">
+                <input
+                  ref={isDesktop ? inputRef : undefined}
+                  id={inputId}
+                  type={requirementType === "email" ? "email" : "text"}
+                  dir="auto"
+                  className="driffle-target-input"
+                  placeholder={targetPlaceholder}
+                  value={targetInput}
+                  onChange={(e) => {
+                    setTargetInput(e.target.value);
+                    if (inputError && e.target.value.trim()) {
+                      setInputError(false);
+                    }
+                  }}
+                />
+                {targetInput && (
+                  <button
+                    type="button"
+                    className="driffle-target-clear-btn"
+                    onClick={() => setTargetInput("")}
+                    title={ar ? "مسح" : "Clear"}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
             {inputError && (
               <div className="driffle-input-error-msg">
                 <span>⚠️</span>

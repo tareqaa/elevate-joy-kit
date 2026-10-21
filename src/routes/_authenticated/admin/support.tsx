@@ -4,7 +4,7 @@ import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   Headphones, MessageSquare, ExternalLink, Copy, Check, Send, PhoneCall,
-  Sparkles, ShieldCheck, Users, Eye, FileText
+  Sparkles, ShieldCheck, Eye, FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,6 @@ export const Route = createFileRoute("/_authenticated/admin/support")({
 
 const WHATSAPP_RAW = "962776252313";
 const WHATSAPP_DISPLAY = "0776252313";
-const DISCORD_INVITE = "https://discord.gg/DvkUd5PgqV";
 
 const CANNED_RESPONSES = [
   {
@@ -31,10 +30,6 @@ const CANNED_RESPONSES = [
   {
     title: "تم تسليم الطلب بنجاح",
     text: "مرحباً بك، تم تنفيذ وتسليم طلبك بنجاح 🎉 يمكنك الاطلاع على بيانات المنتج والأكواد من صفحة «طلباتي» في حسابك. نتمنى لك تجربة ممتعة!",
-  },
-  {
-    title: "دعوة لسيرفر الديسكورد",
-    text: `انضم لمجتمعنا على ديسكورد لمتابعة العروض والبطولات وفتح تذاكر الدعم المباشرة: ${DISCORD_INVITE}`,
   },
 ];
 
@@ -146,48 +141,7 @@ function AdminSupportPage() {
           </div>
         </div>
 
-        {/* Discord Channel Card */}
-        <div className="rounded-2xl p-6 bg-gradient-to-b from-indigo-950/30 to-slate-900/80 border border-[#5865F2]/30 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#5865F2]/20 text-indigo-400 grid place-items-center">
-                <Users className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-white text-base">سيرفر ديسكورد الرسمي</h3>
-                <span className="text-xs text-slate-400 font-mono" dir="ltr">discord.gg/DvkUd5PgqV</span>
-              </div>
-            </div>
-            <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-[#5865F2]/20 text-indigo-300 border border-[#5865F2]/40">
-              نشط
-            </span>
-          </div>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            مجتمع اللاعبين والتذاكر التفاعلية (Support Tickets) وقنوات الإعلانات والبطولات والفعاليات.
-          </p>
-          <div className="flex gap-2 pt-2">
-            <a
-              href={DISCORD_INVITE}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#5865F2] hover:bg-[#4752c4] text-white font-bold text-xs transition"
-            >
-              <span>فتح سيرفر الديسكورد</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                navigator.clipboard.writeText(DISCORD_INVITE);
-                toast.success("تم نسخ الرابط!");
-              }}
-              className="rounded-xl border-white/10 hover:border-[#5865F2]/40 text-xs"
-            >
-              نسخ الرابط
-            </Button>
-          </div>
-        </div>
+
 
       </div>
 

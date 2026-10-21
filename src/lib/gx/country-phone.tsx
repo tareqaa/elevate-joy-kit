@@ -1,0 +1,630 @@
+import React, { useState, useEffect, useRef, useMemo } from "react";
+
+export type CountryInfo = {
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  dialCode: string;
+  flag: string;
+  localPrefix: string;
+  placeholder: string;
+  minLength: number;
+};
+
+export const COUNTRIES: CountryInfo[] = [
+  {
+    code: "JO",
+    nameAr: "الأردن",
+    nameEn: "Jordan",
+    dialCode: "+962",
+    flag: "🇯🇴",
+    localPrefix: "07",
+    placeholder: "07XXXXXXXX",
+    minLength: 9,
+  },
+  {
+    code: "SA",
+    nameAr: "السعودية",
+    nameEn: "Saudi Arabia",
+    dialCode: "+966",
+    flag: "🇸🇦",
+    localPrefix: "05",
+    placeholder: "05XXXXXXXX",
+    minLength: 9,
+  },
+  {
+    code: "AE",
+    nameAr: "الإمارات",
+    nameEn: "United Arab Emirates",
+    dialCode: "+971",
+    flag: "🇦🇪",
+    localPrefix: "05",
+    placeholder: "05XXXXXXXX",
+    minLength: 9,
+  },
+  {
+    code: "KW",
+    nameAr: "الكويت",
+    nameEn: "Kuwait",
+    dialCode: "+965",
+    flag: "🇰🇼",
+    localPrefix: "5",
+    placeholder: "5/6/9XXXXXXX",
+    minLength: 8,
+  },
+  {
+    code: "QA",
+    nameAr: "قطر",
+    nameEn: "Qatar",
+    dialCode: "+974",
+    flag: "🇶🇦",
+    localPrefix: "3",
+    placeholder: "3/5/6/7XXXXXXX",
+    minLength: 8,
+  },
+  {
+    code: "OM",
+    nameAr: "عُمان",
+    nameEn: "Oman",
+    dialCode: "+968",
+    flag: "🇴🇲",
+    localPrefix: "9",
+    placeholder: "9/7XXXXXXX",
+    minLength: 8,
+  },
+  {
+    code: "BH",
+    nameAr: "البحرين",
+    nameEn: "Bahrain",
+    dialCode: "+973",
+    flag: "🇧🇭",
+    localPrefix: "3",
+    placeholder: "3/6XXXXXXX",
+    minLength: 8,
+  },
+  {
+    code: "IQ",
+    nameAr: "العراق",
+    nameEn: "Iraq",
+    dialCode: "+964",
+    flag: "🇮🇶",
+    localPrefix: "07",
+    placeholder: "07XXXXXXXXX",
+    minLength: 10,
+  },
+  {
+    code: "EG",
+    nameAr: "مصر",
+    nameEn: "Egypt",
+    dialCode: "+20",
+    flag: "🇪🇬",
+    localPrefix: "01",
+    placeholder: "01XXXXXXXXX",
+    minLength: 10,
+  },
+  {
+    code: "PS",
+    nameAr: "فلسطين",
+    nameEn: "Palestine",
+    dialCode: "+970",
+    flag: "🇵🇸",
+    localPrefix: "05",
+    placeholder: "05XXXXXXXX",
+    minLength: 9,
+  },
+  {
+    code: "MA",
+    nameAr: "المغرب",
+    nameEn: "Morocco",
+    dialCode: "+212",
+    flag: "🇲🇦",
+    localPrefix: "06",
+    placeholder: "06XXXXXXXX",
+    minLength: 9,
+  },
+  {
+    code: "DZ",
+    nameAr: "الجزائر",
+    nameEn: "Algeria",
+    dialCode: "+213",
+    flag: "🇩🇿",
+    localPrefix: "05",
+    placeholder: "05XXXXXXXX",
+    minLength: 9,
+  },
+  {
+    code: "TN",
+    nameAr: "تونس",
+    nameEn: "Tunisia",
+    dialCode: "+216",
+    flag: "🇹🇳",
+    localPrefix: "9",
+    placeholder: "9XXXXXXX",
+    minLength: 8,
+  },
+  {
+    code: "TR",
+    nameAr: "تركيا",
+    nameEn: "Turkey",
+    dialCode: "+90",
+    flag: "🇹🇷",
+    localPrefix: "05",
+    placeholder: "05XXXXXXXXX",
+    minLength: 10,
+  },
+  {
+    code: "US",
+    nameAr: "أمريكا / كندا",
+    nameEn: "USA / Canada",
+    dialCode: "+1",
+    flag: "🇺🇸",
+    localPrefix: "",
+    placeholder: "(XXX) XXX-XXXX",
+    minLength: 10,
+  },
+  {
+    code: "GB",
+    nameAr: "المملكة المتحدة",
+    nameEn: "United Kingdom",
+    dialCode: "+44",
+    flag: "🇬🇧",
+    localPrefix: "07",
+    placeholder: "07XXXXXXXXX",
+    minLength: 10,
+  },
+  {
+    code: "OTHER",
+    nameAr: "دولة أخرى",
+    nameEn: "Other Country",
+    dialCode: "+",
+    flag: "🌐",
+    localPrefix: "",
+    placeholder: "XXXXXXXXXX",
+    minLength: 7,
+  },
+];
+
+const CURRENCY_TO_COUNTRY: Record<string, string> = {
+  JOD: "JO",
+  SAR: "SA",
+  AED: "AE",
+  KWD: "KW",
+  QAR: "QA",
+  OMR: "OM",
+  BHD: "BH",
+  IQD: "IQ",
+  EGP: "EG",
+  MAD: "MA",
+  DZD: "DZ",
+  TND: "TN",
+  USD: "US",
+  EUR: "JO", // Fallback to Jordan for generic EUR
+};
+
+/**
+ * Detect the customer's country code (e.g. JO, SA, AE, etc.)
+ */
+export function detectUserCountry(): CountryInfo {
+  try {
+    // 1. User manual preference
+    const saved = localStorage.getItem("gx_customer_country");
+    if (saved) {
+      const match = COUNTRIES.find((c) => c.code === saved);
+      if (match) return match;
+    }
+
+    // 2. IP-based country
+    const ipCountry = localStorage.getItem("gx_country_code");
+    if (ipCountry) {
+      const match = COUNTRIES.find((c) => c.code === ipCountry.toUpperCase());
+      if (match) return match;
+    }
+
+    // 3. Active store currency
+    const cur = localStorage.getItem("gx_currency");
+    if (cur && CURRENCY_TO_COUNTRY[cur]) {
+      const match = COUNTRIES.find((c) => c.code === CURRENCY_TO_COUNTRY[cur]);
+      if (match) return match;
+    }
+  } catch {
+    /* noop */
+  }
+
+  // Fallback: Jordan (Home of GX Store)
+  return COUNTRIES[0];
+}
+
+/**
+ * Asynchronously fetch and cache IP country for instant subsequent loads
+ */
+export function warmUpCountryDetection(): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (localStorage.getItem("gx_country_code")) return;
+  } catch {
+    return;
+  }
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 2000);
+  fetch("https://ipwho.is/", { signal: ctrl.signal })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success && data.country_code) {
+        try {
+          localStorage.setItem("gx_country_code", data.country_code.toUpperCase());
+          window.dispatchEvent(new CustomEvent("gx:country-detected", { detail: data.country_code }));
+        } catch {
+          /* noop */
+        }
+      }
+    })
+    .catch(() => {
+      /* silent */
+    })
+    .finally(() => clearTimeout(timer));
+}
+
+/**
+ * Format any user-entered number into an international WhatsApp number with dial code.
+ * E.g.
+ * - '0791234567' with JO (+962) => '+962791234567'
+ * - '0512345678' with SA (+966) => '+966512345678'
+ * - '+966512345678' with any => '+966512345678'
+ */
+export function formatInternationalWhatsApp(
+  input: string,
+  country: CountryInfo
+): {
+  fullInternational: string;
+  cleanDigits: string;
+  localDigits: string;
+} {
+  const raw = (input || "").trim();
+  if (!raw) {
+    return { fullInternational: "", cleanDigits: "", localDigits: "" };
+  }
+
+  const onlyDigits = raw.replace(/\D/g, "");
+
+  // If user already typed with international prefix (starts with dial code without +)
+  const dialDigits = country.dialCode.replace(/\D/g, "");
+  if (dialDigits && onlyDigits.startsWith(dialDigits)) {
+    return {
+      fullInternational: `+${onlyDigits}`,
+      cleanDigits: onlyDigits,
+      localDigits: onlyDigits.slice(dialDigits.length),
+    };
+  }
+
+  // If starts with 00 (e.g. 00962...)
+  if (raw.startsWith("00")) {
+    const without00 = raw.slice(2).replace(/\D/g, "");
+    return {
+      fullInternational: `+${without00}`,
+      cleanDigits: without00,
+      localDigits: without00,
+    };
+  }
+
+  // Remove leading zeros for local formats (e.g. 079... -> 79... or 05... -> 5...)
+  const strippedLocal = onlyDigits.replace(/^0+/, "");
+  if (!strippedLocal) {
+    return { fullInternational: "", cleanDigits: "", localDigits: "" };
+  }
+
+  const prefix = country.dialCode === "+" ? "" : country.dialCode;
+  const full = `${prefix}${strippedLocal}`;
+
+  return {
+    fullInternational: full,
+    cleanDigits: full.replace(/\D/g, ""),
+    localDigits: strippedLocal,
+  };
+}
+
+export type CountryPhoneInputProps = {
+  value: string;
+  onChange: (value: string, fullInternational: string, country: CountryInfo) => void;
+  onCountryChange?: (country: CountryInfo) => void;
+  placeholder?: string;
+  isAr?: boolean;
+  style?: React.CSSProperties;
+  inputStyle?: React.CSSProperties;
+  className?: string;
+  autoFocus?: boolean;
+  error?: boolean;
+};
+
+/**
+ * Reusable Country Phone Input Component with auto-detected country,
+ * flag pill, dropdown switcher, and dynamic prefix/placeholder.
+ */
+export function CountryPhoneInput({
+  value,
+  onChange,
+  onCountryChange,
+  placeholder,
+  isAr = true,
+  style,
+  inputStyle,
+  className = "",
+  autoFocus = false,
+  error = false,
+}: CountryPhoneInputProps) {
+  const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(() => detectUserCountry());
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Background warm-up
+  useEffect(() => {
+    warmUpCountryDetection();
+    const handler = (e: Event) => {
+      const code = (e as CustomEvent).detail;
+      if (code && !localStorage.getItem("gx_customer_country")) {
+        const found = COUNTRIES.find((c) => c.code === code);
+        if (found) {
+          setSelectedCountry(found);
+          onCountryChange?.(found);
+        }
+      }
+    };
+    window.addEventListener("gx:country-detected", handler);
+    return () => window.removeEventListener("gx:country-detected", handler);
+  }, [onCountryChange]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    if (isDropdownOpen) {
+      document.addEventListener("mousedown", onDocClick);
+    }
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [isDropdownOpen]);
+
+  // Filter countries for dropdown
+  const filteredCountries = useMemo(() => {
+    if (!searchQuery.trim()) return COUNTRIES;
+    const q = searchQuery.toLowerCase().trim();
+    return COUNTRIES.filter(
+      (c) =>
+        c.nameAr.includes(q) ||
+        c.nameEn.toLowerCase().includes(q) ||
+        c.dialCode.includes(q) ||
+        c.code.toLowerCase().includes(q)
+    );
+  }, [searchQuery]);
+
+  const handleSelectCountry = (country: CountryInfo) => {
+    setSelectedCountry(country);
+    onCountryChange?.(country);
+    try {
+      localStorage.setItem("gx_customer_country", country.code);
+    } catch {
+      /* noop */
+    }
+    setIsDropdownOpen(false);
+    setSearchQuery("");
+
+    // Re-format existing value with the new country dial code
+    const formatted = formatInternationalWhatsApp(value, country);
+    onChange(value, formatted.fullInternational, country);
+    inputRef.current?.focus();
+  };
+
+  const handleInputChange = (rawVal: string) => {
+    const formatted = formatInternationalWhatsApp(rawVal, selectedCountry);
+    onChange(rawVal, formatted.fullInternational, selectedCountry);
+  };
+
+  const dynamicPlaceholder = placeholder || selectedCountry.placeholder;
+
+  return (
+    <div
+      ref={dropdownRef}
+      style={{
+        position: "relative",
+        display: "flex",
+        alignItems: "stretch",
+        width: "100%",
+        direction: "ltr", // Ensure uniform phone + flag alignment LTR
+        ...style,
+      }}
+      className={`gx-country-phone-wrap ${className}`}
+    >
+      {/* Country Selector Trigger Pill */}
+      <button
+        type="button"
+        onClick={() => setIsDropdownOpen((prev) => !prev)}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "0 12px",
+          background: "rgba(255, 255, 255, 0.06)",
+          border: error ? "1.5px solid #ef4444" : "1.5px solid rgba(0, 229, 255, 0.28)",
+          borderRight: "none",
+          borderRadius: "12px 0 0 12px",
+          color: "#f8fafc",
+          cursor: "pointer",
+          fontSize: "13px",
+          fontWeight: 700,
+          transition: "all 0.18s ease",
+          flexShrink: 0,
+          userSelect: "none",
+          boxSizing: "border-box",
+        }}
+        title={isAr ? "اضغط لتغيير الدولة ورمز الاتصال" : "Click to change country"}
+        aria-label="Select Country"
+      >
+        <span style={{ fontSize: "16px", lineHeight: 1 }}>{selectedCountry.flag}</span>
+        <span style={{ fontSize: "12.5px", color: "#00e5ff", fontWeight: 800 }} dir="ltr">
+          {selectedCountry.dialCode}
+        </span>
+        <span style={{ fontSize: "9px", color: "#94a3b8", marginLeft: 2 }}>▼</span>
+      </button>
+
+      {/* Phone Number Input */}
+      <div style={{ position: "relative", flex: 1, display: "flex" }}>
+        <input
+          ref={inputRef}
+          type="tel"
+          autoComplete="tel"
+          autoFocus={autoFocus}
+          placeholder={dynamicPlaceholder}
+          value={value}
+          onChange={(e) => handleInputChange(e.target.value)}
+          style={{
+            width: "100%",
+            height: "44px",
+            padding: "0 14px",
+            background: "rgba(6, 11, 22, 0.75)",
+            border: error ? "1.5px solid #ef4444" : "1.5px solid rgba(0, 229, 255, 0.28)",
+            borderRadius: "0 12px 12px 0",
+            color: "#ffffff",
+            fontSize: "14px",
+            fontFamily: "monospace, inherit",
+            letterSpacing: "0.5px",
+            outline: "none",
+            boxSizing: "border-box",
+            textAlign: "left",
+            direction: "ltr",
+            transition: "all 0.2s ease",
+            ...inputStyle,
+          }}
+        />
+
+        {value && (
+          <button
+            type="button"
+            onClick={() => handleInputChange("")}
+            style={{
+              position: "absolute",
+              right: 10,
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "rgba(255,255,255,0.08)",
+              border: "none",
+              borderRadius: "50%",
+              width: 20,
+              height: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#94a3b8",
+              cursor: "pointer",
+              fontSize: "11px",
+              padding: 0,
+            }}
+            title={isAr ? "مسح" : "Clear"}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* Country Dropdown Menu */}
+      {isDropdownOpen && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            left: 0,
+            width: "min(320px, 100%)",
+            maxHeight: "280px",
+            background: "#0c121e",
+            border: "1.5px solid rgba(0, 229, 255, 0.35)",
+            borderRadius: "14px",
+            boxShadow: "0 20px 45px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 229, 255, 0.15)",
+            zIndex: 9999,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            direction: isAr ? "rtl" : "ltr",
+            animation: "gxPop 0.18s cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
+          {/* Search box */}
+          <div style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", background: "rgba(0,0,0,0.25)" }}>
+            <input
+              type="text"
+              autoFocus
+              placeholder={isAr ? "ابحث عن الدولة أو الرمز..." : "Search country or dial code..."}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "7px 10px",
+                borderRadius: "8px",
+                background: "rgba(255, 255, 255, 0.06)",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                color: "#ffffff",
+                fontSize: "12px",
+                outline: "none",
+                boxSizing: "border-box",
+                direction: isAr ? "rtl" : "ltr",
+              }}
+            />
+          </div>
+
+          {/* List of countries */}
+          <div style={{ overflowY: "auto", flex: 1, padding: "4px 0" }}>
+            {filteredCountries.map((c) => {
+              const isSelected = c.code === selectedCountry.code;
+              return (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => handleSelectCountry(c)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "8px 12px",
+                    background: isSelected ? "rgba(0, 229, 255, 0.12)" : "transparent",
+                    border: "none",
+                    color: isSelected ? "#00e5ff" : "#e2e8f0",
+                    cursor: "pointer",
+                    fontSize: "12.5px",
+                    fontWeight: isSelected ? 800 : 600,
+                    transition: "background 0.15s ease",
+                    textAlign: isAr ? "right" : "left",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: "16px" }}>{c.flag}</span>
+                    <span>{isAr ? c.nameAr : c.nameEn}</span>
+                  </div>
+                  <span
+                    dir="ltr"
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "12px",
+                      color: isSelected ? "#00e5ff" : "#94a3b8",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {c.dialCode}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
