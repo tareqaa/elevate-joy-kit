@@ -806,6 +806,7 @@ export type Database = {
           admin_notes: string | null
           client_ip: string | null
           client_meta: Json
+          codes_last_revealed_at: string | null
           codes_reveal_count: number
           codes_revealed_at: string | null
           coins_awarded: number
@@ -847,6 +848,7 @@ export type Database = {
           admin_notes?: string | null
           client_ip?: string | null
           client_meta?: Json
+          codes_last_revealed_at?: string | null
           codes_reveal_count?: number
           codes_revealed_at?: string | null
           coins_awarded?: number
@@ -888,6 +890,7 @@ export type Database = {
           admin_notes?: string | null
           client_ip?: string | null
           client_meta?: Json
+          codes_last_revealed_at?: string | null
           codes_reveal_count?: number
           codes_revealed_at?: string | null
           coins_awarded?: number
@@ -1058,6 +1061,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pending_email_credits: {
+        Row: {
+          amount_jod: number
+          claimed_at: string | null
+          claimed_by_user_id: string | null
+          coins: number
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          reason: string
+          status: string
+          updated_at: string
+          xp: number
+        }
+        Insert: {
+          amount_jod: number
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          coins?: number
+          created_at?: string
+          created_by?: string | null
+          email: string
+          id?: string
+          reason?: string
+          status?: string
+          updated_at?: string
+          xp?: number
+        }
+        Update: {
+          amount_jod?: number
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          coins?: number
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          reason?: string
+          status?: string
+          updated_at?: string
+          xp?: number
+        }
+        Relationships: []
       }
       product_country_prices: {
         Row: {
@@ -2200,51 +2248,6 @@ export type Database = {
         }
         Relationships: []
       }
-      pending_email_credits: {
-        Row: {
-          amount_jod: number
-          claimed_at: string | null
-          claimed_by_user_id: string | null
-          coins: number
-          created_at: string
-          created_by: string | null
-          email: string
-          id: string
-          reason: string
-          status: "pending" | "claimed" | "cancelled"
-          updated_at: string
-          xp: number
-        }
-        Insert: {
-          amount_jod: number
-          claimed_at?: string | null
-          claimed_by_user_id?: string | null
-          coins?: number
-          created_at?: string
-          created_by?: string | null
-          email: string
-          id?: string
-          reason?: string
-          status?: "pending" | "claimed" | "cancelled"
-          updated_at?: string
-          xp?: number
-        }
-        Update: {
-          amount_jod?: number
-          claimed_at?: string | null
-          claimed_by_user_id?: string | null
-          coins?: number
-          created_at?: string
-          created_by?: string | null
-          email?: string
-          id?: string
-          reason?: string
-          status?: "pending" | "claimed" | "cancelled"
-          updated_at?: string
-          xp?: number
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -2253,23 +2256,10 @@ export type Database = {
       admin_add_unregistered_email_credit: {
         Args: {
           _amount_jod: number
-          _email: string
           _coins?: number
+          _email: string
           _reason?: string
           _xp?: number
-        }
-        Returns: Json
-      }
-      admin_cancel_unregistered_email_credit: {
-        Args: {
-          _cancel_reason?: string
-          _credit_id: string
-        }
-        Returns: Json
-      }
-      claim_unregistered_credits_for_user: {
-        Args: {
-          _user_id: string
         }
         Returns: Json
       }
@@ -2287,6 +2277,10 @@ export type Database = {
         Returns: Json
       }
       admin_block_ip: { Args: { _ip: string; _reason?: string }; Returns: Json }
+      admin_cancel_unregistered_email_credit: {
+        Args: { _cancel_reason?: string; _credit_id: string }
+        Returns: Json
+      }
       admin_delete_tournament_score: {
         Args: { _tournament_id: string; _user_id: string }
         Returns: Json
@@ -2365,6 +2359,11 @@ export type Database = {
         Returns: Json
       }
       check_password_reset_cooldown: { Args: { _email: string }; Returns: Json }
+      claim_unregistered_credits_for_user: {
+        Args: { _user_id: string }
+        Returns: Json
+      }
+      cleanup_test_review: { Args: never; Returns: undefined }
       create_store_order:
         | {
             Args: {
@@ -2417,6 +2416,7 @@ export type Database = {
         }[]
       }
       get_my_loyalty: { Args: never; Returns: Json }
+      get_order_by_number: { Args: { _order_number: string }; Returns: Json }
       get_order_for_paypal_checkout: {
         Args: { _order_number: string }
         Returns: Json
@@ -2522,6 +2522,10 @@ export type Database = {
         }
         Returns: string
       }
+      mark_order_code_revealed: {
+        Args: { p_order_id?: string; p_order_number: string }
+        Returns: Json
+      }
       mark_order_paid_from_paypal: {
         Args: {
           _amount_usd: number
@@ -2583,6 +2587,17 @@ export type Database = {
       }
       spin_wheel: { Args: never; Returns: Json }
       start_tournament_run: { Args: { _tournament_id: string }; Returns: Json }
+      submit_order_review: {
+        Args: {
+          p_comment?: string
+          p_display_name?: string
+          p_order_id: string
+          p_order_number: string
+          p_rating: number
+          p_user_id?: string
+        }
+        Returns: Json
+      }
       submit_tournament_score: {
         Args: { _run_id?: string; _score: number; _tournament_id: string }
         Returns: Json
