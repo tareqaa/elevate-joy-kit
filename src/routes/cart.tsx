@@ -25,6 +25,7 @@ import {
 import {
   detectUserCountry,
   formatInternationalWhatsApp,
+  getFormattedInternationalPhone,
   CountryPhoneInput,
   CountryInfo,
 } from "@/lib/gx/country-phone";
@@ -543,14 +544,33 @@ function CartCustomerContactCard() {
         const uEmail = data.session.user.email || "";
         const uid = data.session.user.id;
         setSignedInUser({ id: uid, email: uEmail });
-        // Fetch profile whatsapp if phone is empty (for contact/communication)
+        
+        // If phone is already populated in cart, skip network query
+        if (cart.contact.phone) return;
+
+        // Try reading cached profile first (0ms, 0 network requests)
+        try {
+          const raw = localStorage.getItem(`gx:profile:${uid}`) || localStorage.getItem("gx_profile_cache");
+          if (raw) {
+            const p = JSON.parse(raw);
+            if (p?.whatsapp) {
+              const cleanDigits = String(p.whatsapp).trim().replace(/\D/g, "");
+              if (cleanDigits) {
+                cart.setContact({ phone: cleanDigits, type: "whatsapp" });
+                return;
+              }
+            }
+          }
+        } catch { /* noop */ }
+
+        // Fetch profile whatsapp only if not found in cache
         try {
           const { data: prof } = await supabase
             .from("profiles")
             .select("whatsapp")
             .eq("id", uid)
             .maybeSingle();
-          if (prof?.whatsapp && !cart.contact.phone) {
+          if (prof?.whatsapp) {
             const raw = String(prof.whatsapp).trim();
             const cleanDigits = raw.replace(/\D/g, "");
             cart.setContact({ phone: cleanDigits, type: "whatsapp" });
@@ -558,7 +578,7 @@ function CartCustomerContactCard() {
         } catch { /* noop */ }
       }
     });
-  }, [cart]);
+  }, []); // Run on mount only to prevent refetch spam on every cart state change
 
   // Keep phone populated from localStorage if empty, for communication
   useEffect(() => {
@@ -568,7 +588,7 @@ function CartCustomerContactCard() {
         cart.setContact({ phone: remembered, type: "whatsapp" });
       }
     }
-  }, [cart]);
+  }, []); // Run on mount only
 
   const handleEmailChange = (val: string) => {
     cart.setContact({ email: val });
@@ -1414,7 +1434,7 @@ function CartOrderRecapStage2({
         <div className="gx-recap-email-box" style={{ marginTop: 6 }}>
           <div className="gx-reb-left">
             <span className="gx-reb-lbl">🟢 {isAr ? "رقم الواتساب:" : "WhatsApp:"}</span>
-            <span className="gx-reb-val" dir="ltr">{cart.contact.countryCode || "+962"} {cart.contact.phone}</span>
+            <span className="gx-reb-val" dir="ltr">{getFormattedInternationalPhone(cart.contact.phone, cart.contact.countryCode)}</span>
           </div>
           <button type="button" className="gx-reb-edit" onClick={onEditEmail}>
             {t("cart.edit")}

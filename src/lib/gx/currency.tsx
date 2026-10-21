@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { getUnifiedCountryCode, fetchUserCountryOnce } from "./country-phone";
 
 type CurrencyInfo = { label: string; flag: string; rate: number; decimals: number };
 
@@ -91,21 +92,18 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       setCurrencyState(saved);
       return;
     }
-    // Auto-detect via IP
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 1500);
-    (async () => {
-      try {
-        const res = await fetch("https://ipwho.is/", { signal: ctrl.signal });
-        const data = await res.json();
-        if (data?.success && data.country_code) {
-          const cur = COUNTRY_TO_CURRENCY[data.country_code];
-          if (cur && CURRENCIES[cur]) setCurrencyState(cur);
-        }
-      } catch { /* silent */ }
-      finally { clearTimeout(timer); }
-    })();
-    return () => { clearTimeout(timer); ctrl.abort(); };
+    // Auto-detect currency via unified country detection (instant 0ms)
+    const cc = getUnifiedCountryCode();
+    if (cc && COUNTRY_TO_CURRENCY[cc] && CURRENCIES[COUNTRY_TO_CURRENCY[cc]]) {
+      setCurrencyState(COUNTRY_TO_CURRENCY[cc]);
+    }
+    // Connect to shared singleton country fetch (0 duplicate network requests)
+    void fetchUserCountryOnce().then((liveCc) => {
+      if (liveCc && !localStorage.getItem(STORAGE_KEY)) {
+        const cur = COUNTRY_TO_CURRENCY[liveCc];
+        if (cur && CURRENCIES[cur]) setCurrencyState(cur);
+      }
+    });
   }, []);
 
   const setCurrency = useCallback((code: string) => {

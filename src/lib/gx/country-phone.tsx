@@ -201,68 +201,240 @@ const CURRENCY_TO_COUNTRY: Record<string, string> = {
   EUR: "JO", // Fallback to Jordan for generic EUR
 };
 
+const CACHE_COUNTRY_KEY = "gx_country_code";
+const LEGACY_LANG_GEO_KEY = "gx_lang_geo_cc";
+const LEGACY_PRODUCT_GEO_KEY = "gx_user_geo";
+const MANUAL_USER_COUNTRY_KEY = "gx_customer_country";
+
+let inMemoryCountryCode: string | null = null;
+let inFlightCountryPromise: Promise<string | null> | null = null;
+
 /**
- * Detect the customer's country code (e.g. JO, SA, AE, etc.)
+ * Fast 0ms timezone heuristic to determine country without network requests.
  */
-export function detectUserCountry(): CountryInfo {
+export function detectCountryFromTimezone(): string | null {
   try {
-    // 1. User manual preference
-    const saved = localStorage.getItem("gx_customer_country");
-    if (saved) {
-      const match = COUNTRIES.find((c) => c.code === saved);
-      if (match) return match;
-    }
+    const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone || "" : "";
+    if (!tz) return null;
+    if (tz.includes("Amman")) return "JO";
+    if (tz.includes("Riyadh")) return "SA";
+    if (tz.includes("Dubai")) return "AE";
+    if (tz.includes("Kuwait")) return "KW";
+    if (tz.includes("Qatar")) return "QA";
+    if (tz.includes("Bahrain")) return "BH";
+    if (tz.includes("Muscat")) return "OM";
+    if (tz.includes("Baghdad")) return "IQ";
+    if (tz.includes("Beirut")) return "LB";
+    if (tz.includes("Damascus")) return "SY";
+    if (tz.includes("Jerusalem") || tz.includes("Gaza") || tz.includes("Hebron")) return "PS";
+    if (tz.includes("Cairo")) return "EG";
+    if (tz.includes("Tripoli")) return "LY";
+    if (tz.includes("Tunis")) return "TN";
+    if (tz.includes("Algiers")) return "DZ";
+    if (tz.includes("Casablanca")) return "MA";
+    if (tz.includes("Istanbul")) return "TR";
+    if (tz.includes("London")) return "GB";
+    if (tz.startsWith("America/")) return "US";
+  } catch {
+    /* noop */
+  }
+  return null;
+}
 
-    // 2. IP-based country
-    const ipCountry = localStorage.getItem("gx_country_code");
-    if (ipCountry) {
-      const match = COUNTRIES.find((c) => c.code === ipCountry.toUpperCase());
-      if (match) return match;
-    }
+/**
+ * Synchronously retrieves the unified country code with 0 network latency.
+ * Respects manual preference > in-memory > cached IP > currency > timezone > fallback (JO).
+ */
+export function getUnifiedCountryCode(): string {
+  if (typeof window === "undefined") return "JO";
 
-    // 3. Active store currency
-    const cur = localStorage.getItem("gx_currency");
-    if (cur && CURRENCY_TO_COUNTRY[cur]) {
-      const match = COUNTRIES.find((c) => c.code === CURRENCY_TO_COUNTRY[cur]);
-      if (match) return match;
+  // 1. User manual preference wins over everything (priority 1)
+  try {
+    const manual = localStorage.getItem(MANUAL_USER_COUNTRY_KEY);
+    if (manual) {
+      const match = COUNTRIES.find((c) => c.code === manual.toUpperCase());
+      if (match) return match.code;
     }
   } catch {
     /* noop */
   }
 
-  // Fallback: Jordan (Home of GX Store)
-  return COUNTRIES[0];
+  // 2. In-memory cached country
+  if (inMemoryCountryCode) return inMemoryCountryCode;
+
+  // 3. Persistent cache from previous detection
+  try {
+    const saved =
+      localStorage.getItem(CACHE_COUNTRY_KEY) ||
+      localStorage.getItem(LEGACY_LANG_GEO_KEY);
+    if (saved) {
+      inMemoryCountryCode = saved.toUpperCase();
+      return inMemoryCountryCode;
+    }
+
+    const sessionGeo = sessionStorage.getItem(LEGACY_PRODUCT_GEO_KEY);
+    if (sessionGeo) {
+      const parsed = JSON.parse(sessionGeo);
+      if (parsed?.code) {
+        inMemoryCountryCode = String(parsed.code).toUpperCase();
+        return inMemoryCountryCode;
+      }
+    }
+  } catch {
+    /* noop */
+  }
+
+  // 4. Currency heuristic if available
+  try {
+    const cur = localStorage.getItem("gx_currency");
+    if (cur && CURRENCY_TO_COUNTRY[cur]) {
+      return CURRENCY_TO_COUNTRY[cur];
+    }
+  } catch {
+    /* noop */
+  }
+
+  // 5. Timezone heuristic (instant 0ms)
+  const tzCountry = detectCountryFromTimezone();
+  if (tzCountry) {
+    inMemoryCountryCode = tzCountry;
+    return tzCountry;
+  }
+
+  // 6. Safe fallback (Jordan)
+  return "JO";
 }
 
 /**
- * Asynchronously fetch and cache IP country for instant subsequent loads
+ * Asynchronously fetch and cache IP country ONCE across the entire application lifecycle.
+ * Deduplicates in-flight calls and caches persistently, preventing repeated network requests.
  */
-export function warmUpCountryDetection(): void {
-  if (typeof window === "undefined") return;
+export async function fetchUserCountryOnce(): Promise<string> {
+  if (typeof window === "undefined") return "JO";
+
+  // If user has a manual preference or persistent cache, return immediately (0 requests)
   try {
-    if (localStorage.getItem("gx_country_code")) return;
+    const manual = localStorage.getItem(MANUAL_USER_COUNTRY_KEY);
+    if (manual) {
+      const match = COUNTRIES.find((c) => c.code === manual.toUpperCase());
+      if (match) return match.code;
+    }
+
+    const cached = localStorage.getItem(CACHE_COUNTRY_KEY) || localStorage.getItem(LEGACY_LANG_GEO_KEY);
+    if (cached) {
+      inMemoryCountryCode = cached.toUpperCase();
+      return inMemoryCountryCode;
+    }
   } catch {
-    return;
+    /* noop */
   }
 
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 2000);
-  fetch("https://ipwho.is/", { signal: ctrl.signal })
-    .then((res) => res.json())
-    .then((data) => {
-      if (data?.success && data.country_code) {
+  // Deduplicate concurrent requests
+  if (inFlightCountryPromise) {
+    const res = await inFlightCountryPromise;
+    return res || getUnifiedCountryCode();
+  }
+
+  inFlightCountryPromise = (async () => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 1800);
+    try {
+      const res = await fetch("https://ipwho.is/", { signal: ctrl.signal });
+      const data = await res.json();
+      if (data?.success && data?.country_code) {
+        const cc = String(data.country_code).toUpperCase();
+        inMemoryCountryCode = cc;
         try {
-          localStorage.setItem("gx_country_code", data.country_code.toUpperCase());
-          window.dispatchEvent(new CustomEvent("gx:country-detected", { detail: data.country_code }));
+          localStorage.setItem(CACHE_COUNTRY_KEY, cc);
+          localStorage.setItem(LEGACY_LANG_GEO_KEY, cc);
+          const match = COUNTRIES.find((c) => c.code === cc);
+          sessionStorage.setItem(
+            LEGACY_PRODUCT_GEO_KEY,
+            JSON.stringify({
+              code: cc,
+              ar: match?.nameAr || cc,
+              en: match?.nameEn || cc,
+            })
+          );
         } catch {
           /* noop */
         }
+        window.dispatchEvent(new CustomEvent("gx:country-detected", { detail: cc }));
+        return cc;
       }
-    })
-    .catch(() => {
-      /* silent */
-    })
-    .finally(() => clearTimeout(timer));
+    } catch {
+      /* silent fallback */
+    } finally {
+      clearTimeout(timer);
+      inFlightCountryPromise = null;
+    }
+    return null;
+  })();
+
+  const result = await inFlightCountryPromise;
+  return result || getUnifiedCountryCode();
+}
+
+/**
+ * Detect the customer's CountryInfo synchronously (0ms) using the unified caching system.
+ */
+export function detectUserCountry(): CountryInfo {
+  const code = getUnifiedCountryCode();
+  const match = COUNTRIES.find((c) => c.code === code);
+  return match || COUNTRIES[0];
+}
+
+/**
+ * Asynchronously warm up country detection without duplicate calls.
+ */
+export function warmUpCountryDetection(): void {
+  void fetchUserCountryOnce();
+}
+
+/**
+ * Normalizes an international phone number cleanly and deterministically.
+ * Prevents double country codes (e.g. "+962 +962797192051", "+962+962...", "+962 079...")
+ * and returns a standardized, valid international phone number.
+ */
+export function getFormattedInternationalPhone(
+  phone?: string | null,
+  countryCode?: string | null
+): string {
+  if (!phone) return "";
+  const raw = String(phone).trim();
+  if (!raw) return "";
+
+  const dial = (countryCode || "").trim();
+  const dialDigits = dial.replace(/\D/g, "");
+
+  // Extract all numeric digits
+  let digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+
+  // If dialDigits present, strip repeated duplicate dial code at start
+  // e.g. "962962797192051" -> "962797192051"
+  if (dialDigits) {
+    while (digits.startsWith(dialDigits + dialDigits)) {
+      digits = digits.slice(dialDigits.length);
+    }
+  }
+
+  // If already starts with dialDigits
+  if (dialDigits && digits.startsWith(dialDigits)) {
+    // Strip accidental leading zero right after dialDigits (e.g. 962079... -> 96279...)
+    const after = digits.slice(dialDigits.length).replace(/^0+/, "");
+    return `+${dialDigits}${after}`;
+  }
+
+  // If no dialDigits provided but phone originally started with '+'
+  if (!dialDigits && raw.startsWith("+")) {
+    return `+${digits}`;
+  }
+
+  // Local phone without dial code: strip leading zeros and attach dialDigits (or default +962)
+  const localDigits = digits.replace(/^0+/, "");
+  const prefix = dialDigits ? `+${dialDigits}` : "+962";
+  return `${prefix}${localDigits}`;
 }
 
 /**

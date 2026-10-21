@@ -17,7 +17,7 @@ import {
   isRememberContactEnabled,
   setRememberContactEnabled,
 } from "@/lib/gx/contact-storage";
-import { CountryPhoneInput } from "@/lib/gx/country-phone";
+import { CountryPhoneInput, detectUserCountry, fetchUserCountryOnce, COUNTRIES } from "@/lib/gx/country-phone";
 
 function renderStepContent(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -72,76 +72,38 @@ const COUNTRY_MAP: Record<string, { ar: string; en: string }> = {
   GB: { ar: "بريطانيا", en: "UK" },
 };
 
-function detectCountryFromTimezone(): { code: string; ar: string; en: string } {
-  try {
-    const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone || "" : "";
-    if (tz.includes("Qatar")) return { code: "QA", ar: "قطر", en: "Qatar" };
-    if (tz.includes("Amman")) return { code: "JO", ar: "الأردن", en: "Jordan" };
-    if (tz.includes("Riyadh")) return { code: "SA", ar: "السعودية", en: "Saudi Arabia" };
-    if (tz.includes("Dubai")) return { code: "AE", ar: "الإمارات", en: "UAE" };
-    if (tz.includes("Kuwait")) return { code: "KW", ar: "الكويت", en: "Kuwait" };
-    if (tz.includes("Bahrain")) return { code: "BH", ar: "البحرين", en: "Bahrain" };
-    if (tz.includes("Muscat")) return { code: "OM", ar: "عُمان", en: "Oman" };
-    if (tz.includes("Baghdad")) return { code: "IQ", ar: "العراق", en: "Iraq" };
-    if (tz.includes("Beirut")) return { code: "LB", ar: "لبنان", en: "Lebanon" };
-    if (tz.includes("Damascus")) return { code: "SY", ar: "سوريا", en: "Syria" };
-    if (tz.includes("Jerusalem") || tz.includes("Gaza") || tz.includes("Hebron")) return { code: "PS", ar: "فلسطين", en: "Palestine" };
-    if (tz.includes("Cairo")) return { code: "EG", ar: "مصر", en: "Egypt" };
-    if (tz.includes("Tripoli")) return { code: "LY", ar: "ليبيا", en: "Libya" };
-    if (tz.includes("Tunis")) return { code: "TN", ar: "تونس", en: "Tunisia" };
-    if (tz.includes("Algiers")) return { code: "DZ", ar: "الجزائر", en: "Algeria" };
-    if (tz.includes("Casablanca")) return { code: "MA", ar: "المغرب", en: "Morocco" };
-    if (tz.includes("Istanbul")) return { code: "TR", ar: "تركيا", en: "Turkey" };
-    if (tz.includes("London")) return { code: "GB", ar: "بريطانيا", en: "UK" };
-    if (tz.startsWith("America/")) return { code: "US", ar: "أمريكا", en: "USA" };
-  } catch (e) {
-    // ignore
-  }
-  return { code: "JO", ar: "الأردن", en: "Jordan" };
-}
 
 function useUserCountry() {
-  const [geo, setGeo] = useState<{ code: string; ar: string; en: string }>(detectCountryFromTimezone);
+  const [geo, setGeo] = useState<{ code: string; ar: string; en: string }>(() => {
+    const c = detectUserCountry();
+    return {
+      code: c.code,
+      ar: c.nameAr,
+      en: c.nameEn,
+    };
+  });
 
   useEffect(() => {
-    try {
-      const cached = sessionStorage.getItem("gx_user_geo");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed?.code && parsed?.ar) {
-          setGeo(parsed);
-          return;
+    void fetchUserCountryOnce().then((code) => {
+      if (code) {
+        const c = COUNTRIES.find((x) => x.code === code);
+        if (c) {
+          setGeo({ code: c.code, ar: c.nameAr, en: c.nameEn });
         }
       }
-    } catch (e) {}
+    });
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1200);
-
-    fetch("https://api.country.is", { signal: controller.signal })
-      .then((res) => res.json())
-      .then((data) => {
-        clearTimeout(timeoutId);
-        if (data?.country && COUNTRY_MAP[data.country]) {
-          const resolved = {
-            code: data.country,
-            ar: COUNTRY_MAP[data.country].ar,
-            en: COUNTRY_MAP[data.country].en,
-          };
-          setGeo(resolved);
-          try {
-            sessionStorage.setItem("gx_user_geo", JSON.stringify(resolved));
-          } catch (e) {}
+    const handler = (e: Event) => {
+      const code = (e as CustomEvent).detail;
+      if (code) {
+        const c = COUNTRIES.find((x) => x.code === code);
+        if (c) {
+          setGeo({ code: c.code, ar: c.nameAr, en: c.nameEn });
         }
-      })
-      .catch(() => {
-        // Fallback to timezone already set
-      });
-
-    return () => {
-      clearTimeout(timeoutId);
-      controller.abort();
+      }
     };
+    window.addEventListener("gx:country-detected", handler);
+    return () => window.removeEventListener("gx:country-detected", handler);
   }, []);
 
   return geo;

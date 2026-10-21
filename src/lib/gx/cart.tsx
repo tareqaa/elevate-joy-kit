@@ -6,6 +6,7 @@ import { useCurrency } from "./currency";
 import { submitStoreOrder } from "./orders.functions";
 import { validateCouponFn } from "./coupons.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { getFormattedInternationalPhone } from "./country-phone";
 
 
 type CartItem = {
@@ -700,7 +701,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
 
       if (contact.phone?.trim()) {
-        msg += `\n📱 *رقم الواتساب للتواصل:* ${contact.countryCode || "+962"} ${contact.phone.trim()}`;
+        msg += `\n📱 *رقم الواتساب للتواصل:* ${getFormattedInternationalPhone(contact.phone, contact.countryCode)}`;
       }
 
       if (serviceFeeJOD > 0) {
@@ -734,7 +735,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const hasPhone = !!contact.phone?.trim() && contact.phone.trim().length >= 3;
     const isWa = contact.type === "whatsapp";
     const contactValue = hasPhone
-      ? (isWa ? (contact.countryCode + contact.phone).replace(/\s+/g, "") : "@" + contact.phone.trim().replace(/^@+/, ""))
+      ? (isWa ? getFormattedInternationalPhone(contact.phone, contact.countryCode) : "@" + contact.phone.trim().replace(/^@+/, ""))
       : null;
     const contactType = hasPhone ? contact.type : "email";
     const customerName = contact.name?.trim() || null;

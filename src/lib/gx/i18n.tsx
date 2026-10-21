@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { UI_TRANSLATIONS } from "./translations";
+import { getUnifiedCountryCode, fetchUserCountryOnce } from "./country-phone";
 
 export type Lang = "ar" | "en";
 type Dir = "rtl" | "ltr";
@@ -51,56 +52,24 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (saved) { setLangState(saved); return; }
     if (typeof window === "undefined") return;
 
-    // Cached country from a previous visit
-    try {
-      const cc = localStorage.getItem(GEO_KEY);
-      if (cc) {
-        const detected = langFromCountry(cc);
-        setLangState(detected);
-        localStorage.setItem(STORAGE_KEY, detected);
-        return;
-      }
-    } catch { /* noop */ }
-
-    // Hide content briefly to avoid an AR -> EN flash on first visit
-    const html = document.documentElement;
-    const lift = () => {
-      html.removeAttribute("data-lang-pending");
-      document.getElementById("gx-lang-gate")?.remove();
-    };
-    html.setAttribute("data-lang-pending", "1");
-    if (!document.getElementById("gx-lang-gate")) {
-      const st = document.createElement("style");
-      st.id = "gx-lang-gate";
-      st.textContent = "html[data-lang-pending] body{visibility:hidden!important}";
-      document.head.appendChild(st);
+    // Fast check: cached or unified detected country code (0ms)
+    const instantCc = getUnifiedCountryCode();
+    if (instantCc) {
+      const detected = langFromCountry(instantCc);
+      setLangState(detected);
     }
-    // Hard failsafe: never leave the page hidden, whatever happens below.
-    const failsafe = setTimeout(lift, 2500);
 
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 1500);
-    (async () => {
-      try {
-        const res = await fetch("https://ipwho.is/", { signal: ctrl.signal });
-        const data = await res.json();
-        const cc = data?.success ? String(data.country_code || "") : "";
-        if (cc) {
-          const detected = langFromCountry(cc);
-          try {
-            localStorage.setItem(GEO_KEY, cc.toUpperCase());
-            localStorage.setItem(STORAGE_KEY, detected);
-          } catch { /* noop */ }
-          setLangState(detected);
-        }
-      } catch { /* silent — keep Arabic default */ }
-      finally {
-        clearTimeout(timer);
-        clearTimeout(failsafe);
-        lift();
+    // In background, hook into single deduplicated country fetch
+    void fetchUserCountryOnce().then((cc) => {
+      if (cc && !readSaved()) {
+        const detected = langFromCountry(cc);
+        try {
+          localStorage.setItem(GEO_KEY, cc.toUpperCase());
+          localStorage.setItem(STORAGE_KEY, detected);
+        } catch { /* noop */ }
+        setLangState(detected);
       }
-    })();
-    return () => { clearTimeout(timer); clearTimeout(failsafe); ctrl.abort(); lift(); };
+    });
   }, []);
 
 
