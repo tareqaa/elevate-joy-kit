@@ -476,12 +476,19 @@ function readCachedBalances(): { coins: number; credit: number } | null {
   return null;
 }
 
-/** Card: "أين تريد استلام الطلب؟" (Order Delivery & Activation Email Card) */
+/** Card: "Where to deliver the order?" */
 function CartCustomerContactCard() {
   const cart = useCart();
   const { lang } = useLang();
   const isAr = lang !== "en";
   const [signedInUser, setSignedInUser] = useState<{ id: string; email: string } | null>(() => readStoredUser());
+  const [rememberEmail, setRememberEmail] = useState(() => {
+    try {
+      return !!localStorage.getItem("gx_customer_email");
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -489,11 +496,7 @@ function CartCustomerContactCard() {
         const uEmail = data.session.user.email || "";
         const uid = data.session.user.id;
         setSignedInUser({ id: uid, email: uEmail });
-        // Only set default if cart email is currently empty
-        if (uEmail && !cart.contact.email) {
-          cart.setContact({ email: uEmail });
-        }
-        // Also fetch profile whatsapp if phone is empty (for contact/communication)
+        // Fetch profile whatsapp if phone is empty (for contact/communication)
         try {
           const { data: prof } = await supabase
             .from("profiles")
@@ -520,105 +523,173 @@ function CartCustomerContactCard() {
     }
   }, [cart]);
 
+  const handleEmailChange = (val: string) => {
+    cart.setContact({ email: val });
+    if (rememberEmail) {
+      try {
+        if (val.trim()) {
+          localStorage.setItem("gx_customer_email", val.trim());
+        } else {
+          localStorage.removeItem("gx_customer_email");
+        }
+      } catch { /* noop */ }
+    }
+    cart.items.forEach((it) => {
+      if (resolveProductRequirementType(it) === "email") {
+        cart.updateItemTarget(it.cartId, val);
+      }
+    });
+  };
+
+  const handleRememberToggle = (checked: boolean) => {
+    setRememberEmail(checked);
+    try {
+      if (checked && cart.contact.email?.trim()) {
+        localStorage.setItem("gx_customer_email", cart.contact.email.trim());
+      } else {
+        localStorage.removeItem("gx_customer_email");
+      }
+    } catch { /* noop */ }
+  };
+
   return (
     <div className="gx-delivery-card gx-contact-card">
       {/* Top Header: Where to deliver the order? */}
-      <div className="gx-dc-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={{ fontSize: "18px" }}>✉️</span>
-          <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#f8fafc" }}>
-            {isAr ? "أين تريد استلام الطلب؟" : "Where to deliver the order?"}
-          </h3>
-          <div className="gx-help-tooltip-wrap" tabIndex={0} role="button" aria-label="تفاصيل عنوان التسليم">
+      <div className="gx-dc-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, borderBottom: "none", paddingBottom: 0 }}>
+        <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.2px" }}>
+          {isAr ? "أين تريد استلام الطلب؟" : "Where to deliver the order?"}
+        </h3>
+        {signedInUser?.email && !cart.contact.email && (
+          <button
+            type="button"
+            onClick={() => handleEmailChange(signedInUser.email)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#00e5ff",
+              fontSize: "11px",
+              fontWeight: 700,
+              cursor: "pointer",
+              padding: 0,
+              textDecoration: "underline",
+            }}
+          >
+            {isAr ? "استخدام بريد حسابي" : "Use my account email"}
+          </button>
+        )}
+      </div>
+
+      {/* Label: البريد الإلكتروني * */}
+      <div style={{ marginBottom: 6 }}>
+        <label
+          htmlFor="gx-cart-delivery-email"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            fontSize: "13px",
+            fontWeight: 700,
+            color: "#e2e8f0",
+            cursor: "pointer",
+          }}
+        >
+          <span>{isAr ? "البريد الإلكتروني" : "Email"}</span>
+          <span style={{ color: "#00e5ff", fontWeight: 900 }}>*</span>
+        </label>
+      </div>
+
+      {/* Input box: NO placeholder text inside! */}
+      <div className="gx-contact-group" style={{ position: "relative", zIndex: 10 }}>
+        <input
+          id="gx-cart-delivery-email"
+          className="gx-cb-input gx-delivery-email-input"
+          type="email"
+          autoComplete="email"
+          placeholder=""
+          value={cart.contact.email || ""}
+          onChange={(e) => handleEmailChange(e.target.value)}
+          style={{
+            direction: "ltr",
+            textAlign: "left",
+            fontSize: "14px",
+            height: "44px",
+            background: "rgba(6, 11, 22, 0.75)",
+            border: "1.5px solid rgba(0, 229, 255, 0.22)",
+            borderRadius: "10px",
+            color: "#ffffff",
+            padding: "0 14px",
+            width: "100%",
+            boxSizing: "border-box",
+            transition: "all 0.2s ease",
+          }}
+        />
+
+        {/* Bottom row: تذكرني (i) [ ] */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            gap: 8,
+            marginTop: 10,
+            userSelect: "none",
+          }}
+        >
+          <label
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              fontSize: "12.5px",
+              color: "#cbd5e1",
+              fontWeight: 600,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={rememberEmail}
+              onChange={(e) => handleRememberToggle(e.target.checked)}
+              style={{
+                width: 17,
+                height: 17,
+                cursor: "pointer",
+                accentColor: "#00e5ff",
+                borderRadius: "4px",
+                margin: 0,
+              }}
+            />
+            <span>{isAr ? "تذكّرني" : "Remember me"}</span>
+          </label>
+
+          <div className="gx-help-tooltip-wrap" tabIndex={0} role="button" aria-label="شرح تذكرني">
             <span
-              className="gx-help-icon"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 3,
-                padding: "2px 7px",
-                borderRadius: "6px",
-                background: "rgba(0, 229, 255, 0.12)",
-                border: "1px solid rgba(0, 229, 255, 0.3)",
-                color: "#00e5ff",
+                justifyContent: "center",
+                width: 17,
+                height: 17,
+                borderRadius: "50%",
+                background: "rgba(255, 255, 255, 0.08)",
+                border: "1px solid rgba(255, 255, 255, 0.22)",
+                color: "#cbd5e1",
                 fontSize: "11px",
                 fontWeight: 700,
                 cursor: "pointer",
+                lineHeight: 1,
               }}
             >
-              <span>تفاصيل</span>
-              <span style={{ fontSize: "9px" }}>▼</span>
+              ⓘ
             </span>
             <div className="gx-help-tooltip-popover">
               <span className="gx-popover-arrow" />
               {isAr
-                ? "يرجى كتابة بريدك الإلكتروني الحقيقي والصحيح، حيث سيصلك كود التفعيل وتفاصيل الطلب مباشرة إلى هذا العنوان."
-                : "Please write your real and valid email address. The activation code and order details will be delivered directly to this address."}
+                ? "حفظ هذا البريد الإلكتروني على هذا المتصفح لتعبئته تلقائياً في طلباتك القادمة."
+                : "Save this email on this browser to auto-fill in your upcoming orders."}
             </div>
           </div>
         </div>
-        {signedInUser && (
-          <span style={{ fontSize: "11px", color: "#00e5b0", fontWeight: 700 }}>
-            ✓ {isAr ? "حسابك المسجل" : "Registered"}
-          </span>
-        )}
-      </div>
-
-      {/* Email Input directly underneath */}
-      <div className="gx-contact-group" style={{ position: "relative", zIndex: 10 }}>
-        <input
-          className="gx-cb-input"
-          type="email"
-          autoComplete="email"
-          placeholder={isAr ? "أدخل البريد الإلكتروني لتلقي التفعيل والطلب..." : "Enter your email for order delivery & activation"}
-          value={cart.contact.email || ""}
-          onChange={(e) => {
-            const val = e.target.value;
-            cart.setContact({ email: val });
-            cart.items.forEach((it) => {
-              if (resolveProductRequirementType(it) === "email") {
-                cart.updateItemTarget(it.cartId, val);
-              }
-            });
-          }}
-          style={{ direction: "ltr", textAlign: "left", fontSize: "14px" }}
-        />
-
-        {signedInUser?.email && cart.contact.email !== signedInUser.email && (
-          <button
-            type="button"
-            onClick={() => {
-              cart.setContact({ email: signedInUser.email });
-              cart.items.forEach((it) => {
-                if (resolveProductRequirementType(it) === "email") {
-                  cart.updateItemTarget(it.cartId, signedInUser.email);
-                }
-              });
-            }}
-            style={{
-              marginTop: 6,
-              background: "rgba(0, 229, 255, 0.08)",
-              border: "1px dashed rgba(0, 229, 255, 0.3)",
-              color: "#00e5ff",
-              borderRadius: 6,
-              padding: "4px 8px",
-              fontSize: "11.5px",
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            <span>✓</span>
-            <span>{isAr ? `استخدام بريد حسابي (${signedInUser.email})` : `Use account email (${signedInUser.email})`}</span>
-          </button>
-        )}
-
-        <p className="gx-contact-hint" style={{ fontSize: "11.5px", color: "#38bdf8", marginTop: 6, lineHeight: 1.45 }}>
-          {isAr
-            ? "يصلك كود التفعيل أو رابط ودعوة الطلب مباشرة إلى هذا العنوان."
-            : "Your activation code or invite link will be delivered directly to this address."}
-        </p>
       </div>
     </div>
   );
