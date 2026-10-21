@@ -42,6 +42,7 @@ export function QuickRequirementModal() {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<PromptRequirementDetail | null>(null);
   const [value, setValue] = useState("");
+  const [formattedWhatsApp, setFormattedWhatsApp] = useState("");
   const [error, setError] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -134,8 +135,6 @@ export function QuickRequirementModal() {
         ? "اكتب الإيميل الذي ترغب بتفعيل الاشتراك عليه، حيث ستصلك دعوة تفعيل رسمية."
         : "Enter the email to receive the official activation invitation."
       : null);
-
-  const [formattedWhatsApp, setFormattedWhatsApp] = useState("");
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
