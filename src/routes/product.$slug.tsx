@@ -220,6 +220,7 @@ function ProductPage() {
         imageUrl: (selectedVariant as any)?.imageUrl || (firstVariant as any)?.imageUrl || product.imageUrl || undefined,
         icon: product.icon || undefined,
         categorySlug: product.categoryNameEn?.toLowerCase() || undefined,
+        region: product.slug === "tod" || product.slug.startsWith("tod-") || finalVarCartId.startsWith("tod-") ? "الأردن" : (product.region || (selectedVariant as any)?.region || undefined),
       });
     }, 1000);
 

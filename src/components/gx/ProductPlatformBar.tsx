@@ -719,6 +719,22 @@ export function getProductPlatform(
     return { name: "YouTube", icon: <YouTubePlatformIcon /> };
   }
 
+  // 30. TOD by beIN
+  if (has(["tod", "تود", "bein"])) {
+    return {
+      name: "TOD by beIN",
+      icon: (
+        <img
+          src="/app/assets/img/catalog/tod-icon.webp"
+          alt="TOD"
+          width={14}
+          height={14}
+          style={{ width: 14, height: 14, objectFit: "contain", borderRadius: 3, display: "block", flexShrink: 0 }}
+        />
+      ),
+    };
+  }
+
   // 30. VPNs, Productivity & Utilities
   if (has(["nordvpn", "nord vpn", "نورد"])) {
     return { name: "NordVPN", icon: <NordVpnPlatformIcon /> };

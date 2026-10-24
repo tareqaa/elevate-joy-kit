@@ -25,6 +25,7 @@ import { GxIcon } from "@/components/gx/GxIcon";
 import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
 import { localizedCategoryLink, localizedProduct, localizedGiftCard } from "@/lib/gx/product-locale";
 import { useHiddenCategorySlugs } from "@/lib/gx/category-visibility";
+import { useSiteSettings, getEffectiveStockLimit } from "@/lib/gx/site-settings";
 import {
   fetchLiveSearchIndex,
   invalidateSearchCache,
@@ -128,6 +129,7 @@ export function Navbar() {
   const { t, lang, setLang } = useLang();
   const { count: favCount } = useFavorites();
   const hiddenCats = useHiddenCategorySlugs();
+  const siteSettings = useSiteSettings();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -712,6 +714,11 @@ export function Navbar() {
                               lang,
                             );
 
+                            const isSoldOut =
+                              item.type === "product" &&
+                              getEffectiveStockLimit(siteSettings?.product_stock_limits, item.id, item.slug) !== null &&
+                              getEffectiveStockLimit(siteSettings?.product_stock_limits, item.id, item.slug)! <= 0;
+
                             const discountPct =
                               item.oldPriceJod && item.priceJod && item.oldPriceJod > item.priceJod
                                 ? Math.round(((item.oldPriceJod - item.priceJod) / item.oldPriceJod) * 100)
@@ -720,8 +727,9 @@ export function Navbar() {
                             return (
                               <div
                                 key={item.id || item.slug}
-                                className="gx-search-product-card"
+                                className={`gx-search-product-card ${isSoldOut ? "is-sold-out" : ""}`}
                                 onClick={() => handleSelectProduct(item)}
+                                style={isSoldOut ? { opacity: 0.65 } : undefined}
                               >
                                 <div className="gx-search-card-thumb-wrap">
                                   {thumb ? (
@@ -748,22 +756,59 @@ export function Navbar() {
                                 </div>
 
                                 <div className="gx-search-card-pricing">
-                                  {typeof item.priceJod === "number" && item.priceJod > 0 && (
-                                    <>
-                                      <div className="gx-search-card-price-main">
-                                        <span className="gx-search-card-price">{format(item.priceJod)}</span>
+                                  {isSoldOut ? (
+                                    <div style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
+                                      <span style={{ color: "rgba(255, 255, 255, 0.72)", fontSize: 13, fontWeight: 800 }}>
+                                        {lang === "en" ? "Sold Out" : "نفدت"}
+                                      </span>
+                                      <div
+                                        style={{
+                                          width: 25,
+                                          height: 25,
+                                          borderRadius: 6,
+                                          border: "1.5px solid rgba(255, 255, 255, 0.45)",
+                                          display: "inline-flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          color: "rgba(255, 255, 255, 0.75)",
+                                          background: "rgba(255, 255, 255, 0.04)",
+                                          flexShrink: 0,
+                                        }}
+                                      >
+                                        <svg
+                                          width="16"
+                                          height="16"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2.3"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        >
+                                          <line x1="8" y1="10" x2="8.01" y2="10" strokeWidth="3" />
+                                          <line x1="16" y1="10" x2="16.01" y2="10" strokeWidth="3" />
+                                          <path d="M16 16.5c-1-1.6-2.5-2.2-4-2.2s-3 .6-4 2.2" />
+                                        </svg>
                                       </div>
-                                      {item.oldPriceJod && item.oldPriceJod > item.priceJod ? (
-                                        <div className="gx-search-card-price-old">
-                                          <span className="gx-search-card-old-val">{format(item.oldPriceJod)}</span>
+                                    </div>
+                                  ) : (
+                                    typeof item.priceJod === "number" && item.priceJod > 0 && (
+                                      <>
+                                        <div className="gx-search-card-price-main">
+                                          <span className="gx-search-card-price">{format(item.priceJod)}</span>
                                         </div>
-                                      ) : null}
-                                      {discountPct > 0 ? (
-                                        <div className="gx-search-card-discount-tag">
-                                          -{discountPct}%
-                                        </div>
-                                      ) : null}
-                                    </>
+                                        {item.oldPriceJod && item.oldPriceJod > item.priceJod ? (
+                                          <div className="gx-search-card-price-old">
+                                            <span className="gx-search-card-old-val">{format(item.oldPriceJod)}</span>
+                                          </div>
+                                        ) : null}
+                                        {discountPct > 0 ? (
+                                          <div className="gx-search-card-discount-tag">
+                                            -{discountPct}%
+                                          </div>
+                                        ) : null}
+                                      </>
+                                    )
                                   )}
                                 </div>
                               </div>

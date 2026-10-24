@@ -16,13 +16,13 @@ import {
   CanvaPoster,
   WindowsPoster,
   GiftCardPoster,
+  TodPoster,
   FortniteIcon,
   VbucksIcon,
   CrewIcon,
 } from "@/lib/gx/brand-icons";
-import { VBUCKS_TIER_THEMES, CREW_TIER_THEMES } from "@/components/gx/ProductTemplates";
 import { getGiftCardLiveStartingPrice } from "@/components/gx/BestSellingGiftCardsSection";
-import { useSiteSettings } from "@/lib/gx/site-settings";
+import { useSiteSettings, getEffectiveStockLimit } from "@/lib/gx/site-settings";
 
 export type StoreProductCardProps = {
   slug: string;
@@ -276,6 +276,9 @@ export function StoreProductCard({
     if (slug === "adobe") return <AdobePoster />;
     if (slug === "canva") return <CanvaPoster />;
     if (slug === "windows") return <WindowsPoster cartId={finalCartId} planLabel={name} />;
+    if (slug === "tod" || slug.startsWith("tod-") || finalCartId.startsWith("tod-")) {
+      return <TodPoster cartId={finalCartId} name={name} />;
+    }
     if (slug === "fortnite") {
       if (imageUrl && !imageUrl.includes("fortnite-logo.png") && !imageUrl.includes("fortnite-f-icon.jpg")) {
         return (
@@ -397,8 +400,19 @@ export function StoreProductCard({
     });
   };
 
+  const stockLimit = getEffectiveStockLimit(
+    siteSettings?.product_stock_limits,
+    finalCartId,
+    slug
+  );
+
+  const isOutOfStock = stockLimit !== null && stockLimit <= 0;
+
   return (
-    <div className="prod-card">
+    <div
+      className={`prod-card ${isOutOfStock ? "is-sold-out" : ""}`}
+      style={isOutOfStock ? { opacity: 0.72, filter: "grayscale(0.38)" } : undefined}
+    >
       {/* Top-Left Driffle-Style Bookmark Wishlist Ribbon */}
       <button
         type="button"
@@ -446,7 +460,20 @@ export function StoreProductCard({
           to={finalLink as never}
           style={{ textDecoration: "none", color: "inherit", display: "block" }}
         >
-          <div className="prod-name">{formattedTitle}</div>
+          <div
+            className="prod-name"
+            style={{
+              minHeight: 38,
+              maxHeight: 38,
+              lineHeight: 1.35,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {formattedTitle}
+          </div>
         </Link>
 
         {/* Region (Right in Blue) & Product Delivery Type (Left) with Exclamation Info Tooltip */}
@@ -508,64 +535,134 @@ export function StoreProductCard({
           </div>
         </div>
 
-        <div className="prod-prices">
-          {finalDisplayPrice > 0 ? (
-            <>
-              {(showFromLabel || isGiftCardMasterCard) && (
-                <span className="prod-from-label">{priceLabel || (lang === "en" ? "From" : "من")}</span>
-              )}
-              <div className="prod-price-row">
-                <span className="prod-new">
-                  {format(finalDisplayPrice)}
-                </span>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                  {numOldPrice && numOldPrice > finalDisplayPrice && (
-                    <span className="prod-old">{format(numOldPrice)}</span>
-                  )}
-                  {discount > 0 && <span className="prod-discount-pill">-{discount}%</span>}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="prod-price-row">
-              <span className="prod-new">{lang === "en" ? "Check Price" : "حسب الباقة"}</span>
-            </div>
-          )}
-        </div>
-
-        {isGiftCardMasterCard ? (
-          <div className="buy-actions">
-            <Link
-              to={finalLink as never}
-              className="buy-now-btn gx-browse-offers-btn"
+        {isOutOfStock ? (
+          <div
+            className="prod-sold-out-box"
+            style={{
+              marginTop: "auto",
+              height: 44,
+              minHeight: 44,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              gap: 8,
+              userSelect: "none",
+            }}
+          >
+            <span
               style={{
-                textDecoration: "none",
-                width: "100%",
+                color: "#f1f5f9",
+                fontSize: 15,
+                fontWeight: 900,
+                fontFamily: "'Tajawal', sans-serif",
+                letterSpacing: 0.3,
+              }}
+            >
+              {lang === "en" ? "Sold Out" : "نفدت"}
+            </span>
+            <div
+              style={{
+                width: 27,
+                height: 27,
+                borderRadius: 7,
+                border: "2px solid #cbd5e1",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "6px",
+                color: "#cbd5e1",
+                background: "rgba(255, 255, 255, 0.04)",
+                boxSizing: "border-box",
+                flexShrink: 0,
               }}
             >
-              <span>{lang === "en" ? "Browse Offers" : "تصفح العروض"}</span>
-              <span style={{ fontSize: 13 }}>{lang === "en" ? "→" : "←"}</span>
-            </Link>
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="8" y1="10" x2="8.01" y2="10" strokeWidth="3" />
+                <line x1="16" y1="10" x2="16.01" y2="10" strokeWidth="3" />
+                <path d="M16 16.5c-1-1.6-2.5-2.2-4-2.2s-3 .6-4 2.2" />
+              </svg>
+            </div>
           </div>
         ) : (
-          <BuyActions
-            cartId={finalCartId}
-            meta={
-              finalDisplayPrice > 0
-                ? {
-                    price: finalDisplayPrice,
-                    name: formattedTitle || name,
-                    imageUrl: imageUrl || iconImage || null,
-                    icon: icon || null,
-                    product: slug,
-                  }
-                : undefined
-            }
-          />
+          <>
+            <div
+              className="prod-prices"
+              style={{
+                minHeight: 44,
+                height: 44,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-end",
+                marginTop: "auto",
+              }}
+            >
+              {finalDisplayPrice > 0 ? (
+                <>
+                  {(showFromLabel || isGiftCardMasterCard) && (
+                    <span className="prod-from-label">{priceLabel || (lang === "en" ? "From" : "من")}</span>
+                  )}
+                  <div className="prod-price-row">
+                    <span className="prod-new">
+                      {format(finalDisplayPrice)}
+                    </span>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                      {numOldPrice && numOldPrice > finalDisplayPrice && (
+                        <span className="prod-old">{format(numOldPrice)}</span>
+                      )}
+                      {discount > 0 && <span className="prod-discount-pill">-{discount}%</span>}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="prod-price-row">
+                  <span className="prod-new">{lang === "en" ? "Check Price" : "حسب الباقة"}</span>
+                </div>
+              )}
+            </div>
+
+            {isGiftCardMasterCard ? (
+              <div className="buy-actions">
+                <Link
+                  to={finalLink as never}
+                  className="buy-now-btn gx-browse-offers-btn"
+                  style={{
+                    textDecoration: "none",
+                    width: "100%",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <span>{lang === "en" ? "Browse Offers" : "تصفح العروض"}</span>
+                  <span style={{ fontSize: 13 }}>{lang === "en" ? "→" : "←"}</span>
+                </Link>
+              </div>
+            ) : (
+              <BuyActions
+                cartId={finalCartId}
+                meta={
+                  finalDisplayPrice > 0
+                    ? {
+                        price: finalDisplayPrice,
+                        name: formattedTitle || name,
+                        imageUrl: imageUrl || iconImage || null,
+                        icon: icon || null,
+                        product: slug,
+                      }
+                    : undefined
+                }
+              />
+            )}
+          </>
         )}
       </div>
     </div>

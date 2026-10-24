@@ -209,6 +209,9 @@ export const Route = createFileRoute("/category/$slug")({
     if (params.slug === "products" || params.slug === "all" || params.slug === "services" || params.slug === "snapchat" || params.slug === "duolingo" || params.slug === "ai") {
       throw redirect({ to: "/products", replace: true });
     }
+    if (params.slug === "entertainment" || params.slug === "watch") {
+      throw redirect({ to: "/category/$slug", params: { slug: "streaming" }, replace: true });
+    }
     if (params.slug === "game-pass" || params.slug === "gamepass" || params.slug === "xbox-game-pass") {
       throw redirect({ to: "/category/$slug", params: { slug: "subscriptions" }, replace: true });
     }
@@ -233,13 +236,75 @@ export const Route = createFileRoute("/category/$slug")({
     let categoryProducts: CatalogStoreProduct[] = [];
 
     if (category.slug === "subscriptions") {
-      categoryProducts = allProducts.filter(
-        (p) =>
-          p.categorySlug === "subscriptions" ||
-          p.parentCategorySlug === "subscriptions" ||
-          (p.slug || "").includes("game-pass") ||
-          (p.slug || "").includes("youtube")
-      );
+      // كتالوج الاشتراكات: فقط اشتراكات TOD، Game Pass، ويوتيوب بريميوم
+      categoryProducts = allProducts.filter((p) => {
+        const s = (p.slug || "").toLowerCase();
+        return (
+          s === "tod" ||
+          s.startsWith("tod-") ||
+          s.includes("game-pass") ||
+          s.includes("youtube")
+        );
+      });
+    } else if (category.slug === "streaming") {
+      // فئة اشتراكات المشاهدة: اشتراكات TOD ويوتيوب بريميوم
+      categoryProducts = allProducts.filter((p) => {
+        const s = (p.slug || "").toLowerCase();
+        return (
+          p.categorySlug === "streaming" ||
+          p.parentCategorySlug === "streaming" ||
+          s === "tod" ||
+          s.startsWith("tod-") ||
+          s.includes("youtube") ||
+          (p.categoryNameAr || "").includes("مشاهدة")
+        );
+      });
+    } else if (category.slug === "design" || category.slug === "apps" || category.slug === "software" || category.slug === "ai") {
+      // البرامج والتطبيقات: تشمل تطبيقات الذكاء الاصطناعي (Gemini, Lovable, Notion, etc.)
+      const matchingAll = allProducts.filter((p) => {
+        const s = (p.slug || "").toLowerCase();
+        return (
+          p.categorySlug === category.slug ||
+          p.parentCategorySlug === category.slug ||
+          p.categorySlug === "design" ||
+          p.categorySlug === "ai" ||
+          p.slug === category.slug ||
+          (p.categorySlug && childSlugs.has(p.categorySlug)) ||
+          [
+            "gemini",
+            "lovable",
+            "notion",
+            "chatgpt",
+            "claude",
+            "midjourney",
+            "canva",
+            "adobe",
+            "windows",
+            "microsoft365",
+            "autodesk",
+            "discord",
+            "nitro",
+            "nordvpn",
+            "surfshark",
+            "expressvpn",
+            "capcut",
+            "duolingo",
+            "linkedin",
+          ].some((k) => s.includes(k))
+        );
+      });
+
+      const directProducts = (category.products ?? []).map((cp) => {
+        const full = allProducts.find((ap) => ap.id === cp.id || ap.slug === cp.slug);
+        return {
+          ...cp,
+          ...(full || {}),
+          nameAr: cp.nameAr || full?.nameAr || "",
+          nameEn: cp.nameEn || full?.nameEn || "",
+        } as CatalogStoreProduct;
+      });
+
+      categoryProducts = matchingAll.length > 0 ? matchingAll : directProducts;
     } else {
       const matchingAll = allProducts.filter(
         (p) =>
@@ -416,7 +481,8 @@ function CategoryPage() {
   const isSoftwareCategory =
     category.slug === "design" ||
     category.slug === "apps" ||
-    category.slug === "software";
+    category.slug === "software" ||
+    category.slug === "ai";
 
   const isGamingCategory =
     category.slug === "games" ||
@@ -425,7 +491,8 @@ function CategoryPage() {
     category.slug === "sony";
 
   const isSubscriptionsCategory =
-    category.slug === "subscriptions";
+    category.slug === "subscriptions" ||
+    category.slug === "streaming";
 
   const isSocialCategory =
     category.slug === "social-media" ||
@@ -435,6 +502,7 @@ function CategoryPage() {
   const showcaseBrands = useMemo(() => {
     if (isSoftwareCategory) {
       return [
+        { name: "Gemini AI", logo: "/app/assets/img/gemini-logo.svg" },
         { name: "Canva", logo: "/app/assets/img/canva-logo.png" },
         { name: "Adobe", logo: "/app/assets/img/adobe-cc.webp" },
         { name: "Windows", logo: "/app/assets/img/windows-logo.svg" },
@@ -451,7 +519,9 @@ function CategoryPage() {
     }
     if (isSubscriptionsCategory) {
       return [
+        { name: "TOD by beIN", logo: "/app/assets/img/catalog/tod-icon.webp" },
         { name: "Xbox Game Pass", logo: "/app/assets/img/xbox-logo.svg" },
+        { name: "YouTube Premium", logo: "/app/assets/img/youtube-logo.svg" },
       ];
     }
     return [];
@@ -468,6 +538,7 @@ function CategoryPage() {
   const [customMaxPrice, setCustomMaxPrice] = useState<string>("");
   const [isAllPlatformsModalOpen, setIsAllPlatformsModalOpen] = useState<boolean>(false);
   const [fortniteFilter, setFortniteFilter] = useState<"all" | "crew" | "vbucks">("all");
+  const [streamingSubfilter, setStreamingSubfilter] = useState<"all" | "tod" | "youtube">("all");
 
   useEffect(() => {
     let initialPlatform = "all";
@@ -481,6 +552,7 @@ function CategoryPage() {
     }
     setSelectedPlatform(initialPlatform);
     setSelectedSubtype(initialSubtype);
+    setStreamingSubfilter("all");
   }, [category.slug]);
 
 
@@ -500,6 +572,7 @@ function CategoryPage() {
   // Categories are not tracked in Recently Viewed as requested by user (only products viewed)
 
   // Platforms for software/design category
+  // Order: 1. AI Apps, 2. VPN Apps, 3. Design & Video, 4. Engineering, 5. Productivity & OS
   const softwarePlatforms: CategoryPlatformItem[] = useMemo(() => {
     const defs = [
       {
@@ -511,6 +584,86 @@ function CategoryPage() {
         renderLogo: () => <AllPlatformsIcon />,
         match: () => true,
       },
+      // 1. تطبيقات الذكاء الاصطناعي (AI)
+      {
+        id: "ai",
+        nameAr: "تطبيقات الذكاء الاصطناعي",
+        nameEn: "AI Tools & Apps",
+        color: "#8b5cf6",
+        glow: "rgba(139, 92, 246, 0.45)",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("gemini") ||
+          (p.slug || "").includes("lovable") ||
+          (p.slug || "").includes("notion") ||
+          (p.slug || "").includes("chatgpt") ||
+          (p.slug || "").includes("midjourney") ||
+          (p.slug || "").includes("claude") ||
+          (p.nameAr || "").includes("ذكاء") ||
+          (p.nameAr || "").toLowerCase().includes("ai"),
+      },
+      {
+        id: "gemini",
+        nameAr: "جيمناي AI",
+        nameEn: "Gemini AI",
+        color: "#4f87ed",
+        glow: "rgba(79, 135, 237, 0.45)",
+        logoSrc: "/app/assets/img/gemini-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("gemini") ||
+          (p.nameAr || "").toLowerCase().includes("gemini") ||
+          (p.nameAr || "").includes("جيمناي"),
+      },
+      {
+        id: "lovable",
+        nameAr: "Lovable AI",
+        nameEn: "Lovable AI",
+        color: "#ff3366",
+        glow: "rgba(255, 51, 102, 0.45)",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("lovable") ||
+          (p.nameAr || "").toLowerCase().includes("lovable") ||
+          (p.nameAr || "").includes("لوفابل"),
+      },
+      {
+        id: "notion",
+        nameAr: "Notion AI",
+        nameEn: "Notion",
+        color: "#ffffff",
+        glow: "rgba(255, 255, 255, 0.4)",
+        logoSrc: "/app/assets/img/catalog/notion.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("notion") || (p.nameAr || "").toLowerCase().includes("notion"),
+      },
+      // 2. تطبيقات الـ VPN
+      {
+        id: "nordvpn",
+        nameAr: "NordVPN",
+        nameEn: "NordVPN",
+        color: "#2563eb",
+        glow: "rgba(37, 99, 235, 0.45)",
+        logoSrc: "/app/assets/img/catalog/nordvpn.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("nordvpn") || (p.nameAr || "").toLowerCase().includes("nordvpn"),
+      },
+      {
+        id: "surfshark",
+        nameAr: "Surfshark",
+        nameEn: "Surfshark",
+        color: "#00d18f",
+        glow: "rgba(0, 209, 143, 0.45)",
+        renderLogo: () => <SurfsharkIcon />,
+        match: (p: CatalogStoreProduct) => (p.slug || "").includes("surfshark"),
+      },
+      {
+        id: "expressvpn",
+        nameAr: "ExpressVPN",
+        nameEn: "ExpressVPN",
+        color: "#da3941",
+        glow: "rgba(218, 57, 65, 0.45)",
+        renderLogo: () => <ExpressVpnIcon />,
+        match: (p: CatalogStoreProduct) => (p.slug || "").includes("expressvpn"),
+      },
+      // 3. التصميم والمونتاج
       {
         id: "canva",
         nameAr: "Canva",
@@ -532,38 +685,26 @@ function CategoryPage() {
           (p.slug || "").includes("adobe") || (p.categorySlug || "") === "adobe",
       },
       {
-        id: "nordvpn",
-        nameAr: "NordVPN",
-        nameEn: "NordVPN",
-        color: "#2563eb",
-        glow: "rgba(37, 99, 235, 0.45)",
-        logoSrc: "/app/assets/img/catalog/nordvpn.svg",
-        directLink: "/product/nordvpn",
-        match: (p: CatalogStoreProduct) =>
-          (p.slug || "").includes("nordvpn") || (p.nameAr || "").toLowerCase().includes("nordvpn"),
+        id: "capcut",
+        nameAr: "CapCut",
+        nameEn: "CapCut",
+        color: "#00e5ff",
+        glow: "rgba(0, 229, 255, 0.45)",
+        renderLogo: () => <CapCutIcon />,
+        match: (p: CatalogStoreProduct) => (p.slug || "").includes("capcut"),
       },
+      // 4. الهندسة
       {
-        id: "headspace",
-        nameAr: "Headspace",
-        nameEn: "Headspace",
-        color: "#f47d15",
-        glow: "rgba(244, 125, 21, 0.45)",
-        logoSrc: "/app/assets/img/catalog/headspace.svg",
-        directLink: "/product/headspace",
+        id: "autodesk",
+        nameAr: "Autodesk",
+        nameEn: "Autodesk",
+        color: "#0696d7",
+        glow: "rgba(6, 150, 215, 0.45)",
+        logoSrc: "/app/assets/img/autodesk-logo.svg",
         match: (p: CatalogStoreProduct) =>
-          (p.slug || "").includes("headspace") || (p.nameAr || "").toLowerCase().includes("headspace"),
+          (p.slug || "").includes("autodesk") || (p.categorySlug || "") === "autodesk",
       },
-      {
-        id: "notion",
-        nameAr: "Notion",
-        nameEn: "Notion",
-        color: "#ffffff",
-        glow: "rgba(255, 255, 255, 0.4)",
-        logoSrc: "/app/assets/img/catalog/notion.svg",
-        directLink: "/product/notion-business",
-        match: (p: CatalogStoreProduct) =>
-          (p.slug || "").includes("notion") || (p.nameAr || "").toLowerCase().includes("notion"),
-      },
+      // 5. الإنتاجية وأنظمة التشغيل والتطبيقات الأخرى
       {
         id: "windows",
         nameAr: "Windows",
@@ -604,43 +745,6 @@ function CategoryPage() {
           (p.nameAr || "").includes("ديسكورد"),
       },
       {
-        id: "capcut",
-        nameAr: "CapCut",
-        nameEn: "CapCut",
-        color: "#00e5ff",
-        glow: "rgba(0, 229, 255, 0.45)",
-        renderLogo: () => <CapCutIcon />,
-        match: (p: CatalogStoreProduct) => (p.slug || "").includes("capcut"),
-      },
-      {
-        id: "autodesk",
-        nameAr: "Autodesk",
-        nameEn: "Autodesk",
-        color: "#0696d7",
-        glow: "rgba(6, 150, 215, 0.45)",
-        logoSrc: "/app/assets/img/autodesk-logo.svg",
-        match: (p: CatalogStoreProduct) =>
-          (p.slug || "").includes("autodesk") || (p.categorySlug || "") === "autodesk",
-      },
-      {
-        id: "surfshark",
-        nameAr: "Surfshark",
-        nameEn: "Surfshark",
-        color: "#00d18f",
-        glow: "rgba(0, 209, 143, 0.45)",
-        renderLogo: () => <SurfsharkIcon />,
-        match: (p: CatalogStoreProduct) => (p.slug || "").includes("surfshark"),
-      },
-      {
-        id: "expressvpn",
-        nameAr: "ExpressVPN",
-        nameEn: "ExpressVPN",
-        color: "#da3941",
-        glow: "rgba(218, 57, 65, 0.45)",
-        renderLogo: () => <ExpressVpnIcon />,
-        match: (p: CatalogStoreProduct) => (p.slug || "").includes("expressvpn"),
-      },
-      {
         id: "linkedin",
         nameAr: "LinkedIn",
         nameEn: "LinkedIn",
@@ -649,6 +753,29 @@ function CategoryPage() {
         logoSrc: "/app/assets/img/linkedin-logo.svg",
         match: (p: CatalogStoreProduct) =>
           (p.slug || "").includes("linkedin") || (p.categorySlug || "") === "linkedin-premium",
+      },
+      {
+        id: "headspace",
+        nameAr: "Headspace",
+        nameEn: "Headspace",
+        color: "#f47d15",
+        glow: "rgba(244, 125, 21, 0.45)",
+        logoSrc: "/app/assets/img/catalog/headspace.svg",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("headspace") || (p.nameAr || "").toLowerCase().includes("headspace"),
+      },
+      {
+        id: "duolingo",
+        nameAr: "Duolingo",
+        nameEn: "Duolingo",
+        color: "#58cc02",
+        glow: "rgba(88, 204, 2, 0.45)",
+        logoSrc: "/app/assets/img/catalog/duolingo-super.png",
+        match: (p: CatalogStoreProduct) =>
+          (p.slug || "").includes("duolingo") ||
+          (p.nameAr || "").toLowerCase().includes("duolingo") ||
+          (p.nameAr || "").includes("دولينجو") ||
+          (p.nameAr || "").includes("دولينقو"),
       },
       {
         id: "security",
@@ -909,8 +1036,56 @@ function CategoryPage() {
       .filter((d) => d.id === "all" || d.count > 0);
   }, [products]);
 
-  // Platforms for subscriptions category (/category/subscriptions)
+  // Platforms for subscriptions category (/category/subscriptions & /category/streaming)
   const subscriptionPlatforms: CategoryPlatformItem[] = useMemo(() => {
+    const isStreamingCat = category.slug === "streaming";
+    if (isStreamingCat) {
+      const defs = [
+        {
+          id: "all",
+          nameAr: "كل عروض المشاهدة",
+          nameEn: "All Streaming",
+          color: "#ff2b54",
+          glow: "rgba(255, 43, 84, 0.45)",
+          renderLogo: () => <AllPlatformsIcon />,
+          match: () => true,
+        },
+        {
+          id: "tod",
+          nameAr: "باقات TOD",
+          nameEn: "TOD by beIN",
+          color: "#00e5ff",
+          glow: "rgba(0, 229, 255, 0.45)",
+          logoSrc: "/app/assets/img/catalog/tod-standard-card.jpg",
+          match: (p: CatalogStoreProduct) =>
+            p.slug === "tod" ||
+            (p.slug || "").startsWith("tod-") ||
+            (p.nameAr || "").toLowerCase().includes("tod") ||
+            (p.nameAr || "").includes("تود"),
+        },
+        {
+          id: "youtube",
+          nameAr: "يوتيوب بريميوم",
+          nameEn: "YouTube Premium",
+          color: "#ff0000",
+          glow: "rgba(255, 0, 0, 0.45)",
+          logoSrc: "/app/assets/img/youtube-logo.svg",
+          match: (p: CatalogStoreProduct) =>
+            (p.slug || "").includes("youtube") ||
+            (p.nameAr || "").toLowerCase().includes("youtube") ||
+            (p.nameAr || "").includes("يوتيوب"),
+        },
+      ];
+      return defs
+        .map((d) => ({
+          ...d,
+          count: d.id === "all" ? products.length : products.filter(d.match).length,
+        }))
+        .filter((d) => d.id === "all" || d.count > 0);
+    }
+
+    // Inside /category/subscriptions:
+    // فقط: كل الاشتراكات، اشتراكات المشاهدة (تحتوي باقات TOD ويوتيوب بريميوم)، وقيم باس (Xbox Game Pass)
     const defs = [
       {
         id: "all",
@@ -920,6 +1095,23 @@ function CategoryPage() {
         glow: "rgba(245, 158, 11, 0.45)",
         renderLogo: () => <AllPlatformsIcon />,
         match: () => true,
+      },
+      {
+        id: "streaming",
+        nameAr: "اشتراكات المشاهدة",
+        nameEn: "Streaming & Movies",
+        color: "#ff2b54",
+        glow: "rgba(255, 43, 84, 0.45)",
+        logoSrc: "/app/assets/img/streaming-icon.png",
+        match: (p: CatalogStoreProduct) =>
+          p.categorySlug === "streaming" ||
+          p.parentCategorySlug === "streaming" ||
+          p.slug === "tod" ||
+          (p.slug || "").startsWith("tod-") ||
+          (p.slug || "").includes("youtube") ||
+          (p.categoryNameAr || "").includes("مشاهدة") ||
+          (p.nameAr || "").includes("تود") ||
+          (p.nameAr || "").includes("يوتيوب"),
       },
       {
         id: "gamepass",
@@ -933,18 +1125,6 @@ function CategoryPage() {
           (p.nameAr || "").toLowerCase().includes("game pass") ||
           (p.nameAr || "").includes("جيم باس"),
       },
-      {
-        id: "entertainment",
-        nameAr: "اشتراكات المشاهدة",
-        nameEn: "Streaming & Movies",
-        color: "#ff2b54",
-        glow: "rgba(255, 43, 84, 0.45)",
-        logoSrc: "/app/assets/img/streaming-icon.png",
-        match: (p: CatalogStoreProduct) =>
-          ["netflix", "shahid", "youtube", "spotify", "iptv", "disney", "osn", "watch", "مشاهدة", "سينما", "بريميوم"].some((k) =>
-            (p.slug || "").toLowerCase().includes(k) || (p.nameAr || "").toLowerCase().includes(k)
-          ),
-      },
     ];
 
     return defs
@@ -953,7 +1133,7 @@ function CategoryPage() {
         count: d.id === "all" ? products.length : products.filter(d.match).length,
       }))
       .filter((d) => d.id === "all" || d.count > 0);
-  }, [products]);
+  }, [products, category.slug]);
 
   // Platforms for gift cards category
   const giftCardPlatforms: CategoryPlatformItem[] = useMemo(() => {
@@ -965,7 +1145,7 @@ function CategoryPage() {
         color: "#ff2d78",
         glow: "rgba(255, 45, 120, 0.45)",
         renderLogo: () => <AllPlatformsIcon />,
-        count: 35,
+        count: 36,
         match: () => true,
       },
       {
@@ -976,7 +1156,7 @@ function CategoryPage() {
         glow: "rgba(0, 112, 209, 0.45)",
         logoSrc: "/app/assets/img/playstation-logo.svg",
         directLink: "/product/playstation",
-        count: 16,
+        count: 15,
         match: (p: CatalogStoreProduct) =>
           (p.slug || "").includes("playstation") || (p.categorySlug || "") === "gc-playstation",
       },
@@ -1012,7 +1192,7 @@ function CategoryPage() {
         glow: "rgba(255, 255, 255, 0.4)",
         logoSrc: "/app/assets/img/itunes-logo.svg",
         directLink: "/product/itunes",
-        count: 5,
+        count: 7,
         match: (p: CatalogStoreProduct) =>
           (p.slug || "").includes("itunes") ||
           (p.slug || "").includes("apple") ||
@@ -1059,7 +1239,7 @@ function CategoryPage() {
 
   const platformsList = useMemo(() => {
     if (isSocialCategory) return socialMediaPlatforms;
-    if (category.slug === "subscriptions") return subscriptionPlatforms;
+    if (category.slug === "subscriptions" || category.slug === "streaming") return subscriptionPlatforms;
     if (isSoftwareCategory) return softwarePlatforms;
     if (category.slug === "gift-cards" || category.slug.startsWith("gc-")) return giftCardPlatforms;
     if (category.slug === "pc-games") return pcGamesLaunchers;
@@ -1091,6 +1271,7 @@ function CategoryPage() {
 
   const handleSelectPlatform = (platId: string) => {
     setCurrentPage(1);
+    setStreamingSubfilter("all");
     if (selectedPlatform === platId && platId !== "all") {
       setSelectedPlatform("all");
     } else {
@@ -1298,6 +1479,26 @@ function CategoryPage() {
       }
     }
 
+    // 1b. Subscriptions -> Streaming sub-filter (TOD vs YouTube)
+    if (category.slug === "subscriptions" && selectedPlatform === "streaming" && streamingSubfilter !== "all") {
+      if (streamingSubfilter === "tod") {
+        list = list.filter(
+          (p) =>
+            p.slug === "tod" ||
+            (p.slug || "").startsWith("tod-") ||
+            (p.nameAr || "").toLowerCase().includes("tod") ||
+            (p.nameAr || "").includes("تود")
+        );
+      } else if (streamingSubfilter === "youtube") {
+        list = list.filter(
+          (p) =>
+            (p.slug || "").includes("youtube") ||
+            (p.nameAr || "").toLowerCase().includes("youtube") ||
+            (p.nameAr || "").includes("يوتيوب")
+        );
+      }
+    }
+
     // 2. Search query filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -1359,9 +1560,11 @@ function CategoryPage() {
 
     return list;
   }, [
+    category.slug,
     products,
     selectedSubtype,
     selectedPlatform,
+    streamingSubfilter,
     platformsList,
     searchQuery,
     selectedDeliveryType,
@@ -1382,6 +1585,7 @@ function CategoryPage() {
   }, [
     category.slug,
     selectedPlatform,
+    streamingSubfilter,
     selectedSubtype,
     fortniteFilter,
     searchQuery,
@@ -1399,8 +1603,8 @@ function CategoryPage() {
     return displayedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [displayedProducts, currentPage]);
 
-  // Platform card rendering helper (renders moving marquee when > 3 platforms, or static grid if <= 3)
-  const isStaticPlatforms = platformsList.length <= 3;
+  // Platform card rendering helper (renders moving marquee when > 5 platforms as requested, static if <= 5)
+  const isStaticPlatforms = platformsList.length <= 5;
 
   const renderPlatformCard = (plat: CategoryPlatformItem, key: string, inModal = false) => {
     const isActive = selectedPlatform === plat.id;
@@ -1499,6 +1703,47 @@ function CategoryPage() {
       icon: <span className="pill-icon">💎</span>,
       active: fortniteFilter === "vbucks",
       onClick: () => setFortniteFilter("vbucks"),
+    });
+  } else if (category.slug === "subscriptions" && selectedPlatform === "streaming") {
+    const isTodMatch = (p: CatalogStoreProduct) =>
+      p.slug === "tod" ||
+      (p.slug || "").startsWith("tod-") ||
+      (p.nameAr || "").toLowerCase().includes("tod") ||
+      (p.nameAr || "").includes("تود");
+    const isYtMatch = (p: CatalogStoreProduct) =>
+      (p.slug || "").includes("youtube") ||
+      (p.nameAr || "").toLowerCase().includes("youtube") ||
+      (p.nameAr || "").includes("يوتيوب");
+
+    const todCount = products.filter(isTodMatch).length;
+    const ytCount = products.filter(isYtMatch).length;
+
+    navPills.push({
+      id: "all",
+      name: lang === "en" ? `All Streaming (${todCount + ytCount})` : `كل عروض المشاهدة (${todCount + ytCount})`,
+      icon: <span className="pill-icon">🍿</span>,
+      active: streamingSubfilter === "all",
+      onClick: () => setStreamingSubfilter("all"),
+    });
+    navPills.push({
+      id: "tod",
+      name: lang === "en" ? `TOD Packages (${todCount})` : `باقات TOD (${todCount})`,
+      icon: <span className="pill-icon">📺</span>,
+      active: streamingSubfilter === "tod",
+      onClick: () => setStreamingSubfilter("tod"),
+    });
+    navPills.push({
+      id: "youtube",
+      name: lang === "en" ? `YouTube Premium (${ytCount})` : `يوتيوب بريميوم (${ytCount})`,
+      icon: (
+        <img
+          src="/app/assets/img/youtube-logo.svg"
+          alt="YouTube"
+          style={{ width: 18, height: 18, objectFit: "contain" }}
+        />
+      ),
+      active: streamingSubfilter === "youtube",
+      onClick: () => setStreamingSubfilter("youtube"),
     });
   } else if (category.parent && (category.siblings || []).length > 0) {
     navPills.push({
@@ -1840,8 +2085,40 @@ function CategoryPage() {
                   <button
                     type="button"
                     className="reset-btn"
-                    onClick={() => setSelectedPlatform("all")}
+                    onClick={() => {
+                      setSelectedPlatform("all");
+                      setStreamingSubfilter("all");
+                    }}
                     title={lang === "en" ? "Clear platform filter" : "إلغاء فلتر المنصة"}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Active Streaming Subfilter Pill (TOD or YouTube) */}
+              {category.slug === "subscriptions" && selectedPlatform === "streaming" && streamingSubfilter !== "all" && (
+                <div
+                  className="cat-toolbar-filter-pill"
+                  style={{
+                    borderColor: streamingSubfilter === "tod" ? "#00e5ff" : "#ff0000",
+                    background: streamingSubfilter === "tod" ? "rgba(0, 229, 255, 0.12)" : "rgba(255, 0, 0, 0.12)",
+                  }}
+                >
+                  <span style={{ color: streamingSubfilter === "tod" ? "#00e5ff" : "#ff4444" }}>
+                    {streamingSubfilter === "tod" ? "📺 " : "▶️ "}
+                    {lang === "en" ? "Streaming Service:" : "خدمة المشاهدة:"}
+                  </span>
+                  <span style={{ fontWeight: 800 }}>
+                    {streamingSubfilter === "tod"
+                      ? lang === "en" ? "TOD Packages" : "باقات TOD"
+                      : lang === "en" ? "YouTube Premium" : "يوتيوب بريميوم"}
+                  </span>
+                  <button
+                    type="button"
+                    className="reset-btn"
+                    onClick={() => setStreamingSubfilter("all")}
+                    title={lang === "en" ? "Clear streaming filter" : "إلغاء فلتر المشاهدة"}
                   >
                     ✕
                   </button>

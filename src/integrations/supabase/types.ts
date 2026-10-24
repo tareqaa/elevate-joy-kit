@@ -47,6 +47,42 @@ export type Database = {
         }
         Relationships: []
       }
+      product_restock_requests: {
+        Row: {
+          id: string
+          product_slug: string
+          variant_cart_id: string | null
+          product_name: string | null
+          customer_name: string
+          customer_email: string
+          status: string
+          notified_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          product_slug: string
+          variant_cart_id?: string | null
+          product_name?: string | null
+          customer_name: string
+          customer_email: string
+          status?: string
+          notified_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          product_slug?: string
+          variant_cart_id?: string | null
+          product_name?: string | null
+          customer_name?: string
+          customer_email?: string
+          status?: string
+          notified_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string

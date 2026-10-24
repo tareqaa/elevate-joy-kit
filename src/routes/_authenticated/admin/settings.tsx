@@ -31,6 +31,8 @@ function SettingsPage() {
 
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [dirty, setDirty] = useState<Set<string>>(new Set());
+  const [newStockKey, setNewStockKey] = useState<string>("");
+  const [newStockLimit, setNewStockLimit] = useState<number>(1);
 
   useEffect(() => {
     if (!q.data) return;
@@ -61,6 +63,12 @@ function SettingsPage() {
     onSuccess: () => {
       toast.success("تم حفظ الإعدادات");
       qc.invalidateQueries({ queryKey: ["site-settings"] });
+      try {
+        localStorage.removeItem("gx_site_settings_v2_ts");
+      } catch { /* noop */ }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("gx:site-settings-updated"));
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -167,6 +175,200 @@ function SettingsPage() {
                   <div className="text-xs text-muted-foreground">إلغاء الشارات التلقائية (مثل: فئة برونزية، الأكثر طلباً) عن كافة باقات فورتنايت</div>
                 </div>
                 <Switch checked={Boolean(s("hide_fortnite_badges"))} onCheckedChange={(v) => set("hide_fortnite_badges", v)} />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Product Stock & Seat Limits Card */}
+          <Card className="border-cyan-500/30 lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Store size={18} className="text-cyan-400" />
+                📦 إدارة المخزون والمقاعد المتوفرة (Stock & Seat Limits)
+              </CardTitle>
+              <CardDescription>
+                بشكل افتراضي (By Default)، كافة المنتجات والاشتراكات غير محدودة الكمية (Unlimited). يمكنك من هنا تحديد عدد المقاعد أو الأكواد المتبقية لأي منتج أو باقة معينة. عند إزالة الحد يعود المنتج تلقائياً إلى كمية غير محدودة.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Presets and Info */}
+              <div className="flex flex-wrap items-center gap-2 p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/20 text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">اختصارات سريعة للإضافة:</span>
+                <button
+                  type="button"
+                  onClick={() => { setNewStockKey("youtube-premium"); setNewStockLimit(1); }}
+                  className="px-2.5 py-1 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 font-medium cursor-pointer transition-colors"
+                >
+                  + يوتيوب (مقعد 1)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setNewStockKey("youtube-premium"); setNewStockLimit(0); }}
+                  className="px-2.5 py-1 rounded bg-red-950/40 text-red-300 border border-red-500/30 hover:bg-red-900/40 font-medium cursor-pointer transition-colors"
+                >
+                  + يوتيوب (نفدت 0 ☹️)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setNewStockKey("linkedin-career-12m"); setNewStockLimit(1); }}
+                  className="px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 font-medium cursor-pointer transition-colors"
+                >
+                  + لينكدإن Career (مقعد 1)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setNewStockKey("linkedin-business-12m"); setNewStockLimit(1); }}
+                  className="px-2.5 py-1 rounded bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 font-medium cursor-pointer transition-colors"
+                >
+                  + لينكدإن Business (مقعد 1)
+                </button>
+              </div>
+
+              {/* Add New Limit Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-lg bg-muted/40 border">
+                <div>
+                  <Label className="text-xs mb-1.5 block">معرّف المنتج أو الباقة (Slug أو Cart ID)</Label>
+                  <Input
+                    dir="ltr"
+                    placeholder="مثال: youtube-premium أو linkedin-career-12m"
+                    value={newStockKey}
+                    onChange={(e) => setNewStockKey(e.target.value.trim().toLowerCase())}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs mb-1.5 block">الكمية المتوفرة (ضع 0 لحالة نفدت ☹️)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={newStockLimit}
+                    onChange={(e) => setNewStockLimit(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (!newStockKey) {
+                        toast.error("يرجى إدخال معرّف المنتج أو الباقة");
+                        return;
+                      }
+                      const next = { ...((form["product_stock_limits"] as Record<string, number | null>) || {}) };
+                      next[newStockKey] = newStockLimit;
+                      set("product_stock_limits", next);
+                      toast.success(`تم تحديد كمية (${newStockKey}) إلى ${newStockLimit}`);
+                      setNewStockKey("");
+                    }}
+                    className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-semibold"
+                  >
+                    تحديد الكمية
+                  </Button>
+                </div>
+              </div>
+
+              {/* Current Limits Table */}
+              <div className="rounded-lg border overflow-hidden">
+                <table className="w-full text-xs text-right">
+                  <thead className="bg-muted/50 border-b text-muted-foreground font-semibold">
+                    <tr>
+                      <th className="p-2.5">المنتج / الباقة</th>
+                      <th className="p-2.5">المعرّف (Key)</th>
+                      <th className="p-2.5">المقاعد المتبقية</th>
+                      <th className="p-2.5 text-center">الحالة</th>
+                      <th className="p-2.5 text-center">التحكم في الكمية</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {Object.keys((form["product_stock_limits"] as Record<string, number | null>) || {}).length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                          لا توجد قيود مخزون حالياً — جميع المنتجات كميتها مفتوحة وغير محدودة (Unlimited By Default)
+                        </td>
+                      </tr>
+                    ) : (
+                      Object.entries((form["product_stock_limits"] as Record<string, number | null>) || {}).map(([k, val]) => {
+                        const numVal = typeof val === "number" ? val : 0;
+                        const labelName =
+                          k === "youtube-premium" || k === "youtube-premium-1m" || k === "youtube"
+                            ? "يوتيوب بريميوم (YouTube Premium)"
+                            : k === "linkedin-career-12m"
+                            ? "لينكدإن كارير 12 شهر (شحن حساب)"
+                            : k === "linkedin-business-12m"
+                            ? "لينكدإن بزنس 12 شهر (شحن حساب)"
+                            : k;
+                        return (
+                          <tr key={k} className="hover:bg-muted/30">
+                            <td className="p-2.5 font-bold">{labelName}</td>
+                            <td className="p-2.5 font-mono text-muted-foreground" dir="ltr">{k}</td>
+                            <td className="p-2.5">
+                              <Input
+                                type="number"
+                                min={0}
+                                value={numVal}
+                                onChange={(e) => {
+                                  const n = Math.max(0, parseInt(e.target.value, 10) || 0);
+                                  const next = { ...((form["product_stock_limits"] as Record<string, number | null>) || {}) };
+                                  next[k] = n;
+                                  set("product_stock_limits", next);
+                                }}
+                                className="w-20 h-7 text-xs"
+                              />
+                            </td>
+                            <td className="p-2.5 text-center">
+                              {numVal === 0 ? (
+                                <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 font-bold text-[10px] inline-flex items-center gap-1">
+                                  <span>نفدت بالكامل</span>
+                                  <span>☹️</span>
+                                </span>
+                              ) : numVal === 1 ? (
+                                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold text-[10px]">
+                                  مقعد أخير (1)
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 font-bold text-[10px]">
+                                  {numVal} متوفر
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-2.5 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const next = { ...((form["product_stock_limits"] as Record<string, number | null>) || {}) };
+                                    next[k] = 0;
+                                    set("product_stock_limits", next);
+                                    toast.info(`تم ضبط (${k}) بحالة نفدت (0)`);
+                                  }}
+                                  className="h-7 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-[11px]"
+                                  title="ضبط كـ نفدت الكمية فوراً"
+                                >
+                                  نفدت (0)
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const next = { ...((form["product_stock_limits"] as Record<string, number | null>) || {}) };
+                                    delete next[k];
+                                    set("product_stock_limits", next);
+                                    toast.success(`تم جعل كمية (${k}) مفتوحة وغير محدودة`);
+                                  }}
+                                  className="h-7 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 text-[11px]"
+                                  title="جعل الكمية مفتوحة (إلغاء الحد)"
+                                >
+                                  كمية مفتوحة (غير محدود)
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>

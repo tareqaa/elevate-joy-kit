@@ -73,6 +73,7 @@ export function RecentlyViewedSection() {
                     imageUrl={item.imageUrl}
                     icon={item.icon}
                     categorySlug={item.categorySlug || undefined}
+                    region={item.slug === "tod" || (item.slug || "").startsWith("tod-") || (item.cartId || "").startsWith("tod-") ? "الأردن" : (item.region || undefined)}
                     showPlatformBar={true}
                     showFromLabel={!isSpecificPack}
                     priceLabel={ar ? "السعر" : "Price"}

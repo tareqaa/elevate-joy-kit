@@ -136,6 +136,10 @@ const categoryCache = new Map<string, CacheEntry<CatalogCategory | null>>();
 let overridesCache: CacheEntry<Overrides> = { data: {}, expiresAt: 0 };
 const CACHE_TTL_MS = 5 * 60_000; // 5 minutes server-side cache to absorb traffic and prevent database egress
 
+let cachedCatalogProducts: CatalogStoreProduct[] | null = null;
+let lastCatalogFetchTime = 0;
+const CATALOG_CACHE_TTL_MS = 25_000; // 25s cache to eliminate remote query lag on page navigation
+
 /** Invalidate server catalog cache (e.g. on admin catalog updates) */
 export function invalidateCatalogCache(slug?: string) {
   if (slug) {
@@ -144,6 +148,8 @@ export function invalidateCatalogCache(slug?: string) {
   } else {
     productCache.clear();
     categoryCache.clear();
+    cachedCatalogProducts = null;
+    lastCatalogFetchTime = 0;
   }
   overridesCache = { data: {}, expiresAt: 0 };
 }
@@ -200,7 +206,12 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
       }
     }
 
-    const querySlug = data.slug === "linkedin" ? "linkedin-career-3m" : data.slug;
+    const querySlug =
+      data.slug === "linkedin"
+        ? "linkedin-career-3m"
+        : data.slug === "duolingo"
+        ? "duolingo-super-12-months"
+        : data.slug;
 
     const supabase = getPublicClient();
     const { data: row } = await supabase
@@ -519,6 +530,11 @@ function parseRegionInfo(regionStr?: string | null) {
 
 export const getAllCatalogProducts = createServerFn({ method: "GET" })
   .handler(async (): Promise<CatalogStoreProduct[]> => {
+    const now = Date.now();
+    if (cachedCatalogProducts && (now - lastCatalogFetchTime < CATALOG_CACHE_TTL_MS)) {
+      return cachedCatalogProducts;
+    }
+
     const supabase = getPublicClient();
     const overrides = await loadOverrides(supabase);
 
@@ -559,10 +575,38 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
     for (const p of (rows ?? []) as Record<string, any>[]) {
       const cat = p.categories as { id?: string; slug?: string; name_ar?: string; name_en?: string; parent_id?: string | null } | null;
       const parentCat = cat?.parent_id ? catById.get(cat.parent_id) : null;
-      const rootCategorySlug = parentCat?.slug || cat?.slug || null;
-      const categorySlug = cat?.slug || null;
-      const categoryNameAr = parentCat?.name_ar || cat?.name_ar || null;
-      const categoryNameEn = parentCat?.name_en || cat?.name_en || null;
+      let rootCategorySlug = parentCat?.slug || cat?.slug || null;
+      let categorySlug = cat?.slug || null;
+      let categoryNameAr = parentCat?.name_ar || cat?.name_ar || null;
+      let categoryNameEn = parentCat?.name_en || cat?.name_en || null;
+
+      // Ensure TOD and YouTube are always categorized under "اشتراكات المشاهدة" (streaming)
+      if (
+        cat?.slug === "streaming" ||
+        p.slug === "tod" ||
+        p.slug.startsWith("tod-") ||
+        p.slug === "youtube-premium" ||
+        p.slug.includes("youtube")
+      ) {
+        categorySlug = "streaming";
+        rootCategorySlug = "subscriptions";
+        categoryNameAr = "اشتراكات المشاهدة";
+        categoryNameEn = "Streaming & Movies";
+      }
+
+      // Ensure AI tools belong to "البرامج والتطبيقات"
+      if (
+        cat?.slug === "ai" ||
+        p.slug === "gemini" ||
+        p.slug.startsWith("gemini-") ||
+        p.slug.includes("lovable") ||
+        p.slug.includes("notion")
+      ) {
+        categorySlug = "design";
+        rootCategorySlug = "design";
+        categoryNameAr = "البرامج والتطبيقات";
+        categoryNameEn = "Apps & Software";
+      }
 
       const vars = variantsByProd.get(p.id) ?? [];
       const isGiftCardProduct =
@@ -620,7 +664,7 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           subCatSlug = "gc-itunes";
           iconImage = "/app/assets/img/itunes-logo.svg";
           thumbBg = "linear-gradient(135deg, rgba(241, 7, 163, 0.22), rgba(123, 47, 247, 0.12))";
-          minPrice = 2.22;
+          minPrice = 4.5;
         } else if (p.slug === "google-play") {
           nameAr = "بطاقات جوجل بلاي";
           nameEn = "Google Play Cards";
@@ -832,11 +876,30 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           productType = "activation";
           nameAr = `Autodesk All Apps — ${v.label_ar}`;
           nameEn = `Autodesk All Apps — ${v.label_en || v.label_ar}`;
-        } else if (p.slug === "gemini") {
+        } else if (p.slug === "gemini" || p.slug.startsWith("gemini-")) {
           platform = "Google AI";
           productType = "activation";
-          nameAr = `Gemini Pro — ${v.label_ar}`;
-          nameEn = `Gemini Pro — ${v.label_en || v.label_ar}`;
+          const cid = (v.cart_id || "").toLowerCase();
+          if (cid.includes("plus")) {
+            nameAr = "Google Gemini Plus | اشتراك 3 أشهر";
+            nameEn = "Google Gemini Plus — 3 Months";
+            taglineAr = "خاص بالحسابات التي لم يسبق لها الاشتراك • ذكاء اصطناعي فائق من Google";
+            taglineEn = "For accounts without prior subscription • Advanced Google AI";
+            badge = "1 دينار فقط";
+            imageUrl = "/app/assets/img/gemini-logo.svg";
+          } else if (cid.includes("pro")) {
+            nameAr = "Google Gemini Pro | اشتراك 3 أشهر";
+            nameEn = "Google Gemini Pro — 3 Months";
+            taglineAr = "خاص بالحسابات التي لم يسبق لها الاشتراك • وصول كامل لقدرات Gemini Pro المتقدمة";
+            taglineEn = "For accounts without prior subscription • Full Gemini Pro capabilities";
+            badge = "2 دينار فقط";
+            imageUrl = "/app/assets/img/gemini-logo.svg";
+          } else {
+            nameAr = `Google Gemini — ${v.label_ar}`;
+            nameEn = `Google Gemini — ${v.label_en || v.label_ar}`;
+            badge = "ذكاء اصطناعي";
+            imageUrl = "/app/assets/img/gemini-logo.svg";
+          }
         } else if (p.slug === "fc-27") {
           platform = "Steam";
           productType = "key";
@@ -866,6 +929,85 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           taglineAr = "دعوة عائلية على إيميلك (شرط عدم الانضمام لمجموعة عائلية سابقة)";
           taglineEn = "Official family invite to your email (no prior family group)";
           badge = v.tag_ar ?? "الأكثر طلبًا";
+        } else if (p.slug === "tod" || p.slug.startsWith("tod-")) {
+          platform = "TOD by beIN";
+          productType = "key";
+          const cid = (v.cart_id || "").toLowerCase();
+          if (cid === "tod-total-1d") {
+            nameAr = "باقة TOD | كود يوم واحد (1 Day)";
+            nameEn = "TOD Plan — 1 Day";
+            taglineAr = "دقة Full HD على جهازين معاً (شاشات ذكية، كمبيوتر، أجهزة) • كامل الرياضة والترفيه";
+            taglineEn = "Full HD on up to 2 devices (Smart TV, PC, mobile) • All sports & entertainment";
+            badge = "يوم واحد";
+            imageUrl = "/app/assets/img/catalog/tod-standard-card.jpg";
+          } else if (cid === "tod-total-1w") {
+            nameAr = "باقة TOD | كود أسبوع واحد (1 Week)";
+            nameEn = "TOD Plan — 1 Week";
+            taglineAr = "دقة Full HD على جهازين معاً (شاشات ذكية، كمبيوتر، أجهزة) • كامل الرياضة والترفيه";
+            taglineEn = "Full HD on up to 2 devices (Smart TV, PC, mobile) • All sports & entertainment";
+            badge = "أسبوع واحد";
+            imageUrl = "/app/assets/img/catalog/tod-standard-card.jpg";
+          } else if (cid === "tod-mobile-1m") {
+            nameAr = "باقة TOD Mobile | كود شهر واحد (1 Month)";
+            nameEn = "TOD Mobile — 1 Month";
+            taglineAr = "مخصصة لجهاز واحد فقط (هاتف ذكي أو تابلت) • كامل الحقوق الرياضية والترفيهية";
+            taglineEn = "Dedicated to 1 device (smartphone or tablet) • All live sports & entertainment";
+            badge = "موبايل • شهر";
+            imageUrl = "/app/assets/img/catalog/tod-mobile-card.jpg";
+          } else if (cid === "tod-total-1m") {
+            nameAr = "باقة TOD | كود شهر واحد (1 Month)";
+            nameEn = "TOD Plan — 1 Month";
+            taglineAr = "دقة Full HD على جهازين معاً (شاشات ذكية، كمبيوتر، أجهزة) • كامل الرياضة والترفيه";
+            taglineEn = "Full HD on up to 2 devices (Smart TV, PC, mobile) • All sports & entertainment";
+            badge = "شاشات • شهر";
+            imageUrl = "/app/assets/img/catalog/tod-standard-card.jpg";
+          } else if (cid === "tod-4k-1m") {
+            nameAr = "باقة TOD 4K | كود شهر واحد (1 Month)";
+            nameEn = "TOD 4K — 1 Month";
+            taglineAr = "أعلى دقة 4K Ultra HD على جهازين معاً عبر الشاشات المدعومة • تغطية رياضية وترفيهية شاملة";
+            taglineEn = "4K Ultra HD on up to 2 devices across supported screens • Comprehensive sports & entertainment";
+            badge = "4K فائقة • شهر";
+            imageUrl = "/app/assets/img/catalog/tod-4k-card.jpg";
+          } else if (cid === "tod-mobile-6m") {
+            nameAr = "باقة TOD Mobile | كود 6 أشهر (6 Months)";
+            nameEn = "TOD Mobile — 6 Months";
+            taglineAr = "مخصصة لجهاز واحد فقط (هاتف ذكي أو تابلت) • كامل الحقوق الرياضية والترفيهية لمدة 6 أشهر";
+            taglineEn = "Dedicated to 1 device (smartphone or tablet) • All live sports & entertainment";
+            badge = "موبايل • 6 أشهر";
+            imageUrl = "/app/assets/img/catalog/tod-mobile-card.jpg";
+          } else if (cid === "tod-tv-6m") {
+            nameAr = "باقة TOD | كود 6 أشهر (6 Months)";
+            nameEn = "TOD Plan — 6 Months";
+            taglineAr = "دقة Full HD على جهازين معاً (شاشات ذكية، كمبيوتر، أجهزة) • كامل الرياضة والترفيه";
+            taglineEn = "Full HD on up to 2 devices (Smart TV, PC, mobile) • All sports & entertainment";
+            badge = "شاشات • 6 أشهر";
+            imageUrl = "/app/assets/img/catalog/tod-standard-card.jpg";
+          } else if (cid === "tod-mobile-1y") {
+            nameAr = "باقة TOD Mobile | كود سنة كاملة (1 Year)";
+            nameEn = "TOD Mobile — 1 Year";
+            taglineAr = "مخصصة لجهاز واحد فقط (هاتف ذكي أو تابلت) • كامل الحقوق الرياضية والترفيهية لمدة سنة كاملة";
+            taglineEn = "Dedicated to 1 device (smartphone or tablet) • All live sports & entertainment with full warranty";
+            badge = "موبايل • سنة كاملة";
+            imageUrl = "/app/assets/img/catalog/tod-mobile-card.jpg";
+          } else if (cid === "tod-tv-1y") {
+            nameAr = "باقة TOD | كود سنة كاملة (1 Year)";
+            nameEn = "TOD Plan — 1 Year";
+            taglineAr = "دقة Full HD على جهازين معاً (شاشات ذكية، كمبيوتر، أجهزة) • كامل الرياضة والترفيه 12 شهراً";
+            taglineEn = "Full HD on up to 2 devices (Smart TV, PC, mobile) • All sports & entertainment with full warranty";
+            badge = "شاشات • سنة كاملة";
+            imageUrl = "/app/assets/img/catalog/tod-standard-card.jpg";
+          } else if (cid === "tod-4k-1y") {
+            nameAr = "باقة TOD 4K | كود سنة كاملة (1 Year)";
+            nameEn = "TOD 4K — 1 Year";
+            taglineAr = "أعلى دقة 4K Ultra HD على جهازين معاً عبر الشاشات المدعومة • تغطية رياضية وترفيهية شاملة";
+            taglineEn = "4K Ultra HD on up to 2 devices across supported screens with full warranty";
+            badge = "4K فائقة • سنة كاملة";
+            imageUrl = "/app/assets/img/catalog/tod-4k-card.jpg";
+          } else {
+            nameAr = `TOD — ${v.label_ar}`;
+            nameEn = `TOD — ${v.label_en || v.label_ar}`;
+            imageUrl = "/app/assets/img/catalog/tod-standard-card.jpg";
+          }
         } else {
           platform = p.platform || "GX Store";
           const labelAr = v.label_ar || "";
@@ -913,7 +1055,7 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           categoryNameAr,
           categoryNameEn,
           snapDuration,
-          region: v.region || p.region || "Global",
+          region: (p.slug === "tod" || p.slug?.startsWith("tod-") || v.cart_id?.startsWith("tod-")) ? "الأردن" : (v.region || p.region || "Global"),
           planGroup: v.plan_group ?? null,
           platform,
           productType,
@@ -924,6 +1066,8 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
       }
     }
 
+    cachedCatalogProducts = items;
+    lastCatalogFetchTime = Date.now();
     return items;
   });
 

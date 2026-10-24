@@ -46,6 +46,43 @@ export type Product = {
 };
 
 export const PRODUCTS_CATALOG: Record<string, Product> = {
+  tod: {
+    slug: "tod",
+    name: "اشتراكات TOD by beIN",
+    nameAr: "TOD by beIN | اشتراكات تود الرسمية (كود تفعيل)",
+    categoryAr: "اشتراكات المشاهدة",
+    icon: "📺",
+    iconImg: "/app/assets/img/catalog/tod-icon.webp",
+    imageUrl: "/app/assets/img/catalog/tod_total_one_year.webp",
+    thumbBg: "linear-gradient(145deg, #2b1154, #120626)",
+    category: "اشتراكات المشاهدة",
+    tagline: "أكواد تفعيل رقمية رسمية على حسابك الشخصي لمشاهدة أقوى الدوريات والبطولات والترفيه بضمان كامل المدة",
+    description:
+      "اشتراكات منصة TOD الرسمية التابعة لمجموعة beIN الإعلامية لمتابعة أقوى البطولات والدوريات العالمية (دوري أبطال أوروبا، الدوري الإنجليزي الممتاز، الدوري الإسباني، وغيرها) بالإضافة إلى مكتبة ضخمة من الأفلام والمسلسلات والإنتاجات الحصرية.\n\nجميع الاشتراكات عبارة عن أكواد وقسائم رقمية أصلية ورسمية 100% يتم تفعيلها مباشرة على حسابك الشخصي في TOD مع ضمان كامل وشامل طوال فترة الاشتراك.\n\nالفرق بين باقات TOD الرسمية:\n• باقة TOD Mobile: مخصصة للمشاهدة على الهواتف الذكية والأجهزة اللوحية (شاشة واحدة - دقة SD/HD) ولا تدعم البث على التلفزيون.\n• باقة TOD Total / TV: الباقة الشاملة الأكثر طلباً، تدعم المشاهدة على الشاشات الذكية (Smart TV)، الكمبيوتر، والهواتف (شاشتان في نفس الوقت - دقة Full HD 1080p).\n• باقة TOD 4K: أعلى فئة لعشاق السينما والرياضة بدقة 4K Ultra HD فائقة الوضوح وصوت محيطي Dolby Atmos على الشاشات المتوافقة مع جهازين بالتزامن.",
+    identifierLabel: "كود تفعيل رقمي فوري",
+    identifierPlaceholder: "يصلك كود التفعيل الرقمي فور إتمام الطلب",
+    deliveryMethod:
+      "كود تفعيل رقمي رسمي 100% يوصلك فوراً لتفعيله مباشرة على حسابك الشخصي في منصة TOD عبر موقع tod.tv بدون الحاجة لكلمة المرور.",
+    plans: [
+      { id: "tod-total-1d", label: "TOD Total — يوم واحد (One Day)", price: 1.3, oldPrice: 2.0, tag: "يوم واحد", imageUrl: "/app/assets/img/catalog/one_day.webp" },
+      { id: "tod-total-1w", label: "TOD Total — أسبوع واحد (One Week)", price: 1.95, oldPrice: 3.0, tag: "أسبوع واحد", imageUrl: "/app/assets/img/catalog/one_week_2.webp" },
+      { id: "tod-mobile-1m", label: "TOD Mobile — شهر واحد (One Month)", price: 3.5, oldPrice: 5.0, tag: "موبايل • شهر", imageUrl: "/app/assets/img/catalog/1-01.webp" },
+      { id: "tod-total-1m", label: "TOD Total — شهر واحد (One Month)", price: 6.0, oldPrice: 8.5, tag: "الأكثر طلباً", imageUrl: "/app/assets/img/catalog/1-03.webp" },
+      { id: "tod-4k-1m", label: "TOD 4K Ultra HD — شهر واحد (One Month)", price: 7.6, oldPrice: 11.0, tag: "4K فائقة", imageUrl: "/app/assets/img/catalog/1-02.webp" },
+      { id: "tod-mobile-6m", label: "TOD Mobile — 6 أشهر (6 Months)", price: 17.0, oldPrice: 24.0, tag: "توفير نصف سنوي", imageUrl: "/app/assets/img/catalog/tod_mobile_6_months_1.webp" },
+      { id: "tod-tv-6m", label: "TOD TV (Total) — 6 أشهر (6 Months)", price: 31.0, oldPrice: 42.0, tag: "شاشات Smart TV", imageUrl: "/app/assets/img/catalog/total_6_months.webp" },
+      { id: "tod-mobile-1y", label: "TOD Mobile — سنة كاملة (One Year)", price: 35.0, oldPrice: 50.0, tag: "سنة كاملة", imageUrl: "/app/assets/img/catalog/tod_mobile_-one_year.webp" },
+      { id: "tod-tv-1y", label: "TOD TV (Total) — سنة كاملة (One Year)", price: 60.0, oldPrice: 85.0, tag: "الأفضل قيمة", imageUrl: "/app/assets/img/catalog/tod_total_one_year.webp" },
+      { id: "tod-4k-1y", label: "TOD 4K Ultra HD — سنة كاملة (One Year)", price: 80.0, oldPrice: 110.0, tag: "الباقة الملكية 4K", imageUrl: "/app/assets/img/catalog/4k_.png" },
+    ],
+    features: [
+      { icon: "⚽", title: "دوريات وبطولات beIN الحصرية", desc: "بث مباشر عالي الوضوح لأقوى البطولات: دوري أبطال أوروبا، الدوري الإنجليزي الممتاز، الدوري الإسباني، وغيرها." },
+      { icon: "🎬", title: "مكتبة ترفيهية ضخمة وحصرية", desc: "آلاف الساعات من أحدث الأفلام والمسلسلات الحصرية العربية والتركية والعالمية، وبرامج الأطفال." },
+      { icon: "📺", title: "شاشات وأجهزة متعددة (Mobile / TV / 4K)", desc: "خيارات متعددة: باقة Mobile للهواتف، باقة Total / TV للشاشات الذكية (جهازين معاً)، وباقة 4K لأعلى وضوح سينمائي." },
+      { icon: "⚡", title: "كود تفعيل رسمي فوري على حسابك", desc: "كود رقمي أصلي ورسمي 100% تفعله بنفسك على حسابك الشخصي عبر موقع tod.tv بدون طلب باسورد." },
+      { icon: "🛡️", title: "ضمان كامل مدة الاشتراك", desc: "ضمان حقيقي وشامل طوال فترة الاشتراك بالكامل مع دعم فني متواصل من فريق متجر GX Store." },
+    ],
+  },
   snapchat: {
     slug: "snapchat",
     name: "سناب بلس",
@@ -543,6 +580,32 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
       { icon: "🔗", title: "دعوة تفعيل لمساحة العمل", desc: "تفعيل رسمي وآمن بنقرة واحدة عبر رابط دعوة رسمي لمساحة العمل الخاصة بك." },
     ],
   },
+  "duolingo-super-12-months": {
+    slug: "duolingo-super-12-months",
+    name: "Duolingo Super",
+    nameAr: "اشتراك دولينجو سوبر | سنة كاملة (12 شهر) كود رقمي عالمي",
+    icon: "🦉",
+    iconImg: "/app/assets/img/catalog/duolingo-super.png",
+    imageUrl: "/app/assets/img/catalog/duolingo-super.png",
+    thumbBg: "linear-gradient(145deg, #1b380f, #0c1c06)",
+    category: "البرامج والتطبيقات",
+    categoryAr: "البرامج والتطبيقات",
+    tagline: "تفعيل سنة كاملة من Duolingo Super بدون إعلانات وبقلوب غير محدودة",
+    description:
+      "كود تفعيل اشتراك دولينجو سوبر (Duolingo Super) لمدة 12 شهراً كاملاً.\n\nطريقة التفعيل:\n1. ادخل إلى رابط الاسترداد الرسمي: https://www.duolingo.com/redeem\n2. سجّل الدخول بحسابك في Duolingo\n3. أدخل الكود المستلم واضغط على استرداد.\n\n⚠️ ملاحظة هامة: لتفعيل الاشتراك بنجاح، يجب ألا يكون لديك أي اشتراك نشط حالياً على حسابك.",
+    identifierLabel: "كود رقمي عالمي",
+    identifierPlaceholder: "يصلك كود التفعيل الرقمي فوراً",
+    deliveryMethod: "كود تفعيل رقمي فوري عالمي يتم استرداده عبر https://www.duolingo.com/redeem",
+    plans: [
+      { id: "duolingo-12m", label: "اشتراك 12 شهر (سنة كاملة)", price: 4, oldPrice: 9.99, tag: "سنة كاملة 🚀" },
+    ],
+    features: [
+      { icon: "❤️", title: "قلوب غير محدودة", desc: "تعلم ومارس التمارين بحرية تامة دون القلق من نفاد القلوب أو الأخطاء." },
+      { icon: "🚫", title: "بدون أي إعلانات", desc: "تجربة تعليمية سلسة وسريعة بدون مقاطعات إعلانية مزعجة." },
+      { icon: "🎯", title: "مراجعة الأخطاء المخصصة", desc: "تدريب مكثف على النقاط التي أخطأت فيها لتحسين مستواك اللغوي." },
+      { icon: "🔑", title: "كود تفعيل رسمي عالمي", desc: "كود رقمي أصلي 100% يتم استرداده مباشرة على حسابك في Duolingo." },
+    ],
+  },
 };
 
 export type Denomination = { id: string; value: string; price: number };
@@ -626,12 +689,14 @@ export const GIFT_CARDS_CATALOG: Record<string, GiftCard> = {
     accent: "#f107a3",
     cardGradient: "linear-gradient(135deg,#7b2ff7,#f107a3 55%,#ff5c8a)",
     regions: [
-      { code: "tr", flag: "🇹🇷", name: "تركيا (Turkey)", denominations: [
-        { id: "itunes-tr-100", value: "100 TRY", price: 2.22 },
-        { id: "itunes-tr-200", value: "200 TRY", price: 3.90 },
-        { id: "itunes-tr-300", value: "300 TRY", price: 5.46 },
-        { id: "itunes-tr-500", value: "500 TRY", price: 8.99 },
-        { id: "itunes-tr-1000", value: "1000 TRY", price: 17.38 },
+      { code: "us", flag: "🇺🇸", name: "أمريكا (USA)", denominations: [
+        { id: "itunes-us-5", value: "5$ USD", price: 4.5 },
+        { id: "itunes-us-10", value: "10$ USD", price: 8.0 },
+        { id: "itunes-us-15", value: "15$ USD", price: 12.0 },
+        { id: "itunes-us-20", value: "20$ USD", price: 15.5 },
+        { id: "itunes-us-25", value: "25$ USD", price: 19.0 },
+        { id: "itunes-us-50", value: "50$ USD", price: 38.0 },
+        { id: "itunes-us-100", value: "100$ USD", price: 74.0 },
       ]},
     ],
   },
@@ -650,12 +715,12 @@ export type CategoryLink = {
 };
 
 export const CATEGORY_LINKS: CategoryLink[] = [
-  { slug: "subscriptions", name: "الاشتراكات", nameEn: "Subscriptions", icon: "⚡", type: "group", accent: "#8b5cf6", bg: "linear-gradient(145deg, rgba(139,92,246,0.18), rgba(139,92,246,0.04))", desc: "", descEn: "" },
-  { slug: "social-media", name: "السوشال ميديا", nameEn: "Social Media", icon: "📱", type: "group", accent: "#0088ff", bg: "linear-gradient(145deg, rgba(0,136,255,0.18), rgba(0,136,255,0.04))", desc: "", descEn: "" },
-  { slug: "design", name: "البرامج والتطبيقات", nameEn: "Apps & Software", icon: "🧩", type: "group", accent: "#00e5ff", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "", descEn: "" },
-  { slug: "games", name: "الألعاب", nameEn: "Games", icon: "🎮", type: "group", accent: "#05df72", bg: "linear-gradient(145deg, rgba(5,223,114,0.18), rgba(5,223,114,0.04))", desc: "", descEn: "" },
-  { slug: "gift-cards", name: "بطاقات الهدايا", nameEn: "Gift Cards", icon: "🎁", type: "group", accent: "#ff2d78", bg: "linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))", desc: "بطاقات شحن رقمية وتسليم فوري", descEn: "Digital Gift Cards & Instant Top-ups" },
-  { slug: "products", name: "جميع المنتجات", nameEn: "All Products", icon: "🛍️", type: "direct", accent: "#00e5ff", bg: "linear-gradient(135deg, rgba(0, 112, 240, 0.95), rgba(0, 229, 255, 0.9))", desc: "عرض الكتالوج الكامل والعروض", descEn: "View Full Store Catalog & Deals" },
+  { slug: "subscriptions", name: "الاشتراكات", nameEn: "Subscriptions", icon: "⚡", type: "group", accent: "#8b5cf6", bg: "linear-gradient(145deg, rgba(139,92,246,0.18), rgba(139,92,246,0.04))", desc: "اشتراكات المشاهدة والألعاب والترفيه", descEn: "Streaming, Gaming & Entertainment" },
+  { slug: "social-media", name: "السوشال ميديا", nameEn: "Social Media", icon: "📱", type: "group", accent: "#0088ff", bg: "linear-gradient(145deg, rgba(0,136,255,0.18), rgba(0,136,255,0.04))", desc: "خدمات زيادة المتابعين والتفاعل الحقيقي", descEn: "Real Followers & Engagement" },
+  { slug: "design", name: "البرامج والتطبيقات", nameEn: "Apps & Software", icon: "🧩", type: "group", accent: "#00e5ff", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "برامج وتطبيقات الإنتاجية والتصميم والحماية", descEn: "Productivity, Design & Utility Apps" },
+  { slug: "games", name: "الألعاب", nameEn: "Games", icon: "🎮", type: "group", accent: "#05df72", bg: "linear-gradient(145deg, rgba(5,223,114,0.18), rgba(5,223,114,0.04))", desc: "ألعاب PC والكونسول وشحن الألعاب", descEn: "PC & Console Games & Top-ups" },
+  { slug: "gift-cards", name: "بطاقات الهدايا", nameEn: "Gift Cards", icon: "🎁", type: "group", accent: "#ff2d78", bg: "linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))", desc: "بطاقات شحن رقمية وتسليم فوري للأكواد", descEn: "Digital Gift Cards & Instant Delivery" },
+  { slug: "products", name: "جميع المنتجات", nameEn: "All Products", icon: "🛍️", type: "direct", accent: "#00e5ff", bg: "linear-gradient(135deg, rgba(0, 112, 240, 0.95), rgba(0, 229, 255, 0.9))", desc: "تصفح جميع المنتجات والعروض الحصرية", descEn: "Browse All Products & Deals" },
 ];
 
 export type Subcategory = {
@@ -671,13 +736,22 @@ export type Subcategory = {
 };
 
 export const SUBCATEGORIES: Record<string, Subcategory[]> = {
-  subscriptions: [],
+  subscriptions: [
+    { slug: "streaming", product: null, name: "اشتراكات المشاهدة", icon: "🍿", iconImg: "/app/assets/img/streaming-icon.png", bg: "linear-gradient(145deg,#2b0015,#15000a)" },
+    { slug: "game-pass", product: "xbox-game-pass-ultimate", name: "Xbox Game Pass", icon: "🎮", iconImg: "/app/assets/img/xbox-logo.svg", bg: "linear-gradient(145deg,#0d2a1a,#081510)" },
+  ],
+  streaming: [
+    { slug: "tod", product: "tod", name: "اشتراكات TOD", icon: "📺", iconImg: "/app/assets/img/catalog/tod-icon.webp", bg: "linear-gradient(145deg,#2b1154,#120626)" },
+    { slug: "youtube-premium", product: "youtube-premium", name: "يوتيوب بريميوم", icon: "▶️", iconImg: "/app/assets/img/youtube-logo.svg", bg: "linear-gradient(145deg,#3a0005,#1a0002)" },
+  ],
   "social-media": [],
   design: [
+    { slug: "gemini", product: "gemini", name: "Google Gemini AI", icon: "✨", iconImg: "/app/assets/img/gemini-logo.svg", bg: "linear-gradient(145deg,#0f1f3d,#071020)" },
+    { slug: "lovable-lite-12m", product: "lovable-lite-12m", name: "Lovable Lite", icon: "⚡", iconImg: "/app/assets/img/catalog/lovable.webp", bg: "linear-gradient(145deg,#2e124d,#140624)" },
+    { slug: "notion-business", product: "notion-business", name: "Notion Business", icon: "📝", iconImg: "/app/assets/img/catalog/notion.svg", bg: "linear-gradient(145deg,#1f232b,#0f1115)" },
     { slug: "nordvpn", product: "nordvpn", name: "NordVPN", icon: "🌐", iconImg: "/app/assets/img/catalog/nordvpn.svg", bg: "linear-gradient(145deg,#0f2b5c,#071329)" },
     { slug: "headspace", product: "headspace", name: "Headspace", icon: "🧘", iconImg: "/app/assets/img/catalog/headspace.svg", bg: "linear-gradient(145deg,#1e2340,#0f1122)" },
     { slug: "adobe-express", product: "adobe-express", name: "Adobe Express", icon: "🎨", iconImg: "/app/assets/img/catalog/adobe-express.svg", bg: "linear-gradient(145deg,#2b1145,#12061f)" },
-    { slug: "notion-business", product: "notion-business", name: "Notion Business", icon: "📝", iconImg: "/app/assets/img/catalog/notion.svg", bg: "linear-gradient(145deg,#1f232b,#0f1115)" },
     { slug: "adobe-acrobat-standard", product: "adobe-acrobat-standard", name: "Adobe Acrobat Standard 2026", icon: "📕", iconImg: "/app/assets/img/catalog/adobe-acrobat.svg", bg: "linear-gradient(145deg,#3a000d,#1a0005)" },
     { slug: "adobe", product: "adobe", name: "Adobe Creative Cloud", icon: "🎨", iconImg: "/app/assets/img/adobe-cc.webp", bg: "#12151e" },
     { slug: "canva", product: "canva", name: "Canva Pro", icon: "🎨", iconImg: "/app/assets/img/canva-logo.png", bg: "linear-gradient(145deg,#1a2f6b,#0a1230)" },
@@ -687,7 +761,7 @@ export const SUBCATEGORIES: Record<string, Subcategory[]> = {
     { slug: "linkedin-career-3m", product: "linkedin-career-3m", name: "LinkedIn Career (3 أشهر)", icon: "💼", iconImg: "/app/assets/img/linkedin-logo.svg", bg: "linear-gradient(145deg,#001f3f,#004182)" },
     { slug: "linkedin-career-12m", product: "linkedin-career-12m", name: "LinkedIn Career (سنة)", icon: "💼", iconImg: "/app/assets/img/linkedin-logo.svg", bg: "linear-gradient(145deg,#001f3f,#003366)" },
     { slug: "linkedin-business-12m", product: "linkedin-business-12m", name: "LinkedIn Business (سنة)", icon: "💼", iconImg: "/app/assets/img/linkedin-logo.svg", bg: "linear-gradient(145deg,#001224,#002b54)" },
-    { slug: "lovable-lite-12m", product: "lovable-lite-12m", name: "Lovable Lite", icon: "⚡", iconImg: "/app/assets/img/catalog/lovable.webp", bg: "linear-gradient(145deg,#2e124d,#140624)" },
+    { slug: "duolingo", product: "duolingo-super-12-months", name: "Duolingo Super", icon: "🦉", iconImg: "/app/assets/img/catalog/duolingo-super.png", bg: "linear-gradient(145deg,#1f3a10,#0d1a06)" },
   ],
   games: [
     { slug: "fortnite", product: "fortnite", name: "فورت نايت", icon: "🪂", iconImg: "/app/assets/img/fortnite-logo.png", bg: "linear-gradient(145deg,#0d1a30,#080d18)" },

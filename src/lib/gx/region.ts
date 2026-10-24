@@ -48,6 +48,12 @@ export function detectRegionCode(input: {
   slug?: string | null;
   tagline?: string | null;
 }): RegionCode {
+  const s = (input.slug || "").toLowerCase();
+  const cid = (input.cartId || "").toLowerCase();
+  if (s === "tod" || s.startsWith("tod-") || cid.startsWith("tod-")) {
+    return "jo";
+  }
+
   const region = (input.region || "").trim();
   if (region) {
     for (const [code, re] of EXPLICIT) if (re.test(region)) return code;

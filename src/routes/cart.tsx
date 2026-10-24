@@ -7,7 +7,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { CartItemThumb } from "@/components/gx/CartThumb";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
-import { useSiteSettings } from "@/lib/gx/site-settings";
+import { useSiteSettings, getEffectiveStockLimit } from "@/lib/gx/site-settings";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { OrderConfirmedModal } from "@/components/gx/OrderConfirmedModal";
 import { coinsToJod, jodToCoins, MAX_COINS_DISCOUNT_RATIO } from "@/lib/gx/loyalty";
@@ -415,6 +415,7 @@ function CartList() {
   const cart = useCart();
   const { format } = useCurrency();
   const { t, lang } = useLang();
+  const siteSettings = useSiteSettings();
 
   if (cart.items.length === 0) {
     return (
@@ -443,6 +444,12 @@ function CartList() {
 
       {cart.items.map((it) => {
         const isSnap = it.cartId.startsWith("snap-");
+        const stockLimit = getEffectiveStockLimit(
+          siteSettings?.product_stock_limits,
+          it.cartId,
+          it.product
+        );
+        const isMax = isSnap || (stockLimit !== null && it.qty >= stockLimit);
         const deliveryInfo = getDeliveryTypeInfo(
           {
             slug: it.product,
@@ -488,7 +495,20 @@ function CartList() {
             <div className="cr-qty" aria-label={t("cart.qty")}>
               <button aria-label="−" onClick={() => cart.changeQty(it.cartId, -1)}>−</button>
               <span>{it.qty}</span>
-              <button aria-label="+" disabled={isSnap} onClick={() => cart.changeQty(it.cartId, 1)}>+</button>
+              <button
+                aria-label="+"
+                disabled={isMax}
+                title={
+                  isSnap
+                    ? lang === "ar" ? "الحد الأقصى 1" : "Max 1"
+                    : stockLimit !== null && it.qty >= stockLimit
+                    ? lang === "ar" ? `أقصى كمية متاحة هي ${stockLimit}` : `Max available is ${stockLimit}`
+                    : lang === "ar" ? "زيادة" : "Increase"
+                }
+                onClick={() => cart.changeQty(it.cartId, 1)}
+              >
+                +
+              </button>
             </div>
 
             <div className="cr-price">{format(it.price * it.qty)}</div>

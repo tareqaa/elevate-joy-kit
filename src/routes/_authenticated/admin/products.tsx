@@ -1,22 +1,24 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Layers, FolderTree, ShoppingBag, Flame } from "lucide-react";
+import { Layers, FolderTree, ShoppingBag, Flame, Boxes } from "lucide-react";
 import { CategoryProducts } from "@/components/gx/admin/ProductsManager";
 import { CategoriesManager } from "@/routes/_authenticated/admin/categories";
 import { BestsellersManager } from "@/components/gx/admin/BestsellersManager";
+import { StockManager } from "@/components/gx/admin/StockManager";
 
-type Tab = "products" | "bestsellers" | "categories";
+type Tab = "products" | "stock" | "bestsellers" | "categories";
 
 export const Route = createFileRoute("/_authenticated/admin/products")({
   head: () => ({ meta: [{ title: "إدارة المنتجات والأقسام — لوحة التحكم" }] }),
   validateSearch: (search: Record<string, unknown>): { tab?: Tab } => {
     const t = search.tab;
-    return t === "categories" || t === "products" || t === "bestsellers" ? { tab: t } : {};
+    return t === "categories" || t === "products" || t === "bestsellers" || t === "stock" ? { tab: t } : {};
   },
   component: CatalogAdmin,
 });
 
 const TABS: { id: Tab; label: string; Icon: typeof Layers }[] = [
   { id: "products", label: "المنتجات والأسعار", Icon: ShoppingBag },
+  { id: "stock", label: "📦 إدارة المخزون والمقاعد", Icon: Boxes },
   { id: "bestsellers", label: "🔥 الأكثر مبيعاً", Icon: Flame },
   { id: "categories", label: "الأقسام والكتالوج", Icon: FolderTree },
 ];
@@ -33,7 +35,7 @@ function CatalogAdmin() {
           <Layers size={22} className="text-cyan-400" /> إدارة الكتالوج والمنتجات
         </h1>
         <p className="text-sm text-cyan-100/60 mt-1">
-          إدارة كافة المنتجات والخيارات والأسعار وقائمة الأكثر مبيعاً والأقسام من مكان واحد.
+          إدارة كافة المنتجات والخيارات والأسعار والمخزون والمقاعد وقائمة الأكثر مبيعاً والأقسام من مكان واحد.
         </p>
       </div>
 
@@ -58,6 +60,7 @@ function CatalogAdmin() {
       </div>
 
       {active === "products" && <CategoryProducts categoryId="all" categoryName="كل المنتجات" />}
+      {active === "stock" && <StockManager />}
       {active === "bestsellers" && <BestsellersManager />}
       {active === "categories" && <CategoriesManager />}
     </div>

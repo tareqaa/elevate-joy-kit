@@ -1,5 +1,5 @@
 import { resolveRegionLabel } from "@/lib/gx/region";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
 import { useLang } from "@/lib/gx/i18n";
@@ -8,11 +8,18 @@ import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
 import { CartItemThumb } from "@/components/gx/CartThumb";
 import { Link } from "@tanstack/react-router";
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
+import { useSiteSettings, getEffectiveStockLimit } from "@/lib/gx/site-settings";
 
 export function CartDrawer() {
+  const [mounted, setMounted] = useState(false);
   const cart = useCart();
   const { format } = useCurrency();
   const { t, lang } = useLang();
+  const siteSettings = useSiteSettings();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!cart.isDrawerOpen) return;
@@ -47,7 +54,7 @@ export function CartDrawer() {
             <div className="gx-cart-head-meta">
               <div className="gx-cart-head-row">
                 <h3 className="gx-cart-title">{t("cart.title")}</h3>
-                {cart.count > 0 && (
+                {mounted && cart.count > 0 && (
                   <span className="gx-cart-count-chip">
                     {cart.count} {lang === "ar" ? (cart.count === 1 ? "منتج" : cart.count === 2 ? "منتجان" : "منتجات") : (cart.count === 1 ? "item" : "items")}
                   </span>
@@ -68,7 +75,7 @@ export function CartDrawer() {
 
         {/* Scrollable Items */}
         <div className="cart-items gx-cart-items-body">
-          {cart.items.length === 0 ? (
+          {!mounted || cart.items.length === 0 ? (
             <div className="gx-cart-empty-wrapper">
               <div className="gx-cart-empty-circle">
                 <ShoppingBag size={44} strokeWidth={1.5} />
@@ -156,16 +163,32 @@ export function CartDrawer() {
                             <Minus size={12} strokeWidth={2.6} />
                           </button>
                           <span className="gx-cart-stepper-value">{it.qty}</span>
-                          <button
-                            type="button"
-                            className="gx-cart-stepper-btn plus"
-                            disabled={isSnap}
-                            onClick={() => cart.changeQty(it.cartId, 1)}
-                            title={isSnap ? (lang === "ar" ? "الحد الأقصى 1" : "Max 1") : (lang === "ar" ? "زيادة" : "Increase")}
-                            aria-label="Increase quantity"
-                          >
-                            <Plus size={12} strokeWidth={2.6} />
-                          </button>
+                          {(() => {
+                            const stockLimit = getEffectiveStockLimit(
+                              siteSettings?.product_stock_limits,
+                              it.cartId,
+                              it.product
+                            );
+                            const isMax = isSnap || (stockLimit !== null && it.qty >= stockLimit);
+                            return (
+                              <button
+                                type="button"
+                                className="gx-cart-stepper-btn plus"
+                                disabled={isMax}
+                                onClick={() => cart.changeQty(it.cartId, 1)}
+                                title={
+                                  isSnap
+                                    ? lang === "ar" ? "الحد الأقصى 1" : "Max 1"
+                                    : stockLimit !== null && it.qty >= stockLimit
+                                    ? lang === "ar" ? `أقصى كمية متوفرة ${stockLimit}` : `Max available is ${stockLimit}`
+                                    : lang === "ar" ? "زيادة" : "Increase"
+                                }
+                                aria-label="Increase quantity"
+                              >
+                                <Plus size={12} strokeWidth={2.6} />
+                              </button>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>

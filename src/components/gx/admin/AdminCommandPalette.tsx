@@ -10,7 +10,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { LayoutDashboard, Package, Users, Settings, LogOut, Store, User, Search } from "lucide-react";
+import { LayoutDashboard, Package, Users, Settings, LogOut, Store, User, Search, Boxes } from "lucide-react";
 
 type OrderHit = { id: string; order_number: string; customer_name: string | null; total_jod: number; status: string };
 type UserHit = { id: string; username: string | null; full_name: string | null; email: string | null };
@@ -44,7 +44,11 @@ export function AdminCommandPalette({ open, onOpenChange }: { open: boolean; onO
     return () => { ctrl.abort(); clearTimeout(t); };
   }, [q, open]);
 
-  const go = (to: string) => { onOpenChange(false); setQ(""); navigate({ to: to as never }); };
+  const go = (to: string, search?: Record<string, string>) => {
+    onOpenChange(false);
+    setQ("");
+    navigate({ to: to as never, search: search as never });
+  };
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
@@ -88,6 +92,7 @@ export function AdminCommandPalette({ open, onOpenChange }: { open: boolean; onO
         <CommandGroup heading="التنقّل">
           <CommandItem onSelect={() => go("/admin")}><LayoutDashboard className="mr-2 h-4 w-4" /> لوحة التحكم</CommandItem>
           <CommandItem onSelect={() => go("/admin/orders")}><Package className="mr-2 h-4 w-4" /> الطلبات</CommandItem>
+          <CommandItem onSelect={() => go("/admin/products", { tab: "stock" })}><Boxes className="mr-2 h-4 w-4" /> إدارة المخزون والمقاعد</CommandItem>
           <CommandItem onSelect={() => go("/admin/users")}><Users className="mr-2 h-4 w-4" /> المستخدمون</CommandItem>
           <CommandItem onSelect={() => go("/")}><Store className="mr-2 h-4 w-4" /> المتجر</CommandItem>
           <CommandItem onSelect={() => go("/account")}><Settings className="mr-2 h-4 w-4" /> حسابي</CommandItem>

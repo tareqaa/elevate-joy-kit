@@ -7,7 +7,12 @@ import { useCart } from "@/lib/gx/cart";
 import { useLang } from "@/lib/gx/i18n";
 import { CART_ADDED_EVENT } from "./AddedToCartModal";
 import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
-import { AdobePoster, CanvaPoster, WindowsPoster } from "@/lib/gx/brand-icons";
+import { AdobePoster, CanvaPoster, WindowsPoster, TodPoster } from "@/lib/gx/brand-icons";
+import { useSiteSettings, getEffectiveStockLimit } from "@/lib/gx/site-settings";
+import { Bell } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   resolveProductRequirementType,
   getRememberedWhatsApp,
@@ -121,6 +126,7 @@ export function GxProductTemplate({
   const { format } = useCurrency();
   const cart = useCart();
   const navigate = useNavigate();
+  const siteSettings = useSiteSettings();
 
   const pick = (arText?: string | null, enText?: string | null) =>
     (ar ? arText || enText : enText || arText) || "";
@@ -129,11 +135,25 @@ export function GxProductTemplate({
   const tagline = pick(product.taglineAr, product.taglineEn);
   const description = pick(product.descriptionAr, product.descriptionEn);
   const rawCat = pick(product.categoryNameAr, product.categoryNameEn);
+  const isAiProduct =
+    product.slug.includes("gemini") ||
+    product.slug.includes("lovable") ||
+    product.slug.includes("notion") ||
+    product.slug.includes("chatgpt") ||
+    product.slug.includes("ai");
+
+  const isStreamingProduct =
+    product.slug.includes("tod") ||
+    product.slug.includes("youtube") ||
+    product.categorySlug === "streaming";
+
   const categoryName = rawCat && rawCat.toLowerCase() !== name.toLowerCase()
     ? rawCat
-    : (product.slug.includes("gemini")
-        ? (ar ? "الاشتراكات الرقمية والذكاء الاصطناعي" : "AI & Digital Subscriptions")
-        : (ar ? "الاشتراكات والبرامج" : "Subscriptions & Software"));
+    : (isAiProduct
+        ? (ar ? "البرامج والتطبيقات" : "Apps & Software")
+        : (isStreamingProduct
+            ? (ar ? "اشتراكات المشاهدة" : "Streaming Subscriptions")
+            : (ar ? "الاشتراكات والبرامج" : "Subscriptions & Software")));
 
   const variants = useMemo(() => {
     if (product.variants && product.variants.length > 0) {
@@ -264,6 +284,7 @@ export function GxProductTemplate({
   const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
   const [addedCart, setAddedCart] = useState<boolean>(false);
+  const [todFilterGroup, setTodFilterGroup] = useState<string>("all");
   const requirementType = useMemo(() => {
     return resolveProductRequirementType({
       slug: product.slug,
@@ -328,16 +349,25 @@ export function GxProductTemplate({
     );
   }, [product.slug, categoryName, isLikeProduct, isFollowerProduct]);
 
+  const isTod = useMemo(() => {
+    const s = (product.slug || "").toLowerCase();
+    const n = (product.nameAr || "").toLowerCase();
+    return s === "tod" || s.startsWith("tod-") || n.includes("تود") || n.startsWith("tod");
+  }, [product.slug, product.nameAr]);
+
   const requiresCustomerInput = useMemo(() => {
+    if (isTod || product.deliveryType === "code" || product.deliveryType === "key") {
+      return false;
+    }
     return (
       requirementType !== "none" ||
       Boolean(
         product.requiresPlayerId ||
-        product.identifierLabelAr ||
+        (product.identifierLabelAr && requirementType !== "none") ||
         isSocialProduct
       )
     );
-  }, [requirementType, product.requiresPlayerId, product.identifierLabelAr, isSocialProduct]);
+  }, [isTod, product.deliveryType, requirementType, product.requiresPlayerId, product.identifierLabelAr, isSocialProduct]);
 
   const targetLabel = useMemo(() => {
     if (requirementType === "whatsapp") {
@@ -418,6 +448,99 @@ export function GxProductTemplate({
 
   const activePrice = activeVariant.price || 0;
 
+  // Stock limit & Quantity resolution
+  const stockLimit = useMemo(() => {
+    return getEffectiveStockLimit(
+      siteSettings?.product_stock_limits,
+      activeVariant?.cartId,
+      product?.slug
+    );
+  }, [siteSettings?.product_stock_limits, activeVariant?.cartId, product?.slug]);
+
+  const [quantity, setQuantity] = useState<number>(1);
+
+  // Restock Notification State
+  const [notifyModalOpen, setNotifyModalOpen] = useState(false);
+  const [notifyName, setNotifyName] = useState("");
+  const [notifyEmail, setNotifyEmail] = useState("");
+  const [notifySubmitting, setNotifySubmitting] = useState(false);
+  const [notifySubmitted, setNotifySubmitted] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) {
+        if (data.user.email) setNotifyEmail(data.user.email);
+        const metaName = data.user.user_metadata?.full_name || data.user.user_metadata?.name;
+        if (metaName) setNotifyName(metaName);
+      }
+    });
+  }, []);
+
+  const handleRestockNotifySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = notifyName.trim();
+    const cleanEmail = notifyEmail.trim().toLowerCase();
+
+    if (!cleanName) {
+      toast.error(ar ? "يرجى كتابة اسمك الكريم" : "Please enter your name");
+      return;
+    }
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      toast.error(ar ? "يرجى إدخال بريد إلكتروني صحيح" : "Please enter a valid email");
+      return;
+    }
+
+    setNotifySubmitting(true);
+    try {
+      const { error } = await supabase.from("product_restock_requests").insert({
+        product_slug: product.slug,
+        variant_cart_id: activeVariant?.cartId || product.slug,
+        product_name: name,
+        customer_name: cleanName,
+        customer_email: cleanEmail,
+        status: "pending",
+      });
+
+      if (error) {
+        console.error("Restock request error:", error);
+        toast.error(ar ? "حدث خطأ أثناء حفظ الطلب" : "Failed to submit request");
+      } else {
+        setNotifySubmitted(true);
+        toast.success(
+          ar
+            ? "تم تسجيل طلبك بنجاح! سنقوم بإشعارك عبر الإيميل فور توفره."
+            : "Request submitted! We will email you once it's back in stock."
+        );
+        setTimeout(() => {
+          setNotifyModalOpen(false);
+          setNotifySubmitted(false);
+        }, 2200);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(ar ? "حدث خطأ غير متوقع" : "Unexpected error");
+    } finally {
+      setNotifySubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    setQuantity(1);
+  }, [selectedVariantId]);
+
+  const handleDecreaseQuantity = () => {
+    setQuantity((q) => Math.max(1, q - 1));
+  };
+
+  const handleIncreaseQuantity = () => {
+    setQuantity((q) => {
+      if (stockLimit !== null && q >= stockLimit) {
+        return q;
+      }
+      return q + 1;
+    });
+  };
+
   // Delivery type info
   const deliveryInfo = getDeliveryTypeInfo(
     {
@@ -493,19 +616,43 @@ export function GxProductTemplate({
     if (product.slug === "canva") {
       return <CanvaPoster />;
     }
+    if (isTod || product.slug === "tod" || product.slug.startsWith("tod-")) {
+      return (
+        <div style={{ width: "100%", height: "100%", borderRadius: 12, overflow: "hidden" }}>
+          <TodPoster cartId={activeVariant.cartId} name={pick(activeVariant.labelAr, activeVariant.labelEn)} />
+        </div>
+      );
+    }
 
     // Software apps that specifically use their SVG logos instead of full cover artwork
     const isSvgApp = ["autodesk", "microsoft365", "linkedin", "gemini"].includes(product.slug);
-    const coverSrc = product.imageUrl || product.iconImage;
+    
+    const todImageMap: Record<string, string> = {
+      "tod-total-1d": "/app/assets/img/catalog/one_day.webp",
+      "tod-total-1w": "/app/assets/img/catalog/one_week_2.webp",
+      "tod-mobile-1m": "/app/assets/img/catalog/1-01.webp",
+      "tod-total-1m": "/app/assets/img/catalog/1-03.webp",
+      "tod-4k-1m": "/app/assets/img/catalog/1-02.webp",
+      "tod-mobile-6m": "/app/assets/img/catalog/tod_mobile_6_months_1.webp",
+      "tod-tv-6m": "/app/assets/img/catalog/total_6_months.webp",
+      "tod-mobile-1y": "/app/assets/img/catalog/tod_mobile_-one_year.webp",
+      "tod-tv-1y": "/app/assets/img/catalog/tod_total_one_year.webp",
+      "tod-4k-1y": "/app/assets/img/catalog/4k_.png",
+    };
+    const coverSrc =
+      isTod && activeVariant.cartId && todImageMap[activeVariant.cartId]
+        ? todImageMap[activeVariant.cartId]
+        : product.imageUrl || product.iconImage;
 
     // Full Cover Poster (for all games, subscriptions, and catalog items with cover art)
     if (!isSvgApp && coverSrc) {
       return (
-        <div className="driffle-poster-inner full-cover">
+        <div className="driffle-poster-inner full-cover" style={isTod ? { background: "linear-gradient(145deg, #2b1154, #120626)" } : undefined}>
           <img
             src={coverSrc}
             alt={name}
             className="driffle-cover-img"
+            style={isTod ? { objectFit: "contain", padding: 6 } : undefined}
           />
           <div className="driffle-cover-overlay">
             <div className="driffle-cover-top">
@@ -644,9 +791,20 @@ export function GxProductTemplate({
         cart.setContact({ phone: finalVal, type: "whatsapp" });
       }
     }
+    if (stockLimit !== null) {
+      const existingInCart = cart.items.find((i) => i.cartId === activeVariant.cartId)?.qty || 0;
+      if (existingInCart + quantity > stockLimit) {
+        alert(
+          ar
+            ? `عذراً، أقصى كمية متاحة لهذا المنتج هي ${stockLimit} فقط (لديك ${existingInCart} في السلة)`
+            : `Sorry, maximum available for this product is ${stockLimit} (${existingInCart} already in cart)`
+        );
+        return;
+      }
+    }
     const variantLabel = pick(activeVariant.labelAr, activeVariant.labelEn);
     const itemName = variantLabel && !name.includes(variantLabel) ? `${name} — ${variantLabel}` : name;
-    cart.add(activeVariant.cartId, 1, {
+    cart.add(activeVariant.cartId, quantity, {
       price: activePrice,
       name: itemName,
       product: product.slug,
@@ -673,9 +831,17 @@ export function GxProductTemplate({
         cart.setContact({ phone: finalVal, type: "whatsapp" });
       }
     }
+    if (stockLimit !== null && quantity > stockLimit) {
+      alert(
+        ar
+          ? `عذراً، أقصى كمية متاحة لهذا المنتج هي ${stockLimit} فقط`
+          : `Sorry, maximum available for this product is ${stockLimit}`
+      );
+      return;
+    }
     const variantLabel = pick(activeVariant.labelAr, activeVariant.labelEn);
     const itemName = variantLabel && !name.includes(variantLabel) ? `${name} — ${variantLabel}` : name;
-    cart.buyNow(activeVariant.cartId, 1, {
+    cart.buyNow(activeVariant.cartId, quantity, {
       price: activePrice,
       name: itemName,
       product: product.slug,
@@ -725,13 +891,16 @@ export function GxProductTemplate({
   };
 
   const categorySlug = useMemo<string | null>(() => {
+    if (isStreamingProduct) return "streaming";
+    if (isAiProduct) return "design";
     const c = ((product.categorySlug || "") + " " + (categoryName || "")).toLowerCase();
+    if (c.includes("مشاهد") || c.includes("stream")) return "streaming";
     if (c.includes("اشتراك") || c.includes("subscrip")) return "subscriptions";
     if (c.includes("لعب") || c.includes("game")) return "games";
-    if (c.includes("برامج") || c.includes("soft") || c.includes("design")) return "design";
+    if (c.includes("برامج") || c.includes("soft") || c.includes("design") || c.includes("ذكاء") || c.includes("ai")) return "design";
     if (c.includes("بطاق") || c.includes("card")) return "gift-cards";
     return null;
-  }, [categoryName, product.categorySlug]);
+  }, [categoryName, product.categorySlug, isStreamingProduct, isAiProduct]);
 
   // Steam Game Account detection:
   const isSteamGameAccount = useMemo(() => {
@@ -750,6 +919,25 @@ export function GxProductTemplate({
 
   // Contextual Notice Points
   const noticePoints = useMemo(() => {
+    if (isTod) {
+      return [
+        ar
+          ? "⚡ كود رقمي أصلي 100%: استلام كود التفعيل فوراً بعد الدفع لتفعيله مباشرة على حسابك الشخصي في TOD عبر tod.tv."
+          : "⚡ 100% Genuine Digital Voucher: Receive your voucher code instantly to activate on your own TOD account via tod.tv.",
+        ar
+          ? "🛡️ ضمان كامل مدة الاشتراك: نضمن لك استمرار وتفعيل الاشتراك طوال المدة المحددة بالكامل مع دعم فني متواصل."
+          : "🛡️ Full Duration Warranty: 100% guaranteed uninterrupted access for the entire subscription period.",
+        ar
+          ? "📱 باقة TOD Mobile: مخصصة للاستخدام على جهاز واحد فقط (هاتف ذكي أو جهاز لوحي). تشمل جميع الحقوق الرياضية المباشرة (مثل الدوري الإنجليزي، دوري أبطال أوروبا، الإسباني) بالإضافة إلى المسلسلات، الأفلام، وإنتاجات TOD Originals وقنوات beIN الترفيهية."
+          : "📱 TOD Mobile: For 1 device only (smartphone or tablet). Includes all live sports (Premier League, Champions League, La Liga), plus series, movies, TOD Originals, and beIN entertainment channels.",
+        ar
+          ? "📺 باقة TOD: تدعم المشاهدة بدقة عالية Full HD على ما يصل إلى جهازين في نفس الوقت (تشتغل على الشاشات الذكية، الكمبيوتر، والأجهزة الذكية الأخرى). تشمل كامل المحتوى الرياضي والترفيهي وقنوات البث المباشر."
+          : "📺 TOD Plan: Full HD streaming on up to 2 devices simultaneously (Smart TVs, PC, smart devices). Includes all sports, entertainment, and live channels.",
+        ar
+          ? "🌟 باقة TOD 4K: تدعم المشاهدة بأعلى دقة 4K Ultra HD على ما يصل إلى جهازين في نفس الوقت عبر الأجهزة والشاشات المدعومة. تشمل التغطية الرياضية الشاملة والمحتوى الترفيهي بالكامل."
+          : "🌟 TOD 4K: 4K Ultra HD streaming on up to 2 devices simultaneously on supported 4K screens/devices. Comprehensive sports coverage and full entertainment.",
+      ];
+    }
     if (isYouTube) {
       return [
         ar
@@ -964,6 +1152,28 @@ export function GxProductTemplate({
       const isWindowsKey = (product.slug === "windows" || platformLower.includes("windows")) && !platformLower.includes("store");
       const isOffice = product.slug === "microsoft365" || platformLower.includes("office") || platformLower.includes("365");
       const isDiscord = platformLower.includes("discord") || product.slug.includes("discord");
+      if (isTod) {
+        return [
+          ar
+            ? "توجه إلى الموقع الرسمي المعتمد لمنصة TOD عبر الرابط المباشر: https://www.tod.tv"
+            : "Visit the official TOD website at: https://www.tod.tv",
+          ar
+            ? "سجّل الدخول إلى حسابك الحالي في TOD، أو أنشئ حساباً جديداً بالبريد الإلكتروني في حال كنت مستخدماً جديداً للمنصة."
+            : "Sign in to your existing TOD account, or create a new account using your email if you are a new user.",
+          ar
+            ? "انتقل إلى صفحة الخطط والاشتراكات أو خانة تفعيل الرمز / القسيمة (Promo / Voucher Code)."
+            : "Navigate to the Plans section or enter the Voucher / Promo Code entry field.",
+          ar
+            ? "أدخل كود التفعيل الرقمي المستلم من متجر GX Store واضغط على تطبيق (Apply / Redeem) لتطبيق الخصم بنسبة 100%."
+            : "Enter your digital voucher code received from GX Store and click Apply / Redeem for 100% full discount.",
+          ar
+            ? "أكمل خطوة تأكيد وسيلة الدفع النظامية المعتمدة لدى TOD دون أن يتم خصم أي مبالغ إضافية طوال مدة اشتراكك."
+            : "Complete the standard payment verification required by TOD (no additional charges will occur during your voucher period).",
+          ar
+            ? "مبروك! تم تفعيل اشتراكك رسمياً، ويمكنك الآن الاستمتاع بكافة المباريات والأفلام والمسلسلات فوراً بضمان كامل مدة الاشتراك."
+            : "Congratulations! Your subscription is fully activated. Enjoy sports and entertainment streaming with full warranty.",
+        ];
+      }
 
       if (isRockstar) {
         return [
@@ -1273,27 +1483,211 @@ export function GxProductTemplate({
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="driffle-cta-row gx-cta-row">
-          <button
-            type="button"
-            className="driffle-cart-btn gx-cart-btn"
-            onClick={handleAddToCart}
-            title={ar ? "إضافة إلى السلة" : "Add to Cart"}
-            aria-label={ar ? "إضافة إلى السلة" : "Add to Cart"}
+        {/* Out of Stock Notice & Notify Button OR Quantity Stepper & Buy Buttons */}
+        {stockLimit !== null && stockLimit <= 0 ? (
+          <div
+            style={{
+              background: "linear-gradient(145deg, rgba(24, 28, 38, 0.95) 0%, rgba(16, 19, 28, 0.98) 100%)",
+              border: "1.5px solid rgba(0, 229, 255, 0.22)",
+              borderRadius: 14,
+              padding: "24px 20px",
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 12,
+              margin: "18px 0 14px",
+              boxShadow: "0 12px 32px -10px rgba(0, 229, 255, 0.12), 0 8px 24px rgba(0, 0, 0, 0.5)",
+            }}
           >
-            {addedCart ? "✓" : "🛒"}
-          </button>
+            <div style={{ fontSize: 20, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.02em", fontFamily: "'Tajawal', sans-serif" }}>
+              {ar ? "عذراً، لقد نفدت :(" : "Sorry, Sold Out :("}
+            </div>
 
-          <button
-            type="button"
-            className="driffle-buy-now-btn gx-buy-now-btn"
-            onClick={handleBuyNow}
-          >
-            <span>🛍️</span>
-            <span>{ar ? "شراء الآن" : "Buy now"}</span>
-          </button>
-        </div>
+            <p
+              style={{
+                fontSize: 13.5,
+                color: "#94a3b8",
+                lineHeight: 1.6,
+                margin: 0,
+                maxWidth: 320,
+              }}
+            >
+              {ar
+                ? "هل تريد هذا المنتج؟ يمكننا إخطارك عبر البريد الإلكتروني عندما يتوفر المنتج مرة أخرى."
+                : "Want this product? We can notify you via email as soon as it is back in stock."}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setNotifyModalOpen(true)}
+              style={{
+                marginTop: 6,
+                width: "100%",
+                maxWidth: 290,
+                padding: "11px 20px",
+                borderRadius: 9,
+                border: "1.5px solid rgba(0, 229, 255, 0.45)",
+                background: "linear-gradient(135deg, rgba(0, 229, 255, 0.14) 0%, rgba(0, 229, 255, 0.04) 100%)",
+                color: "#00e5ff",
+                fontSize: 15,
+                fontWeight: 800,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                transition: "all 0.2s ease",
+                boxShadow: "0 4px 16px rgba(0, 229, 255, 0.18)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--cyan, #00e5ff)";
+                e.currentTarget.style.color = "#05060a";
+                e.currentTarget.style.boxShadow = "0 6px 22px rgba(0, 229, 255, 0.4)";
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "linear-gradient(135deg, rgba(0, 229, 255, 0.14) 0%, rgba(0, 229, 255, 0.04) 100%)";
+                e.currentTarget.style.color = "#00e5ff";
+                e.currentTarget.style.boxShadow = "0 4px 16px rgba(0, 229, 255, 0.18)";
+                e.currentTarget.style.transform = "none";
+              }}
+            >
+              <Bell size={18} strokeWidth={2.4} />
+              <span>{ar ? "الإشعار" : "Notify me"}</span>
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Quantity Stepper */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7, margin: "14px 0 12px" }}>
+              {stockLimit !== null && stockLimit > 0 ? (
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 800,
+                    color: stockLimit <= 3 ? "#ff2d78" : "var(--cyan, #00e5ff)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: stockLimit <= 3 ? "rgba(255, 45, 120, 0.12)" : "rgba(0, 229, 255, 0.08)",
+                    border: `1px solid ${stockLimit <= 3 ? "rgba(255, 45, 120, 0.3)" : "rgba(0, 229, 255, 0.22)"}`,
+                    borderRadius: 999,
+                    padding: "3px 12px",
+                    letterSpacing: "0.2px",
+                  }}
+                >
+                  {stockLimit <= 5 && <span style={{ fontSize: 12 }}>⚡</span>}
+                  <span>{ar ? `متبقي ${stockLimit}` : `${stockLimit} Available`}</span>
+                </div>
+              ) : (
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#94a3b8" }}>
+                  <span>{ar ? "الكمية المطلوبة" : "Quantity"}</span>
+                </div>
+              )}
+
+              {/* Capsule Pill Stepper */}
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: 155,
+                  background: "rgba(18, 21, 30, 0.9)",
+                  border: "1.5px solid rgba(255, 255, 255, 0.12)",
+                  borderRadius: 30,
+                  padding: "4px 8px",
+                  boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35)",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={handleDecreaseQuantity}
+                  disabled={quantity <= 1}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    background: "rgba(255, 255, 255, 0.05)",
+                    color: quantity <= 1 ? "rgba(255, 255, 255, 0.25)" : "#ffffff",
+                    fontSize: 20,
+                    fontWeight: 700,
+                    cursor: quantity <= 1 ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.15s ease",
+                  }}
+                  title={ar ? "تقليل" : "Decrease"}
+                  aria-label="Decrease quantity"
+                >
+                  −
+                </button>
+                <span
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 800,
+                    color: "#ffffff",
+                    minWidth: 32,
+                    textAlign: "center",
+                    userSelect: "none",
+                    fontFamily: "'Tajawal', sans-serif",
+                  }}
+                >
+                  {quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleIncreaseQuantity}
+                  disabled={stockLimit !== null && quantity >= stockLimit}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: stockLimit !== null && quantity >= stockLimit ? "rgba(255, 255, 255, 0.08)" : "var(--cyan, #00e5ff)",
+                    color: stockLimit !== null && quantity >= stockLimit ? "rgba(255, 255, 255, 0.3)" : "#05060a",
+                    fontSize: 20,
+                    fontWeight: 900,
+                    cursor: stockLimit !== null && quantity >= stockLimit ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.15s ease",
+                    boxShadow: stockLimit !== null && quantity >= stockLimit ? "none" : "0 2px 10px rgba(0, 229, 255, 0.4)",
+                  }}
+                  title={stockLimit !== null && quantity >= stockLimit ? (ar ? `أقصى كمية هي ${stockLimit}` : `Max is ${stockLimit}`) : (ar ? "زيادة" : "Increase")}
+                  aria-label="Increase quantity"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="driffle-cta-row gx-cta-row">
+              <button
+                type="button"
+                className="driffle-cart-btn gx-cart-btn"
+                onClick={handleAddToCart}
+                title={ar ? "إضافة إلى السلة" : "Add to Cart"}
+                aria-label={ar ? "إضافة إلى السلة" : "Add to Cart"}
+              >
+                {addedCart ? "✓" : "🛒"}
+              </button>
+
+              <button
+                type="button"
+                className="driffle-buy-now-btn gx-buy-now-btn"
+                onClick={handleBuyNow}
+              >
+                <span>🛍️</span>
+                <span>{ar ? "شراء الآن" : "Buy now"}</span>
+              </button>
+            </div>
+          </>
+        )}
 
         {/* Trust Highlights */}
         <div className="driffle-trust-box gx-trust-box">
@@ -1504,28 +1898,191 @@ export function GxProductTemplate({
                 <span className="driffle-var-region-tag gx-var-region-tag">{cleanRegion}</span>
               </div>
 
+              {/* TOD Categorized Filter Tabs (TOD / TOD Mobile / TOD 4K) */}
+              {isTod && (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "4px 0 16px 0" }}>
+                  {[
+                    { id: "all", label: ar ? "✨ كل الباقات (10)" : "All Plans (10)", count: variants.length },
+                    { id: "tod-total", label: ar ? "📺 باقة TOD (شاشات وأجهزة ذكية)" : "TOD (Smart TVs & Devices)", count: variants.filter((x) => x.planGroup === "tod-total").length },
+                    { id: "tod-mobile", label: ar ? "📱 باقة TOD Mobile (موبايل وتابلت)" : "TOD Mobile (Phone & Tablet)", count: variants.filter((x) => x.planGroup === "tod-mobile").length },
+                    { id: "tod-4k", label: ar ? "🌟 باقة TOD 4K (أعلى دقة 4K)" : "TOD 4K Ultra HD", count: variants.filter((x) => x.planGroup === "tod-4k").length },
+                  ].map((tab) => {
+                    const isTabActive = todFilterGroup === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setTodFilterGroup(tab.id)}
+                        style={{
+                          padding: "7px 14px",
+                          borderRadius: 22,
+                          border: isTabActive ? "1.5px solid #f59e0b" : "1px solid rgba(255, 255, 255, 0.12)",
+                          background: isTabActive ? "rgba(245, 158, 11, 0.18)" : "rgba(255, 255, 255, 0.04)",
+                          color: isTabActive ? "#fbbf24" : "#cbd5e1",
+                          fontSize: 12.5,
+                          fontWeight: isTabActive ? 750 : 500,
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               <div className="driffle-var-grid gx-var-grid">
-                {variants.map((v) => {
-                  const isActive = v.cartId === activeVariant.cartId;
-                  const vLabel = pick(v.labelAr, v.labelEn);
-                  return (
-                    <button
-                      key={v.cartId}
-                      type="button"
-                      className={`driffle-var-card gx-var-card ${isActive ? "is-active" : ""}`}
-                      onClick={() => handleSelectVariant(v.cartId)}
-                    >
-                      <div className="driffle-var-top gx-var-top">
-                        <span className="driffle-var-name gx-var-name">{vLabel}</span>
-                        <div className="driffle-var-radio gx-var-radio" />
-                      </div>
-                      <div className="driffle-var-price gx-var-price">
-                        <span>{ar ? "من" : "from"} </span>
-                        <strong>{format(v.price)}</strong>
-                      </div>
-                    </button>
-                  );
-                })}
+                {variants
+                  .filter((v) => {
+                    if (!isTod || todFilterGroup === "all") return true;
+                    return v.planGroup === todFilterGroup;
+                  })
+                  .map((v) => {
+                    const isActive = v.cartId === activeVariant.cartId;
+                    const vLabel = pick(v.labelAr, v.labelEn);
+                    return (
+                      <button
+                        key={v.cartId}
+                        type="button"
+                        className={`driffle-var-card gx-var-card ${isActive ? "is-active" : ""}`}
+                        onClick={() => handleSelectVariant(v.cartId)}
+                      >
+                        <div className="driffle-var-top gx-var-top">
+                          <span className="driffle-var-name gx-var-name">{vLabel}</span>
+                          <div className="driffle-var-radio gx-var-radio" />
+                        </div>
+                        {v.tagAr && (
+                          <div style={{ margin: "4px 0" }}>
+                            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "rgba(245, 158, 11, 0.15)", color: "#f59e0b", fontWeight: 700 }}>
+                              {v.tagAr}
+                            </span>
+                          </div>
+                        )}
+                        <div className="driffle-var-price gx-var-price">
+                          <span>{ar ? "السعر:" : "Price:"} </span>
+                          <strong>{format(v.price)}</strong>
+                          {v.oldPrice && v.oldPrice > v.price && (
+                            <span style={{ textDecoration: "line-through", color: "#64748b", fontSize: 11, marginInlineStart: 6 }}>
+                              {format(v.oldPrice)}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+            </section>
+          )}
+
+          {/* Official TOD Comparison Table & Guarantee (Only on TOD product) */}
+          {isTod && (
+            <section
+              className="gx-tod-comparison-section"
+              style={{
+                margin: "18px 0 24px 0",
+                padding: "20px 22px",
+                background: "linear-gradient(135deg, rgba(43, 17, 84, 0.42), rgba(18, 6, 38, 0.65))",
+                borderRadius: 16,
+                border: "1px solid rgba(245, 158, 11, 0.28)",
+                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.35)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: 24 }}>⚖️</span>
+                <h3 style={{ fontSize: 17, fontWeight: 800, color: "#f8fafc", margin: 0 }}>
+                  {ar ? "دليل المقارنة الرسمي بين باقات TOD (معلومات رسمية 100%)" : "Official TOD Packages Comparison"}
+                </h3>
+              </div>
+
+              <p style={{ fontSize: 13.5, color: "#cbd5e1", lineHeight: 1.7, margin: "0 0 16px 0" }}>
+                {ar
+                  ? "جميع باقات TOD تمنحك وصولاً كاملاً وغير محدود لقنوات beIN Sports الرياضية وأضخم مكتبة أفلام ومسلسلات. يوضح الجدول التالي الفرق بين الباقات الرسمية لتختار الباقة الأنسب لجهازك:"
+                  : "All TOD plans provide complete access to beIN Sports and cinema libraries. See the breakdown below:"}
+              </p>
+
+              <div style={{ overflowX: "auto", borderRadius: 12, border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: 13,
+                    textAlign: ar ? "right" : "left",
+                    minWidth: 540,
+                  }}
+                >
+                  <thead>
+                    <tr style={{ background: "rgba(255, 255, 255, 0.06)", borderBottom: "1px solid rgba(255, 255, 255, 0.12)" }}>
+                      <th style={{ padding: "10px 14px", color: "#94a3b8", fontWeight: 700 }}>{ar ? "الميزة" : "Feature"}</th>
+                      <th style={{ padding: "10px 14px", color: "#38bdf8", fontWeight: 800 }}>📱 TOD Mobile</th>
+                      <th style={{ padding: "10px 14px", color: "#c084fc", fontWeight: 800 }}>📺 TOD Total / TV</th>
+                      <th style={{ padding: "10px 14px", color: "#f59e0b", fontWeight: 800 }}>🌟 TOD 4K Ultra HD</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                      <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "الأجهزة المدعومة" : "Devices"}</td>
+                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "الموبايل والتابلت فقط (iOS / Android) — لا يدعم التلفزيون" : "Smartphones & Tablets only (No TV support)"}</td>
+                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "الشاشات الذكية (Smart TV)، الكمبيوتر، والموبايل" : "Smart TVs, PC/Mac, and Mobile/Tablets"}</td>
+                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "شاشات 4K الذكية، أجهزة البث، وجميع الأجهزة" : "4K Smart TVs, streaming boxes, PC/Mac, Mobile"}</td>
+                    </tr>
+                    <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                      <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "الشاشات المتزامنة" : "Simultaneous Screens"}</td>
+                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "شاشة واحدة فقط (1 Screen)" : "1 Screen only"}</td>
+                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "شاشتان في نفس الوقت (2 Screens)" : "2 Screens simultaneously"}</td>
+                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "شاشتان في نفس الوقت (2 Screens)" : "2 Screens simultaneously"}</td>
+                    </tr>
+                    <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                      <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "أقصى دقة بث" : "Max Resolution"}</td>
+                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "دقة SD / HD (حتى 720p)" : "SD / HD (Up to 720p)"}</td>
+                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "Full HD عالية الوضوح (1080p)" : "Full HD (1080p)"}</td>
+                      <td style={{ padding: "10px 14px", color: "#f59e0b", fontWeight: 700 }}>{ar ? "Ultra HD 4K فائقة الوضوح + صوت Dolby" : "4K Ultra HD + Dolby Audio"}</td>
+                    </tr>
+                    <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                      <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "المحتوى والبطولات" : "Content & Sports"}</td>
+                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "دوري أبطال أوروبا، الإنجليزي، الإسباني + أفلام ومسلسلات" : "beIN Sports UCL, EPL, LaLiga + Movies"}</td>
+                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "دوري أبطال أوروبا، الإنجليزي، الإسباني + أفلام ومسلسلات" : "beIN Sports UCL, EPL, LaLiga + Movies"}</td>
+                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "كافة الدوريات + بث 4K للمباريات الكبرى ومكتبة أفلام 4K" : "All sports + live 4K marquee feeds & 4K cinema"}</td>
+                    </tr>
+                    <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                      <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "نوع الاشتراك" : "Delivery"}</td>
+                      <td style={{ padding: "10px 14px", color: "#10b981", fontWeight: 700 }} colSpan={3}>
+                        {ar ? "كود وقسيمة رقمية أصلية ورسمية 100% لتفعيلها مباشرة على حسابك الشخصي في TOD" : "100% Genuine Digital Voucher Code activated on your own TOD account"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "الضمان" : "Warranty"}</td>
+                      <td style={{ padding: "10px 14px", color: "#10b981", fontWeight: 700 }} colSpan={3}>
+                        {ar ? "🛡️ ضمان كامل ومستمر طوال فترة الاشتراك المحددة 100%" : "🛡️ Full 100% warranty covering the entire duration"}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Golden Guarantee Badge Box */}
+              <div
+                style={{
+                  marginTop: 16,
+                  padding: "12px 16px",
+                  borderRadius: 12,
+                  background: "rgba(16, 185, 129, 0.12)",
+                  border: "1px solid rgba(16, 185, 129, 0.3)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <span style={{ fontSize: 24 }}>🛡️</span>
+                <div style={{ fontSize: 13, color: "#d1fae5", lineHeight: 1.6 }}>
+                  <strong>{ar ? "ضمان GX Store المعتمد:" : "GX Store Official Warranty:"}</strong>{" "}
+                  {ar
+                    ? "جميع أكواد TOD المتوفرة في متجرنا رسمية ومصدرها معتمد في الأردن والشرق الأوسط، ومشمولة بضمان كامل 100% طوال مدة الاشتراك مع دعم فني متواصل."
+                    : "All TOD vouchers sold in our store are 100% official and authorized in Jordan & MENA, backed by a full duration guarantee and continuous customer support."}
+                </div>
               </div>
             </section>
           )}
@@ -1708,25 +2265,195 @@ export function GxProductTemplate({
           </div>
         </div>
         <div className="gx-sticky-bar-actions">
-          <button
-            type="button"
-            className="gx-sticky-cart-btn"
-            onClick={handleAddToCart}
-            title={ar ? "إضافة إلى السلة" : "Add to Cart"}
-            aria-label={ar ? "إضافة إلى السلة" : "Add to Cart"}
-          >
-            {addedCart ? "✓" : "🛒"}
-          </button>
-          <button
-            type="button"
-            className="gx-sticky-buy-btn"
-            onClick={handleBuyNow}
-          >
-            <span>🛍️</span>
-            <span>{ar ? "شراء الآن" : "Buy now"}</span>
-          </button>
+          {stockLimit !== null && stockLimit <= 0 ? (
+            <button
+              type="button"
+              onClick={() => setNotifyModalOpen(true)}
+              style={{
+                padding: "10px 18px",
+                borderRadius: 9,
+                border: "1.5px solid rgba(0, 229, 255, 0.45)",
+                background: "linear-gradient(135deg, rgba(0, 229, 255, 0.18) 0%, rgba(0, 229, 255, 0.06) 100%)",
+                color: "#00e5ff",
+                fontSize: 13,
+                fontWeight: 800,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                cursor: "pointer",
+                boxShadow: "0 2px 10px rgba(0, 229, 255, 0.2)",
+              }}
+            >
+              <Bell size={15} strokeWidth={2.4} />
+              <span>{ar ? "الإشعار عند التوفر" : "Notify me"}</span>
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="gx-sticky-cart-btn"
+                onClick={handleAddToCart}
+                title={ar ? "إضافة إلى السلة" : "Add to Cart"}
+                aria-label={ar ? "إضافة إلى السلة" : "Add to Cart"}
+              >
+                {addedCart ? "✓" : "🛒"}
+              </button>
+              <button
+                type="button"
+                className="gx-sticky-buy-btn"
+                onClick={handleBuyNow}
+              >
+                <span>🛍️</span>
+                <span>{ar ? "شراء الآن" : "Buy now"}</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Restock Notification Dialog */}
+      <Dialog open={notifyModalOpen} onOpenChange={setNotifyModalOpen}>
+        <DialogContent
+          className="gx-notify-modal-content"
+          style={{
+            maxWidth: 440,
+            background: "#0c0d14",
+            border: "1.5px solid rgba(0, 229, 255, 0.28)",
+            boxShadow: "0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 229, 255, 0.12)",
+            color: "#ffffff",
+            direction: ar ? "rtl" : "ltr",
+            borderRadius: 18,
+            padding: "24px 22px",
+          }}
+        >
+          <DialogHeader>
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 14,
+                background: "rgba(0, 229, 255, 0.12)",
+                border: "1.5px solid rgba(0, 229, 255, 0.35)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 8px",
+                color: "#00e5ff",
+                boxShadow: "0 0 16px rgba(0, 229, 255, 0.25)",
+              }}
+            >
+              <Bell size={24} strokeWidth={2.4} />
+            </div>
+            <DialogTitle
+              style={{
+                textAlign: "center",
+                fontSize: 19,
+                fontWeight: 900,
+                color: "#ffffff",
+                fontFamily: "'Tajawal', sans-serif",
+              }}
+            >
+              {ar ? "طلب إشعار عند التوفر" : "Restock Notification"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <p
+            style={{
+              textAlign: "center",
+              fontSize: 13.5,
+              color: "#94a3b8",
+              marginTop: 4,
+              marginBottom: 16,
+              lineHeight: 1.5,
+            }}
+          >
+            {ar
+              ? `أدخل اسمك وبريدك الإلكتروني، وسنرسل لك إشعاراً فور توفر ${name} مباشرة!`
+              : `Enter your details to receive an instant email notification once ${name} is back in stock!`}
+          </p>
+
+          <form onSubmit={handleRestockNotifySubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 700, marginBottom: 6, color: "#e2e8f0" }}>
+                {ar ? "الاسم الكريم *" : "Your Name *"}
+              </label>
+              <input
+                type="text"
+                required
+                value={notifyName}
+                onChange={(e) => setNotifyName(e.target.value)}
+                placeholder={ar ? "مثال: أحمد الزبن" : "e.g. John Doe"}
+                style={{
+                  width: "100%",
+                  padding: "11px 14px",
+                  borderRadius: 10,
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(255, 255, 255, 0.14)",
+                  color: "#ffffff",
+                  fontSize: 14,
+                  outline: "none",
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 700, marginBottom: 6, color: "#e2e8f0" }}>
+                {ar ? "البريد الإلكتروني للإشعار *" : "Notification Email *"}
+              </label>
+              <input
+                type="email"
+                required
+                value={notifyEmail}
+                onChange={(e) => setNotifyEmail(e.target.value)}
+                placeholder="name@example.com"
+                style={{
+                  width: "100%",
+                  padding: "11px 14px",
+                  borderRadius: 10,
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(255, 255, 255, 0.14)",
+                  color: "#ffffff",
+                  fontSize: 14,
+                  outline: "none",
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={notifySubmitting || notifySubmitted}
+              style={{
+                marginTop: 8,
+                width: "100%",
+                padding: "12px",
+                borderRadius: 10,
+                border: "none",
+                background: notifySubmitted
+                  ? "#10b981"
+                  : "linear-gradient(135deg, var(--cyan, #00e5ff) 0%, #00b8d4 100%)",
+                color: notifySubmitted ? "#ffffff" : "#05060a",
+                fontSize: 15,
+                fontWeight: 900,
+                cursor: notifySubmitting || notifySubmitted ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                boxShadow: "0 4px 18px rgba(0, 229, 255, 0.35)",
+                transition: "all 0.2s ease",
+              }}
+            >
+              {notifySubmitting ? (
+                <span>{ar ? "جاري الإرسال..." : "Submitting..."}</span>
+              ) : notifySubmitted ? (
+                <span>{ar ? "✓ تم تسجيل طلبك بنجاح" : "✓ Subscribed Successfully"}</span>
+              ) : (
+                <span>{ar ? "🔔 إخطاري عند توفر المنتج" : "🔔 Notify Me When Available"}</span>
+              )}
+            </button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

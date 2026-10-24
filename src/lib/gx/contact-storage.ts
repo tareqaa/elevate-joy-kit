@@ -131,6 +131,18 @@ export function resolveProductRequirementType(item: {
   const idLabel = (item.identifierLabelAr || "").toLowerCase();
   const dt = (item.deliveryType || "").toLowerCase();
 
+  // Instant Vouchers, Digital Codes & Keys require NO input
+  if (
+    s === "tod" ||
+    s.startsWith("tod-") ||
+    dt === "key" ||
+    dt === "code" ||
+    dt === "voucher" ||
+    s.startsWith("gc-")
+  ) {
+    return "none";
+  }
+
   // Social media products
   if (
     s.includes("instagram") ||
@@ -180,7 +192,9 @@ export function resolveProductRequirementType(item: {
     idLabel.includes("واتس") ||
     idLabel.includes("تواصل") ||
     idLabel.includes("هاتف") ||
-    idLabel.includes("رقم")
+    idLabel.includes("رقم الهاتف") ||
+    idLabel.includes("رقم الواتس") ||
+    idLabel.includes("رقم الجوال")
   ) {
     return "whatsapp";
   }

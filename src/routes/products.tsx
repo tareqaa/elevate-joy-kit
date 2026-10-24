@@ -139,12 +139,15 @@ const CATEGORY_TABS: CategoryFilterTab[] = [
     nameEn: "Subscriptions",
     icon: "⚡",
     color: "#f59e0b",
-    match: (p) =>
-      p.parentCategorySlug === "subscriptions" ||
-      p.categorySlug === "subscriptions" ||
-      (p.slug || "").includes("game-pass") ||
-      (p.slug || "").includes("nitro") ||
-      (p.slug || "").includes("youtube"),
+    match: (p) => {
+      const s = (p.slug || "").toLowerCase();
+      return (
+        s === "tod" ||
+        s.startsWith("tod-") ||
+        s.includes("game-pass") ||
+        s.includes("youtube")
+      );
+    },
   },
   {
     id: "design",
@@ -157,9 +160,25 @@ const CATEGORY_TABS: CategoryFilterTab[] = [
       p.categorySlug === "design" ||
       p.categorySlug === "windows-keys" ||
       p.categorySlug === "duolingo" ||
-      ["windows", "adobe", "canva", "microsoft365", "autodesk", "linkedin", "duolingo"].some((k) =>
-        (p.slug || "").includes(k)
-      ),
+      p.categorySlug === "ai" ||
+      [
+        "windows",
+        "adobe",
+        "canva",
+        "microsoft365",
+        "autodesk",
+        "linkedin",
+        "duolingo",
+        "gemini",
+        "lovable",
+        "notion",
+        "discord",
+        "nitro",
+        "nordvpn",
+        "surfshark",
+        "expressvpn",
+        "capcut",
+      ].some((k) => (p.slug || "").toLowerCase().includes(k)),
   },
   {
     id: "social-media",

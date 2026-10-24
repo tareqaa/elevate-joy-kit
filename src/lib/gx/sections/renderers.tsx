@@ -361,52 +361,52 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
 
   const CATEGORY_TAGLINES: Record<string, { ar: string; en: string }> = {
     subscriptions: {
-      ar: "حسابات وباقات اشتراك رسمية",
-      en: "Official Accounts & Subscriptions",
+      ar: "اشتراكات المشاهدة والألعاب والترفيه",
+      en: "Streaming, Gaming & Entertainment",
     },
     games: {
-      ar: "ألعاب PC والكونسول الأصلية",
-      en: "Original PC & Console Games",
+      ar: "ألعاب PC والكونسول وشحن الألعاب",
+      en: "PC & Console Games & Top-ups",
     },
     "pc-games": {
-      ar: "ألعاب PC والكونسول الأصلية",
-      en: "Original PC & Console Games",
+      ar: "ألعاب PC الأصلية وتفعيلات ستيم",
+      en: "Original PC Games & Steam Keys",
     },
     design: {
-      ar: "برامج وتفعيلات التصميم الأصلية",
-      en: "Design Software & Official Keys",
+      ar: "برامج وتطبيقات الإنتاجية والتصميم والحماية",
+      en: "Productivity, Design & Utility Apps",
     },
     apps: {
-      ar: "برامج وتفعيلات التصميم الأصلية",
-      en: "Design Software & Official Keys",
+      ar: "برامج وتطبيقات الإنتاجية والتصميم والحماية",
+      en: "Productivity, Design & Utility Apps",
     },
     software: {
-      ar: "برامج وتفعيلات التصميم الأصلية",
-      en: "Design Software & Official Keys",
+      ar: "برامج وتطبيقات الإنتاجية والتصميم والحماية",
+      en: "Productivity, Design & Utility Apps",
     },
     "social-media": {
-      ar: "خدمات المتابعين والتفاعل الحقيقي",
+      ar: "خدمات زيادة المتابعين والتفاعل الحقيقي",
       en: "Real Followers & Engagement",
     },
     social: {
-      ar: "خدمات المتابعين والتفاعل الحقيقي",
+      ar: "خدمات زيادة المتابعين والتفاعل الحقيقي",
       en: "Real Followers & Engagement",
     },
     "gift-cards": {
-      ar: "بطاقات شحن رقمية وتسليم فوري",
-      en: "Digital Gift Cards & Instant Top-ups",
+      ar: "بطاقات شحن رقمية وتسليم فوري للأكواد",
+      en: "Digital Gift Cards & Instant Delivery",
     },
     cards: {
-      ar: "بطاقات شحن رقمية وتسليم فوري",
-      en: "Digital Gift Cards & Instant Top-ups",
+      ar: "بطاقات شحن رقمية وتسليم فوري للأكواد",
+      en: "Digital Gift Cards & Instant Delivery",
     },
     products: {
-      ar: "عرض الكتالوج الكامل والعروض ←",
-      en: "View Full Store Catalog & Deals →",
+      ar: "تصفح جميع المنتجات والعروض الحصرية",
+      en: "Browse All Products & Exclusive Deals",
     },
     all: {
-      ar: "عرض الكتالوج الكامل والعروض ←",
-      en: "View Full Store Catalog & Deals →",
+      ar: "تصفح جميع المنتجات والعروض الحصرية",
+      en: "Browse All Products & Exclusive Deals",
     },
   };
 

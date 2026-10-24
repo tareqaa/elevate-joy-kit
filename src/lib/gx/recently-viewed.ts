@@ -13,6 +13,7 @@ export interface RecentlyViewedItem {
   imageUrl?: string | null;
   icon?: string | null;
   categorySlug?: string | null;
+  region?: string | null;
   link?: string | null;
   viewedAt: number;
 }
@@ -22,9 +23,6 @@ const MAX_ITEMS = 12;
 
 export const KNOWN_INACTIVE_SLUGS = new Set([
   "snapchat",
-  "duolingo-super-12-months",
-  "duolingo",
-  "gemini",
 ]);
 
 // Curated starter items if user has not browsed anything yet

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AdminCommandPalette } from "@/components/gx/admin/AdminCommandPalette";
 import {
   LayoutDashboard, Package, Users, Search, Bell, ChevronLeft, ChevronRight,
-  Store, User, LogOut, X, Command, ShoppingBag, Activity, Settings, Ticket, Home, Star, Sparkles, Smile, Award, Trophy, Disc3, Gamepad2, Puzzle, Headphones,
+  Store, User, LogOut, X, Command, ShoppingBag, Activity, Settings, Ticket, Home, Star, Sparkles, Smile, Award, Trophy, Disc3, Gamepad2, Puzzle, Headphones, Boxes,
 } from "lucide-react";
 
 // Cache the admin-role check per user for the lifetime of the tab so moving
@@ -43,7 +43,14 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
 });
 
-type NavItem = { to: string; label: string; Icon: typeof LayoutDashboard; exact?: boolean; soon?: boolean };
+type NavItem = {
+  to: string;
+  label: string;
+  Icon: typeof LayoutDashboard;
+  exact?: boolean;
+  soon?: boolean;
+  search?: Record<string, string>;
+};
 
 const NAV: NavItem[] = [
   { to: "/admin", label: "لوحة التحكم", Icon: LayoutDashboard, exact: true },
@@ -51,6 +58,7 @@ const NAV: NavItem[] = [
   { to: "/admin/support", label: "الدعم والتذاكر", Icon: Headphones },
   { to: "/admin/users", label: "المستخدمون", Icon: Users },
   { to: "/admin/products", label: "المنتجات والأقسام", Icon: ShoppingBag },
+  { to: "/admin/products", search: { tab: "stock" }, label: "إدارة المخزون والمقاعد", Icon: Boxes },
   { to: "/admin/home", label: "الصفحة الرئيسية", Icon: Home },
   { to: "/admin/coupons", label: "الكوبونات", Icon: Ticket },
   { to: "/admin/reviews", label: "المراجعات", Icon: Star },
@@ -164,7 +172,15 @@ function AdminLayout() {
 
         <nav className="gx-aside-nav">
           {NAV.map((n) => {
-            const active = n.exact ? location.pathname === n.to : location.pathname.startsWith(n.to);
+            const currentTab = (location.search as { tab?: string })?.tab;
+            const hasTab = Boolean(n.search?.tab);
+            const active = hasTab
+              ? location.pathname === n.to && currentTab === n.search?.tab
+              : n.to === "/admin/products"
+                ? location.pathname === n.to && (!currentTab || currentTab === "products")
+                : n.exact
+                  ? location.pathname === n.to
+                  : location.pathname.startsWith(n.to);
             const Icon = n.Icon;
             const inner = (
               <>
@@ -176,13 +192,13 @@ function AdminLayout() {
             );
             if (n.soon) {
               return (
-                <button key={n.to} type="button" disabled className={`gx-nav-link disabled`} title={collapsed ? n.label + " — قريبًا" : undefined}>
+                <button key={n.label} type="button" disabled className={`gx-nav-link disabled`} title={collapsed ? n.label + " — قريبًا" : undefined}>
                   {inner}
                 </button>
               );
             }
             return (
-              <Link key={n.to} to={n.to as never} onClick={() => setOpenMobile(false)}
+              <Link key={n.label} to={n.to as never} search={n.search as never} onClick={() => setOpenMobile(false)}
                 className={`gx-nav-link ${active ? "on" : ""}`} title={collapsed ? n.label : undefined}>
                 {inner}
               </Link>

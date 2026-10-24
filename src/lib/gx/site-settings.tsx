@@ -87,6 +87,7 @@ export type SiteSettings = {
   home_bestseller_labels: Record<string, BestsellerLabelConfig>;
   home_layout: HomeLayout;
   catalog_prices: CatalogPrices;
+  product_stock_limits: Record<string, number | null>;
   hide_fortnite_badges: boolean;
   isLoaded: boolean;
   dbFetched: boolean;
@@ -183,8 +184,8 @@ export const DEFAULT_BESTSELLER_ITEMS: BestsellerItemSnapshot[] = [
     productSlug: "discord-nitro-3-months-trial",
     nameAr: "Discord Nitro | 3 أشهر تجريبي",
     nameEn: "Discord Nitro — 3 Months Trial",
-    priceJod: 1.95,
-    oldPriceJod: 2.31,
+    priceJod: 2.5,
+    oldPriceJod: 4.0,
     badge: "🔥 سعر حصري",
     imageUrl: "/app/assets/img/catalog/discord-nitro-3-months-trial.jpg",
     iconImage: "/app/assets/img/catalog/discord-nitro-3-months-trial.jpg",
@@ -265,6 +266,16 @@ const DEFAULTS: SiteSettings = {
   home_bestseller_labels: {},
   home_layout: DEFAULT_HOME_LAYOUT,
   catalog_prices: {},
+  product_stock_limits: {
+    "youtube-premium": 1,
+    "youtube-premium-1m": 1,
+    "youtube": 1,
+    "linkedin-career-12m": 1,
+    "linkedin-business-12m": 1,
+    "duolingo": 0,
+    "duolingo-super-12-months": 0,
+    "duolingo-12m": 0,
+  },
   hide_fortnite_badges: false,
   isLoaded: false,
   dbFetched: false,
@@ -352,7 +363,16 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
         const orderEqual = JSON.stringify(prev.home_bestseller_order) === JSON.stringify(merged.home_bestseller_order);
         const itemsEqual = JSON.stringify(prev.home_bestseller_items) === JSON.stringify(merged.home_bestseller_items);
         const layoutEqual = JSON.stringify(prev.home_layout) === JSON.stringify(merged.home_layout);
-        if (orderEqual && itemsEqual && layoutEqual && prev.store_name === merged.store_name && prev.isLoaded === merged.isLoaded && prev.dbFetched === merged.dbFetched) {
+        const stockEqual = JSON.stringify(prev.product_stock_limits || {}) === JSON.stringify(merged.product_stock_limits || {});
+        if (
+          orderEqual &&
+          itemsEqual &&
+          layoutEqual &&
+          stockEqual &&
+          prev.store_name === merged.store_name &&
+          prev.isLoaded === merged.isLoaded &&
+          prev.dbFetched === merged.dbFetched
+        ) {
           return prev;
         }
         return merged;
@@ -366,15 +386,25 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
 
     // 1. Listen for instant local updates within the same window
     function onLocalSettingsChange(e: Event) {
-      const customEvent = e as CustomEvent<SiteSettings>;
+      const customEvent = e as CustomEvent<Partial<SiteSettings>>;
       if (customEvent.detail) {
-        setSettings((prev) => ({ ...prev, ...customEvent.detail, isLoaded: true, dbFetched: true }));
+        setSettings((prev) => {
+          const next = { ...prev, ...customEvent.detail, isLoaded: true, dbFetched: true };
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(next));
+            localStorage.setItem(TS_KEY, String(Date.now()));
+          } catch { /* noop */ }
+          return next;
+        });
       }
     }
     window.addEventListener("gx_site_settings_changed", onLocalSettingsChange);
 
     // 1.1 Listen for explicit trigger to reload site settings from DB
     function onSettingsReload() {
+      try {
+        localStorage.removeItem(TS_KEY);
+      } catch { /* noop */ }
       load(true);
     }
     window.addEventListener("gx:site-settings-updated", onSettingsReload);
@@ -417,4 +447,74 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
 
 export function useSiteSettings(): SiteSettings {
   return useContext(Ctx);
+}
+
+/**
+ * Universal helper to resolve effective stock limit for a product/variant.
+ * Rules:
+ * 1. If ANY key or alias is explicitly <= 0, the item is SOLD OUT (returns 0).
+ * 2. Variant-specific positive limit wins over parent product limit.
+ * 3. Returns null if limit is open/unlimited.
+ */
+export function getEffectiveStockLimit(
+  stockLimits: Record<string, number | null> | undefined,
+  cartId?: string | null,
+  slug?: string | null
+): number | null {
+  if (!stockLimits || typeof stockLimits !== "object") return null;
+
+  const keys: string[] = [];
+  if (cartId) {
+    keys.push(cartId);
+    const dashIdx = cartId.lastIndexOf("-");
+    if (dashIdx > 0) {
+      keys.push(cartId.substring(0, dashIdx));
+    }
+  }
+  if (slug) {
+    keys.push(slug);
+    if (slug === "youtube" || slug === "youtube-premium") {
+      keys.push("youtube-premium", "youtube", "youtube-premium-1m");
+    }
+    if (slug === "snapchat" || slug === "snap") {
+      keys.push("snapchat", "snap", "snap-3", "snap-6", "snap-12");
+    }
+    if (slug === "discord" || slug === "discord-nitro") {
+      keys.push("discord", "discord-nitro", "discord-nitro-3m");
+    }
+    if (slug === "canva") {
+      keys.push("canva", "canva-pro-1y");
+    }
+    if (slug === "duolingo" || slug === "duolingo-super-12-months") {
+      keys.push("duolingo", "duolingo-super-12-months", "duolingo-12m");
+    }
+  }
+
+  // 1. Any matching key that is <= 0 means SOLD OUT (0) immediately!
+  for (const k of keys) {
+    const v = stockLimits[k];
+    if (v !== undefined && v !== null && Number(v) <= 0) {
+      return 0;
+    }
+  }
+
+  // 2. Specific variant limit
+  if (cartId && stockLimits[cartId] !== undefined && stockLimits[cartId] !== null) {
+    return Number(stockLimits[cartId]);
+  }
+
+  // 3. Specific slug limit
+  if (slug && stockLimits[slug] !== undefined && stockLimits[slug] !== null) {
+    return Number(stockLimits[slug]);
+  }
+
+  // 4. Any alias limit
+  for (const k of keys) {
+    const v = stockLimits[k];
+    if (v !== undefined && v !== null) {
+      return Number(v);
+    }
+  }
+
+  return null;
 }

@@ -28,6 +28,10 @@ export function getCategoryTheme(slug: string): CategoryTheme {
     case "subscriptions":
       return { glow: "rgba(139, 92, 246, 0.45)", ambient: "rgba(139, 92, 246, 0.16)", accent: "#8b5cf6" };
 
+    case "streaming":
+    case "entertainment":
+      return { glow: "rgba(255, 43, 84, 0.45)", ambient: "rgba(255, 43, 84, 0.16)", accent: "#ff2b54" };
+
     case "social-media":
       return { glow: "rgba(0, 136, 255, 0.45)", ambient: "rgba(0, 136, 255, 0.16)", accent: "#0088ff" };
 
@@ -374,6 +378,15 @@ export function renderCategoryVectorIcon(slug: string, size = 40): React.ReactNo
       return <SnapchatCatIcon size={size} />;
     case "subscriptions":
       return <SubscriptionsCatIcon size={size} />;
+    case "streaming":
+    case "entertainment":
+      return (
+        <img
+          src="/app/assets/img/streaming-icon.png"
+          alt="Streaming"
+          style={{ width: size, height: size, objectFit: "contain", flexShrink: 0, display: "block" }}
+        />
+      );
     case "social-media":
       return <SocialMediaCatIcon size={size} />;
     case "instagram":
