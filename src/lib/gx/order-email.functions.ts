@@ -972,34 +972,11 @@ export const sendIncompleteOrderPaymentEmail = createServerFn({ method: "POST" }
       const orderToken = generateOrderToken(orderNumber, customerEmail);
       const orderUrl = `https://gxstore.me/order/${orderNumber}?order_token=${encodeURIComponent(orderToken)}`;
 
-      // Resolve product images from database if missing (Guaranteed JPG/PNG for Gmail)
-      const resolvedItems: OrderItemEmail[] = [];
-      const supabase = getServerServiceClient();
-
-      for (const it of items) {
-        let finalImage = sanitizeImageForEmail(it.image, it.name, it.slug);
-        if (!finalImage) {
-          try {
-            const cleanName = it.name.replace(/\(.*?\)/g, "").trim();
-            const { data: prod } = await (supabase as any)
-              .from("products")
-              .select("image_url, icon_image_url")
-              .or(`slug.eq.${it.slug || ""},name_ar.ilike.%${cleanName}%,name_en.ilike.%${cleanName}%`)
-              .limit(1)
-              .maybeSingle();
-            if (prod) {
-              finalImage = sanitizeImageForEmail(prod.image_url || prod.icon_image_url, it.name, it.slug);
-            }
-          } catch { /* noop */ }
-        }
-        if (!finalImage) {
-          finalImage = OFFICIAL_LOGO_URL;
-        }
-        resolvedItems.push({
-          ...it,
-          image: finalImage,
-        });
-      }
+      // Clean items without images as requested by user
+      const resolvedItems = items.map((it) => ({
+        ...it,
+        name: it.name || (isAr ? "منتج رقمي" : "Digital Product"),
+      }));
 
       const greetingName = (customerName && customerName.trim()) || (isAr ? "عميلنا العزيز" : "Valued Customer");
 
@@ -1033,7 +1010,7 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
         ? `⚠️ طلبك رقم #${orderNumber} بانتظار إتمام الدفع — تواصل معنا عبر الواتساب | GX Store`
         : `⚠️ Action Required: Order #${orderNumber} Pending Payment — Contact via WhatsApp | GX Store`;
 
-      // Items list HTML
+      // Items list HTML (Clean text-only without images)
       const itemsHtml = resolvedItems.length > 0
         ? resolvedItems
             .map((item) => {
@@ -1041,26 +1018,20 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
               const priceFormatted = item.price != null
                 ? `${Number(item.price).toFixed(2)} ${isAr ? "د.أ" : "JOD"}`
                 : "";
-              const imgTag = item.image
-                ? `<img src="${item.image}" alt="${item.name}" width="64" height="64" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,0.12);display:block;background:#0d121c;">`
-                : `<div style="width:64px;height:64px;border-radius:12px;background:#141b27;border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;color:#00e5ff;font-size:24px;text-align:center;line-height:64px;">🎮</div>`;
 
               return `
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:14px;padding:12px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 16px;">
                   <tr>
-                    <td width="74" valign="middle" style="${isAr ? "padding-left:14px;" : "padding-right:14px;"}">
-                      ${imgTag}
-                    </td>
-                    <td valign="middle">
+                    <td valign="middle" align="${isAr ? "right" : "left"}">
                       <div style="color:#ffffff;font-size:14px;font-weight:800;line-height:1.4;margin-bottom:4px;">
                         ${item.name}
                       </div>
-                      <div style="color:#94a3b8;font-size:12px;margin-bottom:3px;">
+                      <div style="color:#94a3b8;font-size:12px;">
                         ${isAr ? "المنطقة / الريجون:" : "Region:"} <strong style="color:#38bdf8;">${item.region || (isAr ? "عالمي (Global)" : "Global")}</strong>
+                        ${qty > 1 ? ` • <span style="color:#64748b;">${isAr ? "الكمية:" : "Qty:"} x${qty}</span>` : ""}
                       </div>
-                      ${qty > 1 ? `<div style="color:#64748b;font-size:11px;">${isAr ? "الكمية:" : "Quantity:"} x${qty}</div>` : ""}
                     </td>
-                    <td width="90" valign="middle" align="${isAr ? "left" : "right"}" style="color:#00e5ff;font-size:15px;font-weight:900;font-family:ui-monospace,Menlo,monospace;white-space:nowrap;">
+                    <td width="90" valign="middle" align="${isAr ? "left" : "right"}" style="color:#00e5ff;font-size:15px;font-weight:900;font-family:ui-monospace,Menlo,monospace;white-space:nowrap;padding-${isAr ? "right" : "left"}:12px;">
                       ${priceFormatted}
                     </td>
                   </tr>
@@ -1074,7 +1045,7 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
           </div>
         `;
 
-      // ARABIC HTML TEMPLATE
+      // ARABIC HTML TEMPLATE (Clean, concise, and structured like the English version)
       const arabicHtml = `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -1096,11 +1067,6 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
               <a href="https://gxstore.me" target="_blank" style="text-decoration:none;display:inline-block;">
                 <img src="${OFFICIAL_LOGO_URL}" alt="GX Store" width="140" height="auto" style="max-width:140px;height:auto;display:block;margin:0 auto;" />
               </a>
-              <div style="margin-top:12px;font-size:11px;color:#64748b;letter-spacing:0.5px;">
-                <a href="https://gxstore.me" style="color:#94a3b8;text-decoration:none;margin:0 8px;">الألعاب والاشتراكات</a> •
-                <a href="https://gxstore.me" style="color:#94a3b8;text-decoration:none;margin:0 8px;">البطاقات الرقمية</a> •
-                <a href="https://gxstore.me" style="color:#94a3b8;text-decoration:none;margin:0 8px;">الشحن المباشر</a>
-              </div>
             </td>
           </tr>
 
@@ -1124,31 +1090,28 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
               </p>
 
               <p style="margin:0 0 16px;font-size:14.5px;color:#cbd5e1;line-height:1.8;">
-                شكراً لاختيارك متجر <strong>GX Store</strong>! نحيطك علماً بأن طلبك تم تسجيله لدينا وهو حالياً <strong>غير مكتمل وبانتظار تأكيد الدفع</strong> ليتم حجز المنتجات وتجهيزها للتسليم الفوري.
+                شكراً لتسوقك من <strong>GX Store</strong>! تم تسجيل طلبك لدينا وهو حالياً <strong>غير مكتمل وبانتظار تأكيد الدفع</strong>.
               </p>
 
               <!-- Callout Box: Contact via WhatsApp to Pay -->
               <div style="background:linear-gradient(135deg,rgba(37,211,102,0.12) 0%,rgba(0,229,255,0.06) 100%);border:1px solid rgba(37,211,102,0.35);border-radius:14px;padding:18px 20px;margin:22px 0;text-align:center;">
                 <div style="font-size:15px;font-weight:900;color:#ffffff;margin-bottom:8px;">
-                  💬 لإتمام الدفع وتأكيد طلبك تواصل معنا عبر الواتساب:
+                  💬 لإتمام الدفع تواصل معنا عبر الواتساب:
                 </div>
                 <p style="margin:0 0 16px;font-size:13px;color:#cbd5e1;line-height:1.6;">
-                  فريقنا متواجد لتزويدك ببيانات الدفع الفوري عبر (كليك CliQ الأردني، محافظ زين كاش، أو بطاقة بنكية) وتأكيد طلبك في دقائق.
+                  فريق الدعم متواجد لتزويدك ببيانات الدفع الفوري (كليك CliQ / زين كاش / بطاقة) وتأكيد طلبك مباشرة.
                 </p>
 
-                <!-- WhatsApp Button (Same style as deposit / cart system) -->
+                <!-- WhatsApp Button -->
                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
                   <tr>
                     <td align="center" style="border-radius:12px;background:#25D366;box-shadow:0 8px 24px rgba(37,211,102,0.35);">
                       <a href="${waLink}" target="_blank" style="display:inline-block;padding:14px 34px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:900;color:#051c14;text-decoration:none;border-radius:12px;letter-spacing:0.3px;">
-                        💬 تواصل معنا عبر الواتساب لإتمام الدفع ←
+                        💬 استكمال الدفع عبر واتساب →
                       </a>
                     </td>
                   </tr>
                 </table>
-                <div style="margin-top:10px;font-size:11.5px;color:#94a3b8;">
-                  رقم الواتساب الرسمي: <span dir="ltr" style="font-weight:bold;color:#25D366;">+962 7 7625 2313</span>
-                </div>
               </div>
 
               ${
@@ -1160,57 +1123,12 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
                   : ""
               }
 
-              <!-- Payment Methods Overview -->
-              <div style="margin:24px 0 20px;">
-                <div style="font-size:12.5px;font-weight:800;color:#00e5ff;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">
-                  طرق الدفع المتاحة للاستكمال:
-                </div>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                  <tr>
-                    <td style="padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:12.5px;color:#e2e8f0;margin-bottom:6px;">
-                      🇯🇴 <strong>خدمة كليك (CliQ):</strong> تحويل بنكي فوري من أي بنك أردني بدون أي عمولات.
-                    </td>
-                  </tr>
-                  <tr><td height="6"></td></tr>
-                  <tr>
-                    <td style="padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:12.5px;color:#e2e8f0;margin-bottom:6px;">
-                      📱 <strong>المحافظ الإلكترونية:</strong> زين كاش (Zain Cash) / أورنج موني / أمنية.
-                    </td>
-                  </tr>
-                  <tr><td height="6"></td></tr>
-                  <tr>
-                    <td style="padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:12.5px;color:#e2e8f0;">
-                      💳 <strong>البطاقات البنكية:</strong> بطاقات فيزا وماستركارد عبر رابط دفع مباشر.
-                    </td>
-                  </tr>
-                </table>
-              </div>
-
-              <!-- Order Metadata Grid -->
-              <div style="border-top:1px solid #1e283d;margin:24px 0 18px;"></div>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:20px;">
-                <tr>
-                  <td width="33%" valign="top" style="padding-bottom:12px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;">رقم الطلب (ORDER ID)</div>
-                    <div style="font-size:14px;color:#ffffff;font-weight:900;font-family:ui-monospace,Menlo,monospace;margin-top:4px;" dir="ltr">#${orderNumber}</div>
-                  </td>
-                  <td width="33%" valign="top" style="padding-bottom:12px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;">حالة الطلب</div>
-                    <div style="font-size:13px;color:#fbbf24;font-weight:800;margin-top:4px;">بانتظار الدفع ⏳</div>
-                  </td>
-                  <td width="33%" valign="top" style="padding-bottom:12px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;">التاريخ</div>
-                    <div style="font-size:12px;color:#94a3b8;margin-top:4px;">${dateFormattedAr}</div>
-                  </td>
-                </tr>
-              </table>
-
               <!-- Products Header -->
-              <div style="font-size:13px;font-weight:800;color:#00e5ff;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;border-bottom:1px solid #1e283d;padding-bottom:8px;">
-                المنتجات المحجوزة في هذا الطلب (${resolvedItems.length})
+              <div style="font-size:13px;font-weight:800;color:#00e5ff;text-transform:uppercase;letter-spacing:0.5px;margin:22px 0 14px;border-bottom:1px solid #1e283d;padding-bottom:8px;">
+                المنتجات المطلوبة (${resolvedItems.length})
               </div>
 
-              <!-- Items List -->
+              <!-- Items List (Clean Text, No Image) -->
               ${itemsHtml}
 
               <!-- Pricing Summary Card -->
@@ -1223,15 +1141,15 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
                     <td align="left" style="color:#ffffff;font-size:13px;font-weight:700;padding-bottom:8px;font-family:ui-monospace,Menlo,monospace;">${formattedSubtotal}</td>
                   </tr>
                   <tr>
-                    <td style="color:#10b981;font-size:13px;padding-bottom:8px;">خصم الكوبون / النقاط</td>
+                    <td style="color:#10b981;font-size:13px;padding-bottom:8px;">الخصم</td>
                     <td align="left" style="color:#10b981;font-size:13px;font-weight:800;padding-bottom:8px;font-family:ui-monospace,Menlo,monospace;">${formattedDiscount}</td>
                   </tr>
                 `
                     : ""
                 }
                 <tr>
-                  <td style="color:#ffffff;font-size:15px;font-weight:900;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);">المبلغ المطلوب سداده</td>
-                  <td align="left" style="color:#00e5ff;font-size:18px;font-weight:900;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);font-family:ui-monospace,Menlo,monospace;">${formattedTotal}</td>
+                  <td style="color:#ffffff;font-size:15px;font-weight:900;">المبلغ المطلوب سداده</td>
+                  <td align="left" style="color:#00e5ff;font-size:18px;font-weight:900;font-family:ui-monospace,Menlo,monospace;">${formattedTotal}</td>
                 </tr>
               </table>
 
@@ -1242,36 +1160,17 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
                 </a>
               </div>
 
-              <!-- Reassurance / Guarantee -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(0,229,255,0.03);border:1px solid rgba(0,229,255,0.12);border-radius:12px;padding:14px;margin-bottom:12px;">
-                <tr>
-                  <td width="36" valign="top" style="padding-left:12px;font-size:22px;">🛡️</td>
-                  <td valign="top" style="font-size:12px;color:#94a3b8;line-height:1.6;">
-                    <strong style="color:#ffffff;">أمان وضمان 100%:</strong>
-                    طلبك محجوز لك. فور استلام وصل التحويل على الواتساب، سيتم تأكيد الدفع وإرسال مفاتيح التفعيل والحسابات مباشرة إلى بريدك الإلكتروني وصفحة طلبك.
-                  </td>
-                </tr>
-              </table>
-
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
             <td style="background:#090d16;padding:24px 28px;border-top:1px solid #1e283d;text-align:center;">
-              <p style="margin:0 0 10px;font-size:12px;color:#64748b;line-height:1.6;">
-                هل لديك استفسار؟ تواصل معنا مباشرة عبر واتساب الدعم الفني:
-                <br>
-                <a href="${waLink}" style="color:#25D366;font-weight:800;text-decoration:none;">
-                  +962 7 7625 2313 (WhatsApp)
-                </a>
+              <p style="margin:0 0 10px;font-size:12px;color:#64748b;">
+                هل لديك استفسار؟ واتساب الدعم الفني: <a href="${waLink}" style="color:#25D366;font-weight:800;text-decoration:none;">+962 7 7625 2313</a>
               </p>
-              <div style="border-top:1px solid rgba(255,255,255,0.04);margin:14px 0 12px;"></div>
-              <p style="margin:0 0 6px;font-size:11px;color:#475569;">
+              <p style="margin:0;font-size:11px;color:#475569;">
                 © ${new Date().getFullYear()} GX Store. جميع الحقوق محفوظة.
-              </p>
-              <p style="margin:0;font-size:10px;color:#334155;">
-                تم إرسال هذا الإشعار من قِبل إدارة متجر GX Store بشأن طلبك رقم #${orderNumber}.
               </p>
             </td>
           </tr>
