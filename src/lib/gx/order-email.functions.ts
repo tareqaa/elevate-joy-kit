@@ -248,6 +248,109 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
   }
 
   if (
+    cleanSlug.includes("linkedin") ||
+    cleanName.includes("linkedin") ||
+    cleanName.includes("لينكد") ||
+    cleanName.includes("لينكدإن")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/linkedin.png";
+  }
+
+  if (
+    cleanSlug.includes("duolingo") ||
+    cleanName.includes("duolingo") ||
+    cleanName.includes("دولينجو") ||
+    cleanName.includes("دولينقو")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/duolingo-super.png";
+  }
+
+  if (
+    cleanSlug.includes("tod") ||
+    cleanName.includes("tod") ||
+    cleanName.includes("تود")
+  ) {
+    if (cleanSlug.includes("4k") || cleanName.includes("4k")) {
+      return "https://gxstore.me/app/assets/img/catalog/tod-4k-card.jpg";
+    }
+    if (cleanSlug.includes("mobile") || cleanName.includes("mobile") || cleanName.includes("موبايل")) {
+      return "https://gxstore.me/app/assets/img/catalog/tod-mobile-card.jpg";
+    }
+    return "https://gxstore.me/app/assets/img/catalog/tod-standard-card.jpg";
+  }
+
+  if (
+    cleanSlug.includes("youtube") ||
+    cleanName.includes("youtube") ||
+    cleanName.includes("يوتيوب")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/youtube-premium.jpg";
+  }
+
+  if (
+    cleanSlug.includes("discord") ||
+    cleanSlug.includes("nitro") ||
+    cleanName.includes("discord") ||
+    cleanName.includes("nitro") ||
+    cleanName.includes("نيترو") ||
+    cleanName.includes("دسكورد") ||
+    cleanName.includes("ديسكورد")
+  ) {
+    if (cleanSlug.includes("boost") || cleanName.includes("boost") || cleanName.includes("بوست")) {
+      return "https://gxstore.me/app/assets/img/catalog/discord-boost-14x-1m.png";
+    }
+    return "https://gxstore.me/app/assets/img/catalog/discord-nitro-1-month.png";
+  }
+
+  if (
+    cleanSlug.includes("windows") ||
+    cleanName.includes("windows") ||
+    cleanName.includes("ويندوز")
+  ) {
+    return "https://gxstore.me/app/assets/img/windows-logo.png";
+  }
+
+  if (
+    cleanSlug.includes("microsoft") ||
+    cleanSlug.includes("office") ||
+    cleanSlug.includes("365") ||
+    cleanName.includes("microsoft") ||
+    cleanName.includes("office") ||
+    cleanName.includes("اوفيس") ||
+    cleanName.includes("مايكروسوفت")
+  ) {
+    return "https://gxstore.me/app/assets/img/microsoft365-logo.png";
+  }
+
+  if (
+    cleanSlug.includes("gemini") ||
+    cleanName.includes("gemini") ||
+    cleanName.includes("جيميناي") ||
+    cleanName.includes("جيميني")
+  ) {
+    return "https://gxstore.me/app/assets/img/gemini-logo.png";
+  }
+
+  if (
+    cleanSlug.includes("autodesk") ||
+    cleanSlug.includes("autocad") ||
+    cleanName.includes("autodesk") ||
+    cleanName.includes("autocad") ||
+    cleanName.includes("اوتوديسك") ||
+    cleanName.includes("اوتوكاد")
+  ) {
+    return "https://gxstore.me/app/assets/img/autodesk-logo.png";
+  }
+
+  if (
+    cleanSlug.includes("capcut") ||
+    cleanName.includes("capcut") ||
+    cleanName.includes("كاب كات")
+  ) {
+    return "https://gxstore.me/app/assets/img/catalog/capcut-pro.png";
+  }
+
+  if (
     cleanSlug.includes("adobe-acrobat") ||
     cleanName.includes("acrobat") ||
     cleanName.includes("اكروبات")
@@ -271,14 +374,17 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
   }
 
   if (url && url.trim()) {
-    const abs = toAbsoluteUrl(url);
-    if (abs.toLowerCase().endsWith(".svg")) {
-      return "https://gxstore.me/app/assets/img/catalog/playstation.jpg";
+    let clean = url.trim();
+    if (clean.toLowerCase().endsWith(".svg")) {
+      clean = clean.replace(/\.svg$/i, ".png");
     }
-    return abs;
+    const abs = toAbsoluteUrl(clean);
+    if (!abs.toLowerCase().endsWith(".svg")) {
+      return abs;
+    }
   }
 
-  return "";
+  return OFFICIAL_LOGO_URL;
 }
 
 export type OrderItemEmail = {
@@ -972,11 +1078,38 @@ export const sendIncompleteOrderPaymentEmail = createServerFn({ method: "POST" }
       const orderToken = generateOrderToken(orderNumber, customerEmail);
       const orderUrl = `https://gxstore.me/order/${orderNumber}?order_token=${encodeURIComponent(orderToken)}`;
 
-      // Clean items without images as requested by user
-      const resolvedItems = items.map((it) => ({
-        ...it,
-        name: it.name || (isAr ? "منتج رقمي" : "Digital Product"),
-      }));
+      // Resolve original product images from database or catalog
+      const resolvedItems: OrderItemEmail[] = [];
+      const supabase = getServerServiceClient();
+
+      for (const it of items) {
+        let finalImage = sanitizeImageForEmail(it.image, it.name, it.slug);
+        if (!finalImage || finalImage === OFFICIAL_LOGO_URL) {
+          try {
+            const cleanName = (it.name || "").replace(/\(.*?\)/g, "").trim();
+            const { data: prod } = await (supabase as any)
+              .from("products")
+              .select("image_url, icon_image_url")
+              .or(`slug.eq.${it.slug || ""},name_ar.ilike.%${cleanName}%,name_en.ilike.%${cleanName}%`)
+              .limit(1)
+              .maybeSingle();
+            if (prod) {
+              const fromProd = sanitizeImageForEmail(prod.image_url || prod.icon_image_url, it.name, it.slug);
+              if (fromProd && fromProd !== OFFICIAL_LOGO_URL) {
+                finalImage = fromProd;
+              }
+            }
+          } catch { /* noop */ }
+        }
+        if (!finalImage) {
+          finalImage = OFFICIAL_LOGO_URL;
+        }
+        resolvedItems.push({
+          ...it,
+          name: it.name || (isAr ? "منتج رقمي" : "Digital Product"),
+          image: finalImage,
+        });
+      }
 
       const greetingName = (customerName && customerName.trim()) || (isAr ? "عميلنا العزيز" : "Valued Customer");
 
@@ -1010,7 +1143,7 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
         ? `⚠️ طلبك رقم #${orderNumber} بانتظار إتمام الدفع — تواصل معنا عبر الواتساب | GX Store`
         : `⚠️ Action Required: Order #${orderNumber} Pending Payment — Contact via WhatsApp | GX Store`;
 
-      // Items list HTML (Clean text-only without images)
+      // Items list HTML (with original product thumbnail image)
       const itemsHtml = resolvedItems.length > 0
         ? resolvedItems
             .map((item) => {
@@ -1018,10 +1151,16 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
               const priceFormatted = item.price != null
                 ? `${Number(item.price).toFixed(2)} ${isAr ? "د.أ" : "JOD"}`
                 : "";
+              const imgTag = item.image
+                ? `<img src="${item.image}" alt="${item.name}" width="56" height="56" style="width:56px;height:56px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,0.12);display:block;background:#0d121c;">`
+                : `<div style="width:56px;height:56px;border-radius:10px;background:#141b27;border:1px solid rgba(255,255,255,0.12);display:block;color:#00e5ff;font-size:22px;text-align:center;line-height:56px;">🎮</div>`;
 
               return `
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 16px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 14px;">
                   <tr>
+                    <td width="56" valign="middle" style="${isAr ? "padding-left:14px;" : "padding-right:14px;"}">
+                      ${imgTag}
+                    </td>
                     <td valign="middle" align="${isAr ? "right" : "left"}">
                       <div style="color:#ffffff;font-size:14px;font-weight:800;line-height:1.4;margin-bottom:4px;">
                         ${item.name}
@@ -1031,7 +1170,7 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
                         ${qty > 1 ? ` • <span style="color:#64748b;">${isAr ? "الكمية:" : "Qty:"} x${qty}</span>` : ""}
                       </div>
                     </td>
-                    <td width="90" valign="middle" align="${isAr ? "left" : "right"}" style="color:#00e5ff;font-size:15px;font-weight:900;font-family:ui-monospace,Menlo,monospace;white-space:nowrap;padding-${isAr ? "right" : "left"}:12px;">
+                    <td width="90" valign="middle" align="${isAr ? "left" : "right"}" style="color:#00e5ff;font-size:15px;font-weight:900;font-family:ui-monospace,Menlo,monospace;white-space:nowrap;padding-${isAr ? "right" : "left"}:8px;">
                       ${priceFormatted}
                     </td>
                   </tr>
@@ -1045,7 +1184,7 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
           </div>
         `;
 
-      // ARABIC HTML TEMPLATE (Clean, concise, and structured like the English version)
+      // ARABIC HTML TEMPLATE (Rich copy, payment methods overview, original product images, no view order details button)
       const arabicHtml = `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -1082,7 +1221,7 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
               </div>
 
               <h1 style="margin:0 0 14px;color:#ffffff;font-size:23px;font-weight:900;line-height:1.35;">
-                طلبك رقم #${orderNumber} بانتظار إتمام الدفع 💳
+                طلبك بانتظار إتمام الدفع 💳
               </h1>
 
               <p style="margin:0 0 12px;font-size:15px;color:#ffffff;line-height:1.7;">
@@ -1090,13 +1229,13 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
               </p>
 
               <p style="margin:0 0 16px;font-size:14.5px;color:#cbd5e1;line-height:1.8;">
-                شكراً لتسوقك من <strong>GX Store</strong>! تم تسجيل طلبك لدينا وهو حالياً <strong>غير مكتمل وبانتظار تأكيد الدفع</strong>.
+                شكراً لتسوقك من <strong>GX Store</strong>! تم تسجيل طلبك لدينا بنجاح، وهو حالياً <strong>غير مكتمل وبانتظار تأكيد الدفع</strong> لتجهيزه وتسليمه لك فوراً.
               </p>
 
               <!-- Callout Box: Contact via WhatsApp to Pay -->
               <div style="background:linear-gradient(135deg,rgba(37,211,102,0.12) 0%,rgba(0,229,255,0.06) 100%);border:1px solid rgba(37,211,102,0.35);border-radius:14px;padding:18px 20px;margin:22px 0;text-align:center;">
                 <div style="font-size:15px;font-weight:900;color:#ffffff;margin-bottom:8px;">
-                  💬 لإتمام الدفع تواصل معنا عبر الواتساب:
+                  💬 لإتمام الدفع وتأكيد طلبك تواصل معنا عبر الواتساب:
                 </div>
                 <p style="margin:0 0 16px;font-size:13px;color:#cbd5e1;line-height:1.6;">
                   فريق الدعم متواجد لتزويدك ببيانات الدفع الفوري (كليك CliQ / زين كاش / بطاقة) وتأكيد طلبك مباشرة.
@@ -1114,6 +1253,55 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
                 </table>
               </div>
 
+              <!-- Available Payment Methods Overview (طرق الدفع المتوفرة عندنا) -->
+              <div style="margin:24px 0 20px;">
+                <div style="font-size:13px;font-weight:800;color:#00e5ff;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">
+                  💳 طرق الدفع المتاحة للاستكمال:
+                </div>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:13px;color:#e2e8f0;">
+                      🇯🇴 <strong>خدمة كليك (CliQ):</strong> تحويل بنكي فوري من أي بنك أردني بدون أي عمولات.
+                    </td>
+                  </tr>
+                  <tr><td height="8"></td></tr>
+                  <tr>
+                    <td style="padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:13px;color:#e2e8f0;">
+                      📱 <strong>المحافظ الإلكترونية:</strong> زين كاش (Zain Cash) / أورنج موني / أمنية.
+                    </td>
+                  </tr>
+                  <tr><td height="8"></td></tr>
+                  <tr>
+                    <td style="padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:13px;color:#e2e8f0;">
+                      💳 <strong>البطاقات البنكية:</strong> بطاقات فيزا وماستركارد عبر رابط دفع مباشر وآمن.
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- Order Metadata Card (Spaced so Order Number and Status NEVER collide) -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:22px 0 18px;background:#0d121c;border:1px solid #1e283d;border-radius:14px;padding:14px 18px;">
+                <tr>
+                  <td align="right" valign="middle" style="padding-bottom:10px;">
+                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">رقم الطلب (ORDER ID)</div>
+                    <div style="font-size:16px;color:#00e5ff;font-weight:900;font-family:ui-monospace,Menlo,monospace;letter-spacing:0.5px;">#${orderNumber}</div>
+                  </td>
+                  <td align="left" valign="middle" style="padding-bottom:10px;">
+                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;text-align:left;">حالة الطلب</div>
+                    <div style="display:inline-block;padding:5px 14px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);border-radius:20px;font-size:12px;font-weight:800;color:#fbbf24;white-space:nowrap;">
+                      ⏳ بانتظار إتمام الدفع
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">
+                    <div style="font-size:11.5px;color:#94a3b8;">
+                      تاريخ إنشاء الطلب: <strong style="color:#cbd5e1;">${dateFormattedAr}</strong>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
               ${
                 notes && notes.trim()
                   ? `<div style="background:rgba(0,229,255,0.06);border:1px dashed rgba(0,229,255,0.3);border-radius:12px;padding:14px 16px;margin-bottom:22px;font-size:13px;color:#e0f2fe;line-height:1.7;">
@@ -1125,10 +1313,10 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
 
               <!-- Products Header -->
               <div style="font-size:13px;font-weight:800;color:#00e5ff;text-transform:uppercase;letter-spacing:0.5px;margin:22px 0 14px;border-bottom:1px solid #1e283d;padding-bottom:8px;">
-                المنتجات المطلوبة (${resolvedItems.length})
+                المنتجات المحجوزة في هذا الطلب (${resolvedItems.length})
               </div>
 
-              <!-- Items List (Clean Text, No Image) -->
+              <!-- Items List (with original images) -->
               ${itemsHtml}
 
               <!-- Pricing Summary Card -->
@@ -1141,24 +1329,28 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
                     <td align="left" style="color:#ffffff;font-size:13px;font-weight:700;padding-bottom:8px;font-family:ui-monospace,Menlo,monospace;">${formattedSubtotal}</td>
                   </tr>
                   <tr>
-                    <td style="color:#10b981;font-size:13px;padding-bottom:8px;">الخصم</td>
+                    <td style="color:#10b981;font-size:13px;padding-bottom:8px;">خصم الكوبون / النقاط</td>
                     <td align="left" style="color:#10b981;font-size:13px;font-weight:800;padding-bottom:8px;font-family:ui-monospace,Menlo,monospace;">${formattedDiscount}</td>
                   </tr>
                 `
                     : ""
                 }
                 <tr>
-                  <td style="color:#ffffff;font-size:15px;font-weight:900;">المبلغ المطلوب سداده</td>
-                  <td align="left" style="color:#00e5ff;font-size:18px;font-weight:900;font-family:ui-monospace,Menlo,monospace;">${formattedTotal}</td>
+                  <td style="color:#ffffff;font-size:15px;font-weight:900;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);">المبلغ المطلوب سداده</td>
+                  <td align="left" style="color:#00e5ff;font-size:18px;font-weight:900;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);font-family:ui-monospace,Menlo,monospace;">${formattedTotal}</td>
                 </tr>
               </table>
 
-              <!-- Order Details Link Button -->
-              <div style="text-align:center;margin:10px 0 24px;">
-                <a href="${orderUrl}" target="_blank" style="display:inline-block;background:rgba(255,255,255,0.06);border:1px solid rgba(0,229,255,0.3);color:#00e5ff;text-decoration:none;font-size:13.5px;font-weight:800;padding:12px 28px;border-radius:10px;">
-                  🔗 عرض تفاصيل الطلب عبر المتجر
-                </a>
-              </div>
+              <!-- Reassurance / Guarantee -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(0,229,255,0.03);border:1px solid rgba(0,229,255,0.12);border-radius:12px;padding:14px;margin-bottom:12px;">
+                <tr>
+                  <td width="36" valign="top" style="padding-left:12px;font-size:22px;">🛡️</td>
+                  <td valign="top" style="font-size:12px;color:#94a3b8;line-height:1.6;">
+                    <strong style="color:#ffffff;">أمان وضمان 100%:</strong>
+                    طلبك محجوز لك. فور استلام وصل التحويل على الواتساب، سيتم تأكيد الدفع وإرسال مفاتيح التفعيل والحسابات مباشرة إلى بريدك الإلكتروني.
+                  </td>
+                </tr>
+              </table>
 
             </td>
           </tr>
@@ -1183,7 +1375,7 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
 </html>
       `;
 
-      // ENGLISH HTML TEMPLATE
+      // ENGLISH HTML TEMPLATE (with original product images, payment methods, separated order metadata, no view order details button)
       const englishHtml = `
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
@@ -1248,6 +1440,55 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
                 </table>
               </div>
 
+              <!-- Payment Methods Overview -->
+              <div style="margin:24px 0 20px;">
+                <div style="font-size:12.5px;font-weight:800;color:#00e5ff;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">
+                  Payment Methods Available:
+                </div>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:12.5px;color:#e2e8f0;">
+                      🇯🇴 <strong>CliQ (Jordan):</strong> Instant bank transfer from any Jordanian bank with zero fees.
+                    </td>
+                  </tr>
+                  <tr><td height="6"></td></tr>
+                  <tr>
+                    <td style="padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:12.5px;color:#e2e8f0;">
+                      📱 <strong>E-Wallets:</strong> Zain Cash / Orange Money / Umniah.
+                    </td>
+                  </tr>
+                  <tr><td height="6"></td></tr>
+                  <tr>
+                    <td style="padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:12.5px;color:#e2e8f0;">
+                      💳 <strong>Cards:</strong> Visa and MasterCard via direct secure payment link.
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- Order Metadata Card (Spaced so Order Number and Status NEVER collide) -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0 18px;background:#0d121c;border:1px solid #1e283d;border-radius:14px;padding:14px 18px;">
+                <tr>
+                  <td align="left" valign="middle" style="padding-bottom:10px;">
+                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">ORDER ID</div>
+                    <div style="font-size:16px;color:#00e5ff;font-weight:900;font-family:ui-monospace,Menlo,monospace;letter-spacing:0.5px;">#${orderNumber}</div>
+                  </td>
+                  <td align="right" valign="middle" style="padding-bottom:10px;">
+                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">STATUS</div>
+                    <div style="display:inline-block;padding:5px 14px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);border-radius:20px;font-size:12px;font-weight:800;color:#fbbf24;white-space:nowrap;">
+                      ⏳ Pending Payment
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">
+                    <div style="font-size:11.5px;color:#94a3b8;">
+                      Order Placed: <strong style="color:#cbd5e1;">${dateFormattedEn}</strong>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
               ${
                 notes && notes.trim()
                   ? `<div style="background:rgba(0,229,255,0.06);border:1px dashed rgba(0,229,255,0.3);border-radius:12px;padding:14px 16px;margin-bottom:22px;font-size:13px;color:#e0f2fe;line-height:1.7;">
@@ -1271,12 +1512,17 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
                 </tr>
               </table>
 
-              <!-- Order Details Link -->
-              <div style="text-align:center;margin:10px 0 24px;">
-                <a href="${orderUrl}" target="_blank" style="display:inline-block;background:rgba(255,255,255,0.06);border:1px solid rgba(0,229,255,0.3);color:#00e5ff;text-decoration:none;font-size:13.5px;font-weight:800;padding:12px 28px;border-radius:10px;">
-                  🔗 View Order on Website
-                </a>
-              </div>
+              <!-- 100% Security & Guarantee -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(0,229,255,0.03);border:1px solid rgba(0,229,255,0.12);border-radius:12px;padding:14px;margin-bottom:12px;">
+                <tr>
+                  <td width="36" valign="top" style="padding-right:12px;font-size:22px;">🛡️</td>
+                  <td valign="top" style="font-size:12px;color:#94a3b8;line-height:1.6;">
+                    <strong style="color:#ffffff;">100% Guaranteed & Secured:</strong>
+                    Your items are reserved. Once your payment receipt is confirmed on WhatsApp, your activation credentials or keys will be delivered immediately to your email.
+                  </td>
+                </tr>
+              </table>
+
             </td>
           </tr>
 

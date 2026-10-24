@@ -194,6 +194,39 @@ export function getProductCoverImage(
   if (cleanSlug.includes("lovable") || cleanName.includes("lovable") || cleanName.includes("لوفابل")) {
     return "/app/assets/img/catalog/lovable.webp";
   }
+  if (cleanSlug.includes("linkedin") || cleanName.includes("linkedin") || cleanName.includes("لينكد")) {
+    return "/app/assets/img/catalog/linkedin.png";
+  }
+  if (cleanSlug.includes("duolingo") || cleanName.includes("duolingo") || cleanName.includes("دولينجو") || cleanName.includes("دولينقو")) {
+    return "/app/assets/img/catalog/duolingo-super.png";
+  }
+  if (cleanSlug.includes("tod") || cleanName.includes("tod") || cleanName.includes("تود")) {
+    if (cleanSlug.includes("4k") || cleanName.includes("4k")) {
+      return "/app/assets/img/catalog/tod-4k-card.jpg";
+    }
+    if (cleanSlug.includes("mobile") || cleanName.includes("mobile") || cleanName.includes("موبايل")) {
+      return "/app/assets/img/catalog/tod-mobile-card.jpg";
+    }
+    return "/app/assets/img/catalog/tod-standard-card.jpg";
+  }
+  if (cleanSlug.includes("youtube") || cleanName.includes("youtube") || cleanName.includes("يوتيوب")) {
+    return "/app/assets/img/catalog/youtube-premium.jpg";
+  }
+  if (cleanSlug.includes("windows") || cleanName.includes("windows") || cleanName.includes("ويندوز")) {
+    return "/app/assets/img/windows-logo.png";
+  }
+  if (cleanSlug.includes("microsoft") || cleanSlug.includes("office") || cleanSlug.includes("365") || cleanName.includes("microsoft") || cleanName.includes("office") || cleanName.includes("اوفيس") || cleanName.includes("مايكروسوفت")) {
+    return "/app/assets/img/microsoft365-logo.png";
+  }
+  if (cleanSlug.includes("gemini") || cleanName.includes("gemini") || cleanName.includes("جيميناي") || cleanName.includes("جيميني")) {
+    return "/app/assets/img/gemini-logo.png";
+  }
+  if (cleanSlug.includes("autodesk") || cleanSlug.includes("autocad") || cleanName.includes("autodesk") || cleanName.includes("autocad") || cleanName.includes("اوتوديسك") || cleanName.includes("اوتوكاد")) {
+    return "/app/assets/img/autodesk-logo.png";
+  }
+  if (cleanSlug.includes("capcut") || cleanName.includes("capcut") || cleanName.includes("كاب كات")) {
+    return "/app/assets/img/catalog/capcut-pro.png";
+  }
   if (cleanSlug.includes("gta") || cleanName.includes("gta") || cleanName.includes("جراند")) {
     return "/app/assets/img/catalog/gta-v-enhanced-pc.jpg";
   }
