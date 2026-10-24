@@ -16,7 +16,7 @@ import {
   CheckCircle2, XCircle, Clock, CreditCard, Package as PackageIcon,
   Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor, Mail, Copy, Eye, Lock,
 } from "lucide-react";
-import { sendOrderStatusEmail, getOrderSecretLinkFn } from "@/lib/gx/order-email.functions";
+import { sendOrderStatusEmail, sendIncompleteOrderPaymentEmail, getOrderSecretLinkFn } from "@/lib/gx/order-email.functions";
 
 
 export const Route = createFileRoute("/_authenticated/admin/orders")({
@@ -809,6 +809,66 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
     }
   }
 
+  const [sendingPaymentReminder, setSendingPaymentReminder] = useState(false);
+
+  async function sendPaymentReminder() {
+    const targetEmail = order.user_email || order.customer_email || (order.delivery_data && typeof order.delivery_data === "object" ? (order.delivery_data as any).customer_email : null);
+    let email = targetEmail ? String(targetEmail).trim() : "";
+    if (!email || !email.includes("@")) {
+      const prompted = prompt("أدخل البريد الإلكتروني للعميل لإرسال إشعار استكمال الدفع:", "");
+      if (!prompted || !prompted.includes("@")) {
+        toast.error("يرجى إدخال بريد إلكتروني صالح لإرسال الإشعار.");
+        return;
+      }
+      email = prompted.trim();
+    }
+
+    if (!confirm(`هل أنت متأكد من إرسال إشعار استكمال الدفع ورابط الواتساب إلى (${email})؟`)) {
+      return;
+    }
+
+    setSendingPaymentReminder(true);
+    try {
+      const emailItems = (Array.isArray(order.items) ? order.items : []).map((it: any) => ({
+        name: it.name || "منتج رقمي",
+        qty: it.qty || it.quantity || 1,
+        price: it.price != null ? Number(it.price) : undefined,
+        image: it.image || it.image_url || undefined,
+        region: it.region || undefined,
+        variant: it.variant || undefined,
+        slug: it.product_slug || it.slug || it.cartId || it.id || undefined,
+      }));
+
+      const res = await sendIncompleteOrderPaymentEmail({
+        data: {
+          orderNumber: order.order_number,
+          customerEmail: email,
+          customerName: order.customer_name || undefined,
+          customerWhatsapp: order.customer_whatsapp || undefined,
+          totalJod: Number(order.total_jod || 0),
+          subtotalJod: Number(order.subtotal_jod ?? order.total_jod ?? 0),
+          discountJod: Number(order.discount_jod || 0),
+          paymentMethod: (order.delivery_data as any)?.payment_method || "",
+          items: emailItems,
+          notes: notes.trim() || undefined,
+          createdAt: order.created_at,
+          lang: emailLang,
+        },
+      });
+
+      if (res && res.ok) {
+        toast.success(`تم إرسال إشعار استكمال الدفع (${emailLang === "ar" ? "بالعربية" : "بالإنجليزية"}) للعميل (${email}) بنجاح!`);
+      } else {
+        toast.error(res?.error || "فشل إرسال إشعار استكمال الدفع");
+      }
+    } catch (err: any) {
+      console.error("Payment reminder email error:", err);
+      toast.error(err?.message || "حدث خطأ أثناء إرسال الإشعار");
+    } finally {
+      setSendingPaymentReminder(false);
+    }
+  }
+
   const contactHref = order.customer_whatsapp
     ? (order.contact_type === "telegram"
       ? `https://t.me/${order.customer_whatsapp.replace(/^@+/, "")}`
@@ -1171,6 +1231,28 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                 </div>
               </div>
             )}
+
+            {/* Incomplete Order Payment Reminder Trigger */}
+            <div className="pt-2.5 mt-2 border-t border-cyan-500/15 flex items-center justify-between gap-3 flex-wrap">
+              <div className="text-[11.5px] text-cyan-200/90 leading-relaxed max-w-md">
+                💬 <strong className="text-white">إشعار طلب غير مكتمل:</strong> إرسال إيميل رسمي للزبون ينبهه بأن طلبه غير مكتمل مع زر مباشر يفتح الواتساب لاستكمال الدفع عبر (كليك / زين كاش / بطاقة).
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={sendPaymentReminder}
+                disabled={sendingPaymentReminder}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-8 px-3.5 shadow-sm shadow-emerald-500/20"
+                title="إرسال إشعار استكمال الدفع على إيميل العميل"
+              >
+                {sendingPaymentReminder ? (
+                  <Loader2 size={13} className="ml-1 animate-spin" />
+                ) : (
+                  <Mail size={13} className="ml-1" />
+                )}
+                إرسال إشعار الواتساب للعميل
+              </Button>
+            </div>
           </div>
 
           {/* Actions */}
@@ -1186,8 +1268,22 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                   <CheckCircle2 size={15} className="ml-1" /> تأكيد الدفع
                 </Button>
               )}
+              <Button
+                type="button"
+                onClick={sendPaymentReminder}
+                disabled={sendingPaymentReminder}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-500/20"
+                title="إرسال إيميل رسمي للعميل يحتوي رابط الواتساب وبيانات الدفع"
+              >
+                {sendingPaymentReminder ? (
+                  <Loader2 size={15} className="ml-1 animate-spin" />
+                ) : (
+                  <Mail size={15} className="ml-1" />
+                )}
+                💬 إشعار استكمال الدفع (واتساب + إيميل)
+              </Button>
               {status !== "delivered" && status !== "cancelled" && (
-                <Button onClick={markDelivered} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20">
+                <Button onClick={markDelivered} className="bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg shadow-cyan-500/20">
                   <CheckCircle2 size={15} className="ml-1" /> تسليم + إشعار
                 </Button>
               )}

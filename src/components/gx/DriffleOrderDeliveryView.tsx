@@ -1034,6 +1034,98 @@ export function DriffleOrderDeliveryView({
            ========================================================= */}
         {!loading && order && !isLocked && (
           <div style={{ display: "flex", flexDirection: "column", gap: "22px", width: "100%" }}>
+            {/* ── PENDING PAYMENT ALERT BANNER (If order is incomplete) ── */}
+            {order.status === "pending" && (
+              <div
+                style={{
+                  borderRadius: "18px",
+                  backgroundColor: cardBg,
+                  border: "1px solid rgba(245, 158, 11, 0.4)",
+                  background: "linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(37, 211, 102, 0.08) 100%)",
+                  padding: "20px 24px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "18px",
+                  flexWrap: "wrap",
+                  boxShadow: "0 10px 32px rgba(0, 0, 0, 0.5)",
+                  animation: "drfFadeUp 0.4s ease",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "14px", flex: "1 1 300px" }}>
+                  <div
+                    style={{
+                      width: "48px",
+                      height: "48px",
+                      borderRadius: "14px",
+                      backgroundColor: "rgba(245, 158, 11, 0.15)",
+                      border: "1px solid rgba(245, 158, 11, 0.35)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#fbbf24",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Clock style={{ width: "24px", height: "24px" }} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span
+                        style={{
+                          padding: "2px 8px",
+                          borderRadius: "6px",
+                          backgroundColor: "rgba(245, 158, 11, 0.2)",
+                          color: "#fbbf24",
+                          fontSize: "11px",
+                          fontWeight: 800,
+                        }}
+                      >
+                        {isAr ? "طلب غير مكتمل" : "Incomplete Order"}
+                      </span>
+                      <h3 style={{ fontSize: "16px", fontWeight: 800, color: textPrimary, margin: 0 }}>
+                        {isAr ? "الطلب بانتظار إتمام الدفع ⏳" : "Order Pending Payment ⏳"}
+                      </h3>
+                    </div>
+                    <p style={{ fontSize: "13px", color: "#cbd5e1", margin: 0, lineHeight: 1.55 }}>
+                      {isAr
+                        ? "لإتمام الدفع وتأكيد الحجز الفوري للمنتجات، تواصل معنا عبر الواتساب لتزويدك ببيانات الدفع (كليك CliQ / زين كاش / بطاقة)."
+                        : "To complete payment and confirm your order, contact us on WhatsApp for payment details (CliQ / Zain Cash / Card)."}
+                    </p>
+                  </div>
+                </div>
+
+                <a
+                  href={`https://wa.me/962776252313?text=${encodeURIComponent(
+                    isAr
+                      ? `مرحباً متجر GX Store 👋\nأود استكمال الدفع لطلبي:\n📦 رقم الطلب: #${order.order_number}\n💰 المبلغ المطلوب: ${Number(order.total_jod || 0).toFixed(2)} د.أ\n🔗 رابط الطلب: https://gxstore.me/order/${order.order_number}\n\nأرجو تزويدي ببيانات الدفع (كليك CliQ / زين كاش / بطاقة). شكراً لكم!`
+                      : `Hi GX Store 👋\nI would like to complete payment for order #${order.order_number}\nAmount: ${Number(order.total_jod || 0).toFixed(2)} JOD\nLink: https://gxstore.me/order/${order.order_number}`
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "12px 24px",
+                    borderRadius: "12px",
+                    backgroundColor: "#25D366",
+                    background: "linear-gradient(135deg, #25D366 0%, #1ebe5d 100%)",
+                    color: "#051c14",
+                    fontWeight: 900,
+                    fontSize: "13.5px",
+                    textDecoration: "none",
+                    boxShadow: "0 6px 20px rgba(37, 211, 102, 0.35)",
+                    flexShrink: 0,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <WhatsAppSvg size={18} color="#051c14" />
+                  <span>{isAr ? "استكمال الدفع عبر واتساب" : "Complete via WhatsApp"}</span>
+                </a>
+              </div>
+            )}
+
             {/* ── SECTION 1: ORDER SUMMARY & DETAILS (AT THE VERY TOP) ── */}
             <div
               style={{

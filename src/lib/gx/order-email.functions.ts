@@ -894,6 +894,552 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
   });
 
 /**
+ * Server function to notify customer that their order is incomplete / pending payment,
+ * providing direct WhatsApp contact button to complete payment via CliQ / Zain Cash / Card.
+ */
+export const sendIncompleteOrderPaymentEmail = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z
+      .object({
+        orderNumber: z.string().trim().min(1),
+        customerEmail: z.string().trim().email(),
+        customerName: z.string().optional(),
+        customerWhatsapp: z.string().optional(),
+        totalJod: z.number(),
+        subtotalJod: z.number().optional(),
+        discountJod: z.number().optional(),
+        paymentMethod: z.string().optional(),
+        items: z
+          .array(
+            z.object({
+              name: z.string(),
+              qty: z.number().optional(),
+              price: z.number().optional(),
+              image: z.string().optional(),
+              region: z.string().optional(),
+              variant: z.string().optional(),
+              slug: z.string().optional(),
+            })
+          )
+          .optional(),
+        notes: z.string().optional(),
+        createdAt: z.string().optional(),
+        lang: z.enum(["ar", "en"]).default("ar"),
+      })
+      .parse(data)
+  )
+  .handler(async ({ data }) => {
+    try {
+      const {
+        orderNumber,
+        customerEmail,
+        customerName,
+        customerWhatsapp,
+        totalJod,
+        subtotalJod,
+        discountJod,
+        paymentMethod,
+        items = [],
+        notes,
+        createdAt,
+        lang = "ar",
+      } = data;
+
+      const isAr = lang === "ar";
+      const formattedTotal = `${Number(totalJod).toFixed(2)} د.أ`;
+      const formattedTotalEn = `${Number(totalJod).toFixed(2)} JOD`;
+      const formattedSubtotal = `${Number(subtotalJod ?? totalJod).toFixed(2)} د.أ`;
+      const formattedSubtotalEn = `${Number(subtotalJod ?? totalJod).toFixed(2)} JOD`;
+      const formattedDiscount = discountJod && discountJod > 0 ? `-${Number(discountJod).toFixed(2)} د.أ` : null;
+      const formattedDiscountEn = discountJod && discountJod > 0 ? `-${Number(discountJod).toFixed(2)} JOD` : null;
+
+      const dateObj = createdAt ? new Date(createdAt) : new Date();
+      const dateFormattedEn = dateObj.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const dateFormattedAr = dateObj.toLocaleDateString("ar-JO", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const orderToken = generateOrderToken(orderNumber, customerEmail);
+      const orderUrl = `https://gxstore.me/order/${orderNumber}?order_token=${encodeURIComponent(orderToken)}`;
+
+      // Resolve product images from database if missing (Guaranteed JPG/PNG for Gmail)
+      const resolvedItems: OrderItemEmail[] = [];
+      const supabase = getServerServiceClient();
+
+      for (const it of items) {
+        let finalImage = sanitizeImageForEmail(it.image, it.name, it.slug);
+        if (!finalImage) {
+          try {
+            const cleanName = it.name.replace(/\(.*?\)/g, "").trim();
+            const { data: prod } = await (supabase as any)
+              .from("products")
+              .select("image_url, icon_image_url")
+              .or(`slug.eq.${it.slug || ""},name_ar.ilike.%${cleanName}%,name_en.ilike.%${cleanName}%`)
+              .limit(1)
+              .maybeSingle();
+            if (prod) {
+              finalImage = sanitizeImageForEmail(prod.image_url || prod.icon_image_url, it.name, it.slug);
+            }
+          } catch { /* noop */ }
+        }
+        if (!finalImage) {
+          finalImage = OFFICIAL_LOGO_URL;
+        }
+        resolvedItems.push({
+          ...it,
+          image: finalImage,
+        });
+      }
+
+      const greetingName = (customerName && customerName.trim()) || (isAr ? "عميلنا العزيز" : "Valued Customer");
+
+      // WhatsApp URL with pre-filled message (matching the deposit system)
+      const itemsListText = resolvedItems
+        .map((it) => `• ${it.name}${it.qty && it.qty > 1 ? ` (×${it.qty})` : ""}`)
+        .join("\n");
+
+      const waMsgAr = `مرحباً متجر GX Store 👋
+أود استكمال الدفع وتأكيد طلبي:
+📦 رقم الطلب: #${orderNumber}
+👤 العميل: ${greetingName}
+💰 المبلغ الإجمالي: ${formattedTotal}
+${itemsListText ? `🛒 المنتجات:\n${itemsListText}\n` : ""}🔗 رابط الطلب: ${orderUrl}
+
+أرجو تزويدي ببيانات الدفع (كليك CliQ / زين كاش / بطاقة). شكراً لكم!`;
+
+      const waMsgEn = `Hi GX Store 👋
+I would like to complete payment for my order:
+📦 Order #: #${orderNumber}
+👤 Name: ${greetingName}
+💰 Total Amount: ${formattedTotalEn}
+${itemsListText ? `🛒 Items:\n${itemsListText}\n` : ""}🔗 Order Link: ${orderUrl}
+
+Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
+
+      const waLink = `https://wa.me/962776252313?text=${encodeURIComponent(isAr ? waMsgAr : waMsgEn)}`;
+
+      // Subject line
+      const subject = isAr
+        ? `⚠️ طلبك رقم #${orderNumber} بانتظار إتمام الدفع — تواصل معنا عبر الواتساب | GX Store`
+        : `⚠️ Action Required: Order #${orderNumber} Pending Payment — Contact via WhatsApp | GX Store`;
+
+      // Items list HTML
+      const itemsHtml = resolvedItems.length > 0
+        ? resolvedItems
+            .map((item) => {
+              const qty = item.qty || 1;
+              const priceFormatted = item.price != null
+                ? `${Number(item.price).toFixed(2)} ${isAr ? "د.أ" : "JOD"}`
+                : "";
+              const imgTag = item.image
+                ? `<img src="${item.image}" alt="${item.name}" width="64" height="64" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,0.12);display:block;background:#0d121c;">`
+                : `<div style="width:64px;height:64px;border-radius:12px;background:#141b27;border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;color:#00e5ff;font-size:24px;text-align:center;line-height:64px;">🎮</div>`;
+
+              return `
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:14px;padding:12px;">
+                  <tr>
+                    <td width="74" valign="middle" style="${isAr ? "padding-left:14px;" : "padding-right:14px;"}">
+                      ${imgTag}
+                    </td>
+                    <td valign="middle">
+                      <div style="color:#ffffff;font-size:14px;font-weight:800;line-height:1.4;margin-bottom:4px;">
+                        ${item.name}
+                      </div>
+                      <div style="color:#94a3b8;font-size:12px;margin-bottom:3px;">
+                        ${isAr ? "المنطقة / الريجون:" : "Region:"} <strong style="color:#38bdf8;">${item.region || (isAr ? "عالمي (Global)" : "Global")}</strong>
+                      </div>
+                      ${qty > 1 ? `<div style="color:#64748b;font-size:11px;">${isAr ? "الكمية:" : "Quantity:"} x${qty}</div>` : ""}
+                    </td>
+                    <td width="90" valign="middle" align="${isAr ? "left" : "right"}" style="color:#00e5ff;font-size:15px;font-weight:900;font-family:ui-monospace,Menlo,monospace;white-space:nowrap;">
+                      ${priceFormatted}
+                    </td>
+                  </tr>
+                </table>
+              `;
+            })
+            .join("")
+        : `
+          <div style="color:#cbd5e1;font-size:13px;padding:12px 0;">
+            ${isAr ? `طلب رقم #${orderNumber} بقيمة ${formattedTotal}` : `Order #${orderNumber} (${formattedTotalEn})`}
+          </div>
+        `;
+
+      // ARABIC HTML TEMPLATE
+      const arabicHtml = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${subject}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#080b12;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f1f5f9;direction:rtl;text-align:right;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#080b12;width:100%;padding:32px 14px;">
+    <tr>
+      <td align="center">
+        <!-- Main Container Card -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:580px;background:linear-gradient(180deg,#121724 0%,#0c0f18 100%);border:1px solid #1e283d;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.7);">
+          
+          <!-- Brand Logo Header -->
+          <tr>
+            <td style="background:#090d16;padding:22px 28px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <a href="https://gxstore.me" target="_blank" style="text-decoration:none;display:inline-block;">
+                <img src="${OFFICIAL_LOGO_URL}" alt="GX Store" width="140" height="auto" style="max-width:140px;height:auto;display:block;margin:0 auto;" />
+              </a>
+              <div style="margin-top:12px;font-size:11px;color:#64748b;letter-spacing:0.5px;">
+                <a href="https://gxstore.me" style="color:#94a3b8;text-decoration:none;margin:0 8px;">الألعاب والاشتراكات</a> •
+                <a href="https://gxstore.me" style="color:#94a3b8;text-decoration:none;margin:0 8px;">البطاقات الرقمية</a> •
+                <a href="https://gxstore.me" style="color:#94a3b8;text-decoration:none;margin:0 8px;">الشحن المباشر</a>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Content Body -->
+          <tr>
+            <td style="padding:32px 28px 20px;">
+              
+              <!-- Title Badge -->
+              <div style="display:inline-block;padding:6px 16px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);border-radius:30px;margin-bottom:18px;">
+                <span style="font-size:12.5px;font-weight:800;color:#fbbf24;">
+                  ⏳ طلب غير مكتمل — بانتظار إتمام الدفع
+                </span>
+              </div>
+
+              <h1 style="margin:0 0 14px;color:#ffffff;font-size:23px;font-weight:900;line-height:1.35;">
+                طلبك رقم #${orderNumber} بانتظار إتمام الدفع 💳
+              </h1>
+
+              <p style="margin:0 0 12px;font-size:15px;color:#ffffff;line-height:1.7;">
+                مرحباً بك <strong style="color:#00e5ff;">${greetingName}</strong> 👋،
+              </p>
+
+              <p style="margin:0 0 16px;font-size:14.5px;color:#cbd5e1;line-height:1.8;">
+                شكراً لاختيارك متجر <strong>GX Store</strong>! نحيطك علماً بأن طلبك تم تسجيله لدينا وهو حالياً <strong>غير مكتمل وبانتظار تأكيد الدفع</strong> ليتم حجز المنتجات وتجهيزها للتسليم الفوري.
+              </p>
+
+              <!-- Callout Box: Contact via WhatsApp to Pay -->
+              <div style="background:linear-gradient(135deg,rgba(37,211,102,0.12) 0%,rgba(0,229,255,0.06) 100%);border:1px solid rgba(37,211,102,0.35);border-radius:14px;padding:18px 20px;margin:22px 0;text-align:center;">
+                <div style="font-size:15px;font-weight:900;color:#ffffff;margin-bottom:8px;">
+                  💬 لإتمام الدفع وتأكيد طلبك تواصل معنا عبر الواتساب:
+                </div>
+                <p style="margin:0 0 16px;font-size:13px;color:#cbd5e1;line-height:1.6;">
+                  فريقنا متواجد لتزويدك ببيانات الدفع الفوري عبر (كليك CliQ الأردني، محافظ زين كاش، أو بطاقة بنكية) وتأكيد طلبك في دقائق.
+                </p>
+
+                <!-- WhatsApp Button (Same style as deposit / cart system) -->
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                  <tr>
+                    <td align="center" style="border-radius:12px;background:#25D366;box-shadow:0 8px 24px rgba(37,211,102,0.35);">
+                      <a href="${waLink}" target="_blank" style="display:inline-block;padding:14px 34px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:900;color:#051c14;text-decoration:none;border-radius:12px;letter-spacing:0.3px;">
+                        💬 تواصل معنا عبر الواتساب لإتمام الدفع ←
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <div style="margin-top:10px;font-size:11.5px;color:#94a3b8;">
+                  رقم الواتساب الرسمي: <span dir="ltr" style="font-weight:bold;color:#25D366;">+962 7 7625 2313</span>
+                </div>
+              </div>
+
+              ${
+                notes && notes.trim()
+                  ? `<div style="background:rgba(0,229,255,0.06);border:1px dashed rgba(0,229,255,0.3);border-radius:12px;padding:14px 16px;margin-bottom:22px;font-size:13px;color:#e0f2fe;line-height:1.7;">
+                      <div style="font-weight:800;color:#00e5ff;margin-bottom:4px;">💡 ملاحظة من إدارة المتجر:</div>
+                      <div>${notes.trim()}</div>
+                    </div>`
+                  : ""
+              }
+
+              <!-- Payment Methods Overview -->
+              <div style="margin:24px 0 20px;">
+                <div style="font-size:12.5px;font-weight:800;color:#00e5ff;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">
+                  طرق الدفع المتاحة للاستكمال:
+                </div>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:12.5px;color:#e2e8f0;margin-bottom:6px;">
+                      🇯🇴 <strong>خدمة كليك (CliQ):</strong> تحويل بنكي فوري من أي بنك أردني بدون أي عمولات.
+                    </td>
+                  </tr>
+                  <tr><td height="6"></td></tr>
+                  <tr>
+                    <td style="padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:12.5px;color:#e2e8f0;margin-bottom:6px;">
+                      📱 <strong>المحافظ الإلكترونية:</strong> زين كاش (Zain Cash) / أورنج موني / أمنية.
+                    </td>
+                  </tr>
+                  <tr><td height="6"></td></tr>
+                  <tr>
+                    <td style="padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:12.5px;color:#e2e8f0;">
+                      💳 <strong>البطاقات البنكية:</strong> بطاقات فيزا وماستركارد عبر رابط دفع مباشر.
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- Order Metadata Grid -->
+              <div style="border-top:1px solid #1e283d;margin:24px 0 18px;"></div>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:20px;">
+                <tr>
+                  <td width="33%" valign="top" style="padding-bottom:12px;">
+                    <div style="font-size:11px;color:#64748b;font-weight:700;">رقم الطلب (ORDER ID)</div>
+                    <div style="font-size:14px;color:#ffffff;font-weight:900;font-family:ui-monospace,Menlo,monospace;margin-top:4px;" dir="ltr">#${orderNumber}</div>
+                  </td>
+                  <td width="33%" valign="top" style="padding-bottom:12px;">
+                    <div style="font-size:11px;color:#64748b;font-weight:700;">حالة الطلب</div>
+                    <div style="font-size:13px;color:#fbbf24;font-weight:800;margin-top:4px;">بانتظار الدفع ⏳</div>
+                  </td>
+                  <td width="33%" valign="top" style="padding-bottom:12px;">
+                    <div style="font-size:11px;color:#64748b;font-weight:700;">التاريخ</div>
+                    <div style="font-size:12px;color:#94a3b8;margin-top:4px;">${dateFormattedAr}</div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Products Header -->
+              <div style="font-size:13px;font-weight:800;color:#00e5ff;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;border-bottom:1px solid #1e283d;padding-bottom:8px;">
+                المنتجات المحجوزة في هذا الطلب (${resolvedItems.length})
+              </div>
+
+              <!-- Items List -->
+              ${itemsHtml}
+
+              <!-- Pricing Summary Card -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0 24px;background:#0d121c;border:1px solid #1e283d;border-radius:14px;padding:16px 20px;">
+                ${
+                  formattedDiscount
+                    ? `
+                  <tr>
+                    <td style="color:#94a3b8;font-size:13px;padding-bottom:8px;">المجموع الفرعي</td>
+                    <td align="left" style="color:#ffffff;font-size:13px;font-weight:700;padding-bottom:8px;font-family:ui-monospace,Menlo,monospace;">${formattedSubtotal}</td>
+                  </tr>
+                  <tr>
+                    <td style="color:#10b981;font-size:13px;padding-bottom:8px;">خصم الكوبون / النقاط</td>
+                    <td align="left" style="color:#10b981;font-size:13px;font-weight:800;padding-bottom:8px;font-family:ui-monospace,Menlo,monospace;">${formattedDiscount}</td>
+                  </tr>
+                `
+                    : ""
+                }
+                <tr>
+                  <td style="color:#ffffff;font-size:15px;font-weight:900;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);">المبلغ المطلوب سداده</td>
+                  <td align="left" style="color:#00e5ff;font-size:18px;font-weight:900;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);font-family:ui-monospace,Menlo,monospace;">${formattedTotal}</td>
+                </tr>
+              </table>
+
+              <!-- Order Details Link Button -->
+              <div style="text-align:center;margin:10px 0 24px;">
+                <a href="${orderUrl}" target="_blank" style="display:inline-block;background:rgba(255,255,255,0.06);border:1px solid rgba(0,229,255,0.3);color:#00e5ff;text-decoration:none;font-size:13.5px;font-weight:800;padding:12px 28px;border-radius:10px;">
+                  🔗 عرض تفاصيل الطلب عبر المتجر
+                </a>
+              </div>
+
+              <!-- Reassurance / Guarantee -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(0,229,255,0.03);border:1px solid rgba(0,229,255,0.12);border-radius:12px;padding:14px;margin-bottom:12px;">
+                <tr>
+                  <td width="36" valign="top" style="padding-left:12px;font-size:22px;">🛡️</td>
+                  <td valign="top" style="font-size:12px;color:#94a3b8;line-height:1.6;">
+                    <strong style="color:#ffffff;">أمان وضمان 100%:</strong>
+                    طلبك محجوز لك. فور استلام وصل التحويل على الواتساب، سيتم تأكيد الدفع وإرسال مفاتيح التفعيل والحسابات مباشرة إلى بريدك الإلكتروني وصفحة طلبك.
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#090d16;padding:24px 28px;border-top:1px solid #1e283d;text-align:center;">
+              <p style="margin:0 0 10px;font-size:12px;color:#64748b;line-height:1.6;">
+                هل لديك استفسار؟ تواصل معنا مباشرة عبر واتساب الدعم الفني:
+                <br>
+                <a href="${waLink}" style="color:#25D366;font-weight:800;text-decoration:none;">
+                  +962 7 7625 2313 (WhatsApp)
+                </a>
+              </p>
+              <div style="border-top:1px solid rgba(255,255,255,0.04);margin:14px 0 12px;"></div>
+              <p style="margin:0 0 6px;font-size:11px;color:#475569;">
+                © ${new Date().getFullYear()} GX Store. جميع الحقوق محفوظة.
+              </p>
+              <p style="margin:0;font-size:10px;color:#334155;">
+                تم إرسال هذا الإشعار من قِبل إدارة متجر GX Store بشأن طلبك رقم #${orderNumber}.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `;
+
+      // ENGLISH HTML TEMPLATE
+      const englishHtml = `
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${subject}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#080b12;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f1f5f9;direction:ltr;text-align:left;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#080b12;width:100%;padding:32px 14px;">
+    <tr>
+      <td align="center">
+        <!-- Main Container Card -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:580px;background:linear-gradient(180deg,#121724 0%,#0c0f18 100%);border:1px solid #1e283d;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.7);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background:#090d16;padding:22px 28px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:center;">
+              <a href="https://gxstore.me" target="_blank" style="text-decoration:none;display:inline-block;">
+                <img src="${OFFICIAL_LOGO_URL}" alt="GX Store" width="140" height="auto" style="max-width:140px;height:auto;display:block;margin:0 auto;" />
+              </a>
+            </td>
+          </tr>
+
+          <!-- Content Body -->
+          <tr>
+            <td style="padding:32px 28px 20px;">
+              <div style="display:inline-block;padding:6px 16px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);border-radius:30px;margin-bottom:18px;">
+                <span style="font-size:12.5px;font-weight:800;color:#fbbf24;">
+                  ⏳ Order Incomplete — Pending Payment
+                </span>
+              </div>
+
+              <h1 style="margin:0 0 14px;color:#ffffff;font-size:23px;font-weight:900;line-height:1.35;">
+                Order #${orderNumber} is Pending Payment 💳
+              </h1>
+
+              <p style="margin:0 0 12px;font-size:15px;color:#ffffff;line-height:1.7;">
+                Hello <strong style="color:#00e5ff;">${greetingName}</strong> 👋,
+              </p>
+
+              <p style="margin:0 0 16px;font-size:14.5px;color:#cbd5e1;line-height:1.8;">
+                Thank you for shopping at <strong>GX Store</strong>! Your order has been placed and is currently <strong>incomplete / pending payment confirmation</strong>.
+              </p>
+
+              <div style="background:linear-gradient(135deg,rgba(37,211,102,0.12) 0%,rgba(0,229,255,0.06) 100%);border:1px solid rgba(37,211,102,0.35);border-radius:14px;padding:18px 20px;margin:22px 0;text-align:center;">
+                <div style="font-size:15px;font-weight:900;color:#ffffff;margin-bottom:8px;">
+                  💬 To complete payment, please contact us on WhatsApp:
+                </div>
+                <p style="margin:0 0 16px;font-size:13px;color:#cbd5e1;line-height:1.6;">
+                  Our support team will promptly provide payment details (CliQ, Zain Cash, or Card) and deliver your items instantly.
+                </p>
+
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                  <tr>
+                    <td align="center" style="border-radius:12px;background:#25D366;box-shadow:0 8px 24px rgba(37,211,102,0.35);">
+                      <a href="${waLink}" target="_blank" style="display:inline-block;padding:14px 34px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:900;color:#051c14;text-decoration:none;border-radius:12px;">
+                        💬 Complete Payment on WhatsApp →
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              ${
+                notes && notes.trim()
+                  ? `<div style="background:rgba(0,229,255,0.06);border:1px dashed rgba(0,229,255,0.3);border-radius:12px;padding:14px 16px;margin-bottom:22px;font-size:13px;color:#e0f2fe;line-height:1.7;">
+                      <div style="font-weight:800;color:#00e5ff;margin-bottom:4px;">💡 Note from Store Management:</div>
+                      <div>${notes.trim()}</div>
+                    </div>`
+                  : ""
+              }
+
+              <!-- Items List -->
+              <div style="font-size:13px;font-weight:800;color:#00e5ff;text-transform:uppercase;letter-spacing:0.5px;margin:22px 0 14px;border-bottom:1px solid #1e283d;padding-bottom:8px;">
+                Reserved Items (${resolvedItems.length})
+              </div>
+              ${itemsHtml}
+
+              <!-- Pricing Summary -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0 24px;background:#0d121c;border:1px solid #1e283d;border-radius:14px;padding:16px 20px;">
+                <tr>
+                  <td style="color:#ffffff;font-size:15px;font-weight:900;">Total Amount Due</td>
+                  <td align="right" style="color:#00e5ff;font-size:18px;font-weight:900;font-family:ui-monospace,Menlo,monospace;">${formattedTotalEn}</td>
+                </tr>
+              </table>
+
+              <!-- Order Details Link -->
+              <div style="text-align:center;margin:10px 0 24px;">
+                <a href="${orderUrl}" target="_blank" style="display:inline-block;background:rgba(255,255,255,0.06);border:1px solid rgba(0,229,255,0.3);color:#00e5ff;text-decoration:none;font-size:13.5px;font-weight:800;padding:12px 28px;border-radius:10px;">
+                  🔗 View Order on Website
+                </a>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#090d16;padding:24px 28px;border-top:1px solid #1e283d;text-align:center;">
+              <p style="margin:0 0 10px;font-size:12px;color:#64748b;">
+                Need assistance? WhatsApp Support: <a href="${waLink}" style="color:#25D366;font-weight:800;text-decoration:none;">+962 7 7625 2313</a>
+              </p>
+              <p style="margin:0;font-size:11px;color:#475569;">
+                © ${new Date().getFullYear()} GX Store. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `;
+
+      const html = isAr ? arabicHtml : englishHtml;
+
+      const apiKey = await getResendApiKey();
+      if (!apiKey) {
+        console.error("Resend API key is not configured.");
+        return { ok: false, error: "مفتاح Resend API غير مهيأ" };
+      }
+
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: SENDER_EMAIL,
+          to: [customerEmail],
+          subject,
+          html,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        console.error("Resend incomplete order email error:", result);
+        return {
+          ok: false,
+          error: result?.message || "Failed to send email via Resend",
+        };
+      }
+
+      return { ok: true, emailId: result?.id, waLink };
+    } catch (err: any) {
+      console.error("Error sending incomplete order payment email:", err);
+      return { ok: false, error: err?.message || "Internal error sending email" };
+    }
+  });
+
+/**
  * Server function to fetch an order using the unguessable cryptographic token (Gamivo style order_token).
  * Validates HMAC signature before returning delivery data.
  */
