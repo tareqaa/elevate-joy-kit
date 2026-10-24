@@ -1848,6 +1848,7 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
           .from("orders")
           .update({
             codes_revealed_at: current.codes_revealed_at || now,
+            codes_last_revealed_at: now,
             codes_reveal_count: (current.codes_reveal_count || 0) + 1,
           })
           .eq("id", current.id);

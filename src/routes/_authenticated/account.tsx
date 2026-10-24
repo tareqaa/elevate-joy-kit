@@ -19,6 +19,7 @@ import { Pager, usePager } from "@/components/gx/Pager";
 import { OrderReviewInline } from "@/components/gx/OrderReviewInline";
 import { useAuthActions } from "@/lib/gx/use-auth-actions";
 import { linkMyPastOrders } from "@/lib/gx/loyalty";
+import { markCodeRevealedFn } from "@/lib/gx/order-email.functions";
 
 type AccountTab = "profile" | "orders" | "wheel" | "security";
 
@@ -355,9 +356,23 @@ function OrderCard({ order: o, userId }: { order: OrderRow; userId: string }) {
 
   async function reveal() {
     setRevealing(true);
-    const { error } = await supabase.rpc("reveal_order_codes", { _order_id: o.id });
+    try {
+      await supabase.rpc("reveal_order_codes", { _order_id: o.id });
+    } catch {}
+    try {
+      await (supabase.rpc as any)("mark_order_code_revealed", {
+        p_order_id: o.id,
+        p_order_number: o.order_number,
+      });
+    } catch {}
+    try {
+      await markCodeRevealedFn({
+        data: {
+          orderNumber: o.order_number,
+        },
+      });
+    } catch {}
     setRevealing(false);
-    if (error) { toast.error(error.message); return; }
   }
 
   return (
@@ -543,18 +558,19 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
   const isTopup = data.kind === "topup";
   const isAccount = !isTopup && (data.kind === "account" || (!!data.email && !data.value));
   const isKey = !isTopup && !isAccount;
-  const [open, setOpen] = useState(!isKey);
+  const [open, setOpen] = useState(isTopup);
   const [confirming, setConfirming] = useState(false);
+  const [agreeChecked, setAgreeChecked] = useState(false);
   const region = (data.region || "").trim();
   const accountExtra = (data.extra || (data.value && data.value !== data.email && data.value !== data.password ? data.value : "") || data.notes || "").trim();
 
-  // Once a key has been revealed it stays visible forever on this device.
+  // Once a key or account has been revealed it stays visible on this device.
   useEffect(() => {
-    if (!isKey) return;
+    if (isTopup) return;
     try {
       if (localStorage.getItem(`gx_revealed:${revealKey}`) === "1") setOpen(true);
     } catch { /* noop */ }
-  }, [revealKey, isKey]);
+  }, [revealKey, isTopup]);
 
   async function confirmReveal() {
     await onReveal();
@@ -595,49 +611,87 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
                 {ar ? "تم الإظهار" : "Revealed"}
               </span>
             )}
+            {isAccount && open && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-500/25 bg-fuchsia-500/10 px-1.5 py-0.5 text-[10px] font-bold text-fuchsia-300">
+                <Check className="h-3 w-3" />
+                {ar ? "تم عرض الحساب" : "Account Shown"}
+              </span>
+            )}
           </div>
         </div>
-        {isKey && !open && (
-          <Button size="sm" className="h-8 shrink-0 gap-1.5"
+        {!isTopup && !open && (
+          <Button
+            size="sm"
+            className="h-8 shrink-0 gap-1.5"
             disabled={revealing}
-            onClick={() => setConfirming(true)}>
-            <Eye className="h-3.5 w-3.5" />
-            <span className="text-[11px] font-bold">{ar ? "إظهار" : "Reveal"}</span>
+            onClick={() => {
+              setAgreeChecked(false);
+              setConfirming(true);
+            }}
+          >
+            {isAccount ? <UserIcon className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            <span className="text-[11px] font-bold">
+              {isAccount ? (ar ? "عرض تفاصيل الحساب" : "View Account Details") : (ar ? "كشف كود التفعيل" : "Reveal Key")}
+            </span>
           </Button>
         )}
       </div>
 
-
-
       {confirming && !open && (
-        <div className="space-y-2 border-b border-amber-500/20 bg-amber-500/[0.07] px-3 py-2.5">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
-            <div className="space-y-1 text-[11px] leading-relaxed text-amber-200/90">
+        <div className="space-y-3 border-b border-amber-500/20 bg-amber-500/[0.07] px-3.5 py-3 rounded-lg mx-2 my-2">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+            <div className="space-y-1 text-[11.5px] leading-relaxed text-amber-200/90">
               <p className="font-bold text-amber-300">
-                {ar ? "⚠️ قبل إظهار المفتاح" : "Before you reveal this key"}
+                {isAccount
+                  ? (ar ? "⚠️ قبل عرض تفاصيل الحساب" : "Before viewing account credentials")
+                  : (ar ? "⚠️ قبل إظهار مفتاح التفعيل" : "Before you reveal this key")}
               </p>
-              <p>
-                {ar
-                  ? `هذا المفتاح مخصص لمنطقة: ${region || "عالمي (Global)"}. تأكد من توافق حسابك أو جهازك مع المنتج قبل المتابعة.`
-                  : `This key is for region: ${region || "Global"}. Make sure your account or device is compatible with the product before continuing.`}
-              </p>
-              <p>
-                {ar
-                  ? "بعد إظهار المفتاح، يُعتبر الطلب مستلمًا ولا يمكن استرجاعه أو استبداله بسبب طبيعة المنتجات الرقمية."
-                  : "Once revealed, the order is considered delivered and cannot be refunded or replaced due to the nature of digital products."}
-              </p>
-              <p>
-                {ar
-                  ? "في حال وجود مشكلة أثناء التفعيل، يرجى التواصل مع الدعم مباشرة وإرفاق صورة للخطأ لمساعدتك."
-                  : "If you face any activation issue, please contact support directly and attach a screenshot of the error."}
-              </p>
-
+              {isAccount ? (
+                <p>
+                  {ar
+                    ? "بمجرد تأكيد عرض بيانات الحساب (الإيميل وكلمة السر)، يُعتبر المنتج مستلماً ومكشوفاً بنجاح ولا يمكن استرجاعه أو إلغاء الطلب."
+                    : "Once account details are revealed, the credentials are considered delivered and non-refundable."}
+                </p>
+              ) : (
+                <p>
+                  {ar
+                    ? `هذا المفتاح مخصص لمنطقة: ${region || "عالمي (Global)"}. بعد إظهار المفتاح، يُعتبر الطلب مستلمًا ولا يمكن استرجاعه أو استبداله بسبب طبيعة المنتجات الرقمية.`
+                    : `This key is for region: ${region || "Global"}. Once revealed, the order is considered delivered and cannot be refunded or replaced.`}
+                </p>
+              )}
             </div>
           </div>
+
+          {/* Mandatory Checkbox */}
+          <label className="flex items-start gap-2 p-2 rounded-lg bg-black/30 border border-white/10 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={agreeChecked}
+              onChange={(e) => setAgreeChecked(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-white/30 text-primary accent-primary cursor-pointer shrink-0"
+            />
+            <span className={`text-[11px] leading-relaxed ${agreeChecked ? "text-white font-medium" : "text-muted-foreground"}`}>
+              {isAccount
+                ? (ar
+                    ? "أقر بأنني قمت بقراءة التعليمات وأوافق على كشف بيانات الحساب، وأعلم أنه لا يمكن الإلغاء أو الاسترجاع بعد الكشف."
+                    : "I confirm that I read instructions and agree to reveal account credentials (non-refundable).")
+                : (ar
+                    ? "أقر بأنني تأكدت من توافق جهازي وحسابي، وأوافق على كشف الكود الرقمي (لا يمكن الاسترجاع بعد الكشف)."
+                    : "I confirm compatibility and agree to reveal the key (non-refundable).")}
+            </span>
+          </label>
+
           <div className="flex gap-2">
-            <Button size="sm" className="h-8 flex-1 text-[11px] font-bold" disabled={revealing} onClick={confirmReveal}>
-              {ar ? "أوافق، أظهر المفتاح" : "I agree, reveal"}
+            <Button
+              size="sm"
+              className="h-8 flex-1 text-[11px] font-bold"
+              disabled={!agreeChecked || revealing}
+              onClick={confirmReveal}
+            >
+              {isAccount
+                ? (ar ? "عرض تفاصيل الحساب" : "View Account Details")
+                : (ar ? "أوافق، أظهر المفتاح" : "I agree, reveal key")}
             </Button>
             <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => setConfirming(false)}>
               {ar ? "إلغاء" : "Cancel"}

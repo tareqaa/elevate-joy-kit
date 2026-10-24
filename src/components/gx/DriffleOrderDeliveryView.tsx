@@ -26,6 +26,7 @@ import {
   ChevronUp,
   Shield,
   Clock,
+  User as UserIcon,
 } from "lucide-react";
 
 /* ────────────────────────────────────────────────────────────────
@@ -654,64 +655,29 @@ export function DriffleOrderDeliveryView({
     };
   }, [order?.order_number]);
 
-  // Automatically record when the customer opens the order delivery page with delivered items
-  useEffect(() => {
-    if (!order || isLocked) return;
-    const isDelivered = order.status === "delivered" || deliveryCodes.length > 0;
-    if (!isDelivered) return;
-
-    const num = order.order_number ? String(order.order_number).trim() : undefined;
-    if (num) {
-      (async () => {
-        try {
-          await (supabase.rpc as any)("mark_order_code_revealed", {
-            p_order_number: num,
-            p_order_id: order.id || null,
-          });
-        } catch {}
-
-        try {
-          await markCodeRevealedFn({
-            data: {
-              orderToken: orderToken ? orderToken.trim() : undefined,
-              orderNumber: num,
-            },
-          });
-        } catch {}
-      })();
-    }
-  }, [order?.order_number, order?.status, isLocked, deliveryCodes.length, orderToken]);
+  // Mandatory confirmation checkbox state before revealing code or account credentials
+  const [agreeChecked, setAgreeChecked] = useState(false);
 
   const activeItem = selectedItemIdx !== null ? items[selectedItemIdx] : null;
   const activeCode = selectedItemIdx !== null ? deliveryCodes[selectedItemIdx] || deliveryCodes[0] : null;
+  const isAccountItem = Boolean(
+    activeCode?.kind === "account" ||
+    (activeCode && activeCode.email && !activeCode.value) ||
+    activeItem?.delivery_type === "account"
+  );
+  const isTopupItem = Boolean(
+    activeCode?.kind === "topup" ||
+    activeItem?.delivery_type === "topup"
+  );
 
-  // Open modal and record reveal timestamp immediately
+  // Open modal without revealing yet - user must confirm and check agreement
   const handleOpenReveal = (idx: number) => {
     setSelectedItemIdx(idx);
     setShowGuide(false);
-    const num = order?.order_number ? String(order.order_number).trim() : undefined;
-    if (num) {
-      (async () => {
-        try {
-          await (supabase.rpc as any)("mark_order_code_revealed", {
-            p_order_number: num,
-            p_order_id: order?.id || null,
-          });
-        } catch {}
-
-        try {
-          await markCodeRevealedFn({
-            data: {
-              orderToken: orderToken ? orderToken.trim() : undefined,
-              orderNumber: num,
-            },
-          });
-        } catch {}
-      })();
-    }
+    setAgreeChecked(false);
   };
 
-  // Explicit confirmation to reveal code
+  // Explicit confirmation to reveal code/account - records reveal strictly after agreement
   const handleConfirmReveal = async (idx: number) => {
     onRevealKey(idx);
     const num = order?.order_number ? String(order.order_number).trim() : undefined;
@@ -738,6 +704,7 @@ export function DriffleOrderDeliveryView({
   const handleCloseReveal = () => {
     setSelectedItemIdx(null);
     setShowGuide(false);
+    setAgreeChecked(false);
   };
 
   // Compute order total from items
@@ -1338,6 +1305,17 @@ export function DriffleOrderDeliveryView({
                 const regionName = it.region || "GLOBAL";
                 const isKeyRevealed = Boolean(revealedKeys[itemIdx]);
 
+                const itemCode = deliveryCodes[itemIdx] || deliveryCodes[0] || null;
+                const isThisTopup = Boolean(
+                  itemCode?.kind === "topup" ||
+                  it?.delivery_type === "topup"
+                );
+                const isThisAccount = !isThisTopup && Boolean(
+                  itemCode?.kind === "account" ||
+                  (itemCode && itemCode.email && !itemCode.value) ||
+                  it?.delivery_type === "account"
+                );
+
                 return (
                   <div
                     key={itemIdx}
@@ -1403,16 +1381,26 @@ export function DriffleOrderDeliveryView({
                                 gap: "4px",
                                 padding: "2px 8px",
                                 borderRadius: "6px",
-                                backgroundColor: "rgba(0, 229, 255, 0.08)",
-                                border: "1px solid rgba(0, 229, 255, 0.15)",
+                                backgroundColor: isThisTopup
+                                  ? "rgba(16, 185, 129, 0.08)"
+                                  : isThisAccount
+                                  ? "rgba(168, 85, 247, 0.08)"
+                                  : "rgba(0, 229, 255, 0.08)",
+                                border: `1px solid ${
+                                  isThisTopup
+                                    ? "rgba(16, 185, 129, 0.2)"
+                                    : isThisAccount
+                                    ? "rgba(168, 85, 247, 0.2)"
+                                    : "rgba(0, 229, 255, 0.15)"
+                                }`,
                                 fontSize: "10.5px",
                                 fontWeight: 800,
-                                color: accentCyan,
+                                color: isThisTopup ? "#10b981" : isThisAccount ? "#c084fc" : accentCyan,
                                 textTransform: "uppercase",
                               }}
                             >
                               <Globe style={{ width: "10px", height: "10px" }} />
-                              {regionName}
+                              {isThisTopup ? (isAr ? "شحن مباشر" : "TOP-UP") : isThisAccount ? (isAr ? "حساب جاهز" : "ACCOUNT") : regionName}
                             </span>
                             {it.platform && (
                               <span
@@ -1437,39 +1425,104 @@ export function DriffleOrderDeliveryView({
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleOpenReveal(itemIdx)}
-                        style={{
-                          background: isKeyRevealed
-                            ? "rgba(0, 229, 255, 0.12)"
-                            : `linear-gradient(135deg, ${accentCyan}, #0098d4)`,
-                          color: isKeyRevealed ? accentCyan : "#07090e",
-                          border: isKeyRevealed ? "1px solid rgba(0, 229, 255, 0.3)" : "none",
-                          borderRadius: "10px",
-                          padding: "10px 20px",
-                          fontWeight: 900,
-                          fontSize: "12.5px",
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "7px",
-                          boxShadow: isKeyRevealed ? "none" : "0 4px 14px rgba(0, 229, 255, 0.25)",
-                          transition: "all 0.15s ease",
-                        }}
-                      >
-                        {isKeyRevealed ? (
-                          <>
-                            <Check style={{ width: "14px", height: "14px" }} />
-                            <span>{isAr ? "عرض الكود المستلم" : "View Key"}</span>
-                          </>
-                        ) : (
-                          <>
-                            <KeyRound style={{ width: "14px", height: "14px" }} />
-                            <span>{isAr ? "كشف الكود" : "Reveal Key"}</span>
-                          </>
-                        )}
-                      </button>
+                      {isThisTopup ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: isAr ? "flex-start" : "flex-end",
+                            gap: "4px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              padding: "8px 14px",
+                              borderRadius: "10px",
+                              backgroundColor: "rgba(16, 185, 129, 0.12)",
+                              border: "1px solid rgba(16, 185, 129, 0.3)",
+                              color: "#10b981",
+                              fontSize: "12px",
+                              fontWeight: 800,
+                            }}
+                          >
+                            <CheckCircle2 style={{ width: "14px", height: "14px" }} />
+                            <span>{isAr ? "تم الشحن على الحساب مباشرة" : "Topped Up Directly"}</span>
+                          </div>
+                          {(itemCode?.email || itemCode?.value) && (
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                color: textSecondary,
+                                fontFamily: "monospace",
+                              }}
+                              dir="ltr"
+                            >
+                              {itemCode?.email || itemCode?.value}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenReveal(itemIdx)}
+                          style={{
+                            background: isKeyRevealed
+                              ? isThisAccount
+                                ? "rgba(168, 85, 247, 0.15)"
+                                : "rgba(0, 229, 255, 0.12)"
+                              : isThisAccount
+                              ? "linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)"
+                              : `linear-gradient(135deg, ${accentCyan}, #0098d4)`,
+                            color: isKeyRevealed
+                              ? isThisAccount ? "#c084fc" : accentCyan
+                              : isThisAccount ? "#ffffff" : "#07090e",
+                            border: isKeyRevealed
+                              ? `1px solid ${isThisAccount ? "rgba(168, 85, 247, 0.35)" : "rgba(0, 229, 255, 0.3)"}`
+                              : "none",
+                            borderRadius: "10px",
+                            padding: "10px 20px",
+                            fontWeight: 900,
+                            fontSize: "12.5px",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "7px",
+                            boxShadow: isKeyRevealed
+                              ? "none"
+                              : isThisAccount
+                              ? "0 4px 14px rgba(168, 85, 247, 0.3)"
+                              : "0 4px 14px rgba(0, 229, 255, 0.25)",
+                            transition: "all 0.15s ease",
+                          }}
+                        >
+                          {isKeyRevealed ? (
+                            <>
+                              <Check style={{ width: "14px", height: "14px" }} />
+                              <span>
+                                {isThisAccount
+                                  ? isAr ? "عرض بيانات الحساب المستلم" : "View Account Details"
+                                  : isAr ? "عرض الكود المستلم" : "View Key"}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              {isThisAccount ? (
+                                <UserIcon style={{ width: "14px", height: "14px" }} />
+                              ) : (
+                                <KeyRound style={{ width: "14px", height: "14px" }} />
+                              )}
+                              <span>
+                                {isThisAccount
+                                  ? isAr ? "عرض تفاصيل الحساب" : "View Account Details"
+                                  : isAr ? "كشف كود التفعيل" : "Reveal Key"}
+                              </span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -1599,9 +1652,15 @@ export function DriffleOrderDeliveryView({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-                <KeyRound style={{ width: "17px", height: "17px", color: accentCyan }} />
+                {isAccountItem ? (
+                  <UserIcon style={{ width: "17px", height: "17px", color: "#c084fc" }} />
+                ) : (
+                  <KeyRound style={{ width: "17px", height: "17px", color: accentCyan }} />
+                )}
                 <h3 style={{ fontSize: "15px", fontWeight: 800, color: textPrimary, margin: 0 }}>
-                  {isAr ? "تفاصيل واستلام المنتج" : "Product Receipt Details"}
+                  {isAccountItem
+                    ? isAr ? "عرض وتفاصيل الحساب" : "Account Access & Details"
+                    : isAr ? "تفاصيل واستلام كود التفعيل" : "Product Key Delivery Details"}
                 </h3>
               </div>
               <button
@@ -1643,7 +1702,7 @@ export function DriffleOrderDeliveryView({
                   borderRadius: "12px",
                   objectFit: "cover",
                   backgroundColor: "rgba(0, 0, 0, 0.5)",
-                  border: `1px solid rgba(0, 229, 255, 0.2)`,
+                  border: `1px solid ${isAccountItem ? "rgba(168, 85, 247, 0.3)" : "rgba(0, 229, 255, 0.2)"}`,
                   boxShadow: "0 6px 18px rgba(0, 0, 0, 0.5)",
                   flexShrink: 0,
                 }}
@@ -1681,16 +1740,16 @@ export function DriffleOrderDeliveryView({
                       alignItems: "center",
                       padding: "3px 10px",
                       borderRadius: "6px",
-                      backgroundColor: "rgba(0, 229, 255, 0.1)",
-                      border: "1px solid rgba(0, 229, 255, 0.2)",
-                      color: accentCyan,
+                      backgroundColor: isAccountItem ? "rgba(168, 85, 247, 0.12)" : "rgba(0, 229, 255, 0.1)",
+                      border: `1px solid ${isAccountItem ? "rgba(168, 85, 247, 0.3)" : "rgba(0, 229, 255, 0.2)"}`,
+                      color: isAccountItem ? "#c084fc" : accentCyan,
                       fontSize: "10.5px",
                       fontWeight: 800,
                       textTransform: "uppercase",
                       letterSpacing: "0.03em",
                     }}
                   >
-                    {activeCode?.kind === "account" ? (isAr ? "حساب جاهز" : "ACCOUNT") : (isAr ? "كود رقمي" : "DIGITAL KEY")}
+                    {isAccountItem ? (isAr ? "حساب جاهز" : "ACCOUNT") : (isAr ? "كود رقمي" : "DIGITAL KEY")}
                   </span>
 
                   {activeItem.platform && (
@@ -1727,7 +1786,7 @@ export function DriffleOrderDeliveryView({
                         color: textSecondary,
                       }}
                     >
-                      <Globe style={{ width: "11px", height: "11px", color: accentCyan }} />
+                      <Globe style={{ width: "11px", height: "11px", color: isAccountItem ? "#c084fc" : accentCyan }} />
                       <span>{isAr ? "المنطقة:" : "Region:"}</span>
                       <strong style={{ color: textPrimary, textTransform: "uppercase" }}>{activeItem.region}</strong>
                     </span>
@@ -1736,30 +1795,36 @@ export function DriffleOrderDeliveryView({
               </div>
             </div>
 
-            {/* ── STEP 1: CONFIRMATION STEP (BEFORE KEY REVEAL) ──── */}
+            {/* ── STEP 1: CONFIRMATION STEP (BEFORE KEY / ACCOUNT REVEAL) ──── */}
             {!revealedKeys[selectedItemIdx] ? (
               <div style={{ padding: "0 22px 22px", display: "flex", flexDirection: "column", gap: "14px" }}>
                 {/* Security Warning Notice */}
                 <div
                   style={{
                     borderRadius: "12px",
-                    background: "rgba(255, 171, 0, 0.08)",
-                    border: "1px solid rgba(255, 171, 0, 0.25)",
+                    background: isAccountItem ? "rgba(168, 85, 247, 0.08)" : "rgba(255, 171, 0, 0.08)",
+                    border: `1px solid ${isAccountItem ? "rgba(168, 85, 247, 0.25)" : "rgba(255, 171, 0, 0.25)"}`,
                     padding: "14px 16px",
                     display: "flex",
                     alignItems: "flex-start",
                     gap: "12px",
                   }}
                 >
-                  <AlertTriangle size={18} color="#ffab00" style={{ flexShrink: 0, marginTop: "2px" }} />
+                  <AlertTriangle size={18} color={isAccountItem ? "#c084fc" : "#ffab00"} style={{ flexShrink: 0, marginTop: "2px" }} />
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <strong style={{ fontSize: "13px", color: "#ffab00" }}>
-                      {isAr ? "تأكيد كشف المفتاح الرقمي" : "Confirm Key Reveal"}
+                    <strong style={{ fontSize: "13px", color: isAccountItem ? "#c084fc" : "#ffab00" }}>
+                      {isAccountItem
+                        ? isAr ? "تأكيد كشف بيانات الحساب" : "Confirm Account Credentials Reveal"
+                        : isAr ? "تأكيد كشف كود التفعيل" : "Confirm Key Reveal"}
                     </strong>
                     <span style={{ fontSize: "12px", color: "#c5d1de", lineHeight: 1.5 }}>
-                      {isAr
-                        ? "بمجرد تأكيد كشف الكود الرقمي، يعتبر المنتج مستلماً ومكشوفاً بنجاح. يرجى التأكد من استعدادك لاستخدام الكود وتفعيله."
-                        : "Once you reveal this key, the item is considered delivered and revealed. Please ensure you are ready to activate it."}
+                      {isAccountItem
+                        ? isAr
+                          ? "بمجرد تأكيد كشف بيانات الحساب، تعتبر بيانات الدخول (الإيميل وكلمة السر) مكشوفة ومستلمة بالكامل. لا يمكن استرجاع أو إلغاء الحساب الرقمي بعد الكشف."
+                          : "Once confirmed, the account credentials are fully revealed and considered delivered. Digital accounts cannot be refunded or cancelled once revealed."
+                        : isAr
+                          ? `هذا المفتاح مخصص لمنطقة: ${activeItem.region || "عالمي / Global"}. بمجرد تأكيد كشف الكود الرقمي، يعتبر المنتج مستلماً ومكشوفاً بنجاح ولا يمكن استرجاعه أو استبداله.`
+                          : `This key is for region: ${activeItem.region || "Global"}. Once revealed, the item is considered delivered and cannot be refunded or replaced.`}
                     </span>
                   </div>
                 </div>
@@ -1769,7 +1834,7 @@ export function DriffleOrderDeliveryView({
                   style={{
                     borderRadius: "12px",
                     background: "rgba(0, 0, 0, 0.4)",
-                    border: "1px dashed rgba(0, 229, 255, 0.25)",
+                    border: `1px dashed ${isAccountItem ? "rgba(168, 85, 247, 0.3)" : "rgba(0, 229, 255, 0.25)"}`,
                     padding: "16px 18px",
                     display: "flex",
                     alignItems: "center",
@@ -1778,7 +1843,7 @@ export function DriffleOrderDeliveryView({
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <Lock size={16} color="#00e5ff" />
+                    <Lock size={16} color={isAccountItem ? "#c084fc" : "#00e5ff"} />
                     <span
                       style={{
                         fontFamily: "monospace",
@@ -1788,17 +1853,70 @@ export function DriffleOrderDeliveryView({
                         userSelect: "none",
                       }}
                     >
-                      •••• - •••• - •••• - ••••
+                      {isAccountItem ? "•••••••••• : ••••••••" : "•••• - •••• - •••• - ••••"}
                     </span>
                   </div>
                   <span style={{ fontSize: "11px", color: textMuted }}>
-                    {isAr ? "محمي حتى التأكيد" : "Locked"}
+                    {isAr ? "محمي ومقفل حتى التأكيد" : "Locked until confirmed"}
                   </span>
                 </div>
+
+                {/* Mandatory Checkbox Agreement */}
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "11px",
+                    padding: "12px 14px",
+                    borderRadius: "10px",
+                    backgroundColor: agreeChecked
+                      ? isAccountItem ? "rgba(168, 85, 247, 0.08)" : "rgba(0, 229, 255, 0.08)"
+                      : "rgba(255, 255, 255, 0.03)",
+                    border: `1px solid ${
+                      agreeChecked
+                        ? isAccountItem ? "rgba(168, 85, 247, 0.4)" : "rgba(0, 229, 255, 0.4)"
+                        : "rgba(255, 255, 255, 0.1)"
+                    }`,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    userSelect: "none",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={agreeChecked}
+                    onChange={(e) => setAgreeChecked(e.target.checked)}
+                    style={{
+                      width: "18px",
+                      height: "18px",
+                      marginTop: "2px",
+                      accentColor: isAccountItem ? "#a855f7" : accentCyan,
+                      cursor: "pointer",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      color: agreeChecked ? "#ffffff" : "#a2b4c7",
+                      lineHeight: 1.5,
+                      fontWeight: agreeChecked ? 700 : 500,
+                    }}
+                  >
+                    {isAccountItem
+                      ? isAr
+                        ? "أقر بأنني قمت بقراءة التعليمات وأوافق على كشف بيانات الحساب، وأعلم أنه لا يمكن الإلغاء أو الاسترجاع بعد الكشف."
+                        : "I confirm that I have read the instructions and agree to reveal the account credentials. I acknowledge that digital accounts cannot be refunded or cancelled once revealed."
+                      : isAr
+                        ? "أقر بأنني تأكدت من توافق جهازي وحسابي مع المنطقة المحددة، وأوافق على كشف الكود الرقمي (لا يمكن الاسترجاع بعد الكشف)."
+                        : "I confirm that I verified device & region compatibility and agree to reveal the digital key (non-refundable once revealed)."}
+                  </span>
+                </label>
 
                 {/* Primary Confirm & Reveal Action Button */}
                 <button
                   type="button"
+                  disabled={!agreeChecked}
                   onClick={() => handleConfirmReveal(selectedItemIdx)}
                   style={{
                     width: "100%",
@@ -1808,18 +1926,31 @@ export function DriffleOrderDeliveryView({
                     gap: "10px",
                     padding: "14px 24px",
                     borderRadius: "12px",
-                    background: "linear-gradient(135deg, #00e5ff 0%, #0098d4 100%)",
-                    color: "#07090e",
+                    background: agreeChecked
+                      ? isAccountItem
+                        ? "linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)"
+                        : "linear-gradient(135deg, #00e5ff 0%, #0098d4 100%)"
+                      : "rgba(255, 255, 255, 0.08)",
+                    color: agreeChecked ? (isAccountItem ? "#ffffff" : "#07090e") : "rgba(255, 255, 255, 0.3)",
                     fontWeight: 900,
                     fontSize: "14px",
-                    border: "none",
-                    cursor: "pointer",
-                    boxShadow: "0 4px 20px rgba(0, 229, 255, 0.3)",
+                    border: agreeChecked ? "none" : "1px solid rgba(255, 255, 255, 0.1)",
+                    cursor: agreeChecked ? "pointer" : "not-allowed",
+                    boxShadow: agreeChecked
+                      ? isAccountItem
+                        ? "0 4px 20px rgba(168, 85, 247, 0.35)"
+                        : "0 4px 20px rgba(0, 229, 255, 0.3)"
+                      : "none",
                     transition: "all 0.15s ease",
+                    opacity: agreeChecked ? 1 : 0.6,
                   }}
                 >
                   <Unlock size={17} />
-                  <span>{isAr ? "تأكيد وكشف مفتاح المنتج" : "Confirm & Reveal Product Key"}</span>
+                  <span>
+                    {isAccountItem
+                      ? isAr ? "عرض تفاصيل الحساب" : "View Account Details"
+                      : isAr ? "تأكيد وكشف كود التفعيل" : "Confirm & Reveal Product Key"}
+                  </span>
                 </button>
               </div>
             ) : (
@@ -1858,13 +1989,13 @@ export function DriffleOrderDeliveryView({
                 {/* Monospace Code Box */}
                 {activeCode && (activeCode.value || activeCode.extra || activeCode.password) ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    {/* Key string if present */}
-                    {(activeCode.value || activeCode.extra) && (
+                    {/* Key string if present (for keys or accounts with single token/credentials string) */}
+                    {(activeCode.value || (!isAccountItem && activeCode.extra)) && (!isAccountItem || (!activeCode.email && !activeCode.password)) && (
                       <div
                         style={{
                           borderRadius: "12px",
                           background: "rgba(0, 0, 0, 0.45)",
-                          border: "1px solid rgba(0, 229, 255, 0.25)",
+                          border: `1px solid ${isAccountItem ? "rgba(168, 85, 247, 0.3)" : "rgba(0, 229, 255, 0.25)"}`,
                           padding: "16px 18px",
                           display: "flex",
                           alignItems: "center",
@@ -1878,7 +2009,7 @@ export function DriffleOrderDeliveryView({
                             fontFamily: "'Fira Code', 'Cascadia Code', 'Consolas', monospace",
                             fontSize: "15px",
                             fontWeight: 700,
-                            color: accentCyan,
+                            color: isAccountItem ? "#c084fc" : accentCyan,
                             wordBreak: "break-all",
                             userSelect: "all",
                             letterSpacing: "0.5px",
@@ -1926,7 +2057,7 @@ export function DriffleOrderDeliveryView({
                     )}
 
                     {/* Account Credentials */}
-                    {activeCode.kind === "account" && (activeCode.email || activeCode.password) && (
+                    {isAccountItem && (activeCode.email || activeCode.password) && (
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }} dir="ltr">
                         {activeCode.email && (
                           <div
@@ -1983,6 +2114,28 @@ export function DriffleOrderDeliveryView({
                             </button>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* Account Extra Notes & Instructions */}
+                    {isAccountItem && (activeCode.extra || (activeCode.value && (activeCode.email || activeCode.password))) && (
+                      <div
+                        style={{
+                          borderRadius: "10px",
+                          background: "rgba(0, 0, 0, 0.3)",
+                          border: `1px solid ${cardBorder}`,
+                          padding: "12px 14px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "6px",
+                        }}
+                      >
+                        <div style={{ fontSize: "10.5px", color: textSecondary, fontWeight: 800 }}>
+                          {isAr ? "معلومات وتعليمات إضافية للحساب:" : "ADDITIONAL ACCOUNT DETAILS:"}
+                        </div>
+                        <div style={{ fontSize: "12px", color: textPrimary, whiteSpace: "pre-wrap", lineHeight: 1.55 }} dir="auto">
+                          {activeCode.extra || activeCode.value}
+                        </div>
                       </div>
                     )}
                   </div>
