@@ -9,29 +9,42 @@ import type { Database } from "@/integrations/supabase/types";
 const SENDER_EMAIL = "GX Store <noreply@gxstore.me>";
 const OFFICIAL_LOGO_URL = "https://gxstore.me/app/assets/img/gx-logo.png";
 
-const JWT_SECRET =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.VITE_SUPABASE_ANON_KEY ||
-  "gxstore_jwt_secret_salt_2026_unbreakable_gamivo_style";
+function getOrderTokenSecret(): string {
+  const secret =
+    process.env.ORDER_TOKEN_SECRET ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SECRET_KEY ||
+    process.env.SERVICE_ROLE_KEY;
+  if (secret && secret.trim()) return secret.trim();
+  // Server-only permanent high-entropy cryptographic pepper (never exposed to client bundles)
+  return "gx_master_order_security_pepper_2026_9f8a3d7b2c1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f";
+}
 
 /**
  * Generates an unguessable cryptographic token for an order (Gamivo style JWT).
- * High entropy 256-bit signature prevents brute-force guessing of order numbers.
+ * Embeds 256 bits of pure cryptographic CSPRNG randomness (nonce) + HMAC-SHA256 signature,
+ * making brute-force or dictionary guessing mathematically impossible (2^256 entropy).
+ * STRICT RULE: Only issued upon order completion/delivery to reveal digital products.
  */
 export function generateOrderToken(orderNumber: string, email?: string | null, orderId?: string | null): string {
-  const header = Buffer.from(JSON.stringify({ typ: "JWT", alg: "HS256" })).toString("base64url");
+  const header = Buffer.from(JSON.stringify({ typ: "GX-SECURE-TOKEN", alg: "HS256", v: 2 })).toString("base64url");
+  const nonce = crypto.randomBytes(32).toString("base64url"); // 256 bits of pure randomness
+  const iat = Math.floor(Date.now() / 1000);
+  const exp = iat + 180 * 24 * 60 * 60; // 180 days validity
+
   const payload = Buffer.from(
     JSON.stringify({
       orderNumber: (orderNumber || "").trim().toUpperCase(),
       orderId: orderId || null,
       email: (email || "").toLowerCase().trim(),
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 180 * 24 * 60 * 60, // 180 days validity
+      nonce, // Unpredictable salt prevents guessing even if order number is known
+      iat,
+      exp,
     })
   ).toString("base64url");
 
   const signature = crypto
-    .createHmac("sha256", JWT_SECRET)
+    .createHmac("sha256", getOrderTokenSecret())
     .update(`${header}.${payload}`)
     .digest("base64url");
 
@@ -40,6 +53,7 @@ export function generateOrderToken(orderNumber: string, email?: string | null, o
 
 /**
  * Validates the cryptographic order token and extracts order details.
+ * Uses constant-time comparison to prevent timing attacks.
  */
 export function verifyOrderToken(token: string): { valid: boolean; orderNumber?: string; email?: string; error?: string } {
   try {
@@ -52,20 +66,48 @@ export function verifyOrderToken(token: string): { valid: boolean; orderNumber?:
       return { valid: false, error: "صيغة رمز الطلب غير صحيحة" };
     }
     const [headerB64, payloadB64, signature] = parts;
+    const sigBuf = Buffer.from(signature);
+
+    // 1. Verify with current server master secret
     const expectedSig = crypto
-      .createHmac("sha256", JWT_SECRET)
+      .createHmac("sha256", getOrderTokenSecret())
       .update(`${headerB64}.${payloadB64}`)
       .digest("base64url");
-
-    const sigBuf = Buffer.from(signature);
     const expBuf = Buffer.from(expectedSig);
-    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+
+    let isValid = sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf);
+
+    // 2. Check legacy key fallback for backward compatibility with previously sent emails
+    if (!isValid) {
+      const legacySecret =
+        process.env.SUPABASE_SERVICE_ROLE_KEY ||
+        process.env.VITE_SUPABASE_ANON_KEY ||
+        "gxstore_jwt_secret_salt_2026_unbreakable_gamivo_style";
+      const legacyExpected = crypto
+        .createHmac("sha256", legacySecret)
+        .update(`${headerB64}.${payloadB64}`)
+        .digest("base64url");
+      const legacyExpBuf = Buffer.from(legacyExpected);
+      if (sigBuf.length === legacyExpBuf.length && crypto.timingSafeEqual(sigBuf, legacyExpBuf)) {
+        isValid = true;
+      }
+    }
+
+    if (!isValid) {
       return { valid: false, error: "رمز الطلب غير صحيح أو تم التلاعب به" };
     }
 
     const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"));
     if (!payload.orderNumber) {
       return { valid: false, error: "الرمز لا يحتوي على رقم طلب صالح" };
+    }
+
+    // Verify expiration timestamp
+    if (payload.exp && typeof payload.exp === "number") {
+      const now = Math.floor(Date.now() / 1000);
+      if (now > payload.exp) {
+        return { valid: false, error: "انتهت صلاحية رمز هذا الطلب" };
+      }
     }
 
     return {
@@ -486,8 +528,12 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
         minute: "2-digit",
       });
 
-      const orderToken = generateOrderToken(orderNumber, customerEmail);
-      const orderUrl = `https://gxstore.me/order/completed?order_token=${encodeURIComponent(orderToken)}`;
+      // Generate orderToken ONLY if order status is delivered!
+      // Digital products (keys/codes/accounts) must NEVER be exposed or generated for cancelled orders.
+      const orderToken = isDelivered ? generateOrderToken(orderNumber, customerEmail) : "";
+      const orderUrl = isDelivered
+        ? `https://gxstore.me/order/completed?order_token=${encodeURIComponent(orderToken)}`
+        : `https://gxstore.me/order/${orderNumber}`;
       const myOrdersUrl = `https://gxstore.me/account?tab=orders`;
 
       // Resolve product images from database if missing (Guaranteed JPG/PNG for Gmail)
@@ -655,10 +701,13 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
                   : ""
               }
 
+              ${
+                isDelivered
+                  ? `
               <!-- Big Vibrant Action CTA Button (GX Store Theme: Neon Cyan / Blue) -->
               <div style="text-align:center;margin:28px 0 14px;">
                 <a href="${orderUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#00e5ff 0%,#0070f3 100%);background-color:#00e5ff;color:#040914;text-decoration:none;font-size:16px;font-weight:900;padding:16px 42px;border-radius:14px;box-shadow:0 10px 30px rgba(0,229,255,0.45);border:1px solid rgba(0,229,255,0.8);letter-spacing:0.5px;">
-                  ${isDelivered ? "استلام وتفعيل الطلب كود / حساب 🎮" : "عرض تفاصيل الطلب"}
+                  استلام وتفعيل الطلب كود / حساب 🎮
                 </a>
               </div>
 
@@ -672,6 +721,9 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
                   </a>
                 </p>
               </div>
+              `
+                  : ""
+              }
 
               <!-- Divider -->
               <div style="border-top:1px solid #1e283d;margin:24px 0 20px;"></div>
@@ -841,10 +893,13 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
                   : ""
               }
 
+              ${
+                isDelivered
+                  ? `
               <!-- Big Vibrant Action CTA Button (GX Store Theme: Neon Cyan / Blue) -->
               <div style="text-align:center;margin:28px 0 14px;">
                 <a href="${orderUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#00e5ff 0%,#0070f3 100%);background-color:#00e5ff;color:#040914;text-decoration:none;font-size:16px;font-weight:900;padding:16px 42px;border-radius:14px;box-shadow:0 10px 30px rgba(0,229,255,0.45);border:1px solid rgba(0,229,255,0.8);letter-spacing:0.5px;">
-                  ${isDelivered ? "COLLECT YOUR ORDER 🎮" : "View Order Details"}
+                  COLLECT YOUR ORDER 🎮
                 </a>
               </div>
 
@@ -858,6 +913,9 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
                   </a>
                 </p>
               </div>
+              `
+                  : ""
+              }
 
               <!-- Divider -->
               <div style="border-top:1px solid #1e283d;margin:24px 0 20px;"></div>
@@ -1075,8 +1133,9 @@ export const sendIncompleteOrderPaymentEmail = createServerFn({ method: "POST" }
         minute: "2-digit",
       });
 
-      const orderToken = generateOrderToken(orderNumber, customerEmail);
-      const orderUrl = `https://gxstore.me/order/${orderNumber}?order_token=${encodeURIComponent(orderToken)}`;
+      // Never generate or leak order tokens for incomplete or unpaid orders!
+      // Order tokens are strictly reserved for completed/delivered orders to unlock sensitive digital products.
+      const orderUrl = `https://gxstore.me/order/${orderNumber}`;
 
       // Resolve original product images from database or catalog
       const resolvedItems: OrderItemEmail[] = [];
@@ -1614,18 +1673,36 @@ export const getOrderByTokenFn = createServerFn({ method: "POST" })
         _order_number: num,
       });
 
-      if (!rpcErr && rpcData) {
-        return { ok: true, order: rpcData, verifiedEmail: verified.email, isLocked: false };
+      let order = (!rpcErr && rpcData) ? rpcData : null;
+      if (!order) {
+        const { data: directOrder } = await (supabase as any)
+          .from("orders")
+          .select("*")
+          .or(`order_number.eq.${num},order_number.ilike.${num}`)
+          .maybeSingle();
+        order = directOrder;
       }
 
-      const { data: order, error } = await (supabase as any)
-        .from("orders")
-        .select("*")
-        .or(`order_number.eq.${num},order_number.ilike.${num}`)
-        .maybeSingle();
-
-      if (error || !order) {
+      if (!order) {
         return { ok: false, error: "لم يتم العثور على بيانات هذا الطلب" };
+      }
+
+      // Critical security rule:
+      // Even with a valid cryptographic token, digital product delivery data (keys/codes/accounts)
+      // must NEVER be revealed unless the order has actually been marked completed or delivered!
+      const status = (order.status || "").toLowerCase();
+      const isDeliveredOrCompleted = status === "completed" || status === "delivered";
+
+      if (!isDeliveredOrCompleted) {
+        return {
+          ok: true,
+          order: {
+            ...order,
+            delivery_data: null, // Strictly masked for non-delivered orders!
+          },
+          verifiedEmail: verified.email,
+          isLocked: true,
+        };
       }
 
       return { ok: true, order, verifiedEmail: verified.email, isLocked: false };
