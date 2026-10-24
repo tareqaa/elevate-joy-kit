@@ -7,7 +7,8 @@ import { supabaseEnv, supabaseFetch } from "@/lib/gx/supabase-request";
 import type { Database } from "@/integrations/supabase/types";
 
 const SENDER_EMAIL = "GX Store <noreply@gxstore.me>";
-const OFFICIAL_LOGO_URL = "https://gxstore.me/app/assets/img/gx-logo.png";
+export const CDN_ASSETS_BASE = "https://cdn.jsdelivr.net/gh/tareqaa/elevate-joy-kit@main/public";
+export const OFFICIAL_LOGO_URL = `${CDN_ASSETS_BASE}/app/assets/img/gx-logo.png`;
 
 function getOrderTokenSecret(): string {
   const secret =
@@ -151,21 +152,126 @@ function getServerServiceClient() {
   });
 }
 
-function toAbsoluteUrl(url?: string | null): string {
+export function toAbsoluteUrl(url?: string | null): string {
   if (!url || !url.trim()) return "";
-  const clean = url.trim();
-  if (clean.startsWith("http://") || clean.startsWith("https://")) return clean;
-  if (clean.startsWith("/")) return `https://gxstore.me${clean}`;
-  return `https://gxstore.me/${clean}`;
+  let clean = url.trim();
+
+  // If pointing to gxstore.me assets or relative path, redirect to high-availability global CDN
+  if (clean.includes("gxstore.me/app/assets/")) {
+    clean = clean.replace("https://gxstore.me", CDN_ASSETS_BASE).replace("http://gxstore.me", CDN_ASSETS_BASE);
+  } else if (clean.startsWith("/")) {
+    clean = `${CDN_ASSETS_BASE}${clean}`;
+  } else if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
+    clean = `${CDN_ASSETS_BASE}/${clean}`;
+  }
+
+  // Gmail strictly blocks SVGs: automatically rewrite any SVG extension to PNG
+  return clean.replace(/\.svg(\?.*)?$/i, ".png$1");
 }
 
 /**
- * Resolves verified PNG/JPG cover images for emails.
- * Gmail blocks .svg files completely, so this maps all SVGs and catalog items to high-res JPG/PNG artwork.
+ * Resolves verified, email-compatible (Gmail, Outlook, Apple Mail) raster PNG/JPG cover images.
+ * Always returns a guaranteed accessible HTTPS URL on global CDN or external storage.
  */
 export function sanitizeImageForEmail(url?: string | null, name?: string, slug?: string): string {
   const cleanName = (name || "").toLowerCase();
   const cleanSlug = (slug || "").toLowerCase();
+
+  // 1. If a URL is provided (e.g. from Supabase products table or order items)
+  if (url && typeof url === "string" && url.trim()) {
+    let clean = url.trim();
+
+    // Map specific known SVG/legacy paths to verified CDN assets
+    if (
+      clean.includes("gemini") ||
+      cleanSlug.includes("gemini") ||
+      cleanName.includes("gemini") ||
+      cleanName.includes("جيمناي") ||
+      cleanName.includes("جيميناي") ||
+      cleanName.includes("جيميني")
+    ) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/gemini-logo.png`;
+    }
+
+    if (
+      clean.includes("autodesk") ||
+      cleanSlug.includes("autodesk") ||
+      cleanSlug.includes("autocad") ||
+      cleanName.includes("autodesk") ||
+      cleanName.includes("اوتوديسك")
+    ) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/autodesk-logo.png`;
+    }
+
+    if (
+      clean.includes("microsoft365") ||
+      cleanSlug.includes("microsoft") ||
+      cleanSlug.includes("office") ||
+      cleanSlug.includes("365") ||
+      cleanName.includes("microsoft") ||
+      cleanName.includes("مايكروسوفت")
+    ) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/microsoft365-logo.png`;
+    }
+
+    if (
+      clean.includes("windows") ||
+      cleanSlug.includes("windows") ||
+      cleanName.includes("windows") ||
+      cleanName.includes("ويندوز")
+    ) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/windows-logo.png`;
+    }
+
+    if (
+      clean.includes("linkedin") ||
+      cleanSlug.includes("linkedin") ||
+      cleanName.includes("linkedin") ||
+      cleanName.includes("لينكد") ||
+      cleanName.includes("لينكدإن")
+    ) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/linkedin.png`;
+    }
+
+    if (clean.includes("facebook")) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/facebook-logo.png`;
+    }
+
+    if (clean.includes("instagram")) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/instagram-logo.png`;
+    }
+
+    if (clean.includes("itunes") || cleanSlug.includes("itunes")) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/itunes.jpg`;
+    }
+
+    if (clean.includes("xbox") || cleanSlug.includes("xbox")) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/xbox.jpg`;
+    }
+
+    if (clean.includes("playstation") || cleanSlug.includes("playstation") || cleanSlug.includes("psn")) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/playstation.jpg`;
+    }
+
+    if (clean.includes("steam") || cleanSlug.includes("steam")) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/steam.jpg`;
+    }
+
+    // Convert any generic relative or absolute path via toAbsoluteUrl
+    const abs = toAbsoluteUrl(clean);
+    if (abs) return abs;
+  }
+
+  // 2. Fallback to catalog brand matching if no URL was supplied
+  if (
+    cleanSlug.includes("gemini") ||
+    cleanName.includes("gemini") ||
+    cleanName.includes("جيمناي") ||
+    cleanName.includes("جيميناي") ||
+    cleanName.includes("جيميني")
+  ) {
+    return `${CDN_ASSETS_BASE}/app/assets/img/gemini-logo.png`;
+  }
 
   if (
     cleanSlug.includes("playstation") ||
@@ -175,7 +281,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("سوني") ||
     cleanName.includes("psn")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/playstation.jpg";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/playstation.jpg`;
   }
 
   if (
@@ -184,7 +290,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("اكس بوكس") ||
     cleanName.includes("game pass")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/xbox.jpg";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/xbox.jpg`;
   }
 
   if (
@@ -194,7 +300,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("ايتونز") ||
     cleanName.includes("apple")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/itunes.jpg";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/itunes.jpg`;
   }
 
   if (
@@ -202,7 +308,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("steam") ||
     cleanName.includes("ستيم")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/steam.jpg";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/steam.jpg`;
   }
 
   if (
@@ -210,7 +316,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("pubg") ||
     cleanName.includes("ببجي")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/pubg-mobile.webp";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/pubg-mobile.webp`;
   }
 
   if (
@@ -219,7 +325,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("freefire") ||
     cleanName.includes("فري فاير")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/free-fire.png";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/free-fire.png`;
   }
 
   if (
@@ -229,7 +335,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("فورت نايت") ||
     cleanName.includes("v-bucks")
   ) {
-    return "https://gxstore.me/app/assets/img/fortnite-logo.png";
+    return `${CDN_ASSETS_BASE}/app/assets/img/fortnite-logo.png`;
   }
 
   if (
@@ -238,7 +344,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("روبلوكس") ||
     cleanName.includes("robux")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/roblox-robux.jpg";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/roblox-robux.jpg`;
   }
 
   if (
@@ -246,7 +352,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("canva") ||
     cleanName.includes("كانفا")
   ) {
-    return "https://gxstore.me/app/assets/img/canva-logo.png";
+    return `${CDN_ASSETS_BASE}/app/assets/img/canva-logo.png`;
   }
 
   if (
@@ -254,7 +360,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("snapchat") ||
     cleanName.includes("سناب")
   ) {
-    return "https://gxstore.me/app/assets/img/snapchat-logo.png";
+    return `${CDN_ASSETS_BASE}/app/assets/img/snapchat-logo.png`;
   }
 
   if (
@@ -262,7 +368,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("nordvpn") ||
     cleanName.includes("نورد")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/nordvpn.jpg";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/nordvpn.jpg`;
   }
 
   if (
@@ -270,7 +376,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("headspace") ||
     cleanName.includes("هيد سبيس")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/headspace.jpg";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/headspace.jpg`;
   }
 
   if (
@@ -278,15 +384,15 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("notion") ||
     cleanName.includes("نوشن")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/notion.jpg";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/notion.jpg`;
   }
 
   if (cleanSlug.includes("realms")) {
-    return "https://gxstore.me/app/assets/img/catalog/minecraft-realms-plus.png";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/minecraft-realms-plus.png`;
   }
 
   if (cleanSlug.includes("lovable") || cleanName.includes("lovable") || cleanName.includes("لوفابل")) {
-    return "https://gxstore.me/app/assets/img/catalog/lovable.webp";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/lovable.webp`;
   }
 
   if (
@@ -295,7 +401,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("لينكد") ||
     cleanName.includes("لينكدإن")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/linkedin.png";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/linkedin.png`;
   }
 
   if (
@@ -304,7 +410,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("دولينجو") ||
     cleanName.includes("دولينقو")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/duolingo-super.png";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/duolingo-super.png`;
   }
 
   if (
@@ -313,12 +419,12 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("تود")
   ) {
     if (cleanSlug.includes("4k") || cleanName.includes("4k")) {
-      return "https://gxstore.me/app/assets/img/catalog/tod-4k-card.jpg";
+      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/tod-4k-card.jpg`;
     }
     if (cleanSlug.includes("mobile") || cleanName.includes("mobile") || cleanName.includes("موبايل")) {
-      return "https://gxstore.me/app/assets/img/catalog/tod-mobile-card.jpg";
+      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/tod-mobile-card.jpg`;
     }
-    return "https://gxstore.me/app/assets/img/catalog/tod-standard-card.jpg";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/tod-standard-card.jpg`;
   }
 
   if (
@@ -326,7 +432,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("youtube") ||
     cleanName.includes("يوتيوب")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/youtube-premium.jpg";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/youtube-premium.jpg`;
   }
 
   if (
@@ -339,9 +445,9 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("ديسكورد")
   ) {
     if (cleanSlug.includes("boost") || cleanName.includes("boost") || cleanName.includes("بوست")) {
-      return "https://gxstore.me/app/assets/img/catalog/discord-boost-14x-1m.png";
+      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/discord-boost-14x-1m.png`;
     }
-    return "https://gxstore.me/app/assets/img/catalog/discord-nitro-1-month.png";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/discord-nitro-1-month.png`;
   }
 
   if (
@@ -349,7 +455,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("windows") ||
     cleanName.includes("ويندوز")
   ) {
-    return "https://gxstore.me/app/assets/img/windows-logo.png";
+    return `${CDN_ASSETS_BASE}/app/assets/img/windows-logo.png`;
   }
 
   if (
@@ -361,16 +467,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("اوفيس") ||
     cleanName.includes("مايكروسوفت")
   ) {
-    return "https://gxstore.me/app/assets/img/microsoft365-logo.png";
-  }
-
-  if (
-    cleanSlug.includes("gemini") ||
-    cleanName.includes("gemini") ||
-    cleanName.includes("جيميناي") ||
-    cleanName.includes("جيميني")
-  ) {
-    return "https://gxstore.me/app/assets/img/gemini-logo.png";
+    return `${CDN_ASSETS_BASE}/app/assets/img/microsoft365-logo.png`;
   }
 
   if (
@@ -381,7 +478,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("اوتوديسك") ||
     cleanName.includes("اوتوكاد")
   ) {
-    return "https://gxstore.me/app/assets/img/autodesk-logo.png";
+    return `${CDN_ASSETS_BASE}/app/assets/img/autodesk-logo.png`;
   }
 
   if (
@@ -389,7 +486,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("capcut") ||
     cleanName.includes("كاب كات")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/capcut-pro.png";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/capcut-pro.png`;
   }
 
   if (
@@ -397,14 +494,14 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("acrobat") ||
     cleanName.includes("اكروبات")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/adobe-acrobat.jpg";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/adobe-acrobat.jpg`;
   }
 
   if (
     cleanSlug.includes("adobe-express") ||
     cleanName.includes("express")
   ) {
-    return "https://gxstore.me/app/assets/img/catalog/adobe-express.jpg";
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/adobe-express.jpg`;
   }
 
   if (
@@ -412,21 +509,73 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("adobe") ||
     cleanName.includes("ادوبي")
   ) {
-    return "https://gxstore.me/app/assets/img/adobe-cc.webp";
-  }
-
-  if (url && url.trim()) {
-    let clean = url.trim();
-    if (clean.toLowerCase().endsWith(".svg")) {
-      clean = clean.replace(/\.svg$/i, ".png");
-    }
-    const abs = toAbsoluteUrl(clean);
-    if (!abs.toLowerCase().endsWith(".svg")) {
-      return abs;
-    }
+    return `${CDN_ASSETS_BASE}/app/assets/img/adobe-cc.webp`;
   }
 
   return OFFICIAL_LOGO_URL;
+}
+
+/**
+ * Dynamically resolves the current product image from the live database or catalog.
+ * Guarantees that any addition or edit to products in the store is immediately reflected in all outgoing emails.
+ */
+export async function resolveProductEmailImage(
+  supabase: any,
+  item: { name?: string; slug?: string; image?: string; id?: string }
+): Promise<string> {
+  let dbImage: string | null = null;
+
+  if (supabase) {
+    try {
+      // 1. Precise lookup by slug
+      if (item.slug && item.slug.trim()) {
+        const { data: prod } = await supabase
+          .from("products")
+          .select("image_url, icon_image_url")
+          .eq("slug", item.slug.trim())
+          .maybeSingle();
+        if (prod && (prod.image_url || prod.icon_image_url)) {
+          dbImage = prod.image_url || prod.icon_image_url;
+        }
+      }
+
+      // 2. Lookup by id if available
+      if (!dbImage && item.id && item.id.trim()) {
+        const { data: prod } = await supabase
+          .from("products")
+          .select("image_url, icon_image_url")
+          .eq("id", item.id.trim())
+          .maybeSingle();
+        if (prod && (prod.image_url || prod.icon_image_url)) {
+          dbImage = prod.image_url || prod.icon_image_url;
+        }
+      }
+
+      // 3. Fallback to product name keyword matching in DB
+      if (!dbImage && item.name && item.name.trim()) {
+        const cleanName = item.name
+          .replace(/\(.*?\)/g, "")
+          .replace(/[—\-|].*/, "")
+          .trim();
+        if (cleanName.length >= 3) {
+          const { data: prods } = await supabase
+            .from("products")
+            .select("image_url, icon_image_url, slug")
+            .or(`name_ar.ilike.%${cleanName}%,name_en.ilike.%${cleanName}%,slug.ilike.%${cleanName}%`)
+            .limit(1);
+          if (prods && prods[0] && (prods[0].image_url || prods[0].icon_image_url)) {
+            dbImage = prods[0].image_url || prods[0].icon_image_url;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Dynamic product image lookup warning:", err);
+    }
+  }
+
+  // Priority: Live DB product image (reflects store additions/edits) -> item image -> keyword fallback
+  const rawCandidate = dbImage || item.image || null;
+  return sanitizeImageForEmail(rawCandidate, item.name, item.slug);
 }
 
 export type OrderItemEmail = {
@@ -536,29 +685,12 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
         : `https://gxstore.me/order/${orderNumber}`;
       const myOrdersUrl = `https://gxstore.me/account?tab=orders`;
 
-      // Resolve product images from database if missing (Guaranteed JPG/PNG for Gmail)
+      // Dynamically resolve product images from live database (reflects any additions/changes immediately)
       const resolvedItems: OrderItemEmail[] = [];
       const supabase = getServerServiceClient();
 
       for (const it of items) {
-        let finalImage = sanitizeImageForEmail(it.image, it.name, it.slug);
-        if (!finalImage) {
-          try {
-            const cleanName = it.name.replace(/\(.*?\)/g, "").trim();
-            const { data: prod } = await (supabase as any)
-              .from("products")
-              .select("image_url, icon_image_url")
-              .or(`slug.eq.${it.slug || ""},name_ar.ilike.%${cleanName}%,name_en.ilike.%${cleanName}%`)
-              .limit(1)
-              .maybeSingle();
-            if (prod) {
-              finalImage = sanitizeImageForEmail(prod.image_url || prod.icon_image_url, it.name, it.slug);
-            }
-          } catch { /* noop */ }
-        }
-        if (!finalImage) {
-          finalImage = OFFICIAL_LOGO_URL;
-        }
+        const finalImage = await resolveProductEmailImage(supabase, it);
         resolvedItems.push({
           ...it,
           image: finalImage,
@@ -728,20 +860,32 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
               <!-- Divider -->
               <div style="border-top:1px solid #1e283d;margin:24px 0 20px;"></div>
 
-              <!-- Order Metadata Grid -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:20px;">
+              <!-- Order Metadata Card (Spaced and Structured so Order ID and Date NEVER collide) -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:22px 0 20px;background:#0d121c;border:1px solid #1e283d;border-radius:14px;padding:16px 20px;">
                 <tr>
-                  <td width="33%" valign="top" style="padding-bottom:12px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;">رقم الطلب (ORDER ID)</div>
-                    <div style="font-size:14px;color:#ffffff;font-weight:900;font-family:ui-monospace,Menlo,monospace;margin-top:4px;" dir="ltr">#${orderNumber}</div>
+                  <td align="right" valign="middle" style="padding-bottom:12px;">
+                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:5px;">رقم الطلب (ORDER ID)</div>
+                    <div style="font-size:16px;color:#00e5ff;font-weight:900;font-family:ui-monospace,Menlo,monospace;letter-spacing:0.5px;direction:ltr;unicode-bidi:isolate;text-align:right;">#${orderNumber}</div>
                   </td>
-                  <td width="33%" valign="top" style="padding-bottom:12px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;">تاريخ الطلب</div>
-                    <div style="font-size:13px;color:#cbd5e1;font-weight:700;margin-top:4px;">${dateFormattedAr}</div>
+                  <td align="left" valign="middle" style="padding-bottom:12px;">
+                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:5px;text-align:left;">حالة الطلب (STATUS)</div>
+                    <div style="display:inline-block;padding:5px 14px;background:${isDelivered ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"};border:1px solid ${isDelivered ? "rgba(16,185,129,0.4)" : "rgba(239,68,68,0.4)"};border-radius:20px;font-size:12px;font-weight:800;color:${isDelivered ? "#10b981" : "#ef4444"};white-space:nowrap;">
+                      ${isDelivered ? "✅ تم التسليم بنجاح" : "❌ ملغي"}
+                    </div>
                   </td>
-                  <td width="34%" valign="top" style="padding-bottom:12px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;">البريد الإلكتروني</div>
-                    <div style="font-size:12px;color:#38bdf8;font-weight:700;word-break:break-all;margin-top:4px;" dir="ltr">${customerEmail}</div>
+                </tr>
+                <tr>
+                  <td colspan="2" style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td align="right" valign="middle" style="font-size:12.5px;color:#94a3b8;line-height:1.6;">
+                          📅 تاريخ الطلب: <strong style="color:#cbd5e1;direction:rtl;unicode-bidi:isolate;">${dateFormattedAr}</strong>
+                        </td>
+                        <td align="left" valign="middle" style="font-size:12px;color:#94a3b8;line-height:1.6;">
+                          ✉️ البريد: <strong style="color:#38bdf8;direction:ltr;unicode-bidi:isolate;">${customerEmail}</strong>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
@@ -920,20 +1064,32 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
               <!-- Divider -->
               <div style="border-top:1px solid #1e283d;margin:24px 0 20px;"></div>
 
-              <!-- Order Metadata Grid -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:20px;">
+              <!-- Order Metadata Card (Spaced and Structured so Order ID and Date NEVER collide) -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:22px 0 20px;background:#0d121c;border:1px solid #1e283d;border-radius:14px;padding:16px 20px;">
                 <tr>
-                  <td width="33%" valign="top" style="padding-bottom:12px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;">ORDER ID</div>
-                    <div style="font-size:14px;color:#ffffff;font-weight:900;font-family:ui-monospace,Menlo,monospace;margin-top:4px;">#${orderNumber}</div>
+                  <td align="left" valign="middle" style="padding-bottom:12px;">
+                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:5px;">ORDER ID</div>
+                    <div style="font-size:16px;color:#00e5ff;font-weight:900;font-family:ui-monospace,Menlo,monospace;letter-spacing:0.5px;direction:ltr;unicode-bidi:isolate;">#${orderNumber}</div>
                   </td>
-                  <td width="33%" valign="top" style="padding-bottom:12px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;">ORDER DATE</div>
-                    <div style="font-size:13px;color:#cbd5e1;font-weight:700;margin-top:4px;">${dateFormattedEn}</div>
+                  <td align="right" valign="middle" style="padding-bottom:12px;">
+                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:5px;text-align:right;">STATUS</div>
+                    <div style="display:inline-block;padding:5px 14px;background:${isDelivered ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"};border:1px solid ${isDelivered ? "rgba(16,185,129,0.4)" : "rgba(239,68,68,0.4)"};border-radius:20px;font-size:12px;font-weight:800;color:${isDelivered ? "#10b981" : "#ef4444"};white-space:nowrap;">
+                      ${isDelivered ? "✅ Completed & Delivered" : "❌ Cancelled"}
+                    </div>
                   </td>
-                  <td width="34%" valign="top" style="padding-bottom:12px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;">EMAIL ID</div>
-                    <div style="font-size:12px;color:#38bdf8;font-weight:700;word-break:break-all;margin-top:4px;">${customerEmail}</div>
+                </tr>
+                <tr>
+                  <td colspan="2" style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td align="left" valign="middle" style="font-size:12.5px;color:#94a3b8;line-height:1.6;">
+                          📅 Order Date: <strong style="color:#cbd5e1;">${dateFormattedEn}</strong>
+                        </td>
+                        <td align="right" valign="middle" style="font-size:12px;color:#94a3b8;line-height:1.6;">
+                          ✉️ Email: <strong style="color:#38bdf8;direction:ltr;unicode-bidi:isolate;">${customerEmail}</strong>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
@@ -1142,27 +1298,7 @@ export const sendIncompleteOrderPaymentEmail = createServerFn({ method: "POST" }
       const supabase = getServerServiceClient();
 
       for (const it of items) {
-        let finalImage = sanitizeImageForEmail(it.image, it.name, it.slug);
-        if (!finalImage || finalImage === OFFICIAL_LOGO_URL) {
-          try {
-            const cleanName = (it.name || "").replace(/\(.*?\)/g, "").trim();
-            const { data: prod } = await (supabase as any)
-              .from("products")
-              .select("image_url, icon_image_url")
-              .or(`slug.eq.${it.slug || ""},name_ar.ilike.%${cleanName}%,name_en.ilike.%${cleanName}%`)
-              .limit(1)
-              .maybeSingle();
-            if (prod) {
-              const fromProd = sanitizeImageForEmail(prod.image_url || prod.icon_image_url, it.name, it.slug);
-              if (fromProd && fromProd !== OFFICIAL_LOGO_URL) {
-                finalImage = fromProd;
-              }
-            }
-          } catch { /* noop */ }
-        }
-        if (!finalImage) {
-          finalImage = OFFICIAL_LOGO_URL;
-        }
+        const finalImage = await resolveProductEmailImage(supabase, it);
         resolvedItems.push({
           ...it,
           name: it.name || (isAr ? "منتج رقمي" : "Digital Product"),
