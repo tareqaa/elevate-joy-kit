@@ -92,3 +92,24 @@ export async function getVerifiedCaller(): Promise<{ userId: string; token: stri
     return null;
   }
 }
+
+/**
+ * Ensures the caller is authenticated AND has the 'admin' app role in Supabase.
+ * Throws an Error if unauthenticated or not an admin.
+ */
+export async function assertAdminCaller(): Promise<{ userId: string; token: string }> {
+  const caller = await getVerifiedCaller();
+  if (!caller) {
+    throw new Error("Unauthorized: authentication required");
+  }
+  const client = getUserScopedClient(caller.token);
+  const { data: isAdmin } = await (client as any).rpc("has_role", {
+    _user_id: caller.userId,
+    _role: "admin",
+  });
+  if (isAdmin !== true) {
+    throw new Error("Forbidden: admin role required");
+  }
+  return caller;
+}
+

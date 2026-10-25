@@ -1,24 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { getPublicClient } from "@/lib/gx/supabase-request";
+import { getPublicClient, assertAdminCaller } from "@/lib/gx/supabase-request";
 
 const SENDER_EMAIL = "GX Store <support@gxstore.me>";
 
 async function getResendApiKey(): Promise<string> {
   const envKey = process.env.RESEND_API_KEY;
   if (envKey && envKey.trim()) return envKey.trim();
-  try {
-    const supabase = getPublicClient();
-    const { data } = await supabase
-      .from("site_settings")
-      .select("value")
-      .eq("key", "resend_api_key")
-      .maybeSingle();
-    const val = data?.value as any;
-    if (val?.api_key) return String(val.api_key);
-  } catch (e) {
-    console.error("Failed to fetch resend_api_key setting:", e);
-  }
   return "";
 }
 
@@ -46,6 +34,7 @@ export const sendRestockNotificationEmail = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     try {
+      await assertAdminCaller();
       const { requestId, email, customerName, productName, productUrl, customMessage } = data;
 
       const actionUrl = productUrl || "https://gxstore.me";

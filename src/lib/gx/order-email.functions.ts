@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import crypto from "node:crypto";
-import { getPublicClient } from "@/lib/gx/supabase-request";
+import { getPublicClient, assertAdminCaller } from "@/lib/gx/supabase-request";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseEnv, supabaseFetch } from "@/lib/gx/supabase-request";
 import type { Database } from "@/integrations/supabase/types";
@@ -124,18 +124,6 @@ export function verifyOrderToken(token: string): { valid: boolean; orderNumber?:
 async function getResendApiKey(): Promise<string> {
   const envKey = process.env.RESEND_API_KEY;
   if (envKey && envKey.trim()) return envKey.trim();
-  try {
-    const supabase = getPublicClient();
-    const { data } = await supabase
-      .from("site_settings")
-      .select("value")
-      .eq("key", "resend_api_key")
-      .maybeSingle();
-    const val = data?.value as any;
-    if (val?.api_key) return String(val.api_key);
-  } catch (e) {
-    console.error("Failed to fetch resend_api_key setting:", e);
-  }
   return "";
 }
 
@@ -636,6 +624,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     try {
+      await assertAdminCaller();
       const {
         orderNumber,
         status,
@@ -1250,6 +1239,7 @@ export const sendIncompleteOrderPaymentEmail = createServerFn({ method: "POST" }
   )
   .handler(async ({ data }) => {
     try {
+      await assertAdminCaller();
       const {
         orderNumber,
         customerEmail,
@@ -1862,6 +1852,7 @@ export const getOrderSecretLinkFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     try {
+      await assertAdminCaller();
       const token = generateOrderToken(data.orderNumber, data.customerEmail || "", data.orderId);
       const secretUrl = `https://gxstore.me/order/completed?order_token=${encodeURIComponent(token)}`;
       return { ok: true, token, secretUrl };
