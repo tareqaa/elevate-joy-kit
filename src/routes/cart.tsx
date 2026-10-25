@@ -101,14 +101,26 @@ function CartPage() {
   } | null>(null);
 
   const detectedCountry = resolveCountryFromPhone(cart.contact.phone);
-  const isForeign =
-    (detectedCountry && detectedCountry.code !== "JO") ||
-    (cart.contact.countryCode && !["+962", "JO", "962"].includes(cart.contact.countryCode));
-  const isJordan = !isForeign && (cart.contact.countryCode === "+962" || currency === "JOD" || !cart.contact.countryCode);
+  const isExplicitForeignPhone = Boolean(detectedCountry && detectedCountry.code !== "JO");
+  const isExplicitForeignCountryCode = Boolean(
+    cart.contact.countryCode && !["+962", "JO", "962"].includes(cart.contact.countryCode)
+  );
+  const isJordanPhone = detectedCountry?.code === "JO";
+
+  // Jordan order if:
+  // 1. Phone is explicitly detected as Jordan (+962 or 07), OR
+  // 2. Not foreign phone/country AND currency is JOD (or default JOD).
+  const isJordan =
+    !isExplicitForeignPhone &&
+    !isExplicitForeignCountryCode &&
+    (isJordanPhone || currency === "JOD" || cart.contact.countryCode === "+962");
+
   const [paymentMethod, setPaymentMethod] = useState<"cliq" | "card">(isJordan ? "cliq" : "card");
 
   useEffect(() => {
-    if (!isJordan && paymentMethod === "cliq") {
+    if (isJordan && paymentMethod !== "cliq") {
+      setPaymentMethod("cliq");
+    } else if (!isJordan && paymentMethod !== "card") {
       setPaymentMethod("card");
     }
   }, [isJordan, paymentMethod]);
@@ -1257,7 +1269,11 @@ function CartPaymentStage2({
       <div className="gx-pm-header">
         <div className="gx-pm-header-info">
           <h2>{t("cart.payment_method_title")}</h2>
-          <p>{t("cart.payment_method_sub")}</p>
+          <p>
+            {isJordan
+              ? (isAr ? "طريقة الدفع المتاحة داخل الأردن عبر كليك (CliQ) — بدون أي رسوم إضافية 🇯🇴" : "Available payment method in Jordan via CliQ (0% extra fees) 🇯🇴")
+              : (isAr ? "طريقة الدفع المتاحة لجميع الدول عبر البطاقات البنكية (Visa / Mastercard) 💳" : "Available payment method for international orders via Bank Cards (Visa / Mastercard) 💳")}
+          </p>
         </div>
         <button type="button" className="gx-pm-back-pill" onClick={onBack}>
           <span className="gx-arr">{dir === "rtl" ? "→" : "←"}</span> {t("cart.shopping_cart")}
@@ -1266,7 +1282,7 @@ function CartPaymentStage2({
 
       {/* Payment Selection List (Spacious & Cleanly Separated) */}
       <div className="gx-pm-tiles-list">
-        {/* CliQ Option - Available for Jordan orders */}
+        {/* CliQ Option - Available ONLY for Jordan orders */}
         {isJordan && (
           <div
             className={"gx-pm-tile " + (paymentMethod === "cliq" ? "active" : "")}
@@ -1292,29 +1308,31 @@ function CartPaymentStage2({
           </div>
         )}
 
-        {/* Visa / Mastercard Option */}
-        <div
-          className={"gx-pm-tile " + (paymentMethod === "card" ? "active" : "")}
-          onClick={() => setPaymentMethod("card")}
-        >
-          <div className="gx-pm-radio">
-            <div className="gx-pm-radio-ring">
-              <div className="gx-pm-radio-inner" />
+        {/* Visa / Mastercard Option - Available ONLY for international / non-Jordan orders */}
+        {!isJordan && (
+          <div
+            className={"gx-pm-tile " + (paymentMethod === "card" ? "active" : "")}
+            onClick={() => setPaymentMethod("card")}
+          >
+            <div className="gx-pm-radio">
+              <div className="gx-pm-radio-ring">
+                <div className="gx-pm-radio-inner" />
+              </div>
+            </div>
+
+            <div className="gx-pm-info">
+              <div className="gx-pm-name-row">
+                <span className="gx-pm-name">{t("cart.method_card")}</span>
+              </div>
+              <p className="gx-pm-desc">{t("cart.method_card_desc")}</p>
+            </div>
+
+            {/* Visa / Mastercard Official Vector Badge */}
+            <div className="gx-pm-logo card">
+              <img src="/app/assets/img/cards-logo.svg" alt="Visa / Mastercard" />
             </div>
           </div>
-
-          <div className="gx-pm-info">
-            <div className="gx-pm-name-row">
-              <span className="gx-pm-name">{t("cart.method_card")}</span>
-            </div>
-            <p className="gx-pm-desc">{t("cart.method_card_desc")}</p>
-          </div>
-
-          {/* Visa / Mastercard Official Vector Badge */}
-          <div className="gx-pm-logo card">
-            <img src="/app/assets/img/cards-logo.svg" alt="Visa / Mastercard" />
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -1525,7 +1543,11 @@ function CartOrderRecapStage2({
         disabled={busy || cart.items.length === 0}
         onClick={handleCheckout}
       >
-        {busy ? t("cart.checkout_saving") : t("cart.complete_payment") + " 💳"}
+        {busy
+          ? t("cart.checkout_saving")
+          : isJordan
+          ? (isAr ? "إتمام الطلب والدفع عبر كليك 🚀" : "Complete & Pay via CliQ 🚀")
+          : (isAr ? "إتمام الدفع عبر البطاقة البنكية 💳" : "Complete & Pay via Card 💳")}
       </button>
 
       {/* Fee Explanation Modal */}
