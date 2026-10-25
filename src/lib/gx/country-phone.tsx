@@ -312,14 +312,8 @@ export function getUnifiedCountryCode(): string {
 export async function fetchUserCountryOnce(): Promise<string> {
   if (typeof window === "undefined") return "JO";
 
-  // If user has a manual preference or persistent cache, return immediately (0 requests)
+  // If already detected and cached from IP, return immediately (0 requests)
   try {
-    const manual = localStorage.getItem(MANUAL_USER_COUNTRY_KEY);
-    if (manual) {
-      const match = COUNTRIES.find((c) => c.code === manual.toUpperCase());
-      if (match) return match.code;
-    }
-
     const cached = localStorage.getItem(CACHE_COUNTRY_KEY) || localStorage.getItem(LEGACY_LANG_GEO_KEY);
     if (cached) {
       inMemoryCountryCode = cached.toUpperCase();
@@ -332,29 +326,11 @@ export async function fetchUserCountryOnce(): Promise<string> {
   // Deduplicate concurrent requests
   if (inFlightCountryPromise) {
     const res = await inFlightCountryPromise;
-    return res || getUnifiedCountryCode();
+    return res || getDetectedIpCountry();
   }
 
   inFlightCountryPromise = (async () => {
-    // 1. Authoritative edge proxy IP header from Cloudflare via server function
-    try {
-      const { getClientCountryFn } = await import("./geo.functions");
-      const serverRes = await getClientCountryFn();
-      if (serverRes?.countryCode) {
-        const cc = serverRes.countryCode.toUpperCase();
-        inMemoryCountryCode = cc;
-        try {
-          localStorage.setItem(CACHE_COUNTRY_KEY, cc);
-          localStorage.setItem(LEGACY_LANG_GEO_KEY, cc);
-        } catch {}
-        window.dispatchEvent(new CustomEvent("gx:country-detected", { detail: cc }));
-        return cc;
-      }
-    } catch {
-      /* fallback to client IP detection */
-    }
-
-    // 2. Client-side IP lookup via ipwho.is
+    // 1. Client-side IP lookup via ipwho.is
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 2000);
     try {
@@ -403,7 +379,7 @@ export async function fetchUserCountryOnce(): Promise<string> {
   })();
 
   const result = await inFlightCountryPromise;
-  return result || getUnifiedCountryCode();
+  return result || getDetectedIpCountry();
 }
 
 /**
