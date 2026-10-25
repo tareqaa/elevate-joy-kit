@@ -30,6 +30,8 @@ import {
   COUNTRIES,
   CountryPhoneInput,
   CountryInfo,
+  getDetectedIpCountry,
+  fetchUserCountryOnce,
 } from "@/lib/gx/country-phone";
 
 export const Route = createFileRoute("/cart")({
@@ -100,20 +102,31 @@ function CartPage() {
     paymentMethod?: "cliq" | "card" | "gx_wallet";
   } | null>(null);
 
-  const detectedCountry = resolveCountryFromPhone(cart.contact.phone);
-  const isExplicitForeignPhone = Boolean(detectedCountry && detectedCountry.code !== "JO");
-  const isExplicitForeignCountryCode = Boolean(
-    cart.contact.countryCode && !["+962", "JO", "962"].includes(cart.contact.countryCode)
-  );
-  const isJordanPhone = detectedCountry?.code === "JO";
+  // --- Strict IP-Based Country Detection (Phone number has NO effect) ---
+  const [ipCountry, setIpCountry] = useState<string>(() => {
+    return getDetectedIpCountry();
+  });
 
-  // Jordan order if:
-  // 1. Phone is explicitly detected as Jordan (+962 or 07), OR
-  // 2. Not foreign phone/country AND currency is JOD (or default JOD).
-  const isJordan =
-    !isExplicitForeignPhone &&
-    !isExplicitForeignCountryCode &&
-    (isJordanPhone || currency === "JOD" || cart.contact.countryCode === "+962");
+  useEffect(() => {
+    let active = true;
+    void fetchUserCountryOnce().then((cc) => {
+      if (active && cc) setIpCountry(cc.toUpperCase());
+    });
+    const onDetected = (e: Event) => {
+      const cc = (e as CustomEvent).detail;
+      if (active && cc && typeof cc === "string") {
+        setIpCountry(cc.toUpperCase());
+      }
+    };
+    window.addEventListener("gx:country-detected", onDetected);
+    return () => {
+      active = false;
+      window.removeEventListener("gx:country-detected", onDetected);
+    };
+  }, []);
+
+  // ONLY based on IP address: JO = Jordan (CliQ only), anything else = other countries (Visa only)
+  const isJordan = ipCountry === "JO";
 
   const [paymentMethod, setPaymentMethod] = useState<"cliq" | "card">(isJordan ? "cliq" : "card");
 

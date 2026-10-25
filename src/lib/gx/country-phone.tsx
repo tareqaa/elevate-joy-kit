@@ -336,8 +336,27 @@ export async function fetchUserCountryOnce(): Promise<string> {
   }
 
   inFlightCountryPromise = (async () => {
+    // 1. Authoritative edge proxy IP header from Cloudflare via server function
+    try {
+      const { getClientCountryFn } = await import("./geo.functions");
+      const serverRes = await getClientCountryFn();
+      if (serverRes?.countryCode) {
+        const cc = serverRes.countryCode.toUpperCase();
+        inMemoryCountryCode = cc;
+        try {
+          localStorage.setItem(CACHE_COUNTRY_KEY, cc);
+          localStorage.setItem(LEGACY_LANG_GEO_KEY, cc);
+        } catch {}
+        window.dispatchEvent(new CustomEvent("gx:country-detected", { detail: cc }));
+        return cc;
+      }
+    } catch {
+      /* fallback to client IP detection */
+    }
+
+    // 2. Client-side IP lookup via ipwho.is
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 1800);
+    const timer = setTimeout(() => ctrl.abort(), 2000);
     try {
       const res = await fetch("https://ipwho.is/", { signal: ctrl.signal });
       const data = await res.json();
@@ -356,14 +375,26 @@ export async function fetchUserCountryOnce(): Promise<string> {
               en: match?.nameEn || cc,
             })
           );
-        } catch {
-          /* noop */
-        }
+        } catch {}
         window.dispatchEvent(new CustomEvent("gx:country-detected", { detail: cc }));
         return cc;
       }
     } catch {
-      /* silent fallback */
+      // 3. Fallback to api.country.is
+      try {
+        const res2 = await fetch("https://api.country.is/", { signal: ctrl.signal });
+        const data2 = await res2.json();
+        if (data2?.country) {
+          const cc = String(data2.country).toUpperCase();
+          inMemoryCountryCode = cc;
+          try {
+            localStorage.setItem(CACHE_COUNTRY_KEY, cc);
+            localStorage.setItem(LEGACY_LANG_GEO_KEY, cc);
+          } catch {}
+          window.dispatchEvent(new CustomEvent("gx:country-detected", { detail: cc }));
+          return cc;
+        }
+      } catch {}
     } finally {
       clearTimeout(timer);
       inFlightCountryPromise = null;
@@ -373,6 +404,21 @@ export async function fetchUserCountryOnce(): Promise<string> {
 
   const result = await inFlightCountryPromise;
   return result || getUnifiedCountryCode();
+}
+
+/**
+ * Synchronously returns the user's detected country code strictly from IP / timezone heuristics.
+ * Independent of phone numbers or contact fields.
+ */
+export function getDetectedIpCountry(): string {
+  if (typeof window === "undefined") return "JO";
+  try {
+    const cached = localStorage.getItem(CACHE_COUNTRY_KEY) || localStorage.getItem(LEGACY_LANG_GEO_KEY);
+    if (cached && cached.trim()) return cached.trim().toUpperCase();
+  } catch {}
+  const tz = detectCountryFromTimezone();
+  if (tz) return tz.toUpperCase();
+  return "JO";
 }
 
 /**
