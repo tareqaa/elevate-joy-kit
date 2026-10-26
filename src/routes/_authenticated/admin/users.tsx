@@ -212,13 +212,13 @@ function UsersAdmin() {
 
   function exportCsv() {
     const header = ["الاسم", "الإيميل", "المعرّف", "الطلبات", "الإنفاق (د.أ)", "XP", "GX Coins", "رصيد المتجر", "المستوى", "الصلاحيات", "التسجيل"];
-    const lines = filtered.map((u) => [
+    const lines = filtered.map((u) => csvRow([
       u.full_name ?? "", u.email ?? "", u.username ?? "", u.orders_count,
-      Number(u.total_spent || 0).toFixed(2), u.xp ?? 0, u.gx_coins ?? 0,
-      Number(u.store_credit_jod ?? 0).toFixed(2), u.level_code ?? "",
+      Number(Number(u.total_spent || 0).toFixed(2)), u.xp ?? 0, u.gx_coins ?? 0,
+      Number(Number(u.store_credit_jod ?? 0).toFixed(2)), u.level_code ?? "",
       u.roles.join("|") || "user",
       new Date(u.created_at).toLocaleString("ar-JO"),
-    ].map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","));
+    ]));
     const csv = "\uFEFF" + [header.join(","), ...lines].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);

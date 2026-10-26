@@ -1,3 +1,4 @@
+import { safeJsonLd } from "@/lib/gx/json-ld";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
@@ -1938,11 +1939,11 @@ function CategoryPage() {
       {/* Structured Data: BreadcrumbList & CollectionPage Schemas */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbListSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbListSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPageSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(collectionPageSchema) }}
       />
 
       {/* 1. Dynamic Integrated Category Stage (Hero + Moving Platforms) */}
