@@ -174,11 +174,7 @@ function beep() {
 function toCsv(rows: OrderWithEmail[]) {
   const cols = ["order_number", "created_at", "status", "customer_name", "user_email", "user_username", "customer_whatsapp", "total_jod"];
   const header = cols.join(",");
-  const esc = (v: unknown) => {
-    const s = v == null ? "" : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const body = rows.map((r) => cols.map((c) => esc((r as unknown as Record<string, unknown>)[c])).join(",")).join("\n");
+  const body = rows.map((r) => csvRow(cols.map((c) => (r as unknown as Record<string, unknown>)[c]))).join("\n");
   return "\uFEFF" + header + "\n" + body;
 }
 

@@ -138,7 +138,7 @@ function LeaderboardAdmin() {
   function exportCsv() {
     const head = ["#", "اسم المستخدم", "الاسم", "البريد", "المستوى", "XP", "GX Coins", "الطلبات", "الإنفاق"];
     const lines = filtered.map((r, i) =>
-      [
+      csvRow([
         i + 1,
         r.username ?? "",
         r.full_name ?? "",
@@ -148,9 +148,7 @@ function LeaderboardAdmin() {
         Number(r.gx_coins || 0),
         r.orders_count ?? 0,
         Number(r.total_spent || 0),
-      ]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(","),
+      ]),
     );
     const csv = "\uFEFF" + [head.join(","), ...lines].join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
