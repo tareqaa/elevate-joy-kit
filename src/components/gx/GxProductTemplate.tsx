@@ -457,6 +457,8 @@ export function GxProductTemplate({
     );
   }, [siteSettings?.product_stock_limits, activeVariant?.cartId, product?.slug]);
 
+  const isOutOfStock = stockLimit !== null && stockLimit <= 0;
+
   const [quantity, setQuantity] = useState<number>(1);
 
   // Restock Notification State
@@ -764,7 +766,7 @@ export function GxProductTemplate({
 
   // Actions
   const validateTargetInput = () => {
-    if (requiresCustomerInput) {
+    if (requiresCustomerInput && !isOutOfStock) {
       const trimmed = targetInput.trim();
       if (!trimmed) {
         setInputError(true);
@@ -780,6 +782,10 @@ export function GxProductTemplate({
   };
 
   const handleAddToCart = () => {
+    if (isOutOfStock) {
+      alert(ar ? "عذراً، لقد نفدت كمية هذا المنتج حالياً" : "Sorry, this product is currently sold out");
+      return;
+    }
     if (!validateTargetInput()) return;
     setInputError(false);
     const trimmedInput = targetInput.trim();
@@ -820,6 +826,10 @@ export function GxProductTemplate({
   };
 
   const handleBuyNow = () => {
+    if (isOutOfStock) {
+      alert(ar ? "عذراً، لقد نفدت كمية هذا المنتج حالياً" : "Sorry, this product is currently sold out");
+      return;
+    }
     if (!validateTargetInput()) return;
     setInputError(false);
     const trimmedInput = targetInput.trim();
@@ -1359,27 +1369,44 @@ export function GxProductTemplate({
   const renderBuyCard = (isDesktop: boolean) => {
     const inputId = isDesktop ? "driffle-target-input-desktop" : "driffle-target-input-mobile";
     return (
-      <div className={`driffle-buy-card gx-buy-card ${isDesktop ? "is-desktop" : "is-mobile"}`}>
+      <div className={`driffle-buy-card gx-buy-card ${isDesktop ? "is-desktop" : "is-mobile"} ${isOutOfStock ? "is-sold-out" : ""}`}>
         {/* Clean, Direct Price Box */}
         <div className="driffle-price-box gx-price-box">
           <span className="driffle-price-label gx-price-label">
             {pick(activeVariant.labelAr, activeVariant.labelEn)}
           </span>
           <div className="driffle-price-main gx-price-main">
-            <span className="driffle-price-val gx-price-val">{format(activePrice)}</span>
-            {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
-              <span className="driffle-price-old gx-price-old">{format(activeVariant.oldPrice)}</span>
+            {isOutOfStock ? (
+              <span
+                className="driffle-price-val gx-price-val gx-sold-out-val"
+                style={{
+                  color: "#ff3b71",
+                  fontSize: 22,
+                  fontWeight: 900,
+                  fontFamily: "'Tajawal', sans-serif",
+                  letterSpacing: "0.2px",
+                }}
+              >
+                {ar ? "نفدت الكمية" : "Sold Out"}
+              </span>
+            ) : (
+              <>
+                <span className="driffle-price-val gx-price-val">{format(activePrice)}</span>
+                {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
+                  <span className="driffle-price-old gx-price-old">{format(activeVariant.oldPrice)}</span>
+                )}
+              </>
             )}
           </div>
-          {(isSocialProduct || isFollowerProduct || isLikeProduct) && (
+          {!isOutOfStock && (isSocialProduct || isFollowerProduct || isLikeProduct) && (
             <div className="driffle-price-note gx-price-note">
               {ar ? "⚡ تنفيذ من ساعة إلى 24 ساعة • ضمان 30 يوماً ضد النقص ⓘ" : "⚡ 1-24h Delivery • 30-Day Drop Refill Guarantee ⓘ"}
             </div>
           )}
         </div>
 
-        {/* Target Link or Username Input Box */}
-        {requiresCustomerInput && (
+        {/* Target Link or Username Input Box (Hidden when sold out / out of stock) */}
+        {requiresCustomerInput && !isOutOfStock && (
           <div className={`driffle-target-input-box ${inputError ? "has-error" : ""}`}>
             <label className="driffle-target-label" htmlFor={inputId}>
               <span className="driffle-target-label-icon">
@@ -1944,31 +1971,51 @@ export function GxProductTemplate({
                   .map((v) => {
                     const isActive = v.cartId === activeVariant.cartId;
                     const vLabel = pick(v.labelAr, v.labelEn);
+                    const vLimit = getEffectiveStockLimit(
+                      siteSettings?.product_stock_limits,
+                      v.cartId,
+                      product.slug
+                    );
+                    const vIsOutOfStock = vLimit !== null && vLimit <= 0;
                     return (
                       <button
                         key={v.cartId}
                         type="button"
-                        className={`driffle-var-card gx-var-card ${isActive ? "is-active" : ""}`}
+                        className={`driffle-var-card gx-var-card ${isActive ? "is-active" : ""} ${vIsOutOfStock ? "is-sold-out" : ""}`}
                         onClick={() => handleSelectVariant(v.cartId)}
                       >
                         <div className="driffle-var-top gx-var-top">
                           <span className="driffle-var-name gx-var-name">{vLabel}</span>
                           <div className="driffle-var-radio gx-var-radio" />
                         </div>
-                        {v.tagAr && (
+                        {v.tagAr ? (
                           <div style={{ margin: "4px 0" }}>
                             <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "rgba(245, 158, 11, 0.15)", color: "#f59e0b", fontWeight: 700 }}>
                               {v.tagAr}
                             </span>
                           </div>
-                        )}
-                        <div className="driffle-var-price gx-var-price">
-                          <span>{ar ? "السعر:" : "Price:"} </span>
-                          <strong>{format(v.price)}</strong>
-                          {v.oldPrice && v.oldPrice > v.price && (
-                            <span style={{ textDecoration: "line-through", color: "#64748b", fontSize: 11, marginInlineStart: 6 }}>
-                              {format(v.oldPrice)}
+                        ) : vIsOutOfStock ? (
+                          <div style={{ margin: "4px 0" }}>
+                            <span style={{ fontSize: 10.5, padding: "2px 7px", borderRadius: 10, background: "rgba(255, 59, 113, 0.15)", color: "#ff3b71", fontWeight: 800 }}>
+                              {ar ? "نفدت" : "Sold Out"}
                             </span>
+                          </div>
+                        ) : null}
+                        <div className="driffle-var-price gx-var-price">
+                          {vIsOutOfStock ? (
+                            <span style={{ color: "#ff3b71", fontWeight: 800, fontSize: 12 }}>
+                              {ar ? "نفدت الكمية" : "Sold Out"}
+                            </span>
+                          ) : (
+                            <>
+                              <span>{ar ? "السعر:" : "Price:"} </span>
+                              <strong>{format(v.price)}</strong>
+                              {v.oldPrice && v.oldPrice > v.price && (
+                                <span style={{ textDecoration: "line-through", color: "#64748b", fontSize: 11, marginInlineStart: 6 }}>
+                                  {format(v.oldPrice)}
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
                       </button>
@@ -2258,9 +2305,17 @@ export function GxProductTemplate({
             )}
           </div>
           <div className="gx-sticky-bar-price">
-            <strong>{format(activePrice)}</strong>
-            {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
-              <span className="gx-sticky-bar-old">{format(activeVariant.oldPrice)}</span>
+            {isOutOfStock ? (
+              <span style={{ color: "#ff3b71", fontWeight: 800, fontSize: 14 }}>
+                {ar ? "نفدت الكمية" : "Sold Out"}
+              </span>
+            ) : (
+              <>
+                <strong>{format(activePrice)}</strong>
+                {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
+                  <span className="gx-sticky-bar-old">{format(activeVariant.oldPrice)}</span>
+                )}
+              </>
             )}
           </div>
         </div>

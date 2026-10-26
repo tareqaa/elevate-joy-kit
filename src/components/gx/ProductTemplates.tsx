@@ -12,7 +12,7 @@ import { useCurrency } from "@/lib/gx/currency";
 import { useCart } from "@/lib/gx/cart";
 import { useLang } from "@/lib/gx/i18n";
 import type { Lang } from "@/lib/gx/i18n";
-import { useSiteSettings } from "@/lib/gx/site-settings";
+import { useSiteSettings, getEffectiveStockLimit } from "@/lib/gx/site-settings";
 import { BuyActions } from "@/components/gx/BuyActions";
 import { FeatureAccordion, DeliveryBox, SectionHead } from "@/components/gx/Primitives";
 import { CrewIcon, VbucksIcon, SnapchatPoster, AdobePoster, CanvaPoster, WindowsPoster } from "@/lib/gx/brand-icons";
@@ -253,10 +253,23 @@ function VariantCard({
     );
   const cleanRegion = getCleanRegion();
 
+  const stockLimit = getEffectiveStockLimit(
+    siteSettings?.product_stock_limits,
+    v.cartId,
+    p.slug
+  );
+  const isOutOfStock = stockLimit !== null && stockLimit <= 0;
+
   return (
     <div
-      className="prod-card"
-      style={theme ? { borderColor: theme.border, boxShadow: `0 8px 24px -6px ${theme.border}` } : undefined}
+      className={`prod-card ${isOutOfStock ? "is-sold-out" : ""}`}
+      style={
+        theme
+          ? { borderColor: theme.border, boxShadow: `0 8px 24px -6px ${theme.border}`, ...(isOutOfStock ? { opacity: 0.72, filter: "grayscale(0.38)" } : {}) }
+          : isOutOfStock
+          ? { opacity: 0.72, filter: "grayscale(0.38)" }
+          : undefined
+      }
     >
       <div className="prod-thumb" style={{ background: theme?.bg || p.thumbBg || undefined }}>
         {thumbContent}
@@ -331,23 +344,53 @@ function VariantCard({
           </div>
         </div>
 
-        <div className="prod-prices">
-          {v.oldPrice && <span className="prod-old">{format(v.oldPrice)}</span>}
-          <div className="prod-price-row">
-            <span className="prod-new" style={theme ? { color: theme.accent } : undefined}>
-              {format(v.price)}
+        {isOutOfStock ? (
+          <div
+            className="prod-sold-out-box"
+            style={{
+              marginTop: "auto",
+              height: 44,
+              minHeight: 44,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              gap: 8,
+              userSelect: "none",
+            }}
+          >
+            <span
+              style={{
+                color: "#ff3b71",
+                fontSize: 15,
+                fontWeight: 900,
+                fontFamily: "'Tajawal', sans-serif",
+                letterSpacing: 0.3,
+              }}
+            >
+              {lang === "en" ? "Sold Out" : "نفدت"}
             </span>
-            {discountOf(v) > 0 && <span className="prod-discount-pill">-{discountOf(v)}%</span>}
           </div>
-        </div>
-        <BuyActions
-          cartId={v.cartId}
-          meta={{
-            price: v.price,
-            name: `${p.nameAr || p.nameEn} — ${v.labelAr || v.labelEn}`,
-            product: p.slug,
-          }}
-        />
+        ) : (
+          <>
+            <div className="prod-prices">
+              {v.oldPrice && <span className="prod-old">{format(v.oldPrice)}</span>}
+              <div className="prod-price-row">
+                <span className="prod-new" style={theme ? { color: theme.accent } : undefined}>
+                  {format(v.price)}
+                </span>
+                {discountOf(v) > 0 && <span className="prod-discount-pill">-{discountOf(v)}%</span>}
+              </div>
+            </div>
+            <BuyActions
+              cartId={v.cartId}
+              meta={{
+                price: v.price,
+                name: `${p.nameAr || p.nameEn} — ${v.labelAr || v.labelEn}`,
+                product: p.slug,
+              }}
+            />
+          </>
+        )}
       </div>
     </div>
   );
