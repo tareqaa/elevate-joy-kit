@@ -1897,7 +1897,7 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
         await (supabase as any)
           .from("orders")
           .select("*")
-          .or(`order_number.eq.${num},order_number.ilike.${num}`)
+          .eq("order_number", num)
           .maybeSingle()
       ).data;
 
