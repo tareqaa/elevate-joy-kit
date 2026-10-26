@@ -1,14 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getPublicClient, assertAdminCaller } from "@/lib/gx/supabase-request";
+import { getResendApiKey } from "./resend-key";
 
 const SENDER_EMAIL = "GX Store <support@gxstore.me>";
-
-async function getResendApiKey(): Promise<string> {
-  const envKey = process.env.RESEND_API_KEY;
-  if (envKey && envKey.trim()) return envKey.trim();
-  return "";
-}
 
 export type SendCreditEmailInput = {
   email: string;

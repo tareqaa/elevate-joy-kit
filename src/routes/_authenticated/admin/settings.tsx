@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Settings as SettingsIcon, Save, Store, MessageCircle, Share2, Wrench } from "lucide-react";
+import { Settings as SettingsIcon, Save, Store, MessageCircle, Share2, Wrench, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/settings")({
   head: () => ({ meta: [{ title: "الإعدادات — لوحة التحكم" }] }),
@@ -176,6 +176,30 @@ function SettingsPage() {
                 </div>
                 <Switch checked={Boolean(s("hide_fortnite_badges"))} onCheckedChange={(v) => set("hide_fortnite_badges", v)} />
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-emerald-500/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base"><Mail size={16} className="text-emerald-400" /> خدمة البريد الإلكتروني (Resend)</CardTitle>
+              <CardDescription>إرسال إيميلات تسليم الطلبات، إشعارات الإلغاء، رصيد المتجر، وتنبيهات توفر المنتجات</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Field label="مفتاح API لخدمة Resend (RESEND_API_KEY)">
+                <div className="space-y-1.5">
+                  <Input
+                    dir="ltr"
+                    type="password"
+                    placeholder="re_xxxxxxxxxxxxxxxxxxxxxxxx"
+                    value={String(s("resend_api_key") ?? "")}
+                    onChange={(e) => set("resend_api_key", e.target.value.trim())}
+                  />
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
+                    <span>الدومين المعتمد: <strong className="text-emerald-400 font-mono">gxstore.me</strong></span>
+                    <span className="font-mono">{s("resend_api_key") ? "✓ المفتاح مُعدّ ونشط" : "⚠️ المفتاح غير مُعدّ"}</span>
+                  </div>
+                </div>
+              </Field>
             </CardContent>
           </Card>
 

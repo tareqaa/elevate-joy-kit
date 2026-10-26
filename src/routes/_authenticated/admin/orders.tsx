@@ -765,7 +765,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           slug: it.product_slug || it.slug || it.cartId || it.id || undefined,
         }));
 
-        await sendOrderStatusEmail({
+        const emailRes = await sendOrderStatusEmail({
           data: {
             orderNumber: order.order_number,
             status: "delivered",
@@ -781,7 +781,11 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             lang: emailLang,
           },
         });
-        toast.success(`تم تسليم الطلب وإرسال إشعار (${emailLang === "ar" ? "بالعربية" : "بالإنجليزية"}) للعميل (${targetEmail}) عبر noreply@gxstore.me!`);
+        if (emailRes && !emailRes.ok) {
+          toast.warning(`تم تسليم الطلب، لكن تعذر إرسال الإيميل للعميل: ${emailRes.error || "مفتاح البريد غير مهيأ"}`);
+        } else {
+          toast.success(`تم تسليم الطلب وإرسال إشعار (${emailLang === "ar" ? "بالعربية" : "بالإنجليزية"}) للعميل (${targetEmail}) عبر noreply@gxstore.me!`);
+        }
       } catch (err) {
         console.error("Order delivery email failed:", err);
         toast.warning("تم تسليم الطلب، لكن تعذر إرسال الإيميل للعميل.");
@@ -802,7 +806,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
     const targetEmail = order.user_email || order.customer_email || (order.delivery_data && typeof order.delivery_data === "object" ? (order.delivery_data as any).customer_email : null);
     if (notifyCustomer && targetEmail && targetEmail.includes("@")) {
       try {
-        await sendOrderStatusEmail({
+        const emailRes = await sendOrderStatusEmail({
           data: {
             orderNumber: order.order_number,
             status: "cancelled",
@@ -817,9 +821,14 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             lang: emailLang,
           },
         });
-        toast.success(`تم إلغاء الطلب وإرسال إشعار للعميل عبر noreply@gxstore.me.`);
+        if (emailRes && !emailRes.ok) {
+          toast.warning(`تم إلغاء الطلب، لكن تعذر إرسال إشعار الإلغاء للعميل: ${emailRes.error || "مفتاح البريد غير مهيأ"}`);
+        } else {
+          toast.success(`تم إلغاء الطلب وإرسال إشعار للعميل عبر noreply@gxstore.me.`);
+        }
       } catch (err) {
         console.error("Cancel email error:", err);
+        toast.warning("تم إلغاء الطلب، لكن تعذر إرسال الإيميل للعميل.");
       }
     }
   }

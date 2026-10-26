@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 import { supabaseEnv, supabaseFetch } from "@/lib/gx/supabase-request";
 import type { Database } from "@/integrations/supabase/types";
 import { resolveProductImage } from "./product-images";
+import { getResendApiKey } from "./resend-key";
 
 const SENDER_EMAIL = "GX Store <noreply@gxstore.me>";
 export const CDN_ASSETS_BASE = "https://cdn.jsdelivr.net/gh/tareqaa/elevate-joy-kit@main/public";
@@ -120,12 +121,6 @@ export function verifyOrderToken(token: string): { valid: boolean; orderNumber?:
   } catch (err: any) {
     return { valid: false, error: err?.message || "فشل التحقق من صحة الرمز" };
   }
-}
-
-async function getResendApiKey(): Promise<string> {
-  const envKey = process.env.RESEND_API_KEY;
-  if (envKey && envKey.trim()) return envKey.trim();
-  return "";
 }
 
 function getServerServiceClient() {

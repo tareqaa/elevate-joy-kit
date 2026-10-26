@@ -531,7 +531,7 @@ function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: ()
 
         if (credit > 0 && user?.email && notifyEmail) {
           try {
-            await sendCreditNotificationEmail({
+            const emailRes = await sendCreditNotificationEmail({
               data: {
                 email: user.email,
                 amountJod: credit,
@@ -542,9 +542,14 @@ function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: ()
                 xp: xp || undefined,
               },
             });
-            toast.success("تم إرسال إشعار الرصيد للعميل عبر support@gxstore.me");
+            if (emailRes && !(emailRes as any).ok) {
+              toast.warning(`تم تعديل الرصيد، لكن تعذر إرسال الإشعار للعميل: ${(emailRes as any).error || "مفتاح البريد غير مهيأ"}`);
+            } else {
+              toast.success("تم إرسال إشعار الرصيد للعميل عبر support@gxstore.me");
+            }
           } catch (mErr) {
             console.error("User email notification error:", mErr);
+            toast.warning("تم تعديل الرصيد، لكن تعذر إرسال الإيميل للعميل.");
           }
         }
       }
@@ -893,6 +898,8 @@ function PreRegistrationCreditDialog({
           });
           if (emailRes?.ok) {
             toast.success("تم إرسال إشعار الرصيد للعميل عبر البريد (support@gxstore.me) بنجاح!");
+          } else {
+            toast.warning(`تم حفظ الرصيد، لكن تعذر إرسال الإيميل للعميل: ${emailRes?.error || "مفتاح البريد غير مهيأ"}`);
           }
         } catch (mailErr) {
           console.error("Email send failed:", mailErr);
