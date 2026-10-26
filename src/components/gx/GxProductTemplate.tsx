@@ -23,6 +23,7 @@ import {
   setRememberContactEnabled,
 } from "@/lib/gx/contact-storage";
 import { CountryPhoneInput, detectUserCountry, fetchUserCountryOnce, COUNTRIES } from "@/lib/gx/country-phone";
+import { resolveProductImage } from "@/lib/gx/product-images";
 
 function renderStepContent(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -631,22 +632,13 @@ export function GxProductTemplate({
     // Software apps that specifically use their SVG logos instead of full cover artwork
     const isSvgApp = ["autodesk", "microsoft365", "linkedin", "gemini"].includes(product.slug);
     
-    const todImageMap: Record<string, string> = {
-      "tod-total-1d": "/app/assets/img/catalog/one_day.webp",
-      "tod-total-1w": "/app/assets/img/catalog/one_week_2.webp",
-      "tod-mobile-1m": "/app/assets/img/catalog/1-01.webp",
-      "tod-total-1m": "/app/assets/img/catalog/1-03.webp",
-      "tod-4k-1m": "/app/assets/img/catalog/1-02.webp",
-      "tod-mobile-6m": "/app/assets/img/catalog/tod_mobile_6_months_1.webp",
-      "tod-tv-6m": "/app/assets/img/catalog/total_6_months.webp",
-      "tod-mobile-1y": "/app/assets/img/catalog/tod_mobile_-one_year.webp",
-      "tod-tv-1y": "/app/assets/img/catalog/tod_total_one_year.webp",
-      "tod-4k-1y": "/app/assets/img/catalog/4k_.png",
-    };
     const coverSrc =
-      isTod && activeVariant.cartId && todImageMap[activeVariant.cartId]
-        ? todImageMap[activeVariant.cartId]
-        : product.imageUrl || product.iconImage;
+      resolveProductImage({
+        cartId: activeVariant.cartId,
+        slug: product.slug,
+        name: name,
+        fallback: (activeVariant as any).imageUrl || product.imageUrl || product.iconImage,
+      }) || product.imageUrl || product.iconImage;
 
     // Full Cover Poster (for all games, subscriptions, and catalog items with cover art)
     if (!isSvgApp && coverSrc) {
@@ -812,13 +804,20 @@ export function GxProductTemplate({
     }
     const variantLabel = pick(activeVariant.labelAr, activeVariant.labelEn);
     const itemName = variantLabel && !name.includes(variantLabel) ? `${name} — ${variantLabel}` : name;
+    const itemCover = resolveProductImage({
+      cartId: activeVariant.cartId,
+      slug: product.slug,
+      name: itemName,
+      fallback: (activeVariant as any).imageUrl || product.imageUrl || product.iconImage,
+    }) || product.imageUrl || product.iconImage;
+
     cart.add(activeVariant.cartId, quantity, {
       price: activePrice,
       name: itemName,
       product: product.slug,
       icon: product.icon || "✨",
-      iconImage: product.iconImage || product.imageUrl,
-      imageUrl: product.imageUrl || product.iconImage,
+      iconImage: itemCover,
+      imageUrl: itemCover,
       bg: product.thumbBg,
       usernames: finalVal ? [finalVal] : undefined,
     });
@@ -853,13 +852,20 @@ export function GxProductTemplate({
     }
     const variantLabel = pick(activeVariant.labelAr, activeVariant.labelEn);
     const itemName = variantLabel && !name.includes(variantLabel) ? `${name} — ${variantLabel}` : name;
+    const itemCover = resolveProductImage({
+      cartId: activeVariant.cartId,
+      slug: product.slug,
+      name: itemName,
+      fallback: (activeVariant as any).imageUrl || product.imageUrl || product.iconImage,
+    }) || product.imageUrl || product.iconImage;
+
     cart.buyNow(activeVariant.cartId, quantity, {
       price: activePrice,
       name: itemName,
       product: product.slug,
       icon: product.icon || "✨",
-      iconImage: product.iconImage || product.imageUrl,
-      imageUrl: product.imageUrl || product.iconImage,
+      iconImage: itemCover,
+      imageUrl: itemCover,
       bg: product.thumbBg,
       usernames: finalVal ? [finalVal] : undefined,
     });
@@ -924,10 +930,21 @@ export function GxProductTemplate({
     return isSteam && isAccount && isGame;
   }, [product, deliveryInfo.type, categorySlug]);
 
-  // YouTube Family Invite detection:
+  // YouTube Family Invite vs Dedicated Pre-Activated Account detection:
   const isYouTube = useMemo(() => {
     return product.slug === "youtube-premium" || (product.slug || "").includes("youtube");
   }, [product.slug]);
+
+  const isYouTubeAccount = useMemo(() => {
+    return (
+      isYouTube &&
+      (activeVariant.deliveryType === "account" ||
+        deliveryInfo.type === "account" ||
+        (product.deliveryType || "").toLowerCase() === "account" ||
+        product.slug === "youtube-premium-account" ||
+        (activeVariant.cartId || "").includes("account"))
+    );
+  }, [isYouTube, activeVariant.deliveryType, deliveryInfo.type, product.deliveryType, product.slug, activeVariant.cartId]);
 
   // Fortnite & Valorant detection:
   const isFortnite = useMemo(() => {
@@ -986,6 +1003,22 @@ export function GxProductTemplate({
       ];
     }
     if (isYouTube) {
+      if (isYouTubeAccount) {
+        return [
+          ar
+            ? "👤 حساب خاص بك بالكامل: يتم تسليمك حساب Google مخصص (بريد إلكتروني وكلمة مرور) مفعل عليه اشتراك YouTube Premium لشهر كامل."
+            : "👤 Dedicated Pre-Activated Account: Fresh personal Google account (email & password) with 1 month YouTube Premium pre-activated.",
+          ar
+            ? "🚫 لا يحتاج دعوة عائلية: حساب مستقل بالكامل، لا يتطلب مغادرة أو الانضمام لأي عائلة في Google وبدون أي تعقيد."
+            : "🚫 No Family Invite Needed: Standalone account, no need to leave or join any Google family group.",
+          ar
+            ? "⚡ تسليم فوري: بيانات الدخول (الإيميل والباسورد) تظهر لك فوراً على شاشة الطلب بعد إتمام الدفع مباشرة."
+            : "⚡ Instant Delivery: Login credentials (email & password) appear instantly on your order page after checkout.",
+          ar
+            ? "✨ مزايا بريميوم كاملة: بدون إعلانات نهائياً، تشغيل بالخلفية عند قفل الشاشة، تنزيل الفيديوهات، واشتراك YouTube Music كامل."
+            : "✨ Complete Premium Access: Zero ads, background playback, offline video downloads, and YouTube Music included.",
+        ];
+      }
       return [
         ar
           ? "📧 دعوة رسمية على الإيميل: يصلك الاشتراك كدعوة رسمية من Google على بريدك الإلكتروني (Gmail)."
@@ -1080,7 +1113,7 @@ export function GxProductTemplate({
         ? "يتم التنفيذ السريع في غضون دقائق معدودة عبر فريق العمل المتخصص."
         : "Processed rapidly within minutes by our dedicated support agents.",
     ];
-  }, [deliveryInfo.type, isSteamGameAccount, isSocialProduct, isFollowerProduct, isLikeProduct, isValorant, isFortnite, ar]);
+  }, [deliveryInfo.type, isSteamGameAccount, isSocialProduct, isFollowerProduct, isLikeProduct, isValorant, isFortnite, isYouTube, isYouTubeAccount, ar]);
 
   const isNoticeHidden = useMemo(() => {
     return (
@@ -1144,6 +1177,22 @@ export function GxProductTemplate({
     }
 
     if (isYouTube) {
+      if (isYouTubeAccount) {
+        return [
+          ar
+            ? "استلم بيانات الحساب (البريد الإلكتروني وكلمة المرور) فوراً في صفحة تأكيد الطلب بعد إتمام الدفع مباشرة."
+            : "Receive your account credentials (email and password) instantly on your order confirmation page.",
+          ar
+            ? "افتح تطبيق YouTube على هاتفك أو تلفازك أو المتصفح، واضغط على زر 'تسجيل الدخول' (Sign In)."
+            : "Open YouTube app or web browser and click 'Sign In'.",
+          ar
+            ? "أدخل البريد الإلكتروني وكلمة المرور المسلّمة لك لإتمام تسجيل الدخول إلى الحساب."
+            : "Enter the delivered email and password to log in to your account.",
+          ar
+            ? "مبروك! استمتع باشتراك YouTube Premium ومزايا YouTube Music طوال فترة الاشتراك وبدون أي إعلانات نهائياً."
+            : "Congratulations! Enjoy full YouTube Premium and YouTube Music benefits with zero ads for the entire period.",
+        ];
+      }
       return [
         ar
           ? "أدخل إيميل حسابك في Google / Gmail في خانة الطلب لتصلك الدعوة عليه."
@@ -1438,7 +1487,7 @@ export function GxProductTemplate({
         ? "يقوم فريق العمل بتنفيذ الشحن لحسابك مباشرة وتأكيد العملية فوراً."
         : "Our team executes the balance charge directly within moments.",
     ];
-  }, [product, deliveryInfo.type, isSocialProduct, isFollowerProduct, isLikeProduct, isSteamGameAccount, isYouTube, isValorant, isFortnite, ar]);
+  }, [product, deliveryInfo.type, isSocialProduct, isFollowerProduct, isLikeProduct, isSteamGameAccount, isYouTube, isYouTubeAccount, isValorant, isFortnite, ar]);
 
   const renderBuyCard = (isDesktop: boolean) => {
     const inputId = isDesktop ? "driffle-target-input-desktop" : "driffle-target-input-mobile";

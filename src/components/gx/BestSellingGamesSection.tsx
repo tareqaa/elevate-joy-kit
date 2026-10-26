@@ -24,7 +24,7 @@ export const INITIAL_REAL_GAMES: RealGameProduct[] = [
     slug: "ea-fc-27-pc",
     name_ar: "EA Sports FC 27 | حساب ستيم خاص بك (PC)",
     name_en: "EA Sports FC 27 (Steam Account)",
-    base_price_jod: 26.0,
+    base_price_jod: 28.0,
     old_price_jod: 35.0,
     delivery_type: "account",
     platform: "Steam / PC",

@@ -557,9 +557,9 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
   valorant: {
     slug: "valorant",
     name: "Valorant Points (Turkey)",
-    nameAr: "فالورانت (حسابات تركية) | كود تفعيل في اللعبة",
+    nameAr: "شحن نقاط فالورانت (Valorant Points) | كود رقمي (الحسابات التركية)",
     icon: "🎯",
-    iconImg: "/app/assets/img/valorant-logo.svg",
+    iconImg: "/app/assets/img/valorant-logo.png",
     imageUrl: "/app/assets/img/catalog/valorant-cover.jpg",
     thumbBg: "linear-gradient(145deg, #2b0811, #120407)",
     category: "الألعاب",
@@ -794,7 +794,7 @@ export const SUBCATEGORIES: Record<string, Subcategory[]> = {
   ],
   games: [
     { slug: "fortnite", product: "fortnite", name: "فورت نايت", icon: "🪂", iconImg: "/app/assets/img/fortnite-logo.png", bg: "linear-gradient(145deg,#0d1a30,#080d18)" },
-    { slug: "valorant", product: "valorant", name: "فالورانت", icon: "🎯", iconImg: "/app/assets/img/valorant-logo.svg", bg: "linear-gradient(145deg,#2b0811,#120407)" },
+    { slug: "valorant", product: "valorant", name: "فالورانت", icon: "🎯", iconImg: "/app/assets/img/valorant-logo.png", bg: "linear-gradient(145deg,#2b0811,#120407)" },
     { slug: "minecraft-realms-plus", product: "minecraft-realms-plus", name: "Minecraft Realms Plus", icon: "⛏️", iconImg: "/app/assets/img/catalog/minecraft-realms-plus.png", bg: "linear-gradient(145deg,#1b3b1e,#0a1a0c)" },
     { slug: "pc-games", product: null, name: "ألعاب PC", icon: "🖥️", iconImg: "/app/assets/img/steam-logo.svg", bg: "linear-gradient(145deg,#101a24,#05090d)" },
     { slug: "sony", product: null, name: "ألعاب بلايستيشن", icon: "🎮", iconImg: "/app/assets/img/playstation-logo.svg", bg: "linear-gradient(145deg,#0d1430,#080a18)", comingSoon: true },

@@ -131,13 +131,15 @@ export function resolveProductRequirementType(item: {
   const idLabel = (item.identifierLabelAr || "").toLowerCase();
   const dt = (item.deliveryType || "").toLowerCase();
 
-  // Instant Vouchers, Digital Codes & Keys require NO input
+  // Accounts, Instant Vouchers, Digital Codes & Keys require NO input
   if (
     s === "tod" ||
     s.startsWith("tod-") ||
     dt === "key" ||
     dt === "code" ||
     dt === "voucher" ||
+    dt === "account" ||
+    s === "youtube-premium-account" ||
     s.startsWith("gc-")
   ) {
     return "none";

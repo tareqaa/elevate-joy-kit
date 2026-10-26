@@ -935,74 +935,74 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
             taglineAr = "دقة Full HD على جهازين معاً (شاشات ذكية، كمبيوتر، أجهزة) • كامل الرياضة والترفيه";
             taglineEn = "Full HD on up to 2 devices (Smart TV, PC, mobile) • All sports & entertainment";
             badge = "يوم واحد";
-            imageUrl = "/app/assets/img/catalog/tod-standard-card.jpg";
+            imageUrl = "/app/assets/img/catalog/one_day.webp";
           } else if (cid === "tod-total-1w") {
             nameAr = "باقة TOD | كود أسبوع واحد (1 Week)";
             nameEn = "TOD Plan — 1 Week";
             taglineAr = "دقة Full HD على جهازين معاً (شاشات ذكية، كمبيوتر، أجهزة) • كامل الرياضة والترفيه";
             taglineEn = "Full HD on up to 2 devices (Smart TV, PC, mobile) • All sports & entertainment";
             badge = "أسبوع واحد";
-            imageUrl = "/app/assets/img/catalog/tod-standard-card.jpg";
+            imageUrl = "/app/assets/img/catalog/one_week_2.webp";
           } else if (cid === "tod-mobile-1m") {
             nameAr = "باقة TOD Mobile | كود شهر واحد (1 Month)";
             nameEn = "TOD Mobile — 1 Month";
             taglineAr = "مخصصة لجهاز واحد فقط (هاتف ذكي أو تابلت) • كامل الحقوق الرياضية والترفيهية";
             taglineEn = "Dedicated to 1 device (smartphone or tablet) • All live sports & entertainment";
             badge = "موبايل • شهر";
-            imageUrl = "/app/assets/img/catalog/tod-mobile-card.jpg";
+            imageUrl = "/app/assets/img/catalog/1-01.webp";
           } else if (cid === "tod-total-1m") {
             nameAr = "باقة TOD | كود شهر واحد (1 Month)";
             nameEn = "TOD Plan — 1 Month";
             taglineAr = "دقة Full HD على جهازين معاً (شاشات ذكية، كمبيوتر، أجهزة) • كامل الرياضة والترفيه";
             taglineEn = "Full HD on up to 2 devices (Smart TV, PC, mobile) • All sports & entertainment";
             badge = "شاشات • شهر";
-            imageUrl = "/app/assets/img/catalog/tod-standard-card.jpg";
+            imageUrl = "/app/assets/img/catalog/1-03.webp";
           } else if (cid === "tod-4k-1m") {
             nameAr = "باقة TOD 4K | كود شهر واحد (1 Month)";
             nameEn = "TOD 4K — 1 Month";
             taglineAr = "أعلى دقة 4K Ultra HD على جهازين معاً عبر الشاشات المدعومة • تغطية رياضية وترفيهية شاملة";
             taglineEn = "4K Ultra HD on up to 2 devices across supported screens • Comprehensive sports & entertainment";
             badge = "4K فائقة • شهر";
-            imageUrl = "/app/assets/img/catalog/tod-4k-card.jpg";
+            imageUrl = "/app/assets/img/catalog/1-02.webp";
           } else if (cid === "tod-mobile-6m") {
             nameAr = "باقة TOD Mobile | كود 6 أشهر (6 Months)";
             nameEn = "TOD Mobile — 6 Months";
             taglineAr = "مخصصة لجهاز واحد فقط (هاتف ذكي أو تابلت) • كامل الحقوق الرياضية والترفيهية لمدة 6 أشهر";
             taglineEn = "Dedicated to 1 device (smartphone or tablet) • All live sports & entertainment";
             badge = "موبايل • 6 أشهر";
-            imageUrl = "/app/assets/img/catalog/tod-mobile-card.jpg";
+            imageUrl = "/app/assets/img/catalog/tod_mobile_6_months_1.webp";
           } else if (cid === "tod-tv-6m") {
             nameAr = "باقة TOD | كود 6 أشهر (6 Months)";
             nameEn = "TOD Plan — 6 Months";
             taglineAr = "دقة Full HD على جهازين معاً (شاشات ذكية، كمبيوتر، أجهزة) • كامل الرياضة والترفيه";
             taglineEn = "Full HD on up to 2 devices (Smart TV, PC, mobile) • All sports & entertainment";
             badge = "شاشات • 6 أشهر";
-            imageUrl = "/app/assets/img/catalog/tod-standard-card.jpg";
+            imageUrl = "/app/assets/img/catalog/total_6_months.webp";
           } else if (cid === "tod-mobile-1y") {
             nameAr = "باقة TOD Mobile | كود سنة كاملة (1 Year)";
             nameEn = "TOD Mobile — 1 Year";
             taglineAr = "مخصصة لجهاز واحد فقط (هاتف ذكي أو تابلت) • كامل الحقوق الرياضية والترفيهية لمدة سنة كاملة";
             taglineEn = "Dedicated to 1 device (smartphone or tablet) • All live sports & entertainment with full warranty";
             badge = "موبايل • سنة كاملة";
-            imageUrl = "/app/assets/img/catalog/tod-mobile-card.jpg";
+            imageUrl = "/app/assets/img/catalog/tod_mobile_-one_year.webp";
           } else if (cid === "tod-tv-1y") {
             nameAr = "باقة TOD | كود سنة كاملة (1 Year)";
             nameEn = "TOD Plan — 1 Year";
             taglineAr = "دقة Full HD على جهازين معاً (شاشات ذكية، كمبيوتر، أجهزة) • كامل الرياضة والترفيه 12 شهراً";
             taglineEn = "Full HD on up to 2 devices (Smart TV, PC, mobile) • All sports & entertainment with full warranty";
             badge = "شاشات • سنة كاملة";
-            imageUrl = "/app/assets/img/catalog/tod-standard-card.jpg";
+            imageUrl = "/app/assets/img/catalog/tod_total_one_year.webp";
           } else if (cid === "tod-4k-1y") {
             nameAr = "باقة TOD 4K | كود سنة كاملة (1 Year)";
             nameEn = "TOD 4K — 1 Year";
             taglineAr = "أعلى دقة 4K Ultra HD على جهازين معاً عبر الشاشات المدعومة • تغطية رياضية وترفيهية شاملة";
             taglineEn = "4K Ultra HD on up to 2 devices across supported screens with full warranty";
             badge = "4K فائقة • سنة كاملة";
-            imageUrl = "/app/assets/img/catalog/tod-4k-card.jpg";
+            imageUrl = "/app/assets/img/catalog/4k_.png";
           } else {
             nameAr = `TOD — ${v.label_ar}`;
             nameEn = `TOD — ${v.label_en || v.label_ar}`;
-            imageUrl = "/app/assets/img/catalog/tod-standard-card.jpg";
+            imageUrl = "/app/assets/img/catalog/tod_total_one_year.webp";
           }
         } else {
           platform = p.platform || "GX Store";

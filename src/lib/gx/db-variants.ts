@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CATALOG_PRICES_CACHE, type CatalogPrices } from "./catalog-prices";
 import type { ResolvedPlan } from "@/data/products";
 import { resolveStrictDeliveryType } from "./delivery-types";
+import { resolveProductImage } from "./product-images";
 
 const CACHE_KEY = "gx_db_variants_v2";
 
@@ -92,13 +93,21 @@ export async function loadDbVariants(force = false): Promise<void> {
           productType: row.delivery_type || p.delivery_type,
         });
 
+        const variantFullName = `${p.name_ar || p.name_en} — ${row.label_ar || row.label_en}`;
+        const canonicalImg = resolveProductImage({
+          cartId: row.cart_id,
+          slug: p.slug,
+          name: variantFullName,
+          fallback: p.image_url || p.icon_image_url,
+        }) || p.image_url || p.icon_image_url || null;
+
         next[row.cart_id] = {
           cartId: row.cart_id,
           product: p.slug,
-          name: `${p.name_ar || p.name_en} — ${row.label_ar || row.label_en}`,
+          name: variantFullName,
           icon: p.icon || "🎮",
-          iconImage: p.icon_image_url || p.image_url || null,
-          imageUrl: p.image_url || p.icon_image_url || null,
+          iconImage: canonicalImg,
+          imageUrl: canonicalImg,
           bg: p.thumb_bg || "linear-gradient(145deg,#1a1e2a,#0a0c12)",
           price: Number(row.price_jod) || 0,
           oldPrice: row.old_price_jod ? Number(row.old_price_jod) : null,
@@ -132,13 +141,21 @@ export async function loadDbVariants(force = false): Promise<void> {
             : null;
           const defaultRegion = p.region || (pVariants.length > 0 ? pVariants[0].region : null);
 
+          const prodName = p.name_ar || p.name_en || p.slug;
+          const canonicalProdImg = resolveProductImage({
+            cartId: p.slug,
+            slug: p.slug,
+            name: prodName,
+            fallback: p.image_url || p.icon_image_url,
+          }) || p.image_url || p.icon_image_url || null;
+
           next[p.slug] = {
             cartId: p.slug,
             product: p.slug,
-            name: p.name_ar || p.name_en || p.slug,
+            name: prodName,
             icon: p.icon || "🎮",
-            iconImage: p.icon_image_url || p.image_url || null,
-            imageUrl: p.image_url || p.icon_image_url || null,
+            iconImage: canonicalProdImg,
+            imageUrl: canonicalProdImg,
             bg: p.thumb_bg || "linear-gradient(145deg,#1a1e2a,#0a0c12)",
             price: defaultPrice,
             oldPrice: defaultOldPrice,

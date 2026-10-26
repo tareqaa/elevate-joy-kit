@@ -5,6 +5,7 @@ import { getPublicClient, assertAdminCaller } from "@/lib/gx/supabase-request";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseEnv, supabaseFetch } from "@/lib/gx/supabase-request";
 import type { Database } from "@/integrations/supabase/types";
+import { resolveProductImage } from "./product-images";
 
 const SENDER_EMAIL = "GX Store <noreply@gxstore.me>";
 export const CDN_ASSETS_BASE = "https://cdn.jsdelivr.net/gh/tareqaa/elevate-joy-kit@main/public";
@@ -165,7 +166,17 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
   const cleanName = (name || "").toLowerCase();
   const cleanSlug = (slug || "").toLowerCase();
 
-  // 1. If a URL is provided (e.g. from Supabase products table or order items)
+  // 1. Check canonical unified registry first (TOD variants, Valorant, Discord, etc.)
+  const canonical = resolveProductImage({
+    cartId: cleanSlug,
+    slug: cleanSlug,
+    name: cleanName,
+  });
+  if (canonical) {
+    return toAbsoluteUrl(canonical);
+  }
+
+  // 2. If a URL is provided (e.g. from Supabase products table or order items)
   if (url && typeof url === "string" && url.trim()) {
     let clean = url.trim();
 

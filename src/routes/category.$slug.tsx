@@ -914,7 +914,7 @@ function CategoryPage() {
         nameEn: "Valorant",
         color: "#ff4655",
         glow: "rgba(255, 70, 85, 0.45)",
-        logoSrc: "/app/assets/img/valorant-logo.svg",
+        logoSrc: "/app/assets/img/valorant-logo.png",
         match: (p: CatalogStoreProduct) =>
           p.categorySlug === "valorant" ||
           p.parentCategorySlug === "valorant" ||

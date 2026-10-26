@@ -4,6 +4,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { toast } from "sonner";
 import { markCodeRevealedFn } from "@/lib/gx/order-email.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveProductImage } from "@/lib/gx/product-images";
 import {
   Check,
   Copy,
@@ -106,14 +107,24 @@ export function getProductCoverImage(
   const cleanSlug = (slug || "").toLowerCase().trim();
   const cleanName = (name || "").toLowerCase().trim();
 
-  // 1. Check if DB map has an image for this slug
+  // 1. Check canonical unified registry first (TOD variants, Valorant, Discord, etc.)
+  const canonical = resolveProductImage({
+    cartId: cleanSlug,
+    slug: cleanSlug,
+    name: cleanName,
+  });
+  if (canonical) {
+    return canonical;
+  }
+
+  // 2. Check if DB map has an image for this slug
   if (cleanSlug && dbImageMap && dbImageMap[cleanSlug]) {
     let url = dbImageMap[cleanSlug];
     if (url.startsWith("https://gxstore.me/")) url = url.replace("https://gxstore.me", "");
     return url;
   }
 
-  // 2. If item already has a direct valid image
+  // 3. If item already has a direct valid image
   if (image && typeof image === "string" && image.trim()) {
     let clean = image.trim();
     if (clean.startsWith("https://gxstore.me/")) clean = clean.replace("https://gxstore.me", "");

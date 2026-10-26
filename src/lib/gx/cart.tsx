@@ -8,6 +8,7 @@ import { validateCouponFn } from "./coupons.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { getFormattedInternationalPhone } from "./country-phone";
 import { isRememberContactEnabled } from "./contact-storage";
+import { resolveProductImage } from "./product-images";
 
 
 type CartItem = {
@@ -173,14 +174,19 @@ function resolve(items: CartItem[]): ResolvedItem[] {
           : typeof i.meta?.price === "number"
           ? i.meta.price
           : 0;
-        const iconImage = i.meta?.iconImage || plan.iconImage || plan.imageUrl || i.meta?.imageUrl || null;
-        const imageUrl = i.meta?.imageUrl || plan.imageUrl || plan.iconImage || i.meta?.iconImage || null;
         const name = i.meta?.name || plan.name;
+        const canonicalImg = resolveProductImage({
+          cartId: cId,
+          slug: plan.product || (i.meta?.product as string),
+          name,
+          fallback: i.meta?.imageUrl || plan.imageUrl || i.meta?.iconImage || plan.iconImage,
+        }) || plan.imageUrl || plan.iconImage || i.meta?.imageUrl || i.meta?.iconImage || null;
+
         return { 
           ...plan, 
           name,
-          iconImage,
-          imageUrl,
+          iconImage: canonicalImg,
+          imageUrl: canonicalImg,
           price, 
           qty: i.qty, 
           usernames 
@@ -189,15 +195,21 @@ function resolve(items: CartItem[]): ResolvedItem[] {
       if (cId) {
         const catalogP = PRODUCTS_CATALOG[cId] || PRODUCTS_CATALOG[i.meta?.product || ""];
         const fallbackImg = catalogP ? (catalogP.imageUrl || catalogP.iconImg || null) : null;
-        const iconImage = i.meta?.iconImage || i.meta?.imageUrl || fallbackImg || null;
-        const imageUrl = i.meta?.imageUrl || i.meta?.iconImage || fallbackImg || null;
+        const name = i.meta?.name || (catalogP ? catalogP.name : cId);
+        const canonicalImg = resolveProductImage({
+          cartId: cId,
+          slug: (i.meta?.product as string) || (catalogP ? catalogP.slug : cId),
+          name,
+          fallback: i.meta?.imageUrl || i.meta?.iconImage || fallbackImg,
+        }) || fallbackImg || null;
+
         return {
           cartId: cId,
           product: i.meta?.product || (catalogP ? catalogP.slug : cId),
-          name: i.meta?.name || (catalogP ? catalogP.name : cId),
+          name,
           icon: i.meta?.icon || (catalogP ? catalogP.icon : "🎮"),
-          iconImage,
-          imageUrl,
+          iconImage: canonicalImg,
+          imageUrl: canonicalImg,
           bg: i.meta?.bg || (catalogP ? catalogP.thumbBg : "linear-gradient(145deg,#1a1e2a,#0a0c12)"),
           price: typeof i.meta?.price === "number" ? i.meta.price : 0,
           qty: i.qty,

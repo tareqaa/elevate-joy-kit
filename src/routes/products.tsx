@@ -70,6 +70,12 @@ const isGameCurrency = (p: CatalogStoreProduct) => {
   const cat = (p.categorySlug || "").toLowerCase();
   const slug = (p.slug || "").toLowerCase();
   const name = (p.nameAr || "").toLowerCase();
+
+  // Euro Truck Simulator 2 and PC game titles are strictly video games, never game currencies
+  if (slug.includes("truck") || slug.includes("euro-truck")) {
+    return false;
+  }
+
   return (
     cat === "fortnite" ||
     cat === "pubg-mobile" ||
@@ -88,7 +94,8 @@ const isGameCurrency = (p: CatalogStoreProduct) => {
     slug.includes("valorant") ||
     slug.includes("vbucks") ||
     slug.includes("robux") ||
-    slug.includes("uc") ||
+    slug.endsWith("-uc") ||
+    slug.includes("-uc-") ||
     name.includes("شدات") ||
     name.includes("جواهر") ||
     name.includes("روبوكس") ||
@@ -133,6 +140,7 @@ const CATEGORY_TABS: CategoryFilterTab[] = [
         (p.slug || "").includes("red-dead") ||
         (p.slug || "").includes("minecraft") ||
         (p.slug || "").includes("helldivers") ||
+        (p.slug || "").includes("truck") ||
         (p.slug || "").includes("forza") ||
         (p.slug || "").includes("resident-evil") ||
         (p.slug || "").includes("mortal-kombat")),

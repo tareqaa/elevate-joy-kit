@@ -33,7 +33,7 @@ export const DEFAULT_RECENT_ITEMS: RecentlyViewedItem[] = [
     nameEn: "EA Sports FC 27 (PC)",
     taglineAr: "حساب ستيم خاص بك — تفعيل فوري",
     taglineEn: "Steam Account — Instant Delivery",
-    price: 26.0,
+    price: 28.0,
     oldPrice: 35.0,
     imageUrl: "/app/assets/img/catalog/ea-fc-27-pc.png",
     icon: "⚽",
