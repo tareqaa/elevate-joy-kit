@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import crypto from "node:crypto";
-import { getPublicClient, assertAdminCaller } from "@/lib/gx/supabase-request";
+import { getPublicClient, assertAdminCaller, getVerifiedCaller, getUserScopedClient } from "@/lib/gx/supabase-request";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseEnv, supabaseFetch } from "@/lib/gx/supabase-request";
 import type { Database } from "@/integrations/supabase/types";
@@ -1906,12 +1906,33 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
         return { ok: false, error: "لم يتم العثور على هذا الطلب" };
       }
 
-      // If valid token passed, return full order
-      if (hasValidToken) {
+      // 2. Authorize if cryptographically signed token is valid, or if logged-in user is owner or admin
+      let isAuthorized = Boolean(hasValidToken);
+      if (!isAuthorized) {
+        try {
+          const caller = await getVerifiedCaller();
+          if (caller?.userId && order.user_id && caller.userId === order.user_id) {
+            isAuthorized = true;
+          } else if (caller?.userId) {
+            const userClient = getUserScopedClient(caller.token);
+            const { data: isAdmin } = await (userClient as any).rpc("has_role", {
+              _user_id: caller.userId,
+              _role: "admin",
+            });
+            if (isAdmin === true) {
+              isAuthorized = true;
+            }
+          }
+        } catch {
+          // Unauthenticated or invalid session
+        }
+      }
+
+      if (isAuthorized) {
         return { ok: true, order, isLocked: false };
       }
 
-      // If accessed without token, lock delivery keys to prevent unauthorized guessing!
+      // If accessed without valid token or owner/admin session, lock delivery keys to prevent unauthorized guessing!
       return {
         ok: true,
         isLocked: true,
