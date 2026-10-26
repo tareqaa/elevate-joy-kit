@@ -47,42 +47,6 @@ export type Database = {
         }
         Relationships: []
       }
-      product_restock_requests: {
-        Row: {
-          id: string
-          product_slug: string
-          variant_cart_id: string | null
-          product_name: string | null
-          customer_name: string
-          customer_email: string
-          status: string
-          notified_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          product_slug: string
-          variant_cart_id?: string | null
-          product_name?: string | null
-          customer_name: string
-          customer_email: string
-          status?: string
-          notified_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          product_slug?: string
-          variant_cart_id?: string | null
-          product_name?: string | null
-          customer_name?: string
-          customer_email?: string
-          status?: string
-          notified_at?: string | null
-          created_at?: string
-        }
-        Relationships: []
-      }
       audit_logs: {
         Row: {
           action: string
@@ -1230,6 +1194,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_restock_requests: {
+        Row: {
+          created_at: string
+          customer_email: string
+          customer_name: string
+          id: string
+          notified_at: string | null
+          product_name: string
+          product_slug: string
+          status: string
+          variant_cart_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          id?: string
+          notified_at?: string | null
+          product_name: string
+          product_slug: string
+          status?: string
+          variant_cart_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          id?: string
+          notified_at?: string | null
+          product_name?: string
+          product_slug?: string
+          status?: string
+          variant_cart_id?: string | null
+        }
+        Relationships: []
       }
       product_variants: {
         Row: {
@@ -2472,6 +2472,7 @@ export type Database = {
           xp: number
         }[]
       }
+      get_resend_api_key: { Args: never; Returns: string }
       get_wheel_status: { Args: never; Returns: Json }
       grant_user_reward: {
         Args: {
