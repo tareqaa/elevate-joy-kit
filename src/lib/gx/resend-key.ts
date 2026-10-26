@@ -1,15 +1,22 @@
 /**
  * ============================================================
  * GX STORE — RESEND API KEY RESOLVER
- * Resolves the Resend API key reliably across all hosting environments:
+ * Securely resolves the Resend API key:
  * 1. process.env.RESEND_API_KEY
- * 2. process.env.VITE_RESEND_API_KEY
- * 3. Supabase RPC public.get_resend_api_key() (SECURITY DEFINER)
- * 4. Supabase site_settings query ('resend_api_key')
+ * 2. In-memory cache (1 minute TTL)
+ * 3. Supabase RPC / site_settings (authenticated via admin caller or service role)
  * ============================================================
  */
 
-import { getPublicClient } from "@/lib/gx/supabase-request";
+import {
+  getPublicClient,
+  getVerifiedCaller,
+  getUserScopedClient,
+  supabaseEnv,
+  supabaseFetch,
+} from "@/lib/gx/supabase-request";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 let cachedKey: string | null = null;
 let cachedAt = 0;
@@ -17,6 +24,7 @@ const CACHE_TTL_MS = 60 * 1000; // 1 minute memory cache
 
 /**
  * Returns the active Resend API key from env or Supabase database settings.
+ * Only accessible in secure server-side execution context.
  */
 export async function getResendApiKey(): Promise<string> {
   // 1. Process environment variable (local dev or deployed container)
@@ -31,11 +39,33 @@ export async function getResendApiKey(): Promise<string> {
     return cachedKey;
   }
 
-  // 3. Supabase RPC / site_settings query
+  // 3. Supabase RPC / site_settings query with authenticated context
   try {
-    const client = getPublicClient();
+    const serviceKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_SECRET_KEY ||
+      process.env.SERVICE_ROLE_KEY;
 
-    // Call get_resend_api_key RPC (runs as SECURITY DEFINER to retrieve key securely)
+    let client: ReturnType<typeof getPublicClient> = getPublicClient();
+
+    if (serviceKey) {
+      const { url } = supabaseEnv();
+      client = createClient<Database>(url, serviceKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+        global: { fetch: supabaseFetch(serviceKey) },
+      });
+    } else {
+      try {
+        const caller = await getVerifiedCaller();
+        if (caller?.token) {
+          client = getUserScopedClient(caller.token);
+        }
+      } catch {
+        // Fallback to public client if called outside HTTP request context
+      }
+    }
+
+    // Call get_resend_api_key RPC
     const { data: rpcKey, error: rpcErr } = await (client as any).rpc("get_resend_api_key");
     if (!rpcErr && rpcKey && typeof rpcKey === "string" && rpcKey.trim().startsWith("re_")) {
       cachedKey = rpcKey.trim();
@@ -43,7 +73,7 @@ export async function getResendApiKey(): Promise<string> {
       return cachedKey;
     }
 
-    // Direct site_settings fallback
+    // Direct site_settings fallback (accessible to admin / service_role)
     const { data: row } = await client
       .from("site_settings")
       .select("value")
