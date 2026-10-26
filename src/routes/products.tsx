@@ -75,7 +75,9 @@ const isGameCurrency = (p: CatalogStoreProduct) => {
     cat === "pubg-mobile" ||
     cat === "free-fire" ||
     cat === "roblox" ||
+    cat === "valorant" ||
     slug === "fortnite" ||
+    slug === "valorant" ||
     slug === "pubg-mobile-uc" ||
     slug === "free-fire-diamonds" ||
     slug === "roblox-robux" ||
@@ -83,12 +85,14 @@ const isGameCurrency = (p: CatalogStoreProduct) => {
     slug.includes("free-fire") ||
     slug.includes("roblox") ||
     slug.includes("fortnite") ||
+    slug.includes("valorant") ||
     slug.includes("vbucks") ||
     slug.includes("robux") ||
     slug.includes("uc") ||
     name.includes("شدات") ||
     name.includes("جواهر") ||
     name.includes("روبوكس") ||
+    name.includes("فالورانت") ||
     name.includes("v-bucks")
   );
 };
@@ -306,6 +310,7 @@ function AllProductsPage() {
     "dark-souls-3-deluxe",
     "bioshock-the-collection",
     "fortnite",
+    "valorant",
     "pubg-mobile-uc",
     "free-fire-diamonds",
     "roblox-robux",

@@ -909,6 +909,19 @@ function CategoryPage() {
           (p.nameAr || "").includes("فورت نايت"),
       },
       {
+        id: "valorant",
+        nameAr: "فالورانت",
+        nameEn: "Valorant",
+        color: "#ff4655",
+        glow: "rgba(255, 70, 85, 0.45)",
+        logoSrc: "/app/assets/img/valorant-logo.svg",
+        match: (p: CatalogStoreProduct) =>
+          p.categorySlug === "valorant" ||
+          p.parentCategorySlug === "valorant" ||
+          (p.slug || "").includes("valorant") ||
+          (p.nameAr || "").includes("فالورانت"),
+      },
+      {
         id: "pubg-mobile",
         nameAr: "ببجي موبايل",
         nameEn: "PUBG Mobile",

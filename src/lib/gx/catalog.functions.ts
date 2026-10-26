@@ -644,7 +644,6 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           subCatSlug = "gc-playstation";
           iconImage = "/app/assets/img/playstation-logo.svg";
           thumbBg = "linear-gradient(135deg, rgba(0, 112, 209, 0.22), rgba(0, 60, 150, 0.12))";
-          minPrice = 7.0;
         } else if (p.slug === "xbox") {
           nameAr = "بطاقات إكسبوكس";
           nameEn = "Xbox Gift Cards";
@@ -654,7 +653,6 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           subCatSlug = "gc-xbox";
           iconImage = "/app/assets/img/xbox-logo.svg";
           thumbBg = "linear-gradient(135deg, rgba(16, 124, 65, 0.22), rgba(10, 80, 40, 0.12))";
-          minPrice = 1.15;
         } else if (p.slug === "itunes") {
           nameAr = "بطاقات آبل وآيتونز";
           nameEn = "iTunes & Apple Gift Cards";
@@ -664,7 +662,6 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           subCatSlug = "gc-itunes";
           iconImage = "/app/assets/img/itunes-logo.svg";
           thumbBg = "linear-gradient(135deg, rgba(241, 7, 163, 0.22), rgba(123, 47, 247, 0.12))";
-          minPrice = 4.5;
         } else if (p.slug === "google-play") {
           nameAr = "بطاقات جوجل بلاي";
           nameEn = "Google Play Cards";
@@ -674,7 +671,6 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           subCatSlug = "gc-google-play";
           iconImage = "/app/assets/img/googleplay-logo.png";
           thumbBg = "linear-gradient(135deg, rgba(52, 168, 83, 0.22), rgba(26, 115, 232, 0.12))";
-          minPrice = 4.5;
         }
 
         items.push({

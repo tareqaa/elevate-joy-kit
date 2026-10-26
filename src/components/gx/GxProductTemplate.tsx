@@ -563,6 +563,8 @@ export function GxProductTemplate({
     if (s.includes("windows") || s.includes("office") || s.includes("microsoft")) return "Microsoft";
     if (s.includes("adobe")) return "Adobe Creative Cloud";
     if (s.includes("canva")) return "Canva";
+    if (s.includes("valorant")) return "Riot Games / PC";
+    if (s.includes("fortnite")) return "Epic Games / All Platforms";
     if (s.includes("steam") || s.includes("fc-27") || c.includes("game")) return "Steam / PC";
     if (s.includes("playstation")) return "PlayStation Network";
     if (s.includes("xbox")) return "Xbox Live";
@@ -927,8 +929,43 @@ export function GxProductTemplate({
     return product.slug === "youtube-premium" || (product.slug || "").includes("youtube");
   }, [product.slug]);
 
+  // Fortnite & Valorant detection:
+  const isFortnite = useMemo(() => {
+    return product.slug === "fortnite" || (product.slug || "").includes("fortnite");
+  }, [product.slug]);
+
+  const isValorant = useMemo(() => {
+    return product.slug === "valorant" || (product.slug || "").includes("valorant");
+  }, [product.slug]);
+
   // Contextual Notice Points
   const noticePoints = useMemo(() => {
+    if (isValorant) {
+      return [
+        ar
+          ? "🇹🇷 كود رقمي معتمد للحسابات التركية: هذا الكود مخصص حصرياً لشحن حسابات فالورانت التركية (Turkey Region)."
+          : "🇹🇷 Turkey Region Exclusive: Official code strictly valid for Turkish region Valorant accounts.",
+        ar
+          ? "⚡ تسليم فوري للأكواد: يظهر كود التفعيل الرقمي فور إتمام الدفع في صفحة تأكيد الطلب وحسابك في الموقع."
+          : "⚡ Instant Digital Delivery: Activation code appears immediately on your order confirmation page.",
+        ar
+          ? "🛡️ شحن رسمي وآمن 100%: أكواد شحن نقاط Riot Games أصلية ومعتمدة بدون أي مخاطر حظر على حسابك."
+          : "🛡️ 100% Genuine & Safe: Official Riot Games Valorant Points codes with zero ban risk.",
+      ];
+    }
+    if (isFortnite) {
+      return [
+        ar
+          ? "🔒 شحن رسمي وآمن 100%: شحن مباشر معتمد عبر Epic Games بصفر مخاطرة حظر (بان) على حسابك، ويتم حذف بيانات الدخول نهائياً فور اكتمال الطلب."
+          : "🔒 100% Safe & Official: Direct official charge via Epic Games with zero ban risk; credentials permanently deleted upon completion.",
+        ar
+          ? "🎮 دعم جميع المنصات والمناطق: الرصيد أو اشتراك Crew يعمل عالمياً على PC، بلايستيشن، وإكسبوكس (ما عدا Nintendo Switch)."
+          : "🎮 Multi-Platform Support: Works globally on PC, PlayStation, and Xbox (except Nintendo Switch).",
+        ar
+          ? "⚡ سرعة التنفيذ: يتم شحن الحساب أو تفعيل اشتراك Crew في وقت قياسي بمجرد استلام معلومات الطلب والتحقق."
+          : "⚡ Fast Fulfillment: Charged or Crew activated promptly once credentials and verification are received.",
+      ];
+    }
     if (isTod) {
       return [
         ar
@@ -1043,7 +1080,7 @@ export function GxProductTemplate({
         ? "يتم التنفيذ السريع في غضون دقائق معدودة عبر فريق العمل المتخصص."
         : "Processed rapidly within minutes by our dedicated support agents.",
     ];
-  }, [deliveryInfo.type, isSteamGameAccount, isSocialProduct, isFollowerProduct, isLikeProduct, ar]);
+  }, [deliveryInfo.type, isSteamGameAccount, isSocialProduct, isFollowerProduct, isLikeProduct, isValorant, isFortnite, ar]);
 
   const isNoticeHidden = useMemo(() => {
     return (
@@ -1120,6 +1157,43 @@ export function GxProductTemplate({
         ar
           ? "مبروك! يتم تفعيل اشتراك YouTube Premium و YouTube Music على حسابك الشخصي فوراً وبدون أي إعلانات."
           : "Congratulations! YouTube Premium and YouTube Music are now fully active on your personal account.",
+      ];
+    }
+
+    if (isValorant) {
+      return [
+        ar
+          ? "استلم كود شحن Valorant Points الرقمي فوراً في صفحة الطلب بعد إتمام الدفع."
+          : "Receive your digital Valorant Points code immediately on the order confirmation screen.",
+        ar
+          ? "افتح لعبة Valorant على جهاز الكمبيوتر (PC) وتأكد من تسجيل الدخول بحسابك التركي."
+          : "Launch Valorant on your PC and ensure you are logged into your Turkish account.",
+        ar
+          ? "اضغط على أيقونة نقاط فالورانت (VP) في الزاوية العلوية اليمنى بجانب رصيدك."
+          : "Click the Valorant Points (VP) icon in the top right corner next to your balance.",
+        ar
+          ? "اختر وسيلة الدفع 'Prepaid Cards & Codes' (بطاقات الدفع المسبق والأكواد)."
+          : "Select 'Prepaid Cards & Codes' payment method.",
+        ar
+          ? "أدخل كود التفعيل واضغط تأكيد (Submit / Redeem) لتتم إضافة نقاط VP إلى رصيدك فوراً وبشكل دائم."
+          : "Enter your digital code and click Submit / Redeem to instantly receive your VP balance.",
+      ];
+    }
+
+    if (isFortnite) {
+      return [
+        ar
+          ? "أدخل بيانات حسابك في Epic Games (الإيميل وكلمة المرور) أو رقم الواتساب للمتابعة والتأكيد أثناء إتمام الطلب."
+          : "Provide your Epic Games account credentials (email and password) or WhatsApp for follow-up at checkout.",
+        ar
+          ? "تأكد من تسجيل الخروج من لعبة فورت نايت وعدم تسجيل الدخول حتى يتم إشعارك بانتهاء الطلب."
+          : "Ensure you are logged out of Fortnite and remain offline until notified of completion.",
+        ar
+          ? "في حال كان التحقق بخطوتين (2FA) مفعلاً، سيتواصل معك فريق الدعم لطلب رمز التأكيد لإتمام الشحن بأمان."
+          : "If 2FA is enabled, our support team will prompt you for the verification code to complete the top-up safely.",
+        ar
+          ? "مبروك! فور انتهاء الطلب ستجد رصيد V-Bucks أو اشتراك Fortnite Crew مضافاً ومفعلاً مباشرة داخل لعبتك."
+          : "Congratulations! Your V-Bucks or Crew subscription will be immediately active in your account.",
       ];
     }
 
@@ -1364,7 +1438,7 @@ export function GxProductTemplate({
         ? "يقوم فريق العمل بتنفيذ الشحن لحسابك مباشرة وتأكيد العملية فوراً."
         : "Our team executes the balance charge directly within moments.",
     ];
-  }, [product, deliveryInfo.type, isSocialProduct, isFollowerProduct, isLikeProduct, isSteamGameAccount, isYouTube, ar]);
+  }, [product, deliveryInfo.type, isSocialProduct, isFollowerProduct, isLikeProduct, isSteamGameAccount, isYouTube, isValorant, isFortnite, ar]);
 
   const renderBuyCard = (isDesktop: boolean) => {
     const inputId = isDesktop ? "driffle-target-input-desktop" : "driffle-target-input-mobile";

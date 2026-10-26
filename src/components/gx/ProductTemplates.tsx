@@ -856,11 +856,6 @@ export function GiftCardTemplate({ product, initialVariant }: { product: Catalog
 }
 
 export function ProductTemplate({ product, initialVariant }: { product: CatalogProduct; initialVariant?: string }) {
-  // منتجات فورت نايت تبقى بقالبها المخصص (Crew + V-Bucks)
-  if (product.slug === "fortnite" || product.pageTemplate === "dual_plans") {
-    return <DualPlansTemplate product={product} />;
-  }
-
   // منتجات سناب شات بلس تبقى بقالبها المخصص (عداد الحسابات وإدخال اليوزرات)
   if (product.slug === "snapchat" || product.pageTemplate === "multi_account") {
     return <MultiAccountTemplate product={product} />;
