@@ -1370,43 +1370,28 @@ export function GxProductTemplate({
     const inputId = isDesktop ? "driffle-target-input-desktop" : "driffle-target-input-mobile";
     return (
       <div className={`driffle-buy-card gx-buy-card ${isDesktop ? "is-desktop" : "is-mobile"} ${isOutOfStock ? "is-sold-out" : ""}`}>
-        {/* Clean, Direct Price Box */}
-        <div className="driffle-price-box gx-price-box">
-          <span className="driffle-price-label gx-price-label">
-            {pick(activeVariant.labelAr, activeVariant.labelEn)}
-          </span>
-          <div className="driffle-price-main gx-price-main">
-            {isOutOfStock ? (
-              <span
-                className="driffle-price-val gx-price-val gx-sold-out-val"
-                style={{
-                  color: "#ff3b71",
-                  fontSize: 22,
-                  fontWeight: 900,
-                  fontFamily: "'Tajawal', sans-serif",
-                  letterSpacing: "0.2px",
-                }}
-              >
-                {ar ? "نفدت الكمية" : "Sold Out"}
-              </span>
-            ) : (
-              <>
-                <span className="driffle-price-val gx-price-val">{format(activePrice)}</span>
-                {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
-                  <span className="driffle-price-old gx-price-old">{format(activeVariant.oldPrice)}</span>
-                )}
-              </>
+        {/* Clean, Direct Price Box (Only shown when product/variant is in stock) */}
+        {!isOutOfStock && (
+          <div className="driffle-price-box gx-price-box">
+            <span className="driffle-price-label gx-price-label">
+              {pick(activeVariant.labelAr, activeVariant.labelEn)}
+            </span>
+            <div className="driffle-price-main gx-price-main">
+              <span className="driffle-price-val gx-price-val">{format(activePrice)}</span>
+              {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
+                <span className="driffle-price-old gx-price-old">{format(activeVariant.oldPrice)}</span>
+              )}
+            </div>
+            {(isSocialProduct || isFollowerProduct || isLikeProduct) && (
+              <div className="driffle-price-note gx-price-note">
+                {ar ? "⚡ تنفيذ من ساعة إلى 24 ساعة • ضمان 30 يوماً ضد النقص ⓘ" : "⚡ 1-24h Delivery • 30-Day Drop Refill Guarantee ⓘ"}
+              </div>
             )}
           </div>
-          {!isOutOfStock && (isSocialProduct || isFollowerProduct || isLikeProduct) && (
-            <div className="driffle-price-note gx-price-note">
-              {ar ? "⚡ تنفيذ من ساعة إلى 24 ساعة • ضمان 30 يوماً ضد النقص ⓘ" : "⚡ 1-24h Delivery • 30-Day Drop Refill Guarantee ⓘ"}
-            </div>
-          )}
-        </div>
+        )}
 
-        {/* Target Link or Username Input Box (Hidden when sold out / out of stock) */}
-        {requiresCustomerInput && !isOutOfStock && (
+        {/* Target Link or Username Input Box (Only shown when product/variant is in stock) */}
+        {!isOutOfStock && requiresCustomerInput && (
           <div className={`driffle-target-input-box ${inputError ? "has-error" : ""}`}>
             <label className="driffle-target-label" htmlFor={inputId}>
               <span className="driffle-target-label-icon">
@@ -1523,7 +1508,7 @@ export function GxProductTemplate({
               flexDirection: "column",
               alignItems: "center",
               gap: 12,
-              margin: "18px 0 14px",
+              margin: isOutOfStock ? "0 0 14px" : "18px 0 14px",
               boxShadow: "0 12px 32px -10px rgba(0, 229, 255, 0.12), 0 8px 24px rgba(0, 0, 0, 0.5)",
             }}
           >
