@@ -1906,54 +1906,73 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
       }
 
       // 2. Authorize if cryptographically signed token is valid, or if logged-in user is owner or admin
-      let isAuthorized = Boolean(hasValidToken);
-      if (!isAuthorized) {
-        try {
-          const caller = await getVerifiedCaller();
-          if (caller?.userId && order.user_id && caller.userId === order.user_id) {
-            isAuthorized = true;
-          } else if (caller?.userId) {
-            const userClient = getUserScopedClient(caller.token);
-            const { data: isAdmin } = await (userClient as any).rpc("has_role", {
-              _user_id: caller.userId,
-              _role: "admin",
-            });
-            if (isAdmin === true) {
-              isAuthorized = true;
-            }
-          }
-        } catch {
-          // Unauthenticated or invalid session
-        }
-      }
+      const isAuthorized = Boolean(hasValidToken) || (await isCallerOwnerOrAdmin(order.user_id));
 
       if (isAuthorized) {
         return { ok: true, order, isLocked: false };
       }
 
-      // If accessed without valid token or owner/admin session, lock delivery keys to prevent unauthorized guessing!
+      // Without a valid token or owner/admin session, return only the public order
+      // summary: no delivery keys and no customer contact / device details.
       return {
         ok: true,
         isLocked: true,
-        order: {
-          ...order,
-          delivery_data: null, // MASKED!
-        },
+        order: maskOrderForPublic(order),
       };
     } catch (err: any) {
       return { ok: false, error: err?.message || "Failed to load order" };
     }
   });
 
+/** Fields that must never be returned to someone who only knows the order number. */
+const PRIVATE_ORDER_FIELDS = [
+  "delivery_data",
+  "customer_name",
+  "customer_email",
+  "customer_whatsapp",
+  "client_ip",
+  "user_agent",
+  "client_meta",
+  "admin_notes",
+  "user_id",
+] as const;
+
+function maskOrderForPublic(order: Record<string, any>): Record<string, any> {
+  const masked: Record<string, any> = { ...order };
+  for (const key of PRIVATE_ORDER_FIELDS) {
+    if (key in masked) masked[key] = null;
+  }
+  return masked;
+}
+
+/** True when the verified signed-in caller owns the order or is an admin. */
+async function isCallerOwnerOrAdmin(orderUserId: string | null | undefined): Promise<boolean> {
+  try {
+    const caller = await getVerifiedCaller();
+    if (!caller?.userId) return false;
+    if (orderUserId && caller.userId === orderUserId) return true;
+    const userClient = getUserScopedClient(caller.token);
+    const { data: isAdmin } = await (userClient as any).rpc("has_role", {
+      _user_id: caller.userId,
+      _role: "admin",
+    });
+    return isAdmin === true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Server function to record that customer revealed / opened the activation code.
+ * Only the order's rightful viewer may record a reveal: a valid signed order link
+ * for that order, or the signed-in owner / an admin.
  */
 export const markCodeRevealedFn = createServerFn({ method: "POST" })
   .validator((data: unknown) =>
     z
       .object({
-        orderToken: z.string().trim().optional(),
-        orderNumber: z.string().trim().optional(),
+        orderToken: z.string().trim().max(4096).optional(),
+        orderNumber: z.string().trim().max(64).optional(),
       })
       .refine((d) => Boolean(d.orderToken || d.orderNumber), {
         message: "orderToken or orderNumber required",
@@ -1963,10 +1982,12 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       let num = "";
+      let tokenAuthorized = false;
       if (data.orderToken) {
         const verified = verifyOrderToken(data.orderToken);
         if (verified.valid && verified.orderNumber) {
           num = verified.orderNumber.trim().toUpperCase();
+          tokenAuthorized = true;
         }
       }
       if (!num && data.orderNumber) {
@@ -1977,6 +1998,16 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
       }
 
       const supabase = getServerServiceClient();
+
+      // Without a valid signed link, the caller must be the signed-in owner or an admin.
+      if (!tokenAuthorized) {
+        const { data: orderRow } = await (supabase as any).rpc("get_order_by_number", {
+          _order_number: num,
+        });
+        if (!orderRow || !(await isCallerOwnerOrAdmin(orderRow.user_id))) {
+          return { ok: false };
+        }
+      }
 
       // Primary: call SECURITY DEFINER RPC to bypass RLS update restriction
       try {
@@ -1993,7 +2024,7 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
       const { data: current } = await (supabase as any)
         .from("orders")
         .select("id, codes_revealed_at, codes_reveal_count")
-        .or(`order_number.eq.${num},order_number.ilike.${num}`)
+        .eq("order_number", num)
         .maybeSingle();
 
       if (current) {
