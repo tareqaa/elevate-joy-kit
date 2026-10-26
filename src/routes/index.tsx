@@ -1,3 +1,4 @@
+import { safeJsonLd } from "@/lib/gx/json-ld";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -234,15 +235,15 @@ function Home() {
       {/* Structured Data: Organization, WebSite & Site Navigation Schemas */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_SCHEMA) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(ORGANIZATION_SCHEMA) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_SCHEMA) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(WEBSITE_SCHEMA) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(SITE_NAVIGATION_SCHEMA) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(SITE_NAVIGATION_SCHEMA) }}
       />
 
       <div className="gx-home-root" style={themeVars}>

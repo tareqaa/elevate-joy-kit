@@ -1,3 +1,4 @@
+import { safeJsonLd } from "@/lib/gx/json-ld";
 import { useEffect } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
@@ -305,11 +306,11 @@ function ProductPage() {
       {/* Structured Data: Product & BreadcrumbList Schemas */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(productSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbSchema) }}
       />
       <ProductTemplate product={product} initialVariant={preselectedVariant} />
     </StoreShell>
