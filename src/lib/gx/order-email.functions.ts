@@ -80,12 +80,11 @@ export function verifyOrderToken(token: string): { valid: boolean; orderNumber?:
 
     let isValid = sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf);
 
-    // 2. Check legacy key fallback for backward compatibility with previously sent emails
-    if (!isValid) {
-      const legacySecret =
-        process.env.SUPABASE_SERVICE_ROLE_KEY ||
-        process.env.VITE_SUPABASE_ANON_KEY ||
-        "gxstore_jwt_secret_salt_2026_unbreakable_gamivo_style";
+    // 2. Legacy fallback for previously sent emails — only with a real server-side
+    //    secret. Never fall back to the public anon key or a literal in source code,
+    //    because anyone could use those to forge order links.
+    const legacySecret = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+    if (!isValid && legacySecret) {
       const legacyExpected = crypto
         .createHmac("sha256", legacySecret)
         .update(`${headerB64}.${payloadB64}`)
