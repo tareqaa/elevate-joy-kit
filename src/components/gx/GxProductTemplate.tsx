@@ -1513,15 +1513,120 @@ export function GxProductTemplate({
               {displayTitle}
             </span>
             <div className="driffle-price-main gx-price-main">
+              <span className="driffle-price-val gx-price-val">{format(activePrice)}</span>
               {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
                 <span className="driffle-price-old gx-price-old">{format(activeVariant.oldPrice)}</span>
               )}
-              <span className="driffle-price-val gx-price-val">{format(activePrice)}</span>
             </div>
             {(isSocialProduct || isFollowerProduct || isLikeProduct) && (
               <div className="driffle-price-note gx-price-note">
                 {ar ? "⚡ تنفيذ من ساعة إلى 24 ساعة • ضمان 30 يوماً ضد النقص ⓘ" : "⚡ 1-24h Delivery • 30-Day Drop Refill Guarantee ⓘ"}
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Target Link or Username / WhatsApp Input Box (Positioned above quantity stepper as in Image 2) */}
+        {requiresCustomerInput && (
+          <div className={`driffle-target-input-box ${inputError ? "has-error" : ""}`} style={{ margin: "2px 0" }}>
+            <label className="driffle-target-label" htmlFor={inputId}>
+              <span className="driffle-target-label-icon">
+                {requirementType === "whatsapp" ? "💬" : requirementType === "email" ? "✉️" : isLikeProduct ? "❤️" : "🔗"}
+              </span>
+              <span>{targetLabel}</span>
+            </label>
+            {requirementType === "whatsapp" ? (
+              <CountryPhoneInput
+                value={targetInput}
+                onChange={(val, fullInt) => {
+                  setTargetInput(val);
+                  setFormattedWhatsApp(fullInt);
+                  if (inputError && val.trim()) setInputError(false);
+                }}
+                isAr={ar}
+                error={inputError}
+                autoFocus={false}
+              />
+            ) : (
+              <div className="driffle-target-field-wrap">
+                <input
+                  ref={isDesktop ? inputRef : undefined}
+                  id={inputId}
+                  type={requirementType === "email" ? "email" : "text"}
+                  dir="auto"
+                  className="driffle-target-input"
+                  placeholder={targetPlaceholder}
+                  value={targetInput}
+                  onChange={(e) => {
+                    setTargetInput(e.target.value);
+                    if (inputError && e.target.value.trim()) {
+                      setInputError(false);
+                    }
+                  }}
+                />
+                {targetInput && (
+                  <button
+                    type="button"
+                    className="driffle-target-clear-btn"
+                    onClick={() => setTargetInput("")}
+                    title={ar ? "مسح" : "Clear"}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
+            {inputError && (
+              <div className="driffle-input-error-msg">
+                <span>⚠️</span>
+                <span>
+                  {requirementType === "whatsapp"
+                    ? (ar ? "يرجى وضع رقم الواتساب للمتابعة" : "Please provide your WhatsApp number")
+                    : requirementType === "email"
+                    ? (ar ? "يرجى وضع البريد الإلكتروني للمتابعة" : "Please provide your email")
+                    : isLikeProduct
+                    ? (ar ? "يرجى وضع رابط المنشور أو الريلز" : "Please provide the post link")
+                    : (ar ? "يرجى وضع رابط الحساب أو اسم المستخدم" : "Please provide the profile link or username")}
+                </span>
+              </div>
+            )}
+            {targetHint && !inputError && (
+              <div className="driffle-target-hint">{targetHint}</div>
+            )}
+            {requirementType === "whatsapp" && (
+              <label
+                className="driffle-remember-contact-row"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginTop: 8,
+                  fontSize: "0.8rem",
+                  color: "#cbd5e1",
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => {
+                    setRememberMe(e.target.checked);
+                    setRememberContactEnabled(e.target.checked);
+                  }}
+                  style={{
+                    accentColor: "#10b981",
+                    width: 14,
+                    height: 14,
+                    cursor: "pointer",
+                  }}
+                />
+                <span>
+                  {ar
+                    ? "تذكر رقمي للطلبات القادمة (حفظ تلقائي لعدم إدخاله كل مرة)"
+                    : "Remember my number for next orders"}
+                </span>
+              </label>
             )}
           </div>
         )}
@@ -1581,12 +1686,12 @@ export function GxProductTemplate({
           </div>
         ) : (
           <>
-            {/* Quantity Stepper (Image 2 style with 'الكمية المطلوبة') */}
+            {/* Quantity Stepper (Image 2 style with centered 'الكمية المطلوبة') */}
             <div className="driffle-qty-wrap gx-qty-wrap">
               <div className="driffle-qty-label gx-qty-label">
                 {ar ? "الكمية المطلوبة" : "Quantity"}
               </div>
-              <div className="driffle-qty-stepper gx-qty-stepper">
+              <div className="driffle-qty-stepper gx-qty-stepper" style={{ direction: "ltr" }}>
                 <button
                   type="button"
                   onClick={handleIncreaseQuantity}
@@ -1611,121 +1716,8 @@ export function GxProductTemplate({
               </div>
             </div>
 
-            {/* Target Link or Username Input Box (If product requires input) */}
-            {requiresCustomerInput && (
-              <div className={`driffle-target-input-box ${inputError ? "has-error" : ""}`} style={{ margin: "4px 0" }}>
-                <label className="driffle-target-label" htmlFor={inputId}>
-                  <span className="driffle-target-label-icon">
-                    {requirementType === "whatsapp" ? "💬" : requirementType === "email" ? "✉️" : isLikeProduct ? "❤️" : "🔗"}
-                  </span>
-                  <span>{targetLabel}</span>
-                </label>
-                {requirementType === "whatsapp" ? (
-                  <CountryPhoneInput
-                    value={targetInput}
-                    onChange={(val, fullInt) => {
-                      setTargetInput(val);
-                      setFormattedWhatsApp(fullInt);
-                      if (inputError && val.trim()) setInputError(false);
-                    }}
-                    isAr={ar}
-                    error={inputError}
-                    autoFocus={false}
-                  />
-                ) : (
-                  <div className="driffle-target-field-wrap">
-                    <input
-                      ref={isDesktop ? inputRef : undefined}
-                      id={inputId}
-                      type={requirementType === "email" ? "email" : "text"}
-                      dir="auto"
-                      className="driffle-target-input"
-                      placeholder={targetPlaceholder}
-                      value={targetInput}
-                      onChange={(e) => {
-                        setTargetInput(e.target.value);
-                        if (inputError && e.target.value.trim()) {
-                          setInputError(false);
-                        }
-                      }}
-                    />
-                    {targetInput && (
-                      <button
-                        type="button"
-                        className="driffle-target-clear-btn"
-                        onClick={() => setTargetInput("")}
-                        title={ar ? "مسح" : "Clear"}
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                )}
-                {inputError && (
-                  <div className="driffle-input-error-msg">
-                    <span>⚠️</span>
-                    <span>
-                      {requirementType === "whatsapp"
-                        ? (ar ? "يرجى وضع رقم الواتساب للمتابعة" : "Please provide your WhatsApp number")
-                        : requirementType === "email"
-                        ? (ar ? "يرجى وضع البريد الإلكتروني للمتابعة" : "Please provide your email")
-                        : isLikeProduct
-                        ? (ar ? "يرجى وضع رابط المنشور أو الريلز" : "Please provide the post link")
-                        : (ar ? "يرجى وضع رابط الحساب أو اسم المستخدم" : "Please provide the profile link or username")}
-                    </span>
-                  </div>
-                )}
-                {targetHint && !inputError && (
-                  <div className="driffle-target-hint">{targetHint}</div>
-                )}
-                {requirementType === "whatsapp" && (
-                  <label
-                    className="driffle-remember-contact-row"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      marginTop: 8,
-                      fontSize: "0.8rem",
-                      color: "#cbd5e1",
-                      cursor: "pointer",
-                      userSelect: "none",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => {
-                        setRememberMe(e.target.checked);
-                        setRememberContactEnabled(e.target.checked);
-                      }}
-                      style={{
-                        accentColor: "#10b981",
-                        width: 14,
-                        height: 14,
-                        cursor: "pointer",
-                      }}
-                    />
-                    <span>
-                      {ar
-                        ? "تذكر رقمي للطلبات القادمة"
-                        : "Remember my number for next orders"}
-                    </span>
-                  </label>
-                )}
-              </div>
-            )}
-
-            {/* Action Buttons: Solid Buy Now + Cart Button (Image 2 style) */}
+            {/* Action Buttons: Cart Button (right in RTL) + Buy Now (left in RTL, fills width) */}
             <div className="driffle-cta-row gx-cta-row">
-              <button
-                type="button"
-                className="driffle-buy-now-btn gx-buy-now-btn"
-                onClick={handleBuyNow}
-              >
-                <span>🛍️</span>
-                <span>{ar ? "شراء الآن" : "Buy now"}</span>
-              </button>
               <button
                 type="button"
                 className="driffle-cart-btn gx-cart-btn"
@@ -1734,6 +1726,14 @@ export function GxProductTemplate({
                 aria-label={ar ? "إضافة إلى السلة" : "Add to Cart"}
               >
                 {addedCart ? "✓" : "🛒"}
+              </button>
+              <button
+                type="button"
+                className="driffle-buy-now-btn gx-buy-now-btn"
+                onClick={handleBuyNow}
+              >
+                <span>🛍️</span>
+                <span>{ar ? "شراء الآن" : "Buy now"}</span>
               </button>
             </div>
           </>
