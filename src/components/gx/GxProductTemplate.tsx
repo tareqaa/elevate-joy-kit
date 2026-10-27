@@ -613,150 +613,33 @@ export function GxProductTemplate({
     return true;
   }, [activeVariant.region, product.region, userCountry.code]);
 
-  // Poster Component
+  // Poster Component: Pure, clean cover art without text labels or overlays (Driffle style)
   const renderPoster = () => {
-    if (product.slug === "windows") {
-      return <WindowsPoster cartId={activeVariant.cartId} planLabel={pick(activeVariant.labelAr, activeVariant.labelEn)} />;
-    }
-    if (product.slug === "adobe") {
-      return <AdobePoster />;
-    }
-    if (product.slug === "canva") {
-      return <CanvaPoster />;
-    }
-    if (isTod || product.slug === "tod" || product.slug.startsWith("tod-")) {
-      return (
-        <div style={{ width: "100%", height: "100%", borderRadius: 12, overflow: "hidden" }}>
-          <TodPoster cartId={activeVariant.cartId} name={pick(activeVariant.labelAr, activeVariant.labelEn)} />
-        </div>
-      );
-    }
-
-    // Software apps that specifically use their SVG logos instead of full cover artwork
-    const isSvgApp = ["autodesk", "microsoft365", "linkedin", "gemini"].includes(product.slug);
-    
     const coverSrc =
       resolveProductImage({
         cartId: activeVariant.cartId,
         slug: product.slug,
         name: name,
         fallback: (activeVariant as any).imageUrl || product.imageUrl || product.iconImage,
-      }) || product.imageUrl || product.iconImage;
-
-    // Full Cover Poster (for all games, subscriptions, and catalog items with cover art)
-    if (!isSvgApp && coverSrc) {
-      return (
-        <div className="driffle-poster-inner full-cover" style={isTod ? { background: "linear-gradient(145deg, #2b1154, #120626)" } : undefined}>
-          <img
-            src={coverSrc}
-            alt={name}
-            className="driffle-cover-img"
-            style={isTod ? { objectFit: "contain", padding: 6 } : undefined}
-          />
-          <div className="driffle-cover-overlay">
-            <div className="driffle-cover-top">
-              <span className="driffle-poster-region-badge">{cleanRegion}</span>
-            </div>
-            {product.variants.length > 1 && activeVariant.labelAr && !activeVariant.labelAr.includes(product.nameAr) && (
-              <div className="driffle-cover-bottom">
-                <div className="driffle-cover-duration">
-                  {pick(activeVariant.labelAr, activeVariant.labelEn)}
-                </div>
-                {deliveryInfo.label && (
-                  <div className="driffle-cover-sub">
-                    {deliveryInfo.label}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // Modern Graphic Poster for SVG Software Brands
-    const brandBgMap: Record<string, string> = {
-      gemini: "linear-gradient(145deg, #090e1c 0%, #0d1a33 55%, #050b18 100%)",
-      linkedin: "linear-gradient(145deg, #001f3f 0%, #004182 55%, #001224 100%)",
-      autodesk: "linear-gradient(145deg, #021a1f 0%, #00363a 55%, #011012 100%)",
-      microsoft365: "linear-gradient(145deg, #1b0a2a 0%, #2e114d 55%, #10051a 100%)",
-    };
-    const brandBg = brandBgMap[product.slug] || product.thumbBg || "linear-gradient(145deg, #0a1120 0%, #111f38 55%, #070d18 100%)";
-
-    const brandLogoMap: Record<string, string> = {
-      gemini: "/app/assets/img/gemini-logo.svg",
-      linkedin: "/app/assets/img/linkedin-logo.svg",
-      autodesk: "/app/assets/img/autodesk-logo.svg",
-      microsoft365: "/app/assets/img/microsoft365-logo.svg",
-    };
-    const brandLogo = product.iconImage || product.imageUrl || brandLogoMap[product.slug] || "/app/assets/img/microsoft365-logo.svg";
+      }) || product.imageUrl || product.iconImage || "/app/assets/img/catalog/tod-standard-card.jpg";
 
     return (
-      <div className="driffle-poster-inner" style={{ background: brandBg }}>
-        {/* Subtle grid pattern background */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: `radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px)`,
-            backgroundSize: "20px 20px",
-            opacity: 0.7,
-            pointerEvents: "none",
+      <div className="driffle-poster-inner clean-image-poster">
+        <img
+          src={coverSrc}
+          alt={name}
+          className="driffle-cover-img"
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (product.imageUrl && target.src !== product.imageUrl) {
+              target.src = product.imageUrl;
+            } else if (product.iconImage && target.src !== product.iconImage) {
+              target.src = product.iconImage;
+            } else {
+              target.src = "/app/assets/img/gx-logo.png";
+            }
           }}
         />
-
-        {/* Ambient Top Glow */}
-        <div
-          style={{
-            position: "absolute",
-            top: -40,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 220,
-            height: 140,
-            background: "radial-gradient(circle, rgba(0, 229, 255, 0.35) 0%, transparent 70%)",
-            filter: "blur(30px)",
-            pointerEvents: "none",
-          }}
-        />
-
-        {/* Brand Logo Floating Card */}
-        <div className="driffle-poster-logo-badge">
-          <img
-            src={brandLogo}
-            alt={name}
-            onError={(e) => {
-              const target = e.currentTarget;
-              if (product.iconImage && target.src !== product.iconImage) {
-                target.src = product.iconImage;
-              } else if (product.imageUrl && target.src !== product.imageUrl) {
-                target.src = product.imageUrl;
-              } else {
-                target.src = "/app/assets/img/gx-logo.png";
-              }
-            }}
-          />
-        </div>
-
-        {/* Brand Title in Poster */}
-        <div style={{ zIndex: 3, textAlign: "center", padding: "0 18px" }}>
-          <div style={{ fontSize: 21, fontWeight: 900, color: "#ffffff", letterSpacing: 0.5 }}>
-            {product.slug === "gemini" ? "Google Gemini Advanced" : name}
-          </div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#00e5ff", marginTop: 4, letterSpacing: 1, textTransform: "uppercase" }}>
-            {deliveryInfo.label} • {platform}
-          </div>
-        </div>
-
-        {/* Poster Footer: Active Plan Label + Region */}
-        <div className="driffle-poster-footer">
-          <div className="driffle-poster-duration">
-            {pick(activeVariant.labelAr, activeVariant.labelEn)}
-          </div>
-          <span className="driffle-poster-region-badge">
-            {cleanRegion}
-          </span>
-        </div>
       </div>
     );
   };
@@ -1882,75 +1765,6 @@ export function GxProductTemplate({
                   • {cleanRegion} • {deliveryInfo.label}
                 </span>
               </h1>
-
-              {/* Driffle-Style Stacked Specifications Card (Image 5) */}
-              <div className="driffle-specs-card gx-specs-card">
-                {/* 1. Activation Status */}
-                <div className="driffle-spec-row">
-                  <div className="driffle-spec-label">
-                    <span className={`driffle-spec-icon-circle ${canActivate ? "green" : "red"}`}>
-                      {canActivate ? "✓" : "✕"}
-                    </span>
-                    <span>{ar ? "صلاحية التفعيل" : "Can be activated in"}</span>
-                  </div>
-                  <div className="driffle-spec-value">
-                    <span style={{ color: canActivate ? "#00f5a0" : "#ff4d6d", fontWeight: 700 }}>
-                      {canActivate
-                        ? (ar ? `يمكن التفعيل في: ${countryDisplayName}` : `${countryDisplayName}`)
-                        : (ar ? `لا يعمل في: ${countryDisplayName}` : `Cannot activate in ${countryDisplayName}`)}
-                    </span>
-                    <span className="driffle-spec-info-dot" title={ar ? "التحقق التلقائي بناءً على الدولة" : "Auto-verified based on region"}>ⓘ</span>
-                  </div>
-                </div>
-
-                {/* 2. Region Badge */}
-                <div className="driffle-spec-row">
-                  <div className="driffle-spec-label">
-                    <span className="driffle-spec-icon-circle blue">🌐</span>
-                    <span>{ar ? "المنطقة / الريجون" : "Region"}</span>
-                  </div>
-                  <div className="driffle-spec-value">
-                    <span style={{ fontWeight: 700, color: "#f8fafc" }}>{cleanRegion}</span>
-                  </div>
-                </div>
-
-                {/* 3. Platform Badge */}
-                <div className="driffle-spec-row">
-                  <div className="driffle-spec-label">
-                    <span className="driffle-spec-icon-circle purple">🎮</span>
-                    <span>{ar ? "المنصة" : "Platform"}</span>
-                  </div>
-                  <div className="driffle-spec-value">
-                    <span style={{ fontWeight: 700, color: "#f8fafc" }}>{platform}</span>
-                  </div>
-                </div>
-
-                {/* 4. Delivery Type with Tooltip */}
-                <div
-                  className="driffle-spec-row is-clickable"
-                  onClick={() => setTooltipOpen(!tooltipOpen)}
-                >
-                  <div className="driffle-spec-label">
-                    <span className="driffle-spec-icon-circle cyan">{deliveryInfo.icon}</span>
-                    <span>{ar ? "نوع التسليم" : "Delivery"}</span>
-                  </div>
-                  <div className="driffle-spec-value">
-                    <span style={{ fontWeight: 700, color: "#00e5ff" }}>{deliveryInfo.label}</span>
-                    <span className="driffle-spec-info-dot">ⓘ</span>
-                  </div>
-                </div>
-                {tooltipOpen && (
-                  <div className="driffle-spec-tooltip-box">
-                    <div style={{ fontWeight: 800, color: "#00e5ff", marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
-                      <span>{deliveryInfo.icon}</span>
-                      <span>{deliveryInfo.label}</span>
-                    </div>
-                    <div style={{ fontSize: 12, color: "#cbd5e1", lineHeight: 1.5 }}>
-                      {deliveryInfo.desc}
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           </section>
 
@@ -2252,6 +2066,75 @@ export function GxProductTemplate({
 
 
 
+          {/* Driffle-Style Stacked Specifications Card (Screenshot 2) */}
+          <section className="driffle-specs-card gx-specs-card">
+            {/* 1. Activation Status */}
+            <div className="driffle-spec-row">
+              <div className="driffle-spec-label">
+                <span className={`driffle-spec-icon-circle ${canActivate ? "green" : "red"}`}>
+                  {canActivate ? "✓" : "✕"}
+                </span>
+                <span>{ar ? "صلاحية التفعيل" : "Can be activated in"}</span>
+              </div>
+              <div className="driffle-spec-value">
+                <span style={{ color: canActivate ? "#00f5a0" : "#ff4d6d", fontWeight: 700 }}>
+                  {canActivate
+                    ? (ar ? `يمكن التفعيل في: ${countryDisplayName}` : `${countryDisplayName}`)
+                    : (ar ? `لا يعمل في: ${countryDisplayName}` : `Cannot activate in ${countryDisplayName}`)}
+                </span>
+                <span className="driffle-spec-info-dot" title={ar ? "التحقق التلقائي بناءً على الدولة" : "Auto-verified based on region"}>ⓘ</span>
+              </div>
+            </div>
+
+            {/* 2. Region Badge */}
+            <div className="driffle-spec-row">
+              <div className="driffle-spec-label">
+                <span className="driffle-spec-icon-circle blue">🌐</span>
+                <span>{ar ? "المنطقة / الريجون" : "Region"}</span>
+              </div>
+              <div className="driffle-spec-value">
+                <span style={{ fontWeight: 700, color: "#f8fafc" }}>{cleanRegion}</span>
+              </div>
+            </div>
+
+            {/* 3. Platform Badge */}
+            <div className="driffle-spec-row">
+              <div className="driffle-spec-label">
+                <span className="driffle-spec-icon-circle purple">🎮</span>
+                <span>{ar ? "المنصة" : "Platform"}</span>
+              </div>
+              <div className="driffle-spec-value">
+                <span style={{ fontWeight: 700, color: "#f8fafc" }}>{platform}</span>
+              </div>
+            </div>
+
+            {/* 4. Delivery Type with Tooltip */}
+            <div
+              className="driffle-spec-row is-clickable"
+              onClick={() => setTooltipOpen(!tooltipOpen)}
+            >
+              <div className="driffle-spec-label">
+                <span className="driffle-spec-icon-circle cyan">{deliveryInfo.icon}</span>
+                <span>{ar ? "نوع التسليم" : "Delivery"}</span>
+              </div>
+              <div className="driffle-spec-value">
+                <span style={{ fontWeight: 700, color: "#00e5ff" }}>{deliveryInfo.label}</span>
+                <span className="driffle-spec-info-dot">ⓘ</span>
+              </div>
+            </div>
+            {tooltipOpen && (
+              <div className="driffle-spec-tooltip-box">
+                <div style={{ fontWeight: 800, color: "#00e5ff", marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>{deliveryInfo.icon}</span>
+                  <span>{deliveryInfo.label}</span>
+                </div>
+                <div style={{ fontSize: 12, color: "#cbd5e1", lineHeight: 1.5 }}>
+                  {deliveryInfo.desc}
+                </div>
+              </div>
+            )}
+          </section>
+
           {/* Important Notice Box (Single top box, can be hidden from admin) */}
           {!isNoticeHidden && displayNoticeList.length > 0 && (
             <section className="driffle-notice-box gx-notice-box" style={isSteamGameAccount ? { borderColor: "rgba(0, 229, 255, 0.45)", background: "linear-gradient(135deg, rgba(23, 29, 43, 0.95), rgba(15, 23, 42, 0.92))" } : undefined}>
@@ -2341,13 +2224,28 @@ export function GxProductTemplate({
             </section>
           )}
 
-          {/* Description & Key Features (Collapsible on Mobile) */}
-          <section className="driffle-desc-box gx-desc-box">
-            <div>
-              <h2 className="driffle-section-heading gx-section-heading" style={{ marginBottom: 10 }}>
-                {ar ? `عن ${name}` : `About ${name}`}
-              </h2>
-              <div className="driffle-desc-text gx-desc-text">
+          {/* Product Description Section (Driffle Screenshot 3 Style) */}
+          <section className="driffle-desc-section gx-desc-section">
+            <h2 className="driffle-section-heading gx-section-heading" style={{ marginBottom: 12 }}>
+              {ar ? "وصف ومميزات المنتج" : "Product description"}
+            </h2>
+
+            <div className="driffle-desc-card gx-desc-card">
+              {/* Product Subtitle inside card */}
+              <h3 className="driffle-desc-card-title gx-desc-card-title">
+                {name}
+              </h3>
+
+              {/* Tag / Category Pills (Simulation, Sports style) */}
+              <div className="driffle-desc-tags gx-desc-tags">
+                <span className="driffle-tag-pill">{categoryName}</span>
+                <span className="driffle-tag-pill">{cleanRegion}</span>
+                <span className="driffle-tag-pill">{deliveryInfo.label}</span>
+                {platform && <span className="driffle-tag-pill">{platform}</span>}
+              </div>
+
+              {/* Description Body with Clamp */}
+              <div className={`driffle-desc-body gx-desc-body ${!descExpanded ? "is-clamped" : ""}`}>
                 <p>
                   {description ||
                     (ar
@@ -2355,70 +2253,57 @@ export function GxProductTemplate({
                       : `100% genuine and verified subscription with instant delivery and full duration warranty.`)}
                 </p>
               </div>
-            </div>
 
-            {/* Collapsible Features & Steps Toggle */}
-            {!descExpanded ? (
+              {/* Read more / Read less toggle button */}
               <button
                 type="button"
-                onClick={() => setDescExpanded(true)}
-                className="gx-details-expand-btn"
+                onClick={() => setDescExpanded(!descExpanded)}
+                className="driffle-read-more-btn gx-read-more-btn"
               >
-                <span>{ar ? "عرض كامل التفاصيل والمميزات وطريقة التفعيل ▾" : "Show all details, features & activation ▾"}</span>
+                {descExpanded ? (ar ? "عرض أقل ▴" : "Read less ▴") : (ar ? "اقرأ المزيد ▾" : "Read more ▾")}
               </button>
-            ) : (
-              <div className="gx-expanded-details-wrap">
-                {/* Key Features */}
-                <div style={{ marginTop: 14 }}>
-                  <h3 style={{ fontSize: 15.5, fontWeight: 700, color: "#f8fafc", marginBottom: 10 }}>
-                    {ar ? "المميزات والخصائص الرئيسية:" : "Key Features:"}
-                  </h3>
-                  <div className="driffle-features-list gx-features-list">
-                    {(product.features && product.features.length > 0
-                      ? product.features
-                      : [
-                          { icon: null as string | null, titleAr: "وصول غير محدود وسريع", titleEn: "Unlimited Fast Access", descAr: "استفادة كاملة بدون انقطاع طوال فترة الاشتراك.", descEn: "Full access without interruption." },
-                          { icon: null as string | null, titleAr: "ضمان رسمي كامل 100%", titleEn: "100% Official Warranty", descAr: "ضمان حقيقي يشمل الدعم الفني والاستبدال.", descEn: "Comprehensive warranty with continuous support." },
-                          { icon: null as string | null, titleAr: "تسليم فوري ومباشر", titleEn: "Instant Automated Delivery", descAr: "استلام بيانات التفعيل فور إتمام عملية الدفع.", descEn: "Receive credentials immediately upon checkout." },
-                          { icon: null as string | null, titleAr: "تكامل مع مختلف الأجهزة", titleEn: "Multi-Platform Compatibility", descAr: "يعمل على الهاتف، الحاسوب، واللوحي بسلاسة.", descEn: "Works seamlessly across mobile, desktop, and web." },
-                        ]
-                    ).map((f, i) => (
-                      <div key={i} className="driffle-feature-item gx-feature-item">
-                        <span className="feat-icon">{f.icon || "★"}</span>
-                        <div>
-                          <div className="feat-title">{pick(f.titleAr, f.titleEn)}</div>
-                          <div className="feat-desc">{pick(f.descAr, f.descEn)}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
-                {/* How to Redeem Steps */}
-                <div style={{ marginTop: 18 }}>
-                  <h3 style={{ fontSize: 15.5, fontWeight: 700, color: "#f8fafc", marginBottom: 10 }}>
-                    {ar ? "طريقة التفعيل والاستخدام (How to redeem?):" : "How to redeem?"}
-                  </h3>
-                  <div className="driffle-steps-grid gx-steps-grid">
-                    {redeemSteps.map((step, idx) => (
-                      <div key={idx} className="driffle-step-card gx-step-card">
-                        <div className="driffle-step-num gx-step-num">{idx + 1}</div>
-                        <div className="driffle-step-body gx-step-body">{renderStepContent(step)}</div>
+              {/* Key Features inside the card */}
+              <div className="driffle-card-features-box" style={{ marginTop: 18, borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: 16 }}>
+                <h4 style={{ fontSize: 14.5, fontWeight: 700, color: "#f8fafc", margin: "0 0 12px 0" }}>
+                  {ar ? "المميزات والخصائص الرئيسية:" : "Key Features:"}
+                </h4>
+                <div className="driffle-features-list gx-features-list">
+                  {(product.features && product.features.length > 0
+                    ? product.features
+                    : [
+                        { icon: null as string | null, titleAr: "وصول غير محدود وسريع", titleEn: "Unlimited Fast Access", descAr: "استفادة كاملة بدون انقطاع طوال فترة الاشتراك.", descEn: "Full access without interruption." },
+                        { icon: null as string | null, titleAr: "ضمان رسمي كامل 100%", titleEn: "100% Official Warranty", descAr: "ضمان حقيقي يشمل الدعم الفني والاستبدال.", descEn: "Comprehensive warranty with continuous support." },
+                        { icon: null as string | null, titleAr: "تسليم فوري ومباشر", titleEn: "Instant Automated Delivery", descAr: "استلام بيانات التفعيل فور إتمام عملية الدفع.", descEn: "Receive credentials immediately upon checkout." },
+                        { icon: null as string | null, titleAr: "تكامل مع مختلف الأجهزة", titleEn: "Multi-Platform Compatibility", descAr: "يعمل على الهاتف، الحاسوب، واللوحي بسلاسة.", descEn: "Works seamlessly across mobile, desktop, and web." },
+                      ]
+                  ).map((f, i) => (
+                    <div key={i} className="driffle-feature-item gx-feature-item">
+                      <span className="feat-icon">{f.icon || "★"}</span>
+                      <div>
+                        <div className="feat-title">{pick(f.titleAr, f.titleEn)}</div>
+                        <div className="feat-desc">{pick(f.descAr, f.descEn)}</div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setDescExpanded(false)}
-                  className="gx-details-expand-btn is-expanded"
-                  style={{ marginTop: 16 }}
-                >
-                  <span>{ar ? "عرض تفاصيل أقل ▴" : "Show less ▴"}</span>
-                </button>
               </div>
-            )}
+            </div>
+          </section>
+
+          {/* How to Redeem Steps (Always Visible as explicitly requested) */}
+          <section className="driffle-redeem-section gx-redeem-section" style={{ marginTop: 22 }}>
+            <h2 className="driffle-section-heading gx-section-heading" style={{ marginBottom: 12 }}>
+              {ar ? "طريقة التفعيل والاستخدام (How to redeem?):" : "How to redeem?"}
+            </h2>
+            <div className="driffle-steps-grid gx-steps-grid">
+              {redeemSteps.map((step, idx) => (
+                <div key={idx} className="driffle-step-card gx-step-card">
+                  <div className="driffle-step-num gx-step-num">{idx + 1}</div>
+                  <div className="driffle-step-body gx-step-body">{renderStepContent(step)}</div>
+                </div>
+              ))}
+            </div>
           </section>
         </main>
 

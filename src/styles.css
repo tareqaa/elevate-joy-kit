@@ -1613,6 +1613,31 @@ input[type="number"] {
     gap: 8px;
   }
 
+  .driffle-desc-card {
+    padding: 16px 14px !important;
+    border-radius: 16px !important;
+    gap: 12px !important;
+  }
+
+  .driffle-desc-card-title {
+    font-size: 15px !important;
+    line-height: 1.35 !important;
+  }
+
+  .driffle-tag-pill {
+    font-size: 11px !important;
+    padding: 4px 10px !important;
+  }
+
+  .driffle-desc-body p {
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+  }
+
+  .driffle-read-more-btn {
+    font-size: 13px !important;
+  }
+
   .driffle-desc-box {
     padding: 18px 16px;
     border-radius: 18px;
@@ -2089,15 +2114,19 @@ input[type="number"] {
   padding: 16px;
 }
 
-.driffle-poster-inner.full-cover {
-  padding: 0;
+.driffle-poster-inner.full-cover,
+.driffle-poster-inner.clean-image-poster {
+  padding: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
-.driffle-poster-inner.full-cover .driffle-cover-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+.driffle-poster-inner.full-cover .driffle-cover-img,
+.clean-image-poster .driffle-cover-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
 }
 
 .driffle-poster-inner.full-cover .driffle-cover-overlay {
@@ -3298,6 +3327,97 @@ input[type="number"] {
 .driffle-bundle-total strong {
   font-size: 18px;
   color: #ffffff;
+}
+
+/* ============================================================
+   DRIFFLE SCREENSHOT 3: PRODUCT DESCRIPTION CARD & FEATURES
+   ============================================================ */
+.driffle-desc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.driffle-desc-card {
+  background: rgba(15, 20, 32, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px);
+}
+
+.driffle-desc-card-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0;
+  line-height: 1.4;
+  letter-spacing: -0.2px;
+}
+
+.driffle-desc-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.driffle-tag-pill {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 5px 14px;
+  border-radius: 9999px;
+  letter-spacing: 0.2px;
+}
+
+.driffle-desc-body p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 14px;
+  line-height: 1.7;
+  font-weight: 400;
+}
+
+.driffle-desc-body.is-clamped p {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.driffle-read-more-btn {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  transition: color 0.15s ease;
+  font-family: inherit;
+}
+
+.driffle-read-more-btn:hover {
+  color: #00e5ff;
+}
+
+.driffle-redeem-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
 }
 
 /* Product Description, Key Features & How to Redeem */
