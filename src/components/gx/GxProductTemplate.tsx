@@ -283,6 +283,7 @@ export function GxProductTemplate({
     }
   };
   const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
+  const [descExpanded, setDescExpanded] = useState<boolean>(false);
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
   const [addedCart, setAddedCart] = useState<boolean>(false);
   const [todFilterGroup, setTodFilterGroup] = useState<string>("all");
@@ -1544,179 +1545,75 @@ export function GxProductTemplate({
     const inputId = isDesktop ? "driffle-target-input-desktop" : "driffle-target-input-mobile";
     return (
       <div className={`driffle-buy-card gx-buy-card ${isDesktop ? "is-desktop" : "is-mobile"} ${isOutOfStock ? "is-sold-out" : ""}`}>
-        {/* Clean, Direct Price Box (Only shown when product/variant is in stock) */}
+        {/* Top Header Banner: Store Name & Featured Offer Badge */}
+        <div className="gx-offer-header-banner">
+          <span className="gx-offer-store-pill">SOLD BY GX STORE</span>
+          <span className="gx-offer-badge-tag">{ar ? "العرض المميز • FEATURED OFFER" : "FEATURED OFFER"}</span>
+        </div>
+
+        {/* Selected Price Frame (Image 2 style) */}
         {!isOutOfStock && (
-          <div className="driffle-price-box gx-price-box">
-            <span className="driffle-price-label gx-price-label">
-              {pick(activeVariant.labelAr, activeVariant.labelEn)}
-            </span>
-            <div className="driffle-price-main gx-price-main">
-              <span className="driffle-price-val gx-price-val">{format(activePrice)}</span>
+          <div className="gx-offer-price-box">
+            <div className="gx-offer-radio-circle">
+              <div className="gx-offer-radio-inner" />
+            </div>
+            <div className="gx-offer-price-content">
+              <span className="gx-offer-price-val">{format(activePrice)}</span>
               {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
-                <span className="driffle-price-old gx-price-old">{format(activeVariant.oldPrice)}</span>
+                <span className="gx-offer-price-old">{format(activeVariant.oldPrice)}</span>
+              )}
+              {activeVariant.labelAr && !name.includes(activeVariant.labelAr) && (
+                <span className="gx-offer-variant-tag">{pick(activeVariant.labelAr, activeVariant.labelEn)}</span>
               )}
             </div>
-            {(isSocialProduct || isFollowerProduct || isLikeProduct) && (
-              <div className="driffle-price-note gx-price-note">
-                {ar ? "⚡ تنفيذ من ساعة إلى 24 ساعة • ضمان 30 يوماً ضد النقص ⓘ" : "⚡ 1-24h Delivery • 30-Day Drop Refill Guarantee ⓘ"}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Target Link or Username Input Box (Only shown when product/variant is in stock) */}
-        {!isOutOfStock && requiresCustomerInput && (
-          <div className={`driffle-target-input-box ${inputError ? "has-error" : ""}`}>
-            <label className="driffle-target-label" htmlFor={inputId}>
-              <span className="driffle-target-label-icon">
-                {requirementType === "whatsapp" ? "💬" : requirementType === "email" ? "✉️" : isLikeProduct ? "❤️" : "🔗"}
+            {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
+              <span className="gx-offer-discount-tag">
+                -{Math.round(((activeVariant.oldPrice - activePrice) / activeVariant.oldPrice) * 100)}%
               </span>
-              <span>{targetLabel}</span>
-            </label>
-            {requirementType === "whatsapp" ? (
-              <CountryPhoneInput
-                value={targetInput}
-                onChange={(val, fullInt) => {
-                  setTargetInput(val);
-                  setFormattedWhatsApp(fullInt);
-                  if (inputError && val.trim()) setInputError(false);
-                }}
-                isAr={ar}
-                error={inputError}
-                autoFocus={false}
-              />
-            ) : (
-              <div className="driffle-target-field-wrap">
-                <input
-                  ref={isDesktop ? inputRef : undefined}
-                  id={inputId}
-                  type={requirementType === "email" ? "email" : "text"}
-                  dir="auto"
-                  className="driffle-target-input"
-                  placeholder={targetPlaceholder}
-                  value={targetInput}
-                  onChange={(e) => {
-                    setTargetInput(e.target.value);
-                    if (inputError && e.target.value.trim()) {
-                      setInputError(false);
-                    }
-                  }}
-                />
-                {targetInput && (
-                  <button
-                    type="button"
-                    className="driffle-target-clear-btn"
-                    onClick={() => setTargetInput("")}
-                    title={ar ? "مسح" : "Clear"}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            )}
-            {inputError && (
-              <div className="driffle-input-error-msg">
-                <span>⚠️</span>
-                <span>
-                  {requirementType === "whatsapp"
-                    ? (ar ? "يرجى وضع رقم الواتساب الخاص بك للمتابعة" : "Please provide your WhatsApp number to proceed")
-                    : requirementType === "email"
-                    ? (ar ? "يرجى وضع البريد الإلكتروني للمتابعة" : "Please provide your email to proceed")
-                    : isLikeProduct
-                    ? (ar ? "يرجى وضع رابط المنشور أو الريلز قبل إتمام الشراء" : "Please provide the post link before purchasing")
-                    : (ar ? "يرجى وضع رابط الحساب أو اسم المستخدم للمتابعة" : "Please provide the profile link or username to proceed")}
-                </span>
-              </div>
-            )}
-            {targetHint && !inputError && (
-              <div className="driffle-target-hint">{targetHint}</div>
-            )}
-            {requirementType === "whatsapp" && (
-              <label
-                className="driffle-remember-contact-row"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginTop: 10,
-                  fontSize: "0.82rem",
-                  color: "#cbd5e1",
-                  cursor: "pointer",
-                  userSelect: "none",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => {
-                    setRememberMe(e.target.checked);
-                    setRememberContactEnabled(e.target.checked);
-                  }}
-                  style={{
-                    accentColor: "#10b981",
-                    width: 15,
-                    height: 15,
-                    cursor: "pointer",
-                  }}
-                />
-                <span>
-                  {ar
-                    ? "تذكر رقمي للطلبات القادمة (حفظ تلقائي لعدم إدخاله كل مرة)"
-                    : "Remember my number for future orders"}
-                </span>
-              </label>
             )}
           </div>
         )}
 
-        {/* Out of Stock Notice & Notify Button OR Quantity Stepper & Buy Buttons */}
+        {/* Out of Stock Notice & Notify Button OR Stock & Quantity Controls + Buy Buttons */}
         {stockLimit !== null && stockLimit <= 0 ? (
           <div
             style={{
               background: "linear-gradient(145deg, rgba(24, 28, 38, 0.95) 0%, rgba(16, 19, 28, 0.98) 100%)",
               border: "1.5px solid rgba(0, 229, 255, 0.22)",
               borderRadius: 14,
-              padding: "24px 20px",
+              padding: "20px 16px",
               textAlign: "center",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 12,
-              margin: isOutOfStock ? "0 0 14px" : "18px 0 14px",
+              gap: 10,
+              margin: "6px 0",
               boxShadow: "0 12px 32px -10px rgba(0, 229, 255, 0.12), 0 8px 24px rgba(0, 0, 0, 0.5)",
             }}
           >
-            <div style={{ fontSize: 20, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.02em", fontFamily: "'Tajawal', sans-serif" }}>
+            <div style={{ fontSize: 18, fontWeight: 900, color: "#ffffff", fontFamily: "'Tajawal', sans-serif" }}>
               {ar ? "عذراً، لقد نفدت :(" : "Sorry, Sold Out :("}
             </div>
 
-            <p
-              style={{
-                fontSize: 13.5,
-                color: "#94a3b8",
-                lineHeight: 1.6,
-                margin: 0,
-                maxWidth: 320,
-              }}
-            >
+            <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.5, margin: 0, maxWidth: 300 }}>
               {ar
-                ? "هل تريد هذا المنتج؟ يمكننا إخطارك عبر البريد الإلكتروني عندما يتوفر المنتج مرة أخرى."
-                : "Want this product? We can notify you via email as soon as it is back in stock."}
+                ? "يمكننا إخطارك عبر البريد الإلكتروني فور توفر هذا المنتج مجدداً."
+                : "We can email you as soon as this item is back in stock."}
             </p>
 
             <button
               type="button"
               onClick={() => setNotifyModalOpen(true)}
               style={{
-                marginTop: 6,
+                marginTop: 4,
                 width: "100%",
-                maxWidth: 290,
-                padding: "11px 20px",
+                maxWidth: 260,
+                padding: "10px 18px",
                 borderRadius: 9,
                 border: "1.5px solid rgba(0, 229, 255, 0.45)",
                 background: "linear-gradient(135deg, rgba(0, 229, 255, 0.14) 0%, rgba(0, 229, 255, 0.04) 100%)",
                 color: "#00e5ff",
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: 800,
                 cursor: "pointer",
                 display: "flex",
@@ -1724,125 +1621,47 @@ export function GxProductTemplate({
                 justifyContent: "center",
                 gap: 8,
                 transition: "all 0.2s ease",
-                boxShadow: "0 4px 16px rgba(0, 229, 255, 0.18)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "var(--cyan, #00e5ff)";
-                e.currentTarget.style.color = "#05060a";
-                e.currentTarget.style.boxShadow = "0 6px 22px rgba(0, 229, 255, 0.4)";
-                e.currentTarget.style.transform = "translateY(-1px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "linear-gradient(135deg, rgba(0, 229, 255, 0.14) 0%, rgba(0, 229, 255, 0.04) 100%)";
-                e.currentTarget.style.color = "#00e5ff";
-                e.currentTarget.style.boxShadow = "0 4px 16px rgba(0, 229, 255, 0.18)";
-                e.currentTarget.style.transform = "none";
               }}
             >
-              <Bell size={18} strokeWidth={2.4} />
-              <span>{ar ? "الإشعار" : "Notify me"}</span>
+              <Bell size={16} strokeWidth={2.4} />
+              <span>{ar ? "إشعاري عند التوفر" : "Notify me"}</span>
             </button>
           </div>
         ) : (
           <>
-            {/* Quantity Stepper */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7, margin: "14px 0 12px" }}>
+            {/* Controls Row: Stock remaining + Quantity Stepper (ABOVE Buy Button) */}
+            <div className="gx-offer-controls-row">
+              {/* Natural / Normal Stock Badge (Clean, subtle, NOT neon) */}
               {stockLimit !== null && stockLimit > 0 ? (
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 800,
-                    color: stockLimit <= 3 ? "#ff2d78" : "var(--cyan, #00e5ff)",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    background: stockLimit <= 3 ? "rgba(255, 45, 120, 0.12)" : "rgba(0, 229, 255, 0.08)",
-                    border: `1px solid ${stockLimit <= 3 ? "rgba(255, 45, 120, 0.3)" : "rgba(0, 229, 255, 0.22)"}`,
-                    borderRadius: 999,
-                    padding: "3px 12px",
-                    letterSpacing: "0.2px",
-                  }}
-                >
-                  {stockLimit <= 5 && <span style={{ fontSize: 12 }}>⚡</span>}
-                  <span>{ar ? `متبقي ${stockLimit}` : `${stockLimit} Available`}</span>
+                <div className="gx-stock-badge-normal">
+                  <span style={{ fontSize: 12 }}>📦</span>
+                  <span>{ar ? `المتبقي: ${stockLimit} فقط` : `${stockLimit} left`}</span>
                 </div>
               ) : (
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#94a3b8" }}>
-                  <span>{ar ? "الكمية المطلوبة" : "Quantity"}</span>
+                <div className="gx-stock-badge-normal in-stock">
+                  <span style={{ fontSize: 12 }}>✓</span>
+                  <span>{ar ? "متوفر في المخزون" : "In Stock"}</span>
                 </div>
               )}
 
-              {/* Capsule Pill Stepper */}
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  width: 155,
-                  background: "rgba(18, 21, 30, 0.9)",
-                  border: "1.5px solid rgba(255, 255, 255, 0.12)",
-                  borderRadius: 30,
-                  padding: "4px 8px",
-                  boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35)",
-                }}
-              >
+              {/* Quantity Stepper */}
+              <div className="gx-qty-stepper-clean">
                 <button
                   type="button"
                   onClick={handleDecreaseQuantity}
                   disabled={quantity <= 1}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    border: "1px solid rgba(255, 255, 255, 0.12)",
-                    background: "rgba(255, 255, 255, 0.05)",
-                    color: quantity <= 1 ? "rgba(255, 255, 255, 0.25)" : "#ffffff",
-                    fontSize: 20,
-                    fontWeight: 700,
-                    cursor: quantity <= 1 ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.15s ease",
-                  }}
+                  className="gx-qty-btn-clean"
                   title={ar ? "تقليل" : "Decrease"}
                   aria-label="Decrease quantity"
                 >
                   −
                 </button>
-                <span
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 800,
-                    color: "#ffffff",
-                    minWidth: 32,
-                    textAlign: "center",
-                    userSelect: "none",
-                    fontFamily: "'Tajawal', sans-serif",
-                  }}
-                >
-                  {quantity}
-                </span>
+                <span className="gx-qty-count-clean">{quantity}</span>
                 <button
                   type="button"
                   onClick={handleIncreaseQuantity}
                   disabled={stockLimit !== null && quantity >= stockLimit}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    border: "none",
-                    background: stockLimit !== null && quantity >= stockLimit ? "rgba(255, 255, 255, 0.08)" : "var(--cyan, #00e5ff)",
-                    color: stockLimit !== null && quantity >= stockLimit ? "rgba(255, 255, 255, 0.3)" : "#05060a",
-                    fontSize: 20,
-                    fontWeight: 900,
-                    cursor: stockLimit !== null && quantity >= stockLimit ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.15s ease",
-                    boxShadow: stockLimit !== null && quantity >= stockLimit ? "none" : "0 2px 10px rgba(0, 229, 255, 0.4)",
-                  }}
+                  className="gx-qty-btn-clean"
                   title={stockLimit !== null && quantity >= stockLimit ? (ar ? `أقصى كمية هي ${stockLimit}` : `Max is ${stockLimit}`) : (ar ? "زيادة" : "Increase")}
                   aria-label="Increase quantity"
                 >
@@ -1851,71 +1670,145 @@ export function GxProductTemplate({
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="driffle-cta-row gx-cta-row">
+            {/* Target Link or Username Input Box (If product requires input) */}
+            {requiresCustomerInput && (
+              <div className={`driffle-target-input-box ${inputError ? "has-error" : ""}`} style={{ margin: "4px 0" }}>
+                <label className="driffle-target-label" htmlFor={inputId}>
+                  <span className="driffle-target-label-icon">
+                    {requirementType === "whatsapp" ? "💬" : requirementType === "email" ? "✉️" : isLikeProduct ? "❤️" : "🔗"}
+                  </span>
+                  <span>{targetLabel}</span>
+                </label>
+                {requirementType === "whatsapp" ? (
+                  <CountryPhoneInput
+                    value={targetInput}
+                    onChange={(val, fullInt) => {
+                      setTargetInput(val);
+                      setFormattedWhatsApp(fullInt);
+                      if (inputError && val.trim()) setInputError(false);
+                    }}
+                    isAr={ar}
+                    error={inputError}
+                    autoFocus={false}
+                  />
+                ) : (
+                  <div className="driffle-target-field-wrap">
+                    <input
+                      ref={isDesktop ? inputRef : undefined}
+                      id={inputId}
+                      type={requirementType === "email" ? "email" : "text"}
+                      dir="auto"
+                      className="driffle-target-input"
+                      placeholder={targetPlaceholder}
+                      value={targetInput}
+                      onChange={(e) => {
+                        setTargetInput(e.target.value);
+                        if (inputError && e.target.value.trim()) {
+                          setInputError(false);
+                        }
+                      }}
+                    />
+                    {targetInput && (
+                      <button
+                        type="button"
+                        className="driffle-target-clear-btn"
+                        onClick={() => setTargetInput("")}
+                        title={ar ? "مسح" : "Clear"}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                )}
+                {inputError && (
+                  <div className="driffle-input-error-msg">
+                    <span>⚠️</span>
+                    <span>
+                      {requirementType === "whatsapp"
+                        ? (ar ? "يرجى وضع رقم الواتساب للمتابعة" : "Please provide your WhatsApp number")
+                        : requirementType === "email"
+                        ? (ar ? "يرجى وضع البريد الإلكتروني للمتابعة" : "Please provide your email")
+                        : isLikeProduct
+                        ? (ar ? "يرجى وضع رابط المنشور أو الريلز" : "Please provide the post link")
+                        : (ar ? "يرجى وضع رابط الحساب أو اسم المستخدم" : "Please provide the profile link or username")}
+                    </span>
+                  </div>
+                )}
+                {targetHint && !inputError && (
+                  <div className="driffle-target-hint">{targetHint}</div>
+                )}
+                {requirementType === "whatsapp" && (
+                  <label
+                    className="driffle-remember-contact-row"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      marginTop: 8,
+                      fontSize: "0.8rem",
+                      color: "#cbd5e1",
+                      cursor: "pointer",
+                      userSelect: "none",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => {
+                        setRememberMe(e.target.checked);
+                        setRememberContactEnabled(e.target.checked);
+                      }}
+                      style={{
+                        accentColor: "#10b981",
+                        width: 14,
+                        height: 14,
+                        cursor: "pointer",
+                      }}
+                    />
+                    <span>
+                      {ar
+                        ? "تذكر رقمي للطلبات القادمة"
+                        : "Remember my number for next orders"}
+                    </span>
+                  </label>
+                )}
+              </div>
+            )}
+
+            {/* Action Buttons: Solid Buy Now + Cart Button (Image 2 style) */}
+            <div className="gx-offer-actions-row">
               <button
                 type="button"
-                className="driffle-cart-btn gx-cart-btn"
+                className="gx-offer-buy-now-btn"
+                onClick={handleBuyNow}
+              >
+                <span>🛍️</span>
+                <span>{ar ? "شراء الآن" : "Buy now"}</span>
+              </button>
+              <button
+                type="button"
+                className="gx-offer-add-cart-btn"
                 onClick={handleAddToCart}
                 title={ar ? "إضافة إلى السلة" : "Add to Cart"}
                 aria-label={ar ? "إضافة إلى السلة" : "Add to Cart"}
               >
                 {addedCart ? "✓" : "🛒"}
               </button>
-
-              <button
-                type="button"
-                className="driffle-buy-now-btn gx-buy-now-btn"
-                onClick={handleBuyNow}
-              >
-                <span>🛍️</span>
-                <span>{ar ? "شراء الآن" : "Buy now"}</span>
-              </button>
             </div>
           </>
         )}
 
-        {/* Trust Highlights */}
-        <div className="driffle-trust-box gx-trust-box">
-          {isSocialProduct || isFollowerProduct || isLikeProduct ? (
-            <>
-              <div className="driffle-trust-item gx-trust-item" style={{ color: "#00e5ff" }}>
-                <span className="driffle-trust-icon gx-trust-icon">⚡</span>
-                <span>{ar ? "تنفيذ وتسليم خلال ساعة إلى 24 ساعة" : "Delivery within 1 to 24 hours"}</span>
-              </div>
-              <div className="driffle-trust-item gx-trust-item" style={{ color: "#10b981" }}>
-                <span className="driffle-trust-icon gx-trust-icon">🛡️</span>
-                <span>{ar ? "ضمان 30 يوماً تعويض كامل لأي Drop أو نقص" : "30-Day Guarantee: Free Refill for Any Drop"}</span>
-              </div>
-              <div className="driffle-trust-item gx-trust-item" style={{ color: "#f59e0b" }}>
-                <span className="driffle-trust-icon gx-trust-icon">⚠️</span>
-                <span>{ar ? "قد يطرأ انخفاض طبيعي (Drop) ونضمن تعويضه" : "Natural Drop May Occur & Is 100% Compensated"}</span>
-              </div>
-              <div className="driffle-trust-item gx-trust-item">
-                <span className="driffle-trust-icon gx-trust-icon">🔒</span>
-                <span>{ar ? "أمان وتفعيل رسمي 100%" : "100% Safe & Official"}</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="driffle-trust-item gx-trust-item">
-                <span className="driffle-trust-icon gx-trust-icon">⚡</span>
-                <span>{ar ? "تسليم فوري ومباشر بعد الدفع" : "Instant Delivery within seconds"}</span>
-              </div>
-              <div className="driffle-trust-item gx-trust-item">
-                <span className="driffle-trust-icon gx-trust-icon">🎧</span>
-                <span>{ar ? "دعم فني وخدمة عملاء 24/7" : "24/7 Support & Live Assistance"}</span>
-              </div>
-              <div className="driffle-trust-item gx-trust-item">
-                <span className="driffle-trust-icon gx-trust-icon">🛡️</span>
-                <span>{ar ? "بائع موثوق وضمان رسمي 100%" : "Verified Seller & Official Warranty"}</span>
-              </div>
-            </>
-          )}
+        {/* Clean, Single-line Trust Highlights */}
+        <div className="gx-offer-trust-line">
+          <span>⚡ {ar ? "تسليم فوري ومباشر" : "Instant Delivery"}</span>
+          <span>•</span>
+          <span>🛡️ {ar ? "ضمان رسمي 100%" : "Full Warranty"}</span>
+          <span>•</span>
+          <span>🔒 {ar ? "دفع إلكتروني آمن" : "Secure Payment"}</span>
         </div>
 
         {/* Only show other-offers-hint when multiple variants exist (> 1) and in desktop */}
-        {variants.length > 1 && (
+        {variants.length > 1 && isDesktop && (
           <div
             className="driffle-other-offers-hint gx-other-offers-hint"
             onClick={() => {
@@ -2184,13 +2077,18 @@ export function GxProductTemplate({
             </section>
           )}
 
-          {/* Official TOD Comparison Table & Guarantee (Only on TOD product) */}
+          {/* Mobile Featured Offer Buy Box (Image 2 - Ravestore / Eneba style) */}
+          <div className="gx-mobile-buy-box">
+            {renderBuyCard(false)}
+          </div>
+
+          {/* Official TOD Comparison (Clean mobile breakdown + desktop table) */}
           {isTod && (
             <section
               className="gx-tod-comparison-section"
               style={{
-                margin: "18px 0 24px 0",
-                padding: "16px 14px",
+                margin: "14px 0 20px 0",
+                padding: "14px 12px",
                 maxWidth: "100%",
                 boxSizing: "border-box",
                 overflowX: "hidden",
@@ -2200,102 +2098,169 @@ export function GxProductTemplate({
                 boxShadow: "0 10px 30px rgba(0, 0, 0, 0.35)",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <span style={{ fontSize: 24 }}>⚖️</span>
-                <h3 style={{ fontSize: 16.5, fontWeight: 800, color: "#f8fafc", margin: 0, lineHeight: 1.35 }}>
-                  {ar ? "دليل المقارنة الرسمي بين باقات TOD (معلومات رسمية 100%)" : "Official TOD Packages Comparison"}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                <span style={{ fontSize: 22 }}>⚖️</span>
+                <h3 style={{ fontSize: 15.5, fontWeight: 800, color: "#f8fafc", margin: 0, lineHeight: 1.35 }}>
+                  {ar ? "مقارنة باقات TOD الرسمية" : "TOD Packages Comparison"}
                 </h3>
               </div>
 
-              <p style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.6, margin: "0 0 12px 0" }}>
+              <p style={{ fontSize: 12, color: "#cbd5e1", lineHeight: 1.5, margin: "0 0 10px 0" }}>
                 {ar
-                  ? "جميع باقات TOD تمنحك وصولاً كاملاً وغير محدود لقنوات beIN Sports الرياضية وأضخم مكتبة أفلام ومسلسلات. يوضح الجدول التالي الفرق بين الباقات الرسمية لتختار الباقة الأنسب لجهازك:"
-                  : "All TOD plans provide complete access to beIN Sports and cinema libraries. See the breakdown below:"}
+                  ? "اختر الباقة الأنسب لأجهزتك ودقة المشاهدة التي تفضلها:"
+                  : "Choose the package tailored for your devices and preferred video quality:"}
               </p>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, fontSize: 11.5, color: "#94a3b8" }}>
-                <span>💡</span>
-                <span>{ar ? "اسحب الجدول أفقياً لرؤية كافة المميزات والباقات" : "Swipe horizontally to see all plans"}</span>
+              {/* Mobile-Only Breakdown (3 Cards - Zero Horizontal Scroll) */}
+              <div className="gx-tod-mobile-breakdown">
+                {/* 1. TOD Mobile */}
+                <div className={`gx-tod-m-card ${todFilterGroup === "tod-mobile" ? "featured" : ""}`}>
+                  <div className="gx-tod-m-header">
+                    <span className="gx-tod-m-badge blue">📱 TOD Mobile</span>
+                    <span className="gx-tod-m-pill">{ar ? "موبايل وتابلت فقط" : "Phone & Tablet"}</span>
+                  </div>
+                  <div className="gx-tod-m-features">
+                    <div className="gx-tod-m-row">
+                      <span className="gx-tod-m-icon">📱</span>
+                      <span>{ar ? "جهاز واحد فقط (هاتف أو تابلت)" : "1 screen only"}</span>
+                    </div>
+                    <div className="gx-tod-m-row alert">
+                      <span className="gx-tod-m-icon">✕</span>
+                      <span>{ar ? "لا يدعم الشاشات الذكية (Smart TV)" : "No TV support"}</span>
+                    </div>
+                    <div className="gx-tod-m-row">
+                      <span className="gx-tod-m-icon">🎬</span>
+                      <span>{ar ? "دقة HD (720p) • جميع الدوريات والترفيه" : "HD (720p) • All leagues & movies"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. TOD Total */}
+                <div className={`gx-tod-m-card featured ${todFilterGroup === "tod-total" || todFilterGroup === "all" ? "featured" : ""}`}>
+                  <div className="gx-tod-m-header">
+                    <span className="gx-tod-m-badge purple">📺 باقة TOD (شاشات وأجهزة)</span>
+                    <span className="gx-tod-m-pill purple">{ar ? "الأكثر طلباً" : "Most Popular"}</span>
+                  </div>
+                  <div className="gx-tod-m-features">
+                    <div className="gx-tod-m-row">
+                      <span className="gx-tod-m-icon">📺</span>
+                      <span>{ar ? "شاشتان معاً في نفس الوقت" : "2 screens simultaneously"}</span>
+                    </div>
+                    <div className="gx-tod-m-row">
+                      <span className="gx-tod-m-icon">💻</span>
+                      <span>{ar ? "شاشات ذكية (Smart TV)، كمبيوتر، وموبايل" : "Smart TVs, PC, Mobile"}</span>
+                    </div>
+                    <div className="gx-tod-m-row">
+                      <span className="gx-tod-m-icon">✨</span>
+                      <span>{ar ? "دقة Full HD (1080p) • كامل المحتوى وقنوات beIN" : "Full HD (1080p) • All sports & live feeds"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. TOD 4K */}
+                <div className={`gx-tod-m-card ultra ${todFilterGroup === "tod-4k" ? "ultra" : ""}`}>
+                  <div className="gx-tod-m-header">
+                    <span className="gx-tod-m-badge gold">🌟 TOD 4K Ultra HD</span>
+                    <span className="gx-tod-m-pill gold">{ar ? "أعلى دقة 4K" : "4K Ultra HD"}</span>
+                  </div>
+                  <div className="gx-tod-m-features">
+                    <div className="gx-tod-m-row">
+                      <span className="gx-tod-m-icon">🌟</span>
+                      <span>{ar ? "شاشتان معاً على كافة الأجهزة وشاشات 4K" : "2 screens on 4K TVs & All Devices"}</span>
+                    </div>
+                    <div className="gx-tod-m-row">
+                      <span className="gx-tod-m-icon">🔥</span>
+                      <span>{ar ? "أعلى دقة 4K Ultra HD + صوت Dolby الفاخر" : "4K Ultra HD + Dolby sound"}</span>
+                    </div>
+                    <div className="gx-tod-m-row">
+                      <span className="gx-tod-m-icon">⚽</span>
+                      <span>{ar ? "بث 4K حصري للمباريات الكبرى ومكتبة الأفلام" : "Exclusive live 4K feeds"}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div style={{ overflowX: "auto", width: "100%", maxWidth: "100%", WebkitOverflowScrolling: "touch", borderRadius: 12, border: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    fontSize: 12,
-                    textAlign: ar ? "right" : "left",
-                    minWidth: 440,
-                  }}
-                >
-                  <thead>
-                    <tr style={{ background: "rgba(255, 255, 255, 0.06)", borderBottom: "1px solid rgba(255, 255, 255, 0.12)" }}>
-                      <th style={{ padding: "10px 14px", color: "#94a3b8", fontWeight: 700 }}>{ar ? "الميزة" : "Feature"}</th>
-                      <th style={{ padding: "10px 14px", color: "#38bdf8", fontWeight: 800 }}>📱 TOD Mobile</th>
-                      <th style={{ padding: "10px 14px", color: "#c084fc", fontWeight: 800 }}>📺 TOD Total / TV</th>
-                      <th style={{ padding: "10px 14px", color: "#f59e0b", fontWeight: 800 }}>🌟 TOD 4K Ultra HD</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
-                      <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "الأجهزة المدعومة" : "Devices"}</td>
-                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "الموبايل والتابلت فقط (iOS / Android) — لا يدعم التلفزيون" : "Smartphones & Tablets only (No TV support)"}</td>
-                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "الشاشات الذكية (Smart TV)، الكمبيوتر، والموبايل" : "Smart TVs, PC/Mac, and Mobile/Tablets"}</td>
-                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "شاشات 4K الذكية، أجهزة البث، وجميع الأجهزة" : "4K Smart TVs, streaming boxes, PC/Mac, Mobile"}</td>
-                    </tr>
-                    <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
-                      <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "الشاشات المتزامنة" : "Simultaneous Screens"}</td>
-                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "شاشة واحدة فقط (1 Screen)" : "1 Screen only"}</td>
-                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "شاشتان في نفس الوقت (2 Screens)" : "2 Screens simultaneously"}</td>
-                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "شاشتان في نفس الوقت (2 Screens)" : "2 Screens simultaneously"}</td>
-                    </tr>
-                    <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
-                      <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "أقصى دقة بث" : "Max Resolution"}</td>
-                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "دقة SD / HD (حتى 720p)" : "SD / HD (Up to 720p)"}</td>
-                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "Full HD عالية الوضوح (1080p)" : "Full HD (1080p)"}</td>
-                      <td style={{ padding: "10px 14px", color: "#f59e0b", fontWeight: 700 }}>{ar ? "Ultra HD 4K فائقة الوضوح + صوت Dolby" : "4K Ultra HD + Dolby Audio"}</td>
-                    </tr>
-                    <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
-                      <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "المحتوى والبطولات" : "Content & Sports"}</td>
-                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "دوري أبطال أوروبا، الإنجليزي، الإسباني + أفلام ومسلسلات" : "beIN Sports UCL, EPL, LaLiga + Movies"}</td>
-                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "دوري أبطال أوروبا، الإنجليزي، الإسباني + أفلام ومسلسلات" : "beIN Sports UCL, EPL, LaLiga + Movies"}</td>
-                      <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "كافة الدوريات + بث 4K للمباريات الكبرى ومكتبة أفلام 4K" : "All sports + live 4K marquee feeds & 4K cinema"}</td>
-                    </tr>
-                    <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
-                      <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "نوع الاشتراك" : "Delivery"}</td>
-                      <td style={{ padding: "10px 14px", color: "#10b981", fontWeight: 700 }} colSpan={3}>
-                        {ar ? "كود وقسيمة رقمية أصلية ورسمية 100% لتفعيلها مباشرة على حسابك الشخصي في TOD" : "100% Genuine Digital Voucher Code activated on your own TOD account"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "الضمان" : "Warranty"}</td>
-                      <td style={{ padding: "10px 14px", color: "#10b981", fontWeight: 700 }} colSpan={3}>
-                        {ar ? "🛡️ ضمان كامل ومستمر طوال فترة الاشتراك المحددة 100%" : "🛡️ Full 100% warranty covering the entire duration"}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+              {/* Desktop-Only Table */}
+              <div className="gx-tod-desktop-table" style={{ marginTop: 12 }}>
+                <div style={{ overflowX: "auto", width: "100%", maxWidth: "100%", borderRadius: 12, border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      fontSize: 12,
+                      textAlign: ar ? "right" : "left",
+                      minWidth: 440,
+                    }}
+                  >
+                    <thead>
+                      <tr style={{ background: "rgba(255, 255, 255, 0.06)", borderBottom: "1px solid rgba(255, 255, 255, 0.12)" }}>
+                        <th style={{ padding: "10px 14px", color: "#94a3b8", fontWeight: 700 }}>{ar ? "الميزة" : "Feature"}</th>
+                        <th style={{ padding: "10px 14px", color: "#38bdf8", fontWeight: 800 }}>📱 TOD Mobile</th>
+                        <th style={{ padding: "10px 14px", color: "#c084fc", fontWeight: 800 }}>📺 TOD Total / TV</th>
+                        <th style={{ padding: "10px 14px", color: "#f59e0b", fontWeight: 800 }}>🌟 TOD 4K Ultra HD</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                        <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "الأجهزة المدعومة" : "Devices"}</td>
+                        <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "الموبايل والتابلت فقط (iOS / Android) — لا يدعم التلفزيون" : "Smartphones & Tablets only (No TV support)"}</td>
+                        <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "الشاشات الذكية (Smart TV)، الكمبيوتر، والموبايل" : "Smart TVs, PC/Mac, and Mobile/Tablets"}</td>
+                        <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "شاشات 4K الذكية، أجهزة البث، وجميع الأجهزة" : "4K Smart TVs, streaming boxes, PC/Mac, Mobile"}</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                        <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "الشاشات المتزامنة" : "Simultaneous Screens"}</td>
+                        <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "شاشة واحدة فقط (1 Screen)" : "1 Screen only"}</td>
+                        <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "شاشتان في نفس الوقت (2 Screens)" : "2 Screens simultaneously"}</td>
+                        <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "شاشتان في نفس الوقت (2 Screens)" : "2 Screens simultaneously"}</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                        <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "أقصى دقة بث" : "Max Resolution"}</td>
+                        <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "دقة SD / HD (حتى 720p)" : "SD / HD (Up to 720p)"}</td>
+                        <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "Full HD عالية الوضوح (1080p)" : "Full HD (1080p)"}</td>
+                        <td style={{ padding: "10px 14px", color: "#f59e0b", fontWeight: 700 }}>{ar ? "Ultra HD 4K فائقة الوضوح + صوت Dolby" : "4K Ultra HD + Dolby Audio"}</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                        <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "المحتوى والبطولات" : "Content & Sports"}</td>
+                        <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "دوري أبطال أوروبا، الإنجليزي، الإسباني + أفلام ومسلسلات" : "beIN Sports UCL, EPL, LaLiga + Movies"}</td>
+                        <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "دوري أبطال أوروبا، الإنجليزي، الإسباني + أفلام ومسلسلات" : "beIN Sports UCL, EPL, LaLiga + Movies"}</td>
+                        <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{ar ? "كافة الدوريات + بث 4K للمباريات الكبرى ومكتبة أفلام 4K" : "All sports + live 4K marquee feeds & 4K cinema"}</td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                        <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "نوع الاشتراك" : "Delivery"}</td>
+                        <td style={{ padding: "10px 14px", color: "#10b981", fontWeight: 700 }} colSpan={3}>
+                          {ar ? "كود وقسيمة رقمية أصلية ورسمية 100% لتفعيلها مباشرة على حسابك الشخصي في TOD" : "100% Genuine Digital Voucher Code activated on your own TOD account"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: "10px 14px", fontWeight: 700, color: "#e2e8f0" }}>{ar ? "الضمان" : "Warranty"}</td>
+                        <td style={{ padding: "10px 14px", color: "#10b981", fontWeight: 700 }} colSpan={3}>
+                          {ar ? "🛡️ ضمان كامل ومستمر طوال فترة الاشتراك المحددة 100%" : "🛡️ Full 100% warranty covering the entire duration"}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* Golden Guarantee Badge Box */}
               <div
                 style={{
-                  marginTop: 16,
-                  padding: "12px 16px",
+                  marginTop: 12,
+                  padding: "10px 14px",
                   borderRadius: 12,
                   background: "rgba(16, 185, 129, 0.12)",
                   border: "1px solid rgba(16, 185, 129, 0.3)",
                   display: "flex",
                   alignItems: "center",
-                  gap: 12,
+                  gap: 10,
                 }}
               >
-                <span style={{ fontSize: 24 }}>🛡️</span>
-                <div style={{ fontSize: 13, color: "#d1fae5", lineHeight: 1.6 }}>
+                <span style={{ fontSize: 20 }}>🛡️</span>
+                <div style={{ fontSize: 12, color: "#d1fae5", lineHeight: 1.5 }}>
                   <strong>{ar ? "ضمان GX Store المعتمد:" : "GX Store Official Warranty:"}</strong>{" "}
                   {ar
-                    ? "جميع أكواد TOD المتوفرة في متجرنا رسمية ومصدرها معتمد في الأردن والشرق الأوسط، ومشمولة بضمان كامل 100% طوال مدة الاشتراك مع دعم فني متواصل."
-                    : "All TOD vouchers sold in our store are 100% official and authorized in Jordan & MENA, backed by a full duration guarantee and continuous customer support."}
+                    ? "جميع أكواد TOD رسمية ومضمونة 100% طوال مدة اشتراكك مع دعم فني متواصل."
+                    : "All TOD vouchers are 100% official and backed by a full warranty."}
                 </div>
               </div>
             </section>
@@ -2395,17 +2360,26 @@ export function GxProductTemplate({
           {/* Description & Key Features */}
           <section className="driffle-desc-box gx-desc-box">
             <div>
-              <h2 className="driffle-section-heading gx-section-heading" style={{ marginBottom: 12 }}>
+              <h2 className="driffle-section-heading gx-section-heading" style={{ marginBottom: 10 }}>
                 {ar ? `عن ${name}` : `About ${name}`}
               </h2>
-              <div className="driffle-desc-text gx-desc-text">
+              <div className={`driffle-desc-text gx-desc-text ${!descExpanded ? "is-collapsed" : ""}`}>
                 <p>
                   {description ||
                     (ar
-                      ? `احصل على أقصى درجات الإنتاجية والإبداع الرقمي مع ${name}. اشتراك أصلي 100% يوفر لك وصولاً كاملاً وغير محدود لأقوى النماذج والأدوات البرمجية المتطورة على مدار الساعة.`
-                      : `Unlock advanced capabilities with ${name}. 100% genuine subscription providing full uninterrupted access to state-of-the-art tools and features.`)}
+                      ? `اشتراك أصلي ومضمون 100% مع تسليم فوري وتفعيل مباشر على حسابك بأعلى معايير الأمان وضمان كامل المدة.`
+                      : `100% genuine and verified subscription with instant delivery and full duration warranty.`)}
                 </p>
               </div>
+              {((description && description.length > 130) || false) && (
+                <button
+                  type="button"
+                  onClick={() => setDescExpanded(!descExpanded)}
+                  className="gx-desc-toggle-btn"
+                >
+                  {descExpanded ? (ar ? "عرض أقل ▴" : "Show less ▴") : (ar ? "اقرأ المزيد ▾" : "Read more ▾")}
+                </button>
+              )}
             </div>
 
             {/* Key Features */}
