@@ -284,6 +284,23 @@ export function GxProductTemplate({
   };
   const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
   const [descExpanded, setDescExpanded] = useState<boolean>(false);
+
+  const descText = useMemo(() => {
+    return (
+      description ||
+      (ar
+        ? "اشتراك أصلي ومضمون 100% مع تسليم فوري وتفعيل مباشر على حسابك بأعلى معايير الأمان وضمان كامل المدة."
+        : "100% genuine and verified subscription with instant delivery and full duration warranty.")
+    );
+  }, [description, ar]);
+
+  const featureList = useMemo(() => {
+    if (product.features && product.features.length > 0) return product.features;
+    return [];
+  }, [product.features]);
+
+  const hasFeatures = featureList.length > 0;
+  const needsReadMore = descText.length > 170 || hasFeatures;
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
   const [addedCart, setAddedCart] = useState<boolean>(false);
   const [todFilterGroup, setTodFilterGroup] = useState<string>("all");
@@ -1753,18 +1770,91 @@ export function GxProductTemplate({
                 </button>
               </div>
 
-              {/* Product Title */}
+              {/* Product Title (Clean: only product title, no region/delivery suffix) */}
               <h1 className="driffle-title gx-title">
                 {name}
-                {product.variants.length > 1 &&
-                pick(activeVariant.labelAr, activeVariant.labelEn) &&
-                !name.includes(pick(activeVariant.labelAr, activeVariant.labelEn))
-                  ? ` - ${pick(activeVariant.labelAr, activeVariant.labelEn)}`
-                  : ""}
-                <span style={{ fontWeight: 500, color: "#94a3b8", fontSize: "0.82em", marginInlineStart: 8 }}>
-                  • {cleanRegion} • {deliveryInfo.label}
-                </span>
               </h1>
+
+              {/* Status Badges Row (Desktop 2x2 Grid - matching Image 5) */}
+              <div className="driffle-status-grid gx-status-grid gx-desktop-only-specs">
+                {/* 1. Activation Status */}
+                {canActivate ? (
+                  <div className="driffle-status-pill gx-status-pill">
+                    <div className="driffle-status-icon green">✓</div>
+                    <div className="driffle-status-text">
+                      <span className="driffle-status-label">{ar ? "صلاحية التفعيل" : "Activation"}</span>
+                      <span className="driffle-status-value">
+                        {ar ? `يمكن التفعيل في: ` : `Can activate in: `}
+                        <strong style={{ color: "#00f5a0" }}>{countryDisplayName}</strong>
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="driffle-status-pill danger gx-status-pill">
+                    <div className="driffle-status-icon red">✕</div>
+                    <div className="driffle-status-text">
+                      <span className="driffle-status-label">{ar ? "صلاحية التفعيل" : "Activation"}</span>
+                      <span className="driffle-status-value">
+                        {ar ? `لا يعمل مباشرة في: ` : `Cannot activate in: `}
+                        <strong style={{ color: "#ff4d6d" }}>{countryDisplayName}</strong>
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Region Badge */}
+                <div className="driffle-status-pill gx-status-pill">
+                  <div className="driffle-status-icon blue">🌐</div>
+                  <div className="driffle-status-text">
+                    <span className="driffle-status-label">{ar ? "المنطقة" : "Region"}</span>
+                    <span className="driffle-status-value">{cleanRegion}</span>
+                  </div>
+                </div>
+
+                {/* 3. Platform Badge */}
+                <div className="driffle-status-pill gx-status-pill">
+                  <div className="driffle-status-icon purple">🎮</div>
+                  <div className="driffle-status-text">
+                    <span className="driffle-status-label">{ar ? "المنصة" : "Platform"}</span>
+                    <span className="driffle-status-value">{platform}</span>
+                  </div>
+                </div>
+
+                {/* 4. Delivery Type Pill with Tooltip */}
+                <div
+                  className="driffle-status-pill gx-status-pill is-clickable"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => setTooltipOpen(!tooltipOpen)}
+                >
+                  <div className="driffle-status-icon cyan" style={{ background: "rgba(0, 229, 255, 0.15)", color: "#00e5ff" }}>
+                    {deliveryInfo.icon}
+                  </div>
+                  <div className="driffle-status-text">
+                    <span className="driffle-status-label">{ar ? "نوع التسليم" : "Delivery Type"}</span>
+                    <span className="driffle-status-value" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      {deliveryInfo.label}
+                      <span style={{ fontSize: 11, color: "#00e5ff" }}>ⓘ</span>
+                    </span>
+                  </div>
+
+                  {/* Tooltip */}
+                  {tooltipOpen && (
+                    <div
+                      className="prod-type-tooltip is-visible"
+                      style={{ bottom: "110%", top: "auto", left: 0, right: "auto" }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="prod-type-tooltip-title">
+                        <span>{deliveryInfo.icon}</span>
+                        <span>{deliveryInfo.label}</span>
+                      </div>
+                      <div className="prod-type-tooltip-desc">
+                        {deliveryInfo.desc}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </section>
 
@@ -1842,19 +1932,13 @@ export function GxProductTemplate({
                           <span className="driffle-var-name gx-var-name">{vLabel}</span>
                           <div className="driffle-var-radio gx-var-radio" />
                         </div>
-                        {v.tagAr ? (
-                          <div style={{ margin: "4px 0" }}>
-                            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "rgba(245, 158, 11, 0.15)", color: "#f59e0b", fontWeight: 700 }}>
-                              {v.tagAr}
-                            </span>
-                          </div>
-                        ) : vIsOutOfStock ? (
+                        {vIsOutOfStock && (
                           <div style={{ margin: "4px 0" }}>
                             <span style={{ fontSize: 10.5, padding: "2px 7px", borderRadius: 10, background: "rgba(255, 59, 113, 0.15)", color: "#ff3b71", fontWeight: 800 }}>
                               {ar ? "نفدت" : "Sold Out"}
                             </span>
                           </div>
-                        ) : null}
+                        )}
                         <div className="driffle-var-price gx-var-price">
                           {vIsOutOfStock ? (
                             <span style={{ color: "#ff3b71", fontWeight: 800, fontSize: 12 }}>
@@ -2066,8 +2150,8 @@ export function GxProductTemplate({
 
 
 
-          {/* Driffle-Style Stacked Specifications Card (Screenshot 2) */}
-          <section className="driffle-specs-card gx-specs-card">
+          {/* Driffle-Style Stacked Specifications Card (Mobile Only: Screenshot 2) */}
+          <section className="driffle-specs-card gx-specs-card gx-mobile-only-specs">
             {/* 1. Activation Status */}
             <div className="driffle-spec-row">
               <div className="driffle-spec-label">
@@ -2224,70 +2308,55 @@ export function GxProductTemplate({
             </section>
           )}
 
-          {/* Product Description Section (Driffle Screenshot 3 Style) */}
+          {/* Product Description Section (Matching Image 2) */}
           <section className="driffle-desc-section gx-desc-section">
             <h2 className="driffle-section-heading gx-section-heading" style={{ marginBottom: 12 }}>
               {ar ? "وصف ومميزات المنتج" : "Product description"}
             </h2>
 
             <div className="driffle-desc-card gx-desc-card">
-              {/* Product Subtitle inside card */}
+              {/* Product Title inside card (like Image 2: Apple 50 TRY Gift Card...) */}
               <h3 className="driffle-desc-card-title gx-desc-card-title">
                 {name}
               </h3>
 
-              {/* Tag / Category Pills (Simulation, Sports style) */}
-              <div className="driffle-desc-tags gx-desc-tags">
-                <span className="driffle-tag-pill">{categoryName}</span>
-                <span className="driffle-tag-pill">{cleanRegion}</span>
-                <span className="driffle-tag-pill">{deliveryInfo.label}</span>
-                {platform && <span className="driffle-tag-pill">{platform}</span>}
-              </div>
-
               {/* Description Body with Clamp */}
-              <div className={`driffle-desc-body gx-desc-body ${!descExpanded ? "is-clamped" : ""}`}>
+              <div className={`driffle-desc-body gx-desc-body ${!descExpanded && needsReadMore ? "is-clamped" : ""}`}>
                 <p>
-                  {description ||
-                    (ar
-                      ? `اشتراك أصلي ومضمون 100% مع تسليم فوري وتفعيل مباشر على حسابك بأعلى معايير الأمان وضمان كامل المدة.`
-                      : `100% genuine and verified subscription with instant delivery and full duration warranty.`)}
+                  {descText}
                 </p>
               </div>
 
-              {/* Read more / Read less toggle button */}
-              <button
-                type="button"
-                onClick={() => setDescExpanded(!descExpanded)}
-                className="driffle-read-more-btn gx-read-more-btn"
-              >
-                {descExpanded ? (ar ? "عرض أقل ▴" : "Read less ▴") : (ar ? "اقرأ المزيد ▾" : "Read more ▾")}
-              </button>
+              {/* Read more / Read less toggle button (only if needsReadMore) */}
+              {needsReadMore && (
+                <button
+                  type="button"
+                  onClick={() => setDescExpanded(!descExpanded)}
+                  className="driffle-read-more-btn gx-read-more-btn"
+                >
+                  {descExpanded ? (ar ? "عرض أقل ▴" : "Read less ▴") : (ar ? "اقرأ المزيد ▾" : "Read more ▾")}
+                </button>
+              )}
 
-              {/* Key Features inside the card */}
-              <div className="driffle-card-features-box" style={{ marginTop: 18, borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: 16 }}>
-                <h4 style={{ fontSize: 14.5, fontWeight: 700, color: "#f8fafc", margin: "0 0 12px 0" }}>
-                  {ar ? "المميزات والخصائص الرئيسية:" : "Key Features:"}
-                </h4>
-                <div className="driffle-features-list gx-features-list">
-                  {(product.features && product.features.length > 0
-                    ? product.features
-                    : [
-                        { icon: null as string | null, titleAr: "وصول غير محدود وسريع", titleEn: "Unlimited Fast Access", descAr: "استفادة كاملة بدون انقطاع طوال فترة الاشتراك.", descEn: "Full access without interruption." },
-                        { icon: null as string | null, titleAr: "ضمان رسمي كامل 100%", titleEn: "100% Official Warranty", descAr: "ضمان حقيقي يشمل الدعم الفني والاستبدال.", descEn: "Comprehensive warranty with continuous support." },
-                        { icon: null as string | null, titleAr: "تسليم فوري ومباشر", titleEn: "Instant Automated Delivery", descAr: "استلام بيانات التفعيل فور إتمام عملية الدفع.", descEn: "Receive credentials immediately upon checkout." },
-                        { icon: null as string | null, titleAr: "تكامل مع مختلف الأجهزة", titleEn: "Multi-Platform Compatibility", descAr: "يعمل على الهاتف، الحاسوب، واللوحي بسلاسة.", descEn: "Works seamlessly across mobile, desktop, and web." },
-                      ]
-                  ).map((f, i) => (
-                    <div key={i} className="driffle-feature-item gx-feature-item">
-                      <span className="feat-icon">{f.icon || "★"}</span>
-                      <div>
-                        <div className="feat-title">{pick(f.titleAr, f.titleEn)}</div>
-                        <div className="feat-desc">{pick(f.descAr, f.descEn)}</div>
+              {/* Key Features inside the card: ONLY REVEALED WHEN EXPANDED! */}
+              {descExpanded && hasFeatures && (
+                <div className="driffle-card-features-box" style={{ marginTop: 18, borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: 16 }}>
+                  <h4 style={{ fontSize: 14.5, fontWeight: 700, color: "#f8fafc", margin: "0 0 12px 0" }}>
+                    {ar ? "المميزات والخصائص الرئيسية:" : "Key Features:"}
+                  </h4>
+                  <div className="driffle-features-list gx-features-list">
+                    {featureList.map((f, i) => (
+                      <div key={i} className="driffle-feature-item gx-feature-item">
+                        <span className="feat-icon">{f.icon || "★"}</span>
+                        <div>
+                          <div className="feat-title">{pick(f.titleAr, f.titleEn)}</div>
+                          <div className="feat-desc">{pick(f.descAr, f.descEn)}</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </section>
 
