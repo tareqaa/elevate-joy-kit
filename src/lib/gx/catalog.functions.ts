@@ -539,6 +539,8 @@ export type CatalogStoreProduct = CatalogCategoryProductItem & {
   parentCategorySlug?: string | null;
   categoryNameAr?: string | null;
   categoryNameEn?: string | null;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
   oldPriceJod?: number | null;
   snapDuration?: string | null;
   region?: string | null;
@@ -786,6 +788,8 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           nameEn: p.name_en || p.name_ar,
           taglineAr: p.tagline_ar ?? p.description_ar ?? null,
           taglineEn: p.tagline_en ?? p.description_en ?? null,
+          descriptionAr: p.description_ar ?? null,
+          descriptionEn: p.description_en ?? null,
           imageUrl: p.image_url ?? p.icon_image_url ?? null,
           icon: p.icon ?? "🎮",
           iconImage: p.icon_image_url ?? p.image_url ?? null,
@@ -1116,6 +1120,8 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           nameEn,
           taglineAr,
           taglineEn,
+          descriptionAr: p.description_ar ?? null,
+          descriptionEn: p.description_en ?? null,
           imageUrl,
           icon: p.icon ?? "🎮",
           iconImage,

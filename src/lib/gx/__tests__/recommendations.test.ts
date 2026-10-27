@@ -319,4 +319,103 @@ describe("GXStore Related Products Recommendation Engine", () => {
       expect(results).toHaveLength(2);
     }).not.toThrow();
   });
+
+  // Test 11: NordVPN must surface all other VPN products at the very top of recommendations
+  it("ranks all other VPN products at the top for NordVPN above unrelated products", () => {
+    const currentNordVpn: RecommendationCandidate = {
+      slug: "nordvpn",
+      nameAr: "NordVPN | اشتراك 3 أشهر (10 أجهزة)",
+      nameEn: "NordVPN | 3 Months for 10 Devices (No Card Required)",
+      categorySlug: "design",
+      deliveryType: "link",
+      platform: "PC / Mac / iOS / Android",
+      descriptionAr: "اشتراك NordVPN الرسمي لحماية خصوصيتك وتأمين اتصالك وتشفير بياناتك بأعلى معايير الأمان وتخطي الحجب.",
+    };
+
+    const catalog: RecommendationCandidate[] = [
+      {
+        slug: "surfshark-vpn",
+        nameAr: "Surfshark VPN | شهرين تجريبي للأجهزة غير المحدودة",
+        nameEn: "Surfshark VPN (2 Months Trial)",
+        categorySlug: "design",
+        deliveryType: "code",
+        platform: "Surfshark",
+        descriptionAr: "اشتراك Surfshark VPN لحماية وتأمين أجهزتك وتشفير البيانات مع سيرفرات سريعة.",
+      },
+      {
+        slug: "expressvpn",
+        nameAr: "ExpressVPN | اشتراك شهر واحد",
+        nameEn: "ExpressVPN (1 Month)",
+        categorySlug: "design",
+        deliveryType: "account",
+        platform: "ExpressVPN",
+        descriptionAr: "اشتراك ExpressVPN الرائد في السرعة والأمان وتشفير عالي وتخطي الحجب.",
+      },
+      {
+        slug: "avast-secureline-vpn",
+        nameAr: "Avast SecureLine VPN | اشتراك سنة كاملة",
+        nameEn: "Avast SecureLine VPN (1 Year)",
+        categorySlug: "design",
+        deliveryType: "code",
+        platform: "Avast",
+        descriptionAr: "تفعيل رسمي أصلي لـ Avast SecureLine VPN لحماية الخصوصية والتصفح الآمن.",
+      },
+      {
+        slug: "avg-secure-vpn",
+        nameAr: "AVG Secure VPN | اشتراك سنة كاملة",
+        nameEn: "AVG Secure VPN (1 Year)",
+        categorySlug: "design",
+        deliveryType: "code",
+        platform: "AVG",
+        descriptionAr: "تفعيل رقمي رسمي لـ AVG Secure VPN لحماية الخصوصية وتأمين الاتصال.",
+      },
+      {
+        slug: "windows",
+        nameAr: "Windows 11 Pro",
+        nameEn: "Windows 11 Pro",
+        categorySlug: "design",
+        deliveryType: "key",
+        platform: "Microsoft",
+      },
+      {
+        slug: "adobe-express",
+        nameAr: "Adobe Express Premium",
+        nameEn: "Adobe Express Premium",
+        categorySlug: "design",
+        deliveryType: "code",
+        platform: "Adobe",
+      },
+      {
+        slug: "notion-business",
+        nameAr: "Notion Business",
+        nameEn: "Notion Business",
+        categorySlug: "design",
+        deliveryType: "key",
+        platform: "Notion",
+      },
+      {
+        slug: "itunes",
+        nameAr: "بطاقات آيتونز",
+        nameEn: "iTunes Gift Cards",
+        categorySlug: "gift-cards",
+        deliveryType: "key",
+        platform: "Apple",
+      },
+    ];
+
+    const results = rankRelatedProducts(currentNordVpn, catalog, 8);
+    const top4Slugs = results.slice(0, 4).map((r) => r.slug);
+
+    // All 4 VPNs must be in the top 4 slots
+    expect(top4Slugs).toContain("surfshark-vpn");
+    expect(top4Slugs).toContain("expressvpn");
+    expect(top4Slugs).toContain("avast-secureline-vpn");
+    expect(top4Slugs).toContain("avg-secure-vpn");
+
+    // Non-VPN products must not appear in the top 4
+    expect(top4Slugs).not.toContain("windows");
+    expect(top4Slugs).not.toContain("itunes");
+    expect(top4Slugs).not.toContain("adobe-express");
+  });
 });
+
