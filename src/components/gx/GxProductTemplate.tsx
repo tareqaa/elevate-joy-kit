@@ -143,18 +143,34 @@ export function GxProductTemplate({
     product.slug.includes("chatgpt") ||
     product.slug.includes("ai");
 
+  const isGameProduct =
+    product.slug === "fortnite" ||
+    product.slug.includes("fortnite") ||
+    product.slug === "valorant" ||
+    product.slug.includes("valorant") ||
+    product.slug === "gta-v" ||
+    product.slug.includes("fc-") ||
+    product.slug.includes("steam") ||
+    product.categorySlug === "games" ||
+    product.categorySlug === "pc-games" ||
+    product.categorySlug === "xbox-games" ||
+    (rawCat || "").includes("لعب") ||
+    (rawCat || "").includes("game");
+
   const isStreamingProduct =
     product.slug.includes("tod") ||
     product.slug.includes("youtube") ||
     product.categorySlug === "streaming";
 
-  const categoryName = rawCat && rawCat.toLowerCase() !== name.toLowerCase()
+  const categoryName = isGameProduct
+    ? (ar ? "ألعاب الفيديو" : "Games")
+    : isAiProduct
+    ? (ar ? "البرامج والتطبيقات" : "Apps & Software")
+    : isStreamingProduct
+    ? (ar ? "اشتراكات المشاهدة" : "Streaming Subscriptions")
+    : rawCat && rawCat.toLowerCase() !== name.toLowerCase()
     ? rawCat
-    : (isAiProduct
-        ? (ar ? "البرامج والتطبيقات" : "Apps & Software")
-        : (isStreamingProduct
-            ? (ar ? "اشتراكات المشاهدة" : "Streaming Subscriptions")
-            : (ar ? "الاشتراكات والبرامج" : "Subscriptions & Software")));
+    : (ar ? "الاشتراكات والبرامج" : "Subscriptions & Software");
 
   const variants = useMemo(() => {
     if (product.variants && product.variants.length > 0) {
@@ -468,6 +484,35 @@ export function GxProductTemplate({
     variants.find((v) => v.cartId === selectedVariantId) || variants[0];
 
   const activePrice = activeVariant.price || 0;
+
+  const activeVariantLabel = pick(activeVariant?.labelAr, activeVariant?.labelEn);
+
+  const displayTitle = useMemo(() => {
+    // 1. Fortnite specific titles
+    if (product.slug === "fortnite") {
+      const cid = (activeVariant?.cartId || "").toLowerCase();
+      if (cid.startsWith("fn-crew")) {
+        const is3m = cid === "fn-crew-3";
+        return is3m
+          ? (ar ? "فورت نايت كرو — 3 أشهر" : "Fortnite Crew — 3 Months")
+          : (ar ? "فورت نايت كرو — شهر" : "Fortnite Crew — 1 Month");
+      }
+      if (cid.startsWith("fn-vb")) {
+        const label = activeVariantLabel || (cid === "fn-vb-800" ? "800 فيبوكس" : cid === "fn-vb-2400" ? "2400 فيبوكس" : "");
+        if (label) {
+          return label.includes(name) ? label : `${name} — ${label}`;
+        }
+      }
+    }
+
+    // 2. Generic products with variants
+    if (variants.length > 1 && activeVariantLabel) {
+      if (!name.includes(activeVariantLabel)) {
+        return `${name} — ${activeVariantLabel}`;
+      }
+    }
+    return name;
+  }, [product.slug, activeVariant?.cartId, activeVariantLabel, name, variants.length, ar]);
 
   // Stock limit & Quantity resolution
   const stockLimit = useMemo(() => {
@@ -861,16 +906,17 @@ export function GxProductTemplate({
   };
 
   const categorySlug = useMemo<string | null>(() => {
+    if (isGameProduct) return "games";
     if (isStreamingProduct) return "streaming";
     if (isAiProduct) return "design";
     const c = ((product.categorySlug || "") + " " + (categoryName || "")).toLowerCase();
+    if (c.includes("لعب") || c.includes("game")) return "games";
     if (c.includes("مشاهد") || c.includes("stream")) return "streaming";
     if (c.includes("اشتراك") || c.includes("subscrip")) return "subscriptions";
-    if (c.includes("لعب") || c.includes("game")) return "games";
     if (c.includes("برامج") || c.includes("soft") || c.includes("design") || c.includes("ذكاء") || c.includes("ai")) return "design";
     if (c.includes("بطاق") || c.includes("card")) return "gift-cards";
     return null;
-  }, [categoryName, product.categorySlug, isStreamingProduct, isAiProduct]);
+  }, [isGameProduct, categoryName, product.categorySlug, isStreamingProduct, isAiProduct]);
 
   // Steam Game Account detection:
   const isSteamGameAccount = useMemo(() => {
@@ -1068,11 +1114,26 @@ export function GxProductTemplate({
   }, [deliveryInfo.type, isSteamGameAccount, isSocialProduct, isFollowerProduct, isLikeProduct, isValorant, isFortnite, isYouTube, isYouTubeAccount, ar]);
 
   const isNoticeHidden = useMemo(() => {
-    return (
-      Boolean(product.deliveryDetails && (product.deliveryDetails as any).hide_important_notes) ||
-      (Array.isArray(product.importantNotes) && product.importantNotes.length === 0)
-    );
-  }, [product.deliveryDetails, product.importantNotes]);
+    // 1. Explicitly hide for TOD as requested by user ("فمثلا منتج تود ما اله داعي التعليمات الهامة هاي شيلها")
+    if (isTod) return true;
+    // 2. Explicitly hide if product deliveryDetails specifies hide_important_notes
+    if (product.deliveryDetails && (product.deliveryDetails as any).hide_important_notes) return true;
+    // 3. If product has explicit empty importantNotes array
+    if (Array.isArray(product.importantNotes) && product.importantNotes.length === 0) return true;
+
+    // 4. Products that legitimately need a critical warning:
+    // - Steam Game Account (critical: avoid changing region, credentials sent in inventory, etc.)
+    // - YouTube Premium Family invite (critical: 12-month Google family group switch limit)
+    // - Social media followers/likes (critical: public profile required, natural drop compensation)
+    // - Any product that has explicit custom importantNotes defined in the database
+    const hasCustomNotes = Array.isArray(product.importantNotes) && product.importantNotes.length > 0;
+    if (isSteamGameAccount || isYouTube || isSocialProduct || isFollowerProduct || isLikeProduct || hasCustomNotes) {
+      return false;
+    }
+
+    // For all ordinary products (TOD, Fortnite, Gift Cards, standard software keys, generic codes), DO NOT show the notice box!
+    return true;
+  }, [isTod, product.deliveryDetails, product.importantNotes, isSteamGameAccount, isYouTube, isSocialProduct, isFollowerProduct, isLikeProduct]);
 
   const displayNoticeList = useMemo(() => {
     if (isSteamGameAccount) {
@@ -1445,31 +1506,22 @@ export function GxProductTemplate({
     const inputId = isDesktop ? "driffle-target-input-desktop" : "driffle-target-input-mobile";
     return (
       <div className={`driffle-buy-card gx-buy-card ${isDesktop ? "is-desktop" : "is-mobile"} ${isOutOfStock ? "is-sold-out" : ""}`}>
-        {/* Top Header Banner: Store Name & Featured Offer Badge */}
-        <div className="gx-offer-header-banner">
-          <span className="gx-offer-store-pill">SOLD BY GX STORE</span>
-          <span className="gx-offer-badge-tag">{ar ? "العرض المميز • FEATURED OFFER" : "FEATURED OFFER"}</span>
-        </div>
-
-        {/* Selected Price Frame (Image 2 style) */}
+        {/* Selected Price Frame (Original Clean Image 2 style) */}
         {!isOutOfStock && (
-          <div className="gx-offer-price-box">
-            <div className="gx-offer-radio-circle">
-              <div className="gx-offer-radio-inner" />
-            </div>
-            <div className="gx-offer-price-content">
-              <span className="gx-offer-price-val">{format(activePrice)}</span>
+          <div className="driffle-price-box gx-price-box">
+            <span className="driffle-price-label gx-price-label">
+              {displayTitle}
+            </span>
+            <div className="driffle-price-main gx-price-main">
               {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
-                <span className="gx-offer-price-old">{format(activeVariant.oldPrice)}</span>
+                <span className="driffle-price-old gx-price-old">{format(activeVariant.oldPrice)}</span>
               )}
-              {activeVariant.labelAr && !name.includes(activeVariant.labelAr) && (
-                <span className="gx-offer-variant-tag">{pick(activeVariant.labelAr, activeVariant.labelEn)}</span>
-              )}
+              <span className="driffle-price-val gx-price-val">{format(activePrice)}</span>
             </div>
-            {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
-              <span className="gx-offer-discount-tag">
-                -{Math.round(((activeVariant.oldPrice - activePrice) / activeVariant.oldPrice) * 100)}%
-              </span>
+            {(isSocialProduct || isFollowerProduct || isLikeProduct) && (
+              <div className="driffle-price-note gx-price-note">
+                {ar ? "⚡ تنفيذ من ساعة إلى 24 ساعة • ضمان 30 يوماً ضد النقص ⓘ" : "⚡ 1-24h Delivery • 30-Day Drop Refill Guarantee ⓘ"}
+              </div>
             )}
           </div>
         )}
@@ -1529,43 +1581,32 @@ export function GxProductTemplate({
           </div>
         ) : (
           <>
-            {/* Controls Row: Stock remaining + Quantity Stepper (ABOVE Buy Button) */}
-            <div className="gx-offer-controls-row">
-              {/* Natural / Normal Stock Badge (Clean, subtle, NOT neon) */}
-              {stockLimit !== null && stockLimit > 0 ? (
-                <div className="gx-stock-badge-normal">
-                  <span style={{ fontSize: 12 }}>📦</span>
-                  <span>{ar ? `المتبقي: ${stockLimit} فقط` : `${stockLimit} left`}</span>
-                </div>
-              ) : (
-                <div className="gx-stock-badge-normal in-stock">
-                  <span style={{ fontSize: 12 }}>✓</span>
-                  <span>{ar ? "متوفر في المخزون" : "In Stock"}</span>
-                </div>
-              )}
-
-              {/* Quantity Stepper */}
-              <div className="gx-qty-stepper-clean">
-                <button
-                  type="button"
-                  onClick={handleDecreaseQuantity}
-                  disabled={quantity <= 1}
-                  className="gx-qty-btn-clean"
-                  title={ar ? "تقليل" : "Decrease"}
-                  aria-label="Decrease quantity"
-                >
-                  −
-                </button>
-                <span className="gx-qty-count-clean">{quantity}</span>
+            {/* Quantity Stepper (Image 2 style with 'الكمية المطلوبة') */}
+            <div className="driffle-qty-wrap gx-qty-wrap">
+              <div className="driffle-qty-label gx-qty-label">
+                {ar ? "الكمية المطلوبة" : "Quantity"}
+              </div>
+              <div className="driffle-qty-stepper gx-qty-stepper">
                 <button
                   type="button"
                   onClick={handleIncreaseQuantity}
                   disabled={stockLimit !== null && quantity >= stockLimit}
-                  className="gx-qty-btn-clean"
+                  className="driffle-qty-btn inc gx-qty-btn"
                   title={stockLimit !== null && quantity >= stockLimit ? (ar ? `أقصى كمية هي ${stockLimit}` : `Max is ${stockLimit}`) : (ar ? "زيادة" : "Increase")}
                   aria-label="Increase quantity"
                 >
                   +
+                </button>
+                <span className="driffle-qty-val gx-qty-val">{quantity}</span>
+                <button
+                  type="button"
+                  onClick={handleDecreaseQuantity}
+                  disabled={quantity <= 1}
+                  className="driffle-qty-btn dec gx-qty-btn"
+                  title={ar ? "تقليل" : "Decrease"}
+                  aria-label="Decrease quantity"
+                >
+                  −
                 </button>
               </div>
             </div>
@@ -1676,10 +1717,10 @@ export function GxProductTemplate({
             )}
 
             {/* Action Buttons: Solid Buy Now + Cart Button (Image 2 style) */}
-            <div className="gx-offer-actions-row">
+            <div className="driffle-cta-row gx-cta-row">
               <button
                 type="button"
-                className="gx-offer-buy-now-btn"
+                className="driffle-buy-now-btn gx-buy-now-btn"
                 onClick={handleBuyNow}
               >
                 <span>🛍️</span>
@@ -1687,7 +1728,7 @@ export function GxProductTemplate({
               </button>
               <button
                 type="button"
-                className="gx-offer-add-cart-btn"
+                className="driffle-cart-btn gx-cart-btn"
                 onClick={handleAddToCart}
                 title={ar ? "إضافة إلى السلة" : "Add to Cart"}
                 aria-label={ar ? "إضافة إلى السلة" : "Add to Cart"}
@@ -1698,13 +1739,20 @@ export function GxProductTemplate({
           </>
         )}
 
-        {/* Clean, Single-line Trust Highlights */}
-        <div className="gx-offer-trust-line">
-          <span>⚡ {ar ? "تسليم فوري ومباشر" : "Instant Delivery"}</span>
-          <span>•</span>
-          <span>🛡️ {ar ? "ضمان رسمي 100%" : "Full Warranty"}</span>
-          <span>•</span>
-          <span>🔒 {ar ? "دفع إلكتروني آمن" : "Secure Payment"}</span>
+        {/* Clean 3-Item Trust Highlights (Exact Image 2 style) */}
+        <div className="driffle-trust-box gx-trust-box">
+          <div className="driffle-trust-item gx-trust-item">
+            <span className="driffle-trust-icon gx-trust-icon">⚡</span>
+            <span>{ar ? "تسليم فوري ومباشر بعد الدفع" : "Instant delivery after payment"}</span>
+          </div>
+          <div className="driffle-trust-item gx-trust-item">
+            <span className="driffle-trust-icon gx-trust-icon">🎧</span>
+            <span>{ar ? "دعم فني وخدمة عملاء 24/7" : "24/7 customer support"}</span>
+          </div>
+          <div className="driffle-trust-item gx-trust-item">
+            <span className="driffle-trust-icon gx-trust-icon">🛡️</span>
+            <span>{ar ? "بائع موثوق وضمان رسمي 100%" : "Verified seller & 100% warranty"}</span>
+          </div>
         </div>
 
         {/* Only show other-offers-hint when multiple variants exist (> 1) and in desktop */}
@@ -1770,9 +1818,9 @@ export function GxProductTemplate({
                 </button>
               </div>
 
-              {/* Product Title (Clean: only product title, no region/delivery suffix) */}
+              {/* Product Title (Dynamically reflects selected variant/package) */}
               <h1 className="driffle-title gx-title">
-                {name}
+                {displayTitle}
               </h1>
 
               {/* Status Badges Row (Desktop 2x2 Grid - matching Image 5) */}
@@ -2317,7 +2365,7 @@ export function GxProductTemplate({
             <div className="driffle-desc-card gx-desc-card">
               {/* Product Title inside card (like Image 2: Apple 50 TRY Gift Card...) */}
               <h3 className="driffle-desc-card-title gx-desc-card-title">
-                {name}
+                {displayTitle}
               </h3>
 
               {/* Description Body with Clamp */}

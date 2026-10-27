@@ -281,7 +281,7 @@ function ProductPage() {
               "@type": "ListItem",
               position: 2,
               name: product.categoryNameAr,
-              item: "https://gxstore.me/products",
+              item: product.categorySlug ? `https://gxstore.me/category/${product.categorySlug}` : "https://gxstore.me/products",
             },
             {
               "@type": "ListItem",

@@ -217,7 +217,7 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
     const { data: row } = await supabase
       .from("products")
       .select(
-        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, base_price_jod, image_url, icon, icon_image_url, thumb_bg, accent_color, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, requires_player_id, delivery_method_ar, delivery_method_en, delivery_details, delivery_instructions_ar, delivery_instructions_en, page_template, delivery_type, region, is_active, categories:category_id (name_ar, name_en, description_ar, description_en)",
+        "id, slug, name_ar, name_en, tagline_ar, tagline_en, description_ar, description_en, base_price_jod, image_url, icon, icon_image_url, thumb_bg, accent_color, card_gradient, identifier_label_ar, identifier_label_en, identifier_placeholder, requires_player_id, delivery_method_ar, delivery_method_en, delivery_details, delivery_instructions_ar, delivery_instructions_en, page_template, delivery_type, region, is_active, categories:category_id (slug, name_ar, name_en, description_ar, description_en)",
       )
       .eq("slug", querySlug)
       .eq("is_active", true)
@@ -248,7 +248,58 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
       loadOverrides(supabase),
     ]);
 
-    const cat = (p.categories ?? null) as { name_ar?: string; name_en?: string } | null;
+    const cat = (p.categories ?? null) as { slug?: string; name_ar?: string; name_en?: string; description_ar?: string; description_en?: string } | null;
+
+    const isGameProd =
+      p.slug === "fortnite" ||
+      p.slug.includes("fortnite") ||
+      p.slug === "valorant" ||
+      p.slug.includes("valorant") ||
+      p.slug === "gta-v" ||
+      p.slug.includes("fc-") ||
+      p.slug.includes("steam") ||
+      cat?.slug === "games" ||
+      cat?.slug === "pc-games" ||
+      cat?.slug === "xbox-games";
+
+    const isStreamingProd =
+      cat?.slug === "streaming" ||
+      p.slug === "tod" ||
+      p.slug.startsWith("tod-") ||
+      p.slug.includes("youtube");
+
+    const isAiProd =
+      cat?.slug === "ai" ||
+      cat?.slug === "software" ||
+      cat?.slug === "apps" ||
+      cat?.slug === "design" ||
+      p.slug.includes("gemini") ||
+      p.slug.includes("notion") ||
+      p.slug.includes("lovable");
+
+    const resolvedCategorySlug = isGameProd
+      ? "games"
+      : isStreamingProd
+      ? "streaming"
+      : isAiProd
+      ? "design"
+      : cat?.slug ?? null;
+
+    const resolvedCategoryNameAr = isGameProd
+      ? "ألعاب الفيديو"
+      : isStreamingProd
+      ? "اشتراكات المشاهدة"
+      : isAiProd
+      ? "البرامج والتطبيقات"
+      : cat?.name_ar ?? null;
+
+    const resolvedCategoryNameEn = isGameProd
+      ? "Games"
+      : isStreamingProd
+      ? "Streaming Subscriptions"
+      : isAiProd
+      ? "Apps & Software"
+      : cat?.name_en ?? cat?.name_ar ?? null;
 
     const resolvedVariants: CatalogVariant[] =
       variants && variants.length > 0
@@ -306,8 +357,9 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
       thumbBg: p.thumb_bg ?? null,
       accentColor: p.accent_color ?? null,
       cardGradient: p.card_gradient ?? null,
-      categoryNameAr: cat?.name_ar ?? null,
-      categoryNameEn: cat?.name_en ?? cat?.name_ar ?? null,
+      categorySlug: resolvedCategorySlug,
+      categoryNameAr: resolvedCategoryNameAr,
+      categoryNameEn: resolvedCategoryNameEn,
       categoryDescriptionAr: (cat as any)?.description_ar ?? null,
       categoryDescriptionEn: (cat as any)?.description_en ?? null,
       identifierLabelAr: p.identifier_label_ar ?? null,
@@ -606,6 +658,25 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
         rootCategorySlug = "design";
         categoryNameAr = "البرامج والتطبيقات";
         categoryNameEn = "Apps & Software";
+      }
+
+      // Ensure Fortnite, Valorant, GTA, FC, and all games belong to "ألعاب الفيديو" (games)
+      if (
+        p.slug === "fortnite" ||
+        p.slug.includes("fortnite") ||
+        p.slug === "valorant" ||
+        p.slug.includes("valorant") ||
+        p.slug === "gta-v" ||
+        p.slug.includes("fc-") ||
+        p.slug.includes("steam") ||
+        cat?.slug === "games" ||
+        cat?.slug === "pc-games" ||
+        cat?.slug === "xbox-games"
+      ) {
+        categorySlug = "games";
+        rootCategorySlug = "games";
+        categoryNameAr = "ألعاب الفيديو";
+        categoryNameEn = "Games";
       }
 
       const vars = variantsByProd.get(p.id) ?? [];
