@@ -2,7 +2,7 @@ import { safeJsonLd } from "@/lib/gx/json-ld";
 import { useEffect } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { getCatalogProduct } from "@/lib/gx/catalog.functions";
+import { getCatalogProduct, getRelatedCatalogProducts } from "@/lib/gx/catalog.functions";
 import { ProductTemplate } from "@/components/gx/ProductTemplates";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { trackRecentlyViewed } from "@/lib/gx/recently-viewed";
@@ -19,7 +19,8 @@ export const Route = createFileRoute("/product/$slug")({
   loader: async ({ params }) => {
     const product = await getCatalogProduct({ data: { slug: params.slug, bypassCache: true } });
     if (!product) throw notFound();
-    return { product };
+    const relatedProducts = await getRelatedCatalogProducts({ data: { slug: params.slug, limit: 8 } }).catch(() => []);
+    return { product, relatedProducts };
   },
   head: ({ loaderData }) => {
     const p = loaderData?.product;
@@ -79,7 +80,7 @@ export const Route = createFileRoute("/product/$slug")({
 });
 
 function ProductPage() {
-  const { product } = Route.useLoaderData();
+  const { product, relatedProducts } = Route.useLoaderData();
   const search = Route.useSearch();
   const preselectedVariant = search.variant || search.plan || search.cartId || search.id;
 
@@ -312,7 +313,11 @@ function ProductPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbSchema) }}
       />
-      <ProductTemplate product={product} initialVariant={preselectedVariant} />
+      <ProductTemplate
+        product={product}
+        initialVariant={preselectedVariant}
+        relatedProducts={relatedProducts}
+      />
     </StoreShell>
   );
 }

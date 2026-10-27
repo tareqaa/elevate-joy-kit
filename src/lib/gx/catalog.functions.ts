@@ -11,6 +11,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getPublicClient, getVerifiedCaller, getUserScopedClient } from "@/lib/gx/supabase-request";
 import { isAdminUser } from "@/lib/gx/pricing.server";
 import { resolveStrictDeliveryType } from "@/lib/gx/delivery-types";
+import { rankRelatedProducts } from "@/lib/gx/recommendations";
 
 export type CatalogVariant = {
   cartId: string;
@@ -1141,5 +1142,16 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
     cachedCatalogProducts = items;
     lastCatalogFetchTime = Date.now();
     return items;
+  });
+
+export const getRelatedCatalogProducts = createServerFn({ method: "GET" })
+  .validator((d: { slug: string; limit?: number }) => d)
+  .handler(async ({ data }): Promise<CatalogStoreProduct[]> => {
+    const all = await getAllCatalogProducts();
+    const current = all.find((p) => p.slug === data.slug);
+    if (!current) {
+      return rankRelatedProducts({ slug: data.slug, nameAr: data.slug, nameEn: data.slug }, all, data.limit || 8);
+    }
+    return rankRelatedProducts(current, all, data.limit || 8);
   });
 

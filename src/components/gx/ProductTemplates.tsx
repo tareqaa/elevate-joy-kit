@@ -19,6 +19,8 @@ import { CrewIcon, VbucksIcon, SnapchatPoster, AdobePoster, CanvaPoster, Windows
 import { ProductPlatformBar } from "@/components/gx/ProductPlatformBar";
 import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
 import { GxProductTemplate } from "@/components/gx/GxProductTemplate";
+import { RelatedProductsSection } from "@/components/gx/RelatedProductsSection";
+import type { CatalogStoreProduct } from "@/lib/gx/catalog.functions";
 
 const pick = (lang: Lang, ar: string | null | undefined, en: string | null | undefined) =>
   (lang === "en" ? en || ar : ar || en) || "";
@@ -855,17 +857,25 @@ export function GiftCardTemplate({ product, initialVariant }: { product: Catalog
   );
 }
 
-export function ProductTemplate({ product, initialVariant }: { product: CatalogProduct; initialVariant?: string }) {
-  // منتجات سناب شات بلس تبقى بقالبها المخصص (عداد الحسابات وإدخال اليوزرات)
-  if (product.slug === "snapchat" || product.pageTemplate === "multi_account") {
-    return <MultiAccountTemplate product={product} />;
-  }
-
-  // بطاقات الهدايا الرقمية تبقى بقالبها المخصص (اختيار الدول والفئات)
-  if (product.pageTemplate === "gift_card") {
-    return <GiftCardTemplate product={product} initialVariant={initialVariant} />;
-  }
-
-  // جميع المنتجات الأخرى (Gemini, Windows, Adobe, Canva, Steam, Games, etc.) تستخدم تصميم GX Store الشامل الموحد
-  return <GxProductTemplate product={product} initialVariant={initialVariant} />;
+export function ProductTemplate({
+  product,
+  initialVariant,
+  relatedProducts,
+}: {
+  product: CatalogProduct;
+  initialVariant?: string;
+  relatedProducts?: CatalogStoreProduct[];
+}) {
+  return (
+    <>
+      {product.slug === "snapchat" || product.pageTemplate === "multi_account" ? (
+        <MultiAccountTemplate product={product} />
+      ) : product.pageTemplate === "gift_card" ? (
+        <GiftCardTemplate product={product} initialVariant={initialVariant} />
+      ) : (
+        <GxProductTemplate product={product} initialVariant={initialVariant} />
+      )}
+      <RelatedProductsSection currentProduct={product} initialRelatedProducts={relatedProducts} />
+    </>
+  );
 }

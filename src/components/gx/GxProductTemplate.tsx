@@ -1688,6 +1688,27 @@ export function GxProductTemplate({
           <>
             {/* Quantity Stepper (Image 2 style with centered 'الكمية المطلوبة') */}
             <div className="driffle-qty-wrap gx-qty-wrap">
+              {stockLimit !== null && stockLimit > 0 && (
+                <div
+                  className="gx-stock-remaining-banner"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "4px 12px",
+                    borderRadius: 8,
+                    background: "rgba(245, 158, 11, 0.14)",
+                    border: "1px solid rgba(245, 158, 11, 0.32)",
+                    color: "#fbbf24",
+                    fontSize: "12.5px",
+                    fontWeight: 800,
+                    marginBottom: 2,
+                  }}
+                >
+                  <span>⚡</span>
+                  <span>{ar ? `متبقي ${stockLimit} فقط في المخزون` : `Only ${stockLimit} left in stock`}</span>
+                </div>
+              )}
               <div className="driffle-qty-label gx-qty-label">
                 {ar ? "الكمية المطلوبة" : "Quantity"}
               </div>
