@@ -181,8 +181,8 @@ div[style*="Edit with Lovable"],
 .gx-anim-slide-right { transform: translateX(-28px); }
 .gx-anim-zoom-in     { transform: scale(.96); }
 .gx-anim.is-in { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) {
-  .gx-anim { opacity: 1 !important; transform: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce), (max-width: 768px) {
+  .gx-anim { opacity: 1 !important; transform: none !important; transition: none !important; will-change: auto !important; }
 }
 
 /* ============= Hide native number input spinners (global) ============= */
@@ -1074,8 +1074,30 @@ input[type="number"] {
 }
 
 @media (max-width: 768px) {
-  .driffle-page-wrap {
+  .driffle-page-wrap,
+  .gx-page-wrap {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: clip !important;
+    box-sizing: border-box !important;
     padding-bottom: 95px !important;
+    padding-inline: 12px !important;
+  }
+
+  .driffle-layout,
+  .gx-layout,
+  .driffle-main,
+  .gx-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: clip !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Hide redundant inline buy box on mobile phones, keeping only the bottom sticky bar */
+  .gx-mobile-buy-box {
+    display: none !important;
   }
 
   /* Fixed Bottom Sticky Buy Bar on Phones */
@@ -1096,6 +1118,22 @@ input[type="number"] {
     -webkit-backdrop-filter: blur(24px);
     border-top: 1px solid rgba(0, 229, 255, 0.28);
     box-shadow: 0 -10px 32px rgba(0, 0, 0, 0.75), 0 0 24px rgba(0, 229, 255, 0.12);
+  }
+
+  .gx-sticky-stock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.14);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    padding: 1.5px 7px;
+    border-radius: 6px;
+    width: fit-content;
+    white-space: nowrap;
+    line-height: 1.3;
   }
 
   .gx-sticky-bar-info {
@@ -1205,18 +1243,50 @@ input[type="number"] {
 }
 
 @media (max-width: 680px) {
-  .driffle-hero-card {
+  .driffle-hero-card,
+  .gx-hero-card {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 14px;
   }
 
-  .driffle-poster-box {
-    max-height: 240px;
-    aspect-ratio: 16 / 9;
-    border-radius: 16px;
+  /* Compact Eneba-style mobile poster header */
+  .driffle-poster-box,
+  .gx-poster-box {
+    max-height: 155px !important;
+    height: 155px !important;
+    aspect-ratio: auto !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto 4px !important;
   }
 
-  .driffle-status-grid {
+  .driffle-poster-inner,
+  .gx-poster-inner {
+    height: 155px !important;
+    max-height: 155px !important;
+    border-radius: 14px !important;
+  }
+
+  .driffle-cover-img,
+  .gx-cover-img {
+    height: 155px !important;
+    max-height: 155px !important;
+    object-fit: cover !important;
+    object-position: center !important;
+  }
+
+  .driffle-title,
+  .gx-title {
+    font-size: 19px !important;
+    line-height: 1.3 !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  .driffle-status-grid,
+  .gx-status-grid {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
@@ -4212,10 +4282,24 @@ html[dir="ltr"] .gx-nav-login-pill:hover svg {
     font-size: 10px !important;
   }
 
+  .prod-price-top-row,
+  .featured-grid .prod-price-top-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    min-height: 12px !important;
+  }
+
   .prod-discount-pill,
   .discount-badge {
     font-size: 9px !important;
-    padding: 1px 4px !important;
+    padding: 1.5px 5px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    line-height: 1 !important;
   }
 
   .prod-card .buy-actions,

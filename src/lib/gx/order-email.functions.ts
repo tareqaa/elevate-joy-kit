@@ -24,7 +24,7 @@ function getOrderTokenSecret(): string {
 }
 
 /**
- * Generates an unguessable cryptographic token for an order (Gamivo style JWT).
+ * Generates an unguessable cryptographic token for an order (GX Store Secure Token).
  * Embeds 256 bits of pure cryptographic CSPRNG randomness (nonce) + HMAC-SHA256 signature,
  * making brute-force or dictionary guessing mathematically impossible (2^256 entropy).
  * STRICT RULE: Only issued upon order completion/delivery to reveal digital products.
@@ -761,7 +761,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
           </div>
         `;
 
-      // ARABIC HTML TEMPLATE (Gamivo + Driffle Style with Logo, Products, Stepper, and My Orders Link)
+      // ARABIC HTML TEMPLATE (GX Store Official Style with Logo, Products, Stepper, and My Orders Link)
       const arabicHtml = `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -777,7 +777,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
         <!-- Main Container Card -->
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:580px;background:linear-gradient(180deg,#121724 0%,#0c0f18 100%);border:1px solid #1e283d;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.7);">
           
-          <!-- Brand Logo Header (GAMIVO & DRIFFLE STYLE) -->
+          <!-- Brand Logo Header (GX STORE STYLE) -->
           <tr>
             <td style="background:#090d16;padding:22px 28px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:center;">
               <a href="https://gxstore.me" target="_blank" style="text-decoration:none;display:inline-block;">
@@ -927,7 +927,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
                 </tr>
               </table>
 
-              <!-- Support Note (Gamivo/Driffle style) -->
+              <!-- Support Note (GX Store Official style) -->
               <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px;font-size:13px;color:#cbd5e1;line-height:1.8;">
                 <p style="margin:0 0 10px;font-weight:800;color:#ffffff;">
                   هل تحتاج لمساعدة أو لديك استفسار بشأن التفعيل؟
@@ -965,7 +965,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
 </html>
       `;
 
-      // ENGLISH HTML TEMPLATE (Gamivo + Driffle Style with Logo, Products, Stepper, and My Orders Link)
+      // ENGLISH HTML TEMPLATE (GX Store Official Style with Logo, Products, Stepper, and My Orders Link)
       const englishHtml = `
 <!DOCTYPE html>
 <html lang="en">
@@ -981,7 +981,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
         <!-- Main Container Card -->
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:580px;background:linear-gradient(180deg,#121724 0%,#0c0f18 100%);border:1px solid #1e283d;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.7);">
           
-          <!-- Brand Logo Header (GAMIVO & DRIFFLE STYLE) -->
+          <!-- Brand Logo Header (GX STORE STYLE) -->
           <tr>
             <td style="background:#090d16;padding:22px 28px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:center;">
               <a href="https://gxstore.me" target="_blank" style="text-decoration:none;display:inline-block;">
@@ -1131,7 +1131,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
                 </tr>
               </table>
 
-              <!-- Support Note (Gamivo/Driffle style) -->
+              <!-- Support Note (GX Store Official style) -->
               <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px;font-size:13px;color:#cbd5e1;line-height:1.8;">
                 <p style="margin:0 0 10px;font-weight:800;color:#ffffff;">
                   Need assistance with activation?
@@ -1775,7 +1775,7 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
   });
 
 /**
- * Server function to fetch an order using the unguessable cryptographic token (Gamivo style order_token).
+ * Server function to fetch an order using the unguessable cryptographic token (GX Store Secure Token).
  * Validates HMAC signature before returning delivery data.
  */
 export const getOrderByTokenFn = createServerFn({ method: "POST" })
@@ -1843,7 +1843,7 @@ export const getOrderByTokenFn = createServerFn({ method: "POST" })
   });
 
 /**
- * Server function to generate a secret Gamivo-style link for any order (used by admin to copy link).
+ * Server function to generate a secret GX Store token link for any order (used by admin to copy link).
  */
 export const getOrderSecretLinkFn = createServerFn({ method: "POST" })
   .validator((data: unknown) =>

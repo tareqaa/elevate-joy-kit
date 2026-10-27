@@ -286,6 +286,8 @@ export function GxProductTemplate({
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
   const [addedCart, setAddedCart] = useState<boolean>(false);
   const [todFilterGroup, setTodFilterGroup] = useState<string>("all");
+  const [reqModalOpen, setReqModalOpen] = useState<boolean>(false);
+  const [pendingAction, setPendingAction] = useState<"buy_now" | "add_cart" | null>(null);
   const requirementType = useMemo(() => {
     return resolveProductRequirementType({
       slug: product.slug,
@@ -870,6 +872,55 @@ export function GxProductTemplate({
       usernames: finalVal ? [finalVal] : undefined,
     });
     navigate({ to: "/cart" });
+  };
+
+  const handleStickyBuyNow = () => {
+    if (isOutOfStock) {
+      toast.error(ar ? "عذراً، لقد نفدت كمية هذا المنتج حالياً" : "Sorry, this product is currently sold out");
+      return;
+    }
+    if (requiresCustomerInput && !targetInput.trim()) {
+      setPendingAction("buy_now");
+      setReqModalOpen(true);
+      return;
+    }
+    handleBuyNow();
+  };
+
+  const handleStickyAddToCart = () => {
+    if (isOutOfStock) {
+      toast.error(ar ? "عذراً، لقد نفدت كمية هذا المنتج حالياً" : "Sorry, this product is currently sold out");
+      return;
+    }
+    if (requiresCustomerInput && !targetInput.trim()) {
+      setPendingAction("add_cart");
+      setReqModalOpen(true);
+      return;
+    }
+    handleAddToCart();
+  };
+
+  const handleConfirmRequirementModal = () => {
+    const trimmed = targetInput.trim();
+    if (!trimmed) {
+      setInputError(true);
+      toast.error(ar ? "يرجى إدخال البيانات المطلوبة للمتابعة" : "Please fill in the required field to continue");
+      return;
+    }
+    setInputError(false);
+    const finalVal = requirementType === "whatsapp" ? (formattedWhatsApp || trimmed) : trimmed;
+    if (finalVal && requirementType === "whatsapp") {
+      setRememberedWhatsApp(finalVal, rememberMe);
+      setRememberContactEnabled(rememberMe);
+      cart.setContact({ phone: finalVal, type: "whatsapp" });
+    }
+    setReqModalOpen(false);
+    if (pendingAction === "buy_now") {
+      handleBuyNow();
+    } else {
+      handleAddToCart();
+    }
+    setPendingAction(null);
   };
 
   // Configured bundles: Opt-in only. If not configured, this section is completely hidden.
@@ -2139,7 +2190,10 @@ export function GxProductTemplate({
               className="gx-tod-comparison-section"
               style={{
                 margin: "18px 0 24px 0",
-                padding: "20px 22px",
+                padding: "16px 14px",
+                maxWidth: "100%",
+                boxSizing: "border-box",
+                overflowX: "hidden",
                 background: "linear-gradient(135deg, rgba(43, 17, 84, 0.42), rgba(18, 6, 38, 0.65))",
                 borderRadius: 16,
                 border: "1px solid rgba(245, 158, 11, 0.28)",
@@ -2148,25 +2202,30 @@ export function GxProductTemplate({
             >
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                 <span style={{ fontSize: 24 }}>⚖️</span>
-                <h3 style={{ fontSize: 17, fontWeight: 800, color: "#f8fafc", margin: 0 }}>
+                <h3 style={{ fontSize: 16.5, fontWeight: 800, color: "#f8fafc", margin: 0, lineHeight: 1.35 }}>
                   {ar ? "دليل المقارنة الرسمي بين باقات TOD (معلومات رسمية 100%)" : "Official TOD Packages Comparison"}
                 </h3>
               </div>
 
-              <p style={{ fontSize: 13.5, color: "#cbd5e1", lineHeight: 1.7, margin: "0 0 16px 0" }}>
+              <p style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.6, margin: "0 0 12px 0" }}>
                 {ar
                   ? "جميع باقات TOD تمنحك وصولاً كاملاً وغير محدود لقنوات beIN Sports الرياضية وأضخم مكتبة أفلام ومسلسلات. يوضح الجدول التالي الفرق بين الباقات الرسمية لتختار الباقة الأنسب لجهازك:"
                   : "All TOD plans provide complete access to beIN Sports and cinema libraries. See the breakdown below:"}
               </p>
 
-              <div style={{ overflowX: "auto", borderRadius: 12, border: "1px solid rgba(255, 255, 255, 0.08)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, fontSize: 11.5, color: "#94a3b8" }}>
+                <span>💡</span>
+                <span>{ar ? "اسحب الجدول أفقياً لرؤية كافة المميزات والباقات" : "Swipe horizontally to see all plans"}</span>
+              </div>
+
+              <div style={{ overflowX: "auto", width: "100%", maxWidth: "100%", WebkitOverflowScrolling: "touch", borderRadius: 12, border: "1px solid rgba(255, 255, 255, 0.08)" }}>
                 <table
                   style={{
                     width: "100%",
                     borderCollapse: "collapse",
-                    fontSize: 13,
+                    fontSize: 12,
                     textAlign: ar ? "right" : "left",
-                    minWidth: 540,
+                    minWidth: 440,
                   }}
                 >
                   <thead>
@@ -2242,10 +2301,7 @@ export function GxProductTemplate({
             </section>
           )}
 
-          {/* Mobile-Only Purchase Card: Placed directly at the top of the mobile screen under Hero/Variations */}
-          <div className="gx-mobile-buy-box">
-            {renderBuyCard(false)}
-          </div>
+
 
           {/* Important Notice Box (Single top box, can be hidden from admin) */}
           {!isNoticeHidden && displayNoticeList.length > 0 && (
@@ -2412,18 +2468,25 @@ export function GxProductTemplate({
               <span className="gx-sticky-bar-variant"> • {pick(activeVariant.labelAr, activeVariant.labelEn)}</span>
             )}
           </div>
-          <div className="gx-sticky-bar-price">
-            {isOutOfStock ? (
-              <span style={{ color: "#ff3b71", fontWeight: 800, fontSize: 14 }}>
-                {ar ? "نفدت الكمية" : "Sold Out"}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
+            <div className="gx-sticky-bar-price">
+              {isOutOfStock ? (
+                <span style={{ color: "#ff3b71", fontWeight: 800, fontSize: 14 }}>
+                  {ar ? "نفدت الكمية" : "Sold Out"}
+                </span>
+              ) : (
+                <>
+                  <strong>{format(activePrice)}</strong>
+                  {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
+                    <span className="gx-sticky-bar-old">{format(activeVariant.oldPrice)}</span>
+                  )}
+                </>
+              )}
+            </div>
+            {stockLimit !== null && stockLimit > 0 && (
+              <span className="gx-sticky-stock-badge">
+                ⚡ {ar ? `متبقي ${stockLimit} فقط` : `${stockLimit} left`}
               </span>
-            ) : (
-              <>
-                <strong>{format(activePrice)}</strong>
-                {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
-                  <span className="gx-sticky-bar-old">{format(activeVariant.oldPrice)}</span>
-                )}
-              </>
             )}
           </div>
         </div>
@@ -2455,7 +2518,7 @@ export function GxProductTemplate({
               <button
                 type="button"
                 className="gx-sticky-cart-btn"
-                onClick={handleAddToCart}
+                onClick={handleStickyAddToCart}
                 title={ar ? "إضافة إلى السلة" : "Add to Cart"}
                 aria-label={ar ? "إضافة إلى السلة" : "Add to Cart"}
               >
@@ -2464,7 +2527,7 @@ export function GxProductTemplate({
               <button
                 type="button"
                 className="gx-sticky-buy-btn"
-                onClick={handleBuyNow}
+                onClick={handleStickyBuyNow}
               >
                 <span>🛍️</span>
                 <span>{ar ? "شراء الآن" : "Buy now"}</span>
@@ -2473,6 +2536,154 @@ export function GxProductTemplate({
           )}
         </div>
       </div>
+
+      {/* Mobile Quick Requirement Dialog */}
+      <Dialog open={reqModalOpen} onOpenChange={setReqModalOpen}>
+        <DialogContent
+          className="gx-req-modal-content"
+          style={{
+            maxWidth: 440,
+            background: "linear-gradient(145deg, #0d121f 0%, #060911 100%)",
+            border: "1.5px solid rgba(0, 229, 255, 0.35)",
+            borderRadius: 18,
+            color: "#ffffff",
+            padding: "24px 20px",
+            boxShadow: "0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 229, 255, 0.15)",
+          }}
+        >
+          <DialogHeader>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <span style={{ fontSize: 24 }}>
+                {requirementType === "whatsapp" ? "💬" : requirementType === "email" ? "✉️" : "🎮"}
+              </span>
+              <DialogTitle style={{ fontSize: 17, fontWeight: 900, color: "#ffffff", margin: 0 }}>
+                {targetLabel}
+              </DialogTitle>
+            </div>
+            <p style={{ fontSize: 13, color: "#94a3b8", margin: "4px 0 0", lineHeight: 1.5 }}>
+              {targetHint || (ar ? "سيتم التواصل معك وتفعيل طلبك فور إتمام الشراء" : "Our team will deliver & activate your order to these details")}
+            </p>
+          </DialogHeader>
+
+          <div style={{ marginTop: 14 }}>
+            {requirementType === "whatsapp" ? (
+              <CountryPhoneInput
+                value={targetInput}
+                onChange={(val, fullInt) => {
+                  setTargetInput(val);
+                  setFormattedWhatsApp(fullInt);
+                  if (inputError && val.trim()) setInputError(false);
+                }}
+                isAr={ar}
+                error={inputError}
+                autoFocus={true}
+              />
+            ) : requirementType === "email" ? (
+              <input
+                type="email"
+                required
+                value={targetInput}
+                onChange={(e) => {
+                  setTargetInput(e.target.value);
+                  setInputError(false);
+                }}
+                placeholder="example@gmail.com"
+                dir="ltr"
+                style={{
+                  width: "100%",
+                  padding: "12px 14px",
+                  borderRadius: 10,
+                  background: "rgba(255, 255, 255, 0.06)",
+                  border: `1.5px solid ${inputError ? "#ff4d6d" : "rgba(255, 255, 255, 0.16)"}`,
+                  color: "#ffffff",
+                  fontSize: 15,
+                  outline: "none",
+                }}
+              />
+            ) : (
+              <input
+                type="text"
+                required
+                value={targetInput}
+                onChange={(e) => {
+                  setTargetInput(e.target.value);
+                  setInputError(false);
+                }}
+                placeholder={targetPlaceholder || (ar ? "أدخل البيانات هنا..." : "Enter details here...")}
+                style={{
+                  width: "100%",
+                  padding: "12px 14px",
+                  borderRadius: 10,
+                  background: "rgba(255, 255, 255, 0.06)",
+                  border: `1.5px solid ${inputError ? "#ff4d6d" : "rgba(255, 255, 255, 0.16)"}`,
+                  color: "#ffffff",
+                  fontSize: 15,
+                  outline: "none",
+                }}
+              />
+            )}
+
+            {requirementType === "whatsapp" && (
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginTop: 12,
+                  fontSize: 12.5,
+                  color: "#cbd5e1",
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => {
+                    setRememberMe(e.target.checked);
+                    setRememberContactEnabled(e.target.checked);
+                  }}
+                  style={{ accentColor: "#10b981", width: 16, height: 16 }}
+                />
+                <span>
+                  {ar
+                    ? "تذكر رقمي للطلبات القادمة (حفظ تلقائي)"
+                    : "Remember my number for future orders"}
+                </span>
+              </label>
+            )}
+
+            <button
+              type="button"
+              onClick={handleConfirmRequirementModal}
+              style={{
+                marginTop: 18,
+                width: "100%",
+                padding: "13px",
+                borderRadius: 12,
+                border: "none",
+                background: "linear-gradient(135deg, #00f0ff 0%, #0091ff 50%, #0060ff 100%)",
+                color: "#040914",
+                fontSize: 15.5,
+                fontWeight: 900,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                boxShadow: "0 6px 20px rgba(0, 229, 255, 0.4)",
+              }}
+            >
+              <span>{pendingAction === "buy_now" ? "🛍️" : "🛒"}</span>
+              <span>
+                {pendingAction === "buy_now"
+                  ? (ar ? "تأكيد ومتابعة الشراء" : "Confirm & Proceed")
+                  : (ar ? "تأكيد وإضافة للسلة" : "Confirm & Add to Cart")}
+              </span>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Restock Notification Dialog */}
       <Dialog open={notifyModalOpen} onOpenChange={setNotifyModalOpen}>

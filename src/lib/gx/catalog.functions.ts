@@ -743,6 +743,11 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
       // 3. PRODUCTS WITH INDIVIDUAL EDITIONS/VARIANTS
       // (Windows Pro OEM/Account, Fortnite Crew/V-Bucks, Snapchat, Microsoft 365, Adobe, etc.)
       for (const v of vars) {
+        if (v.is_active === false) continue;
+        // Eliminate duplicate YouTube account variant under family invite product
+        if (p.slug === "youtube-premium" && (v.cart_id === "youtube-premium-account-1m" || (v.label_ar && v.label_ar.includes("إيميل وباسورد")))) {
+          continue;
+        }
         const o = v.cart_id ? overrides[v.cart_id] : undefined;
         const price = typeof o?.price === "number" && o.price >= 0 ? o.price : Number(v.price_jod) || 0;
         const rawOld = o && "oldPrice" in o ? o.oldPrice : v.old_price_jod;

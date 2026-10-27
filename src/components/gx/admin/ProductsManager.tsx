@@ -1138,7 +1138,7 @@ function QuickPriceDialog({
  * ============================================================
  * VISUAL WYSIWYG PRODUCT PAGE EDITOR
  * Modeled directly after the storefront product page (`GxProductTemplate`).
- * Displays live Driffle poster preview, instant delivery pills,
+ * Displays live GX Store poster preview, instant delivery pills,
  * duration/variation cards, and pre-populates all catalog texts.
  * ============================================================
  */
@@ -1715,7 +1715,7 @@ function ProductModal({
         {/* MAIN PRODUCT PAGE WYSIWYG GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 my-4 items-start">
           {/* ============================================================ */}
-          {/* LEFT: THE DRIFFLE POSTER ART (LIVE PRODUCT CARD PREVIEW)     */}
+          {/* LEFT: THE GX STORE POSTER ART (LIVE PRODUCT CARD PREVIEW)     */}
           {/* ============================================================ */}
           <div className="lg:col-span-5 space-y-4">
             <div className="text-xs font-bold text-cyan-300 flex items-center justify-between">

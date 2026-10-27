@@ -35,7 +35,7 @@ export function AnimatedSection({
           if (e.isIntersecting) { setVisible(true); io.disconnect(); break; }
         }
       },
-      { rootMargin: "0px 0px -10% 0px", threshold: 0.05 },
+      { rootMargin: "800px 0px 800px 0px", threshold: 0 },
     );
     io.observe(el);
     return () => io.disconnect();

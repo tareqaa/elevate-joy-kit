@@ -489,10 +489,19 @@ html[dir="ltr"] .gx-search-item{ text-align:left; }
   color:#8b90a0;
   font-weight:500;
 }
+.prod-price-top-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  gap:4px;
+  min-height:14px;
+}
 .prod-price-row{
   display:flex;
   align-items:center;
   justify-content:space-between;
+  width:100%;
   gap:6px;
 }
 .prod-old-row{
@@ -506,6 +515,7 @@ html[dir="ltr"] .gx-search-item{ text-align:left; }
   color:#8b90a0;
   font-size:11px;
   text-decoration:line-through;
+  white-space:nowrap;
 }
 .prod-discount-pill{
   background:#ff1b55;
@@ -518,6 +528,8 @@ html[dir="ltr"] .gx-search-item{ text-align:left; }
   align-items:center;
   direction:ltr;
   unicode-bidi:isolate;
+  flex-shrink:0;
+  white-space:nowrap;
 }
 .prod-new{
   font-size:19px;

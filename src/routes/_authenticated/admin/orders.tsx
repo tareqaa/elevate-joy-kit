@@ -691,7 +691,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           document.execCommand("copy");
           document.body.removeChild(ta);
         }
-        toast.success("تم نسخ الرابط السري المشفر (Gamivo Token) بنجاح! يمكنك إرساله للعميل.");
+        toast.success("تم نسخ الرابط السري المشفر لطلب العميل (GX Store Token) بنجاح! يمكنك إرساله للعميل.");
       } else {
         toast.error("تعذر توليد الرابط السري للطلب");
       }
@@ -942,7 +942,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                   onClick={handleCopySecretLink}
                   disabled={copyingLink}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 hover:text-cyan-200 text-xs font-bold transition-all shadow-sm"
-                  title="نسخ الرابط السري المشفر بـ Token غير قابل للتخمين (Gamivo Style)"
+                  title="نسخ الرابط السري المشفر لطلب العميل (GX Store Secure Link)"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span>{copyingLink ? "جارٍ التوليد..." : "نسخ رابط الطلب السري (Token)"}</span>

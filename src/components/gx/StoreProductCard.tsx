@@ -602,23 +602,46 @@ export function StoreProductCard({
                 flexDirection: "column",
                 justifyContent: "flex-end",
                 marginTop: "auto",
+                width: "100%",
               }}
             >
               {finalDisplayPrice > 0 ? (
                 <>
-                  {(showFromLabel || isGiftCardMasterCard) && (
-                    <span className="prod-from-label">{priceLabel || (lang === "en" ? "From" : "من")}</span>
-                  )}
+                  <div
+                    className="prod-price-top-row"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      width: "100%",
+                      minHeight: 14,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {(showFromLabel || isGiftCardMasterCard) ? (
+                      <span className="prod-from-label">{priceLabel || (lang === "en" ? "From" : "من")}</span>
+                    ) : (
+                      <span />
+                    )}
+                    {numOldPrice && numOldPrice > finalDisplayPrice ? (
+                      <span className="prod-old">{format(numOldPrice)}</span>
+                    ) : null}
+                  </div>
                   <div className="prod-price-row">
                     <span className="prod-new">
                       {format(finalDisplayPrice)}
                     </span>
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                      {numOldPrice && numOldPrice > finalDisplayPrice && (
-                        <span className="prod-old">{format(numOldPrice)}</span>
-                      )}
-                      {discount > 0 && <span className="prod-discount-pill">-{discount}%</span>}
-                    </div>
+                    {discount > 0 && (
+                      <span
+                        className="prod-discount-pill"
+                        style={{
+                          flexShrink: 0,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        -{discount}%
+                      </span>
+                    )}
                   </div>
                 </>
               ) : (
