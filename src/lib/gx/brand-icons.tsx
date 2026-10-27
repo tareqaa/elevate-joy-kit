@@ -418,6 +418,7 @@ export function TodPoster({
 
   return (
     <div
+      className="tod-poster-card"
       style={{
         position: "relative",
         width: "100%",
@@ -427,7 +428,7 @@ export function TodPoster({
         flexDirection: "column",
         justifyContent: "space-between",
         alignItems: "center",
-        padding: "16px 14px",
+        padding: "10px 8px",
         boxSizing: "border-box",
         overflow: "hidden",
         userSelect: "none",
@@ -443,26 +444,29 @@ export function TodPoster({
         }}
       />
 
-      {/* Top: Official Duration Tag (Yellow Pill Badge exactly like classic TOD card) */}
+      {/* Top: Official Duration Tag (Yellow Pill Badge - Compact & Single-line) */}
       <div style={{ width: "100%", display: "flex", justifyContent: "flex-start", position: "relative", zIndex: 1 }}>
         <div
+          className="tod-poster-badge"
           style={{
             background: "#ffcc00",
             color: "#0a031c",
             fontWeight: 900,
-            fontSize: 11,
-            padding: "4px 10px",
-            borderRadius: 7,
-            letterSpacing: 0.5,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+            fontSize: 9.5,
+            padding: "2px 7px",
+            borderRadius: 5,
+            letterSpacing: 0.3,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.35)",
             display: "inline-flex",
             alignItems: "center",
             gap: 4,
             fontFamily: "'Tajawal', sans-serif",
+            whiteSpace: "nowrap",
+            lineHeight: 1.2,
           }}
         >
           <span>{durationAr}</span>
-          <span style={{ opacity: 0.6 }}>•</span>
+          <span style={{ opacity: 0.5 }}>•</span>
           <span>{durationLabel}</span>
         </div>
       </div>
@@ -484,17 +488,18 @@ export function TodPoster({
           src="/app/assets/img/catalog/tod-icon.webp"
           alt="TOD by beIN"
           style={{
-            width: "82%",
-            maxWidth: 165,
+            width: "80%",
+            maxWidth: 140,
             height: "auto",
             objectFit: "contain",
-            filter: "drop-shadow(0 8px 20px rgba(0,0,0,0.5))",
+            filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.5))",
           }}
         />
       </div>
 
       {/* Bottom: Official Plan Name & Screen Specifications */}
       <div
+        className="tod-poster-bottom"
         style={{
           width: "100%",
           position: "relative",
@@ -503,17 +508,17 @@ export function TodPoster({
           flexDirection: "column",
           alignItems: "center",
           textAlign: "center",
-          background: "rgba(10, 3, 28, 0.55)",
+          background: "rgba(10, 3, 28, 0.65)",
           backdropFilter: "blur(6px)",
-          border: "1px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: 8,
-          padding: "7px 10px",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
+          borderRadius: 6,
+          padding: "3px 6px",
         }}
       >
-        <div style={{ color: "#ffffff", fontWeight: 900, fontSize: 13.5, letterSpacing: 0.4, fontFamily: "'Tajawal', sans-serif" }}>
+        <div style={{ color: "#ffffff", fontWeight: 900, fontSize: 11, letterSpacing: 0.3, fontFamily: "'Tajawal', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%" }}>
           {planTitle}
         </div>
-        <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 10.5, fontWeight: 700, marginTop: 2, fontFamily: "'Tajawal', sans-serif" }}>
+        <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 8.5, fontWeight: 700, marginTop: 1, fontFamily: "'Tajawal', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%" }}>
           {planSubtitle}
         </div>
       </div>
