@@ -582,6 +582,65 @@ export function formatInternationalWhatsApp(
   };
 }
 
+/**
+ * Converts any international or full phone into clean local display digits (e.g. +962797192051 -> 0797192051).
+ */
+export function toLocalPhoneDisplay(phone?: string | null): string {
+  if (!phone) return "";
+  const raw = String(phone).trim();
+  if (!raw) return "";
+
+  // If already in standard local format like 079... or 05...
+  if (raw.startsWith("0")) return raw;
+
+  // Jordan
+  if (raw.startsWith("+962")) {
+    const rest = raw.slice(4).replace(/^0+/, "");
+    return `0${rest}`;
+  }
+  if (raw.startsWith("00962")) {
+    const rest = raw.slice(5).replace(/^0+/, "");
+    return `0${rest}`;
+  }
+  if (raw.startsWith("962") && raw.length >= 11) {
+    const rest = raw.slice(3).replace(/^0+/, "");
+    return `0${rest}`;
+  }
+
+  // Saudi Arabia
+  if (raw.startsWith("+966")) {
+    const rest = raw.slice(4).replace(/^0+/, "");
+    return `0${rest}`;
+  }
+  if (raw.startsWith("00966")) {
+    const rest = raw.slice(5).replace(/^0+/, "");
+    return `0${rest}`;
+  }
+
+  // UAE
+  if (raw.startsWith("+971")) {
+    const rest = raw.slice(4).replace(/^0+/, "");
+    return `0${rest}`;
+  }
+  if (raw.startsWith("00971")) {
+    const rest = raw.slice(5).replace(/^0+/, "");
+    return `0${rest}`;
+  }
+
+  // Generic match by registered country dial codes
+  if (raw.startsWith("+")) {
+    for (const c of COUNTRIES) {
+      if (c.dialCode !== "+" && raw.startsWith(c.dialCode)) {
+        const rest = raw.slice(c.dialCode.length).replace(/^0+/, "");
+        const prefix = c.localPrefix || "";
+        return prefix && !rest.startsWith(prefix) ? `${prefix}${rest}` : rest;
+      }
+    }
+  }
+
+  return raw;
+}
+
 export type CountryPhoneInputProps = {
   value: string;
   country?: CountryInfo;

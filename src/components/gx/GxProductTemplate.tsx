@@ -675,6 +675,23 @@ export function GxProductTemplate({
     return true;
   }, [activeVariant.region, product.region, userCountry.code]);
 
+  // Fortnite detection
+  const isFortnite = useMemo(() => {
+    return product.slug === "fortnite" || (product.slug || "").includes("fortnite");
+  }, [product.slug]);
+
+  // Fortnite V-Bucks Dynamic Tier Styling
+  const getVbucksTierStyle = (cartId?: string | null) => {
+    if (!isFortnite) return null;
+    const cid = (cartId || "").toLowerCase();
+    if (cid.includes("800") || cid === "fn-vb-800") return { tier: 800, color: "#10b981", glow: "rgba(16, 185, 129, 0.45)", label: "800 V-Bucks" };
+    if (cid.includes("2400") || cid === "fn-vb-2400") return { tier: 2400, color: "#3b82f6", glow: "rgba(59, 130, 246, 0.45)", label: "2,400 V-Bucks" };
+    if (cid.includes("4500") || cid === "fn-vb-4500") return { tier: 4500, color: "#a855f7", glow: "rgba(168, 85, 247, 0.45)", label: "4,500 V-Bucks" };
+    if (cid.includes("12500") || cid === "fn-vb-12500") return { tier: 12500, color: "#f59e0b", glow: "rgba(245, 158, 11, 0.45)", label: "12,500 V-Bucks" };
+    return null;
+  };
+  const activeVbTier = useMemo(() => getVbucksTierStyle(activeVariant.cartId), [isFortnite, activeVariant.cartId]);
+
   // Poster Component: Pure, clean cover art without text labels or overlays (Driffle style)
   const renderPoster = () => {
     const coverSrc =
@@ -686,7 +703,20 @@ export function GxProductTemplate({
       }) || product.imageUrl || product.iconImage || "/app/assets/img/catalog/tod-standard-card.jpg";
 
     return (
-      <div className="driffle-poster-inner clean-image-poster">
+      <div
+        className="driffle-poster-inner clean-image-poster"
+        style={
+          activeVbTier
+            ? {
+                borderColor: activeVbTier.color,
+                boxShadow: `0 0 35px ${activeVbTier.glow}`,
+                borderRadius: 18,
+                borderWidth: 2,
+                borderStyle: "solid",
+              }
+            : undefined
+        }
+      >
         <img
           src={coverSrc}
           alt={name}
@@ -944,10 +974,7 @@ export function GxProductTemplate({
     );
   }, [isYouTube, activeVariant.deliveryType, deliveryInfo.type, product.deliveryType, product.slug, activeVariant.cartId]);
 
-  // Fortnite & Valorant detection:
-  const isFortnite = useMemo(() => {
-    return product.slug === "fortnite" || (product.slug || "").includes("fortnite");
-  }, [product.slug]);
+  // Valorant detection:
 
   const isValorant = useMemo(() => {
     return product.slug === "valorant" || (product.slug || "").includes("valorant");
@@ -1061,89 +1088,35 @@ export function GxProductTemplate({
           : "🔒 100% Safe & Private: Only your public profile or post link is required to complete the service safely.",
       ];
     }
-    if (deliveryInfo.type === "link") {
-      return [
-        ar
-          ? "هذا المنتج مخصص للتفعيل الفوري عبر رابط رسمي معتمد ومباشر."
-          : "This product is activated directly via an official and direct activation link.",
-        ar
-          ? "لا يُستخدم هذا المنتج لتمديد اشتراك قائم؛ يُشترط التفعيل عند انتهاء اشتراكك الحالي أو على حساب مؤهل."
-          : "Cannot be used to extend an active subscription. Redeem after current plan expires.",
-        ar
-          ? "يُرجى فتح الرابط واستكمال التفعيل خلال 24 ساعة من استلام الطلب لضمان الصلاحية التامة."
-          : "Redeem within 24 hours of delivery as the activation link expires after this period.",
-        ar
-          ? "الاشتراك رسمي ويدعم الوصول لجميع المزايا والأدوات المتقدمة في المنصة دون أي قيود."
-          : "Eligible for personal accounts with full uninterrupted access to all pro features.",
-      ];
-    }
-    if (deliveryInfo.type === "code") {
-      return [
-        ar
-          ? "مفتاح تفعيل رقمي أصلي 100% يتم إرساله لك فوراً بعد إتمام الدفع."
-          : "100% genuine digital activation key delivered instantly after payment.",
-        ar
-          ? "المفتاح صالح للاستخدام والتنشيط الدائم على جهاز واحد أو حسب ترخيص المنتج."
-          : "Key is valid for permanent activation on one PC or as specified by product license.",
-        ar
-          ? "يمكنك ربط الترخيص بحسابك الشخصي على المنصة الرسمية لسهولة إعادة التثبيت مستقبلاً."
-          : "Can be bound to your personal account on the official portal for easy reinstall.",
-      ];
-    }
-    if (deliveryInfo.type === "account") {
-      return [
-        ar
-          ? "حساب خاص وجديد بالكامل يتم تسليم بياناته (إيميل وباسورد) فور إتمام الطلب."
-          : "Fresh dedicated account delivered with full credentials immediately.",
-        ar
-          ? "يمكنك تغيير كلمة المرور والبريد الاحتياطي لتأمين الحساب باسمك وبياناتك الخاصة."
-          : "You can freely change password and recovery settings to secure it.",
-        ar
-          ? "ضمان رسمي طوال فترة الاشتراك مع دعم فني مستمر لمعالجة أي استفسارات."
-          : "Full warranty covering the entire duration with 24/7 technical support.",
-      ];
-    }
-    return [
-      ar
-        ? "شحن رسمي ومباشر داخل حسابك بأعلى معايير الأمان والحماية."
-        : "Direct safe top-up into your official account with maximum security.",
-      ar
-        ? "يتم التنفيذ السريع في غضون دقائق معدودة عبر فريق العمل المتخصص."
-        : "Processed rapidly within minutes by our dedicated support agents.",
-    ];
+    return [];
   }, [deliveryInfo.type, isSteamGameAccount, isSocialProduct, isFollowerProduct, isLikeProduct, isValorant, isFortnite, isYouTube, isYouTubeAccount, ar]);
 
+  const displayNoticeList = useMemo(() => {
+    // 1. Prioritize database importantNotes
+    if (product.importantNotes && Array.isArray(product.importantNotes) && product.importantNotes.length > 0) {
+      const clean = product.importantNotes.filter((n: string) => {
+        const text = n.trim();
+        // Drop pure marketing fluff that doesn't state conditions or rules
+        if (text === "شحن رسمي وآمن 100%" || text === "تنفيذ سريع" || text === "ضمان ذهبي" || text === "بائع موثوق وضمان رسمي 100%") {
+          return false;
+        }
+        return true;
+      });
+      if (clean.length > 0) return clean;
+    }
+    // 2. Specific contextual conditions
+    return noticePoints;
+  }, [product.importantNotes, noticePoints]);
+
   const isNoticeHidden = useMemo(() => {
-    // 1. Explicitly hide for TOD as requested by user ("فمثلا منتج تود ما اله داعي التعليمات الهامة هاي شيلها")
+    // 1. Explicitly hide for TOD
     if (isTod) return true;
     // 2. Explicitly hide if product deliveryDetails specifies hide_important_notes
     if (product.deliveryDetails && (product.deliveryDetails as any).hide_important_notes) return true;
-    // 3. If product has explicit empty importantNotes array
-    if (Array.isArray(product.importantNotes) && product.importantNotes.length === 0) return true;
-
-    // 4. Products that legitimately need a critical warning:
-    // - Steam Game Account (critical: avoid changing region, credentials sent in inventory, etc.)
-    // - YouTube Premium Family invite (critical: 12-month Google family group switch limit)
-    // - Social media followers/likes (critical: public profile required, natural drop compensation)
-    // - Any product that has explicit custom importantNotes defined in the database
-    const hasCustomNotes = Array.isArray(product.importantNotes) && product.importantNotes.length > 0;
-    if (isSteamGameAccount || isYouTube || isSocialProduct || isFollowerProduct || isLikeProduct || hasCustomNotes) {
-      return false;
-    }
-
-    // For all ordinary products (TOD, Fortnite, Gift Cards, standard software keys, generic codes), DO NOT show the notice box!
-    return true;
-  }, [isTod, product.deliveryDetails, product.importantNotes, isSteamGameAccount, isYouTube, isSocialProduct, isFollowerProduct, isLikeProduct]);
-
-  const displayNoticeList = useMemo(() => {
-    if (isSteamGameAccount) {
-      return noticePoints;
-    }
-    if (product.importantNotes && product.importantNotes.length > 0) {
-      return product.importantNotes;
-    }
-    return noticePoints;
-  }, [isSteamGameAccount, product.importantNotes, noticePoints]);
+    // 3. If there are no terms or conditions, hide the notice box completely
+    if (!displayNoticeList || displayNoticeList.length === 0) return true;
+    return false;
+  }, [isTod, product.deliveryDetails, displayNoticeList]);
 
   // Contextual Redeem Steps
   const redeemSteps = useMemo(() => {
@@ -1514,9 +1487,6 @@ export function GxProductTemplate({
             </span>
             <div className="driffle-price-main gx-price-main">
               <span className="driffle-price-val gx-price-val">{format(activePrice)}</span>
-              {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
-                <span className="driffle-price-old gx-price-old">{format(activeVariant.oldPrice)}</span>
-              )}
             </div>
             {(isSocialProduct || isFollowerProduct || isLikeProduct) && (
               <div className="driffle-price-note gx-price-note">
@@ -1935,7 +1905,6 @@ export function GxProductTemplate({
                   <span>⏱️</span>
                   <span>{ar ? "اختر الباقة / المدة" : "Select Duration / Plan"}</span>
                 </span>
-                <span className="driffle-var-region-tag gx-var-region-tag">{cleanRegion}</span>
               </div>
 
               {/* TOD Categorized Filter Tabs (TOD / TOD Mobile / TOD 4K) */}
@@ -1990,16 +1959,28 @@ export function GxProductTemplate({
                       product.slug
                     );
                     const vIsOutOfStock = vLimit !== null && vLimit <= 0;
+                    const vbTier = isFortnite ? getVbucksTierStyle(v.cartId) : null;
                     return (
                       <button
                         key={v.cartId}
                         type="button"
                         className={`driffle-var-card gx-var-card ${isActive ? "is-active" : ""} ${vIsOutOfStock ? "is-sold-out" : ""}`}
+                        style={
+                          isActive && vbTier
+                            ? { borderColor: vbTier.color, boxShadow: `0 0 18px ${vbTier.glow}` }
+                            : undefined
+                        }
                         onClick={() => handleSelectVariant(v.cartId)}
                       >
                         <div className="driffle-var-top gx-var-top">
-                          <span className="driffle-var-name gx-var-name">{vLabel}</span>
-                          <div className="driffle-var-radio gx-var-radio" />
+                          <span className="driffle-var-name gx-var-name" style={isActive && vbTier ? { color: vbTier.color } : undefined}>
+                            {vbTier && <span style={{ marginInlineEnd: 6, color: vbTier.color }}>●</span>}
+                            {vLabel}
+                          </span>
+                          <div
+                            className="driffle-var-radio gx-var-radio"
+                            style={isActive && vbTier ? { borderColor: vbTier.color, background: vbTier.color } : undefined}
+                          />
                         </div>
                         {vIsOutOfStock && (
                           <div style={{ margin: "4px 0" }}>
@@ -2016,12 +1997,7 @@ export function GxProductTemplate({
                           ) : (
                             <>
                               <span>{ar ? "السعر:" : "Price:"} </span>
-                              <strong>{format(v.price)}</strong>
-                              {v.oldPrice && v.oldPrice > v.price && (
-                                <span style={{ textDecoration: "line-through", color: "#64748b", fontSize: 11, marginInlineStart: 6 }}>
-                                  {format(v.oldPrice)}
-                                </span>
-                              )}
+                              <strong style={isActive && vbTier ? { color: vbTier.color } : undefined}>{format(v.price)}</strong>
                             </>
                           )}
                         </div>
@@ -2461,12 +2437,7 @@ export function GxProductTemplate({
                 {ar ? "نفدت الكمية" : "Sold Out"}
               </span>
             ) : (
-              <>
-                <span className="gx-sticky-current-price">{format(activePrice)}</span>
-                {activeVariant.oldPrice && activeVariant.oldPrice > activePrice && (
-                  <span className="gx-sticky-old-price">{format(activeVariant.oldPrice)}</span>
-                )}
-              </>
+              <span className="gx-sticky-current-price">{format(activePrice)}</span>
             )}
           </div>
 

@@ -16,7 +16,6 @@ export type ProductRequirementType = "whatsapp" | "email" | "link" | "id" | "non
 export function getRememberedWhatsApp(): string {
   if (typeof window === "undefined") return "";
   try {
-    if (!isRememberContactEnabled()) return "";
     const saved = localStorage.getItem(WHATSAPP_STORAGE_KEY);
     if (saved && saved.trim()) return saved.trim();
 
@@ -87,7 +86,10 @@ export function isRememberContactEnabled(): boolean {
   if (typeof window === "undefined") return false;
   try {
     const val = localStorage.getItem(REMEMBER_ENABLED_KEY);
-    if (val === null) return false;
+    if (val === null) {
+      const saved = localStorage.getItem(WHATSAPP_STORAGE_KEY);
+      return !!(saved && saved.trim());
+    }
     return val === "true";
   } catch {
     return false;

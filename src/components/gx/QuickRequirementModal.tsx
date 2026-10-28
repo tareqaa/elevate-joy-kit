@@ -13,7 +13,12 @@ import {
   type ProductRequirementType,
 } from "@/lib/gx/contact-storage";
 import { MessageCircle, Mail, Link as LinkIcon, Check, X, ShieldCheck } from "lucide-react";
-import { CountryPhoneInput } from "@/lib/gx/country-phone";
+import {
+  CountryPhoneInput,
+  toLocalPhoneDisplay,
+  formatInternationalWhatsApp,
+  detectUserCountry,
+} from "@/lib/gx/country-phone";
 
 export const PROMPT_REQUIREMENT_EVENT = "gx:prompt-requirement";
 
@@ -56,13 +61,20 @@ export function QuickRequirementModal() {
 
       // Pre-fill remembered WhatsApp contact if available (activation email is always entered fresh)
       let initialVal = "";
+      let initialInt = "";
       if (d.requirementType === "whatsapp") {
-        initialVal = getRememberedWhatsApp();
+        const raw = getRememberedWhatsApp();
+        initialVal = toLocalPhoneDisplay(raw);
+        if (initialVal) {
+          const userCountry = detectUserCountry();
+          initialInt = formatInternationalWhatsApp(initialVal, userCountry).fullInternational;
+        }
       }
 
       setValue(initialVal);
+      setFormattedWhatsApp(initialInt);
       setError(false);
-      setRememberMe(isRememberContactEnabled());
+      setRememberMe(isRememberContactEnabled() || !!initialVal);
       setOpen(true);
     };
 
@@ -188,15 +200,18 @@ export function QuickRequirementModal() {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: "min(460px, 100%)",
+          width: "min(460px, calc(100vw - 24px))",
+          maxHeight: "92vh",
+          overflowY: "auto",
           background: "linear-gradient(165deg, #131722 0%, #0c0f17 100%)",
           border: isWhatsApp ? "1.5px solid rgba(16, 185, 129, 0.35)" : "1.5px solid rgba(0, 229, 255, 0.3)",
           borderRadius: 20,
-          padding: "26px 22px 22px",
+          padding: "24px 18px 18px",
           boxShadow: "0 25px 70px rgba(0, 0, 0, 0.65), 0 0 35px rgba(0, 229, 255, 0.08)",
           color: "#f8fafc",
           position: "relative",
           direction: ar ? "rtl" : "ltr",
+          boxSizing: "border-box",
         }}
       >
         {/* Close Button */}

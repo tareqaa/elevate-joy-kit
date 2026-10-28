@@ -351,23 +351,51 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
       { icon: "🛡️", title: "ضمان استبدال", desc: "لو المفتاح صار فيه أي مشكلة خلال فترة الضمان، منستبدله فورًا." },
     ],
   },
+  "fortnite-crew": {
+    slug: "fortnite-crew",
+    name: "اشتراك فورتنايت كرو | Fortnite Crew",
+    nameAr: "اشتراك فورتنايت كرو | Fortnite Crew",
+    icon: "👑",
+    iconImg: "/app/assets/img/fortnite-f-icon.jpg",
+    imageUrl: "/app/assets/img/fortnite-f-icon.jpg",
+    thumbBg: "linear-gradient(145deg,#0d1a30,#080d18)",
+    category: "الألعاب",
+    tagline: "اشتراك شهري وباتل باس رسمي مع 1000 V-Bucks وسكنات حصرية",
+    description: "اشتراك Fortnite Crew الرسمي يشمل الباتل باس، 1000 وحدة V-Bucks شهريًا، وحزمة أزياء وسكنات حصرية دائمة تُضاف لحسابك مباشرة.",
+    identifierLabel: "رقم الواتساب للتواصل والتفعيل",
+    identifierPlaceholder: "07XXXXXXXX",
+    plans: [
+      { id: "fn-crew-1m", label: "Fortnite Crew — شهر واحد", price: 5, oldPrice: 6, imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473" },
+      { id: "fn-crew-3m", label: "Fortnite Crew — 3 أشهر", price: 12, oldPrice: 15, imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473" },
+    ],
+    crewPlans: [
+      { id: "fn-crew-1m", label: "Fortnite Crew — شهر واحد", price: 5, oldPrice: 6, imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473" },
+      { id: "fn-crew-3m", label: "Fortnite Crew — 3 أشهر", price: 12, oldPrice: 15, imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473" },
+    ],
+    features: [
+      { icon: "🎽", title: "طقم Crew Pack حصري شهريًا", desc: "تشكيلة (Outfit) حصرية مع إكسسواراتها تتجدد كل شهر، وما بتنباع بشكل منفصل بأي مكان تاني." },
+      { icon: "🎫", title: "Battle Pass الموسم الحالي", desc: "يشمل اشتراكك Battle Pass الموسم الحالي تلقائيًا طول ما اشتراكك فعّال." },
+      { icon: "💰", title: "1000 وحدة V-Bucks شهريًا", desc: "رصيد V-Bucks بينضاف لحسابك كل شهر طول فترة الاشتراك، تصرفه على أي شي بالمتجر." },
+    ],
+  },
   fortnite: {
     slug: "fortnite",
-    name: "فورت نايت",
+    name: "فورت نايت — شحن V-Bucks",
+    nameAr: "فورت نايت — شحن V-Bucks",
     icon: "🪂",
     iconImg: "/app/assets/img/fortnite-logo.png",
     imageUrl: "/app/assets/img/fortnite-logo.png",
     thumbBg: "linear-gradient(145deg,#0d1a30,#080d18)",
     category: "الألعاب",
-    tagline: "كرو شهري ورصيد V-Bucks يوصلك فورًا",
-    description: "اشترك بالـ Crew الشهري أو اشحن رصيد V-Bucks مباشرة على حساب Epic Games تبعك.",
+    tagline: "شحن رصيد V-Bucks رسمي ومباشر لحسابك في Epic Games",
+    description: "اشحن رصيد V-Bucks الرسمي لحسابك في Epic Games مباشرة بأفضل الأسعار وأسرع تفعيل.",
     identifierLabel: "رقم الواتساب للتواصل والتفعيل",
     identifierPlaceholder: "ضع رقم الواتس اب الخاص بك لسهولة التواصل والتفعيل (مثال: 0791234567)",
     delivery: {
-      intro: "بعد تأكيد طلبك، رح نتواصل معك مباشرة عبر الواتساب لتأكيد وشحن رصيد V-Bucks أو تفعيل الكرو بكل سهولة وأمان دون أي تعقيد:",
+      intro: "بعد تأكيد طلبك، رح نتواصل معك مباشرة عبر الواتساب لتأكيد وشحن رصيد V-Bucks بكل سهولة وأمان دون أي تعقيد:",
       requirements: [
         "رقم الواتساب الخاص بك للتواصل المباشر مع فريق الدعم والتفعيل",
-        "تأكيد باقة V-Bucks أو الكرو المطلوب شحنها",
+        "تأكيد باقة V-Bucks المطلوب شحنها",
         "تفعيل رسمي ومضمون 100% بأسرع وقت",
       ],
       safety: [
@@ -382,9 +410,11 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
         "بيشتغل لكل مناطق العالم",
       ],
     },
-    crewPlans: [
-      { id: "fn-crew", label: "Fortnite Crew — شهر واحد", price: 4, oldPrice: 6, tag: "يشمل 1000 V-Bucks", imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473" },
-      { id: "fn-crew-3", label: "Fortnite Crew — 3 أشهر", price: 9, oldPrice: 12, tag: "الأفضل قيمة", imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473" },
+    plans: [
+      { id: "fn-vb-800", label: "800 وحدة V-Bucks", price: 5, oldPrice: 7, imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_800_EGS_Portrait_1200x1600_1200x1600-79529d8c20514e82ae2ebce58991b912" },
+      { id: "fn-vb-2400", label: "2400 وحدة V-Bucks", price: 12, oldPrice: 16, imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_2400_EGS_Landscape_2560x1440_2560x1440-e51d802c9d414431973ae3e2ba60528d" },
+      { id: "fn-vb-4500", label: "4500 وحدة V-Bucks", price: 19, oldPrice: 25, imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_4500_EGS_Landscape_2560x1440_2560x1440-799cfafb76bf4ae795fece5e4c0de4a3" },
+      { id: "fn-vb-12500", label: "12500 وحدة V-Bucks", price: 38, oldPrice: 49, imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_12500_EGS_Portrait_1200x1600_1200x1600-070f17d0f6a34e9180b2927c8c24c40e" },
     ],
     vbucksPlans: [
       { id: "fn-vb-800", label: "800 وحدة V-Bucks", price: 5, oldPrice: 7, imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_800_EGS_Portrait_1200x1600_1200x1600-79529d8c20514e82ae2ebce58991b912" },
@@ -393,9 +423,9 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
       { id: "fn-vb-12500", label: "12500 وحدة V-Bucks", price: 38, oldPrice: 49, imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_12500_EGS_Portrait_1200x1600_1200x1600-070f17d0f6a34e9180b2927c8c24c40e" },
     ],
     features: [
-      { icon: "🎽", title: "طقم Crew Pack حصري شهريًا", desc: "تشكيلة (Outfit) حصرية مع إكسسواراتها تتجدد كل شهر، وما بتنباع بشكل منفصل بأي مكان تاني." },
-      { icon: "🎫", title: "Battle Pass الموسم الحالي", desc: "يشمل اشتراكك Battle Pass الموسم الحالي تلقائيًا طول ما اشتراكك فعّال." },
-      { icon: "💰", title: "1000 وحدة V-Bucks شهريًا", desc: "رصيد V-Bucks بينضاف لحسابك كل شهر طول فترة الاشتراك، تصرفه على أي شي بالمتجر." },
+      { icon: "💰", title: "رصيد V-Bucks فوري", desc: "رصيد V-Bucks بينضاف لحسابك مباشرة تصرفه على أي سكن أو رقصة أو باتل باس بالمتجر." },
+      { icon: "⚡", title: "شحن آمن ورسمي", desc: "شحن معتمد 100% عبر طرق دفع نظامية دون أي مخاطر على حسابك." },
+      { icon: "🎮", title: "يعمل على كل الأجهزة", desc: "الرصيد يظهر في حسابك ويشتغل على PC وبلايستيشن وإكسبوكس." },
     ],
   },
   "adobe-express": {
@@ -635,6 +665,33 @@ export const PRODUCTS_CATALOG: Record<string, Product> = {
       { icon: "🔑", title: "كود تفعيل رسمي عالمي", desc: "كود رقمي أصلي 100% يتم استرداده مباشرة على حسابك في Duolingo." },
     ],
   },
+  "free-fire-diamonds": {
+    slug: "free-fire-diamonds",
+    name: "شحن جواهر فري فاير (Garena Free Fire)",
+    nameAr: "شحن جواهر فري فاير | فوري ورسمي (عرض الدبل)",
+    icon: "💎",
+    iconImg: "/app/assets/img/free-fire-logo.png",
+    imageUrl: "/app/assets/img/free-fire-cover.jpg",
+    thumbBg: "linear-gradient(145deg, #3d1b06, #1a0a02)",
+    category: "الألعاب",
+    categoryAr: "الألعاب",
+    tagline: "شحن جواهر فري فاير فوري ورسمي بكود غارينا للشرق الأوسط",
+    description: "شحن جواهر فري فاير (Garena Free Fire Diamonds) الرسمية مع بونص الدبل الإضافي! افتح الفاير باس والشخصيات وسكنات الأسلحة النادرة وتفوق في ساحات المعركة.",
+    deliveryMethod: "كود رقمي رسمي يتم تفعيله وشحنه فوراً بالمعرف (Player ID) عبر موقع قارينا الرسمي shop2game.com.",
+    plans: [
+      { id: "ff-me-420", label: "420 جوهرة (عرض الدبل 💎)", price: 2.50, oldPrice: 3.50 },
+      { id: "ff-me-620", label: "620 جوهرة (عرض الدبل 💎)", price: 4.00, oldPrice: 5.50 },
+      { id: "ff-me-1060", label: "1060 جوهرة (عرض الدبل 💎)", price: 5.00, oldPrice: 7.00 },
+      { id: "ff-me-2160", label: "2160 جوهرة (عرض الدبل 💎)", price: 9.50, oldPrice: 13.00 },
+      { id: "ff-me-4400", label: "4400 جوهرة (عرض الدبل 💎)", price: 19.00, oldPrice: 26.00 },
+      { id: "ff-me-11200", label: "11200 جوهرة (عرض الدبل 💎)", price: 42.00, oldPrice: 55.00 },
+    ],
+    features: [
+      { icon: "💎", title: "عرض الدبل الحصري", desc: "احصل على ضعف الجواهر مع رصيد إضافي مضاعف لأول شحنة." },
+      { icon: "⚡", title: "تسليم وشحن فوري", desc: "أكواد رقمية معتمدة ورسمية 100% من شركة Garena لتفعيل فوري بالمعرف." },
+      { icon: "🛡️", title: "شحن آمن ورسمي", desc: "شحن مضمون وخالٍ من أي مخاطر حظر لحسابك." },
+    ],
+  },
 };
 
 export type Denomination = { id: string; value: string; price: number };
@@ -688,9 +745,11 @@ export const GIFT_CARDS_CATALOG: Record<string, GiftCard> = {
     cardGradient: "linear-gradient(135deg,#0e4d0e,#107c10 45%,#4fdc4f)",
     regions: [
       { code: "tr", flag: "🇹🇷", name: "تركيا (Turkey)", denominations: [
-        { id: "xbox-tr-50", value: "50 TRY", price: 1.15 },
-        { id: "xbox-tr-100", value: "100 TRY", price: 2.30 },
-        { id: "xbox-tr-300", value: "300 TRY", price: 6.50 },
+        { id: "xbox-tr-500", value: "500 TRY", price: 9.5 },
+        { id: "xbox-tr-1000", value: "1000 TRY", price: 17 },
+        { id: "xbox-tr-1500", value: "1500 TRY", price: 25 },
+        { id: "xbox-tr-3000", value: "3000 TRY", price: 47.8 },
+        { id: "xbox-tr-5000", value: "5000 TRY", price: 77 },
       ]},
       { code: "us", flag: "🇺🇸", name: "أمريكا (USA)", denominations: [
         { id: "xbox-us-5", value: "5$", price: 4 },
@@ -700,6 +759,22 @@ export const GIFT_CARDS_CATALOG: Record<string, GiftCard> = {
         { id: "xbox-us-25", value: "25$", price: 19 },
         { id: "xbox-us-50", value: "50$", price: 36 },
         { id: "xbox-us-100", value: "100$", price: 71 },
+      ]},
+    ],
+  },
+  "razer-gold": {
+    name: "Razer Gold Gift Cards",
+    icon: "🪙",
+    iconImg: "/app/assets/img/razer-logo.png",
+    accent: "#00e700",
+    cardGradient: "linear-gradient(135deg,#052b0d,#00e700 45%,#68ff68)",
+    regions: [
+      { code: "us", flag: "🇺🇸", name: "أمريكا (USA)", denominations: [
+        { id: "razer-us-10", value: "10$", price: 8 },
+        { id: "razer-us-20", value: "20$", price: 15 },
+        { id: "razer-us-50", value: "50$", price: 36 },
+        { id: "razer-us-60", value: "60$", price: 44 },
+        { id: "razer-us-100", value: "100$", price: 71 },
       ]},
     ],
   },
@@ -745,7 +820,7 @@ export type CategoryLink = {
 
 export const CATEGORY_LINKS: CategoryLink[] = [
   { slug: "subscriptions", name: "الاشتراكات", nameEn: "Subscriptions", icon: "⚡", type: "group", accent: "#8b5cf6", bg: "linear-gradient(145deg, rgba(139,92,246,0.18), rgba(139,92,246,0.04))", desc: "اشتراكات المشاهدة والألعاب والترفيه", descEn: "Streaming, Gaming & Entertainment" },
-  { slug: "social-media", name: "السوشال ميديا", nameEn: "Social Media", icon: "📱", type: "group", accent: "#0088ff", bg: "linear-gradient(145deg, rgba(0,136,255,0.18), rgba(0,136,255,0.04))", desc: "خدمات زيادة المتابعين والتفاعل الحقيقي", descEn: "Real Followers & Engagement" },
+  { slug: "social-media", name: "السوشال ميديا", nameEn: "Social Media", icon: "📱", type: "group", accent: "#0088ff", bg: "linear-gradient(145deg, rgba(0,136,255,0.18), rgba(0,136,255,0.04))", desc: "خدمات زيادة المتابعين والتفاعل", descEn: "Followers & Engagement" },
   { slug: "design", name: "البرامج والتطبيقات", nameEn: "Apps & Software", icon: "🧩", type: "group", accent: "#00e5ff", bg: "linear-gradient(145deg, rgba(0,229,255,0.16), rgba(0,229,255,0.04))", desc: "برامج وتطبيقات الإنتاجية والتصميم والحماية", descEn: "Productivity, Design & Utility Apps" },
   { slug: "games", name: "الألعاب", nameEn: "Games", icon: "🎮", type: "group", accent: "#05df72", bg: "linear-gradient(145deg, rgba(5,223,114,0.18), rgba(5,223,114,0.04))", desc: "ألعاب PC والكونسول وشحن الألعاب", descEn: "PC & Console Games & Top-ups" },
   { slug: "gift-cards", name: "بطاقات الهدايا", nameEn: "Gift Cards", icon: "🎁", type: "group", accent: "#ff2d78", bg: "linear-gradient(145deg, rgba(255,45,120,0.16), rgba(255,45,120,0.04))", desc: "بطاقات شحن رقمية وتسليم فوري للأكواد", descEn: "Digital Gift Cards & Instant Delivery" },

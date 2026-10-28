@@ -380,7 +380,6 @@ function VariantCard({
                 <span className="prod-new" style={theme ? { color: theme.accent } : undefined}>
                   {format(v.price)}
                 </span>
-                {discountOf(v) > 0 && <span className="prod-discount-pill">-{discountOf(v)}%</span>}
               </div>
             </div>
             <BuyActions
@@ -499,7 +498,6 @@ export function MultiAccountTemplate({ product }: { product: CatalogProduct }) {
                   }}
                 >
                   <div className="sp-check">✓</div>
-                  {discount > 0 && <div className="sp-discount">{t("snap.save_pct")} {discount}%</div>}
                   <div className="sp-icon">
                     {product.slug === "snapchat" ? (
                       <img src="/app/assets/img/snapchat-logo.png" alt="" style={{ width: 34, height: 34, objectFit: "contain", borderRadius: 6 }} />

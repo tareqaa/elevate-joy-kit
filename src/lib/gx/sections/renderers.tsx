@@ -385,12 +385,12 @@ export function CategoriesRenderer({ data }: { data: CategoriesData }) {
       en: "Productivity, Design & Utility Apps",
     },
     "social-media": {
-      ar: "خدمات زيادة المتابعين والتفاعل الحقيقي",
-      en: "Real Followers & Engagement",
+      ar: "خدمات زيادة المتابعين والتفاعل",
+      en: "Followers & Engagement",
     },
     social: {
-      ar: "خدمات زيادة المتابعين والتفاعل الحقيقي",
-      en: "Real Followers & Engagement",
+      ar: "خدمات زيادة المتابعين والتفاعل",
+      en: "Followers & Engagement",
     },
     "gift-cards": {
       ar: "بطاقات شحن رقمية وتسليم فوري للأكواد",
