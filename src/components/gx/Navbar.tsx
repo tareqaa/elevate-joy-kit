@@ -376,7 +376,7 @@ export function Navbar() {
           for (const cp of raw.crewPlans) {
             out.push({
               id: cp.id,
-              slug: "fortnite",
+              slug: "fortnite-crew",
               type: "product",
               nameAr: `فورت نايت — ${cp.label}`,
               nameEn: `Fortnite — ${cp.label}`,
@@ -396,7 +396,7 @@ export function Navbar() {
               icon: "🪂",
               thumbBg: "linear-gradient(135deg,#2e1065,#170736)",
               variantLabels: ["فورتنايت", "فورت نايت", "fortnite", "crew", "كرو", "اشتراك كرو", cp.label],
-              link: `/product/fortnite#${cp.id}`,
+              link: "/product/fortnite-crew",
             });
           }
         }

@@ -218,8 +218,8 @@ function ProductPage() {
           link: `/product/fortnite-crew`,
           nameAr: is3m ? "فورت نايت كرو — 3 أشهر" : "فورت نايت كرو — شهر",
           nameEn: is3m ? "Fortnite Crew — 3 Months" : "Fortnite Crew — 1 Month",
-          price: is3m ? 9 : 4,
-          oldPrice: is3m ? 12 : 6,
+          price: is3m ? 12 : 5,
+          oldPrice: is3m ? 15 : 7,
           imageUrl: "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
           categorySlug: "games",
         });

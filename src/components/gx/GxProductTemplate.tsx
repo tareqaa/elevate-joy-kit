@@ -180,14 +180,26 @@ export function GxProductTemplate({
       // Exclude Crew variants from V-Bucks page
       raw = raw.filter((v) => !v.cartId.toLowerCase().startsWith("fn-crew"));
     } else if (product.slug === "fortnite-crew") {
-      // Dedicated Fortnite Crew variants (1 Month = 4 JD, 3 Months = 9 JD)
+      if (raw.length > 0) {
+        return raw.map((v) => {
+          const is3m = v.cartId.includes("3");
+          return {
+            ...v,
+            price: typeof v.price === "number" && v.price > 0 ? v.price : (is3m ? 12.0 : 5.0),
+            oldPrice: typeof v.oldPrice === "number" && v.oldPrice > 0 ? v.oldPrice : (is3m ? 15.0 : 7.0),
+            tagAr: v.tagAr || (is3m ? "👑 أفضل قيمة" : "يشمل 1000 V-Bucks"),
+            tagEn: v.tagEn || (is3m ? "Best Value" : "Includes 1000 V-Bucks"),
+          };
+        });
+      }
+      // Dedicated Fortnite Crew variants (1 Month = 5 JD, 3 Months = 12 JD)
       return [
         {
           cartId: "fn-crew-1m",
           labelAr: "اشتراك شهر واحد (1 Month)",
           labelEn: "1 Month Subscription",
-          price: 4.0,
-          oldPrice: 6.0,
+          price: 5.0,
+          oldPrice: 7.0,
           tagAr: "يشمل 1000 V-Bucks",
           tagEn: "Includes 1000 V-Bucks",
           planGroup: null,
@@ -198,8 +210,8 @@ export function GxProductTemplate({
           cartId: "fn-crew-3m",
           labelAr: "اشتراك 3 أشهر (3 Months)",
           labelEn: "3 Months Subscription",
-          price: 9.0,
-          oldPrice: 12.0,
+          price: 12.0,
+          oldPrice: 15.0,
           tagAr: "👑 أفضل قيمة",
           tagEn: "Best Value",
           planGroup: null,
