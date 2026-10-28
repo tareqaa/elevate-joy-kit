@@ -530,6 +530,11 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
 
   const makeBestsellerLink = (prodSlug: string, cId?: string | null) => {
     if (!prodSlug) return "/products";
+    const cleanId = (cId || "").toLowerCase();
+    const cleanSlug = (prodSlug || "").toLowerCase();
+    if (cleanId.startsWith("fn-crew") || cleanId.includes("crew") || cleanSlug === "fortnite-crew") {
+      return "/product/fortnite-crew";
+    }
     if (!cId || cId === prodSlug) return `/product/${prodSlug}`;
     return `/product/${prodSlug}?variant=${encodeURIComponent(cId)}`;
   };
@@ -550,7 +555,10 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
     if (snap && snap.nameAr && (snap.priceJod > 0 || dbPlan)) {
       const isEn = lang === "en";
       const name = isEn ? (snap.nameEn || snap.nameAr) : (snap.nameAr || snap.nameEn);
-      const prodSlug = snap.productSlug || (dbPlan?.product ?? "product");
+      let prodSlug = snap.productSlug || (dbPlan?.product ?? "product");
+      if (snap.cartId.toLowerCase().includes("crew") || prodSlug === "fortnite-crew") {
+        prodSlug = "fortnite-crew";
+      }
       const basePrice = dbPlan && typeof dbPlan.price === "number" && dbPlan.price > 0 ? dbPlan.price : snap.priceJod;
       const { price, oldPrice } = getLivePrice(snap.cartId, basePrice, snap.oldPriceJod);
 
@@ -572,10 +580,14 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
     }
 
     if (dbPlan) {
+      let prodSlug = dbPlan.product;
+      if (dbPlan.cartId.toLowerCase().includes("crew") || prodSlug === "fortnite-crew") {
+        prodSlug = "fortnite-crew";
+      }
       const { price, oldPrice } = getLivePrice(dbPlan.cartId, dbPlan.price, 0);
       return {
         cartId: dbPlan.cartId,
-        product: dbPlan.product,
+        product: prodSlug,
         name: dbPlan.name,
         icon: dbPlan.icon,
         bg: dbPlan.bg,
@@ -586,17 +598,21 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
         badge: null,
         region: dbPlan.region || null,
         deliveryType: dbPlan.deliveryType || null,
-        link: makeBestsellerLink(dbPlan.product, dbPlan.cartId),
+        link: makeBestsellerLink(prodSlug, dbPlan.cartId),
       };
     }
 
     // 2. Check static plan catalog via findPlanByCartId(cartId)
     const plan = findPlanByCartId(cartId);
     if (plan) {
+      let prodSlug = plan.product;
+      if (plan.cartId.toLowerCase().includes("crew") || prodSlug === "fortnite-crew") {
+        prodSlug = "fortnite-crew";
+      }
       const { price, oldPrice } = getLivePrice(plan.cartId, plan.price, 0);
       return {
         cartId: plan.cartId,
-        product: plan.product,
+        product: prodSlug,
         name: plan.name,
         icon: plan.icon,
         bg: plan.bg,
@@ -606,7 +622,7 @@ export function BestsellersRenderer({ data }: { data: BestsellersData }) {
         iconImage: plan.iconImage,
         region: plan.region || null,
         deliveryType: plan.deliveryType || null,
-        link: makeBestsellerLink(plan.product, plan.cartId),
+        link: makeBestsellerLink(prodSlug, plan.cartId),
       };
     }
 

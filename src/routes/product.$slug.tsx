@@ -1,6 +1,6 @@
 import { safeJsonLd } from "@/lib/gx/json-ld";
 import { useEffect } from "react";
-import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate, redirect } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { getCatalogProduct, getRelatedCatalogProducts } from "@/lib/gx/catalog.functions";
 import { ProductTemplate } from "@/components/gx/ProductTemplates";
@@ -16,6 +16,18 @@ export const Route = createFileRoute("/product/$slug")({
     cartId: typeof search.cartId === "string" ? search.cartId : undefined,
     id: typeof search.id === "string" ? search.id : undefined,
   }),
+  beforeLoad: ({ params, search }) => {
+    if (params.slug === "fortnite") {
+      const v = (search.variant || search.plan || search.cartId || search.id || "").toLowerCase();
+      if (v.includes("crew")) {
+        throw redirect({
+          to: "/product/$slug",
+          params: { slug: "fortnite-crew" },
+          replace: true,
+        });
+      }
+    }
+  },
   loader: async ({ params }) => {
     const product = await getCatalogProduct({ data: { slug: params.slug, bypassCache: true } });
     if (!product) throw notFound();
