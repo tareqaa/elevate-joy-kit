@@ -212,7 +212,11 @@ export function getProductCoverImage(
   if (cleanSlug.includes("duolingo") || cleanName.includes("duolingo") || cleanName.includes("دولينجو") || cleanName.includes("دولينقو")) {
     return "/app/assets/img/catalog/duolingo-super.png";
   }
-  if (cleanSlug.includes("tod") || cleanName.includes("tod") || cleanName.includes("تود")) {
+  if (cleanSlug.includes("autodesk") || cleanName.includes("autodesk") || cleanName.includes("أوتوديسك")) {
+    return "/app/assets/img/catalog/autodesk-cover.jpg";
+  }
+  const isExplicitTod = cleanSlug === "tod" || cleanSlug.startsWith("tod-") || cleanName.startsWith("tod") || cleanName.includes("تود") || cleanName.includes(" tod");
+  if (isExplicitTod && !cleanSlug.includes("autodesk")) {
     if (cleanSlug.includes("4k") || cleanName.includes("4k")) {
       return "/app/assets/img/catalog/tod-4k-card.jpg";
     }
@@ -225,7 +229,7 @@ export function getProductCoverImage(
     return "/app/assets/img/catalog/youtube-premium.jpg";
   }
   if (cleanSlug.includes("windows") || cleanName.includes("windows") || cleanName.includes("ويندوز")) {
-    return "/app/assets/img/windows-logo.png";
+    return "/app/assets/img/catalog/windows-cover.jpg";
   }
   if (cleanSlug.includes("microsoft") || cleanSlug.includes("office") || cleanSlug.includes("365") || cleanName.includes("microsoft") || cleanName.includes("office") || cleanName.includes("اوفيس") || cleanName.includes("مايكروسوفت")) {
     return "/app/assets/img/microsoft365-logo.png";

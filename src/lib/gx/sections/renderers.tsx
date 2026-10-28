@@ -221,6 +221,7 @@ export function HeroRenderer({ data }: { data: HeroData }) {
             <div className="hero-car-slide">
               <HeroGamesSlide />
             </div>
+
           </div>
 
           <div className="hero-car-dots" role="tablist">

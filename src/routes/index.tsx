@@ -8,7 +8,6 @@ import { useSiteSettings } from "@/lib/gx/site-settings";
 import { SECTION_REGISTRY } from "@/lib/gx/sections/registry";
 import { containerMaxWidth, sectionWrapperStyle, themeToCssVars, type HomeLayout, type Section } from "@/lib/gx/sections/types";
 import { AnimatedSection } from "@/components/gx/AnimatedSection";
-import { G2ADealsHero } from "@/components/gx/G2ADealsHero";
 
 
 const ORGANIZATION_SCHEMA = {
@@ -248,30 +247,25 @@ function Home() {
       />
 
       <div className="gx-home-root" style={themeVars}>
-        {!sections.some((s) => ["hero", "carousel"].includes(s.type)) && <G2ADealsHero />}
-        {sections.map((s, idx) => {
+        {sections.map((s) => {
           const def = SECTION_REGISTRY[s.type];
           if (!def) return null;
           const { Renderer } = def;
           const wrapStyle = sectionWrapperStyle(s.style);
           const maxW = containerMaxWidth(s.style?.container);
-          const isHero = ["hero", "carousel"].includes(s.type);
-          const isFirstHero = isHero && sections.findIndex((x) => ["hero", "carousel"].includes(x.type)) === idx;
           return (
-            <Fragment key={s.id}>
-              <AnimatedSection
-                animation={s.style?.animation ?? "none"}
-                duration={s.style?.animation_duration ?? 600}
-                delay={s.style?.animation_delay ?? 0}
-                style={wrapStyle}
-                dataAttrs={{ "data-section": s.type }}
-              >
-                <div style={{ maxWidth: maxW, margin: "0 auto", width: "100%" }}>
-                  <Renderer data={s.data} />
-                </div>
-              </AnimatedSection>
-              {isFirstHero && <G2ADealsHero />}
-            </Fragment>
+            <AnimatedSection
+              key={s.id}
+              animation={s.style?.animation ?? "none"}
+              duration={s.style?.animation_duration ?? 600}
+              delay={s.style?.animation_delay ?? 0}
+              style={wrapStyle}
+              dataAttrs={{ "data-section": s.type }}
+            >
+              <div style={{ maxWidth: maxW, margin: "0 auto", width: "100%" }}>
+                <Renderer data={s.data} />
+              </div>
+            </AnimatedSection>
           );
         })}
       </div>

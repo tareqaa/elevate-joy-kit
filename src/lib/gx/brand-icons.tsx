@@ -596,6 +596,7 @@ export function GiftCardPoster({
   const isItunes = slug.includes("itunes") || slug.includes("apple") || (cartId || "").includes("itunes") || slug.startsWith("gc-itunes");
   const isGooglePlay = slug.includes("google") || (cartId || "").startsWith("gp-") || slug.startsWith("gc-google");
   const isSteam = slug.includes("steam") || (cartId || "").includes("steam") || slug.startsWith("gc-steam");
+  const isRazer = slug.includes("razer") || (cartId || "").includes("razer") || slug.startsWith("gc-razer");
 
   let brandName = "GIFT CARD";
   let brandSub = "DIGITAL GIFT CARD • بطاقة رقمية";
@@ -654,6 +655,12 @@ export function GiftCardPoster({
     brandLogo = "/app/assets/img/googleplay-logo.png";
     bgGradient = "linear-gradient(145deg, #047857 0%, #064e3b 55%, #022c22 100%)";
     ambientColor = "rgba(52, 168, 83, 0.45)";
+  } else if (isRazer) {
+    brandName = "RAZER GOLD";
+    brandSub = "GLOBAL PIN • بطاقة ريزر جولد";
+    brandLogo = "/app/assets/img/razer-logo.png";
+    bgGradient = "linear-gradient(145deg, #052b0d 0%, #031c08 55%, #010d04 100%)";
+    ambientColor = "rgba(0, 231, 0, 0.45)";
   }
 
   return (

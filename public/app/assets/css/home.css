@@ -2838,3 +2838,23 @@ html[dir="ltr"] .gx-view-all-games-btn:hover .gx-view-all-arrow {
   box-shadow: 0 6px 20px rgba(0, 229, 255, 0.45);
   transform: translateY(-1px);
 }
+
+
+/* Free Fire 3x2 Symmetrical Grid */
+.gx-ff-packs-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 18px !important;
+}
+
+@media (max-width: 900px) {
+  .gx-ff-packs-compare-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 580px) {
+  .gx-ff-packs-compare-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

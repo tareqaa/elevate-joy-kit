@@ -59,7 +59,43 @@ export const CANONICAL_VARIANT_IMAGES: Record<string, string> = {
   "adobe-acrobat": "/app/assets/img/catalog/adobe-acrobat.jpg",
   "adobe-express": "/app/assets/img/catalog/adobe-express.jpg",
   "notion": "/app/assets/img/catalog/notion.png",
-  "lovable": "/app/assets/img/catalog/lovable.webp",
+  // Autodesk
+  "autodesk": "/app/assets/img/catalog/autodesk-cover.jpg",
+  "autodesk-12": "/app/assets/img/catalog/autodesk-cover.jpg",
+
+  // Windows
+  "windows": "/app/assets/img/catalog/windows-cover.jpg",
+  "win-pro-oem": "/app/assets/img/catalog/windows-cover.jpg",
+  "win-pro-acct": "/app/assets/img/catalog/windows-cover.jpg",
+  "win-home-oem": "/app/assets/img/catalog/windows-cover.jpg",
+  "win-home-acct": "/app/assets/img/catalog/windows-cover.jpg",
+
+  // Razer Gold
+  "razer-gold": "/app/assets/img/razer-card.jpg",
+  "razer-global-5": "/app/assets/img/razer-card.jpg",
+  "razer-global-10": "/app/assets/img/razer-card.jpg",
+  "razer-global-20": "/app/assets/img/razer-card.jpg",
+  "razer-global-50": "/app/assets/img/razer-card.jpg",
+  "razer-global-60": "/app/assets/img/razer-card.jpg",
+  "razer-global-100": "/app/assets/img/razer-card.jpg",
+  "razer-us-10": "/app/assets/img/razer-card.jpg",
+  "razer-us-20": "/app/assets/img/razer-card.jpg",
+  "razer-us-50": "/app/assets/img/razer-card.jpg",
+  "razer-us-60": "/app/assets/img/razer-card.jpg",
+  "razer-us-100": "/app/assets/img/razer-card.jpg",
+
+  // Fortnite V-Bucks Packs (Official Artwork matching cards & catalog)
+  "fn-vb-800": "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_800_EGS_Portrait_1200x1600_1200x1600-79529d8c20514e82ae2ebce58991b912",
+  "fn-vb-2400": "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_2400_EGS_Landscape_2560x1440_2560x1440-e51d802c9d414431973ae3e2ba60528d",
+  "fn-vb-4500": "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_4500_EGS_Landscape_2560x1440_2560x1440-799cfafb76bf4ae795fece5e4c0de4a3",
+  "fn-vb-12500": "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_12500_EGS_Portrait_1200x1600_1200x1600-070f17d0f6a34e9180b2927c8c24c40e",
+
+  // Fortnite Crew
+  "fortnite-crew": "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
+  "fn-crew": "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
+  "fn-crew-3": "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
+  "fn-crew-1m": "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
+  "fn-crew-3m": "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
 };
 
 export interface ResolveImageOptions {
@@ -83,8 +119,49 @@ export function resolveProductImage(options: ResolveImageOptions): string {
     return CANONICAL_VARIANT_IMAGES[cleanId];
   }
 
-  // 2. TOD specific resolution by cartId or naming
-  if (cleanId.includes("tod") || cleanSlug.includes("tod") || cleanName.includes("tod") || cleanName.includes("تود")) {
+  // 1.1 Fortnite V-Bucks packs & Crew explicit resolution
+  if (cleanId.includes("800") || (cleanSlug === "fortnite" && cleanName.includes("800"))) {
+    return "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_800_EGS_Portrait_1200x1600_1200x1600-79529d8c20514e82ae2ebce58991b912";
+  }
+  if (cleanId.includes("2400") || (cleanSlug === "fortnite" && cleanName.includes("2400"))) {
+    return "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_2400_EGS_Landscape_2560x1440_2560x1440-e51d802c9d414431973ae3e2ba60528d";
+  }
+  if (cleanId.includes("4500") || (cleanSlug === "fortnite" && cleanName.includes("4500"))) {
+    return "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_4500_EGS_Landscape_2560x1440_2560x1440-799cfafb76bf4ae795fece5e4c0de4a3";
+  }
+  if (cleanId.includes("12500") || (cleanSlug === "fortnite" && cleanName.includes("12500"))) {
+    return "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_12500_EGS_Portrait_1200x1600_1200x1600-070f17d0f6a34e9180b2927c8c24c40e";
+  }
+  if (cleanId.includes("crew") || cleanSlug.includes("crew") || cleanName.includes("كرو") || cleanName.includes("crew")) {
+    return "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473";
+  }
+
+  // 2. Autodesk specific resolution (must be BEFORE any 'tod' check to avoid 'autodesk' matching)
+  if (cleanSlug.includes("autodesk") || cleanId.includes("autodesk") || cleanName.includes("autodesk") || cleanName.includes("أوتوديسك")) {
+    return "/app/assets/img/catalog/autodesk-cover.jpg";
+  }
+
+  // 3. Windows specific resolution
+  if (cleanSlug.includes("windows") || cleanId.startsWith("win-") || cleanName.includes("windows") || cleanName.includes("ويندوز")) {
+    return "/app/assets/img/catalog/windows-cover.jpg";
+  }
+
+  // 4. Razer Gold specific resolution
+  if (cleanSlug.includes("razer") || cleanId.includes("razer") || cleanName.includes("razer") || cleanName.includes("ريزر")) {
+    return "/app/assets/img/razer-card.jpg";
+  }
+
+  // 5. TOD specific resolution by cartId or naming (explicit matching to prevent false positives)
+  const isExplicitTod =
+    cleanId === "tod" ||
+    cleanId.startsWith("tod-") ||
+    cleanSlug === "tod" ||
+    cleanSlug.startsWith("tod-") ||
+    cleanName.startsWith("tod") ||
+    cleanName.includes("تود") ||
+    cleanName.includes(" tod");
+
+  if (isExplicitTod && !cleanSlug.includes("autodesk") && !cleanId.includes("autodesk")) {
     if (cleanId === "tod-total-1d" || cleanName.includes("يوم واحد") || cleanName.includes("1 day")) {
       return "/app/assets/img/catalog/one_day.webp";
     }

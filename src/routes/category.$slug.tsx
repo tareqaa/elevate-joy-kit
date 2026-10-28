@@ -1072,10 +1072,10 @@ function CategoryPage() {
           glow: "rgba(0, 229, 255, 0.45)",
           logoSrc: "/app/assets/img/catalog/tod-standard-card.jpg",
           match: (p: CatalogStoreProduct) =>
-            p.slug === "tod" ||
-            (p.slug || "").startsWith("tod-") ||
-            (p.nameAr || "").toLowerCase().includes("tod") ||
-            (p.nameAr || "").includes("تود"),
+            (p.slug === "tod" ||
+              (p.slug || "").startsWith("tod-") ||
+              (p.nameAr || "").includes("تود")) &&
+            !(p.slug || "").includes("autodesk"),
         },
         {
           id: "youtube",
@@ -1498,10 +1498,10 @@ function CategoryPage() {
       if (streamingSubfilter === "tod") {
         list = list.filter(
           (p) =>
-            p.slug === "tod" ||
-            (p.slug || "").startsWith("tod-") ||
-            (p.nameAr || "").toLowerCase().includes("tod") ||
-            (p.nameAr || "").includes("تود")
+            (p.slug === "tod" ||
+              (p.slug || "").startsWith("tod-") ||
+              (p.nameAr || "").includes("تود")) &&
+            !(p.slug || "").includes("autodesk")
         );
       } else if (streamingSubfilter === "youtube") {
         list = list.filter(
@@ -1720,10 +1720,10 @@ function CategoryPage() {
     });
   } else if (category.slug === "subscriptions" && selectedPlatform === "streaming") {
     const isTodMatch = (p: CatalogStoreProduct) =>
-      p.slug === "tod" ||
-      (p.slug || "").startsWith("tod-") ||
-      (p.nameAr || "").toLowerCase().includes("tod") ||
-      (p.nameAr || "").includes("تود");
+      (p.slug === "tod" ||
+        (p.slug || "").startsWith("tod-") ||
+        (p.nameAr || "").includes("تود")) &&
+      !(p.slug || "").includes("autodesk");
     const isYtMatch = (p: CatalogStoreProduct) =>
       (p.slug || "").includes("youtube") ||
       (p.nameAr || "").toLowerCase().includes("youtube") ||

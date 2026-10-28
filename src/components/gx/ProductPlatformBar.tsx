@@ -639,6 +639,22 @@ export function getProductPlatform(
     return { name: "Google Play", icon: <GooglePlayPlatformIcon /> };
   }
 
+  // 13.1 Razer Gold
+  if (has(["razer", "ريزر"])) {
+    return {
+      name: "Razer Gold",
+      icon: (
+        <img
+          src="/app/assets/img/razer-logo.png"
+          alt="Razer Gold"
+          width={14}
+          height={14}
+          style={{ width: 14, height: 14, objectFit: "contain", borderRadius: 3, display: "block", flexShrink: 0 }}
+        />
+      ),
+    };
+  }
+
   // 14. Google AI / Gemini
   if (has(["gemini", "جيمناي", "google ai", "bard", "جوجل بارد"])) {
     return { name: "Google AI", icon: <GeminiPlatformIcon /> };

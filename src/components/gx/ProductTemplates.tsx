@@ -47,7 +47,7 @@ function useLocalized(p: CatalogProduct) {
       variants: p.variants.map((v) => ({
         ...v,
         label: pick(lang, v.labelAr, v.labelEn),
-        tag: pick(lang, v.tagAr, v.tagEn) || null,
+        tag: null,
       })),
     }),
     [p, lang],
@@ -196,12 +196,7 @@ function VariantCard({
     (p.slug === "gemini" ? "/app/assets/img/gemini-logo.svg" : undefined) ||
     (p.thumbBg && (p.thumbBg.startsWith("/") || p.thumbBg.startsWith("http")) ? p.thumbBg : undefined);
 
-  let badgeText: string | null = null;
-  if (!isTagDisabled && !(siteSettings as Record<string, unknown>).hide_plan_badges) {
-    badgeText = rawTag;
-  } else if (!isTagDisabled && !siteSettings.hide_fortnite_badges && theme) {
-    badgeText = (lang === "en" ? theme.badgeEn : theme.badgeAr) || null;
-  }
+  const badgeText: string | null = null;
 
   const snapDuration =
     p.slug === "snapchat"
@@ -691,17 +686,20 @@ export function GiftCardTemplate({ product, initialVariant }: { product: Catalog
       const cId = (v.cartId || "").toLowerCase();
       const r = (v.region || "").toLowerCase();
       if (!code || code === "xx") {
-        if (cId.includes("-us-") || cId.startsWith("gp-us") || r.includes("أمريك") || r.includes("usa")) code = "us";
+        if (cId.includes("global") || cId.includes("razer") || r.includes("global") || r.includes("عالمي")) code = "global";
+        else if (cId.includes("-us-") || cId.startsWith("gp-us") || r.includes("أمريك") || r.includes("usa")) code = "us";
         else if (cId.includes("-sa-") || r.includes("سعود") || r.includes("ksa")) code = "sa";
         else if (cId.includes("-ae-") || r.includes("إمارات") || r.includes("uae")) code = "ae";
         else if (cId.includes("-tr-") || r.includes("ترك") || r.includes("turkey")) code = "tr";
         else if (cId === "gb" || cId.includes("uk") || r.includes("gb") || r.includes("بريطان")) code = "gb";
-        else code = "us";
+        else code = "global";
       }
 
       const [ar, en] = (v.region || "").split("|");
       let name = (lang === "en" ? en || ar : ar || en) || "";
-      if (!name || name === "XX" || name === "GB") {
+      if (code === "global" || (v.cartId || "").includes("razer")) {
+        name = lang === "en" ? "Global 🌐" : "عالمي (Global) 🌐";
+      } else if (!name || name === "XX" || name === "GB") {
         if (code === "gb") name = lang === "en" ? "United Kingdom (UK) 🇬🇧" : "بريطانيا (UK) 🇬🇧";
         else if (code === "us") name = lang === "en" ? "United States (USA) 🇺🇸" : "أمريكا (USA) 🇺🇸";
         else if (code === "sa") name = lang === "en" ? "Saudi Arabia (KSA) 🇸🇦" : "السعودية (KSA) 🇸🇦";
@@ -778,9 +776,12 @@ export function GiftCardTemplate({ product, initialVariant }: { product: Catalog
               </button>
               {regions.map((r) => {
                 const codeClean = r.code.toLowerCase().trim();
-                const flagSrc = codeClean.startsWith("http") || codeClean.startsWith("data:")
-                  ? codeClean
-                  : `https://flagcdn.com/w160/${codeClean === "uk" ? "gb" : codeClean}.png`;
+                const isGlobal = codeClean === "global" || codeClean === "ww" || codeClean === "xx";
+                const flagSrc = isGlobal
+                  ? null
+                  : (codeClean.startsWith("http") || codeClean.startsWith("data:")
+                    ? codeClean
+                    : `https://flagcdn.com/w160/${codeClean === "uk" ? "gb" : codeClean}.png`);
                 return (
                   <button
                     key={r.code}
@@ -788,14 +789,16 @@ export function GiftCardTemplate({ product, initialVariant }: { product: Catalog
                     className={`gc-region-pill ${selectedRegion === r.code ? "active" : ""}`}
                     onClick={() => setSelectedRegion(r.code)}
                   >
-                    <img
-                      src={flagSrc}
-                      alt=""
-                      className="gc-pill-flag"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://flagcdn.com/w160/gb.png";
-                      }}
-                    />
+                    {!isGlobal && flagSrc && (
+                      <img
+                        src={flagSrc}
+                        alt=""
+                        className="gc-pill-flag"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    )}
                     <span>{r.name}</span>
                     <span className="gc-pill-badge">{r.items.length}</span>
                   </button>
@@ -812,21 +815,26 @@ export function GiftCardTemplate({ product, initialVariant }: { product: Catalog
           ) : (
             visibleRegions.map((region) => {
               const codeClean = region.code.toLowerCase().trim();
-              const flagSrc = codeClean.startsWith("http") || codeClean.startsWith("data:")
-                ? codeClean
-                : `https://flagcdn.com/w160/${codeClean === "uk" ? "gb" : codeClean}.png`;
+              const isGlobal = codeClean === "global" || codeClean === "ww" || codeClean === "xx";
+              const flagSrc = isGlobal
+                ? null
+                : (codeClean.startsWith("http") || codeClean.startsWith("data:")
+                  ? codeClean
+                  : `https://flagcdn.com/w160/${codeClean === "uk" ? "gb" : codeClean}.png`);
               return (
                 <div key={region.code} className="region-section">
                   <div className="region-head">
-                    <div className="region-flag">
-                      <img
-                        src={flagSrc}
-                        alt={region.name}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "https://flagcdn.com/w160/gb.png";
-                        }}
-                      />
-                    </div>
+                    {!isGlobal && flagSrc && (
+                      <div className="region-flag">
+                        <img
+                          src={flagSrc}
+                          alt={region.name}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                      </div>
+                    )}
                     <div className="region-name">{region.name}</div>
                   </div>
                   <div className="denom-grid" style={{ ["--gc-accent" as string]: product.accentColor || "var(--accent)" } as React.CSSProperties}>

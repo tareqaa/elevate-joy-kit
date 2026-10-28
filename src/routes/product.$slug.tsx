@@ -1,6 +1,6 @@
 import { safeJsonLd } from "@/lib/gx/json-ld";
 import { useEffect } from "react";
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { getCatalogProduct, getRelatedCatalogProducts } from "@/lib/gx/catalog.functions";
 import { ProductTemplate } from "@/components/gx/ProductTemplates";
@@ -82,7 +82,18 @@ export const Route = createFileRoute("/product/$slug")({
 function ProductPage() {
   const { product, relatedProducts } = Route.useLoaderData();
   const search = Route.useSearch();
+  const navigate = useNavigate();
   const preselectedVariant = search.variant || search.plan || search.cartId || search.id;
+
+  // Auto-redirect Crew requests on Fortnite to dedicated Fortnite Crew page
+  useEffect(() => {
+    if (product?.slug === "fortnite") {
+      const p = preselectedVariant || (typeof window !== "undefined" ? window.location.hash.replace("#", "") : "");
+      if (p && p.toLowerCase().includes("crew")) {
+        navigate({ to: "/product/$slug", params: { slug: "fortnite-crew" }, replace: true });
+      }
+    }
+  }, [product?.slug, preselectedVariant, navigate]);
 
   const variants = product?.variants || [];
   const firstVariant = variants.length > 0 ? variants[0] : null;
@@ -171,12 +182,28 @@ function ProductPage() {
           return;
         }
 
-        // Default or Crew
-        const is3m = isCrew3;
+        // Default V-Bucks
         trackRecentlyViewed({
           slug: "fortnite",
-          cartId: is3m ? "fn-crew-3" : "fn-crew",
-          link: `/product/fortnite#${is3m ? "fn-crew-3" : "fn-crew"}`,
+          cartId: "fn-vb-800",
+          link: "/product/fortnite?variant=fn-vb-800",
+          nameAr: "فورت نايت — 800 وحدة V-Bucks",
+          nameEn: "Fortnite — 800 V-Bucks",
+          price: 5,
+          oldPrice: 7,
+          imageUrl: "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_800_EGS_Portrait_1200x1600_1200x1600-79529d8c20514e82ae2ebce58991b912",
+          categorySlug: "games",
+        });
+        return;
+      }
+
+      // 1.1 Fortnite Crew dedicated tracking
+      if (product.slug === "fortnite-crew") {
+        const is3m = planParam && (planParam.includes("3") || planParam.includes("3m"));
+        trackRecentlyViewed({
+          slug: "fortnite-crew",
+          cartId: is3m ? "fn-crew-3m" : "fn-crew-1m",
+          link: `/product/fortnite-crew`,
           nameAr: is3m ? "فورت نايت كرو — 3 أشهر" : "فورت نايت كرو — شهر",
           nameEn: is3m ? "Fortnite Crew — 3 Months" : "Fortnite Crew — 1 Month",
           price: is3m ? 9 : 4,

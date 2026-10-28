@@ -33,6 +33,7 @@ const EXPLICIT: Array<[RegionCode, RegExp]> = [
 
 /** Patterns applied to free text (names, slugs, cart ids) — strict. */
 const IMPLICIT: Array<[RegionCode, RegExp]> = [
+  ["global", /global|عالمي|worldwide|\bww\b/i],
   ["us", /أمريك|\busa\b|united\s*states|(^|[-_\s])us([-_\s]|\d|$)/i],
   ["tr", /ترك|\bturkey\b|\bturkish\b|\btry\b|(^|[-_\s])tr([-_\s]|\d|$)/i],
   ["sa", /سعود|\bksa\b|\bsaudi\b|(^|[-_\s])sa([-_\s]|\d|$)/i],
@@ -52,6 +53,9 @@ export function detectRegionCode(input: {
   const cid = (input.cartId || "").toLowerCase();
   if (s === "tod" || s.startsWith("tod-") || cid.startsWith("tod-")) {
     return "jo";
+  }
+  if (s.includes("razer") || cid.includes("razer") || (input.name && /razer|ريزر/i.test(input.name))) {
+    return "global";
   }
 
   const region = (input.region || "").trim();

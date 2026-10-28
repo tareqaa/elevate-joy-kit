@@ -407,10 +407,21 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
   }
 
   if (
-    cleanSlug.includes("tod") ||
-    cleanName.includes("tod") ||
-    cleanName.includes("تود")
+    cleanSlug.includes("autodesk") ||
+    cleanName.includes("autodesk") ||
+    cleanName.includes("أوتوديسك")
   ) {
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/autodesk-cover.jpg`;
+  }
+
+  const isExplicitTod =
+    cleanSlug === "tod" ||
+    cleanSlug.startsWith("tod-") ||
+    cleanName.startsWith("tod") ||
+    cleanName.includes("تود") ||
+    cleanName.includes(" tod");
+
+  if (isExplicitTod && !cleanSlug.includes("autodesk")) {
     if (cleanSlug.includes("4k") || cleanName.includes("4k")) {
       return `${CDN_ASSETS_BASE}/app/assets/img/catalog/tod-4k-card.jpg`;
     }

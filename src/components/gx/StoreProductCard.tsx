@@ -23,6 +23,7 @@ import {
 } from "@/lib/gx/brand-icons";
 import { getGiftCardLiveStartingPrice } from "@/components/gx/BestSellingGiftCardsSection";
 import { useSiteSettings, getEffectiveStockLimit } from "@/lib/gx/site-settings";
+import { resolveProductImage } from "@/lib/gx/product-images";
 
 export type StoreProductCardProps = {
   slug: string;
@@ -237,20 +238,27 @@ export function StoreProductCard({
 
   // Render thumbnail inner
   const renderThumbnail = () => {
-    if (isCrew) return <CrewIcon />;
-    if (isVbucks) {
-      if (imageUrl && !imageUrl.includes("fortnite-logo.png") && !imageUrl.endsWith("vbucks.png")) {
+    // 1. Fortnite (V-Bucks & Crew) — Show official pack artwork matching product page
+    const isFortniteItem = slug === "fortnite" || slug === "fortnite-crew" || finalCartId.startsWith("fn-");
+    if (isFortniteItem) {
+      const fnImg =
+        (imageUrl && !imageUrl.includes("fortnite-logo.png") && !imageUrl.includes("fortnite-f-icon.jpg") ? imageUrl : null) ||
+        resolveProductImage({ cartId: finalCartId, slug, name });
+
+      if (fnImg) {
         return (
           <CardProductImage
-            src={imageUrl}
+            src={fnImg}
             alt={name}
             className="prod-thumb-img prod-card-img"
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         );
       }
+      if (isCrew || finalCartId.includes("crew")) return <CrewIcon />;
       return <VbucksIcon tier={tier} />;
     }
+
     if (slug === "snapchat") {
       let resolvedSnapDuration = snapDuration;
       if (lang === "en" && resolvedSnapDuration) {
@@ -275,25 +283,22 @@ export function StoreProductCard({
     }
     if (slug === "adobe") return <AdobePoster />;
     if (slug === "canva") return <CanvaPoster />;
-    if (slug === "windows") return <WindowsPoster cartId={finalCartId} planLabel={name} />;
+    if (slug === "windows") {
+      const winImg =
+        imageUrl ||
+        resolveProductImage({ cartId: finalCartId, slug: "windows", name }) ||
+        "/app/assets/img/catalog/windows-cover.jpg";
+      return (
+        <CardProductImage
+          src={winImg}
+          alt={name}
+          className="prod-thumb-img prod-card-img"
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      );
+    }
     if (slug === "tod" || slug.startsWith("tod-") || finalCartId.startsWith("tod-")) {
       return <TodPoster cartId={finalCartId} name={name} />;
-    }
-    if (slug === "fortnite") {
-      if (imageUrl && !imageUrl.includes("fortnite-logo.png") && !imageUrl.includes("fortnite-f-icon.jpg")) {
-        return (
-          <CardProductImage
-            src={imageUrl}
-            alt={name}
-            className="prod-thumb-img prod-card-img"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-        );
-      }
-      if (finalCartId.includes("crew") || name.toLowerCase().includes("crew") || name.includes("كرو")) {
-        return <CrewIcon />;
-      }
-      return <FortniteIcon />;
     }
 
     if (
@@ -301,6 +306,7 @@ export function StoreProductCard({
       slug === "xbox" ||
       slug === "itunes" ||
       slug === "google-play" ||
+      slug === "razer-gold" ||
       categorySlug === "gift-cards" ||
       categorySlug?.startsWith("gc-")
     ) {
@@ -320,7 +326,7 @@ export function StoreProductCard({
       imgSrc &&
       (imgSrc.endsWith(".svg") ||
         imgSrc.includes("googleplay-logo") ||
-        ["playstation", "xbox", "itunes", "google-play", "microsoft365", "autodesk", "linkedin", "gemini"].includes(slug));
+        ["playstation", "xbox", "itunes", "google-play", "microsoft365", "linkedin", "gemini"].includes(slug));
 
     if (isBrandVector) {
       return (

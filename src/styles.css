@@ -1030,10 +1030,16 @@ input[type="number"] {
   font-weight: 600;
 }
 
+.driffle-page-wrap,
+.gx-page-wrap {
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
 .driffle-layout {
   display: grid;
   grid-template-columns: 1fr 320px;
-  gap: 28px;
+  gap: 24px;
   align-items: start;
 }
 

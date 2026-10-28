@@ -86,6 +86,17 @@ export const BEST_SELLING_GIFT_CARDS: GiftCardItem[] = [
     badgeEn: "Digital Code",
     link: "/product/google-play",
   },
+  {
+    id: "razer-gold",
+    nameAr: "بطاقات ريزر جولد",
+    nameEn: "Razer Gold Cards",
+    startingPrice: 4.0,
+    iconImage: "/app/assets/img/razer-logo.png",
+    bgGradient: "linear-gradient(135deg, rgba(0, 231, 0, 0.22), rgba(0, 100, 0, 0.12))",
+    badgeAr: "كود تفعيل",
+    badgeEn: "Digital Code",
+    link: "/product/razer-gold",
+  },
 ];
 
 export function BestSellingGiftCardsSection() {

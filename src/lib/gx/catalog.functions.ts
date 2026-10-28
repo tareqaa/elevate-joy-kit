@@ -1114,7 +1114,7 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
 
         items.push({
           id: `${p.id}-${v.id}`,
-          slug: p.slug,
+          slug: (v.cart_id && v.cart_id.startsWith("fn-crew")) ? "fortnite-crew" : p.slug,
           cartId: v.cart_id,
           nameAr,
           nameEn,

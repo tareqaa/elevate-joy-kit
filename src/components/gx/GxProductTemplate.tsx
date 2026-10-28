@@ -158,7 +158,7 @@ export function GxProductTemplate({
     (rawCat || "").includes("game");
 
   const isStreamingProduct =
-    product.slug.includes("tod") ||
+    (product.slug === "tod" || product.slug.startsWith("tod-")) ||
     product.slug.includes("youtube") ||
     product.categorySlug === "streaming";
 
@@ -173,9 +173,46 @@ export function GxProductTemplate({
     : (ar ? "الاشتراكات والبرامج" : "Subscriptions & Software");
 
   const variants = useMemo(() => {
-    if (product.variants && product.variants.length > 0) {
-      return product.variants;
+    let raw = product.variants && product.variants.length > 0 ? [...product.variants] : [];
+
+    // Separate Fortnite V-Bucks vs Fortnite Crew
+    if (product.slug === "fortnite") {
+      // Exclude Crew variants from V-Bucks page
+      raw = raw.filter((v) => !v.cartId.toLowerCase().startsWith("fn-crew"));
+    } else if (product.slug === "fortnite-crew") {
+      // Dedicated Fortnite Crew variants (1 Month = 4 JD, 3 Months = 9 JD)
+      return [
+        {
+          cartId: "fn-crew-1m",
+          labelAr: "اشتراك شهر واحد (1 Month)",
+          labelEn: "1 Month Subscription",
+          price: 4.0,
+          oldPrice: 6.0,
+          tagAr: "يشمل 1000 V-Bucks",
+          tagEn: "Includes 1000 V-Bucks",
+          planGroup: null,
+          region: "عالمي | Global",
+          deliveryType: "topup",
+        },
+        {
+          cartId: "fn-crew-3m",
+          labelAr: "اشتراك 3 أشهر (3 Months)",
+          labelEn: "3 Months Subscription",
+          price: 9.0,
+          oldPrice: 12.0,
+          tagAr: "👑 أفضل قيمة",
+          tagEn: "Best Value",
+          planGroup: null,
+          region: "عالمي | Global",
+          deliveryType: "topup",
+        },
+      ];
     }
+
+    if (raw.length > 0) {
+      return raw;
+    }
+
     const fallbackPrice =
       typeof product.basePriceJod === "number" && product.basePriceJod > 0
         ? product.basePriceJod
@@ -211,6 +248,16 @@ export function GxProductTemplate({
     // 1. Exact cartId match
     const exact = variants.find((v) => v.cartId === clean);
     if (exact) return exact.cartId;
+
+    // 1.1 Aliases for fn-crew
+    if (clean === "fn-crew" || clean === "fn-crew-1m") {
+      const v1 = variants.find((v) => v.cartId === "fn-crew-1m" || v.cartId === "fn-crew");
+      if (v1) return v1.cartId;
+    }
+    if (clean === "fn-crew-3" || clean === "fn-crew-3m") {
+      const v3 = variants.find((v) => v.cartId === "fn-crew-3m" || v.cartId === "fn-crew-3");
+      if (v3) return v3.cartId;
+    }
 
     // 2. Case-insensitive cartId match
     const lower = clean.toLowerCase();
@@ -289,6 +336,16 @@ export function GxProductTemplate({
       window.removeEventListener("hashchange", handleUrlChange);
     };
   }, [variants, initialVariant]);
+
+  // Redirect Fortnite Crew requests on /product/fortnite to /product/fortnite-crew
+  useEffect(() => {
+    if (product.slug === "fortnite") {
+      const p = initialVariant || (typeof window !== "undefined" ? (new URLSearchParams(window.location.search).get("variant") || new URLSearchParams(window.location.search).get("tier") || new URLSearchParams(window.location.search).get("plan") || window.location.hash.replace("#", "")) : "");
+      if (p && p.toLowerCase().includes("crew")) {
+        navigate({ to: "/product/$slug", params: { slug: "fortnite-crew" }, replace: true });
+      }
+    }
+  }, [product.slug, initialVariant, navigate]);
 
   const handleSelectVariant = (cartId: string) => {
     setSelectedVariantId(cartId);
@@ -700,7 +757,7 @@ export function GxProductTemplate({
         slug: product.slug,
         name: name,
         fallback: (activeVariant as any).imageUrl || product.imageUrl || product.iconImage,
-      }) || product.imageUrl || product.iconImage || "/app/assets/img/catalog/tod-standard-card.jpg";
+      }) || product.imageUrl || product.iconImage || "/app/assets/img/gx-logo.png";
 
     return (
       <div
@@ -718,6 +775,7 @@ export function GxProductTemplate({
         }
       >
         <img
+          key={coverSrc}
           src={coverSrc}
           alt={name}
           className="driffle-cover-img"
