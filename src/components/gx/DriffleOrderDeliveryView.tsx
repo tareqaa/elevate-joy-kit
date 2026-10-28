@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { markCodeRevealedFn } from "@/lib/gx/order-email.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveProductImage } from "@/lib/gx/product-images";
+import { formatFullRegion } from "@/lib/gx/region";
 import {
   Check,
   Copy,
@@ -685,6 +686,19 @@ export function DriffleOrderDeliveryView({
     activeItem?.delivery_type === "topup"
   );
 
+  const activeModalRegion = activeItem
+    ? formatFullRegion(
+        {
+          region: activeCode?.region || activeItem?.region,
+          cartId: activeItem?.cartId || activeItem?.id,
+          name: activeItem?.name,
+          slug: activeItem?.product_slug || activeItem?.slug,
+        },
+        isAr ? "ar" : "en",
+        { withDetails: true }
+      )
+    : "";
+
   // Open modal without revealing yet - user must confirm and check agreement
   const handleOpenReveal = (idx: number) => {
     setSelectedItemIdx(idx);
@@ -1317,10 +1331,20 @@ export function DriffleOrderDeliveryView({
               {/* LIST OF ITEMS */}
               {items.map((it: any, itemIdx: number) => {
                 const coverImg = getProductCoverImage(it.image, it.name, it.product_slug || it.slug, dbImageMap);
-                const regionName = it.region || "GLOBAL";
                 const isKeyRevealed = Boolean(revealedKeys[itemIdx]);
 
                 const itemCode = deliveryCodes[itemIdx] || deliveryCodes[0] || null;
+                const itemRegionBadge = formatFullRegion(
+                  {
+                    region: itemCode?.region || it.region,
+                    cartId: it.cartId || it.id,
+                    name: it.name,
+                    slug: it.product_slug || it.slug,
+                  },
+                  isAr ? "ar" : "en",
+                  { withDetails: false }
+                );
+
                 const isThisTopup = Boolean(
                   itemCode?.kind === "topup" ||
                   it?.delivery_type === "topup"
@@ -1415,7 +1439,7 @@ export function DriffleOrderDeliveryView({
                               }}
                             >
                               <Globe style={{ width: "10px", height: "10px" }} />
-                              {isThisTopup ? (isAr ? "شحن مباشر" : "TOP-UP") : isThisAccount ? (isAr ? "حساب جاهز" : "ACCOUNT") : regionName}
+                              {isThisTopup ? (isAr ? "شحن مباشر" : "TOP-UP") : isThisAccount ? (isAr ? "حساب جاهز" : "ACCOUNT") : itemRegionBadge}
                             </span>
                             {it.platform && (
                               <span
@@ -1787,7 +1811,7 @@ export function DriffleOrderDeliveryView({
                     </span>
                   )}
 
-                  {activeItem.region && (
+                  {!isTopupItem && activeModalRegion && (
                     <span
                       style={{
                         display: "inline-flex",
@@ -1803,7 +1827,7 @@ export function DriffleOrderDeliveryView({
                     >
                       <Globe style={{ width: "11px", height: "11px", color: isAccountItem ? "#c084fc" : accentCyan }} />
                       <span>{isAr ? "المنطقة:" : "Region:"}</span>
-                      <strong style={{ color: textPrimary, textTransform: "uppercase" }}>{activeItem.region}</strong>
+                      <strong style={{ color: textPrimary }}>{activeModalRegion}</strong>
                     </span>
                   )}
                 </div>
@@ -1838,8 +1862,8 @@ export function DriffleOrderDeliveryView({
                           ? "بمجرد تأكيد كشف بيانات الحساب، تعتبر بيانات الدخول (الإيميل وكلمة السر) مكشوفة ومستلمة بالكامل. لا يمكن استرجاع أو إلغاء الحساب الرقمي بعد الكشف."
                           : "Once confirmed, the account credentials are fully revealed and considered delivered. Digital accounts cannot be refunded or cancelled once revealed."
                         : isAr
-                          ? `هذا المفتاح مخصص لمنطقة: ${activeItem.region || "عالمي / Global"}. بمجرد تأكيد كشف الكود الرقمي، يعتبر المنتج مستلماً ومكشوفاً بنجاح ولا يمكن استرجاعه أو استبداله.`
-                          : `This key is for region: ${activeItem.region || "Global"}. Once revealed, the item is considered delivered and cannot be refunded or replaced.`}
+                          ? `هذا المفتاح مخصص لمنطقة: ${activeModalRegion}. بمجرد تأكيد كشف الكود الرقمي، يعتبر المنتج مستلماً ومكشوفاً بنجاح ولا يمكن استرجاعه أو استبداله.`
+                          : `This key is for region: ${activeModalRegion}. Once revealed, the item is considered delivered and cannot be refunded or replaced.`}
                     </span>
                   </div>
                 </div>

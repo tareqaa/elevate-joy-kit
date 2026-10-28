@@ -7,6 +7,7 @@ import { supabaseEnv, supabaseFetch } from "@/lib/gx/supabase-request";
 import type { Database } from "@/integrations/supabase/types";
 import { resolveProductImage } from "./product-images";
 import { getResendApiKey } from "./resend-key";
+import { formatFullRegion } from "./region";
 
 const SENDER_EMAIL = "GX Store <noreply@gxstore.me>";
 export const CDN_ASSETS_BASE = "https://cdn.jsdelivr.net/gh/tareqaa/elevate-joy-kit@main/public";
@@ -743,6 +744,16 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
                 ? `<img src="${item.image}" alt="${item.name}" width="64" height="64" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,0.12);display:block;background:#0d121c;">`
                 : `<div style="width:64px;height:64px;border-radius:12px;background:#141b27;border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;color:#00e5ff;font-size:24px;text-align:center;line-height:64px;">🎮</div>`;
 
+              const itemRegionFormatted = formatFullRegion(
+                {
+                  region: item.region,
+                  name: item.name,
+                  cartId: item.slug || item.variant,
+                },
+                isAr ? "ar" : "en",
+                { withDetails: true }
+              );
+
               return `
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:18px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:14px;padding:12px;">
                   <tr>
@@ -754,7 +765,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
                         ${item.name}
                       </div>
                       <div style="color:#94a3b8;font-size:12px;margin-bottom:3px;">
-                        ${isAr ? "المنطقة / الريجون:" : "Region:"} <strong style="color:#38bdf8;">${item.region || (isAr ? "عالمي (Global)" : "Global")}</strong>
+                        ${isAr ? "المنطقة / الريجون:" : "Region:"} <strong style="color:#38bdf8;">${itemRegionFormatted}</strong>
                       </div>
                       ${qty > 1 ? `<div style="color:#64748b;font-size:11px;">${isAr ? "الكمية:" : "Quantity:"} x${qty}</div>` : ""}
                     </td>
@@ -1356,6 +1367,16 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
                 ? `<img src="${item.image}" alt="${item.name}" width="56" height="56" style="width:56px;height:56px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,0.12);display:block;background:#0d121c;">`
                 : `<div style="width:56px;height:56px;border-radius:10px;background:#141b27;border:1px solid rgba(255,255,255,0.12);display:block;color:#00e5ff;font-size:22px;text-align:center;line-height:56px;">🎮</div>`;
 
+              const itemRegionFormatted = formatFullRegion(
+                {
+                  region: item.region,
+                  name: item.name,
+                  cartId: item.slug || item.variant,
+                },
+                isAr ? "ar" : "en",
+                { withDetails: true }
+              );
+
               return `
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 14px;">
                   <tr>
@@ -1367,7 +1388,7 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
                         ${item.name}
                       </div>
                       <div style="color:#94a3b8;font-size:12px;">
-                        ${isAr ? "المنطقة / الريجون:" : "Region:"} <strong style="color:#38bdf8;">${item.region || (isAr ? "عالمي (Global)" : "Global")}</strong>
+                        ${isAr ? "المنطقة / الريجون:" : "Region:"} <strong style="color:#38bdf8;">${itemRegionFormatted}</strong>
                         ${qty > 1 ? ` • <span style="color:#64748b;">${isAr ? "الكمية:" : "Qty:"} x${qty}</span>` : ""}
                       </div>
                     </td>

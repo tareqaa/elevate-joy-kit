@@ -18,6 +18,7 @@ import {
   Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor, Mail, Copy, Eye, Lock,
 } from "lucide-react";
 import { sendOrderStatusEmail, sendIncompleteOrderPaymentEmail, getOrderSecretLinkFn } from "@/lib/gx/order-email.functions";
+import { detectRegionCode, formatFullRegion } from "@/lib/gx/region";
 
 
 export const Route = createFileRoute("/_authenticated/admin/orders")({
@@ -607,13 +608,20 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
       }));
     }
     const seeded: DeliveryCode[] = [];
-    (items as Array<{ name?: string; qty?: number }>).forEach((it) => {
+    (items as Array<{ name?: string; qty?: number; cartId?: string; id?: string; slug?: string; product_slug?: string; region?: string }>).forEach((it) => {
       const qty = Math.max(1, Number(it.qty) || 1);
+      const detected = detectRegionCode({
+        region: it.region,
+        cartId: it.cartId || it.id,
+        name: it.name,
+        slug: it.product_slug || it.slug,
+      });
+      const defaultReg = detected === "global" ? "Global" : detected.toUpperCase();
       for (let k = 0; k < qty; k++) {
         seeded.push({
           kind: "code",
           label: qty > 1 ? `${it.name || "منتج"} (${k + 1}/${qty})` : (it.name || "منتج"),
-          value: "", email: "", password: "", extra: "", region: "Global",
+          value: "", email: "", password: "", extra: "", region: defaultReg,
         });
       }
     });
@@ -752,15 +760,29 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
     const targetEmail = order.user_email || order.customer_email || (order.delivery_data && typeof order.delivery_data === "object" ? (order.delivery_data as any).customer_email : null);
     if (notifyCustomer && targetEmail && targetEmail.includes("@")) {
       try {
-        const emailItems = (Array.isArray(order.items) ? order.items : []).map((it: any) => ({
-          name: it.name || "منتج رقمي",
-          qty: it.qty || it.quantity || 1,
-          price: it.price != null ? Number(it.price) : undefined,
-          image: it.image || it.image_url || undefined,
-          region: it.region || undefined,
-          variant: it.variant || undefined,
-          slug: it.product_slug || it.slug || it.cartId || it.id || undefined,
-        }));
+        const emailItems = (Array.isArray(order.items) ? order.items : []).map((it: any, itemIdx: number) => {
+          const matchingCode = codes[itemIdx] || codes[0] || null;
+          const fullRegion = formatFullRegion(
+            {
+              region: matchingCode?.region || it.region,
+              cartId: it.cartId || it.id,
+              name: it.name,
+              slug: it.product_slug || it.slug,
+            },
+            emailLang,
+            { withDetails: true }
+          );
+
+          return {
+            name: it.name || "منتج رقمي",
+            qty: it.qty || it.quantity || 1,
+            price: it.price != null ? Number(it.price) : undefined,
+            image: it.image || it.image_url || undefined,
+            region: fullRegion,
+            variant: it.variant || undefined,
+            slug: it.product_slug || it.slug || it.cartId || it.id || undefined,
+          };
+        });
 
         const emailRes = await sendOrderStatusEmail({
           data: {
@@ -1172,19 +1194,40 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                       <div className="mt-2">
                         <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
                           <span className="text-[10px] font-bold text-cyan-100/60">الريجون (مطلوب للمفاتيح):</span>
-                          {["Global", "US", "EU", "TR", "UK", "SA", "AE"].map((r) => (
-                            <button
-                              key={r}
-                              type="button"
-                              onClick={() => updateCode(i, { region: r })}
-                              className={`text-[10px] px-2 py-0.5 rounded-full border font-bold transition ${(c.region || "").trim().toLowerCase() === r.toLowerCase()
-                                ? "bg-cyan-500/25 text-cyan-200 border-cyan-400/60"
-                                : "bg-white/5 text-cyan-100/60 border-white/10 hover:bg-white/10"
+                          {[
+                            { code: "Global", label: "عالمي 🌐" },
+                            { code: "SA", label: "سعودي 🇸🇦" },
+                            { code: "AE", label: "إماراتي 🇦🇪" },
+                            { code: "US", label: "أمريكي 🇺🇸" },
+                            { code: "UK", label: "بريطاني 🇬🇧" },
+                            { code: "TR", label: "تركي 🇹🇷" },
+                            { code: "EU", label: "أوروبي 🇪🇺" },
+                            { code: "KW", label: "كويتي 🇰🇼" },
+                            { code: "QA", label: "قطري 🇶🇦" },
+                            { code: "BH", label: "بحريني 🇧🇭" },
+                            { code: "OM", label: "عُماني 🇴🇲" },
+                            { code: "JO", label: "أردني 🇯🇴" },
+                            { code: "EG", label: "مصري 🇪🇬" },
+                          ].map((r) => {
+                            const isSelected =
+                              (c.region || "").trim().toLowerCase() === r.code.toLowerCase() ||
+                              (c.region || "").trim().toLowerCase() === r.label.toLowerCase();
+                            return (
+                              <button
+                                key={r.code}
+                                type="button"
+                                onClick={() => updateCode(i, { region: r.code })}
+                                className={`text-[10px] px-2 py-0.5 rounded-md border font-bold transition flex items-center gap-1 ${
+                                  isSelected
+                                    ? "bg-cyan-500/25 text-cyan-200 border-cyan-400/60 shadow-[0_0_8px_rgba(0,229,255,0.25)]"
+                                    : "bg-white/5 text-cyan-100/60 border-white/10 hover:bg-white/10 hover:text-white"
                                 }`}
-                            >
-                              {r}
-                            </button>
-                          ))}
+                              >
+                                <span>{r.code}</span>
+                                <span className="text-[9px] opacity-75">({r.label})</span>
+                              </button>
+                            );
+                          })}
                         </div>
                         <Input
                           placeholder="المنطقة / الريجون (مثلاً: Global · US · EU · TR)"

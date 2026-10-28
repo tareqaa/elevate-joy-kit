@@ -769,7 +769,6 @@ export const GIFT_CARDS_CATALOG: Record<string, GiftCard> = {
     cardGradient: "linear-gradient(135deg,#052b0d,#00e700 45%,#68ff68)",
     regions: [
       { code: "global", flag: "🌐", name: "عالمي (Global)", denominations: [
-        { id: "razer-global-5", value: "5$", price: 4 },
         { id: "razer-global-10", value: "10$", price: 8 },
         { id: "razer-global-20", value: "20$", price: 15 },
         { id: "razer-global-50", value: "50$", price: 36 },

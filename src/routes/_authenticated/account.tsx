@@ -20,6 +20,7 @@ import { OrderReviewInline } from "@/components/gx/OrderReviewInline";
 import { useAuthActions } from "@/lib/gx/use-auth-actions";
 import { linkMyPastOrders } from "@/lib/gx/loyalty";
 import { markCodeRevealedFn } from "@/lib/gx/order-email.functions";
+import { formatFullRegion } from "@/lib/gx/region";
 
 type AccountTab = "profile" | "orders" | "wheel" | "security";
 
@@ -492,8 +493,7 @@ function OrderCard({ order: o, userId }: { order: OrderRow; userId: string }) {
                       {ar ? "بيانات التسليم لهذا المنتج" : "Delivery data for this product"}
                     </div>
                     {g.codes.map((c, k) => (
-                      <DeliveryBlock key={k} data={c} index={k} onReveal={reveal} revealing={revealing} revealKey={`${o.id}:${i}:${k}`} />
-
+                      <DeliveryBlock key={k} data={c} itemContext={g.item} index={k} onReveal={reveal} revealing={revealing} revealKey={`${o.id}:${i}:${k}`} />
                     ))}
                   </div>
                 )}
@@ -546,8 +546,16 @@ function OrderCard({ order: o, userId }: { order: OrderRow; userId: string }) {
   );
 }
 
-function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
+function DeliveryBlock({
+  data,
+  itemContext,
+  index,
+  onReveal,
+  revealing,
+  revealKey,
+}: {
   data: { label?: string; value?: string; email?: string; password?: string; kind?: string; region?: string; extra?: string; notes?: string };
+  itemContext?: { name?: string; qty?: number; price?: number; cartId?: string; slug?: string; region?: string };
   index: number;
   onReveal: () => Promise<void> | void;
   revealing?: boolean;
@@ -561,7 +569,29 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
   const [open, setOpen] = useState(isTopup);
   const [confirming, setConfirming] = useState(false);
   const [agreeChecked, setAgreeChecked] = useState(false);
-  const region = (data.region || "").trim();
+
+  const fullRegionBadge = formatFullRegion(
+    {
+      region: data.region || itemContext?.region,
+      cartId: (itemContext as any)?.cartId || (itemContext as any)?.id,
+      name: itemContext?.name || data.label,
+      slug: (itemContext as any)?.product_slug || (itemContext as any)?.slug,
+    },
+    lang,
+    { withDetails: false }
+  );
+
+  const fullRegionDetailed = formatFullRegion(
+    {
+      region: data.region || itemContext?.region,
+      cartId: (itemContext as any)?.cartId || (itemContext as any)?.id,
+      name: itemContext?.name || data.label,
+      slug: (itemContext as any)?.product_slug || (itemContext as any)?.slug,
+    },
+    lang,
+    { withDetails: true }
+  );
+
   const accountExtra = (data.extra || (data.value && data.value !== data.email && data.value !== data.password ? data.value : "") || data.notes || "").trim();
 
   // Once a key or account has been revealed it stays visible on this device.
@@ -602,7 +632,7 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
             {isKey && (
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
                 <Globe className="h-3 w-3" />
-                {region || (ar ? "عالمي / Global" : "Global")}
+                {fullRegionBadge}
               </span>
             )}
             {isKey && open && (
@@ -656,8 +686,8 @@ function DeliveryBlock({ data, index, onReveal, revealing, revealKey }: {
               ) : (
                 <p>
                   {ar
-                    ? `هذا المفتاح مخصص لمنطقة: ${region || "عالمي (Global)"}. بعد إظهار المفتاح، يُعتبر الطلب مستلمًا ولا يمكن استرجاعه أو استبداله بسبب طبيعة المنتجات الرقمية.`
-                    : `This key is for region: ${region || "Global"}. Once revealed, the order is considered delivered and cannot be refunded or replaced.`}
+                    ? `هذا المفتاح مخصص لمنطقة: ${fullRegionDetailed}. بعد إظهار المفتاح، يُعتبر الطلب مستلمًا ولا يمكن استرجاعه أو استبداله بسبب طبيعة المنتجات الرقمية.`
+                    : `This key is for region: ${fullRegionDetailed}. Once revealed, the order is considered delivered and cannot be refunded or replaced.`}
                 </p>
               )}
             </div>
