@@ -92,7 +92,7 @@ export const BEST_SELLING_GIFT_CARDS: GiftCardItem[] = [
     nameEn: "Razer Gold Cards",
     startingPrice: 8.0,
     iconImage: "/app/assets/img/razer-logo.png",
-    bgGradient: "linear-gradient(135deg, #052b0d 0%, #00e700 45%, #68ff68 100%)",
+    bgGradient: "linear-gradient(135deg, rgba(0, 185, 60, 0.22), rgba(0, 95, 25, 0.12))",
     badgeAr: "كود تفعيل",
     badgeEn: "Digital Code",
     link: "/product/razer-gold",

@@ -659,7 +659,7 @@ export function GiftCardPoster({
     brandName = "RAZER GOLD";
     brandSub = "GLOBAL PIN • بطاقة ريزر جولد";
     brandLogo = "/app/assets/img/razer-logo.png";
-    bgGradient = "linear-gradient(135deg, #052b0d 0%, #00e700 45%, #68ff68 100%)";
+    bgGradient = "linear-gradient(145deg, #072610 0%, #03170a 55%, #010c05 100%)";
     ambientColor = "rgba(0, 231, 0, 0.45)";
   }
 

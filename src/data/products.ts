@@ -766,7 +766,7 @@ export const GIFT_CARDS_CATALOG: Record<string, GiftCard> = {
     icon: "🪙",
     iconImg: "/app/assets/img/razer-logo.png",
     accent: "#00e700",
-    cardGradient: "linear-gradient(135deg,#052b0d,#00e700 45%,#68ff68)",
+    cardGradient: "linear-gradient(135deg, rgba(0, 185, 60, 0.22), rgba(0, 95, 25, 0.12))",
     regions: [
       { code: "global", flag: "🌐", name: "عالمي (Global)", denominations: [
         { id: "razer-global-10", value: "10$", price: 8 },
