@@ -8,6 +8,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { resolveProductImage } from "./product-images";
 import { getResendApiKey } from "./resend-key";
 import { formatFullRegion } from "./region";
+import { renderDriffleEmail, escapeHtml, type EmailProductItem } from "./email-theme";
 
 const SENDER_EMAIL = "GX Store <noreply@gxstore.me>";
 export const CDN_ASSETS_BASE = "https://cdn.jsdelivr.net/gh/tareqaa/elevate-joy-kit@main/public";
@@ -158,13 +159,14 @@ export function toAbsoluteUrl(url?: string | null): string {
  * Resolves verified, email-compatible (Gmail, Outlook, Apple Mail) raster PNG/JPG cover images.
  * Always returns a guaranteed accessible HTTPS URL on global CDN or external storage.
  */
-export function sanitizeImageForEmail(url?: string | null, name?: string, slug?: string): string {
+export function sanitizeImageForEmail(url?: string | null, name?: string, slug?: string, cartId?: string): string {
   const cleanName = (name || "").toLowerCase();
   const cleanSlug = (slug || "").toLowerCase();
+  const cleanId = (cartId || "").toLowerCase();
 
-  // 1. Check canonical unified registry first (TOD variants, Valorant, Discord, etc.)
+  // 1. Check canonical unified registry first (TOD variants, Valorant, Discord, Game Pass, Roblox, Gemini, etc.)
   const canonical = resolveProductImage({
-    cartId: cleanSlug,
+    cartId: cleanId || cleanSlug,
     slug: cleanSlug,
     name: cleanName,
   });
@@ -176,6 +178,37 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
   if (url && typeof url === "string" && url.trim()) {
     let clean = url.trim();
 
+    // Specific products FIRST before generic brand overrides!
+    if (
+      clean.includes("xbox-game-pass-ultimate") ||
+      cleanSlug.includes("ultimate") ||
+      cleanName.includes("ultimate") ||
+      cleanName.includes("التيمت") ||
+      cleanName.includes("التميت")
+    ) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/xbox-game-pass-ultimate.jpg`;
+    }
+
+    if (
+      clean.includes("pc-game-pass") ||
+      cleanSlug.includes("pc-game-pass") ||
+      (cleanName.includes("game pass") && cleanName.includes("pc")) ||
+      (cleanName.includes("قيم باس") && cleanName.includes("pc"))
+    ) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/pc-game-pass.jpg`;
+    }
+
+    if (
+      clean.includes("roblox") ||
+      cleanSlug.includes("roblox") ||
+      cleanName.includes("roblox") ||
+      cleanName.includes("روبلوكس") ||
+      cleanName.includes("robux") ||
+      cleanName.includes("روبوكس")
+    ) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/roblox-robux.jpg`;
+    }
+
     // Map specific known SVG/legacy paths to verified CDN assets
     if (
       clean.includes("gemini") ||
@@ -183,7 +216,9 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
       cleanName.includes("gemini") ||
       cleanName.includes("جيمناي") ||
       cleanName.includes("جيميناي") ||
-      cleanName.includes("جيميني")
+      cleanName.includes("جيميني") ||
+      cleanName.includes("google ai") ||
+      cleanName.includes("قوقل ai")
     ) {
       return `${CDN_ASSETS_BASE}/app/assets/img/gemini-logo.png`;
     }
@@ -240,16 +275,16 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
       return `${CDN_ASSETS_BASE}/app/assets/img/catalog/itunes.jpg`;
     }
 
-    if (clean.includes("xbox") || cleanSlug.includes("xbox")) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/xbox.jpg`;
-    }
-
     if (clean.includes("playstation") || cleanSlug.includes("playstation") || cleanSlug.includes("psn")) {
       return `${CDN_ASSETS_BASE}/app/assets/img/catalog/playstation.jpg`;
     }
 
     if (clean.includes("steam") || cleanSlug.includes("steam")) {
       return `${CDN_ASSETS_BASE}/app/assets/img/catalog/steam.jpg`;
+    }
+
+    if (clean.includes("xbox") || cleanSlug.includes("xbox")) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/xbox.jpg`;
     }
 
     // Convert any generic relative or absolute path via toAbsoluteUrl
@@ -263,7 +298,9 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("gemini") ||
     cleanName.includes("جيمناي") ||
     cleanName.includes("جيميناي") ||
-    cleanName.includes("جيميني")
+    cleanName.includes("جيميني") ||
+    cleanName.includes("google ai") ||
+    cleanName.includes("قوقل ai")
   ) {
     return `${CDN_ASSETS_BASE}/app/assets/img/gemini-logo.png`;
   }
@@ -280,10 +317,30 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
   }
 
   if (
+    cleanSlug === "xbox-game-pass-ultimate" ||
+    cleanId.startsWith("gpu-") ||
+    cleanSlug.startsWith("gpu-") ||
+    cleanName.includes("ultimate") ||
+    cleanName.includes("التيمت") ||
+    cleanName.includes("التميت")
+  ) {
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/xbox-game-pass-ultimate.jpg`;
+  }
+
+  if (
+    cleanSlug === "pc-game-pass" ||
+    cleanId.startsWith("pcgp-") ||
+    cleanSlug.startsWith("pcgp-") ||
+    (cleanName.includes("game pass") && cleanName.includes("pc")) ||
+    (cleanName.includes("قيم باس") && cleanName.includes("pc"))
+  ) {
+    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/pc-game-pass.jpg`;
+  }
+
+  if (
     cleanSlug.includes("xbox") ||
     cleanName.includes("xbox") ||
-    cleanName.includes("اكس بوكس") ||
-    cleanName.includes("game pass")
+    cleanName.includes("اكس بوكس")
   ) {
     return `${CDN_ASSETS_BASE}/app/assets/img/catalog/xbox.jpg`;
   }
@@ -527,7 +584,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
  */
 export async function resolveProductEmailImage(
   supabase: any,
-  item: { name?: string; slug?: string; image?: string; id?: string }
+  item: { name?: string; slug?: string; image?: string; id?: string; variant?: string; cartId?: string }
 ): Promise<string> {
   let dbImage: string | null = null;
 
@@ -581,7 +638,7 @@ export async function resolveProductEmailImage(
 
   // Priority: Live DB product image (reflects store additions/edits) -> item image -> keyword fallback
   const rawCandidate = dbImage || item.image || null;
-  return sanitizeImageForEmail(rawCandidate, item.name, item.slug);
+  return sanitizeImageForEmail(rawCandidate, item.name, item.slug, item.variant || item.cartId);
 }
 
 export type OrderItemEmail = {
@@ -733,466 +790,102 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
 
       const greetingName = (customerName && customerName.trim()) || (isAr ? "عميلنا العزيز" : "Valued Customer");
 
-      // Items list HTML
-      const itemsHtml = resolvedItems.length > 0
-        ? resolvedItems
-            .map((item) => {
-              const qty = item.qty || 1;
-              const priceFormatted = item.price != null
-                ? `${Number(item.price).toFixed(2)} ${isAr ? "د.أ" : "JOD"}`
-                : "";
-              const imgTag = item.image
-                ? `<img src="${item.image}" alt="${item.name}" width="64" height="64" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,0.12);display:block;background:#0d121c;">`
-                : `<div style="width:64px;height:64px;border-radius:12px;background:#141b27;border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;color:#00e5ff;font-size:24px;text-align:center;line-height:64px;">🎮</div>`;
+      const emailProducts: EmailProductItem[] = resolvedItems.map((item) => {
+        const itemRegionFormatted = formatFullRegion(
+          {
+            region: item.region,
+            name: item.name,
+            cartId: item.slug || item.variant,
+          },
+          isAr ? "ar" : "en",
+          { withDetails: true }
+        );
 
-              const itemRegionFormatted = formatFullRegion(
+        const priceText = item.price != null
+          ? `${Number(item.price).toFixed(2)} ${isAr ? "د.أ" : "JOD"}`
+          : "";
+
+        return {
+          name: item.name,
+          image: item.image,
+          region: isAr ? `المنطقة: ${itemRegionFormatted}` : `Region: ${itemRegionFormatted}`,
+          price: priceText,
+          qty: item.qty || 1,
+        };
+      });
+
+      const notesBlock = notes && notes.trim()
+        ? `<div style="font-weight:700;color:#38bdf8;margin-bottom:6px;">${isAr ? "💡 تعليمات وملاحظات الطلب:" : "💡 Order Instructions & Notes:"}</div><div>${escapeHtml(notes.trim())}</div>`
+        : undefined;
+
+      const html = renderDriffleEmail({
+        lang: isAr ? "ar" : "en",
+        subject,
+        headline: isDelivered
+          ? (isAr ? "شكراً لشرائك من متجرنا" : "Thank you for your purchase")
+          : (isAr ? "تم إلغاء الطلب" : "Order Cancelled"),
+        greetingText: isAr
+          ? `عميلنا العزيز${customerName ? ` (${customerName})` : ""}،`
+          : `Hey ${customerName || "Valued Customer"},`,
+        bodyText: isDelivered
+          ? (isAr
+              ? "لقد تم الانتهاء من طلبك بنجاح. يمكنك رؤية منتجاتك في القائمة أدناه."
+              : "Thank you for choosing GX Store. We are pleased to inform you that your order has been completed successfully! You can view your products and details in the list below.")
+          : (isAr
+              ? `نود إعلامك بأنه تم إلغاء طلبك رقم #${orderNumber}. إذا كنت بحاجة إلى مساعدة أو ترغب في اختيار منتج بديل، يسعدنا تواصلك مع فريق الدعم الفني.`
+              : `We would like to inform you that your order #${orderNumber} has been cancelled. If you need any assistance or wish to choose an alternative product, our support team is happy to help.`),
+        introDetailsText: isDelivered
+          ? (isAr ? "إليك تفاصيل طلبك:" : "Here are your order details:")
+          : (isAr ? "إليك تفاصيل الطلب الملغي:" : "Here are the cancelled order details:"),
+        ctaButton: isDelivered
+          ? {
+              text: isAr ? "تفاصيل المنتج 🎮" : "Product Details 🎮",
+              url: orderUrl,
+            }
+          : {
+              text: isAr ? "تصفح المتجر 🛍️" : "Visit Store 🛍️",
+              url: "https://gxstore.me",
+            },
+        meta: {
+          orderIdLabel: isAr ? "رقم الطلب (ORDER ID)" : "ORDER ID",
+          orderIdValue: `#${orderNumber}`,
+          dateLabel: isAr ? "تاريخ الطلب (ORDER DATE)" : "ORDER DATE",
+          dateValue: isAr ? dateFormattedAr : dateFormattedEn,
+          emailLabel: isAr ? "البريد الإلكتروني (EMAIL ID)" : "EMAIL ID",
+          emailValue: customerEmail,
+        },
+        summaryTitle: isAr ? "تفاصيل ومحتويات الطلب (ORDER SUMMARY)" : "ORDER SUMMARY",
+        products: emailProducts,
+        breakdown: isDelivered
+          ? {
+              rows: [
                 {
-                  region: item.region,
-                  name: item.name,
-                  cartId: item.slug || item.variant,
+                  label: isAr ? "قيمة الطلب" : "Order Amount",
+                  value: isAr ? formattedSubtotal : formattedSubtotalEn,
                 },
-                isAr ? "ar" : "en",
-                { withDetails: true }
-              );
-
-              return `
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:18px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:14px;padding:12px;">
-                  <tr>
-                    <td width="74" valign="middle" style="${isAr ? "padding-left:14px;" : "padding-right:14px;"}">
-                      ${imgTag}
-                    </td>
-                    <td valign="middle">
-                      <div style="color:#ffffff;font-size:14px;font-weight:800;line-height:1.4;margin-bottom:4px;">
-                        ${item.name}
-                      </div>
-                      <div style="color:#94a3b8;font-size:12px;margin-bottom:3px;">
-                        ${isAr ? "المنطقة / الريجون:" : "Region:"} <strong style="color:#38bdf8;">${itemRegionFormatted}</strong>
-                      </div>
-                      ${qty > 1 ? `<div style="color:#64748b;font-size:11px;">${isAr ? "الكمية:" : "Quantity:"} x${qty}</div>` : ""}
-                    </td>
-                    <td width="90" valign="middle" align="${isAr ? "left" : "right"}" style="color:#00e5ff;font-size:15px;font-weight:900;font-family:ui-monospace,Menlo,monospace;white-space:nowrap;">
-                      ${priceFormatted}
-                    </td>
-                  </tr>
-                </table>
-              `;
-            })
-            .join("")
-        : `
-          <div style="color:#cbd5e1;font-size:13px;padding:12px 0;">
-            ${isAr ? `طلب رقم #${orderNumber} بقيمة ${formattedTotal}` : `Order #${orderNumber} (${formattedTotalEn})`}
-          </div>
-        `;
-
-      // ARABIC HTML TEMPLATE (GX Store Official Style with Logo, Products, Stepper, and My Orders Link)
-      const arabicHtml = `
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
-</head>
-<body style="margin:0;padding:0;background-color:#080b12;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f1f5f9;direction:rtl;text-align:right;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#080b12;width:100%;padding:32px 14px;">
-    <tr>
-      <td align="center">
-        <!-- Main Container Card -->
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:580px;background:linear-gradient(180deg,#121724 0%,#0c0f18 100%);border:1px solid #1e283d;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.7);">
-          
-          <!-- Brand Logo Header (GX STORE STYLE) -->
-          <tr>
-            <td style="background:#090d16;padding:22px 28px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:center;">
-              <a href="https://gxstore.me" target="_blank" style="text-decoration:none;display:inline-block;">
-                <img src="${OFFICIAL_LOGO_URL}" alt="GX Store" width="140" height="auto" style="max-width:140px;height:auto;display:block;margin:0 auto;" />
-              </a>
-              <div style="margin-top:12px;font-size:11px;color:#64748b;letter-spacing:0.5px;">
-                <a href="https://gxstore.me" style="color:#94a3b8;text-decoration:none;margin:0 8px;">الألعاب والاشتراكات</a> •
-                <a href="https://gxstore.me" style="color:#94a3b8;text-decoration:none;margin:0 8px;">البطاقات الرقمية</a> •
-                <a href="https://gxstore.me" style="color:#94a3b8;text-decoration:none;margin:0 8px;">الشحن المباشر</a>
-              </div>
-            </td>
-          </tr>
-
-          <!-- Content Body -->
-          <tr>
-            <td style="padding:32px 28px 20px;">
-              
-              <!-- Title Badge -->
-              <div style="display:inline-block;padding:5px 14px;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.25);border-radius:30px;margin-bottom:16px;">
-                <span style="font-size:12px;font-weight:800;color:#00e5ff;">
-                  ${isDelivered ? "✓ تم اكتمال وتسليم الطلب" : "✕ تم إلغاء الطلب"}
-                </span>
-              </div>
-
-              <h1 style="margin:0 0 14px;color:#ffffff;font-size:24px;font-weight:900;line-height:1.3;">
-                ${isDelivered ? "تم تأكيد وتسليم طلبك بنجاح! 🎮" : "إشعار بشأن إلغاء طلبك"}
-              </h1>
-
-              <p style="margin:0 0 10px;font-size:15px;color:#e2e8f0;line-height:1.7;">
-                مرحباً بك <strong style="color:#00e5ff;">${greetingName}</strong>،
-              </p>
-
-              <p style="margin:0 0 22px;font-size:14px;color:#cbd5e1;line-height:1.8;">
-                ${
-                  isDelivered
-                    ? "شكراً لتسوقك من <strong>GX Store</strong>. يسعدنا إعلامك بأنه تم تأكيد استلام الدفع وتسليم منتجات طلبك بالكامل، وجاهزة الآن لاستلامها وتفعيلها!"
-                    : "نحيطك علماً بأنه تم إلغاء طلبك من قِبل إدارة المتجر. إذا قمت بالدفع مسبقاً أو كان لديك أي استفسار، فإن فريق الدعم جاهز لمساعدتك فوراً."
-                }
-              </p>
-
-              ${
-                notes && notes.trim()
-                  ? `<div style="background:rgba(0,229,255,0.06);border:1px dashed rgba(0,229,255,0.3);border-radius:12px;padding:14px 16px;margin-bottom:24px;font-size:13px;color:#e0f2fe;line-height:1.7;">
-                      <div style="font-weight:800;color:#00e5ff;margin-bottom:4px;">💡 تعليمات وملاحظات الطلب:</div>
-                      <div>${notes.trim()}</div>
-                    </div>`
-                  : ""
-              }
-
-              ${
-                isDelivered
-                  ? `
-              <!-- Big Vibrant Action CTA Button (GX Store Theme: Neon Cyan / Blue) -->
-              <div style="text-align:center;margin:28px 0 14px;">
-                <a href="${orderUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#00e5ff 0%,#0070f3 100%);background-color:#00e5ff;color:#040914;text-decoration:none;font-size:16px;font-weight:900;padding:16px 42px;border-radius:14px;box-shadow:0 10px 30px rgba(0,229,255,0.45);border:1px solid rgba(0,229,255,0.8);letter-spacing:0.5px;">
-                  استلام وتفعيل الطلب كود / حساب 🎮
-                </a>
-              </div>
-
-              <!-- Reassurance Note: My Orders Page (USER EXPLICIT REQUIREMENT) -->
-              <div style="text-align:center;margin-bottom:28px;">
-                <p style="margin:0;font-size:12.5px;color:#94a3b8;line-height:1.6;">
-                  ✨ يمكنك دائماً رؤية منتجاتك ورموز التفعيل والرجوع إليها في أي وقت عبر:
-                  <br>
-                  <a href="${myOrdersUrl}" target="_blank" style="color:#00e5ff;font-weight:800;text-decoration:underline;">
-                    صفحة طلباتي في حسابك (My Orders)
-                  </a>
-                </p>
-              </div>
-              `
-                  : ""
-              }
-
-              <!-- Divider -->
-              <div style="border-top:1px solid #1e283d;margin:24px 0 20px;"></div>
-
-              <!-- Order Metadata Card (Spaced and Structured so Order ID and Date NEVER collide) -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:22px 0 20px;background:#0d121c;border:1px solid #1e283d;border-radius:14px;padding:16px 20px;">
-                <tr>
-                  <td align="right" valign="middle" style="padding-bottom:12px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:5px;">رقم الطلب (ORDER ID)</div>
-                    <div style="font-size:16px;color:#00e5ff;font-weight:900;font-family:ui-monospace,Menlo,monospace;letter-spacing:0.5px;direction:ltr;unicode-bidi:isolate;text-align:right;">#${orderNumber}</div>
-                  </td>
-                  <td align="left" valign="middle" style="padding-bottom:12px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:5px;text-align:left;">حالة الطلب (STATUS)</div>
-                    <div style="display:inline-block;padding:5px 14px;background:${isDelivered ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"};border:1px solid ${isDelivered ? "rgba(16,185,129,0.4)" : "rgba(239,68,68,0.4)"};border-radius:20px;font-size:12px;font-weight:800;color:${isDelivered ? "#10b981" : "#ef4444"};white-space:nowrap;">
-                      ${isDelivered ? "✅ تم التسليم بنجاح" : "❌ ملغي"}
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td colspan="2" style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
-                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                      <tr>
-                        <td align="right" valign="middle" style="font-size:12.5px;color:#94a3b8;line-height:1.6;">
-                          📅 تاريخ الطلب: <strong style="color:#cbd5e1;direction:rtl;unicode-bidi:isolate;">${dateFormattedAr}</strong>
-                        </td>
-                        <td align="left" valign="middle" style="font-size:12px;color:#94a3b8;line-height:1.6;">
-                          ✉️ البريد: <strong style="color:#38bdf8;direction:ltr;unicode-bidi:isolate;">${customerEmail}</strong>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Divider -->
-              <div style="border-top:1px solid #1e283d;margin:10px 0 22px;"></div>
-
-              <!-- Section: ملخص المنتجات (ORDER SUMMARY) -->
-              <div style="font-size:12px;color:#94a3b8;font-weight:800;letter-spacing:1px;margin-bottom:16px;">
-                ملخص المنتجات المطلوبة (ORDER SUMMARY)
-              </div>
-
-              <!-- Real Items with Images and Details -->
-              ${itemsHtml}
-
-              <!-- Financial Breakdown -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:16px;background:rgba(0,0,0,0.3);border-radius:12px;padding:14px;">
-                <tr>
-                  <td style="color:#94a3b8;font-size:13px;padding:5px 0;">المجموع الفرعي</td>
-                  <td align="left" style="color:#cbd5e1;font-size:13px;font-family:ui-monospace,Menlo,monospace;">${formattedSubtotal}</td>
-                </tr>
-                ${
-                  formattedDiscount
-                    ? `<tr>
-                        <td style="color:#10b981;font-size:13px;padding:5px 0;">الخصم المطبق / رصيد</td>
-                        <td align="left" style="color:#10b981;font-size:13px;font-family:ui-monospace,Menlo,monospace;">${formattedDiscount}</td>
-                      </tr>`
-                    : ""
-                }
-                <tr>
-                  <td style="color:#ffffff;font-size:15px;font-weight:900;padding:12px 0 4px;border-top:1px solid rgba(255,255,255,0.08);">المبلغ الإجمالي المدفوع</td>
-                  <td align="left" style="color:#00e5ff;font-size:18px;font-weight:900;font-family:ui-monospace,Menlo,monospace;padding:12px 0 4px;border-top:1px solid rgba(255,255,255,0.08);">${formattedTotal}</td>
-                </tr>
-              </table>
-
-              <!-- Payment Method Section -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:18px 0 26px;">
-                <tr>
-                  <td style="color:#64748b;font-size:11px;font-weight:700;">طريقة الدفع (YOU PAID USING)</td>
-                  <td align="left" style="color:#64748b;font-size:11px;font-weight:700;">المبلغ</td>
-                </tr>
-                <tr>
-                  <td style="color:#ffffff;font-size:13px;font-weight:800;padding-top:4px;">${pmLabel}</td>
-                  <td align="left" style="color:#ffffff;font-size:14px;font-weight:900;font-family:ui-monospace,Menlo,monospace;padding-top:4px;">${formattedTotal}</td>
-                </tr>
-              </table>
-
-              <!-- Support Note (GX Store Official style) -->
-              <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px;font-size:13px;color:#cbd5e1;line-height:1.8;">
-                <p style="margin:0 0 10px;font-weight:800;color:#ffffff;">
-                  هل تحتاج لمساعدة أو لديك استفسار بشأن التفعيل؟
-                </p>
-                <p style="margin:0 0 12px;font-size:12.5px;color:#94a3b8;">
-                  فريق دعم <strong>GX Store</strong> جاهز لخدمتك عبر واتساب لحل أي مشكلة فوراً.
-                </p>
-                <div style="margin-top:10px;">
-                  <a href="https://wa.me/962776252313?text=${encodeURIComponent(`مرحباً، أود المساعدة بشأن طلبي رقم #${orderNumber}`)}" target="_blank" style="display:inline-block;background:#25D366;color:#051c14;padding:8px 16px;border-radius:8px;font-weight:800;font-size:12px;text-decoration:none;">
-                    واتساب الدعم الفني
-                  </a>
-                </div>
-              </div>
-
-            </td>
-          </tr>
-
-          <!-- Footer with Noreply Disclaimer -->
-          <tr>
-            <td style="background-color:#070a12;padding:20px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
-              <p style="margin:0 0 6px;font-size:12px;color:#64748b;">
-                مع تحيات فريق عمل متجر <strong>GX Store</strong> — وجهتك الأولى للألعاب والاشتراكات.
-              </p>
-              <p style="margin:0;font-size:11px;color:#475569;">
-                *تم إنشاء هذه الرسالة تلقائياً من noreply@gxstore.me. يرجى عدم الرد عليها مباشرة.*
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-      `;
-
-      // ENGLISH HTML TEMPLATE (GX Store Official Style with Logo, Products, Stepper, and My Orders Link)
-      const englishHtml = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
-</head>
-<body style="margin:0;padding:0;background-color:#080b12;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f1f5f9;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#080b12;width:100%;padding:32px 14px;">
-    <tr>
-      <td align="center">
-        <!-- Main Container Card -->
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:580px;background:linear-gradient(180deg,#121724 0%,#0c0f18 100%);border:1px solid #1e283d;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.7);">
-          
-          <!-- Brand Logo Header (GX STORE STYLE) -->
-          <tr>
-            <td style="background:#090d16;padding:22px 28px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:center;">
-              <a href="https://gxstore.me" target="_blank" style="text-decoration:none;display:inline-block;">
-                <img src="${OFFICIAL_LOGO_URL}" alt="GX Store" width="140" height="auto" style="max-width:140px;height:auto;display:block;margin:0 auto;" />
-              </a>
-              <div style="margin-top:12px;font-size:11px;color:#64748b;letter-spacing:0.5px;">
-                <a href="https://gxstore.me" style="color:#94a3b8;text-decoration:none;margin:0 8px;">Video Games</a> •
-                <a href="https://gxstore.me" style="color:#94a3b8;text-decoration:none;margin:0 8px;">Gift Cards</a> •
-                <a href="https://gxstore.me" style="color:#94a3b8;text-decoration:none;margin:0 8px;">Subscriptions</a>
-              </div>
-            </td>
-          </tr>
-
-          <!-- Content Body -->
-          <tr>
-            <td style="padding:32px 28px 20px;">
-              
-              <!-- Title Badge -->
-              <div style="display:inline-block;padding:5px 14px;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.25);border-radius:30px;margin-bottom:16px;">
-                <span style="font-size:12px;font-weight:800;color:#00e5ff;">
-                  ${isDelivered ? "✓ Order Completed & Delivered" : "✕ Order Cancelled"}
-                </span>
-              </div>
-
-              <h1 style="margin:0 0 14px;color:#ffffff;font-size:24px;font-weight:900;line-height:1.3;">
-                ${isDelivered ? "Thank you for your purchase!" : "Order Cancellation Notice"}
-              </h1>
-
-              <p style="margin:0 0 10px;font-size:15px;color:#e2e8f0;line-height:1.7;">
-                Hey <strong style="color:#00e5ff;">${greetingName}</strong>,
-              </p>
-
-              <p style="margin:0 0 22px;font-size:14px;color:#cbd5e1;line-height:1.8;">
-                ${
-                  isDelivered
-                    ? "Thank you for shopping at <strong>GX Store</strong>. We are pleased to inform you that your payment has been confirmed and your digital order has been delivered and is ready for activation!"
-                    : "We are writing to inform you that your order has been cancelled by store administration. If you have already paid or need assistance, our support team is available immediately."
-                }
-              </p>
-
-              ${
-                notes && notes.trim()
-                  ? `<div style="background:rgba(0,229,255,0.06);border:1px dashed rgba(0,229,255,0.3);border-radius:12px;padding:14px 16px;margin-bottom:24px;font-size:13px;color:#e0f2fe;line-height:1.7;">
-                      <div style="font-weight:800;color:#00e5ff;margin-bottom:4px;">💡 Order Instructions & Notes:</div>
-                      <div>${notes.trim()}</div>
-                    </div>`
-                  : ""
-              }
-
-              ${
-                isDelivered
-                  ? `
-              <!-- Big Vibrant Action CTA Button (GX Store Theme: Neon Cyan / Blue) -->
-              <div style="text-align:center;margin:28px 0 14px;">
-                <a href="${orderUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#00e5ff 0%,#0070f3 100%);background-color:#00e5ff;color:#040914;text-decoration:none;font-size:16px;font-weight:900;padding:16px 42px;border-radius:14px;box-shadow:0 10px 30px rgba(0,229,255,0.45);border:1px solid rgba(0,229,255,0.8);letter-spacing:0.5px;">
-                  COLLECT YOUR ORDER 🎮
-                </a>
-              </div>
-
-              <!-- Reassurance Note: My Orders Page (USER EXPLICIT REQUIREMENT) -->
-              <div style="text-align:center;margin-bottom:28px;">
-                <p style="margin:0;font-size:12.5px;color:#94a3b8;line-height:1.6;">
-                  ✨ You can reveal and view these products at any time from:
-                  <br>
-                  <a href="${myOrdersUrl}" target="_blank" style="color:#00e5ff;font-weight:800;text-decoration:underline;">
-                    My Orders page in your profile
-                  </a>
-                </p>
-              </div>
-              `
-                  : ""
-              }
-
-              <!-- Divider -->
-              <div style="border-top:1px solid #1e283d;margin:24px 0 20px;"></div>
-
-              <!-- Order Metadata Card (Spaced and Structured so Order ID and Date NEVER collide) -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:22px 0 20px;background:#0d121c;border:1px solid #1e283d;border-radius:14px;padding:16px 20px;">
-                <tr>
-                  <td align="left" valign="middle" style="padding-bottom:12px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:5px;">ORDER ID</div>
-                    <div style="font-size:16px;color:#00e5ff;font-weight:900;font-family:ui-monospace,Menlo,monospace;letter-spacing:0.5px;direction:ltr;unicode-bidi:isolate;">#${orderNumber}</div>
-                  </td>
-                  <td align="right" valign="middle" style="padding-bottom:12px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:5px;text-align:right;">STATUS</div>
-                    <div style="display:inline-block;padding:5px 14px;background:${isDelivered ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"};border:1px solid ${isDelivered ? "rgba(16,185,129,0.4)" : "rgba(239,68,68,0.4)"};border-radius:20px;font-size:12px;font-weight:800;color:${isDelivered ? "#10b981" : "#ef4444"};white-space:nowrap;">
-                      ${isDelivered ? "✅ Completed & Delivered" : "❌ Cancelled"}
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td colspan="2" style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
-                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                      <tr>
-                        <td align="left" valign="middle" style="font-size:12.5px;color:#94a3b8;line-height:1.6;">
-                          📅 Order Date: <strong style="color:#cbd5e1;">${dateFormattedEn}</strong>
-                        </td>
-                        <td align="right" valign="middle" style="font-size:12px;color:#94a3b8;line-height:1.6;">
-                          ✉️ Email: <strong style="color:#38bdf8;direction:ltr;unicode-bidi:isolate;">${customerEmail}</strong>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Divider -->
-              <div style="border-top:1px solid #1e283d;margin:10px 0 22px;"></div>
-
-              <!-- Section: ORDER SUMMARY -->
-              <div style="font-size:12px;color:#94a3b8;font-weight:800;letter-spacing:1px;margin-bottom:16px;">
-                ORDER SUMMARY
-              </div>
-
-              <!-- Real Items with Images and Details -->
-              ${itemsHtml}
-
-              <!-- Financial Breakdown -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:16px;background:rgba(0,0,0,0.3);border-radius:12px;padding:14px;">
-                <tr>
-                  <td style="color:#94a3b8;font-size:13px;padding:5px 0;">Order Amount</td>
-                  <td align="right" style="color:#cbd5e1;font-size:13px;font-family:ui-monospace,Menlo,monospace;">${formattedSubtotalEn}</td>
-                </tr>
-                ${
-                  formattedDiscountEn
-                    ? `<tr>
-                        <td style="color:#10b981;font-size:13px;padding:5px 0;">Discount / Credits</td>
-                        <td align="right" style="color:#10b981;font-size:13px;font-family:ui-monospace,Menlo,monospace;">${formattedDiscountEn}</td>
-                      </tr>`
-                    : ""
-                }
-                <tr>
-                  <td style="color:#ffffff;font-size:15px;font-weight:900;padding:12px 0 4px;border-top:1px solid rgba(255,255,255,0.08);">ORDER TOTAL</td>
-                  <td align="right" style="color:#00e5ff;font-size:18px;font-weight:900;font-family:ui-monospace,Menlo,monospace;padding:12px 0 4px;border-top:1px solid rgba(255,255,255,0.08);">${formattedTotalEn}</td>
-                </tr>
-              </table>
-
-              <!-- Payment Method Section -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:18px 0 26px;">
-                <tr>
-                  <td style="color:#64748b;font-size:11px;font-weight:700;">YOU PAID USING</td>
-                  <td align="right" style="color:#64748b;font-size:11px;font-weight:700;">AMOUNT</td>
-                </tr>
-                <tr>
-                  <td style="color:#ffffff;font-size:13px;font-weight:800;padding-top:4px;">${pmLabel}</td>
-                  <td align="right" style="color:#ffffff;font-size:14px;font-weight:900;font-family:ui-monospace,Menlo,monospace;padding-top:4px;">${formattedTotalEn}</td>
-                </tr>
-              </table>
-
-              <!-- Support Note (GX Store Official style) -->
-              <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px;font-size:13px;color:#cbd5e1;line-height:1.8;">
-                <p style="margin:0 0 10px;font-weight:800;color:#ffffff;">
-                  Need assistance with activation?
-                </p>
-                <p style="margin:0 0 12px;font-size:12.5px;color:#94a3b8;">
-                  The <strong>GX Store</strong> Support Team is available around the clock to help you through our official channels.
-                </p>
-                <div style="margin-top:10px;">
-                  <a href="https://wa.me/962776252313?text=${encodeURIComponent(`Hello, I need help with my order #${orderNumber}`)}" target="_blank" style="display:inline-block;background:#25D366;color:#051c14;padding:8px 16px;border-radius:8px;font-weight:800;font-size:12px;text-decoration:none;">
-                    WhatsApp Support
-                  </a>
-                </div>
-              </div>
-
-            </td>
-          </tr>
-
-          <!-- Footer with Noreply Disclaimer -->
-          <tr>
-            <td style="background-color:#070a12;padding:20px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
-              <p style="margin:0 0 6px;font-size:12px;color:#64748b;">
-                Best regards, <strong>GX Store Team</strong> — Your premier digital gaming destination.
-              </p>
-              <p style="margin:0;font-size:11px;color:#475569;">
-                *This email has been generated automatically from noreply@gxstore.me. Please do not reply to it.*
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-      `;
-
-      const html = isAr ? arabicHtml : englishHtml;
+                ...(discountJod && discountJod > 0
+                  ? [
+                      {
+                        label: isAr ? "الخصم الترويجي" : "Promo",
+                        value: isAr ? formattedDiscount! : formattedDiscountEn!,
+                        isPromo: true,
+                      },
+                    ]
+                  : []),
+                {
+                  label: isAr ? "المبلغ الإجمالي" : "ORDER TOTAL",
+                  value: isAr ? formattedTotal : formattedTotalEn,
+                  isTotal: true,
+                },
+              ],
+              paidUsingLabel: isAr ? "طريقة الدفع (YOU PAID USING)" : "YOU PAID USING",
+              paidUsingMethod: pmLabel,
+              paidAmountLabel: isAr ? "المبلغ (AMOUNT)" : "AMOUNT",
+              paidAmountValue: isAr ? formattedTotal : formattedTotalEn,
+            }
+          : undefined, // Omitted on cancellation (as user explicitly requested: "وشيل منه المبلغ الاجمالي المدفوع مهو ما دفع اشي وطريقة الدفع")
+        notesHtml: notesBlock,
+      });
 
       const apiKey = await getResendApiKey();
       if (!apiKey) {
@@ -1356,420 +1049,87 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
         ? `⚠️ طلبك رقم #${orderNumber} بانتظار إتمام الدفع — تواصل معنا عبر الواتساب | GX Store`
         : `⚠️ Action Required: Order #${orderNumber} Pending Payment — Contact via WhatsApp | GX Store`;
 
-      // Items list HTML (with original product thumbnail image)
-      const itemsHtml = resolvedItems.length > 0
-        ? resolvedItems
-            .map((item) => {
-              const qty = item.qty || 1;
-              const priceFormatted = item.price != null
-                ? `${Number(item.price).toFixed(2)} ${isAr ? "د.أ" : "JOD"}`
-                : "";
-              const imgTag = item.image
-                ? `<img src="${item.image}" alt="${item.name}" width="56" height="56" style="width:56px;height:56px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,0.12);display:block;background:#0d121c;">`
-                : `<div style="width:56px;height:56px;border-radius:10px;background:#141b27;border:1px solid rgba(255,255,255,0.12);display:block;color:#00e5ff;font-size:22px;text-align:center;line-height:56px;">🎮</div>`;
+      const emailProducts: EmailProductItem[] = resolvedItems.map((item) => {
+        const itemRegionFormatted = formatFullRegion(
+          {
+            region: item.region,
+            name: item.name,
+            cartId: item.slug || item.variant,
+          },
+          isAr ? "ar" : "en",
+          { withDetails: true }
+        );
 
-              const itemRegionFormatted = formatFullRegion(
-                {
-                  region: item.region,
-                  name: item.name,
-                  cartId: item.slug || item.variant,
-                },
-                isAr ? "ar" : "en",
-                { withDetails: true }
-              );
+        const priceText = item.price != null
+          ? `${Number(item.price).toFixed(2)} ${isAr ? "د.أ" : "JOD"}`
+          : "";
 
-              return `
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 14px;">
-                  <tr>
-                    <td width="56" valign="middle" style="${isAr ? "padding-left:14px;" : "padding-right:14px;"}">
-                      ${imgTag}
-                    </td>
-                    <td valign="middle" align="${isAr ? "right" : "left"}">
-                      <div style="color:#ffffff;font-size:14px;font-weight:800;line-height:1.4;margin-bottom:4px;">
-                        ${item.name}
-                      </div>
-                      <div style="color:#94a3b8;font-size:12px;">
-                        ${isAr ? "المنطقة / الريجون:" : "Region:"} <strong style="color:#38bdf8;">${itemRegionFormatted}</strong>
-                        ${qty > 1 ? ` • <span style="color:#64748b;">${isAr ? "الكمية:" : "Qty:"} x${qty}</span>` : ""}
-                      </div>
-                    </td>
-                    <td width="90" valign="middle" align="${isAr ? "left" : "right"}" style="color:#00e5ff;font-size:15px;font-weight:900;font-family:ui-monospace,Menlo,monospace;white-space:nowrap;padding-${isAr ? "right" : "left"}:8px;">
-                      ${priceFormatted}
-                    </td>
-                  </tr>
-                </table>
-              `;
-            })
-            .join("")
-        : `
-          <div style="color:#cbd5e1;font-size:13px;padding:12px 0;">
-            ${isAr ? `طلب رقم #${orderNumber} بقيمة ${formattedTotal}` : `Order #${orderNumber} (${formattedTotalEn})`}
-          </div>
-        `;
+        return {
+          name: item.name,
+          image: item.image,
+          region: isAr ? `المنطقة: ${itemRegionFormatted}` : `Region: ${itemRegionFormatted}`,
+          price: priceText,
+          qty: item.qty || 1,
+        };
+      });
 
-      // ARABIC HTML TEMPLATE (Rich copy, payment methods overview, original product images, no view order details button)
-      const arabicHtml = `
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
-</head>
-<body style="margin:0;padding:0;background-color:#080b12;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f1f5f9;direction:rtl;text-align:right;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#080b12;width:100%;padding:32px 14px;">
-    <tr>
-      <td align="center">
-        <!-- Main Container Card -->
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:580px;background:linear-gradient(180deg,#121724 0%,#0c0f18 100%);border:1px solid #1e283d;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.7);">
-          
-          <!-- Brand Logo Header -->
-          <tr>
-            <td style="background:#090d16;padding:22px 28px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:center;">
-              <a href="https://gxstore.me" target="_blank" style="text-decoration:none;display:inline-block;">
-                <img src="${OFFICIAL_LOGO_URL}" alt="GX Store" width="140" height="auto" style="max-width:140px;height:auto;display:block;margin:0 auto;" />
-              </a>
-            </td>
-          </tr>
+      const paymentInstructions = isAr
+        ? `<div style="text-align:center;"><p style="margin:0 0 10px;font-weight:700;color:#38bdf8;">💳 طرق الدفع المتاحة الفورية:</p><p style="margin:0;font-size:13px;color:#d4d4d8;line-height:1.7;">🇯🇴 <strong>كليك CliQ:</strong> تحويل فوري ومجاني من كافة البنوك الأردنية.<br>📱 <strong>زين كاش / محافظ إلكترونية:</strong> تحويل مباشر وآمن.<br>💳 <strong>فيزا / ماستركارد:</strong> دفع إلكتروني مباشر.</p></div>`
+        : `<div style="text-align:center;"><p style="margin:0 0 10px;font-weight:700;color:#38bdf8;">💳 Instant Payment Options:</p><p style="margin:0;font-size:13px;color:#d4d4d8;line-height:1.7;">🇯🇴 <strong>CliQ (Jordan):</strong> Instant bank transfer with zero fees.<br>📱 <strong>Zain Cash / Mobile Wallets:</strong> Instant direct payment.<br>💳 <strong>Credit / Debit Card:</strong> Fast and secure checkout.</p></div>`;
 
-          <!-- Content Body -->
-          <tr>
-            <td style="padding:32px 28px 20px;">
-              
-              <!-- Title Badge -->
-              <div style="display:inline-block;padding:6px 16px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);border-radius:30px;margin-bottom:18px;">
-                <span style="font-size:12.5px;font-weight:800;color:#fbbf24;">
-                  ⏳ طلب غير مكتمل — بانتظار إتمام الدفع
-                </span>
-              </div>
-
-              <h1 style="margin:0 0 14px;color:#ffffff;font-size:23px;font-weight:900;line-height:1.35;">
-                طلبك بانتظار إتمام الدفع 💳
-              </h1>
-
-              <p style="margin:0 0 12px;font-size:15px;color:#ffffff;line-height:1.7;">
-                مرحباً بك <strong style="color:#00e5ff;">${greetingName}</strong> 👋،
-              </p>
-
-              <p style="margin:0 0 16px;font-size:14.5px;color:#cbd5e1;line-height:1.8;">
-                شكراً لتسوقك من <strong>GX Store</strong>! تم تسجيل طلبك لدينا بنجاح، وهو حالياً <strong>غير مكتمل وبانتظار تأكيد الدفع</strong> لتجهيزه وتسليمه لك فوراً.
-              </p>
-
-              <!-- Callout Box: Contact via WhatsApp to Pay -->
-              <div style="background:linear-gradient(135deg,rgba(37,211,102,0.12) 0%,rgba(0,229,255,0.06) 100%);border:1px solid rgba(37,211,102,0.35);border-radius:14px;padding:18px 20px;margin:22px 0;text-align:center;">
-                <div style="font-size:15px;font-weight:900;color:#ffffff;margin-bottom:8px;">
-                  💬 لإتمام الدفع وتأكيد طلبك تواصل معنا عبر الواتساب:
-                </div>
-                <p style="margin:0 0 16px;font-size:13px;color:#cbd5e1;line-height:1.6;">
-                  فريق الدعم متواجد لتزويدك ببيانات الدفع الفوري (كليك CliQ / زين كاش / بطاقة) وتأكيد طلبك مباشرة.
-                </p>
-
-                <!-- WhatsApp Button -->
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
-                  <tr>
-                    <td align="center" style="border-radius:12px;background:#25D366;box-shadow:0 8px 24px rgba(37,211,102,0.35);">
-                      <a href="${waLink}" target="_blank" style="display:inline-block;padding:14px 34px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:900;color:#051c14;text-decoration:none;border-radius:12px;letter-spacing:0.3px;">
-                        💬 استكمال الدفع عبر واتساب →
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-              </div>
-
-              <!-- Available Payment Methods Overview (طرق الدفع المتوفرة عندنا) -->
-              <div style="margin:24px 0 20px;">
-                <div style="font-size:13px;font-weight:800;color:#00e5ff;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">
-                  💳 طرق الدفع المتاحة للاستكمال:
-                </div>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                  <tr>
-                    <td style="padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:13px;color:#e2e8f0;">
-                      🇯🇴 <strong>خدمة كليك (CliQ):</strong> تحويل بنكي فوري من أي بنك أردني بدون أي عمولات.
-                    </td>
-                  </tr>
-                  <tr><td height="8"></td></tr>
-                  <tr>
-                    <td style="padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:13px;color:#e2e8f0;">
-                      📱 <strong>المحافظ الإلكترونية:</strong> زين كاش (Zain Cash) / أورنج موني / أمنية.
-                    </td>
-                  </tr>
-                  <tr><td height="8"></td></tr>
-                  <tr>
-                    <td style="padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:13px;color:#e2e8f0;">
-                      💳 <strong>البطاقات البنكية:</strong> بطاقات فيزا وماستركارد عبر رابط دفع مباشر وآمن.
-                    </td>
-                  </tr>
-                </table>
-              </div>
-
-              <!-- Order Metadata Card (Spaced so Order Number and Status NEVER collide) -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:22px 0 18px;background:#0d121c;border:1px solid #1e283d;border-radius:14px;padding:14px 18px;">
-                <tr>
-                  <td align="right" valign="middle" style="padding-bottom:10px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">رقم الطلب (ORDER ID)</div>
-                    <div style="font-size:16px;color:#00e5ff;font-weight:900;font-family:ui-monospace,Menlo,monospace;letter-spacing:0.5px;">#${orderNumber}</div>
-                  </td>
-                  <td align="left" valign="middle" style="padding-bottom:10px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;text-align:left;">حالة الطلب</div>
-                    <div style="display:inline-block;padding:5px 14px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);border-radius:20px;font-size:12px;font-weight:800;color:#fbbf24;white-space:nowrap;">
-                      ⏳ بانتظار إتمام الدفع
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td colspan="2" style="border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">
-                    <div style="font-size:11.5px;color:#94a3b8;">
-                      تاريخ إنشاء الطلب: <strong style="color:#cbd5e1;">${dateFormattedAr}</strong>
-                    </div>
-                  </td>
-                </tr>
-              </table>
-
-              ${
-                notes && notes.trim()
-                  ? `<div style="background:rgba(0,229,255,0.06);border:1px dashed rgba(0,229,255,0.3);border-radius:12px;padding:14px 16px;margin-bottom:22px;font-size:13px;color:#e0f2fe;line-height:1.7;">
-                      <div style="font-weight:800;color:#00e5ff;margin-bottom:4px;">💡 ملاحظة من إدارة المتجر:</div>
-                      <div>${notes.trim()}</div>
-                    </div>`
-                  : ""
-              }
-
-              <!-- Products Header -->
-              <div style="font-size:13px;font-weight:800;color:#00e5ff;text-transform:uppercase;letter-spacing:0.5px;margin:22px 0 14px;border-bottom:1px solid #1e283d;padding-bottom:8px;">
-                المنتجات المحجوزة في هذا الطلب (${resolvedItems.length})
-              </div>
-
-              <!-- Items List (with original images) -->
-              ${itemsHtml}
-
-              <!-- Pricing Summary Card -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0 24px;background:#0d121c;border:1px solid #1e283d;border-radius:14px;padding:16px 20px;">
-                ${
-                  formattedDiscount
-                    ? `
-                  <tr>
-                    <td style="color:#94a3b8;font-size:13px;padding-bottom:8px;">المجموع الفرعي</td>
-                    <td align="left" style="color:#ffffff;font-size:13px;font-weight:700;padding-bottom:8px;font-family:ui-monospace,Menlo,monospace;">${formattedSubtotal}</td>
-                  </tr>
-                  <tr>
-                    <td style="color:#10b981;font-size:13px;padding-bottom:8px;">خصم الكوبون / النقاط</td>
-                    <td align="left" style="color:#10b981;font-size:13px;font-weight:800;padding-bottom:8px;font-family:ui-monospace,Menlo,monospace;">${formattedDiscount}</td>
-                  </tr>
-                `
-                    : ""
-                }
-                <tr>
-                  <td style="color:#ffffff;font-size:15px;font-weight:900;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);">المبلغ المطلوب سداده</td>
-                  <td align="left" style="color:#00e5ff;font-size:18px;font-weight:900;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);font-family:ui-monospace,Menlo,monospace;">${formattedTotal}</td>
-                </tr>
-              </table>
-
-              <!-- Reassurance / Guarantee -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(0,229,255,0.03);border:1px solid rgba(0,229,255,0.12);border-radius:12px;padding:14px;margin-bottom:12px;">
-                <tr>
-                  <td width="36" valign="top" style="padding-left:12px;font-size:22px;">🛡️</td>
-                  <td valign="top" style="font-size:12px;color:#94a3b8;line-height:1.6;">
-                    <strong style="color:#ffffff;">أمان وضمان 100%:</strong>
-                    طلبك محجوز لك. فور استلام وصل التحويل على الواتساب، سيتم تأكيد الدفع وإرسال مفاتيح التفعيل والحسابات مباشرة إلى بريدك الإلكتروني.
-                  </td>
-                </tr>
-              </table>
-
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background:#090d16;padding:24px 28px;border-top:1px solid #1e283d;text-align:center;">
-              <p style="margin:0 0 10px;font-size:12px;color:#64748b;">
-                هل لديك استفسار؟ واتساب الدعم الفني: <a href="${waLink}" style="color:#25D366;font-weight:800;text-decoration:none;">+962 7 7625 2313</a>
-              </p>
-              <p style="margin:0;font-size:11px;color:#475569;">
-                © ${new Date().getFullYear()} GX Store. جميع الحقوق محفوظة.
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-      `;
-
-      // ENGLISH HTML TEMPLATE (with original product images, payment methods, separated order metadata, no view order details button)
-      const englishHtml = `
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
-</head>
-<body style="margin:0;padding:0;background-color:#080b12;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f1f5f9;direction:ltr;text-align:left;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#080b12;width:100%;padding:32px 14px;">
-    <tr>
-      <td align="center">
-        <!-- Main Container Card -->
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:580px;background:linear-gradient(180deg,#121724 0%,#0c0f18 100%);border:1px solid #1e283d;border-radius:20px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.7);">
-          
-          <!-- Header -->
-          <tr>
-            <td style="background:#090d16;padding:22px 28px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:center;">
-              <a href="https://gxstore.me" target="_blank" style="text-decoration:none;display:inline-block;">
-                <img src="${OFFICIAL_LOGO_URL}" alt="GX Store" width="140" height="auto" style="max-width:140px;height:auto;display:block;margin:0 auto;" />
-              </a>
-            </td>
-          </tr>
-
-          <!-- Content Body -->
-          <tr>
-            <td style="padding:32px 28px 20px;">
-              <div style="display:inline-block;padding:6px 16px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);border-radius:30px;margin-bottom:18px;">
-                <span style="font-size:12.5px;font-weight:800;color:#fbbf24;">
-                  ⏳ Order Incomplete — Pending Payment
-                </span>
-              </div>
-
-              <h1 style="margin:0 0 14px;color:#ffffff;font-size:23px;font-weight:900;line-height:1.35;">
-                Order #${orderNumber} is Pending Payment 💳
-              </h1>
-
-              <p style="margin:0 0 12px;font-size:15px;color:#ffffff;line-height:1.7;">
-                Hello <strong style="color:#00e5ff;">${greetingName}</strong> 👋,
-              </p>
-
-              <p style="margin:0 0 16px;font-size:14.5px;color:#cbd5e1;line-height:1.8;">
-                Thank you for shopping at <strong>GX Store</strong>! Your order has been placed and is currently <strong>incomplete / pending payment confirmation</strong>.
-              </p>
-
-              <div style="background:linear-gradient(135deg,rgba(37,211,102,0.12) 0%,rgba(0,229,255,0.06) 100%);border:1px solid rgba(37,211,102,0.35);border-radius:14px;padding:18px 20px;margin:22px 0;text-align:center;">
-                <div style="font-size:15px;font-weight:900;color:#ffffff;margin-bottom:8px;">
-                  💬 To complete payment, please contact us on WhatsApp:
-                </div>
-                <p style="margin:0 0 16px;font-size:13px;color:#cbd5e1;line-height:1.6;">
-                  Our support team will promptly provide payment details (CliQ, Zain Cash, or Card) and deliver your items instantly.
-                </p>
-
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 auto;">
-                  <tr>
-                    <td align="center" style="border-radius:12px;background:#25D366;box-shadow:0 8px 24px rgba(37,211,102,0.35);">
-                      <a href="${waLink}" target="_blank" style="display:inline-block;padding:14px 34px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:900;color:#051c14;text-decoration:none;border-radius:12px;">
-                        💬 Complete Payment on WhatsApp →
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-              </div>
-
-              <!-- Payment Methods Overview -->
-              <div style="margin:24px 0 20px;">
-                <div style="font-size:12.5px;font-weight:800;color:#00e5ff;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">
-                  Payment Methods Available:
-                </div>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                  <tr>
-                    <td style="padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:12.5px;color:#e2e8f0;">
-                      🇯🇴 <strong>CliQ (Jordan):</strong> Instant bank transfer from any Jordanian bank with zero fees.
-                    </td>
-                  </tr>
-                  <tr><td height="6"></td></tr>
-                  <tr>
-                    <td style="padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:12.5px;color:#e2e8f0;">
-                      📱 <strong>E-Wallets:</strong> Zain Cash / Orange Money / Umniah.
-                    </td>
-                  </tr>
-                  <tr><td height="6"></td></tr>
-                  <tr>
-                    <td style="padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;font-size:12.5px;color:#e2e8f0;">
-                      💳 <strong>Cards:</strong> Visa and MasterCard via direct secure payment link.
-                    </td>
-                  </tr>
-                </table>
-              </div>
-
-              <!-- Order Metadata Card (Spaced so Order Number and Status NEVER collide) -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0 18px;background:#0d121c;border:1px solid #1e283d;border-radius:14px;padding:14px 18px;">
-                <tr>
-                  <td align="left" valign="middle" style="padding-bottom:10px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">ORDER ID</div>
-                    <div style="font-size:16px;color:#00e5ff;font-weight:900;font-family:ui-monospace,Menlo,monospace;letter-spacing:0.5px;">#${orderNumber}</div>
-                  </td>
-                  <td align="right" valign="middle" style="padding-bottom:10px;">
-                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">STATUS</div>
-                    <div style="display:inline-block;padding:5px 14px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);border-radius:20px;font-size:12px;font-weight:800;color:#fbbf24;white-space:nowrap;">
-                      ⏳ Pending Payment
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td colspan="2" style="border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">
-                    <div style="font-size:11.5px;color:#94a3b8;">
-                      Order Placed: <strong style="color:#cbd5e1;">${dateFormattedEn}</strong>
-                    </div>
-                  </td>
-                </tr>
-              </table>
-
-              ${
-                notes && notes.trim()
-                  ? `<div style="background:rgba(0,229,255,0.06);border:1px dashed rgba(0,229,255,0.3);border-radius:12px;padding:14px 16px;margin-bottom:22px;font-size:13px;color:#e0f2fe;line-height:1.7;">
-                      <div style="font-weight:800;color:#00e5ff;margin-bottom:4px;">💡 Note from Store Management:</div>
-                      <div>${notes.trim()}</div>
-                    </div>`
-                  : ""
-              }
-
-              <!-- Items List -->
-              <div style="font-size:13px;font-weight:800;color:#00e5ff;text-transform:uppercase;letter-spacing:0.5px;margin:22px 0 14px;border-bottom:1px solid #1e283d;padding-bottom:8px;">
-                Reserved Items (${resolvedItems.length})
-              </div>
-              ${itemsHtml}
-
-              <!-- Pricing Summary -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0 24px;background:#0d121c;border:1px solid #1e283d;border-radius:14px;padding:16px 20px;">
-                <tr>
-                  <td style="color:#ffffff;font-size:15px;font-weight:900;">Total Amount Due</td>
-                  <td align="right" style="color:#00e5ff;font-size:18px;font-weight:900;font-family:ui-monospace,Menlo,monospace;">${formattedTotalEn}</td>
-                </tr>
-              </table>
-
-              <!-- 100% Security & Guarantee -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(0,229,255,0.03);border:1px solid rgba(0,229,255,0.12);border-radius:12px;padding:14px;margin-bottom:12px;">
-                <tr>
-                  <td width="36" valign="top" style="padding-right:12px;font-size:22px;">🛡️</td>
-                  <td valign="top" style="font-size:12px;color:#94a3b8;line-height:1.6;">
-                    <strong style="color:#ffffff;">100% Guaranteed & Secured:</strong>
-                    Your items are reserved. Once your payment receipt is confirmed on WhatsApp, your activation credentials or keys will be delivered immediately to your email.
-                  </td>
-                </tr>
-              </table>
-
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background:#090d16;padding:24px 28px;border-top:1px solid #1e283d;text-align:center;">
-              <p style="margin:0 0 10px;font-size:12px;color:#64748b;">
-                Need assistance? WhatsApp Support: <a href="${waLink}" style="color:#25D366;font-weight:800;text-decoration:none;">+962 7 7625 2313</a>
-              </p>
-              <p style="margin:0;font-size:11px;color:#475569;">
-                © ${new Date().getFullYear()} GX Store. All rights reserved.
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-      `;
-
-      const html = isAr ? arabicHtml : englishHtml;
+      const html = renderDriffleEmail({
+        lang: isAr ? "ar" : "en",
+        subject,
+        headline: isAr ? "طلبك بانتظار إتمام الدفع 💳" : "Complete your payment",
+        greetingText: isAr
+          ? `عميلنا العزيز${greetingName ? ` (${greetingName})` : ""}،`
+          : `Hey ${greetingName || "Valued Customer"},`,
+        bodyText: isAr
+          ? "شكراً لتسوقك من متجرنا! تم تسجيل طلبك لدينا بنجاح، وهو حالياً بانتظار إتمام وتأكيد الدفع لنتمكن من تسليمه وتفعيله لك فوراً."
+          : "Thank you for shopping at GX Store! Your order has been placed and is currently pending payment confirmation so we can deliver your products immediately.",
+        introDetailsText: isAr ? "إليك تفاصيل طلبك:" : "Here are your order details:",
+        ctaButton: {
+          text: isAr ? "استكمال الدفع عبر واتساب 💬" : "Complete Payment on WhatsApp 💬",
+          url: waLink,
+        },
+        meta: {
+          orderIdLabel: isAr ? "رقم الطلب (ORDER ID)" : "ORDER ID",
+          orderIdValue: `#${orderNumber}`,
+          dateLabel: isAr ? "تاريخ الطلب (ORDER DATE)" : "ORDER DATE",
+          dateValue: isAr ? dateFormattedAr : dateFormattedEn,
+          emailLabel: isAr ? "البريد الإلكتروني (EMAIL ID)" : "EMAIL ID",
+          emailValue: customerEmail,
+        },
+        summaryTitle: isAr ? "تفاصيل ومحتويات الطلب (ORDER SUMMARY)" : "ORDER SUMMARY",
+        products: emailProducts,
+        breakdown: {
+          rows: [
+            {
+              label: isAr ? "قيمة الطلب" : "Order Amount",
+              value: isAr ? formattedSubtotal : formattedSubtotalEn,
+            },
+            ...(discountJod && discountJod > 0
+              ? [
+                  {
+                    label: isAr ? "الخصم الترويجي" : "Promo",
+                    value: isAr ? formattedDiscount! : formattedDiscountEn!,
+                    isPromo: true,
+                  },
+                ]
+              : []),
+            {
+              label: isAr ? "المبلغ المطلوب" : "ORDER TOTAL",
+              value: isAr ? formattedTotal : formattedTotalEn,
+              isTotal: true,
+            },
+          ],
+          paidUsingLabel: isAr ? "طرق الدفع المتاحة" : "AVAILABLE PAYMENT METHODS",
+          paidUsingMethod: isAr ? "كليك CliQ • زين كاش • فيزا / ماستركارد" : "CliQ • Zain Cash • Visa / MasterCard",
+          paidAmountLabel: isAr ? "المبلغ المطلوب (AMOUNT DUE)" : "AMOUNT DUE",
+          paidAmountValue: isAr ? formattedTotal : formattedTotalEn,
+        },
+        notesHtml: paymentInstructions,
+      });
 
       const apiKey = await getResendApiKey();
       if (!apiKey) {

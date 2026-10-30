@@ -114,6 +114,48 @@ export const CANONICAL_VARIANT_IMAGES: Record<string, string> = {
   "fn-crew-3": "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
   "fn-crew-1m": "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
   "fn-crew-3m": "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473",
+
+  // Xbox Game Pass Ultimate (Official Artwork)
+  "xbox-game-pass-ultimate": "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg",
+  "gpu-1m-topup": "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg",
+  "gpu-2m-acct": "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg",
+  "gpu-35m-topup": "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg",
+  "gpu-4m-acct": "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg",
+  "gpu-6m-acct": "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg",
+  "gpu-65m-topup": "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg",
+  "gpu-8m-topup": "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg",
+  "gpu-10m-acct": "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg",
+  "gpu-10m-topup": "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg",
+  "gpu-12m-acct": "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg",
+  "gpu-12m-topup": "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg",
+
+  // PC Game Pass (Official Artwork)
+  "pc-game-pass": "/app/assets/img/catalog/pc-game-pass.jpg",
+  "pcgp-3m-topup": "/app/assets/img/catalog/pc-game-pass.jpg",
+  "pcgp-6m-topup": "/app/assets/img/catalog/pc-game-pass.jpg",
+  "pcgp-9m-topup": "/app/assets/img/catalog/pc-game-pass.jpg",
+  "pcgp-12m-topup": "/app/assets/img/catalog/pc-game-pass.jpg",
+
+  // Roblox Robux (Official Artwork)
+  "roblox-robux": "/app/assets/img/catalog/roblox-robux.jpg",
+  "roblox": "/app/assets/img/catalog/roblox-robux.jpg",
+  "rbx-500": "/app/assets/img/catalog/roblox-robux.jpg",
+  "rbx-600": "/app/assets/img/catalog/roblox-robux.jpg",
+  "rbx-1000": "/app/assets/img/catalog/roblox-robux.jpg",
+  "rbx-1200": "/app/assets/img/catalog/roblox-robux.jpg",
+  "rbx-1500": "/app/assets/img/catalog/roblox-robux.jpg",
+  "rbx-1800": "/app/assets/img/catalog/roblox-robux.jpg",
+  "rbx-2000": "/app/assets/img/catalog/roblox-robux.jpg",
+  "rbx-2400": "/app/assets/img/catalog/roblox-robux.jpg",
+  "rbx-3625": "/app/assets/img/catalog/roblox-robux.jpg",
+  "rbx-4800": "/app/assets/img/catalog/roblox-robux.jpg",
+  "rbx-11100": "/app/assets/img/catalog/roblox-robux.jpg",
+
+  // Google Gemini / AI
+  "gemini": "/app/assets/img/gemini-logo.png",
+  "gemini-18": "/app/assets/img/gemini-logo.png",
+  "gemini-plus-3m": "/app/assets/img/gemini-logo.png",
+  "gemini-pro-3m": "/app/assets/img/gemini-logo.png",
 };
 
 export interface ResolveImageOptions {
@@ -238,7 +280,52 @@ export function resolveProductImage(options: ResolveImageOptions): string {
     return "/app/assets/img/catalog/euro-truck-simulator-2.jpg";
   }
 
-  // 6. Direct match by slug in canonical registry
+  // 6. Xbox Game Pass Ultimate
+  if (
+    cleanSlug === "xbox-game-pass-ultimate" ||
+    cleanId.startsWith("gpu-") ||
+    cleanName.includes("ultimate") ||
+    cleanName.includes("التيمت") ||
+    cleanName.includes("التميت")
+  ) {
+    return "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg";
+  }
+
+  // 7. PC Game Pass
+  if (
+    cleanSlug === "pc-game-pass" ||
+    cleanId.startsWith("pcgp-") ||
+    (cleanName.includes("game pass") && cleanName.includes("pc")) ||
+    (cleanName.includes("قيم باس") && cleanName.includes("pc"))
+  ) {
+    return "/app/assets/img/catalog/pc-game-pass.jpg";
+  }
+
+  // 8. Roblox Robux
+  if (
+    cleanSlug.includes("roblox") ||
+    cleanId.startsWith("rbx-") ||
+    cleanName.includes("roblox") ||
+    cleanName.includes("روبلوكس") ||
+    cleanName.includes("robux") ||
+    cleanName.includes("روبوكس")
+  ) {
+    return "/app/assets/img/catalog/roblox-robux.jpg";
+  }
+
+  // 9. Google Gemini / AI
+  if (
+    cleanSlug.includes("gemini") ||
+    cleanId.startsWith("gemini-") ||
+    cleanName.includes("gemini") ||
+    cleanName.includes("جيمناي") ||
+    cleanName.includes("جيميناي") ||
+    cleanName.includes("google ai")
+  ) {
+    return "/app/assets/img/gemini-logo.png";
+  }
+
+  // 10. Direct match by slug in canonical registry
   if (cleanSlug && CANONICAL_VARIANT_IMAGES[cleanSlug]) {
     return CANONICAL_VARIANT_IMAGES[cleanSlug];
   }

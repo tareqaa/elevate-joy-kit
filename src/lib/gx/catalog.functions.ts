@@ -969,7 +969,7 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
             nameEn = "Google Gemini Pro — 3 Months";
             taglineAr = "خاص بالحسابات التي لم يسبق لها الاشتراك • وصول كامل لقدرات Gemini Pro المتقدمة";
             taglineEn = "For accounts without prior subscription • Full Gemini Pro capabilities";
-            badge = "2 دينار فقط";
+            badge = v.tag_ar || "الأكثر طلباً";
             imageUrl = "/app/assets/img/gemini-logo.svg";
           } else {
             nameAr = `Google Gemini — ${v.label_ar}`;
