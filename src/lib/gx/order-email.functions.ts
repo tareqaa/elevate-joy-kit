@@ -20,8 +20,8 @@ function getOrderTokenSecret(): string {
     process.env.SUPABASE_SECRET_KEY ||
     process.env.SERVICE_ROLE_KEY;
   if (secret && secret.trim()) return secret.trim();
-  // Server-only permanent high-entropy cryptographic pepper (never exposed to client bundles)
-  return "gx_master_order_security_pepper_2026_9f8a3d7b2c1e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f";
+  // Fail closed: never sign or accept order links with a key that lives in source code.
+  throw new Error("Order link signing key is not configured (ORDER_TOKEN_SECRET)");
 }
 
 /**
