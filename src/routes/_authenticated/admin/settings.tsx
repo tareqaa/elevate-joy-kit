@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Settings as SettingsIcon, Save, Store, MessageCircle, Share2, Wrench, Mail } from "lucide-react";
+import { Settings as SettingsIcon, Save, Store, MessageCircle, Share2, Wrench, Mail, Disc3 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/settings")({
   head: () => ({ meta: [{ title: "الإعدادات — لوحة التحكم" }] }),
@@ -175,6 +175,22 @@ function SettingsPage() {
                   <div className="text-xs text-muted-foreground">إلغاء الشارات التلقائية (مثل: فئة برونزية، الأكثر طلباً) عن كافة باقات فورتنايت</div>
                 </div>
                 <Switch checked={Boolean(s("hide_fortnite_badges"))} onCheckedChange={(v) => set("hide_fortnite_badges", v)} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-cyan-500/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base"><Disc3 size={16} className="text-cyan-400" /> عجلة الحظ (Spin Wheel)</CardTitle>
+              <CardDescription>التحكم بظهور أو إخفاء عجلة الحظ والجوائز اليومية للمستخدمين</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/20">
+                <div>
+                  <div className="font-medium text-sm">تشغيل عجلة الحظ في المتجر</div>
+                  <div className="text-xs text-muted-foreground">عند الإيقاف، لن تظهر العجلة في القائمة العلوية أو صفحة حساب العميل أو الأسئلة الشائعة</div>
+                </div>
+                <Switch checked={Boolean(s("wheel_enabled"))} onCheckedChange={(v) => set("wheel_enabled", v)} />
               </div>
             </CardContent>
           </Card>

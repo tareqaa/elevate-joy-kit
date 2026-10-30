@@ -374,12 +374,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (items.length === 0) return { ok: false, message: "السلة فاضية" };
     try {
       const productSlugs = Array.from(new Set(items.map((i) => i.product).filter(Boolean)));
+      const itemsPayload = items.map((i) => ({
+        cartId: i.cartId,
+        product: i.product,
+        slug: i.product,
+        price: i.price,
+        qty: i.qty,
+      }));
       const res = await validateCouponRpc({
         data: {
           code: trimmed,
           subtotal_jod: subtotalJOD,
           product_slugs: productSlugs,
           category_slugs: [],
+          items: itemsPayload,
         },
       });
       if (!res.valid || !res.coupon_id) {
@@ -387,6 +395,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const { data: lv } = await supabase.rpc("validate_my_level_coupon", {
           _code: trimmed,
           _subtotal_jod: subtotalJOD,
+          _items: itemsPayload as any,
         });
         const lvRes = lv as unknown as {
           valid?: boolean; user_coupon_id?: string; code?: string;
@@ -403,7 +412,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           });
           return { ok: true, message: lvRes.message || "تم تطبيق كوبون المستوى" };
         }
-        return { ok: false, message: res.message || lvRes?.message || "الكوبون غير صالح" };
+        return { ok: false, message: lvRes?.message || res.message || "الكوبون غير صالح" };
       }
       persistCoupon({
         id: res.coupon_id,
@@ -486,20 +495,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 
 
-  // Re-validate discount when subtotal changes
+  // Re-validate coupon when items or subtotal changes to respect gift card and product exclusions
   useEffect(() => {
     if (!coupon) return;
-    if (subtotalJOD <= 0) { persistCoupon(null); return; }
-    // recompute discount amount based on type
-    let d = coupon.discount_type === "percent"
-      ? Math.round((subtotalJOD * coupon.discount_value) / 100 * 1000) / 1000
-      : coupon.discount_value;
-    if (d > subtotalJOD) d = subtotalJOD;
-    if (Math.abs(d - coupon.discount_jod) > 0.001) {
-      persistCoupon({ ...coupon, discount_jod: d });
+    if (subtotalJOD <= 0 || items.length === 0) {
+      persistCoupon(null);
+      return;
     }
+    let cancelled = false;
+    applyCoupon(coupon.code).then((r) => {
+      if (cancelled) return;
+      if (!r.ok) persistCoupon(null);
+    });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subtotalJOD]);
+  }, [items, subtotalJOD]);
 
   const add = useCallback(
     (cartId: string, qty = 1, meta?: Record<string, any>) => {

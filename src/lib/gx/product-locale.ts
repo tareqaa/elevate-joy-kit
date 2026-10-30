@@ -261,7 +261,7 @@ export const FAQ_EN = [
 
   // Loyalty: XP, levels, coins, credit
   { icon: "⚡", title: "What is XP and how do I earn it?", desc: "Every {UNIT} of order value earns you {XP_PER_UNIT} XP. XP raises your level, and each level unlocks a bigger coin bonus, avatars and level coupons." },
-  { icon: "💰", title: "What are GX Coins and how do I earn them?", desc: "Every {UNIT} you actually pay earns you {COINS_PER_UNIT} GX Coins, increased by your level bonus. You also earn coins from the lucky wheel and from tournament prizes." },
+  { icon: "💰", title: "What are GX Coins and how do I earn them?", desc: "Every {UNIT} you actually pay earns registered members {COINS_PER_UNIT} GX Coins, increased by your level bonus, plus tournament prizes." },
   { icon: "🧮", title: "How do I spend GX Coins?", desc: "{REDEEM_COINS} GX Coins = {REDEEM_VALUE} off, and coins can cover up to {MAX_PCT} of any order. You choose how many coins to use at checkout." },
   { icon: "📅", title: "Do GX Coins expire?", desc: "Yes — GX Coins are valid for one year from the date you earn them. Coins that pass one year without being used expire, so it's best to spend them on your next orders." },
   { icon: "🎫", title: "What's the difference between store credit and coins?", desc: "Store credit is a real balance in your currency (from refunds or admin credits) and can cover a full order. GX Coins are a reward currency capped at {MAX_PCT} of an order. Both are private and visible only to you inside your own profile." },
@@ -270,7 +270,6 @@ export const FAQ_EN = [
   { icon: "🎮", title: "What is GX Arena?", desc: "GX Arena is our games hub. You play mini games such as GX Blast, register in the live tournament and compete for the top spots on a real-time leaderboard." },
   { icon: "🏆", title: "How do tournaments work?", desc: "Each tournament runs for a set period with a clear start and end. Your best valid score during that window is the one on the leaderboard, and the ranking refreshes automatically." },
   { icon: "🎁", title: "What are the tournament prizes?", desc: "Prizes are set per placement and may include discount coupons (percentage, fixed amount, or product-specific), GX Coins, XP or custom prizes. All prizes are listed on the tournament page." },
-  { icon: "🎡", title: "What is the lucky wheel?", desc: "A free daily spin that can award XP, GX Coins, a discount coupon or a temporary double-rewards boost. Extra spins can be granted by the store team." },
 
   // Support & policies
   { icon: "🆘", title: "What if I have an issue with my order?", desc: "Message us on WhatsApp with your order number or a screenshot of the chat. We review the case and provide a solution as fast as possible." },

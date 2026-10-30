@@ -67,6 +67,37 @@ function WheelAdmin() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
+  const wheelSettingQ = useQuery({
+    queryKey: ["site-setting-wheel-enabled"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "wheel_enabled")
+        .maybeSingle();
+      if (error) throw error;
+      return data?.value === true || data?.value === "true";
+    },
+  });
+
+  const [togglingWheel, setTogglingWheel] = useState(false);
+  async function toggleWheel(enabled: boolean) {
+    setTogglingWheel(true);
+    try {
+      const { error } = await supabase
+        .from("site_settings")
+        .upsert({ key: "wheel_enabled", value: enabled as never }, { onConflict: "key" });
+      if (error) throw error;
+      toast.success(enabled ? "تم تشغيل عجلة الحظ وإظهارها في المتجر" : "تم إيقاف عجلة الحظ وإخفاؤها من المتجر بنجاح");
+      await qc.invalidateQueries({ queryKey: ["site-setting-wheel-enabled"] });
+      window.dispatchEvent(new CustomEvent("gx_site_settings_changed", { detail: { wheel_enabled: enabled } }));
+    } catch (err: any) {
+      toast.error(err.message || "فشل تحديث إعداد العجلة");
+    } finally {
+      setTogglingWheel(false);
+    }
+  }
+
   const prizesQ = useQuery({
     queryKey: ["admin-wheel-prizes"],
     queryFn: async () => {
@@ -232,6 +263,35 @@ function WheelAdmin() {
           </Button>
         </div>
       </div>
+
+      {/* Global toggle card */}
+      <Card className={`border transition-colors ${wheelSettingQ.data ? "border-emerald-500/30 bg-emerald-500/5" : "border-amber-500/30 bg-amber-500/5"}`}>
+        <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-base text-foreground">حالة عجلة الحظ في المتجر:</span>
+              <Badge variant={wheelSettingQ.data ? "default" : "secondary"} className={wheelSettingQ.data ? "bg-emerald-500 text-slate-950 font-bold" : "bg-amber-500/20 text-amber-300 border-amber-500/30"}>
+                {wheelSettingQ.data ? "مفعّلة وظاهرة للعملاء" : "معطّلة ومخفية عن المتجر"}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {wheelSettingQ.data
+                ? "عجلة الحظ ظاهرة ومتاحة للمستخدمين في القائمة وصفحة الحساب."
+                : "عجلة الحظ مطفأة ومخفية تماماً الآن ولا تظهر في أي مكان بالمتجر (القائمة، صفحة الحساب، الأسئلة الشائعة)."}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-muted-foreground">
+              {wheelSettingQ.data ? "إيقاف العجلة" : "تشغيل العجلة"}
+            </span>
+            <Switch
+              checked={!!wheelSettingQ.data}
+              disabled={togglingWheel || wheelSettingQ.isLoading}
+              onCheckedChange={toggleWheel}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="prizes" dir="rtl">
         <TabsList>

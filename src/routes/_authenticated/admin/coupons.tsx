@@ -24,6 +24,8 @@ type Coupon = {
   scope: "all" | "products" | "categories";
   product_slugs: string[];
   category_slugs: string[];
+  allow_gift_cards?: boolean;
+  excluded_product_slugs?: string[];
   is_active: boolean;
   created_at: string;
 };
@@ -41,6 +43,8 @@ const EMPTY: Partial<Coupon> = {
   scope: "all",
   product_slugs: [],
   category_slugs: [],
+  allow_gift_cards: false,
+  excluded_product_slugs: [],
   is_active: true,
 };
 
@@ -80,6 +84,8 @@ function AdminCouponsPage() {
       scope: editing.scope || "all",
       product_slugs: editing.product_slugs || [],
       category_slugs: editing.category_slugs || [],
+      allow_gift_cards: editing.allow_gift_cards ?? false,
+      excluded_product_slugs: editing.excluded_product_slugs || [],
       is_active: editing.is_active ?? true,
     };
 
@@ -243,6 +249,16 @@ function AdminCouponsPage() {
                       <Calendar size={11} /> {new Date(c.expires_at).toLocaleDateString("ar")}
                     </span>
                   )}
+                  {c.allow_gift_cards ? (
+                    <span className="cp-stat-pill !text-emerald-300 !border-emerald-500/30 !bg-emerald-500/10">يشمل القيفت كارد</span>
+                  ) : (
+                    <span className="cp-stat-pill !text-amber-300 !border-amber-500/30 !bg-amber-500/10">يستثني القيفت كارد</span>
+                  )}
+                  {c.excluded_product_slugs && c.excluded_product_slugs.length > 0 && (
+                    <span className="cp-stat-pill !text-rose-300 !border-rose-500/30 !bg-rose-500/10">
+                      استثناء {c.excluded_product_slugs.length} منتج
+                    </span>
+                  )}
                   {expired && <span className="cp-stat-pill !bg-rose-500/15 !text-rose-300 !border-rose-500/30">منتهي</span>}
                   {!c.is_active && <span className="cp-stat-pill !bg-slate-700/40 !text-slate-400">متوقف</span>}
                 </div>
@@ -381,6 +397,38 @@ function CouponEditor({
                 <input value={(editing.category_slugs || []).join(",")} onChange={(e) => set({ category_slugs: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })} placeholder="games,gift-cards" className="cp-input font-mono text-xs" />
               </Field>
             )}
+          </Section>
+
+          {/* Rules & Exclusions */}
+          <Section title="الاستثناءات وبطاقات الهدايا">
+            <div className="space-y-4">
+              <label className="flex items-start gap-3 p-3.5 rounded-xl border border-slate-700 bg-slate-800/40 cursor-pointer hover:border-cyan-500/40 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={editing.allow_gift_cards ?? false}
+                  onChange={(e) => set({ allow_gift_cards: e.target.checked })}
+                  className="w-4 h-4 mt-1 accent-cyan-500"
+                />
+                <div>
+                  <div className="text-sm font-bold text-white flex items-center gap-2">
+                    السماح بالتطبيق على بطاقات الهدايا (Gift Cards)
+                  </div>
+                  <div className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    افتراضياً: الكوبونات <strong className="text-amber-300">لا تشمل</strong> بطاقات الهدايا لحماية هامش الربح. فعّل هذا الخيار إذا كنت تريد السماح بالخصم عليها.
+                  </div>
+                </div>
+              </label>
+
+              <Field label="استثناء منتجات معينة من الخصم (اختياري)">
+                <p className="text-[11px] text-slate-400 mb-2">
+                  المنتجات المحددة هنا لن يتم تطبيق الخصم عليها حتى لو كان الكوبون يغطي السلة كاملة.
+                </p>
+                <ProductPicker
+                  selected={editing.excluded_product_slugs || []}
+                  onChange={(v) => set({ excluded_product_slugs: v })}
+                />
+              </Field>
+            </div>
           </Section>
 
           {/* Status toggle */}

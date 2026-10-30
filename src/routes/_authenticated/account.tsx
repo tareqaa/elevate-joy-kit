@@ -21,6 +21,7 @@ import { useAuthActions } from "@/lib/gx/use-auth-actions";
 import { linkMyPastOrders } from "@/lib/gx/loyalty";
 import { markCodeRevealedFn } from "@/lib/gx/order-email.functions";
 import { formatFullRegion } from "@/lib/gx/region";
+import { useSiteSettings } from "@/lib/gx/site-settings";
 
 type AccountTab = "profile" | "orders" | "wheel" | "security";
 
@@ -93,6 +94,8 @@ function AccountPage() {
   const navigate = Route.useNavigate();
   const qc = useQueryClient();
   const { t, lang, dir } = useLang();
+  const { wheel_enabled } = useSiteSettings();
+  const activeTab = (!wheel_enabled && tab === "wheel") ? "profile" : tab;
 
   const profileQ = useQuery({
     queryKey: ["my-profile", user.id],
@@ -197,13 +200,15 @@ function AccountPage() {
 
       <Tabs
         dir={dir}
-        value={tab}
+        value={activeTab}
         onValueChange={(v) => navigate({ search: { tab: v as AccountTab } })}
       >
-        <TabsList className="grid grid-cols-4 w-full max-w-xl h-11">
+        <TabsList className={`grid ${wheel_enabled ? "grid-cols-4" : "grid-cols-3"} w-full max-w-xl h-11`}>
           <TabsTrigger value="profile" className="gap-2"><UserIcon className="w-4 h-4" />{t("acc.tab_profile")}</TabsTrigger>
           <TabsTrigger value="orders" className="gap-2"><Package className="w-4 h-4" />{t("acc.tab_orders")}</TabsTrigger>
-          <TabsTrigger value="wheel" className="gap-2"><Disc3 className="w-4 h-4" />{lang === "ar" ? "العجلة" : "Wheel"}</TabsTrigger>
+          {wheel_enabled && (
+            <TabsTrigger value="wheel" className="gap-2"><Disc3 className="w-4 h-4" />{lang === "ar" ? "العجلة" : "Wheel"}</TabsTrigger>
+          )}
           <TabsTrigger value="security" className="gap-2"><ShieldCheck className="w-4 h-4" />{t("acc.tab_security")}</TabsTrigger>
         </TabsList>
 
@@ -219,9 +224,11 @@ function AccountPage() {
           <OrdersTab loading={ordersQ.isLoading} orders={ordersQ.data ?? []} userId={user.id} />
         </TabsContent>
 
-        <TabsContent value="wheel" className="mt-4">
-          <SpinWheel />
-        </TabsContent>
+        {wheel_enabled && (
+          <TabsContent value="wheel" className="mt-4">
+            <SpinWheel />
+          </TabsContent>
+        )}
 
         <TabsContent value="security" className="mt-4">
           <SecurityTab email={user.email || ""} />

@@ -89,6 +89,7 @@ export type SiteSettings = {
   catalog_prices: CatalogPrices;
   product_stock_limits: Record<string, number | null>;
   hide_fortnite_badges: boolean;
+  wheel_enabled: boolean;
   isLoaded: boolean;
   dbFetched: boolean;
 };
@@ -277,6 +278,7 @@ const DEFAULTS: SiteSettings = {
     "duolingo-12m": 0,
   },
   hide_fortnite_badges: false,
+  wheel_enabled: false,
   isLoaded: false,
   dbFetched: false,
 };

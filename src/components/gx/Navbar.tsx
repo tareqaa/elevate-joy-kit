@@ -155,6 +155,7 @@ export function Navbar() {
   });
   const [accountOpen, setAccountOpen] = useState(false);
   const [wheelOpen, setWheelOpen] = useState(false);
+  const { wheel_enabled } = useSiteSettings();
   // Admin state lives in memory only — never in localStorage, which any user
   // could forge to reveal the admin entry. It is always (re)verified against
   // has_role() in the database below.
@@ -964,13 +965,15 @@ export function Navbar() {
                     <Link to="/account" search={{ tab: "orders" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">📦</span><span>{t("nav.orders")}</span>
                     </Link>
-                    <button
-                      type="button"
-                      className="acc-link"
-                      onClick={() => { setAccountOpen(false); setWheelOpen(true); }}
-                    >
-                      <span className="ai">🎡</span><span>{lang === "en" ? "Daily Wheel" : "عجلة الحظ"}</span>
-                    </button>
+                    {wheel_enabled && (
+                      <button
+                        type="button"
+                        className="acc-link"
+                        onClick={() => { setAccountOpen(false); setWheelOpen(true); }}
+                      >
+                        <span className="ai">🎡</span><span>{lang === "en" ? "Daily Wheel" : "عجلة الحظ"}</span>
+                      </button>
+                    )}
                     <Link to="/account" search={{ tab: "security" } as never} className="acc-link" onClick={() => setAccountOpen(false)}>
                       <span className="ai">⚙️</span><span>{t("nav.settings")}</span>
                     </Link>
@@ -1086,7 +1089,7 @@ export function Navbar() {
       )}
       <CurrencyModal open={currencyOpen} onClose={() => setCurrencyOpen(false)} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
-      <SpinWheelModal open={wheelOpen} onOpenChange={setWheelOpen} />
+      {wheel_enabled && <SpinWheelModal open={wheelOpen} onOpenChange={setWheelOpen} />}
     </>
   );
 }
