@@ -76,3 +76,48 @@ describe("Flippy Engine Physics & Scoring Bounds", () => {
     expect(forgedScore).toBeGreaterThan(10 + elapsedSeconds * 2.0);
   });
 });
+
+import { jump, replayFlippyRun, type FlippyRunLog } from "../flippy-engine";
+
+function playBotRun(seed: number, maxSteps = 20000, resizeAt = -1): { score: number; log: FlippyRunLog } {
+  let w = 400;
+  let h = 600;
+  const state = createInitialState(h, seed);
+  const log: FlippyRunLog = { seed, initHeight: h, startW: w, startH: h, jumps: [], resizes: [], steps: 0 };
+  let lastW = w;
+  let lastH = h;
+  jump(state);
+  while (state.status === "playing" && log.steps < maxSteps) {
+    if (log.steps === resizeAt) { w = 420; h = 640; }
+    if (w !== lastW || h !== lastH) {
+      log.resizes.push({ f: log.steps, w, h });
+      lastW = w; lastH = h;
+      state.groundY = h - 50;
+    }
+    const target = state.pipes.find((p) => !p.passed)?.y ?? h / 2;
+    if (state.bird.pos.y > target + 15 && state.bird.vel.y > 0) {
+      log.jumps.push(log.steps);
+      jump(state);
+    }
+    updateEngine(state, w, h, 1);
+    log.steps++;
+  }
+  return { score: state.score, log };
+}
+
+describe("Flippy server-side replay", () => {
+  it("reproduces the exact score of a played run", () => {
+    const { score, log } = playBotRun(123456789, 20000, 300);
+    const res = replayFlippyRun(log);
+    expect(res.valid).toBe(true);
+    if (res.valid) expect(res.score).toBe(score);
+  });
+
+  it("rejects a log that was tampered with", () => {
+    const { log } = playBotRun(987654321);
+    const forged = { ...log, steps: log.steps + 5000 };
+    expect(replayFlippyRun(forged).valid).toBe(false);
+    const shuffled = { ...log, jumps: [...log.jumps].reverse() };
+    expect(replayFlippyRun(shuffled).valid).toBe(false);
+  });
+});
