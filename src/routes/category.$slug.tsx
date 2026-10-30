@@ -1834,7 +1834,7 @@ function CategoryPage() {
 
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--cyan, #00e5ff)" }}>
-                {ar ? "عرض العروض" : "View Offers"}
+                {ar ? "تصفح العروض" : "Browse Offers"}
               </span>
               <div className="gx-gamepoint-arrow-btn">
                 {ar ? <ArrowLeft size={16} /> : <ArrowRight size={16} />}

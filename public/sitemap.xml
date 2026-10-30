@@ -193,6 +193,18 @@
     <priority>0.80</priority>
   </url>
   <url>
+    <loc>https://gxstore.me/product/valorant</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://gxstore.me/product/youtube-premium-account</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
     <loc>https://gxstore.me/product/lovable-lite-12m</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
@@ -205,13 +217,7 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/youtube-premium-account</loc>
-    <lastmod>2026-10-30</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://gxstore.me/product/valorant</loc>
+    <loc>https://gxstore.me/product/instagram-followers</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -223,19 +229,13 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/tod</loc>
-    <lastmod>2026-10-30</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://gxstore.me/product/instagram-followers</loc>
-    <lastmod>2026-10-30</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
     <loc>https://gxstore.me/product/adobe-express</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://gxstore.me/product/tod</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -373,13 +373,13 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/pubg-mobile-uc</loc>
+    <loc>https://gxstore.me/product/playstation</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/playstation</loc>
+    <loc>https://gxstore.me/product/pubg-mobile-uc</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>

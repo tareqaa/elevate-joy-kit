@@ -273,9 +273,6 @@ const DEFAULTS: SiteSettings = {
     "youtube": 1,
     "linkedin-career-12m": 1,
     "linkedin-business-12m": 1,
-    "duolingo": 0,
-    "duolingo-super-12-months": 0,
-    "duolingo-12m": 0,
   },
   hide_fortnite_badges: false,
   wheel_enabled: false,
@@ -488,7 +485,7 @@ export function getEffectiveStockLimit(
       keys.push("canva", "canva-pro-1y");
     }
     if (slug === "duolingo" || slug === "duolingo-super-12-months") {
-      keys.push("duolingo", "duolingo-super-12-months", "duolingo-12m");
+      keys.push("duolingo", "duolingo-super-12-months", "duolingo-1m");
     }
   }
 

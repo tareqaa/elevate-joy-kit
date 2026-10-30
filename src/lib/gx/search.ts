@@ -105,16 +105,21 @@ const SYNONYM_MAP: Record<string, string[]> = {
   ps4: ["بلايستيشن", "playstation"],
 
   // Xbox & Game Pass
-  اكسبوكس: ["xbox", "اكس بوكس", "قيم باس", "جيم باس", "game pass", "ultimate", "التيمت", "بطاقة اكسبوكس", "بطاقات اكسبوكس", "شحن اكسبوكس"],
-  "اكس بوكس": ["xbox", "اكسبوكس", "قيم باس", "جيم باس", "game pass", "بطاقة اكسبوكس", "بطاقات اكسبوكس"],
+  gamepass: ["game pass", "xbox game pass", "xbox", "اكسبوكس", "اكس بوكس", "قيم باس", "جيم باس", "قيمباس", "جيمباس", "ultimate", "التيمت"],
+  "game pass": ["gamepass", "xbox game pass", "xbox", "قيم باس", "جيم باس", "قيمباس", "جيمباس", "ultimate"],
+  "xbox game pass": ["gamepass", "game pass", "xbox", "اكسبوكس", "اكس بوكس", "قيم باس", "جيم باس", "قيمباس", "جيمباس", "ultimate"],
+  "pc game pass": ["gamepass", "game pass", "بي سي جيم باس", "قيمباس بي سي", "pc", "بي سي", "xbox"],
+  قيمباس: ["game pass", "gamepass", "قيم باس", "جيم باس", "xbox", "اكسبوكس", "اكس بوكس", "ultimate", "التيمت"],
+  جيمباس: ["game pass", "gamepass", "قيم باس", "جيم باس", "xbox", "اكسبوكس", "اكس بوكس", "ultimate", "التيمت"],
+  "قيم باس": ["game pass", "gamepass", "xbox", "اكسبوكس", "جيم باس", "قيمباس", "ultimate"],
+  "جيم باس": ["game pass", "gamepass", "xbox", "اكسبوكس", "قيم باس", "جيمباس", "ultimate"],
+  اكسبوكس: ["xbox", "اكس بوكس", "قيم باس", "جيم باس", "game pass", "gamepass", "ultimate", "التيمت", "بطاقة اكسبوكس", "بطاقات اكسبوكس", "شحن اكسبوكس"],
+  "اكس بوكس": ["xbox", "اكسبوكس", "قيم باس", "جيم باس", "game pass", "gamepass", "بطاقة اكسبوكس", "بطاقات اكسبوكس"],
   "بطاقة اكسبوكس": ["xbox", "اكسبوكس", "اكس بوكس", "بطاقات اكسبوكس", "كروت اكسبوكس", "شحن اكسبوكس"],
   "بطاقة اكس بوكس": ["xbox", "اكسبوكس", "اكس بوكس", "بطاقات اكسبوكس", "كروت اكسبوكس"],
   "بطاقات اكسبوكس": ["xbox", "اكسبوكس", "اكس بوكس", "بطاقة اكسبوكس", "كروت اكسبوكس"],
   "بطاقات اكس بوكس": ["xbox", "اكسبوكس", "اكس بوكس", "بطاقة اكسبوكس"],
-  xbox: ["اكسبوكس", "اكس بوكس", "game pass", "قيم باس", "جيم باس", "بطاقة اكسبوكس", "بطاقات اكسبوكس"],
-  "قيم باس": ["game pass", "xbox", "اكسبوكس", "جيم باس"],
-  "جيم باس": ["game pass", "xbox", "اكسبوكس", "قيم باس"],
-  "game pass": ["قيم باس", "جيم باس", "xbox", "اكسبوكس"],
+  xbox: ["اكسبوكس", "اكس بوكس", "game pass", "gamepass", "قيم باس", "جيم باس", "قيمباس", "جيمباس", "بطاقة اكسبوكس", "بطاقات اكسبوكس"],
 
   // Steam & PC Games
   ستيم: ["steam", "بي سي", "pc", "العاب ستيم", "حساب ستيم", "كود ستيم"],
@@ -243,6 +248,16 @@ export function buildSearchHaystack(item: SearchableItem): string {
   if (item.descriptionAr) parts.push(item.descriptionAr.slice(0, 300));
   if (item.descriptionEn) parts.push(item.descriptionEn.slice(0, 300));
 
+  // Add space-collapsed versions of English name and slug so compound words like "gamepass" match "game pass"
+  if (item.nameEn) {
+    const noSpaceEn = item.nameEn.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (noSpaceEn.length >= 4) parts.push(noSpaceEn);
+  }
+  if (item.slug) {
+    const noSpaceSlug = item.slug.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (noSpaceSlug.length >= 4) parts.push(noSpaceSlug);
+  }
+
   return normalizeSearchText(parts.join(" "));
 }
 
@@ -258,7 +273,14 @@ function hasTermInHaystack(haystack: string, term: string, words: Set<string>): 
     if (words.has(term)) return true;
     return (" " + haystack + " ").includes(" " + term + " ");
   }
-  return haystack.includes(term);
+  if (haystack.includes(term)) return true;
+  // Space-collapsed matching for compound queries (e.g. "gamepass" matching "game pass")
+  const termNoSpace = term.replace(/\s+/g, "");
+  if (termNoSpace.length >= 4) {
+    const haystackNoSpace = haystack.replace(/\s+/g, "");
+    if (haystackNoSpace.includes(termNoSpace)) return true;
+  }
+  return false;
 }
 
 /**
@@ -310,26 +332,52 @@ export function matchSearchQuery(
     const normNameEn = normalizeSearchText(item.nameEn);
     const normSlug = normalizeSearchText(item.slug);
 
+    const cleanQNoSpace = cleanQ.replace(/\s+/g, "");
+    const normNameArNoSpace = normNameAr.replace(/\s+/g, "");
+    const normNameEnNoSpace = normNameEn.replace(/\s+/g, "");
+    const normSlugNoSpace = normSlug.replace(/\s+/g, "");
+
     let score = 0;
 
     // 1. Exact Match on name (Massive bonus)
     if (normNameAr === cleanQ || normNameEn === cleanQ || normSlug === cleanQ) {
       score += 500;
+    } else if (
+      cleanQNoSpace.length >= 4 &&
+      (normNameArNoSpace === cleanQNoSpace ||
+        normNameEnNoSpace === cleanQNoSpace ||
+        normSlugNoSpace === cleanQNoSpace)
+    ) {
+      score += 480;
     }
 
     // 2. Starts with Query (Strong bonus)
     if (normNameAr.startsWith(cleanQ) || normNameEn.startsWith(cleanQ) || normSlug.startsWith(cleanQ)) {
       score += 250;
+    } else if (
+      cleanQNoSpace.length >= 4 &&
+      (normNameArNoSpace.startsWith(cleanQNoSpace) ||
+        normNameEnNoSpace.startsWith(cleanQNoSpace) ||
+        normSlugNoSpace.startsWith(cleanQNoSpace))
+    ) {
+      score += 230;
     }
 
-    // 3. Name Contains full query phrase
+    // 3. Name Contains full query phrase (or space-collapsed phrase)
     if (normNameAr.includes(cleanQ) || normNameEn.includes(cleanQ)) {
       score += 150;
+    } else if (
+      cleanQNoSpace.length >= 4 &&
+      (normNameArNoSpace.includes(cleanQNoSpace) || normNameEnNoSpace.includes(cleanQNoSpace))
+    ) {
+      score += 140;
     }
 
-    // 4. Slug Contains full query phrase
+    // 4. Slug Contains full query phrase (or space-collapsed phrase)
     if (normSlug.includes(cleanQ)) {
       score += 100;
+    } else if (cleanQNoSpace.length >= 4 && normSlugNoSpace.includes(cleanQNoSpace)) {
+      score += 95;
     }
 
     // 5. Check each term in original query
@@ -800,6 +848,26 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
             });
 
             const isSnap = p.slug === "snapchat";
+            const isGP =
+              p.slug.includes("game-pass") ||
+              p.slug.includes("gamepass") ||
+              (p.name_en && p.name_en.toLowerCase().includes("game pass"));
+            const gpLabels = isGP
+              ? [
+                  "gamepass",
+                  "game pass",
+                  "xbox game pass",
+                  "قيم باس",
+                  "جيم باس",
+                  "قيمباس",
+                  "جيمباس",
+                  "التيمت",
+                  "ultimate",
+                  "xbox",
+                  "اكسبوكس",
+                  "اكس بوكس",
+                ]
+              : [];
             const variantNameAr = isSnap ? `سناب بلس — اشتراك ${v.label_ar}` : `${p.name_ar} — ${v.label_ar}`;
             const variantNameEn = isSnap ? `Snapchat+ — ${v.label_en || v.label_ar}` : `${p.name_en || p.name_ar} — ${v.label_en || v.label_ar}`;
 
@@ -827,7 +895,7 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
               icon: p.icon,
               iconImage: p.icon_image_url || p.image_url,
               thumbBg: p.thumb_bg || p.card_gradient,
-              variantLabels: [p.name_ar, p.name_en || "", v.label_ar, v.label_en || ""],
+              variantLabels: [p.name_ar, p.name_en || "", v.label_ar, v.label_en || "", ...gpLabels],
               link: `/product/${p.slug}?variant=${encodeURIComponent(v.cart_id || v.id)}#${v.cart_id || v.id}`,
             };
             variantItem.normalizedHaystack = buildSearchHaystack(variantItem);
@@ -849,8 +917,27 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
         const firstVariant = prodVariants[0];
 
         const isLinkedIn = p.slug.includes("linkedin") || (p.name_ar && (p.name_ar.includes("لينكد") || p.name_ar.includes("linkedin")));
+        const isGP =
+          p.slug.includes("game-pass") ||
+          p.slug.includes("gamepass") ||
+          (p.name_en && p.name_en.toLowerCase().includes("game pass"));
         const extraLabels = isLinkedIn
           ? ["لينكدإن", "لينكد ان", "لينكدان", "لينكد", "linkedin", "بريميوم", "كرير", "بزنس", "career", "business"]
+          : isGP
+          ? [
+              "gamepass",
+              "game pass",
+              "xbox game pass",
+              "قيم باس",
+              "جيم باس",
+              "قيمباس",
+              "جيمباس",
+              "التيمت",
+              "ultimate",
+              "xbox",
+              "اكسبوكس",
+              "اكس بوكس",
+            ]
           : [];
 
         const item: SearchableItem = {
@@ -1011,8 +1098,13 @@ export function getQuerySuggestions(
     for (const name of [primaryName, secondaryName]) {
       if (!name) continue;
       const cleanName = normalizeSearchText(name);
+      const cleanNameNoSpace = cleanName.replace(/\s+/g, "");
+      const cleanQNoSpace = cleanQ.replace(/\s+/g, "");
 
-      if (cleanName.includes(cleanQ)) {
+      if (
+        cleanName.includes(cleanQ) ||
+        (cleanQNoSpace.length >= 4 && cleanNameNoSpace.includes(cleanQNoSpace))
+      ) {
         // Strip subtitle or platform suffix for clean suggestion
         const cleanPhrase = name
           .split(/[|:()]/)[0]

@@ -76,6 +76,7 @@ export function resolveStrictDeliveryType(item: {
   if (s.includes("discord")) return "code";
   if (s.includes("minecraft-realms")) return "code";
   if (s.includes("lovable")) return "link";
+  if (s.includes("duolingo") || c.includes("duolingo")) return "link";
 
   // Priority 1: Explicit database delivery_type configured by admin
   if (pt === "account" || pt === "حساب" || pt === "حساب جاهز") return "account";
