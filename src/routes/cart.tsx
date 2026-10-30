@@ -877,9 +877,9 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
     const uid = sess.session?.user?.id;
     const { toast } = await import("sonner");
 
-    // 1. WhatsApp validation if cart contains topup or WhatsApp items
+    // 1. WhatsApp validation strictly for items requiring WhatsApp contact (LinkedIn, Fortnite Crew, etc.)
     const whatsappItems = cart.items.filter(
-      (it) => resolveProductRequirementType(it) === "whatsapp" || it.deliveryType === "topup"
+      (it) => resolveProductRequirementType(it) === "whatsapp"
     );
     if (whatsappItems.length > 0) {
       const missingTarget = whatsappItems.find((it) => !it.usernames?.[0]?.trim());

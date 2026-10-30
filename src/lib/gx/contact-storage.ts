@@ -189,10 +189,9 @@ export function resolveProductRequirementType(item: {
     s.includes("fortnite") ||
     s === "roblox" ||
     s.includes("roblox") ||
-    s === "linkedin-business-12m" ||
-    s === "linkedin-career-12m" ||
+    s === "linkedin" ||
+    s.includes("linkedin") ||
     s.includes("game-pass") ||
-    dt === "topup" ||
     idLabel.includes("واتس") ||
     idLabel.includes("تواصل") ||
     idLabel.includes("هاتف") ||
