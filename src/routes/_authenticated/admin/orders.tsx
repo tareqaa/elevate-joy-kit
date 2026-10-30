@@ -1032,29 +1032,26 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             </div>
           ) : (
             <div
-              className={`border rounded-xl p-4 transition-all shadow-md ${
-                revealInfo.revealed_at
+              className={`border rounded-xl p-4 transition-all shadow-md ${revealInfo.revealed_at
                   ? "bg-gradient-to-r from-emerald-950/70 via-emerald-900/40 to-cyan-950/60 border-emerald-500/40 shadow-emerald-950/30"
                   : "bg-amber-950/30 border-amber-500/30 shadow-amber-950/20"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${
-                      revealInfo.revealed_at
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${revealInfo.revealed_at
                         ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.25)]"
                         : "bg-amber-500/20 text-amber-400 border-amber-500/40"
-                    }`}
+                      }`}
                   >
                     {revealInfo.revealed_at ? <Eye size={22} /> : <Lock size={20} />}
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
-                        className={`text-sm font-extrabold ${
-                          revealInfo.revealed_at ? "text-emerald-300" : "text-amber-300"
-                        }`}
+                        className={`text-sm font-extrabold ${revealInfo.revealed_at ? "text-emerald-300" : "text-amber-300"
+                          }`}
                       >
                         {revealInfo.revealed_at
                           ? "🔓 العميل فتح وكشف الكود / بيانات الحساب"
@@ -1067,9 +1064,8 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                       )}
                     </div>
                     <div
-                      className={`text-xs mt-1 leading-relaxed ${
-                        revealInfo.revealed_at ? "text-emerald-100/90" : "text-amber-200/80"
-                      }`}
+                      className={`text-xs mt-1 leading-relaxed ${revealInfo.revealed_at ? "text-emerald-100/90" : "text-amber-200/80"
+                        }`}
                     >
                       {revealInfo.revealed_at ? (
                         <div className="flex items-center gap-2 flex-wrap">
@@ -1222,11 +1218,10 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                                 key={r.code}
                                 type="button"
                                 onClick={() => updateCode(i, { region: r.code })}
-                                className={`text-[10px] px-2 py-0.5 rounded-md border font-bold transition flex items-center gap-1 ${
-                                  isSelected
+                                className={`text-[10px] px-2 py-0.5 rounded-md border font-bold transition flex items-center gap-1 ${isSelected
                                     ? "bg-cyan-500/25 text-cyan-200 border-cyan-400/60 shadow-[0_0_8px_rgba(0,229,255,0.25)]"
                                     : "bg-white/5 text-cyan-100/60 border-white/10 hover:bg-white/10 hover:text-white"
-                                }`}
+                                  }`}
                               >
                                 <span>{r.code}</span>
                                 <span className="text-[9px] opacity-75">({r.label})</span>

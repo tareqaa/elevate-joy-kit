@@ -107,7 +107,7 @@ function UsersAdmin() {
       const [profilesRes, rolesRes, ordersRes] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
         supabase.from("user_roles").select("user_id, role"),
-        supabase.from("orders").select("user_id"),
+        supabase.from("orders").select("user_id, status").in("status", ["delivered", "paid", "processing"]),
       ]);
       if (profilesRes.error) throw profilesRes.error;
       if (rolesRes.error) throw rolesRes.error;
