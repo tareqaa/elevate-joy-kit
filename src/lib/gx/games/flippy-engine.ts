@@ -41,6 +41,29 @@ export interface FlippyState {
   transitionProgress: number; // 0 to 1
   visitedWorldIds: string[]; // worlds already shown this run, so a portal
   // doesn't send the player back to one they just left
+  seed: number; // run seed (uint32) — the whole run is reproducible from it
+  rng: number; // current PRNG state, advanced by nextRandom()
+  pipeSeq: number;
+}
+
+/** Fresh uint32 seed for a new run. */
+export function makeFlippySeed(): number {
+  try {
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    return buf[0] >>> 0;
+  } catch {
+    return (Math.floor(Math.random() * 0xffffffff) >>> 0);
+  }
+}
+
+/** Deterministic mulberry32 step — every gameplay random draw goes through here. */
+function nextRandom(state: FlippyState): number {
+  state.rng = (state.rng + 0x6d2b79f5) >>> 0;
+  let t = state.rng;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
 
 const CONSTANTS = {
@@ -56,7 +79,7 @@ const CONSTANTS = {
   BIRD_START_X: 100,
 };
 
-export function createInitialState(height: number): FlippyState {
+export function createInitialState(height: number, seed: number = makeFlippySeed()): FlippyState {
   return {
     status: "idle",
     score: 0,
@@ -76,6 +99,9 @@ export function createInitialState(height: number): FlippyState {
     groundY: height - 50,
     transitionProgress: 1, // Start fully transitioned
     visitedWorldIds: [FLIPPY_WORLDS[0].id],
+    seed: seed >>> 0,
+    rng: seed >>> 0,
+    pipeSeq: 0,
   };
 }
 
@@ -146,7 +172,7 @@ export function updateEngine(state: FlippyState, width: number, height: number, 
     const currentGap = Math.max(CONSTANTS.MIN_GAP, CONSTANTS.GAP_SIZE * gapMod);
     const minCenter = currentGap / 2 + 50;
     const maxCenter = state.groundY - currentGap / 2 - 50;
-    const centerY = Math.random() * (maxCenter - minCenter) + minCenter;
+    const centerY = nextRandom(state) * (maxCenter - minCenter) + minCenter;
 
     let nextWorldForPortal: WorldConfig | undefined = undefined;
     if (isTransitionPipe) {
@@ -159,11 +185,11 @@ export function updateEngine(state: FlippyState, width: number, height: number, 
         state.visitedWorldIds = [state.currentWorld.id];
         candidates = FLIPPY_WORLDS.filter(w => w.id !== state.currentWorld.id);
       }
-      nextWorldForPortal = candidates[Math.floor(Math.random() * candidates.length)];
+      nextWorldForPortal = candidates[Math.floor(nextRandom(state) * candidates.length)];
     }
 
     state.pipes.push({
-      id: Math.random().toString(36).substr(2, 9),
+      id: `p${++state.pipeSeq}`,
       x: width + 50,
       y: centerY,
       gap: currentGap,
@@ -172,7 +198,7 @@ export function updateEngine(state: FlippyState, width: number, height: number, 
       isPortal: isTransitionPipe,
       nextWorldObj: nextWorldForPortal,
       offsetY: 0,
-      dirY: Math.random() > 0.5 ? 1 : -1,
+      dirY: nextRandom(state) > 0.5 ? 1 : -1,
     });
   }
 
@@ -244,4 +270,73 @@ function transitionWorld(state: FlippyState, nextWorld: WorldConfig) {
 
   // Increase speed slightly based on absolute score, cap it at MAX_SPEED
   state.speed = Math.min(CONSTANTS.MAX_SPEED, CONSTANTS.SPEED + (state.score * 0.005));
+}
+
+/* ============================================================
+   RUN LOG + SERVER-SIDE REPLAY
+   The game advances in fixed steps (one step == one 60fps frame).
+   The client records the seed, the play-area size, the step index
+   of every flap and of every resize, and how many steps the run
+   lasted. The server replays exactly those inputs through this same
+   engine and only the recomputed score is ever saved.
+   ============================================================ */
+
+export type FlippyRunLog = {
+  seed: number;
+  initHeight: number; // height passed to createInitialState
+  startW: number; // play-area size when the first flap started the run
+  startH: number;
+  jumps: number[]; // step indices (strictly increasing) of flaps after the first
+  resizes: { f: number; w: number; h: number }[];
+  steps: number; // fixed steps simulated until game over
+};
+
+export type FlippyReplayResult =
+  | { valid: true; score: number; steps: number }
+  | { valid: false; reason: string };
+
+export const FLIPPY_MAX_STEPS = 3 * 60 * 60 * 60; // 3 hours at 60 steps/s
+
+export function replayFlippyRun(log: FlippyRunLog): FlippyReplayResult {
+  const steps = log.steps;
+  if (!Number.isInteger(steps) || steps < 1 || steps > FLIPPY_MAX_STEPS) {
+    return { valid: false, reason: "bad_steps" };
+  }
+  for (let i = 0; i < log.jumps.length; i++) {
+    const f = log.jumps[i];
+    if (!Number.isInteger(f) || f < 0 || f >= steps || (i > 0 && f <= log.jumps[i - 1])) {
+      return { valid: false, reason: "bad_jumps" };
+    }
+  }
+  for (let i = 0; i < log.resizes.length; i++) {
+    const r = log.resizes[i];
+    if (!Number.isInteger(r.f) || r.f < 0 || r.f >= steps || (i > 0 && r.f < log.resizes[i - 1].f)) {
+      return { valid: false, reason: "bad_resizes" };
+    }
+  }
+
+  const state = createInitialState(log.initHeight, log.seed);
+  let w = log.startW;
+  let h = log.startH;
+  state.groundY = h - 50;
+  jump(state); // the opening flap that started the run
+
+  let ji = 0;
+  let ri = 0;
+  for (let f = 0; f < steps; f++) {
+    if (state.status !== "playing") return { valid: false, reason: "ended_early" };
+    while (ri < log.resizes.length && log.resizes[ri].f === f) {
+      w = log.resizes[ri].w;
+      h = log.resizes[ri].h;
+      state.groundY = h - 50;
+      ri++;
+    }
+    if (ji < log.jumps.length && log.jumps[ji] === f) {
+      jump(state);
+      ji++;
+    }
+    updateEngine(state, w, h, 1);
+  }
+  if (state.status !== "gameover") return { valid: false, reason: "not_over" };
+  return { valid: true, score: state.score, steps };
 }
