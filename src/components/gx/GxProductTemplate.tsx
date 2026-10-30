@@ -1986,7 +1986,7 @@ export function GxProductTemplate({
               {isValorant && (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, margin: "6px 0 16px 0" }}>
                   <Link
-                    to="/product/valorant-eu"
+                    to="/product/$slug" params={{ slug: "valorant-eu" }}
                     style={{
                       padding: "10px 14px",
                       borderRadius: 14,
@@ -2009,7 +2009,7 @@ export function GxProductTemplate({
                     <span>{ar ? "السيرفر الأوروبي (EU Server)" : "Europe Server (EU)"}</span>
                   </Link>
                   <Link
-                    to="/product/valorant"
+                    to="/product/$slug" params={{ slug: "valorant" }}
                     style={{
                       padding: "10px 14px",
                       borderRadius: 14,
