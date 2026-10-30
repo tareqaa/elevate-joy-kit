@@ -9,7 +9,7 @@ export const validateCouponFn = createServerFn({ method: "POST" })
       subtotal_jod: z.number().min(0).max(100000),
       product_slugs: z.array(z.string().max(120)).max(200).default([]),
       category_slugs: z.array(z.string().max(120)).max(200).default([]),
-      items: z.array(z.record(z.unknown())).optional(),
+      items: z.array(z.record(z.string(), z.unknown())).optional(),
     }).parse(data)
   )
   .handler(async ({ data }) => {
