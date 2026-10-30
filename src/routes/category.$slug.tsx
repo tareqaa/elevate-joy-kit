@@ -260,6 +260,21 @@ export const Route = createFileRoute("/category/$slug")({
           (p.categoryNameAr || "").includes("مشاهدة")
         );
       });
+    } else if (category.slug === "valorant") {
+      // كاتجوري فالورانت: بطاقات سيرفر تركيا وسيرفر أوروبا
+      categoryProducts = allProducts.filter((p) => {
+        const s = (p.slug || "").toLowerCase();
+        const cid = (p.cartId || "").toLowerCase();
+        const name = `${p.nameAr || ""} ${p.nameEn || ""}`.toLowerCase();
+        return (
+          s === "valorant" ||
+          s.includes("valorant") ||
+          cid.startsWith("vp-eu") ||
+          cid.startsWith("valorant-") ||
+          name.includes("فالورانت") ||
+          name.includes("valorant")
+        );
+      });
     } else if (category.slug === "design" || category.slug === "apps" || category.slug === "software" || category.slug === "ai") {
       // البرامج والتطبيقات: تشمل تطبيقات الذكاء الاصطناعي (Gemini, Lovable, Notion, etc.)
       const matchingAll = allProducts.filter((p) => {
@@ -516,6 +531,7 @@ function CategoryPage() {
         { name: "Xbox", logo: "/app/assets/img/xbox-logo.svg" },
         { name: "PlayStation", logo: "/app/assets/img/playstation-logo.svg" },
         { name: "Fortnite", logo: "/app/assets/img/fortnite-f-icon.jpg" },
+        { name: "Valorant", logo: "/app/assets/img/valorant-logo.png" },
       ];
     }
     if (isSubscriptionsCategory) {
@@ -540,6 +556,9 @@ function CategoryPage() {
   const [isAllPlatformsModalOpen, setIsAllPlatformsModalOpen] = useState<boolean>(false);
   const [fortniteFilter, setFortniteFilter] = useState<"all" | "crew" | "vbucks">("all");
   const [streamingSubfilter, setStreamingSubfilter] = useState<"all" | "tod" | "youtube">("all");
+  const [valorantRegion, setValorantRegion] = useState<"all" | "tr" | "eu">("all");
+
+  const isValorantMode = category.slug === "valorant" || selectedPlatform === "valorant";
 
   useEffect(() => {
     let initialPlatform = "all";
@@ -554,6 +573,7 @@ function CategoryPage() {
     setSelectedPlatform(initialPlatform);
     setSelectedSubtype(initialSubtype);
     setStreamingSubfilter("all");
+    setValorantRegion("all");
   }, [category.slug]);
 
 
@@ -915,16 +935,20 @@ function CategoryPage() {
         nameEn: "Valorant",
         color: "#ff4655",
         glow: "rgba(255, 70, 85, 0.45)",
-        logoSrc: "/app/assets/img/valorant-logo.svg",
+        logoSrc: "/app/assets/img/valorant-logo.png",
         renderLogo: () => (
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="#ff4655" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2.108 0L0 2.808l10.15 13.528L24 0H2.108zm19.784 7.662l-7.054 9.395 2.108 2.809L24 10.47V7.662z" />
-          </svg>
+          <img
+            src="/app/assets/img/valorant-logo.png"
+            alt="Valorant"
+            style={{ width: 30, height: 30, objectFit: "contain" }}
+          />
         ),
         match: (p: CatalogStoreProduct) =>
           p.categorySlug === "valorant" ||
           p.parentCategorySlug === "valorant" ||
           (p.slug || "").includes("valorant") ||
+          (p.cartId || "").startsWith("vp-eu") ||
+          (p.cartId || "").startsWith("valorant-") ||
           (p.nameAr || "").includes("فالورانت"),
       },
       {
@@ -1291,6 +1315,7 @@ function CategoryPage() {
   const handleSelectPlatform = (platId: string) => {
     setCurrentPage(1);
     setStreamingSubfilter("all");
+    setValorantRegion("all");
     if (selectedPlatform === platId && platId !== "all") {
       setSelectedPlatform("all");
     } else {
@@ -1518,6 +1543,23 @@ function CategoryPage() {
       }
     }
 
+    // 1c. Valorant dedicated region sub-filter (Turkey vs Europe)
+    if (isValorantMode && valorantRegion !== "all") {
+      if (valorantRegion === "tr") {
+        list = list.filter((p) => {
+          const s = `${p.slug || ""} ${p.cartId || ""} ${p.region || ""} ${p.nameAr || ""} ${p.nameEn || ""}`.toLowerCase();
+          const isEu = s.includes("eu") || s.includes("europe") || s.includes("أوروبا");
+          const isTr = s.includes("turkey") || s.includes("تركيا") || s.includes("تركي") || p.slug === "valorant" || (p.cartId || "").startsWith("valorant-");
+          return isTr && !isEu;
+        });
+      } else if (valorantRegion === "eu") {
+        list = list.filter((p) => {
+          const s = `${p.slug || ""} ${p.cartId || ""} ${p.region || ""} ${p.nameAr || ""} ${p.nameEn || ""}`.toLowerCase();
+          return s.includes("eu") || s.includes("europe") || s.includes("أوروبا") || (p.cartId || "").startsWith("vp-eu");
+        });
+      }
+    }
+
     // 2. Search query filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -1592,6 +1634,8 @@ function CategoryPage() {
     customMaxPrice,
     sortBy,
     fortniteFilter,
+    isValorantMode,
+    valorantRegion,
   ]);
 
   // 5x5 Pagination (25 items per page for lightning fast page loading)
@@ -1763,6 +1807,60 @@ function CategoryPage() {
       ),
       active: streamingSubfilter === "youtube",
       onClick: () => setStreamingSubfilter("youtube"),
+    });
+  } else if (isValorantMode) {
+    const isTrMatch = (p: CatalogStoreProduct) => {
+      const s = `${p.slug || ""} ${p.cartId || ""} ${p.region || ""} ${p.nameAr || ""} ${p.nameEn || ""}`.toLowerCase();
+      const isEu = s.includes("eu") || s.includes("europe") || s.includes("أوروبا");
+      const isTr = s.includes("turkey") || s.includes("تركيا") || s.includes("تركي") || p.slug === "valorant" || (p.cartId || "").startsWith("valorant-");
+      return isTr && !isEu;
+    };
+    const isEuMatch = (p: CatalogStoreProduct) => {
+      const s = `${p.slug || ""} ${p.cartId || ""} ${p.region || ""} ${p.nameAr || ""} ${p.nameEn || ""}`.toLowerCase();
+      return s.includes("eu") || s.includes("europe") || s.includes("أوروبا") || (p.cartId || "").startsWith("vp-eu");
+    };
+
+    const valorantPool = products.filter(
+      (p) =>
+        p.slug === "valorant" ||
+        p.slug.includes("valorant") ||
+        (p.cartId || "").startsWith("vp-eu") ||
+        (p.cartId || "").startsWith("valorant-") ||
+        (p.nameAr || "").includes("فالورانت")
+    );
+    const trCount = valorantPool.filter(isTrMatch).length;
+    const euCount = valorantPool.filter(isEuMatch).length;
+    const allCount = valorantPool.length;
+
+    navPills.push({
+      id: "all",
+      name: lang === "en" ? `All Regions (${allCount})` : `🌐 كل السيرفرات (${allCount})`,
+      icon: <span className="pill-icon">🌐</span>,
+      active: valorantRegion === "all",
+      onClick: () => {
+        setValorantRegion("all");
+        setCurrentPage(1);
+      },
+    });
+    navPills.push({
+      id: "tr",
+      name: lang === "en" ? `Turkey Server 🇹🇷 (${trCount})` : `🇹🇷 سيرفر تركيا (${trCount})`,
+      icon: <span className="pill-icon">🇹🇷</span>,
+      active: valorantRegion === "tr",
+      onClick: () => {
+        setValorantRegion("tr");
+        setCurrentPage(1);
+      },
+    });
+    navPills.push({
+      id: "eu",
+      name: lang === "en" ? `Europe Server 🇪🇺 (${euCount})` : `🇪🇺 سيرفر أوروبا (${euCount})`,
+      icon: <span className="pill-icon">🇪🇺</span>,
+      active: valorantRegion === "eu",
+      onClick: () => {
+        setValorantRegion("eu");
+        setCurrentPage(1);
+      },
     });
   } else if (category.parent && (category.siblings || []).length > 0) {
     navPills.push({
@@ -2138,6 +2236,35 @@ function CategoryPage() {
                     className="reset-btn"
                     onClick={() => setStreamingSubfilter("all")}
                     title={lang === "en" ? "Clear streaming filter" : "إلغاء فلتر المشاهدة"}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Active Valorant Region Filter Pill */}
+              {isValorantMode && valorantRegion !== "all" && (
+                <div
+                  className="cat-toolbar-filter-pill"
+                  style={{
+                    borderColor: valorantRegion === "tr" ? "#e11d48" : "#2563eb",
+                    background: valorantRegion === "tr" ? "rgba(225, 29, 72, 0.12)" : "rgba(37, 99, 235, 0.12)",
+                  }}
+                >
+                  <span style={{ color: valorantRegion === "tr" ? "#fb7185" : "#60a5fa" }}>
+                    {valorantRegion === "tr" ? "🇹🇷 " : "🇪🇺 "}
+                    {lang === "en" ? "Region:" : "الريجون:"}
+                  </span>
+                  <span style={{ fontWeight: 800 }}>
+                    {valorantRegion === "tr"
+                      ? lang === "en" ? "Turkey Server" : "سيرفر تركيا"
+                      : lang === "en" ? "Europe Server" : "سيرفر أوروبا"}
+                  </span>
+                  <button
+                    type="button"
+                    className="reset-btn"
+                    onClick={() => setValorantRegion("all")}
+                    title={lang === "en" ? "Clear region filter" : "إلغاء فلتر الريجون"}
                   >
                     ✕
                   </button>

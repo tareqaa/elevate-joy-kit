@@ -34,13 +34,31 @@ export const CANONICAL_VARIANT_IMAGES: Record<string, string> = {
   "youtube-premium-account-1m": "/app/assets/img/catalog/youtube-premium.jpg",
 
   // Valorant Points (Turkey Region)
-  "valorant": "/app/assets/img/catalog/valorant-cover.jpg",
-  "valorant-375": "/app/assets/img/catalog/valorant-cover.jpg",
-  "valorant-825": "/app/assets/img/catalog/valorant-cover.jpg",
-  "valorant-1700": "/app/assets/img/catalog/valorant-cover.jpg",
-  "valorant-2925": "/app/assets/img/catalog/valorant-cover.jpg",
-  "valorant-4325": "/app/assets/img/catalog/valorant-cover.jpg",
-  "valorant-8900": "/app/assets/img/catalog/valorant-cover.jpg",
+  "valorant": "/app/assets/img/catalog/valorant-tr-cover.jpg",
+  "valorant-tr": "/app/assets/img/catalog/valorant-tr-cover.jpg",
+  "valorant-375": "/app/assets/img/catalog/valorant-tr-cover.jpg",
+  "valorant-825": "/app/assets/img/catalog/valorant-tr-cover.jpg",
+  "valorant-1700": "/app/assets/img/catalog/valorant-tr-cover.jpg",
+  "valorant-2925": "/app/assets/img/catalog/valorant-tr-cover.jpg",
+  "valorant-4325": "/app/assets/img/catalog/valorant-tr-cover.jpg",
+  "valorant-8900": "/app/assets/img/catalog/valorant-tr-cover.jpg",
+
+  // Valorant Points (Europe Region)
+  "valorant-eu": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-240": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-325": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-475": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-675": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-1000": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-1375": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-1750": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-2050": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-2450": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-3550": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-3650": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-5350": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-7350": "/app/assets/img/catalog/valorant-eu-cover.jpg",
+  "vp-eu-11000": "/app/assets/img/catalog/valorant-eu-cover.jpg",
 
   // EA Sports FC 27
   "ea-fc-27-pc": "/app/assets/img/catalog/ea-fc-27-pc.png",
@@ -197,8 +215,17 @@ export function resolveProductImage(options: ResolveImageOptions): string {
   }
 
   // 3. Valorant points
-  if (cleanId.includes("valorant") || cleanSlug.includes("valorant") || cleanName.includes("فالورانت")) {
-    return "/app/assets/img/catalog/valorant-cover.jpg";
+  if (
+    cleanId.includes("valorant-eu") ||
+    cleanSlug.includes("valorant-eu") ||
+    cleanId.startsWith("vp-eu") ||
+    cleanName.includes("اوروب") ||
+    cleanName.includes("europe")
+  ) {
+    return "/app/assets/img/catalog/valorant-eu-cover.jpg";
+  }
+  if (cleanId.includes("valorant") || cleanSlug.includes("valorant") || cleanName.includes("فالورانت") || cleanName.includes("ترك")) {
+    return "/app/assets/img/catalog/valorant-tr-cover.jpg";
   }
 
   // 4. FC 27 PC

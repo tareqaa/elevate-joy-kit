@@ -87,6 +87,8 @@ export function getCategoryTheme(slug: string): CategoryTheme {
       return { glow: "rgba(255, 45, 120, 0.4)", ambient: "rgba(255, 45, 120, 0.15)", accent: "#ff2d78" };
     case "instagram":
       return { glow: "rgba(225, 48, 108, 0.45)", ambient: "rgba(225, 48, 108, 0.16)", accent: "#e1306c" };
+    case "valorant":
+      return { glow: "rgba(255, 70, 85, 0.45)", ambient: "rgba(255, 70, 85, 0.16)", accent: "#ff4655" };
     case "facebook":
       return { glow: "rgba(24, 119, 242, 0.45)", ambient: "rgba(24, 119, 242, 0.16)", accent: "#1877f2" };
 
@@ -415,6 +417,14 @@ export function renderCategoryVectorIcon(slug: string, size = 40): React.ReactNo
     case "pc-games":
     case "steam":
       return <GamingHeroIcon size={size} />;
+    case "valorant":
+      return (
+        <img
+          src="/app/assets/img/valorant-logo.png"
+          alt="Valorant"
+          style={{ width: size, height: size, objectFit: "contain", flexShrink: 0, display: "block" }}
+        />
+      );
     case "gift-cards":
       return <GiftCardCatIcon size={size} />;
     case "products":

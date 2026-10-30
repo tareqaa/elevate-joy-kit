@@ -259,6 +259,39 @@ export function StoreProductCard({
       return <VbucksIcon tier={tier} />;
     }
 
+    // 1b. Valorant (Turkey vs Europe) — Distinct regional artwork
+    const isValorantItem =
+      slug === "valorant" ||
+      slug === "valorant-eu" ||
+      slug.includes("valorant") ||
+      finalCartId.includes("valorant") ||
+      finalCartId.startsWith("vp-eu") ||
+      name.toLowerCase().includes("valorant") ||
+      name.includes("فالورانت");
+    if (isValorantItem) {
+      const isEu =
+        slug === "valorant-eu" ||
+        slug.includes("eu") ||
+        finalCartId.startsWith("vp-eu") ||
+        (region || "").toLowerCase().includes("europe") ||
+        (region || "").includes("أوروبا") ||
+        name.includes("اوروب") ||
+        name.toLowerCase().includes("eu");
+      const valImg =
+        (imageUrl && (imageUrl.includes("valorant-tr-cover") || imageUrl.includes("valorant-eu-cover")) ? imageUrl : null) ||
+        resolveProductImage({ cartId: finalCartId, slug, name }) ||
+        (isEu ? "/app/assets/img/catalog/valorant-eu-cover.jpg" : "/app/assets/img/catalog/valorant-tr-cover.jpg");
+
+      return (
+        <CardProductImage
+          src={valImg}
+          alt={name}
+          className="prod-thumb-img prod-card-img"
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      );
+    }
+
     if (slug === "snapchat") {
       let resolvedSnapDuration = snapDuration;
       if (lang === "en" && resolvedSnapDuration) {
