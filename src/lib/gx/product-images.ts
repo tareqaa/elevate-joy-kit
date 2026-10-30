@@ -102,6 +102,12 @@ export const CANONICAL_VARIANT_IMAGES: Record<string, string> = {
   "razer-us-60": "/app/assets/img/razer-card.jpg",
   "razer-us-100": "/app/assets/img/razer-card.jpg",
 
+  // PlayStation PSN Gift Cards (Official Store Design)
+  "playstation": "/app/assets/img/playstation-card.jpg",
+  "psn": "/app/assets/img/playstation-card.jpg",
+  "gc-playstation": "/app/assets/img/playstation-card.jpg",
+  "psn-card": "/app/assets/img/playstation-card.jpg",
+
   // Fortnite V-Bucks Packs (Official Artwork matching cards & catalog)
   "fn-vb-800": "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_800_EGS_Portrait_1200x1600_1200x1600-79529d8c20514e82ae2ebce58991b912",
   "fn-vb-2400": "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_2400_EGS_Landscape_2560x1440_2560x1440-e51d802c9d414431973ae3e2ba60528d",
@@ -323,6 +329,20 @@ export function resolveProductImage(options: ResolveImageOptions): string {
     cleanName.includes("google ai")
   ) {
     return "/app/assets/img/gemini-logo.png";
+  }
+
+  // 10. PlayStation PSN Gift Cards (Official Store Design)
+  if (
+    cleanSlug.includes("playstation") ||
+    cleanSlug.includes("psn") ||
+    cleanId.startsWith("psn-") ||
+    cleanId.includes("playstation") ||
+    cleanName.includes("playstation") ||
+    cleanName.includes("بلايستيشن") ||
+    cleanName.includes("سوني") ||
+    cleanName.includes("psn")
+  ) {
+    return "/app/assets/img/playstation-card.jpg";
   }
 
   // 10. Direct match by slug in canonical registry

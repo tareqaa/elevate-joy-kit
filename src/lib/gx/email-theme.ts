@@ -355,7 +355,7 @@ export function renderDriffleEmail(opts: RenderDriffleEmailOptions): string {
                 ${receivedReason}
               </p>
               <p style="margin:0 0 18px;font-size:12.5px;">
-                <a href="https://gxstore.me/contact" target="_blank" style="color:#a1a1aa;text-decoration:underline;">
+                <a href="https://gxstore.me/support" target="_blank" style="color:#a1a1aa;text-decoration:underline;">
                   ${supportLinkText}
                 </a>
               </p>

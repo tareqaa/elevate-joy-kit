@@ -276,7 +276,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     }
 
     if (clean.includes("playstation") || cleanSlug.includes("playstation") || cleanSlug.includes("psn")) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/playstation.jpg`;
+      return `${CDN_ASSETS_BASE}/app/assets/img/playstation-card.jpg`;
     }
 
     if (clean.includes("steam") || cleanSlug.includes("steam")) {
@@ -313,7 +313,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("سوني") ||
     cleanName.includes("psn")
   ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/playstation.jpg`;
+    return `${CDN_ASSETS_BASE}/app/assets/img/playstation-card.jpg`;
   }
 
   if (
@@ -824,9 +824,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
         headline: isDelivered
           ? (isAr ? "شكراً لشرائك من متجرنا" : "Thank you for your purchase")
           : (isAr ? "تم إلغاء الطلب" : "Order Cancelled"),
-        greetingText: isAr
-          ? `عميلنا العزيز${customerName ? ` (${customerName})` : ""}،`
-          : `Hey ${customerName || "Valued Customer"},`,
+        greetingText: isAr ? "عميلنا العزيز،" : "Dear Customer,",
         bodyText: isDelivered
           ? (isAr
               ? "لقد تم الانتهاء من طلبك بنجاح. يمكنك رؤية منتجاتك في القائمة أدناه."
@@ -1073,21 +1071,14 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
         };
       });
 
-      const paymentInstructions = isAr
-        ? `<div style="text-align:center;"><p style="margin:0 0 10px;font-weight:700;color:#38bdf8;">💳 طرق الدفع المتاحة الفورية:</p><p style="margin:0;font-size:13px;color:#d4d4d8;line-height:1.7;">🇯🇴 <strong>كليك CliQ:</strong> تحويل فوري ومجاني من كافة البنوك الأردنية.<br>📱 <strong>زين كاش / محافظ إلكترونية:</strong> تحويل مباشر وآمن.<br>💳 <strong>فيزا / ماستركارد:</strong> دفع إلكتروني مباشر.</p></div>`
-        : `<div style="text-align:center;"><p style="margin:0 0 10px;font-weight:700;color:#38bdf8;">💳 Instant Payment Options:</p><p style="margin:0;font-size:13px;color:#d4d4d8;line-height:1.7;">🇯🇴 <strong>CliQ (Jordan):</strong> Instant bank transfer with zero fees.<br>📱 <strong>Zain Cash / Mobile Wallets:</strong> Instant direct payment.<br>💳 <strong>Credit / Debit Card:</strong> Fast and secure checkout.</p></div>`;
-
       const html = renderDriffleEmail({
         lang: isAr ? "ar" : "en",
         subject,
         headline: isAr ? "طلبك بانتظار إتمام الدفع 💳" : "Complete your payment",
-        greetingText: isAr
-          ? `عميلنا العزيز${greetingName ? ` (${greetingName})` : ""}،`
-          : `Hey ${greetingName || "Valued Customer"},`,
+        greetingText: isAr ? "عميلنا العزيز،" : "Dear Customer,",
         bodyText: isAr
           ? "شكراً لتسوقك من متجرنا! تم تسجيل طلبك لدينا بنجاح، وهو حالياً بانتظار إتمام وتأكيد الدفع لنتمكن من تسليمه وتفعيله لك فوراً."
           : "Thank you for shopping at GX Store! Your order has been placed and is currently pending payment confirmation so we can deliver your products immediately.",
-        introDetailsText: isAr ? "إليك تفاصيل طلبك:" : "Here are your order details:",
         ctaButton: {
           text: isAr ? "استكمال الدفع عبر واتساب 💬" : "Complete Payment on WhatsApp 💬",
           url: waLink,
@@ -1123,12 +1114,7 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
               isTotal: true,
             },
           ],
-          paidUsingLabel: isAr ? "طرق الدفع المتاحة" : "AVAILABLE PAYMENT METHODS",
-          paidUsingMethod: isAr ? "كليك CliQ • زين كاش • فيزا / ماستركارد" : "CliQ • Zain Cash • Visa / MasterCard",
-          paidAmountLabel: isAr ? "المبلغ المطلوب (AMOUNT DUE)" : "AMOUNT DUE",
-          paidAmountValue: isAr ? formattedTotal : formattedTotalEn,
         },
-        notesHtml: paymentInstructions,
       });
 
       const apiKey = await getResendApiKey();

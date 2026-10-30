@@ -48,7 +48,7 @@ export const sendRestockNotificationEmail = createServerFn({ method: "POST" })
         lang: "ar",
         subject,
         headline: "🎉 أصبح متوفراً الآن!",
-        greetingText: `مرحباً بك عزيزنا ${customerName || "العميل"} 👋،`,
+        greetingText: "عميلنا العزيز،",
         bodyText: introText,
         introDetailsText: "إليك تفاصيل المنتج المتوفر:",
         ctaButton: {

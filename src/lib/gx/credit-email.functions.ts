@@ -180,37 +180,50 @@ export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
           : `يسعدنا إعلامك بأنه تم تخصيص وإيداع رصيد بقيمة <strong>${formattedAmount}</strong> لبريدك الإلكتروني، وهو محجوز لك حالياً وبانتظار تسجيلك بالموقع:`);
 
       const customCreditCard = `
-        <div style="background:#18181b;border:1px solid #27272a;border-radius:14px;padding:24px 20px;text-align:center;margin:0 auto 20px;max-width:380px;">
+        <div style="background:#18181b;border:1px solid #27272a;border-radius:14px;padding:26px 20px;text-align:center;margin:0 auto 20px;max-width:400px;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+          <div style="display:inline-block;padding:4px 12px;border-radius:999px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.35);color:#22c55e;font-size:11px;font-weight:800;margin-bottom:12px;">
+            ✓ تم شحن الرصيد بنجاح
+          </div>
           <div style="font-size:12px;color:#71717a;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">
             ${isCompensation ? "قيمة رصيد التعويض المضاف" : "قيمة الرصيد المضاف بالمحفظة"}
           </div>
-          <div style="font-size:36px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;direction:ltr;unicode-bidi:isolate;">
+          <div style="font-size:38px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;direction:ltr;unicode-bidi:isolate;margin-bottom:8px;">
             ${formattedAmount}
           </div>
           ${
             (coins || 0) > 0 || (xp || 0) > 0
-              ? `<div style="margin-top:10px;font-size:12.5px;color:#fbbf24;font-weight:700;">
-                  ${(coins || 0) > 0 ? `+${coins} عملة GX Coins ` : ""}
-                  ${(xp || 0) > 0 ? `+${xp} XP ` : ""}
+              ? `<div style="margin-bottom:10px;font-size:12.5px;color:#fbbf24;font-weight:700;">
+                  ${(coins || 0) > 0 ? `+${coins} عملة GX Coins 🪙 ` : ""}
+                  ${(xp || 0) > 0 ? `+${xp} XP ⭐` : ""}
                  </div>`
               : ""
           }
-          <div style="border-top:1px solid #27272a;margin:16px 0 12px;"></div>
-          <div style="font-size:13px;color:#a1a1aa;">
-            البيان / سبب الإيداع: <strong style="color:#ffffff;">${cleanReason}</strong>
-          </div>
+          <div style="border-top:1px solid #27272a;margin:16px 0 14px;"></div>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="text-align:right;">
+            <tr>
+              <td style="color:#a1a1aa;font-size:12.5px;padding:4px 0;">البيان / سبب الإيداع:</td>
+              <td align="left" style="color:#ffffff;font-size:13px;font-weight:700;padding:4px 0;">${cleanReason}</td>
+            </tr>
+            <tr>
+              <td style="color:#a1a1aa;font-size:12.5px;padding:4px 0;">حالة الرصيد:</td>
+              <td align="left" style="color:#22c55e;font-size:12.5px;font-weight:700;padding:4px 0;">جاهز ومتاح للاستخدام فوراً</td>
+            </tr>
+          </table>
         </div>
       `;
 
-      const cleanIntro = introText.replace(/<[^>]+>/g, " ");
+      const cleanIntro = isCompensation
+        ? `نحيطك علماً بأنه تم إيداع رصيد مالي بقيمة ${formattedAmount} في محفظتك تقديراً لتعاملكم و${cleanReason}.`
+        : isRegistered
+        ? "يسرنا إعلامك بأنه تم شحن محفظتك في متجر GX Store برصيد مالي جديد يمكنك استخدامه مباشرة عند الشراء في أي وقت."
+        : `يسعدنا إعلامك بأنه تم تخصيص وإيداع رصيد بقيمة ${formattedAmount} لبريدك الإلكتروني، وهو محجوز لك حالياً في محفظة المتجر.`;
 
       const html = renderDriffleEmail({
         lang: "ar",
         subject,
         headline: headerTitle,
-        greetingText: `مرحباً بك${username ? ` (@${username})` : " عزيزنا العميل"} 👋،`,
+        greetingText: "عميلنا العزيز،",
         bodyText: cleanIntro,
-        introDetailsText: "إليك تفاصيل الرصيد المودع:",
         ctaButton: {
           text: actionButtonText,
           url: actionUrl,
@@ -226,9 +239,9 @@ export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
         summaryTitle: "تفاصيل الرصيد المودع (CREDIT SUMMARY)",
         customSummaryHtml: customCreditCard,
         notesHtml: !isRegistered
-          ? `<div style="font-size:13px;color:#e4e4e7;line-height:1.7;">💡 <strong>كيف تستفيد من الرصيد؟</strong> تم ربط هذا الرصيد ببريدك الإلكتروني (${email}). يمكنك تسجيل الدخول بنفس البريد لتجد الرصيد متاحاً في محفظتك تلقائياً وجاهزاً للاستخدام عند الشراء فوراً!</div>`
+          ? `<div style="font-size:13px;color:#e4e4e7;line-height:1.7;">💡 <strong>كيف تستفيد من الرصيد؟</strong> تم ربط هذا الرصيد ببريدك الإلكتروني (${email}). يمكنك تسجيل الدخول أو إنشاء حساب جديد بنفس هذا البريد لتجد الرصيد متاحاً في محفظتك تلقائياً وجاهزاً للاستخدام عند الشراء فوراً!</div>`
           : undefined,
-        closingMessageHtml: `<p style="margin:0 0 12px;">يمكنك استخدام رصيدك في أي وقت لشراء أي من منتجات أو اشتراكات المتجر بضغطة زر عند الدفع.</p><p style="margin:0 0 14px;color:#38bdf8;font-weight:700;">نحن دائماً هنا لمساعدتك!</p><p style="margin:0;font-weight:700;color:#ffffff;">مع أطيب التحيات،<br>فريق عمل GX Store</p>`,
+        closingMessageHtml: `<p style="margin:0 0 12px;">يمكنك استخدام رصيدك في أي وقت لشراء أي من منتجات أو اشتراكات المتجر بضغطة زر عند إتمام الطلب.</p><p style="margin:0 0 14px;color:#38bdf8;font-weight:700;">نحن دائماً هنا لمساعدتك!</p><p style="margin:0;font-weight:700;color:#ffffff;">مع أطيب التحيات،<br>فريق عمل GX Store</p>`,
       });
 
       const apiKey = await getResendApiKey();
