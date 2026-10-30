@@ -391,6 +391,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         },
       });
       if (!res.valid || !res.coupon_id) {
+        // If the coupon was identified as belonging to another user, show the message immediately
+        if (res.message && res.message.includes("كوبون المستوى خاص")) {
+          return { ok: false, message: res.message };
+        }
+
         // Fall back to personal level coupons issued by the GX Loyalty system.
         const { data: lv } = await supabase.rpc("validate_my_level_coupon", {
           _code: trimmed,
