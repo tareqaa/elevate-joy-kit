@@ -359,6 +359,7 @@ export type Database = {
       }
       coupons: {
         Row: {
+          allow_gift_cards: boolean
           assigned_user_id: string | null
           category_slugs: string[]
           code: string
@@ -367,6 +368,7 @@ export type Database = {
           description: string | null
           discount_type: Database["public"]["Enums"]["coupon_discount_type"]
           discount_value: number
+          excluded_product_slugs: string[]
           expires_at: string | null
           id: string
           is_active: boolean
@@ -380,6 +382,7 @@ export type Database = {
           usage_limit: number | null
         }
         Insert: {
+          allow_gift_cards?: boolean
           assigned_user_id?: string | null
           category_slugs?: string[]
           code: string
@@ -388,6 +391,7 @@ export type Database = {
           description?: string | null
           discount_type?: Database["public"]["Enums"]["coupon_discount_type"]
           discount_value: number
+          excluded_product_slugs?: string[]
           expires_at?: string | null
           id?: string
           is_active?: boolean
@@ -401,6 +405,7 @@ export type Database = {
           usage_limit?: number | null
         }
         Update: {
+          allow_gift_cards?: boolean
           assigned_user_id?: string | null
           category_slugs?: string[]
           code?: string
@@ -409,6 +414,7 @@ export type Database = {
           description?: string | null
           discount_type?: Database["public"]["Enums"]["coupon_discount_type"]
           discount_value?: number
+          excluded_product_slugs?: string[]
           expires_at?: string | null
           id?: string
           is_active?: boolean
@@ -2664,6 +2670,17 @@ export type Database = {
         Args: {
           _category_slugs: string[]
           _code: string
+          _items?: Json
+          _product_slugs: string[]
+          _subtotal_jod: number
+          _user_id: string
+        }
+        Returns: Json
+      }
+      validate_coupon_v1_legacy: {
+        Args: {
+          _category_slugs: string[]
+          _code: string
           _product_slugs: string[]
           _subtotal_jod: number
           _user_id: string
@@ -2671,6 +2688,10 @@ export type Database = {
         Returns: Json
       }
       validate_my_level_coupon: {
+        Args: { _code: string; _items?: Json; _subtotal_jod: number }
+        Returns: Json
+      }
+      validate_my_level_coupon_v1_legacy: {
         Args: { _code: string; _subtotal_jod: number }
         Returns: Json
       }
