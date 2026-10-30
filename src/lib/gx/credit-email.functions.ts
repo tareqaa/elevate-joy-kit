@@ -137,17 +137,17 @@ export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
       const coins = isRegistered ? Math.max(0, Math.floor(Number(data.coins || 0))) : verified.coins;
       const xp = isRegistered ? Math.max(0, Math.floor(Number(data.xp || 0))) : verified.xp;
       const formattedAmount = `${Number(amountJod).toFixed(2)} د.أ`;
-      const cleanReason = escapeHtml(verified.reason.trim() || "إيداع رصيد من إدارة المتجر");
+      const rawReason = verified.reason.trim() || "إيداع رصيد من إدارة المتجر";
+      const cleanReason = escapeHtml(rawReason);
 
       // Detect if the reason is compensation, refund, or general deposit vs a gift/reward
-      const isCompensation = /تعويض|استرجاع|إرجاع|بدل|حل مشكلة|شكوى|تأخير/i.test(cleanReason);
-      const isGift = /هدية|مكافأة|فوز|مسابقة|ترقية|بونص/i.test(cleanReason);
+      const isCompensation = /تعويض|استرجاع|إرجاع|بدل|حل مشكلة|شكوى|تأخير/i.test(rawReason);
+      const isGift = /هدية|مكافأة|فوز|مسابقة|ترقية|بونص/i.test(rawReason);
 
-      // Determine subject: prioritize explicit custom subject, then compensation/neutral, then general
+      // Subject is plain text (not HTML), so it uses the raw reason.
       const subject =
-        customSubject?.trim() ||
         (isCompensation
-          ? `إشعار إيداع رصيد بقيمة ${formattedAmount} لحسابكم (${cleanReason}) — متجر GX Store`
+          ? `إشعار إيداع رصيد بقيمة ${formattedAmount} لحسابكم (${rawReason}) — متجر GX Store`
           : isGift
           ? `🎁 مكافأة رصيد بقيمة ${formattedAmount} لحسابك — متجر GX Store`
           : isRegistered
@@ -155,7 +155,6 @@ export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
           : `إشعار تخصيص رصيد بقيمة ${formattedAmount} لبريدك الإلكتروني — متجر GX Store`);
 
       const headerTitle =
-        customTitle?.trim() ||
         (isCompensation
           ? `إشعار إيداع رصيد (${cleanReason})`
           : isGift
@@ -173,7 +172,6 @@ export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
         : "✨ تسجيل الدخول وتفعيل الرصيد فوراً";
 
       const introText =
-        customMessage?.trim() ||
         (isCompensation
           ? `نحيطك علماً بأنه تم إيداع رصيد مالي بقيمة <strong>${formattedAmount}</strong> لحسابكم تقديراً لتعاملكم و${cleanReason}:`
           : isRegistered
@@ -186,7 +184,7 @@ export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
+  <title>${escapeHtml(subject)}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#070a13;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f1f5f9;direction:rtl;text-align:right;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#070a13;width:100%;padding:30px 15px;">
@@ -299,7 +297,7 @@ export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
         },
         body: JSON.stringify({
           from: SENDER_EMAIL,
-          to: [email],
+          to: [verified.email],
           subject,
           html,
         }),
