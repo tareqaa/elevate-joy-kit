@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Volume2, VolumeX, Pause, Play, Zap, Sparkles, Info, LogOut, MousePointerClick, Activity } from "lucide-react";
-import { createInitialState, updateEngine, jump, type FlippyState } from "@/lib/gx/games/flippy-engine";
+import { createInitialState, updateEngine, jump, type FlippyState, type FlippyRunLog } from "@/lib/gx/games/flippy-engine";
 import { FlippyRenderer } from "@/lib/gx/games/flippy-renderer";
 import { flippyAudio } from "@/lib/gx/games/flippy-audio";
 import { useNavigate } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 
 interface FlippyCanvasProps {
-  onGameOver: (score: number) => void;
+  onGameOver: (score: number, runLog: FlippyRunLog | null) => void;
   onGameStart?: () => void;
   bestScore: number;
   arenaRank: { rank: number | null; total: number | null; delta: number | null } | null;
@@ -85,6 +85,10 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
   const stateRef = useRef<FlippyState>(createInitialState(600));
   // Logical (CSS-pixel) canvas size — see the comment in updateSize().
   const sizeRef = useRef({ width: 400, height: 600 });
+  // Replayable record of the current run (seed, flaps, resizes, step count).
+  const initHeightRef = useRef(600);
+  const runLogRef = useRef<(FlippyRunLog & { lastW: number; lastH: number }) | null>(null);
+  const pendingJumpRef = useRef(false);
 
   const onGameOverRef = useRef(onGameOver);
   const onGameStartRef = useRef(onGameStart);
@@ -122,10 +126,12 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       if (!rendererRef.current) {
         rendererRef.current = new FlippyRenderer(canvasRef.current, width, height);
         rendererRef.current.setQualityMode(qualityModeRef.current);
+        initHeightRef.current = height;
         stateRef.current = createInitialState(height);
       } else {
         rendererRef.current.resize(width, height);
-        stateRef.current.groundY = height - 50;
+        // While a run is live the fixed-step loop applies (and logs) the new size.
+        if (stateRef.current.status !== "playing") stateRef.current.groundY = height - 50;
       }
     };
 
@@ -141,6 +147,7 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
     // land per real second. Clamped so resuming a backgrounded tab (RAF
     // pauses while hidden) doesn't apply one huge catch-up step.
     let lastTime = performance.now();
+    let stepAcc = 0;
     // Render-rate cap: the canvas draw is CPU work (dozens of gradient
     // allocations and shadowBlur calls per frame — canvas 2D isn't
     // GPU-accelerated the way WebGL/real games are), and requestAnimationFrame
@@ -188,11 +195,37 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       const dt = Math.min(2.5, Math.max(0.1, elapsedMs / (1000 / 60)));
 
       const state = stateRef.current;
-      const w = sizeRef.current.width;
-      const h = sizeRef.current.height;
 
       const workStart = performance.now();
-      updateEngine(state, w, h, dt);
+      // Physics runs in fixed one-frame steps so a run can be replayed exactly
+      // on the server; real elapsed time is accumulated and drained in whole steps.
+      stepAcc += Math.min(2.5, Math.max(0, elapsedMs / (1000 / 60)));
+      let stepsThisFrame = 0;
+      while (stepAcc >= 1 && stepsThisFrame < 4) {
+        stepAcc -= 1;
+        stepsThisFrame++;
+        const log = runLogRef.current;
+        if (state.status !== "playing" || !log) {
+          pendingJumpRef.current = false;
+          continue;
+        }
+        const w = sizeRef.current.width;
+        const h = sizeRef.current.height;
+        if (w !== log.lastW || h !== log.lastH) {
+          log.resizes.push({ f: log.steps, w, h });
+          log.lastW = w;
+          log.lastH = h;
+          state.groundY = h - 50;
+        }
+        if (pendingJumpRef.current) {
+          pendingJumpRef.current = false;
+          log.jumps.push(log.steps);
+          jump(state);
+        }
+        updateEngine(state, w, h, 1);
+        log.steps++;
+      }
+      if (stepsThisFrame >= 4) stepAcc = 0;
       rendererRef.current?.render(state, dt);
       const workMs = performance.now() - workStart;
 
@@ -244,7 +277,20 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
         }
         if (state.status === "gameover") {
           setScore(state.score);
-          onGameOverRef.current?.(state.score);
+          const log = runLogRef.current;
+          const finished: FlippyRunLog | null = log
+            ? {
+                seed: log.seed,
+                initHeight: log.initHeight,
+                startW: log.startW,
+                startH: log.startH,
+                jumps: [...log.jumps],
+                resizes: log.resizes.map((r) => ({ ...r })),
+                steps: log.steps,
+              }
+            : null;
+          runLogRef.current = null;
+          onGameOverRef.current?.(state.score, finished);
         }
       }
 
@@ -267,6 +313,7 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
     }
     
     if (stateRef.current.status === "gameover") {
+      initHeightRef.current = sizeRef.current.height;
       stateRef.current = createInitialState(sizeRef.current.height);
       setScore(0);
       setStatus("idle");
@@ -275,7 +322,27 @@ export function FlippyCanvas({ onGameOver, onGameStart, bestScore, arenaRank, ac
       return;
     }
 
-    jump(stateRef.current);
+    const st = stateRef.current;
+    if (st.status === "idle") {
+      // Opening flap starts the run; this is the replay's starting point.
+      const { width, height } = sizeRef.current;
+      st.groundY = height - 50;
+      runLogRef.current = {
+        seed: st.seed,
+        initHeight: initHeightRef.current,
+        startW: width,
+        startH: height,
+        jumps: [],
+        resizes: [],
+        steps: 0,
+        lastW: width,
+        lastH: height,
+      };
+      pendingJumpRef.current = false;
+      jump(st);
+      return;
+    }
+    if (st.status === "playing") pendingJumpRef.current = true;
   }, []);
 
   useEffect(() => {

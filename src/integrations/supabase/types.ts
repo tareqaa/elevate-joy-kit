@@ -2642,7 +2642,13 @@ export type Database = {
         Returns: Json
       }
       submit_tournament_score: {
-        Args: { _run_id?: string; _score: number; _tournament_id: string }
+        Args: {
+          _run_id: string
+          _score: number
+          _sim_frames?: number
+          _tournament_id: string
+          _user_id: string
+        }
         Returns: Json
       }
       sync_user_level: { Args: { _user_id: string }; Returns: undefined }

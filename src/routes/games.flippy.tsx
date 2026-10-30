@@ -6,6 +6,7 @@ import { FlippyCanvas } from "@/components/gx/games/FlippyCanvas";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { flippyAudio } from "@/lib/gx/games/flippy-audio";
+import type { FlippyRunLog } from "@/lib/gx/games/flippy-engine";
 import { useLang } from "@/lib/gx/i18n";
 import { toast } from "sonner";
 import { resolveActiveTournamentId, startTournamentRun, readTournamentStanding } from "@/lib/gx/games/use-tournament-run";
@@ -83,7 +84,7 @@ function FlippyPage() {
     runIdPromiseRef.current = startTournamentRun(activeTid);
   }, [activeTid]);
   
-  const handleGameOver = useCallback(async (score: number) => {
+  const handleGameOver = useCallback(async (score: number, runLog: FlippyRunLog | null) => {
     scoreRef.current = score;
     setBestScore((prev) => {
       const newBest = Math.max(prev, score);
@@ -114,37 +115,33 @@ function FlippyPage() {
       return;
     }
 
-    // Step 2: Submit the score with the run_id
-    const { data: subData, error: subErr } = await supabase.rpc("submit_tournament_score", { 
-      _tournament_id: activeTid, 
-      _score: score,
-      _run_id: runId
-    });
-    const subResult = subData as { ok?: boolean; error?: string; best?: number } | null;
-    
-    if (subErr || !subResult?.ok) {
-      const reason = subResult?.error ?? subErr?.message ?? "unknown";
-      console.error("submit_tournament_score failed:", reason, subErr);
-      if (reason === "run_too_short") {
-        // Game was too short — silently ignore (user played less than 5s)
-        return;
-      }
+    if (!runLog) {
+      console.error("No run log available for score submission.");
+      return;
+    }
 
-      // Fallback: If database constraint error or RPC issue occurs, save via server function
-      try {
-        const { submitTournamentScoreServer } = await import("@/lib/gx/tournaments.server");
-        const fallbackRes = await submitTournamentScoreServer({
-          data: { tournamentId: activeTid, runId, score }
-        });
-        if (!fallbackRes.ok) {
-          toast.error(lang === "ar" ? `خطأ في السكور: ${reason}` : `Score error: ${reason}`);
+    // The server replays the full run log through the same engine and only
+    // saves the score it recomputes — a raw claimed score is never trusted.
+    try {
+      const { submitFlippyRun } = await import("@/lib/gx/games/flippy.server");
+      const res = await submitFlippyRun({
+        data: { tournamentId: activeTid, runId, log: runLog, claimedScore: score },
+      });
+      if (!res.ok) {
+        const reason = res.error ?? "unknown";
+        if (reason === "run_too_short") return;
+        if (reason === "tournament_full") {
+          toast.error(lang === "ar" ? "اكتمل عدد اللاعبين في هذه البطولة" : "This tournament is full");
           return;
         }
-      } catch (fbErr) {
-        console.error("Fallback score submission failed:", fbErr);
-        toast.error(lang === "ar" ? `خطأ في السكور: ${reason}` : `Score error: ${reason}`);
+        console.error("Flippy score submission failed:", reason);
+        toast.error(lang === "ar" ? "تعذّر تسجيل النتيجة في البطولة" : "Couldn't record your tournament score");
         return;
       }
+    } catch (subErr) {
+      console.error("Flippy score submission failed:", subErr);
+      toast.error(lang === "ar" ? "تعذّر تسجيل النتيجة في البطولة" : "Couldn't record your tournament score");
+      return;
     }
 
     // Invalidate query caches to refresh leaderboard in UI immediately

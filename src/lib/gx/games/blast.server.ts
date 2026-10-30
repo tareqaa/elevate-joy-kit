@@ -11,7 +11,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { verifyRun } from "./blast-engine";
-import { getVerifiedCaller, getUserScopedClient } from "@/lib/gx/supabase-request";
+import { getVerifiedCaller } from "@/lib/gx/supabase-request";
 
 const submittedMoveSchema = z.object({
   trayIndex: z.number().int(),
@@ -52,16 +52,19 @@ export const submitBlastRun = createServerFn({ method: "POST" })
       return { ok: false, error: "verification_failed" };
     }
 
-    const supabase = getUserScopedClient(caller.token);
-    const { data: rpcData, error } = await (supabase as any).rpc("submit_tournament_score", {
+    // Only the server's service role may save a score (the database function is
+    // closed to players), and the player id comes from the verified session.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rpcData, error } = await (supabaseAdmin as any).rpc("submit_tournament_score", {
       _tournament_id: data.tournamentId,
       _score: result.score,
       _run_id: data.runId,
+      _user_id: caller.userId,
     });
 
     if (error) {
       console.error("submitBlastRun: submit_tournament_score RPC failed", error);
-      return { ok: false, error: error.message };
+      return { ok: false, error: "submit_failed" };
     }
 
     return (rpcData as SubmitBlastRunResult) ?? { ok: false, error: "unknown" };
