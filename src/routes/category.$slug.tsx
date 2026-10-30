@@ -915,7 +915,12 @@ function CategoryPage() {
         nameEn: "Valorant",
         color: "#ff4655",
         glow: "rgba(255, 70, 85, 0.45)",
-        logoSrc: "/app/assets/img/valorant-logo.png",
+        logoSrc: "/app/assets/img/valorant-logo.svg",
+        renderLogo: () => (
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="#ff4655" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2.108 0L0 2.808l10.15 13.528L24 0H2.108zm19.784 7.662l-7.054 9.395 2.108 2.809L24 10.47V7.662z" />
+          </svg>
+        ),
         match: (p: CatalogStoreProduct) =>
           p.categorySlug === "valorant" ||
           p.parentCategorySlug === "valorant" ||
@@ -1625,10 +1630,10 @@ function CategoryPage() {
     const cardContent = (
       <>
         <div className="platform-square-logo">
-          {plat.logoSrc ? (
-            <img src={plat.logoSrc} alt={pick(plat.nameAr, plat.nameEn)} loading="lazy" />
-          ) : plat.renderLogo ? (
+          {plat.renderLogo ? (
             plat.renderLogo()
+          ) : plat.logoSrc ? (
+            <img src={plat.logoSrc} alt={pick(plat.nameAr, plat.nameEn)} loading="lazy" />
           ) : (
             <span style={{ fontSize: 24 }}>📁</span>
           )}

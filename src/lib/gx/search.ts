@@ -178,6 +178,12 @@ const SYNONYM_MAP: Record<string, string[]> = {
   روكستار: ["rockstar", "gta", "red dead", "قراند"],
   rockstar: ["روكستار", "gta", "red dead"],
 
+  // Valorant & VP
+  فالورانت: ["valorant", "فالورنت", "vp", "نقاط فالورانت", "شحن فالورانت", "سيرفر اوروبا", "riot games", "riot"],
+  فالورنت: ["valorant", "فالورانت", "vp", "نقاط فالورانت", "شحن فالورانت"],
+  valorant: ["فالورانت", "فالورنت", "vp", "valorant points", "riot games", "riot"],
+  vp: ["valorant", "فالورانت", "فالورنت", "نقاط فالورانت", "valorant points"],
+
   // Minecraft
   ماينكرافت: ["minecraft", "ماين كرافت"],
   "ماين كرافت": ["minecraft", "ماينكرافت"],

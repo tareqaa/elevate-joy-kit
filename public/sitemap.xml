@@ -193,19 +193,7 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/valorant</loc>
-    <lastmod>2026-10-30</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
     <loc>https://gxstore.me/product/youtube-premium-account</loc>
-    <lastmod>2026-10-30</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://gxstore.me/product/lovable-lite-12m</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -217,13 +205,13 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/instagram-followers</loc>
+    <loc>https://gxstore.me/product/lovable-lite-12m</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/youtube-premium</loc>
+    <loc>https://gxstore.me/product/valorant</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -235,7 +223,19 @@
     <priority>0.80</priority>
   </url>
   <url>
+    <loc>https://gxstore.me/product/youtube-premium</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
     <loc>https://gxstore.me/product/tod</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://gxstore.me/product/instagram-followers</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -247,7 +247,7 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/notion-business</loc>
+    <loc>https://gxstore.me/product/instagram-likes</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -259,19 +259,25 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/instagram-likes</loc>
+    <loc>https://gxstore.me/product/notion-business</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/canva</loc>
+    <loc>https://gxstore.me/product/valorant-eu</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://gxstore.me/product/adobe-acrobat-standard</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://gxstore.me/product/canva</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -307,13 +313,13 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/microsoft365</loc>
+    <loc>https://gxstore.me/product/nordvpn</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/nordvpn</loc>
+    <loc>https://gxstore.me/product/microsoft365</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -349,13 +355,13 @@
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/free-fire-diamonds</loc>
+    <loc>https://gxstore.me/product/xbox-game-pass-ultimate</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
-    <loc>https://gxstore.me/product/xbox-game-pass-ultimate</loc>
+    <loc>https://gxstore.me/product/free-fire-diamonds</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -422,12 +428,6 @@
   </url>
   <url>
     <loc>https://gxstore.me/product/crimson-desert</loc>
-    <lastmod>2026-10-30</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://gxstore.me/product/shadow-of-war-definitive</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>
@@ -746,6 +746,12 @@
   </url>
   <url>
     <loc>https://gxstore.me/product/shadow-of-mordor-goty</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://gxstore.me/product/shadow-of-war-definitive</loc>
     <lastmod>2026-10-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.80</priority>

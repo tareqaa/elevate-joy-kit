@@ -1053,10 +1053,15 @@ export function GxProductTemplate({
   // Contextual Notice Points
   const noticePoints = useMemo(() => {
     if (isValorant) {
+      const isEU = (product.slug || "").includes("eu") || (activeVariant.region || "").includes("Europe") || (activeVariant.region || "").includes("أوروبا");
       return [
         ar
-          ? "🇹🇷 كود رقمي معتمد للحسابات التركية: هذا الكود مخصص حصرياً لشحن حسابات فالورانت التركية (Turkey Region)."
-          : "🇹🇷 Turkey Region Exclusive: Official code strictly valid for Turkish region Valorant accounts.",
+          ? (isEU
+              ? "🇪🇺 كود رقمي معتمد للسيرفر الأوروبي: هذا الكود مخصص حصرياً لشحن حسابات فالورانت التابعة لمنطقة أوروبا (EU Server)."
+              : "🇹🇷 كود رقمي معتمد للحسابات التركية: هذا الكود مخصص حصرياً لشحن حسابات فالورانت التركية (Turkey Region).")
+          : (isEU
+              ? "🇪🇺 Europe Server Exclusive: Official code strictly valid for European region Valorant accounts."
+              : "🇹🇷 Turkey Region Exclusive: Official code strictly valid for Turkish region Valorant accounts."),
         ar
           ? "⚡ تسليم فوري للأكواد: يظهر كود التفعيل الرقمي فور إتمام الدفع في صفحة تأكيد الطلب وحسابك في الموقع."
           : "⚡ Instant Digital Delivery: Activation code appears immediately on your order confirmation page.",
@@ -1976,6 +1981,58 @@ export function GxProductTemplate({
                   <span>{ar ? "اختر الباقة / المدة" : "Select Duration / Plan"}</span>
                 </span>
               </div>
+
+              {/* Valorant Region / Server Switcher (EU Server vs Turkey) */}
+              {isValorant && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, margin: "6px 0 16px 0" }}>
+                  <Link
+                    to="/product/valorant-eu"
+                    style={{
+                      padding: "10px 14px",
+                      borderRadius: 14,
+                      textAlign: "center",
+                      border: product.slug === "valorant-eu" ? "2px solid #ff4655" : "1px solid rgba(255, 255, 255, 0.12)",
+                      background: product.slug === "valorant-eu" ? "rgba(255, 70, 85, 0.18)" : "rgba(255, 255, 255, 0.04)",
+                      color: product.slug === "valorant-eu" ? "#ff4655" : "#cbd5e1",
+                      fontWeight: 800,
+                      fontSize: 13,
+                      textDecoration: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      boxShadow: product.slug === "valorant-eu" ? "0 0 16px rgba(255, 70, 85, 0.35)" : "none",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <span style={{ fontSize: 18 }}>🇪🇺</span>
+                    <span>{ar ? "السيرفر الأوروبي (EU Server)" : "Europe Server (EU)"}</span>
+                  </Link>
+                  <Link
+                    to="/product/valorant"
+                    style={{
+                      padding: "10px 14px",
+                      borderRadius: 14,
+                      textAlign: "center",
+                      border: product.slug === "valorant" ? "2px solid #ff4655" : "1px solid rgba(255, 255, 255, 0.12)",
+                      background: product.slug === "valorant" ? "rgba(255, 70, 85, 0.18)" : "rgba(255, 255, 255, 0.04)",
+                      color: product.slug === "valorant" ? "#ff4655" : "#cbd5e1",
+                      fontWeight: 800,
+                      fontSize: 13,
+                      textDecoration: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      boxShadow: product.slug === "valorant" ? "0 0 16px rgba(255, 70, 85, 0.35)" : "none",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <span style={{ fontSize: 18 }}>🇹🇷</span>
+                    <span>{ar ? "السيرفر التركي (Turkey)" : "Turkey Region"}</span>
+                  </Link>
+                </div>
+              )}
 
               {/* TOD Categorized Filter Tabs (TOD / TOD Mobile / TOD 4K) */}
               {isTod && (
