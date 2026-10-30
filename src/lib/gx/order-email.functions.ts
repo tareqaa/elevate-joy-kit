@@ -119,7 +119,8 @@ export function verifyOrderToken(token: string): { valid: boolean; orderNumber?:
       email: payload.email,
     };
   } catch (err: any) {
-    return { valid: false, error: err?.message || "فشل التحقق من صحة الرمز" };
+    console.error("verifyOrderToken failed:", err?.message);
+    return { valid: false, error: "فشل التحقق من صحة الرمز" };
   }
 }
 
