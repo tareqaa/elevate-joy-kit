@@ -53,7 +53,7 @@ function OrderDetailsPage() {
           setOrder(res.order);
           setIsLocked(Boolean(res.isLocked));
           if (res.order.codes_revealed_at) {
-            setRevealedKeys({ 0: true, 1: true, 2: true, 3: true, 4: true });
+            const map: Record<number, boolean> = {}; for (let k = 0; k < 100; k++) map[k] = true; setRevealedKeys(map);
           }
         } else {
           setError(res.error || (isAr ? "لم يتم العثور على هذا الطلب" : "Order not found"));

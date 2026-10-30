@@ -35,7 +35,7 @@ export const sendRestockNotificationEmail = createServerFn({ method: "POST" })
       const { requestId, email, customerName, productName, productUrl, customMessage } = data;
 
       const actionUrl = productUrl || "https://gxstore.me";
-      const subject = `🎉 أصبح متوفراً الآن! [${productName}] جاهز للطلب — متجر GX Store`;
+      const subject = `أصبح متوفراً الآن! [${productName}] جاهز للطلب — متجر GX Store`;
 
       const introText =
         customMessage?.trim() ||

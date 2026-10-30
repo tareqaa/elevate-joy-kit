@@ -55,7 +55,7 @@ export function OrderCompletedPage() {
         if (res.ok && res.order) {
           setOrder(res.order);
           if (res.order.codes_revealed_at) {
-            setRevealedKeys({ 0: true, 1: true, 2: true, 3: true, 4: true });
+            const map: Record<number, boolean> = {}; for (let k = 0; k < 100; k++) map[k] = true; setRevealedKeys(map);
           }
         } else {
           setError(res.error || (isAr ? "الرابط غير صالح أو منتهي الصلاحية" : "Invalid or expired link"));

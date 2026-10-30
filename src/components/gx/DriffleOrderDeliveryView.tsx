@@ -264,6 +264,27 @@ export type DeliveryCode = {
   extra?: string;
 };
 
+
+export interface DeliverableUnit {
+  unitIndex: number;
+  item: any;
+  itemIndex: number;
+  unitInItem: number;
+  totalUnitsInItem: number;
+  unitLabel: string;
+  code: DeliveryCode | null;
+  coverImg: string;
+  regionBadge: string;
+  isAccount: boolean;
+  isTopup: boolean;
+  platform?: string;
+  siblingUnits: Array<{
+    unitIndex: number;
+    unitInItem: number;
+    code: DeliveryCode | null;
+  }>;
+}
+
 export interface DriffleOrderDeliveryViewProps {
   order: any;
   loading: boolean;
@@ -620,9 +641,125 @@ export function DriffleOrderDeliveryView({
     return Array.isArray(codes) ? codes : [];
   }, [order]);
 
+
   const items = useMemo(() => {
     return Array.isArray(order?.items) ? order.items : [];
   }, [order]);
+
+  const deliverableUnits = useMemo<DeliverableUnit[]>(() => {
+    const units: DeliverableUnit[] = [];
+    const codesPool = [...deliveryCodes];
+
+    if (items && items.length > 0) {
+      items.forEach((it: any, itemIdx: number) => {
+        const qty = Math.max(1, Number(it.qty ?? it.quantity) || 1);
+        const coverImg = getProductCoverImage(it.image, it.name, it.product_slug || it.slug, dbImageMap);
+        const itemName = (it.name || "").trim().toLowerCase();
+
+        const itemCodes: (DeliveryCode | null)[] = [];
+        for (let k = 0; k < qty; k++) {
+          let matched: DeliveryCode | null = null;
+          if (itemName) {
+            const foundIdx = codesPool.findIndex((c) => {
+              const lbl = (c.label || "").trim().toLowerCase();
+              return Boolean(lbl && (lbl.includes(itemName) || itemName.includes(lbl.replace(/\s*\(\d+\/\d+\)$/, ""))));
+            });
+            if (foundIdx !== -1) {
+              matched = codesPool.splice(foundIdx, 1)[0];
+            }
+          }
+          if (!matched && codesPool.length > 0) {
+            matched = codesPool.shift() || null;
+          }
+          itemCodes.push(matched);
+        }
+
+        const startIndex = units.length;
+        const siblingUnitsRef: Array<{
+          unitIndex: number;
+          unitInItem: number;
+          code: DeliveryCode | null;
+        }> = [];
+
+        for (let k = 0; k < qty; k++) {
+          siblingUnitsRef.push({
+            unitIndex: startIndex + k,
+            unitInItem: k + 1,
+            code: itemCodes[k] || null,
+          });
+        }
+
+        for (let k = 0; k < qty; k++) {
+          const assignedCode = itemCodes[k] || null;
+          const isThisTopup = Boolean(
+            assignedCode?.kind === "topup" ||
+            it?.delivery_type === "topup"
+          );
+          const isThisAccount = !isThisTopup && Boolean(
+            assignedCode?.kind === "account" ||
+            (assignedCode && assignedCode.email && !assignedCode.value) ||
+            it?.delivery_type === "account"
+          );
+          const regionBadge = formatFullRegion(
+            {
+              region: assignedCode?.region || it.region,
+              cartId: it.cartId || it.id,
+              name: it.name,
+              slug: it.product_slug || it.slug,
+            },
+            isAr ? "ar" : "en",
+            { withDetails: false }
+          );
+
+          const unitLabel = qty > 1
+            ? (isAr ? `${it.name} (كود ${k + 1} من ${qty})` : `${it.name} (Key ${k + 1} of ${qty})`)
+            : (it.name || (isAr ? "منتج رقمي" : "Digital Product"));
+
+          units.push({
+            unitIndex: startIndex + k,
+            item: it,
+            itemIndex: itemIdx,
+            unitInItem: k + 1,
+            totalUnitsInItem: qty,
+            unitLabel,
+            code: assignedCode,
+            coverImg,
+            regionBadge,
+            isAccount: isThisAccount,
+            isTopup: isThisTopup,
+            platform: it.platform,
+            siblingUnits: siblingUnitsRef,
+          });
+        }
+      });
+    }
+
+    while (codesPool.length > 0) {
+      const extraCode = codesPool.shift()!;
+      const isThisTopup = extraCode?.kind === "topup";
+      const isThisAccount = !isThisTopup && Boolean(
+        extraCode?.kind === "account" || (extraCode && extraCode.email && !extraCode.value)
+      );
+      const uIdx = units.length;
+      units.push({
+        unitIndex: uIdx,
+        item: { name: extraCode.label || (isAr ? "منتج رقمي إضافي" : "Extra Product") },
+        itemIndex: -1,
+        unitInItem: 1,
+        totalUnitsInItem: 1,
+        unitLabel: extraCode.label || (isAr ? "منتج رقمي" : "Digital Product"),
+        code: extraCode,
+        coverImg: "/app/assets/img/gx-logo.png",
+        regionBadge: extraCode.region || "Global",
+        isAccount: isThisAccount,
+        isTopup: isThisTopup,
+        siblingUnits: [{ unitIndex: uIdx, unitInItem: 1, code: extraCode }],
+      });
+    }
+
+    return units;
+  }, [items, deliveryCodes, dbImageMap, isAr]);
+
 
   // Load product images from DB
   useEffect(() => {
@@ -674,19 +811,22 @@ export function DriffleOrderDeliveryView({
   // Mandatory confirmation checkbox state before revealing code or account credentials
   const [agreeChecked, setAgreeChecked] = useState(false);
 
-  const activeItem = selectedItemIdx !== null ? items[selectedItemIdx] : null;
-  const activeCode = selectedItemIdx !== null ? deliveryCodes[selectedItemIdx] || deliveryCodes[0] : null;
+  const activeUnit = selectedItemIdx !== null ? deliverableUnits[selectedItemIdx] : null;
+  const activeItem = activeUnit ? activeUnit.item : null;
+  const activeCode = activeUnit ? activeUnit.code : null;
   const isAccountItem = Boolean(
+    activeUnit?.isAccount ||
     activeCode?.kind === "account" ||
     (activeCode && activeCode.email && !activeCode.value) ||
     activeItem?.delivery_type === "account"
   );
   const isTopupItem = Boolean(
+    activeUnit?.isTopup ||
     activeCode?.kind === "topup" ||
     activeItem?.delivery_type === "topup"
   );
 
-  const activeModalRegion = activeItem
+  const activeModalRegion = activeUnit?.regionBadge || (activeItem
     ? formatFullRegion(
         {
           region: activeCode?.region || activeItem?.region,
@@ -697,7 +837,7 @@ export function DriffleOrderDeliveryView({
         isAr ? "ar" : "en",
         { withDetails: true }
       )
-    : "";
+    : "");
 
   // Open modal without revealing yet - user must confirm and check agreement
   const handleOpenReveal = (idx: number) => {
@@ -709,6 +849,12 @@ export function DriffleOrderDeliveryView({
   // Explicit confirmation to reveal code/account - records reveal strictly after agreement
   const handleConfirmReveal = async (idx: number) => {
     onRevealKey(idx);
+    const unit = deliverableUnits[idx];
+    if (unit?.siblingUnits) {
+      unit.siblingUnits.forEach((s) => {
+        onRevealKey(s.unitIndex);
+      });
+    }
     const num = order?.order_number ? String(order.order_number).trim() : undefined;
     if (num) {
       try {
@@ -739,7 +885,7 @@ export function DriffleOrderDeliveryView({
   // Compute order total from items
   const orderTotal = useMemo(() => {
     if (order?.total_jod) return order.total_jod;
-    return items.reduce((sum: number, it: any) => sum + ((it.price || 0) * (it.quantity || 1)), 0);
+    return items.reduce((sum: number, it: any) => sum + ((it.price || 0) * (it.qty || it.quantity || 1)), 0);
   }, [order, items]);
 
   /* ── Shared Styles ────────────────────────────────────────── */
@@ -1275,17 +1421,20 @@ export function DriffleOrderDeliveryView({
                   color: textSecondary,
                 }}
               >
-                {items.map((it: any, i: number) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ color: textPrimary, fontWeight: 600 }}>
-                      {it.name}{" "}
-                      <strong style={{ color: textSecondary, fontWeight: 500 }}>× {it.quantity || 1}</strong>
-                    </span>
-                    <span style={{ color: textPrimary, fontWeight: 700 }} dir="ltr">
-                      {((it.price || 0) * (it.quantity || 1)).toFixed(2)} JOD
-                    </span>
-                  </div>
-                ))}
+                {items.map((it: any, i: number) => {
+                  const itemQty = it.qty || it.quantity || 1;
+                  return (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: textPrimary, fontWeight: 600 }}>
+                        {it.name}{" "}
+                        <strong style={{ color: textSecondary, fontWeight: 500 }}>× {itemQty}</strong>
+                      </span>
+                      <span style={{ color: textPrimary, fontWeight: 700 }} dir="ltr">
+                        {((it.price || 0) * itemQty).toFixed(2)} JOD
+                      </span>
+                    </div>
+                  );
+                })}
 
                 {order.discount_jod && Number(order.discount_jod) > 0 && (
                   <div style={{ display: "flex", justifyContent: "space-between", color: "#10b981", fontWeight: 700 }}>
@@ -1727,7 +1876,7 @@ export function DriffleOrderDeliveryView({
             <div style={{ display: "flex", alignItems: "flex-start", gap: "16px", padding: "20px 22px 16px" }}>
               <img
                 src={getProductCoverImage(activeItem.image, activeItem.name, activeItem.product_slug || activeItem.slug, dbImageMap)}
-                alt={activeItem.name}
+                alt={activeUnit?.unitLabel || activeItem.name}
                 onError={(e) => {
                   const target = e.currentTarget;
                   if (!target.dataset.triedFallback) {
@@ -2153,6 +2302,127 @@ export function DriffleOrderDeliveryView({
                             </button>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* All Sibling Codes for Multi-Quantity Product */}
+                    {activeUnit && activeUnit.totalUnitsInItem > 1 && (
+                      <div
+                        style={{
+                          borderRadius: "12px",
+                          background: "rgba(0, 0, 0, 0.35)",
+                          border: "1px solid rgba(0, 229, 255, 0.2)",
+                          padding: "14px 16px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "10px",
+                          marginTop: "6px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ fontSize: "12px", fontWeight: 800, color: textPrimary }}>
+                            {isAr
+                              ? `جميع أكواد هذا المنتج في طلبك (${activeUnit.totalUnitsInItem} أكواد):`
+                              : `All keys for this product (${activeUnit.totalUnitsInItem} keys):`}
+                          </span>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          {activeUnit.siblingUnits.map((sib) => {
+                            const isSibCurrent = sib.unitIndex === selectedItemIdx;
+                            const sibCodeVal = sib.code?.value || sib.code?.extra || sib.code?.password || "";
+                            const sibKeyId = `sib-code-${sib.unitIndex}`;
+
+                            return (
+                              <div
+                                key={sib.unitIndex}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  gap: "10px",
+                                  padding: "9px 12px",
+                                  borderRadius: "8px",
+                                  backgroundColor: isSibCurrent
+                                    ? "rgba(0, 229, 255, 0.08)"
+                                    : "rgba(255, 255, 255, 0.03)",
+                                  border: isSibCurrent
+                                    ? "1px solid rgba(0, 229, 255, 0.35)"
+                                    : "1px solid rgba(255, 255, 255, 0.06)",
+                                }}
+                              >
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, flex: 1 }}>
+                                  <span
+                                    style={{
+                                      fontSize: "10.5px",
+                                      fontWeight: 800,
+                                      padding: "2px 6px",
+                                      borderRadius: "4px",
+                                      backgroundColor: isSibCurrent ? "rgba(0, 229, 255, 0.18)" : "rgba(255, 255, 255, 0.06)",
+                                      color: isSibCurrent ? accentCyan : textSecondary,
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    {isAr ? `كود ${sib.unitInItem}` : `Key ${sib.unitInItem}`}
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontFamily: "'Fira Code', 'Cascadia Code', monospace",
+                                      fontSize: "13px",
+                                      fontWeight: 700,
+                                      color: sibCodeVal ? (isSibCurrent ? accentCyan : textPrimary) : textMuted,
+                                      direction: "ltr",
+                                      unicodeBidi: "isolate",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {sibCodeVal || (isAr ? "قيد التجهيز..." : "Pending...")}
+                                  </span>
+                                </div>
+
+                                {sibCodeVal ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => onCopyKey(sibCodeVal, sibKeyId)}
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "5px",
+                                      padding: "5px 11px",
+                                      borderRadius: "6px",
+                                      backgroundColor:
+                                        copiedKey === sibKeyId
+                                          ? "rgba(16, 185, 129, 0.2)"
+                                          : "rgba(255, 255, 255, 0.08)",
+                                      border: `1px solid ${
+                                        copiedKey === sibKeyId ? "rgba(16, 185, 129, 0.4)" : cardBorder
+                                      }`,
+                                      color: copiedKey === sibKeyId ? "#10b981" : textPrimary,
+                                      cursor: "pointer",
+                                      fontSize: "11px",
+                                      fontWeight: 700,
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    {copiedKey === sibKeyId ? (
+                                      <>
+                                        <Check style={{ width: "12px", height: "12px" }} />
+                                        <span>{isAr ? "تم!" : "Copied"}</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy style={{ width: "12px", height: "12px" }} />
+                                        <span>{isAr ? "نسخ" : "Copy"}</span>
+                                      </>
+                                    )}
+                                  </button>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 

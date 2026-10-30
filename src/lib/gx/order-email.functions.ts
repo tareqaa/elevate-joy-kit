@@ -782,11 +782,11 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
       // Subject line
       const subject = isAr
         ? isDelivered
-          ? `🎮 تم تسليم وتأكيد طلبك بنجاح #${orderNumber} — متجر GX Store`
-          : `⚠️ إشعار بشأن إلغاء طلبك #${orderNumber} — متجر GX Store`
+          ? `تم تسليم وتأكيد طلبك بنجاح #${orderNumber} — متجر GX Store`
+          : `إشعار بشأن إلغاء طلبك #${orderNumber} — متجر GX Store`
         : isDelivered
-        ? `🎮 Order #${orderNumber} Completed & Delivered — GX Store`
-        : `⚠️ Order #${orderNumber} Cancellation Notice — GX Store`;
+        ? `Order #${orderNumber} Completed & Delivered — GX Store`
+        : `Order #${orderNumber} Cancellation Notice — GX Store`;
 
       const greetingName = (customerName && customerName.trim()) || (isAr ? "عميلنا العزيز" : "Valued Customer");
 
@@ -837,7 +837,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
           : (isAr ? "إليك تفاصيل الطلب الملغي:" : "Here are the cancelled order details:"),
         ctaButton: isDelivered
           ? {
-              text: isAr ? "تفاصيل المنتج 🎮" : "Product Details 🎮",
+              text: isAr ? "تفاصيل المنتج" : "Product Details",
               url: orderUrl,
             }
           : {
@@ -1044,8 +1044,8 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
 
       // Subject line
       const subject = isAr
-        ? `⚠️ طلبك رقم #${orderNumber} بانتظار إتمام الدفع — تواصل معنا عبر الواتساب | GX Store`
-        : `⚠️ Action Required: Order #${orderNumber} Pending Payment — Contact via WhatsApp | GX Store`;
+        ? `طلبك رقم #${orderNumber} بانتظار إتمام الدفع — تواصل معنا عبر الواتساب | GX Store`
+        : `Action Required: Order #${orderNumber} Pending Payment — Contact via WhatsApp | GX Store`;
 
       const emailProducts: EmailProductItem[] = resolvedItems.map((item) => {
         const itemRegionFormatted = formatFullRegion(

@@ -150,7 +150,7 @@ export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
         (isCompensation
           ? `إشعار إيداع رصيد بقيمة ${formattedAmount} لحسابكم (${rawReason}) — متجر GX Store`
           : isGift
-          ? `🎁 مكافأة رصيد بقيمة ${formattedAmount} لحسابك — متجر GX Store`
+          ? `مكافأة رصيد بقيمة ${formattedAmount} لحسابك — متجر GX Store`
           : isRegistered
           ? `إشعار إيداع رصيد بقيمة ${formattedAmount} في محفظتك — متجر GX Store`
           : `إشعار تخصيص رصيد بقيمة ${formattedAmount} لبريدك الإلكتروني — متجر GX Store`);
