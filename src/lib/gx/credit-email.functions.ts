@@ -57,7 +57,7 @@ async function loadRecentCredit(
   const { data: profile } = await db
     .from("profiles")
     .select("id, username, email")
-    .ilike("email", normEmail)
+    .ilike("email", normEmail.replace(/[\\%_]/g, (c) => `\\${c}`))
     .maybeSingle();
   if (profile?.id) {
     const { data: tx } = await db
