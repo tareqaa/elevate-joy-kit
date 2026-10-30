@@ -736,8 +736,13 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
       ? (order.delivery_data as Record<string, unknown>)
       : {};
 
+    const effectivePaid = (nextStatus === "delivered" || nextStatus === "paid")
+      ? (Number(order.paid_jod || 0) > 0 ? Number(order.paid_jod) : Number(order.total_jod || 0))
+      : order.paid_jod;
+
     return {
       status: nextStatus,
+      paid_jod: effectivePaid,
       admin_notes: notes.trim() || null,
       delivery_data: {
         ...existingDel,
