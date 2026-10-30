@@ -261,20 +261,10 @@ export const Route = createFileRoute("/category/$slug")({
         );
       });
     } else if (category.slug === "valorant") {
-      // كاتجوري فالورانت: بطاقات سيرفر تركيا وسيرفر أوروبا
-      categoryProducts = allProducts.filter((p) => {
-        const s = (p.slug || "").toLowerCase();
-        const cid = (p.cartId || "").toLowerCase();
-        const name = `${p.nameAr || ""} ${p.nameEn || ""}`.toLowerCase();
-        return (
-          s === "valorant" ||
-          s.includes("valorant") ||
-          cid.startsWith("vp-eu") ||
-          cid.startsWith("valorant-") ||
-          name.includes("فالورانت") ||
-          name.includes("valorant")
-        );
-      });
+      // كاتجوري فالورانت: بطاقتا السيرفر التركي والسيرفر الأوروبي (Master Cards)
+      categoryProducts = allProducts.filter(
+        (p) => p.slug === "valorant" || p.slug === "valorant-eu" || p.categorySlug === "valorant"
+      );
     } else if (category.slug === "design" || category.slug === "apps" || category.slug === "software" || category.slug === "ai") {
       // البرامج والتطبيقات: تشمل تطبيقات الذكاء الاصطناعي (Gemini, Lovable, Notion, etc.)
       const matchingAll = allProducts.filter((p) => {
@@ -531,7 +521,7 @@ function CategoryPage() {
         { name: "Xbox", logo: "/app/assets/img/xbox-logo.svg" },
         { name: "PlayStation", logo: "/app/assets/img/playstation-logo.svg" },
         { name: "Fortnite", logo: "/app/assets/img/fortnite-f-icon.jpg" },
-        { name: "Valorant", logo: "/app/assets/img/valorant-logo.png" },
+        { name: "Valorant", logo: "/app/assets/img/valorant-logo.svg" },
       ];
     }
     if (isSubscriptionsCategory) {
@@ -556,9 +546,6 @@ function CategoryPage() {
   const [isAllPlatformsModalOpen, setIsAllPlatformsModalOpen] = useState<boolean>(false);
   const [fortniteFilter, setFortniteFilter] = useState<"all" | "crew" | "vbucks">("all");
   const [streamingSubfilter, setStreamingSubfilter] = useState<"all" | "tod" | "youtube">("all");
-  const [valorantRegion, setValorantRegion] = useState<"all" | "tr" | "eu">("all");
-
-  const isValorantMode = category.slug === "valorant" || selectedPlatform === "valorant";
 
   useEffect(() => {
     let initialPlatform = "all";
@@ -573,7 +560,6 @@ function CategoryPage() {
     setSelectedPlatform(initialPlatform);
     setSelectedSubtype(initialSubtype);
     setStreamingSubfilter("all");
-    setValorantRegion("all");
   }, [category.slug]);
 
 
@@ -935,20 +921,17 @@ function CategoryPage() {
         nameEn: "Valorant",
         color: "#ff4655",
         glow: "rgba(255, 70, 85, 0.45)",
-        logoSrc: "/app/assets/img/valorant-logo.png",
+        logoSrc: "/app/assets/img/valorant-logo.svg",
         renderLogo: () => (
-          <img
-            src="/app/assets/img/valorant-logo.png"
-            alt="Valorant"
-            style={{ width: 30, height: 30, objectFit: "contain" }}
-          />
+          <svg viewBox="240 0 522 432" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#ff4655" d="M 245.44 4.65 C 248.61 2.76 250.63 6.58 252.34 8.59 C 362.37 146.24 472.53 283.79 582.55 421.44 C 584.81 423.40 583.10 427.59 580.05 427.14 C 527.37 427.20 474.68 427.16 422.00 427.16 C 417.78 427.21 413.74 425.11 411.15 421.82 C 356.49 353.53 301.86 285.21 247.20 216.91 C 244.88 214.15 243.68 210.58 243.83 206.99 C 243.83 141.01 243.85 75.02 243.81 9.04 C 243.84 7.48 243.78 5.46 245.44 4.65 Z" />
+            <path fill="#ff4655" d="M 754.32 4.33 C 756.57 3.48 759.05 5.56 758.72 7.92 C 758.80 73.93 758.71 139.94 758.76 205.95 C 758.91 209.69 758.09 213.56 755.66 216.50 C 739.05 237.28 722.42 258.05 705.81 278.82 C 703.04 282.42 698.51 284.41 693.98 284.18 C 641.65 284.13 589.31 284.21 536.98 284.14 C 533.89 284.62 532.13 280.45 534.41 278.44 C 606.98 187.65 679.61 96.89 752.22 6.12 C 752.77 5.34 753.47 4.74 754.32 4.33 Z" />
+          </svg>
         ),
         match: (p: CatalogStoreProduct) =>
           p.categorySlug === "valorant" ||
           p.parentCategorySlug === "valorant" ||
           (p.slug || "").includes("valorant") ||
-          (p.cartId || "").startsWith("vp-eu") ||
-          (p.cartId || "").startsWith("valorant-") ||
           (p.nameAr || "").includes("فالورانت"),
       },
       {
@@ -1264,14 +1247,24 @@ function CategoryPage() {
         p.categorySlug === ch.slug || p.slug === ch.slug;
       const count = products.filter(matchFn).length;
       if (count > 0) {
+        const isValorantPlatform = ch.slug === "valorant";
         list.push({
           id: ch.slug,
           nameAr: pick(ch.nameAr, ch.nameEn),
           nameEn: pick(ch.nameEn, ch.nameAr),
-          color: "#00e5ff",
-          glow: "rgba(0, 229, 255, 0.35)",
-          logoSrc: ch.iconImage || undefined,
-          renderLogo: ch.icon ? () => <span style={{ fontSize: 24 }}>{ch.icon}</span> : undefined,
+          color: isValorantPlatform ? "#ff4655" : "#00e5ff",
+          glow: isValorantPlatform ? "rgba(255, 70, 85, 0.45)" : "rgba(0, 229, 255, 0.35)",
+          logoSrc: isValorantPlatform ? "/app/assets/img/valorant-logo.svg" : (ch.iconImage || undefined),
+          renderLogo: isValorantPlatform
+            ? () => (
+                <svg viewBox="240 0 522 432" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+                  <path fill="#ff4655" d="M 245.44 4.65 C 248.61 2.76 250.63 6.58 252.34 8.59 C 362.37 146.24 472.53 283.79 582.55 421.44 C 584.81 423.40 583.10 427.59 580.05 427.14 C 527.37 427.20 474.68 427.16 422.00 427.16 C 417.78 427.21 413.74 425.11 411.15 421.82 C 356.49 353.53 301.86 285.21 247.20 216.91 C 244.88 214.15 243.68 210.58 243.83 206.99 C 243.83 141.01 243.85 75.02 243.81 9.04 C 243.84 7.48 243.78 5.46 245.44 4.65 Z" />
+                  <path fill="#ff4655" d="M 754.32 4.33 C 756.57 3.48 759.05 5.56 758.72 7.92 C 758.80 73.93 758.71 139.94 758.76 205.95 C 758.91 209.69 758.09 213.56 755.66 216.50 C 739.05 237.28 722.42 258.05 705.81 278.82 C 703.04 282.42 698.51 284.41 693.98 284.18 C 641.65 284.13 589.31 284.21 536.98 284.14 C 533.89 284.62 532.13 280.45 534.41 278.44 C 606.98 187.65 679.61 96.89 752.22 6.12 C 752.77 5.34 753.47 4.74 754.32 4.33 Z" />
+                </svg>
+              )
+            : ch.icon
+            ? () => <span style={{ fontSize: 24 }}>{ch.icon}</span>
+            : undefined,
           count,
           match: matchFn,
         });
@@ -1543,23 +1536,6 @@ function CategoryPage() {
       }
     }
 
-    // 1c. Valorant dedicated region sub-filter (Turkey vs Europe)
-    if (isValorantMode && valorantRegion !== "all") {
-      if (valorantRegion === "tr") {
-        list = list.filter((p) => {
-          const s = `${p.slug || ""} ${p.cartId || ""} ${p.region || ""} ${p.nameAr || ""} ${p.nameEn || ""}`.toLowerCase();
-          const isEu = s.includes("eu") || s.includes("europe") || s.includes("أوروبا");
-          const isTr = s.includes("turkey") || s.includes("تركيا") || s.includes("تركي") || p.slug === "valorant" || (p.cartId || "").startsWith("valorant-");
-          return isTr && !isEu;
-        });
-      } else if (valorantRegion === "eu") {
-        list = list.filter((p) => {
-          const s = `${p.slug || ""} ${p.cartId || ""} ${p.region || ""} ${p.nameAr || ""} ${p.nameEn || ""}`.toLowerCase();
-          return s.includes("eu") || s.includes("europe") || s.includes("أوروبا") || (p.cartId || "").startsWith("vp-eu");
-        });
-      }
-    }
-
     // 2. Search query filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -1634,8 +1610,6 @@ function CategoryPage() {
     customMaxPrice,
     sortBy,
     fortniteFilter,
-    isValorantMode,
-    valorantRegion,
   ]);
 
   // 5x5 Pagination (25 items per page for lightning fast page loading)
@@ -1807,60 +1781,6 @@ function CategoryPage() {
       ),
       active: streamingSubfilter === "youtube",
       onClick: () => setStreamingSubfilter("youtube"),
-    });
-  } else if (isValorantMode) {
-    const isTrMatch = (p: CatalogStoreProduct) => {
-      const s = `${p.slug || ""} ${p.cartId || ""} ${p.region || ""} ${p.nameAr || ""} ${p.nameEn || ""}`.toLowerCase();
-      const isEu = s.includes("eu") || s.includes("europe") || s.includes("أوروبا");
-      const isTr = s.includes("turkey") || s.includes("تركيا") || s.includes("تركي") || p.slug === "valorant" || (p.cartId || "").startsWith("valorant-");
-      return isTr && !isEu;
-    };
-    const isEuMatch = (p: CatalogStoreProduct) => {
-      const s = `${p.slug || ""} ${p.cartId || ""} ${p.region || ""} ${p.nameAr || ""} ${p.nameEn || ""}`.toLowerCase();
-      return s.includes("eu") || s.includes("europe") || s.includes("أوروبا") || (p.cartId || "").startsWith("vp-eu");
-    };
-
-    const valorantPool = products.filter(
-      (p) =>
-        p.slug === "valorant" ||
-        p.slug.includes("valorant") ||
-        (p.cartId || "").startsWith("vp-eu") ||
-        (p.cartId || "").startsWith("valorant-") ||
-        (p.nameAr || "").includes("فالورانت")
-    );
-    const trCount = valorantPool.filter(isTrMatch).length;
-    const euCount = valorantPool.filter(isEuMatch).length;
-    const allCount = valorantPool.length;
-
-    navPills.push({
-      id: "all",
-      name: lang === "en" ? `All Regions (${allCount})` : `🌐 كل السيرفرات (${allCount})`,
-      icon: <span className="pill-icon">🌐</span>,
-      active: valorantRegion === "all",
-      onClick: () => {
-        setValorantRegion("all");
-        setCurrentPage(1);
-      },
-    });
-    navPills.push({
-      id: "tr",
-      name: lang === "en" ? `Turkey Server 🇹🇷 (${trCount})` : `🇹🇷 سيرفر تركيا (${trCount})`,
-      icon: <span className="pill-icon">🇹🇷</span>,
-      active: valorantRegion === "tr",
-      onClick: () => {
-        setValorantRegion("tr");
-        setCurrentPage(1);
-      },
-    });
-    navPills.push({
-      id: "eu",
-      name: lang === "en" ? `Europe Server 🇪🇺 (${euCount})` : `🇪🇺 سيرفر أوروبا (${euCount})`,
-      icon: <span className="pill-icon">🇪🇺</span>,
-      active: valorantRegion === "eu",
-      onClick: () => {
-        setValorantRegion("eu");
-        setCurrentPage(1);
-      },
     });
   } else if (category.parent && (category.siblings || []).length > 0) {
     navPills.push({
@@ -2081,7 +2001,9 @@ function CategoryPage() {
 
                 <div className="cat-stage-heading">
                   <div className="cat-stage-badge">
-                    {category.iconImage ? (
+                    {category.slug === "valorant" ? (
+                      renderCategoryVectorIcon("valorant", 40)
+                    ) : category.iconImage ? (
                       <img src={category.iconImage} alt={catName} />
                     ) : (
                       renderCategoryVectorIcon(category.slug, 40)
@@ -2242,34 +2164,7 @@ function CategoryPage() {
                 </div>
               )}
 
-              {/* Active Valorant Region Filter Pill */}
-              {isValorantMode && valorantRegion !== "all" && (
-                <div
-                  className="cat-toolbar-filter-pill"
-                  style={{
-                    borderColor: valorantRegion === "tr" ? "#e11d48" : "#2563eb",
-                    background: valorantRegion === "tr" ? "rgba(225, 29, 72, 0.12)" : "rgba(37, 99, 235, 0.12)",
-                  }}
-                >
-                  <span style={{ color: valorantRegion === "tr" ? "#fb7185" : "#60a5fa" }}>
-                    {valorantRegion === "tr" ? "🇹🇷 " : "🇪🇺 "}
-                    {lang === "en" ? "Region:" : "الريجون:"}
-                  </span>
-                  <span style={{ fontWeight: 800 }}>
-                    {valorantRegion === "tr"
-                      ? lang === "en" ? "Turkey Server" : "سيرفر تركيا"
-                      : lang === "en" ? "Europe Server" : "سيرفر أوروبا"}
-                  </span>
-                  <button
-                    type="button"
-                    className="reset-btn"
-                    onClick={() => setValorantRegion("all")}
-                    title={lang === "en" ? "Clear region filter" : "إلغاء فلتر الريجون"}
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
+
 
               {/* Active Subtype / Service / Genre Pill */}
               {selectedSubtype !== "all" && (

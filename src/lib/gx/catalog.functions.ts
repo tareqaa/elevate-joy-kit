@@ -687,6 +687,70 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
         ["playstation", "xbox", "itunes", "google-play"].includes(p.slug) ||
         rootCategorySlug === "gift-cards";
 
+      // 1. VALORANT REGIONAL SERVER MASTER CARDS CONSOLIDATION
+      // Show exactly two cards:
+      // 1) Turkey Server Card (بطاقة سيرفر تركيا) -> links to /product/valorant
+      // 2) Euro Server Card (بطاقة سيرفر أوروبا) -> links to /product/valorant-eu
+      if ((p.slug === "valorant" || p.slug === "valorant-eu") && vars.length > 0) {
+        let minPrice = Infinity;
+        for (const v of vars) {
+          const o = v.cart_id ? overrides[v.cart_id] : undefined;
+          const pVal = typeof o?.price === "number" && o.price >= 0 ? o.price : Number(v.price_jod) || 0;
+          if (pVal > 0 && pVal < minPrice) minPrice = pVal;
+        }
+        if (minPrice === Infinity) minPrice = Number(p.base_price_jod) || 2.25;
+
+        const isEu = p.slug === "valorant-eu";
+        const nameAr = isEu
+          ? "نقاط فالورانت (VP) — سيرفر أوروبا"
+          : "نقاط فالورانت (VP) — سيرفر تركيا";
+        const nameEn = isEu
+          ? "Valorant Points (VP) — Euro Store"
+          : "Valorant Points (VP) — Turkey Store";
+        const taglineAr = isEu
+          ? "شحن رصيد بطاقات فالورانت للحسابات الأوروبية مع تسليم فوري للأكواد"
+          : "شحن رصيد بطاقات فالورانت للحسابات التركية مع تسليم فوري للأكواد";
+        const taglineEn = isEu
+          ? "Valorant Points Gift Card Euro Store with instant code delivery"
+          : "Valorant Points Gift Card Turkey Store with instant code delivery";
+        const coverImg = isEu
+          ? "/app/assets/img/catalog/valorant-eu-cover.jpg"
+          : "/app/assets/img/catalog/valorant-tr-cover.jpg";
+        const badge = isEu ? "سيرفر أوروبي 🇪🇺" : "سيرفر تركي 🇹🇷";
+        const region = isEu ? "أوروبا | Europe | 🇪🇺" : "تركيا | Turkey | 🇹🇷";
+
+        items.push({
+          id: p.id,
+          slug: p.slug,
+          cartId: p.slug,
+          nameAr,
+          nameEn,
+          taglineAr,
+          taglineEn,
+          imageUrl: coverImg,
+          icon: "🎯",
+          iconImage: "/app/assets/img/valorant-logo.svg",
+          thumbBg: isEu
+            ? "linear-gradient(135deg, rgba(0, 51, 153, 0.35), rgba(0, 20, 60, 0.2))"
+            : "linear-gradient(135deg, rgba(227, 10, 23, 0.35), rgba(60, 5, 10, 0.2))",
+          basePriceJod: minPrice,
+          oldPriceJod: null,
+          badge,
+          categorySlug: "valorant",
+          parentCategorySlug: "games",
+          categoryNameAr: "فالورانت",
+          categoryNameEn: "Valorant",
+          platform: "Valorant",
+          productType: "giftcard",
+          region,
+          isGiftCardMaster: true,
+          viewOfferLink: `/product/${p.slug}`,
+          createdAt: p.created_at || null,
+          sortOrder: isEu ? 2 : 1,
+        });
+        continue;
+      }
+
       // 1. SMART GIFT CARDS CONSOLIDATION
       // Show one master card per gift card brand (PlayStation, Xbox, iTunes, Google Play)
       // with starting price ("يبدأ من") and link to the dedicated selector page (/product/[slug])
