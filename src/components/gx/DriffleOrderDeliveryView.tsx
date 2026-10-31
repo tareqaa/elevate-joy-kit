@@ -800,6 +800,40 @@ export function DriffleOrderDeliveryView({
     };
   }, [order?.order_number]);
 
+  // Local persistent revealed state to prevent race-condition regressions when background sync triggers
+  const storageKey = order?.order_number || order?.id ? `gx_rev_${order.order_number || order.id}` : null;
+  const [localRevealed, setLocalRevealed] = useState<Record<number, boolean>>(() => {
+    if (!storageKey || typeof window === "undefined") return {};
+    try {
+      const saved = sessionStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const markUnitRevealedLocally = (idx: number) => {
+    setLocalRevealed((prev) => {
+      const next = { ...prev, [idx]: true };
+      if (storageKey && typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem(storageKey, JSON.stringify(next));
+        } catch {}
+      }
+      return next;
+    });
+  };
+
+  const isUnitRevealed = (idx: number | null | undefined): boolean => {
+    if (idx === null || idx === undefined) return false;
+    const unit = deliverableUnits[idx];
+    return Boolean(
+      revealedKeys[idx] ||
+      localRevealed[idx] ||
+      unit?.code?.revealed_at
+    );
+  };
+
   // Mandatory confirmation checkbox state before revealing code or account credentials
   const [agreeChecked, setAgreeChecked] = useState(false);
 
@@ -840,7 +874,12 @@ export function DriffleOrderDeliveryView({
     }
     setSelectedItemIdx(idx);
     setShowGuide(false);
-    setAgreeChecked(false);
+    // If unit was already revealed, auto-check agreement so it NEVER locks them out again!
+    if (isUnitRevealed(idx)) {
+      setAgreeChecked(true);
+    } else {
+      setAgreeChecked(false);
+    }
   };
 
   // Explicit confirmation to reveal code/account - records reveal strictly after agreement
@@ -851,6 +890,8 @@ export function DriffleOrderDeliveryView({
       handleCloseReveal();
       return;
     }
+    markUnitRevealedLocally(idx);
+    setAgreeChecked(true);
     onRevealKey(idx);
     const num = order?.order_number ? String(order.order_number).trim() : undefined;
     if (order?.order_number || orderToken) {
@@ -1614,7 +1655,7 @@ export function DriffleOrderDeliveryView({
 
               {/* LIST OF INDEPENDENT CODE PRODUCTS */}
               {deliverableUnits.map((unit, unitIdx) => {
-                const isKeyRevealed = Boolean(unit.code?.revealed_at || revealedKeys[unitIdx]);
+                const isKeyRevealed = isUnitRevealed(unitIdx);
                 const isThisTopup = Boolean(unit.isTopup);
                 const isThisAccount = Boolean(unit.isAccount);
                 const itemCode = unit.code;
@@ -2184,7 +2225,7 @@ export function DriffleOrderDeliveryView({
             </div>
 
             {/* ── STEP 1: CONFIRMATION STEP (BEFORE KEY / ACCOUNT REVEAL) ──── */}
-            {!revealedKeys[selectedItemIdx] ? (
+            {!isUnitRevealed(selectedItemIdx) ? (
               <div style={{ padding: "0 22px 22px", display: "flex", flexDirection: "column", gap: "14px" }}>
                 {/* Security Warning Notice */}
                 <div

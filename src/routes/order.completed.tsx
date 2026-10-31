@@ -51,7 +51,25 @@ export function OrderCompletedPage() {
     try {
       const res = await getOrderByTokenFn({ data: { orderToken: order_token.trim() } });
       if (res.ok && res.order) {
-        setOrder(res.order);
+        setOrder((prev: any) => {
+          if (!prev?.delivery_data?.codes || !res.order?.delivery_data?.codes) {
+            return res.order;
+          }
+          const mergedCodes = res.order.delivery_data.codes.map((c: any, i: number) => {
+            const prevCode = prev.delivery_data.codes[i];
+            if (prevCode?.revealed_at && !c.revealed_at) {
+              return { ...c, revealed_at: prevCode.revealed_at };
+            }
+            return c;
+          });
+          return {
+            ...res.order,
+            delivery_data: {
+              ...res.order.delivery_data,
+              codes: mergedCodes,
+            },
+          };
+        });
         const delCodes = (res.order.delivery_data && (res.order.delivery_data as any).codes) || [];
         const map: Record<number, boolean> = {};
         if (Array.isArray(delCodes)) {
@@ -59,7 +77,7 @@ export function OrderCompletedPage() {
             if (c.revealed_at) map[i] = true;
           });
         }
-        setRevealedKeys(map);
+        setRevealedKeys((prev) => ({ ...prev, ...map }));
       } else if (!isBackground) {
         setError(res.error || (isAr ? "الرابط غير صالح أو منتهي الصلاحية" : "Invalid or expired link"));
       }

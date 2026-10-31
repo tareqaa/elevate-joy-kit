@@ -46,7 +46,25 @@ function OrderDetailsPage() {
         },
       });
       if (res.ok && res.order) {
-        setOrder(res.order);
+        setOrder((prev: any) => {
+          if (!prev?.delivery_data?.codes || !res.order?.delivery_data?.codes) {
+            return res.order;
+          }
+          const mergedCodes = res.order.delivery_data.codes.map((c: any, i: number) => {
+            const prevCode = prev.delivery_data.codes[i];
+            if (prevCode?.revealed_at && !c.revealed_at) {
+              return { ...c, revealed_at: prevCode.revealed_at };
+            }
+            return c;
+          });
+          return {
+            ...res.order,
+            delivery_data: {
+              ...res.order.delivery_data,
+              codes: mergedCodes,
+            },
+          };
+        });
         setIsLocked(Boolean(res.isLocked));
         const delCodes = (res.order.delivery_data && (res.order.delivery_data as any).codes) || [];
         const map: Record<number, boolean> = {};
@@ -55,7 +73,7 @@ function OrderDetailsPage() {
             if (c.revealed_at) map[i] = true;
           });
         }
-        setRevealedKeys(map);
+        setRevealedKeys((prev) => ({ ...prev, ...map }));
       } else if (!isBackground) {
         setError(res.error || (isAr ? "لم يتم العثور على هذا الطلب" : "Order not found"));
       }
