@@ -22,7 +22,7 @@ import {
   CrewIcon,
 } from "@/lib/gx/brand-icons";
 import { getGiftCardLiveStartingPrice } from "@/components/gx/BestSellingGiftCardsSection";
-import { useSiteSettings, getEffectiveStockLimit } from "@/lib/gx/site-settings";
+import { useSiteSettings, getEffectiveStockLimit, isSocialMediaStockItem } from "@/lib/gx/site-settings";
 import { resolveProductImage } from "@/lib/gx/product-images";
 
 export type StoreProductCardProps = {
@@ -442,10 +442,15 @@ export function StoreProductCard({
   const stockLimit = getEffectiveStockLimit(
     siteSettings?.product_stock_limits,
     finalCartId,
-    slug
+    slug,
+    categorySlug,
+    categoryName,
+    name
   );
 
-  const isOutOfStock = stockLimit !== null && stockLimit <= 0;
+  const isOutOfStock =
+    isSocialMediaStockItem(finalCartId, slug, categorySlug, categoryName, name) ||
+    (stockLimit !== null && stockLimit <= 0);
 
   return (
     <div
@@ -477,7 +482,27 @@ export function StoreProductCard({
       </button>
 
       <Link to={finalLink as never} style={{ display: "contents" }}>
-        <div className="prod-thumb" style={{ background: bgStyle }}>
+        <div className="prod-thumb" style={{ background: bgStyle, position: "relative" }}>
+          {isOutOfStock && (
+            <div
+              style={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                backgroundColor: "rgba(239, 68, 68, 0.92)",
+                color: "#ffffff",
+                fontSize: 10.5,
+                fontWeight: 800,
+                padding: "2px 7px",
+                borderRadius: 6,
+                zIndex: 3,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                letterSpacing: 0.2,
+              }}
+            >
+              {lang === "en" ? "Sold Out" : "نفدت الكمية"}
+            </div>
+          )}
           {renderThumbnail()}
         </div>
       </Link>
@@ -597,7 +622,7 @@ export function StoreProductCard({
                 letterSpacing: 0.3,
               }}
             >
-              {lang === "en" ? "Sold Out" : "نفدت"}
+              {lang === "en" ? "Sold Out" : "نفدت الكمية"}
             </span>
             <div
               style={{

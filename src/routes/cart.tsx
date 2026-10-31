@@ -474,7 +474,8 @@ function CartList() {
           it.cartId,
           it.product
         );
-        const isMax = isSnap || (stockLimit !== null && it.qty >= stockLimit);
+        const isSoldOut = stockLimit !== null && stockLimit <= 0;
+        const isMax = isSnap || isSoldOut || (stockLimit !== null && it.qty >= stockLimit);
         const deliveryInfo = getDeliveryTypeInfo(
           {
             slug: it.product,
@@ -490,11 +491,18 @@ function CartList() {
         );
 
         return (
-          <div key={it.cartId} className="cart-row gx-eneba-row">
+          <div key={it.cartId} className={`cart-row gx-eneba-row ${isSoldOut ? "is-sold-out" : ""}`} style={isSoldOut ? { opacity: 0.72 } : undefined}>
             <CartItemThumb item={it} size={70} />
 
             <div className="cr-info">
-              <div className="cr-name">{localizeResolvedName(it.name, lang)}</div>
+              <div className="cr-name">
+                {localizeResolvedName(it.name, lang)}
+                {isSoldOut && (
+                  <span style={{ marginInlineStart: 8, fontSize: "11px", padding: "2px 7px", borderRadius: "4px", background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", fontWeight: 800 }}>
+                    ⚠️ {lang === "en" ? "Sold Out" : "نفدت الكمية"}
+                  </span>
+                )}
+              </div>
               <div style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "3px", marginBottom: "4px", flexWrap: "wrap" }}>
                 <span style={{ fontSize: "11px", padding: "1px 7px", borderRadius: "4px", background: "rgba(0, 229, 255, 0.12)", color: "#00e5ff", fontWeight: 600 }}>
                   {deliveryInfo.label}
@@ -798,6 +806,7 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
   const { format } = useCurrency();
   const { t, lang, dir } = useLang();
   const isAr = lang !== "en";
+  const siteSettings = useSiteSettings();
 
   // Balances state - synchronously initialize from cached profile for instant 0ms render
   const [balance, setBalance] = useState<{ coins: number; credit: number } | null>(() => readCachedBalances());
@@ -876,6 +885,24 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
     const { toast } = await import("sonner");
+
+    // 0. Stock validation: prevent checking out items that are sold out / out of stock
+    const soldOutItem = cart.items.find((it) => {
+      const limit = getEffectiveStockLimit(
+        siteSettings?.product_stock_limits,
+        it.cartId,
+        it.product
+      );
+      return limit !== null && limit <= 0;
+    });
+    if (soldOutItem) {
+      toast.error(
+        isAr
+          ? `عذراً، المنتج "${soldOutItem.name}" نفدت كميته حالياً، يرجى إزالته من السلة للمتابعة.`
+          : `Sorry, "${soldOutItem.name}" is currently sold out. Please remove it from cart to continue.`
+      );
+      return;
+    }
 
     // 1. WhatsApp validation strictly for items requiring WhatsApp contact (LinkedIn, Fortnite Crew, etc.)
     const whatsappItems = cart.items.filter(

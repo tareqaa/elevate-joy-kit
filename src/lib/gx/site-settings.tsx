@@ -449,8 +449,112 @@ export function useSiteSettings(): SiteSettings {
 }
 
 /**
+ * Detects whether a product or variant belongs to social media services
+ * (Instagram followers/likes, Facebook followers/likes, TikTok, Twitter/X, etc.).
+ * By business requirement, all social media products are permanently SOLD OUT (نفدت الكمية).
+ */
+export function isSocialMediaStockItem(
+  cartId?: string | null,
+  slug?: string | null,
+  categorySlug?: string | null,
+  categoryName?: string | null,
+  name?: string | null
+): boolean {
+  const s = (slug || "").toLowerCase().trim();
+  const c = (cartId || "").toLowerCase().trim();
+  const catS = (categorySlug || "").toLowerCase().trim();
+  const catN = (categoryName || "").toLowerCase().trim();
+  const n = (name || "").toLowerCase().trim();
+
+  // 1. Explicit Category slugs and names
+  if (
+    catS === "social-media" ||
+    catS === "social" ||
+    catS === "instagram" ||
+    catS === "facebook" ||
+    catS === "tiktok" ||
+    catS === "twitter" ||
+    catS === "x" ||
+    catS === "threads" ||
+    catN.includes("سوشال") ||
+    catN.includes("سوشيال") ||
+    catN.includes("social")
+  ) {
+    return true;
+  }
+
+  // 2. Known social media slugs
+  if (
+    s === "social-media" ||
+    s.startsWith("social-media") ||
+    s === "instagram" ||
+    s.startsWith("instagram-") ||
+    s === "facebook" ||
+    s.startsWith("facebook-") ||
+    s === "tiktok" ||
+    s.startsWith("tiktok-") ||
+    s === "twitter" ||
+    s.startsWith("twitter-") ||
+    s === "threads" ||
+    s.startsWith("threads-") ||
+    s === "instagram-followers" ||
+    s === "instagram-likes" ||
+    s === "facebook-followers" ||
+    s === "facebook-post-likes"
+  ) {
+    return true;
+  }
+
+  // 3. Known social media variant cartIds
+  if (
+    c.startsWith("fb-fol") ||
+    c.startsWith("fb-lik") ||
+    c.startsWith("ig-fol") ||
+    c.startsWith("ig-lik") ||
+    c.startsWith("tiktok-") ||
+    c.startsWith("tt-") ||
+    c.startsWith("tw-") ||
+    c.startsWith("twitter-")
+  ) {
+    return true;
+  }
+
+  // 4. Follower and Like services (متابعين / لايكات)
+  const isFollowerOrLike =
+    s.includes("follower") ||
+    s.includes("likes") ||
+    s.includes("engagement") ||
+    c.includes("fol-") ||
+    c.includes("lik-") ||
+    n.includes("متابع") ||
+    n.includes("لايك");
+
+  const isSocialPlatform =
+    s.includes("instagram") ||
+    s.includes("facebook") ||
+    s.includes("tiktok") ||
+    s.includes("twitter") ||
+    s.includes("social") ||
+    c.includes("ig-") ||
+    c.includes("fb-") ||
+    n.includes("انستقرام") ||
+    n.includes("إنستقرام") ||
+    n.includes("انستغرام") ||
+    n.includes("فيسبوك") ||
+    n.includes("تيك توك") ||
+    n.includes("سوشال");
+
+  if (isFollowerOrLike && isSocialPlatform) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Universal helper to resolve effective stock limit for a product/variant.
  * Rules:
+ * 0. Social media products are permanently SOLD OUT (0) across all updates & versions!
  * 1. If ANY key or alias is explicitly <= 0, the item is SOLD OUT (returns 0).
  * 2. Variant-specific positive limit wins over parent product limit.
  * 3. Returns null if limit is open/unlimited.
@@ -458,8 +562,17 @@ export function useSiteSettings(): SiteSettings {
 export function getEffectiveStockLimit(
   stockLimits: Record<string, number | null> | undefined,
   cartId?: string | null,
-  slug?: string | null
+  slug?: string | null,
+  categorySlug?: string | null,
+  categoryName?: string | null,
+  name?: string | null
 ): number | null {
+  // RULE 0: All social media products & services are permanently OUT OF STOCK (نفدت الكمية / 0)
+  // across all database versions, legacy updates, and settings resets.
+  if (isSocialMediaStockItem(cartId, slug, categorySlug, categoryName, name)) {
+    return 0;
+  }
+
   if (!stockLimits || typeof stockLimits !== "object") return null;
 
   const keys: string[] = [];

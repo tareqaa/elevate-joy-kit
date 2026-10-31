@@ -760,7 +760,7 @@ export function Navbar() {
                                   {isSoldOut ? (
                                     <div style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
                                       <span style={{ color: "rgba(255, 255, 255, 0.72)", fontSize: 13, fontWeight: 800 }}>
-                                        {lang === "en" ? "Sold Out" : "نفدت"}
+                                        {lang === "en" ? "Sold Out" : "نفدت الكمية"}
                                       </span>
                                       <div
                                         style={{

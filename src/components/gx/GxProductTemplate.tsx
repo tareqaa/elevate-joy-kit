@@ -8,7 +8,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { CART_ADDED_EVENT } from "./AddedToCartModal";
 import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
 import { AdobePoster, CanvaPoster, WindowsPoster, TodPoster } from "@/lib/gx/brand-icons";
-import { useSiteSettings, getEffectiveStockLimit } from "@/lib/gx/site-settings";
+import { useSiteSettings, getEffectiveStockLimit, isSocialMediaStockItem } from "@/lib/gx/site-settings";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -588,11 +588,17 @@ export function GxProductTemplate({
     return getEffectiveStockLimit(
       siteSettings?.product_stock_limits,
       activeVariant?.cartId,
-      product?.slug
+      product?.slug,
+      undefined,
+      categoryName,
+      product?.nameAr
     );
-  }, [siteSettings?.product_stock_limits, activeVariant?.cartId, product?.slug]);
+  }, [siteSettings?.product_stock_limits, activeVariant?.cartId, product?.slug, categoryName, product?.nameAr]);
 
-  const isOutOfStock = stockLimit !== null && stockLimit <= 0;
+  const isOutOfStock =
+    isSocialProduct ||
+    isSocialMediaStockItem(activeVariant?.cartId, product?.slug, undefined, categoryName, product?.nameAr) ||
+    (stockLimit !== null && stockLimit <= 0);
 
   const [quantity, setQuantity] = useState<number>(1);
 
@@ -1677,7 +1683,7 @@ export function GxProductTemplate({
         )}
 
         {/* Out of Stock Notice & Notify Button OR Stock & Quantity Controls + Buy Buttons */}
-        {stockLimit !== null && stockLimit <= 0 ? (
+        {isOutOfStock ? (
           <div
             style={{
               background: "linear-gradient(145deg, rgba(24, 28, 38, 0.95) 0%, rgba(16, 19, 28, 0.98) 100%)",
@@ -2083,9 +2089,15 @@ export function GxProductTemplate({
                     const vLimit = getEffectiveStockLimit(
                       siteSettings?.product_stock_limits,
                       v.cartId,
-                      product.slug
+                      product.slug,
+                      categorySlug,
+                      categoryName,
+                      product.nameAr
                     );
-                    const vIsOutOfStock = vLimit !== null && vLimit <= 0;
+                    const vIsOutOfStock =
+                      isSocialProduct ||
+                      isSocialMediaStockItem(v.cartId, product.slug, categorySlug, categoryName, product.nameAr) ||
+                      (vLimit !== null && vLimit <= 0);
                     const vbTier = isFortnite ? getVbucksTierStyle(v.cartId) : null;
                     return (
                       <button
@@ -2601,7 +2613,7 @@ export function GxProductTemplate({
 
         {/* Bottom Row: Action Buttons */}
         <div className="gx-sticky-bottom-row">
-          {stockLimit !== null && stockLimit <= 0 ? (
+          {isOutOfStock ? (
             <button
               type="button"
               onClick={() => setNotifyModalOpen(true)}

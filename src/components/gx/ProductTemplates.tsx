@@ -12,7 +12,7 @@ import { useCurrency } from "@/lib/gx/currency";
 import { useCart } from "@/lib/gx/cart";
 import { useLang } from "@/lib/gx/i18n";
 import type { Lang } from "@/lib/gx/i18n";
-import { useSiteSettings, getEffectiveStockLimit } from "@/lib/gx/site-settings";
+import { useSiteSettings, getEffectiveStockLimit, isSocialMediaStockItem } from "@/lib/gx/site-settings";
 import { BuyActions } from "@/components/gx/BuyActions";
 import { FeatureAccordion, DeliveryBox, SectionHead } from "@/components/gx/Primitives";
 import { CrewIcon, VbucksIcon, SnapchatPoster, AdobePoster, CanvaPoster, WindowsPoster } from "@/lib/gx/brand-icons";
@@ -253,9 +253,14 @@ function VariantCard({
   const stockLimit = getEffectiveStockLimit(
     siteSettings?.product_stock_limits,
     v.cartId,
-    p.slug
+    p.slug,
+    p.categorySlug,
+    p.categoryNameAr,
+    p.nameAr
   );
-  const isOutOfStock = stockLimit !== null && stockLimit <= 0;
+  const isOutOfStock =
+    isSocialMediaStockItem(v.cartId, p.slug, p.categorySlug, p.categoryNameAr, p.nameAr) ||
+    (stockLimit !== null && stockLimit <= 0);
 
   return (
     <div
@@ -268,7 +273,27 @@ function VariantCard({
           : undefined
       }
     >
-      <div className="prod-thumb" style={{ background: theme?.bg || p.thumbBg || undefined }}>
+      <div className="prod-thumb" style={{ background: theme?.bg || p.thumbBg || undefined, position: "relative" }}>
+        {isOutOfStock && (
+          <div
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              backgroundColor: "rgba(239, 68, 68, 0.92)",
+              color: "#ffffff",
+              fontSize: 10.5,
+              fontWeight: 800,
+              padding: "2px 7px",
+              borderRadius: 6,
+              zIndex: 3,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+              letterSpacing: 0.2,
+            }}
+          >
+            {lang === "en" ? "Sold Out" : "نفدت الكمية"}
+          </div>
+        )}
         {thumbContent}
       </div>
       <div className="prod-body">
@@ -364,7 +389,7 @@ function VariantCard({
                 letterSpacing: 0.3,
               }}
             >
-              {lang === "en" ? "Sold Out" : "نفدت"}
+              {lang === "en" ? "Sold Out" : "نفدت الكمية"}
             </span>
           </div>
         ) : (

@@ -108,8 +108,15 @@ export function CartDrawer() {
                   lang,
                 );
 
+                const stockLimit = getEffectiveStockLimit(
+                  siteSettings?.product_stock_limits,
+                  it.cartId,
+                  it.product
+                );
+                const isOutOfStock = stockLimit !== null && stockLimit <= 0;
+
                 return (
-                  <div key={it.cartId} className="gx-cart-item-card">
+                  <div key={it.cartId} className="gx-cart-item-card" style={isOutOfStock ? { opacity: 0.72, border: "1px solid rgba(239, 68, 68, 0.35)" } : undefined}>
                     {/* Item Thumbnail */}
                     <div className="gx-cart-item-thumb-box">
                       <CartItemThumb item={it} size={56} />
@@ -133,6 +140,11 @@ export function CartDrawer() {
                       </div>
 
                       <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "3px", marginBottom: "4px", flexWrap: "wrap" }}>
+                        {isOutOfStock && (
+                          <span style={{ fontSize: "10px", padding: "1px 6px", borderRadius: "4px", background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", fontWeight: 700 }}>
+                            {lang === "ar" ? "⚠️ نفدت الكمية" : "⚠️ Out of Stock"}
+                          </span>
+                        )}
                         <span style={{ fontSize: "10px", padding: "1px 6px", borderRadius: "4px", background: "rgba(0, 229, 255, 0.12)", color: "#00e5ff", fontWeight: 600 }}>
                           {deliveryInfo.label}
                         </span>
@@ -164,12 +176,7 @@ export function CartDrawer() {
                           </button>
                           <span className="gx-cart-stepper-value">{it.qty}</span>
                           {(() => {
-                            const stockLimit = getEffectiveStockLimit(
-                              siteSettings?.product_stock_limits,
-                              it.cartId,
-                              it.product
-                            );
-                            const isMax = isSnap || (stockLimit !== null && it.qty >= stockLimit);
+                            const isMax = isSnap || isOutOfStock || (stockLimit !== null && it.qty >= stockLimit);
                             return (
                               <button
                                 type="button"
@@ -179,6 +186,8 @@ export function CartDrawer() {
                                 title={
                                   isSnap
                                     ? lang === "ar" ? "الحد الأقصى 1" : "Max 1"
+                                    : isOutOfStock
+                                    ? lang === "ar" ? "نفدت الكمية" : "Out of stock"
                                     : stockLimit !== null && it.qty >= stockLimit
                                     ? lang === "ar" ? `أقصى كمية متوفرة ${stockLimit}` : `Max available is ${stockLimit}`
                                     : lang === "ar" ? "زيادة" : "Increase"
