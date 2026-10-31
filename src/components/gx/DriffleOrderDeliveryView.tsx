@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { markCodeRevealedFn } from "@/lib/gx/order-email.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveProductImage } from "@/lib/gx/product-images";
+import { OrderIpMismatchNotice } from "./OrderIpMismatchNotice";
 import { formatFullRegion } from "@/lib/gx/region";
 import {
   Check,
@@ -314,6 +315,14 @@ export interface DriffleOrderDeliveryViewProps {
   copiedKey: string | null;
   onRevealKey: (index: number) => void;
   onCopyKey: (text: string, id: string) => void;
+  ipMismatchInfo?: {
+    mismatch: boolean;
+    purchaseIp?: string | null;
+    currentIp?: string | null;
+    customerEmail?: string | null;
+    orderNumber?: string | null;
+  } | null;
+  onRefresh?: () => void;
 }
 
 /* ────────────────────────────────────────────────────────────────
@@ -637,6 +646,8 @@ export function DriffleOrderDeliveryView({
   copiedKey,
   onRevealKey,
   onCopyKey,
+  ipMismatchInfo,
+  onRefresh,
 }: DriffleOrderDeliveryViewProps) {
   const { lang, dir } = useLang();
   const isAr = lang === "ar";
@@ -1301,8 +1312,20 @@ export function DriffleOrderDeliveryView({
           </div>
         )}
 
+        {/* IP MISMATCH FRAUD PROTECTION NOTICE */}
+        {!loading && !isCancelledOrder && ipMismatchInfo?.mismatch && (
+          <OrderIpMismatchNotice
+            orderNumber={ipMismatchInfo.orderNumber || order?.order_number}
+            customerEmail={ipMismatchInfo.customerEmail || order?.customer_email}
+            orderToken={orderToken}
+            purchaseIp={ipMismatchInfo.purchaseIp}
+            currentIp={ipMismatchInfo.currentIp}
+            onRefresh={onRefresh}
+          />
+        )}
+
         {/* LOCKED ORDER STATE */}
-        {!loading && order && isLocked && (
+        {!loading && order && isLocked && !ipMismatchInfo?.mismatch && (
           <div
             style={{
               borderRadius: "18px",

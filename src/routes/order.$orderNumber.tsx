@@ -35,45 +35,70 @@ function OrderDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [revealedKeys, setRevealedKeys] = useState<Record<number, boolean>>({});
+  const [ipMismatchInfo, setIpMismatchInfo] = useState<{
+    mismatch: boolean;
+    purchaseIp?: string | null;
+    currentIp?: string | null;
+    customerEmail?: string | null;
+    orderNumber?: string | null;
+  } | null>(null);
 
   const fetchOrder = async (isBackground = false) => {
     if (!isBackground) setLoading(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token || undefined;
+
       const res = await getOrderByNumberFn({
         data: {
           orderNumber,
           orderToken: order_token || undefined,
+          accessToken,
         },
       });
+
       if (res.ok && res.order) {
-        setOrder((prev: any) => {
-          if (!prev?.delivery_data?.codes || !res.order?.delivery_data?.codes) {
-            return res.order;
-          }
-          const mergedCodes = res.order.delivery_data.codes.map((c: any, i: number) => {
-            const prevCode = prev.delivery_data.codes[i];
-            if (prevCode?.revealed_at && !c.revealed_at) {
-              return { ...c, revealed_at: prevCode.revealed_at };
+        if ((res as any).ipMismatch) {
+          setIpMismatchInfo({
+            mismatch: true,
+            purchaseIp: (res as any).purchaseIp,
+            currentIp: (res as any).currentIp,
+            customerEmail: (res as any).customerEmail,
+            orderNumber: (res as any).orderNumber || res.order.order_number,
+          });
+          setOrder(res.order);
+          setIsLocked(true);
+        } else {
+          setIpMismatchInfo(null);
+          setOrder((prev: any) => {
+            if (!prev?.delivery_data?.codes || !res.order?.delivery_data?.codes) {
+              return res.order;
             }
-            return c;
+            const mergedCodes = res.order.delivery_data.codes.map((c: any, i: number) => {
+              const prevCode = prev.delivery_data.codes[i];
+              if (prevCode?.revealed_at && !c.revealed_at) {
+                return { ...c, revealed_at: prevCode.revealed_at };
+              }
+              return c;
+            });
+            return {
+              ...res.order,
+              delivery_data: {
+                ...res.order.delivery_data,
+                codes: mergedCodes,
+              },
+            };
           });
-          return {
-            ...res.order,
-            delivery_data: {
-              ...res.order.delivery_data,
-              codes: mergedCodes,
-            },
-          };
-        });
-        setIsLocked(Boolean(res.isLocked));
-        const delCodes = (res.order.delivery_data && (res.order.delivery_data as any).codes) || [];
-        const map: Record<number, boolean> = {};
-        if (Array.isArray(delCodes)) {
-          delCodes.forEach((c: any, i: number) => {
-            if (c.revealed_at) map[i] = true;
-          });
+          setIsLocked(Boolean(res.isLocked));
+          const delCodes = (res.order.delivery_data && (res.order.delivery_data as any).codes) || [];
+          const map: Record<number, boolean> = {};
+          if (Array.isArray(delCodes)) {
+            delCodes.forEach((c: any, i: number) => {
+              if (c.revealed_at) map[i] = true;
+            });
+          }
+          setRevealedKeys((prev) => ({ ...prev, ...map }));
         }
-        setRevealedKeys((prev) => ({ ...prev, ...map }));
       } else if (!isBackground) {
         setError(res.error || (isAr ? "لم يتم العثور على هذا الطلب" : "Order not found"));
       }
@@ -183,6 +208,8 @@ function OrderDetailsPage() {
         copiedKey={copiedKey}
         onRevealKey={handleRevealKey}
         onCopyKey={copyToClipboard}
+        ipMismatchInfo={ipMismatchInfo}
+        onRefresh={() => fetchOrder(false)}
       />
     </StoreShell>
   );

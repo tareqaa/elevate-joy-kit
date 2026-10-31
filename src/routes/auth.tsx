@@ -7,8 +7,15 @@ import { useAuthActions } from "@/lib/gx/use-auth-actions";
 import { ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
+  validateSearch: (
+    search: Record<string, unknown>
+  ): { redirect?: string; mode?: "signin" | "signup" | "reset"; email?: string } => ({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+    mode:
+      search.mode === "reset" || search.mode === "signup" || search.mode === "signin"
+        ? (search.mode as "signin" | "signup" | "reset")
+        : undefined,
+    email: typeof search.email === "string" ? search.email : undefined,
   }),
   head: () => ({
     meta: [
@@ -37,13 +44,13 @@ function getSafeRedirect(customRedirect?: string): string {
 }
 
 function AuthPage() {
-  const { redirect } = Route.useSearch();
+  const { redirect, mode: searchMode, email: searchEmail } = Route.useSearch();
   const safeTarget = getSafeRedirect(redirect);
   const { t } = useLang();
   const navigate = useNavigate();
   const { signIn, signUp, resetPassword, signInWithGoogle, verify2fa, cancel2fa } = useAuthActions();
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"signin" | "signup" | "reset" | "2fa">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "reset" | "2fa">(searchMode || "signin");
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState("");
 
@@ -110,7 +117,7 @@ function AuthPage() {
     };
   }, [navigate, safeTarget]);
 
-  const [siEmail, setSiEmail] = useState("");
+  const [siEmail, setSiEmail] = useState(searchEmail || "");
   const [siPass, setSiPass] = useState("");
   const [suUsername, setSuUsername] = useState("");
   const [suEmail, setSuEmail] = useState("");

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
-import { resolveSafeClientIp } from "./ip";
+import { resolveSafeClientIp, normalizeIp } from "./ip";
 import { z } from "zod";
 import crypto from "node:crypto";
 import { getPublicClient, assertAdminCaller, getVerifiedCaller, getUserScopedClient } from "@/lib/gx/supabase-request";
@@ -1174,6 +1174,7 @@ export const getOrderByTokenFn = createServerFn({ method: "POST" })
     z
       .object({
         orderToken: z.string().trim().min(5),
+        accessToken: z.string().optional().nullable(),
       })
       .parse(data)
   )
@@ -1234,7 +1235,80 @@ export const getOrderByTokenFn = createServerFn({ method: "POST" })
         };
       }
 
-      return { ok: true, order, verifiedEmail: verified.email, isLocked: false };
+      // --- Security & Anti-Fraud: IP Address Verification ---
+      // Check if caller is authenticated as the order owner or admin
+      let callerUser: { id: string; email?: string } | null = null;
+      const authHeader = getRequestHeader("authorization");
+      const token = data.accessToken || (authHeader?.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : null);
+      if (token) {
+        try {
+          const { data: userData } = await getPublicClient().auth.getUser(token);
+          if (userData?.user) {
+            callerUser = {
+              id: userData.user.id,
+              email: (userData.user.email || "").toLowerCase().trim(),
+            };
+          }
+        } catch {
+          // ignore invalid token
+        }
+      }
+
+      let isOwnerOrAdmin = false;
+      if (callerUser) {
+        if (order.user_id && callerUser.id === order.user_id) {
+          isOwnerOrAdmin = true;
+        } else if (
+          callerUser.email &&
+          (callerUser.email === (order.customer_email || "").toLowerCase().trim() ||
+           callerUser.email === (verified.email || "").toLowerCase().trim())
+        ) {
+          isOwnerOrAdmin = true;
+        } else if (token) {
+          try {
+            const userClient = getUserScopedClient(token);
+            const { data: isAdmin } = await (userClient as any).rpc("has_role", {
+              _user_id: callerUser.id,
+              _role: "admin",
+            });
+            if (isAdmin === true) isOwnerOrAdmin = true;
+          } catch {}
+        }
+      }
+
+      // If caller is NOT authenticated as owner or admin, enforce purchase IP check:
+      if (!isOwnerOrAdmin) {
+        let currentIp: string | null = null;
+        try {
+          currentIp = resolveSafeClientIp(getRequestHeader);
+        } catch {
+          currentIp = null;
+        }
+
+        const purchaseIp = (order.client_ip || "").trim();
+        const normPurchase = purchaseIp ? normalizeIp(purchaseIp) : "";
+        const normCurrent = currentIp ? normalizeIp(currentIp) : "";
+
+        // If the order has a recorded purchase IP, and current visitor IP differs:
+        if (normPurchase && normCurrent && normPurchase !== normCurrent) {
+          return {
+            ok: true,
+            ipMismatch: true,
+            purchaseIp,
+            currentIp,
+            customerEmail: order.customer_email || verified.email || null,
+            orderNumber: order.order_number,
+            order: {
+              ...maskOrderForPublic(order),
+              delivery_data: null, // Zero sensitive keys/codes returned!
+            },
+            verifiedEmail: verified.email,
+            isLocked: true,
+          };
+        }
+      }
+
+      return { ok: true, ipMismatch: false, order, verifiedEmail: verified.email, isLocked: false };
     } catch (err: any) {
       return { ok: false, error: err?.message || "فشل التحقق من الطلب" };
     }
@@ -1275,6 +1349,7 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
       .object({
         orderNumber: z.string().trim().min(1),
         orderToken: z.string().optional(),
+        accessToken: z.string().optional().nullable(),
       })
       .parse(data)
   )
@@ -1313,11 +1388,61 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
         };
       }
 
-      // 2. Authorize if cryptographically signed token is valid, or if logged-in user is owner or admin
-      const isAuthorized = Boolean(hasValidToken) || (await isCallerOwnerOrAdmin(order.user_id));
+      // Check caller identity
+      let callerUser: { id: string; email?: string } | null = null;
+      const authHeader = getRequestHeader("authorization");
+      const token = data.accessToken || (authHeader?.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : null);
+      if (token) {
+        try {
+          const { data: userData } = await getPublicClient().auth.getUser(token);
+          if (userData?.user) {
+            callerUser = {
+              id: userData.user.id,
+              email: (userData.user.email || "").toLowerCase().trim(),
+            };
+          }
+        } catch {}
+      }
+
+      const isOwner = Boolean(
+        (callerUser && order.user_id && callerUser.id === order.user_id) ||
+        (callerUser?.email && (callerUser.email === (order.customer_email || "").toLowerCase().trim() ||
+                               callerUser.email === (tokenCheck?.email || "").toLowerCase().trim())) ||
+        (await isCallerOwnerOrAdmin(order.user_id))
+      );
+
+      // If visitor has valid token but is not authenticated as owner/admin, check IP:
+      if (hasValidToken && !isOwner && !isAdminCaller) {
+        let currentIp: string | null = null;
+        try {
+          currentIp = resolveSafeClientIp(getRequestHeader);
+        } catch {
+          currentIp = null;
+        }
+
+        const purchaseIp = (order.client_ip || "").trim();
+        const normPurchase = purchaseIp ? normalizeIp(purchaseIp) : "";
+        const normCurrent = currentIp ? normalizeIp(currentIp) : "";
+
+        if (normPurchase && normCurrent && normPurchase !== normCurrent) {
+          return {
+            ok: true,
+            ipMismatch: true,
+            purchaseIp,
+            currentIp,
+            customerEmail: order.customer_email || tokenCheck?.email || null,
+            orderNumber: order.order_number,
+            order: maskOrderForPublic(order),
+            isLocked: true,
+          };
+        }
+      }
+
+      // 2. Authorize if cryptographically signed token is valid (and IP matches), or if logged-in user is owner or admin
+      const isAuthorized = Boolean(hasValidToken) || isOwner || isAdminCaller;
 
       if (isAuthorized) {
-        return { ok: true, order, isLocked: false };
+        return { ok: true, ipMismatch: false, order, isLocked: false };
       }
 
       // Without a valid token or owner/admin session, return only the public order
@@ -1446,12 +1571,29 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
       const now = new Date().toISOString();
       const { data: current } = await (supabase as any)
         .from("orders")
-        .select("id, delivery_data, codes_revealed_at, codes_reveal_count")
+        .select("id, client_ip, user_id, delivery_data, codes_revealed_at, codes_reveal_count")
         .eq("order_number", num)
         .maybeSingle();
 
       if (!current) {
         return { ok: false };
+      }
+
+      // If token was used without active owner/admin session, enforce purchase IP matching:
+      if (tokenAuthorized) {
+        const isOwnerOrAdmin = await isCallerOwnerOrAdmin(current.user_id);
+        if (!isOwnerOrAdmin) {
+          const purchaseIp = (current.client_ip || "").trim();
+          const normPurchase = purchaseIp ? normalizeIp(purchaseIp) : "";
+          const normCurrent = ip ? normalizeIp(ip) : "";
+          if (normPurchase && normCurrent && normPurchase !== normCurrent) {
+            return {
+              ok: false,
+              ipMismatch: true,
+              error: "عنوان IP الحالي غير مطابق لعنوان الشراء. يرجى تسجيل الدخول بنفس الحساب للوصول إلى طلبك.",
+            };
+          }
+        }
       }
 
       const deliveryData = (current.delivery_data && typeof current.delivery_data === "object")
