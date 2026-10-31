@@ -34,49 +34,77 @@ export function OrderCompletedPage() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [revealedKeys, setRevealedKeys] = useState<Record<number, boolean>>({});
 
-  useEffect(() => {
-    let mounted = true;
+  const fetchOrder = async (isBackground = false) => {
     if (!order_token || !order_token.trim()) {
-      setLoading(false);
-      setError(
-        isAr
-          ? "الرابط غير صحيح أو منتهي الصلاحية. يرجى فتح الرابط السري المرسل إلى بريدك الإلكتروني."
-          : "Invalid or expired link. Please open the link sent to your email address."
-      );
+      if (!isBackground) {
+        setLoading(false);
+        setError(
+          isAr
+            ? "الرابط غير صحيح أو منتهي الصلاحية. يرجى فتح الرابط السري المرسل إلى بريدك الإلكتروني."
+            : "Invalid or expired link. Please open the link sent to your email address."
+        );
+      }
       return;
     }
 
-    setLoading(true);
-    setError(null);
-
-    getOrderByTokenFn({ data: { orderToken: order_token.trim() } })
-      .then((res) => {
-        if (!mounted) return;
-        if (res.ok && res.order) {
-          setOrder(res.order);
-          const delCodes = (res.order.delivery_data && (res.order.delivery_data as any).codes) || [];
-          const map: Record<number, boolean> = {};
-          if (Array.isArray(delCodes)) {
-            delCodes.forEach((c: any, i: number) => {
-              if (c.revealed_at) map[i] = true;
-            });
-          }
-          setRevealedKeys(map);
-        } else {
-          setError(res.error || (isAr ? "الرابط غير صالح أو منتهي الصلاحية" : "Invalid or expired link"));
+    if (!isBackground) setLoading(true);
+    try {
+      const res = await getOrderByTokenFn({ data: { orderToken: order_token.trim() } });
+      if (res.ok && res.order) {
+        setOrder(res.order);
+        const delCodes = (res.order.delivery_data && (res.order.delivery_data as any).codes) || [];
+        const map: Record<number, boolean> = {};
+        if (Array.isArray(delCodes)) {
+          delCodes.forEach((c: any, i: number) => {
+            if (c.revealed_at) map[i] = true;
+          });
         }
-      })
-      .catch((err) => {
-        if (mounted) setError(err.message || (isAr ? "حدث خطأ أثناء تحميل الطلب" : "Failed to load order"));
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
+        setRevealedKeys(map);
+      } else if (!isBackground) {
+        setError(res.error || (isAr ? "الرابط غير صالح أو منتهي الصلاحية" : "Invalid or expired link"));
+      }
+    } catch (err: any) {
+      if (!isBackground) setError(err.message || (isAr ? "حدث خطأ أثناء تحميل الطلب" : "Failed to load order"));
+    } finally {
+      if (!isBackground) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrder(false);
+  }, [order_token, isAr]);
+
+  // Realtime subscription: When admin modifies delivery_data or cancels a code, sync instantly!
+  useEffect(() => {
+    if (!order?.id) return;
+    const channel = supabase
+      .channel(`order-live-token-${order.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+          filter: `id=eq.${order.id}`,
+        },
+        () => {
+          fetchOrder(true);
+        }
+      )
+      .subscribe();
+
+    // 4-second background heartbeat while viewing order
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        fetchOrder(true);
+      }
+    }, 4000);
 
     return () => {
-      mounted = false;
+      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
-  }, [order_token, isAr]);
+  }, [order?.id, order_token]);
 
   const copyToClipboard = async (text: string, id: string) => {
     try {

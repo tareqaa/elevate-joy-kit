@@ -29,6 +29,7 @@ import {
   Shield,
   Clock,
   User as UserIcon,
+  XCircle,
 } from "lucide-react";
 
 /* ────────────────────────────────────────────────────────────────
@@ -158,9 +159,12 @@ export function getProductCoverImage(
     cleanSlug.includes("apple") ||
     cleanName.includes("itunes") ||
     cleanName.includes("ايتونز") ||
+    cleanName.includes("آيتونز") ||
+    cleanName.includes("آبل") ||
+    cleanName.includes("ابل") ||
     cleanName.includes("apple")
   ) {
-    return "/app/assets/img/catalog/itunes.jpg";
+    return "/app/assets/img/itunes-card.png";
   }
   if (cleanSlug.includes("nordvpn") || cleanName.includes("nordvpn") || cleanName.includes("نورد")) {
     return "/app/assets/img/catalog/nordvpn.jpg";
@@ -264,6 +268,19 @@ export type DeliveryCode = {
   extra?: string;
   revealed_at?: string | null;
   revealed_ip?: string | null;
+  revealed_country?: string | null;
+  revealed_city?: string | null;
+  revealed_ua?: string | null;
+  last_revealed_at?: string | null;
+  last_revealed_ip?: string | null;
+  status?: "active" | "cancelled" | "refunded";
+  is_cancelled?: boolean;
+  cancelled_at?: string | null;
+  cancel_reason?: string | null;
+  backup_email?: string;
+  backup_code?: string;
+  extra_fields?: Array<{ label: string; value: string }>;
+  notes?: string;
 };
 
 
@@ -816,6 +833,11 @@ export function DriffleOrderDeliveryView({
 
   // Open modal without revealing yet - user must confirm and check agreement
   const handleOpenReveal = (idx: number) => {
+    const unit = deliverableUnits[idx];
+    if (unit?.code?.is_cancelled || unit?.code?.status === "cancelled" || unit?.code?.status === "refunded") {
+      toast.error(isAr ? "عذراً، تم إلغاء هذا الكود أو المنتج من قِبل إدارة المتجر." : "This code has been cancelled by store admin.");
+      return;
+    }
     setSelectedItemIdx(idx);
     setShowGuide(false);
     setAgreeChecked(false);
@@ -823,17 +845,27 @@ export function DriffleOrderDeliveryView({
 
   // Explicit confirmation to reveal code/account - records reveal strictly after agreement
   const handleConfirmReveal = async (idx: number) => {
+    const unit = deliverableUnits[idx];
+    if (unit?.code?.is_cancelled || unit?.code?.status === "cancelled" || unit?.code?.status === "refunded") {
+      toast.error(isAr ? "عذراً، هذا الكود ملغي ولا يمكن كشفه." : "This code is cancelled and cannot be revealed.");
+      handleCloseReveal();
+      return;
+    }
     onRevealKey(idx);
     const num = order?.order_number ? String(order.order_number).trim() : undefined;
     if (order?.order_number || orderToken) {
       try {
-        await markCodeRevealedFn({
+        const res: any = await markCodeRevealedFn({
           data: {
             orderToken: orderToken ? orderToken.trim() : undefined,
             orderNumber: num,
             codeIndex: idx,
           },
         });
+        if (res && res.code_cancelled) {
+          toast.error(res.error || (isAr ? "تم إلغاء هذا الكود من قِبل إدارة المتجر" : "This code was cancelled"));
+          handleCloseReveal();
+        }
       } catch {}
     }
   };
@@ -894,6 +926,40 @@ export function DriffleOrderDeliveryView({
           @keyframes drfGlow {
             0%, 100% { box-shadow: 0 0 15px rgba(0, 229, 255, 0.15); }
             50% { box-shadow: 0 0 25px rgba(0, 229, 255, 0.35); }
+          }
+          @media (max-width: 640px) {
+            .drf-unit-card-inner {
+              flex-direction: column !important;
+              align-items: stretch !important;
+              gap: 14px !important;
+              padding: 14px 14px !important;
+            }
+            .drf-unit-info-left {
+              width: 100% !important;
+              align-items: center !important;
+            }
+            .drf-unit-actions-right {
+              width: 100% !important;
+              align-items: stretch !important;
+            }
+            .drf-unit-reveal-btn {
+              width: 100% !important;
+              justify-content: center !important;
+              padding: 12px 18px !important;
+              font-size: 13.5px !important;
+            }
+            .drf-unit-cancelled-badge {
+              width: 100% !important;
+              justify-content: center !important;
+              padding: 12px 14px !important;
+              text-align: center !important;
+              box-sizing: border-box !important;
+            }
+            .drf-gift-card-img {
+              width: 76px !important;
+              height: 52px !important;
+              border-radius: 8px !important;
+            }
           }
         `,
         }}
@@ -1553,6 +1619,11 @@ export function DriffleOrderDeliveryView({
                 const isThisAccount = Boolean(unit.isAccount);
                 const itemCode = unit.code;
                 const revealedDate = itemCode?.revealed_at;
+                const isCodeCancelled = Boolean(
+                  itemCode?.is_cancelled ||
+                  itemCode?.status === "cancelled" ||
+                  itemCode?.status === "refunded"
+                );
 
                 return (
                   <div
@@ -1560,7 +1631,13 @@ export function DriffleOrderDeliveryView({
                     style={{
                       borderRadius: "16px",
                       backgroundColor: cardBg,
-                      border: `1px solid ${isKeyRevealed ? "rgba(16, 185, 129, 0.25)" : cardBorder}`,
+                      border: `1px solid ${
+                        isCodeCancelled
+                          ? "rgba(244, 63, 94, 0.3)"
+                          : isKeyRevealed
+                          ? "rgba(16, 185, 129, 0.25)"
+                          : cardBorder
+                      }`,
                       overflow: "hidden",
                       width: "100%",
                       boxSizing: "border-box",
@@ -1569,6 +1646,7 @@ export function DriffleOrderDeliveryView({
                     }}
                   >
                     <div
+                      className="drf-unit-card-inner"
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -1578,10 +1656,11 @@ export function DriffleOrderDeliveryView({
                         flexWrap: "wrap",
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: "14px", minWidth: 0, flex: 1 }}>
+                      <div className="drf-unit-info-left" style={{ display: "flex", alignItems: "center", gap: "14px", minWidth: 0, flex: 1 }}>
                         <img
                           src={unit.coverImg}
                           alt={unit.unitLabel}
+                          className="drf-gift-card-img"
                           onError={(e) => {
                             const target = e.currentTarget;
                             if (!target.dataset.triedFallback) {
@@ -1590,13 +1669,14 @@ export function DriffleOrderDeliveryView({
                             }
                           }}
                           style={{
-                            width: "68px",
-                            height: "86px",
+                            width: "78px",
+                            height: "54px",
                             borderRadius: "10px",
                             objectFit: "cover",
                             backgroundColor: "rgba(0, 0, 0, 0.4)",
                             border: `1px solid ${cardBorder}`,
                             flexShrink: 0,
+                            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
                           }}
                         />
 
@@ -1613,34 +1693,54 @@ export function DriffleOrderDeliveryView({
                             {unit.unitLabel}
                           </h3>
                           <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                            <span
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "4px",
-                                padding: "2px 8px",
-                                borderRadius: "6px",
-                                backgroundColor: isThisTopup
-                                  ? "rgba(16, 185, 129, 0.08)"
-                                  : isThisAccount
-                                  ? "rgba(168, 85, 247, 0.08)"
-                                  : "rgba(0, 229, 255, 0.08)",
-                                border: `1px solid ${
-                                  isThisTopup
-                                    ? "rgba(16, 185, 129, 0.2)"
+                            {isCodeCancelled ? (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  padding: "2px 8px",
+                                  borderRadius: "6px",
+                                  backgroundColor: "rgba(244, 63, 94, 0.15)",
+                                  border: "1px solid rgba(244, 63, 94, 0.35)",
+                                  fontSize: "10.5px",
+                                  fontWeight: 800,
+                                  color: "#fb7185",
+                                }}
+                              >
+                                <XCircle style={{ width: "11px", height: "11px" }} />
+                                {isAr ? "كود ملغي / مسترجع" : "CANCELLED"}
+                              </span>
+                            ) : (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  padding: "2px 8px",
+                                  borderRadius: "6px",
+                                  backgroundColor: isThisTopup
+                                    ? "rgba(16, 185, 129, 0.08)"
                                     : isThisAccount
-                                    ? "rgba(168, 85, 247, 0.2)"
-                                    : "rgba(0, 229, 255, 0.15)"
-                                }`,
-                                fontSize: "10.5px",
-                                fontWeight: 800,
-                                color: isThisTopup ? "#10b981" : isThisAccount ? "#c084fc" : accentCyan,
-                                textTransform: "uppercase",
-                              }}
-                            >
-                              <Globe style={{ width: "10px", height: "10px" }} />
-                              {isThisTopup ? (isAr ? "شحن مباشر" : "TOP-UP") : isThisAccount ? (isAr ? "حساب جاهز" : "ACCOUNT") : unit.regionBadge}
-                            </span>
+                                    ? "rgba(168, 85, 247, 0.08)"
+                                    : "rgba(0, 229, 255, 0.08)",
+                                  border: `1px solid ${
+                                    isThisTopup
+                                      ? "rgba(16, 185, 129, 0.2)"
+                                      : isThisAccount
+                                      ? "rgba(168, 85, 247, 0.2)"
+                                      : "rgba(0, 229, 255, 0.15)"
+                                  }`,
+                                  fontSize: "10.5px",
+                                  fontWeight: 800,
+                                  color: isThisTopup ? "#10b981" : isThisAccount ? "#c084fc" : accentCyan,
+                                  textTransform: "uppercase",
+                                }}
+                              >
+                                <Globe style={{ width: "10px", height: "10px" }} />
+                                {isThisTopup ? (isAr ? "شحن مباشر" : "TOP-UP") : isThisAccount ? (isAr ? "حساب جاهز" : "ACCOUNT") : unit.regionBadge}
+                              </span>
+                            )}
                             {unit.platform && (
                               <span
                                 style={{
@@ -1660,7 +1760,7 @@ export function DriffleOrderDeliveryView({
                                 {unit.platform}
                               </span>
                             )}
-                            {revealedDate && (
+                            {revealedDate && !isCodeCancelled && (
                               <span
                                 style={{
                                   display: "inline-flex",
@@ -1683,111 +1783,134 @@ export function DriffleOrderDeliveryView({
                         </div>
                       </div>
 
-                      {isThisTopup ? (
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: isAr ? "flex-start" : "flex-end",
-                            gap: "4px",
-                          }}
-                        >
+                      {/* Right Action Section */}
+                      <div className="drf-unit-actions-right" style={{ display: "flex", flexDirection: "column", alignItems: isAr ? "flex-start" : "flex-end", gap: "6px" }}>
+                        {isCodeCancelled ? (
                           <div
+                            className="drf-unit-cancelled-badge"
                             style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "6px",
-                              padding: "8px 14px",
-                              borderRadius: "10px",
-                              backgroundColor: "rgba(16, 185, 129, 0.12)",
-                              border: "1px solid rgba(16, 185, 129, 0.3)",
-                              color: "#10b981",
-                              fontSize: "12px",
-                              fontWeight: 800,
-                            }}
-                          >
-                            <CheckCircle2 style={{ width: "14px", height: "14px" }} />
-                            <span>{isAr ? "تم الشحن على الحساب مباشرة" : "Topped Up Directly"}</span>
-                          </div>
-                          {(itemCode?.email || itemCode?.value) && (
-                            <span
-                              style={{
-                                fontSize: "11px",
-                                color: textSecondary,
-                                fontFamily: "monospace",
-                              }}
-                              dir="ltr"
-                            >
-                              {itemCode?.email || itemCode?.value}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: isAr ? "flex-start" : "flex-end", gap: "6px" }}>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenReveal(unitIdx)}
-                            style={{
-                              background: isKeyRevealed
-                                ? isThisAccount
-                                  ? "rgba(168, 85, 247, 0.15)"
-                                  : "rgba(0, 229, 255, 0.12)"
-                                : isThisAccount
-                                ? "linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)"
-                                : `linear-gradient(135deg, ${accentCyan}, #0098d4)`,
-                              color: isKeyRevealed
-                                ? isThisAccount ? "#c084fc" : accentCyan
-                                : isThisAccount ? "#ffffff" : "#07090e",
-                              border: isKeyRevealed
-                                ? `1px solid ${isThisAccount ? "rgba(168, 85, 247, 0.35)" : "rgba(0, 229, 255, 0.3)"}`
-                                : "none",
-                              borderRadius: "10px",
-                              padding: "10px 20px",
-                              fontWeight: 900,
-                              fontSize: "12.5px",
-                              cursor: "pointer",
                               display: "inline-flex",
                               alignItems: "center",
                               gap: "7px",
-                              boxShadow: isKeyRevealed
-                                ? "none"
-                                : isThisAccount
-                                ? "0 4px 14px rgba(168, 85, 247, 0.3)"
-                                : "0 4px 14px rgba(0, 229, 255, 0.25)",
-                              transition: "all 0.15s ease",
+                              padding: "10px 18px",
+                              borderRadius: "10px",
+                              backgroundColor: "rgba(244, 63, 94, 0.12)",
+                              border: "1px solid rgba(244, 63, 94, 0.35)",
+                              color: "#fb7185",
+                              fontSize: "12.5px",
+                              fontWeight: 800,
                             }}
                           >
-                            {isKeyRevealed ? (
-                              <>
-                                <Check style={{ width: "14px", height: "14px" }} />
-                                <span>
-                                  {isThisAccount
-                                    ? isAr ? "عرض بيانات الحساب المستلم" : "View Account Details"
-                                    : isAr ? "عرض الكود المستلم" : "View Key"}
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                {isThisAccount ? (
-                                  <UserIcon style={{ width: "14px", height: "14px" }} />
-                                ) : (
-                                  <KeyRound style={{ width: "14px", height: "14px" }} />
-                                )}
-                                <span>
-                                  {isThisAccount
-                                    ? isAr ? "عرض تفاصيل الحساب" : "View Account Details"
-                                    : isAr ? "إظهار الكود 🔑" : "Reveal Key 🔑"}
-                                </span>
-                              </>
+                            <XCircle style={{ width: "15px", height: "15px", flexShrink: 0 }} />
+                            <span>{isAr ? "تم إلغاء هذا الكود (مسترجع / Refunded)" : "Code Cancelled / Refunded"}</span>
+                          </div>
+                        ) : isThisTopup ? (
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: isAr ? "flex-start" : "flex-end",
+                              gap: "4px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                padding: "8px 14px",
+                                borderRadius: "10px",
+                                backgroundColor: "rgba(16, 185, 129, 0.12)",
+                                border: "1px solid rgba(16, 185, 129, 0.3)",
+                                color: "#10b981",
+                                fontSize: "12px",
+                                fontWeight: 800,
+                              }}
+                            >
+                              <CheckCircle2 style={{ width: "14px", height: "14px" }} />
+                              <span>{isAr ? "تم الشحن على الحساب مباشرة" : "Topped Up Directly"}</span>
+                            </div>
+                            {(itemCode?.email || itemCode?.value) && (
+                              <span
+                                style={{
+                                  fontSize: "11px",
+                                  color: textSecondary,
+                                  fontFamily: "monospace",
+                                }}
+                                dir="ltr"
+                              >
+                                {itemCode?.email || itemCode?.value}
+                              </span>
                             )}
-                          </button>
-                          {revealedDate && (
-                            <span style={{ fontSize: "11px", color: "#34d399", fontWeight: 700 }}>
-                              ✓ {isAr ? "تم الكشف:" : "Revealed:"} {new Date(revealedDate).toLocaleDateString(isAr ? "ar-EG" : "en-US", { month: "numeric", day: "numeric" })}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                          </div>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              className="drf-unit-reveal-btn"
+                              onClick={() => handleOpenReveal(unitIdx)}
+                              style={{
+                                background: isKeyRevealed
+                                  ? isThisAccount
+                                    ? "rgba(168, 85, 247, 0.15)"
+                                    : "rgba(0, 229, 255, 0.12)"
+                                  : isThisAccount
+                                  ? "linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)"
+                                  : `linear-gradient(135deg, ${accentCyan}, #0098d4)`,
+                                color: isKeyRevealed
+                                  ? isThisAccount ? "#c084fc" : accentCyan
+                                  : isThisAccount ? "#ffffff" : "#07090e",
+                                border: isKeyRevealed
+                                  ? `1px solid ${isThisAccount ? "rgba(168, 85, 247, 0.35)" : "rgba(0, 229, 255, 0.3)"}`
+                                  : "none",
+                                borderRadius: "10px",
+                                padding: "10px 20px",
+                                fontWeight: 900,
+                                fontSize: "12.5px",
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "7px",
+                                boxShadow: isKeyRevealed
+                                  ? "none"
+                                  : isThisAccount
+                                  ? "0 4px 14px rgba(168, 85, 247, 0.3)"
+                                  : "0 4px 14px rgba(0, 229, 255, 0.25)",
+                                transition: "all 0.15s ease",
+                              }}
+                            >
+                              {isKeyRevealed ? (
+                                <>
+                                  <Check style={{ width: "14px", height: "14px" }} />
+                                  <span>
+                                    {isThisAccount
+                                      ? isAr ? "عرض بيانات الحساب المستلم" : "View Account Details"
+                                      : isAr ? "عرض الكود المستلم" : "View Key"}
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  {isThisAccount ? (
+                                    <UserIcon style={{ width: "14px", height: "14px" }} />
+                                  ) : (
+                                    <KeyRound style={{ width: "14px", height: "14px" }} />
+                                  )}
+                                  <span>
+                                    {isThisAccount
+                                      ? isAr ? "عرض تفاصيل الحساب" : "View Account Details"
+                                      : isAr ? "إظهار الكود 🔑" : "Reveal Key 🔑"}
+                                  </span>
+                                </>
+                              )}
+                            </button>
+                            {revealedDate && (
+                              <span style={{ fontSize: "11px", color: "#34d399", fontWeight: 700 }}>
+                                ✓ {isAr ? "تم الكشف:" : "Revealed:"} {new Date(revealedDate).toLocaleDateString(isAr ? "ar-EG" : "en-US", { month: "numeric", day: "numeric" })}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -2377,6 +2500,126 @@ export function DriffleOrderDeliveryView({
                             >
                               <Copy style={{ width: "14px", height: "14px" }} />
                             </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Extra Credentials / Recovery Email / Backup Code / Custom Fields / Notes */}
+                    {activeCode && (activeCode.backup_email || activeCode.backup_code || (activeCode.extra_fields && activeCode.extra_fields.length > 0) || activeCode.notes) && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "2px" }}>
+                        {activeCode.backup_email && (
+                          <div
+                            style={{
+                              borderRadius: "10px",
+                              background: "rgba(0, 0, 0, 0.3)",
+                              border: `1px solid ${cardBorder}`,
+                              padding: "10px 14px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: "8px",
+                            }}
+                          >
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: "10px", color: "#38bdf8", fontWeight: 800 }}>
+                                {isAr ? "📧 الإيميل الاحتياطي (Recovery Email)" : "RECOVERY EMAIL"}
+                              </div>
+                              <div style={{ fontFamily: "monospace", fontSize: "12px", color: textPrimary, wordBreak: "break-all" }} dir="ltr">
+                                {activeCode.backup_email}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => onCopyKey(activeCode.backup_email!, `modal-rec-${selectedItemIdx}`)}
+                              style={{ background: "none", border: "none", color: accentCyan, cursor: "pointer", padding: "4px" }}
+                              title={isAr ? "نسخ" : "Copy"}
+                            >
+                              <Copy style={{ width: "14px", height: "14px" }} />
+                            </button>
+                          </div>
+                        )}
+
+                        {activeCode.backup_code && (
+                          <div
+                            style={{
+                              borderRadius: "10px",
+                              background: "rgba(0, 0, 0, 0.3)",
+                              border: `1px solid ${cardBorder}`,
+                              padding: "10px 14px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: "8px",
+                            }}
+                          >
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: "10px", color: "#fbbf24", fontWeight: 800 }}>
+                                {isAr ? "🔒 رمز الأمان / 2FA / Backup Code" : "SECURITY CODE / PIN"}
+                              </div>
+                              <div style={{ fontFamily: "monospace", fontSize: "12px", color: textPrimary, wordBreak: "break-all" }} dir="ltr">
+                                {activeCode.backup_code}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => onCopyKey(activeCode.backup_code!, `modal-pin-${selectedItemIdx}`)}
+                              style={{ background: "none", border: "none", color: accentCyan, cursor: "pointer", padding: "4px" }}
+                              title={isAr ? "نسخ" : "Copy"}
+                            >
+                              <Copy style={{ width: "14px", height: "14px" }} />
+                            </button>
+                          </div>
+                        )}
+
+                        {Array.isArray(activeCode.extra_fields) &&
+                          activeCode.extra_fields.map((f, fIdx) => (
+                            <div
+                              key={fIdx}
+                              style={{
+                                borderRadius: "10px",
+                                background: "rgba(0, 0, 0, 0.3)",
+                                border: `1px solid ${cardBorder}`,
+                                padding: "10px 14px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: "8px",
+                              }}
+                            >
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: "10px", color: textSecondary, fontWeight: 800 }}>{f.label}</div>
+                                <div style={{ fontFamily: "monospace", fontSize: "12px", color: textPrimary, wordBreak: "break-all" }} dir="ltr">
+                                  {f.value}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => onCopyKey(f.value, `modal-fld-${selectedItemIdx}-${fIdx}`)}
+                                style={{ background: "none", border: "none", color: accentCyan, cursor: "pointer", padding: "4px" }}
+                                title={isAr ? "نسخ" : "Copy"}
+                              >
+                                <Copy style={{ width: "14px", height: "14px" }} />
+                              </button>
+                            </div>
+                          ))}
+
+                        {activeCode.notes && (
+                          <div
+                            style={{
+                              borderRadius: "10px",
+                              background: "rgba(0, 229, 255, 0.05)",
+                              border: "1px solid rgba(0, 229, 255, 0.2)",
+                              padding: "10px 14px",
+                              fontSize: "12px",
+                              color: "#e2e8f0",
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            <div style={{ fontSize: "10.5px", color: accentCyan, fontWeight: 800, marginBottom: "3px" }}>
+                              {isAr ? "📌 تعليمات وملاحظات إضافية لهذا المنتج:" : "Additional instructions:"}
+                            </div>
+                            <div style={{ whiteSpace: "pre-wrap" }}>{activeCode.notes}</div>
                           </div>
                         )}
                       </div>

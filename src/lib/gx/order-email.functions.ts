@@ -273,8 +273,18 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
       return `${CDN_ASSETS_BASE}/app/assets/img/instagram-logo.png`;
     }
 
-    if (clean.includes("itunes") || cleanSlug.includes("itunes")) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/itunes.jpg`;
+    if (
+      clean.includes("itunes") ||
+      cleanSlug.includes("itunes") ||
+      cleanName.includes("itunes") ||
+      cleanName.includes("آيتونز") ||
+      cleanName.includes("ايتونز") ||
+      clean.includes("apple") ||
+      cleanSlug.includes("apple") ||
+      cleanName.includes("آبل") ||
+      cleanName.includes("ابل")
+    ) {
+      return `${CDN_ASSETS_BASE}/app/assets/img/itunes-card.png`;
     }
 
     if (clean.includes("playstation") || cleanSlug.includes("playstation") || cleanSlug.includes("psn")) {
@@ -1451,6 +1461,13 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
 
       if (typeof data.codeIndex === "number" && codes[data.codeIndex]) {
         const target = codes[data.codeIndex];
+        if (target.is_cancelled || target.status === "cancelled" || target.status === "refunded") {
+          return {
+            ok: false,
+            code_cancelled: true,
+            error: "تم إلغاء هذا الكود أو المنتج من قِبل إدارة المتجر ولم يعد متاحاً للكشف.",
+          };
+        }
         const prevCount = Number(target.reveal_count) || (target.revealed_at ? 1 : 0);
         codes[data.codeIndex] = {
           ...target,

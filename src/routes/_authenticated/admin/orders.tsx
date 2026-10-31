@@ -16,7 +16,7 @@ import {
   Search, Download, Volume2, VolumeX, RefreshCw, Filter, Bell,
   CheckCircle2, XCircle, Clock, CreditCard, Package as PackageIcon,
   Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor, Mail, Copy, Eye, Lock,
-  Calendar, Globe, KeyRound,
+  Calendar, Globe, KeyRound, Check, DollarSign, Plus, ChevronDown, ChevronUp, Send,
 } from "lucide-react";
 import { sendOrderStatusEmail, sendIncompleteOrderPaymentEmail, getOrderSecretLinkFn } from "@/lib/gx/order-email.functions";
 import { detectRegionCode, formatFullRegion } from "@/lib/gx/region";
@@ -683,13 +683,23 @@ type DeliveryCode = {
   reveal_count?: number | null;
   last_revealed_at?: string | null;
   last_revealed_ip?: string | null;
+  status?: "active" | "cancelled" | "refunded";
+  is_cancelled?: boolean;
+  cancelled_at?: string | null;
+  cancel_reason?: string | null;
+  backup_email?: string;
+  backup_code?: string;
+  extra_fields?: Array<{ label: string; value: string }>;
+  notes?: string;
 };
 
 function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
+  const qc = useQueryClient();
   const [status, setStatus] = useState(order.status);
   const [notes, setNotes] = useState(order.admin_notes ?? "");
   const [notifyCustomer, setNotifyCustomer] = useState(true);
   const [emailLang, setEmailLang] = useState<"ar" | "en">("ar");
+  const [showFinancialTools, setShowFinancialTools] = useState(false);
   const items = Array.isArray(order.items) ? order.items : [];
   const existingDelivery = order.delivery_data && typeof order.delivery_data === "object" ? order.delivery_data as { codes?: DeliveryCode[] } : {};
 
@@ -711,6 +721,14 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
         reveal_count: c.reveal_count ?? null,
         last_revealed_at: c.last_revealed_at ?? null,
         last_revealed_ip: c.last_revealed_ip ?? null,
+        status: (c.is_cancelled || c.status === "cancelled" || c.status === "refunded") ? "cancelled" : (c.status || "active"),
+        is_cancelled: Boolean(c.is_cancelled || c.status === "cancelled" || c.status === "refunded"),
+        cancelled_at: c.cancelled_at ?? null,
+        cancel_reason: c.cancel_reason ?? null,
+        backup_email: c.backup_email || "",
+        backup_code: c.backup_code || "",
+        extra_fields: Array.isArray(c.extra_fields) ? c.extra_fields : [],
+        notes: c.notes || "",
       }));
     }
     const seeded: DeliveryCode[] = [];
@@ -789,6 +807,14 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             reveal_count: c.reveal_count ?? null,
             last_revealed_at: c.last_revealed_at ?? null,
             last_revealed_ip: c.last_revealed_ip ?? null,
+            status: (c.is_cancelled || c.status === "cancelled" || c.status === "refunded") ? "cancelled" : (c.status || "active"),
+            is_cancelled: Boolean(c.is_cancelled || c.status === "cancelled" || c.status === "refunded"),
+            cancelled_at: c.cancelled_at ?? null,
+            cancel_reason: c.cancel_reason ?? null,
+            backup_email: c.backup_email || "",
+            backup_code: c.backup_code || "",
+            extra_fields: Array.isArray(c.extra_fields) ? c.extra_fields : [],
+            notes: c.notes || "",
           })));
         }
         toast.success("تم تحديث حالة استلام وكشف الأكواد مباشرة");
@@ -841,10 +867,48 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
   function updateCode(i: number, patch: Partial<DeliveryCode>) { setCodes(codes.map((c, idx) => idx === i ? { ...c, ...patch } : c)); }
   function removeCode(i: number) { setCodes(codes.filter((_, idx) => idx !== i)); }
 
+  const toggleCancelCode = async (i: number) => {
+    const nextCodes = [...codes];
+    const target = { ...nextCodes[i] };
+    const willCancel = !target.is_cancelled && target.status !== "cancelled";
+    target.is_cancelled = willCancel;
+    target.status = willCancel ? "cancelled" : "active";
+    if (willCancel) {
+      target.cancelled_at = new Date().toISOString();
+    } else {
+      target.cancelled_at = null;
+    }
+    nextCodes[i] = target;
+    setCodes(nextCodes);
+
+    // Save immediately to DB so client realtime updates at once!
+    try {
+      const patch = buildPatch(status);
+      const { error } = await supabase
+        .from("orders")
+        .update({ delivery_data: patch.delivery_data })
+        .eq("id", order.id);
+
+      if (error) {
+        toast.error("فشل تحديث حالة الكود: " + error.message);
+      } else {
+        toast.success(
+          willCancel
+            ? "تم إلغاء هذا الكود وحجبه لحظياً عن العميل ✓"
+            : "تمت إعادة تفعيل هذا الكود بنجاح ✓"
+        );
+        qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "حدث خطأ أثناء حفظ حالة الكود");
+    }
+  };
+
   function buildPatch(nextStatus: string) {
     const cleanCodes = codes.map((c) => {
       const kind = c.kind || "code";
       const extra = (c.extra || "").trim();
+      const isCanc = Boolean(c.is_cancelled || c.status === "cancelled" || c.status === "refunded");
       return {
         kind,
         label: (c.label || "").trim(),
@@ -862,8 +926,16 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
         reveal_count: c.reveal_count ?? null,
         last_revealed_at: c.last_revealed_at ?? null,
         last_revealed_ip: c.last_revealed_ip ?? null,
+        status: isCanc ? "cancelled" : (c.status || "active"),
+        is_cancelled: isCanc,
+        cancelled_at: c.cancelled_at ?? null,
+        cancel_reason: c.cancel_reason ?? null,
+        backup_email: (c.backup_email || "").trim() || null,
+        backup_code: (c.backup_code || "").trim() || null,
+        extra_fields: Array.isArray(c.extra_fields) ? c.extra_fields.filter((f) => f.label || f.value) : [],
+        notes: (c.notes || "").trim() || null,
       };
-    }).filter((c) => c.label || c.value || c.email || c.password || c.extra);
+    }).filter((c) => c.label || c.value || c.email || c.password || c.extra || c.is_cancelled);
 
     const existingDel = order.delivery_data && typeof order.delivery_data === "object"
       ? (order.delivery_data as Record<string, unknown>)
@@ -1321,28 +1393,71 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                 const kind = c.kind || "code";
                 const isAccount = kind === "account";
                 const isTopup = kind === "topup";
+                const isCancelled = Boolean(c.is_cancelled || c.status === "cancelled" || c.status === "refunded");
                 return (
-                  <div key={i} className="gx-od-code">
-                    <div className="flex gap-2 items-center mb-2 flex-wrap">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isTopup ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : isAccount ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"}`}>
-                        {isTopup ? "تعبئة" : isAccount ? "حساب" : "كود"}
-                      </span>
-                      {c.revealed_at ? (
-                        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 rounded shrink-0">
-                          <CheckCircle2 size={12} className="text-emerald-400" />
-                          <span>مكشوف ✓</span>
+                  <div key={i} className={`gx-od-code ${isCancelled ? "border-rose-500/50 bg-rose-950/25" : ""}`}>
+                    <div className="flex gap-2 items-center mb-2 flex-wrap justify-between">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                          isCancelled
+                            ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                            : isTopup
+                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                            : isAccount
+                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
+                            : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+                        }`}>
+                          {isTopup ? "تعبئة" : isAccount ? "حساب" : "كود"} #{i + 1}
                         </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-amber-300/90 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded shrink-0">
-                          <Lock size={11} className="text-amber-400" />
-                          <span>لم يُكشف بعد</span>
-                        </span>
-                      )}
-                      <Input placeholder={isTopup ? "الوصف (مثلاً: شحن 1000 UC · اشتراك شهر)" : "الوصف (مثلاً: كود PS 25$ / حساب Netflix)"} value={c.label} onChange={(e) => updateCode(i, { label: e.target.value })} className="gx-adm-input flex-1 h-9 text-sm min-w-[200px]" />
-                      <button type="button" onClick={() => removeCode(i)} className="text-rose-400 hover:text-rose-300 p-1.5 rounded hover:bg-rose-500/10" title="حذف">
+
+                        {/* Cancellation Toggle */}
+                        {isCancelled ? (
+                          <div className="inline-flex items-center gap-1 text-[10.5px] font-extrabold text-rose-300 bg-rose-500/25 border border-rose-500/50 px-2 py-0.5 rounded shrink-0">
+                            <XCircle size={12} className="text-rose-400" />
+                            <span>ملغي ومسترجع (Refunded)</span>
+                            <button
+                              type="button"
+                              onClick={() => toggleCancelCode(i)}
+                              className="text-[10px] text-cyan-300 hover:text-white underline mr-1"
+                              title="إعادة تفعيل هذا الكود للعميل فوراً"
+                            >
+                              إعادة تفعيل
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => toggleCancelCode(i)}
+                            className="text-[10.5px] px-2 py-0.5 rounded border border-rose-500/40 text-rose-300 hover:bg-rose-500/15 font-bold transition flex items-center gap-1"
+                            title="إلغاء هذا الكود بشكل فوري وحجبه عن العميل"
+                          >
+                            <XCircle size={11} />
+                            <span>إلغاء الكود (Refund)</span>
+                          </button>
+                        )}
+
+                        {c.revealed_at ? (
+                          <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 rounded shrink-0">
+                            <CheckCircle2 size={12} className="text-emerald-400" />
+                            <span>مكشوف ✓</span>
+                          </span>
+                        ) : !isCancelled ? (
+                          <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-amber-300/90 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded shrink-0">
+                            <Lock size={11} className="text-amber-400" />
+                            <span>لم يُكشف بعد</span>
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <button type="button" onClick={() => removeCode(i)} className="text-rose-400 hover:text-rose-300 p-1.5 rounded hover:bg-rose-500/10" title="حذف هذا الكود بالكامل من الطلب">
                         <XCircle size={16} />
                       </button>
                     </div>
+
+                    <div className="mb-2">
+                      <Input placeholder={isTopup ? "الوصف (مثلاً: شحن 1000 UC · اشتراك شهر)" : "الوصف (مثلاً: كود PS 25$ / حساب Netflix)"} value={c.label} onChange={(e) => updateCode(i, { label: e.target.value })} className="gx-adm-input h-9 text-sm w-full" />
+                    </div>
+
                     {isAccount ? (
                       <div className="space-y-2">
                         <div className="grid sm:grid-cols-2 gap-2">
@@ -1363,8 +1478,9 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                         <Input placeholder="تفاصيل التعبئة (المبلغ / المدة / ملاحظة)" value={c.value} onChange={(e) => updateCode(i, { value: e.target.value })} className="gx-adm-input h-9 text-sm" />
                       </div>
                     ) : (
-                      <Input placeholder="الكود" dir="ltr" value={c.value} onChange={(e) => updateCode(i, { value: e.target.value })} className="gx-adm-input h-9 text-sm font-mono" />
+                      <Input placeholder="الكود الرقمي" dir="ltr" value={c.value} onChange={(e) => updateCode(i, { value: e.target.value })} className="gx-adm-input h-9 text-sm font-mono" />
                     )}
+
                     {!isAccount && !isTopup && (
                       <div className="mt-2">
                         <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
@@ -1414,6 +1530,95 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                         )}
                       </div>
                     )}
+
+                    {/* Extensible Extra Fields & Recovery Credentials (for this item) */}
+                    <div className="mt-2.5 pt-2.5 border-t border-white/10 space-y-2 bg-black/20 p-2.5 rounded-lg">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold text-cyan-200/90">
+                          📌 معلومات إضافية خاصة بهذا المنتج (تظهر للعميل عند كشف هذا الكود/الحساب):
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextCodes = [...codes];
+                            const curr = nextCodes[i];
+                            const fields = Array.isArray(curr.extra_fields) ? [...curr.extra_fields] : [];
+                            fields.push({ label: "بيان إضافي", value: "" });
+                            curr.extra_fields = fields;
+                            setCodes(nextCodes);
+                          }}
+                          className="text-[10.5px] px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 font-bold transition flex items-center gap-1"
+                        >
+                          <Plus size={11} />
+                          <span>إضافة حقل مخصص</span>
+                        </button>
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        <Input
+                          placeholder="الإيميل الاحتياطي / Recovery Email (اختياري)"
+                          dir="ltr"
+                          value={c.backup_email || ""}
+                          onChange={(e) => updateCode(i, { backup_email: e.target.value })}
+                          className="gx-adm-input h-8 text-xs"
+                        />
+                        <Input
+                          placeholder="رمز الأمان / PIN / Backup Code (اختياري)"
+                          dir="ltr"
+                          value={c.backup_code || ""}
+                          onChange={(e) => updateCode(i, { backup_code: e.target.value })}
+                          className="gx-adm-input h-8 text-xs font-mono"
+                        />
+                      </div>
+
+                      {Array.isArray(c.extra_fields) && c.extra_fields.length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          {c.extra_fields.map((f, fIdx) => (
+                            <div key={fIdx} className="flex items-center gap-2">
+                              <Input
+                                placeholder="اسم الحقل (مثلاً: سيرفر اللعبة)"
+                                value={f.label}
+                                onChange={(e) => {
+                                  const nextCodes = [...codes];
+                                  nextCodes[i].extra_fields![fIdx].label = e.target.value;
+                                  setCodes(nextCodes);
+                                }}
+                                className="gx-adm-input h-8 text-xs w-1/3"
+                              />
+                              <Input
+                                placeholder="القيمة"
+                                value={f.value}
+                                onChange={(e) => {
+                                  const nextCodes = [...codes];
+                                  nextCodes[i].extra_fields![fIdx].value = e.target.value;
+                                  setCodes(nextCodes);
+                                }}
+                                className="gx-adm-input h-8 text-xs flex-1 font-mono"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const nextCodes = [...codes];
+                                  nextCodes[i].extra_fields = nextCodes[i].extra_fields!.filter((_, idx) => idx !== fIdx);
+                                  setCodes(nextCodes);
+                                }}
+                                className="text-rose-400 hover:text-rose-300 p-1"
+                                title="حذف هذا الحقل"
+                              >
+                                <XCircle size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <Input
+                        placeholder="ملاحظة أو تعليمات خاصة بهذا الكود/الحساب (تظهر للعميل بعد فتح الكود مباشرة)"
+                        value={c.notes || ""}
+                        onChange={(e) => updateCode(i, { notes: e.target.value })}
+                        className="gx-adm-input h-8 text-xs"
+                      />
+                    </div>
 
                     {/* Per-Code Detailed Reveal Box */}
                     {c.revealed_at ? (
@@ -1516,11 +1721,42 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             />
           </div>
 
-          {/* Amounts */}
-          <AmountsBlock order={order} />
+          {/* Collapsible Advanced Financial & Refund Section */}
+          <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden transition-all">
+            <button
+              type="button"
+              onClick={() => setShowFinancialTools(!showFinancialTools)}
+              className="w-full flex items-center justify-between p-3.5 text-right hover:bg-white/[0.04] transition cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 grid place-items-center text-amber-400 shrink-0">
+                  <DollarSign size={16} />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-foreground flex items-center gap-2">
+                    <span>خيارات مالية ومحاسبية متقدمة (تعديل القيمة، رصيد GX Coins، و Refund)</span>
+                    <span className="text-[10px] text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono">
+                      اختياري / متقدم
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">
+                    تعديل إجمالي الطلب يدوياً، تسوية عملات GX المستخدمة، أو إجراء استرجاع مالي لرصيد العميل
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-cyan-400 text-xs font-semibold shrink-0 mr-2">
+                <span>{showFinancialTools ? "إخفاء الخيارات" : "إظهار الخيارات"}</span>
+                {showFinancialTools ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+            </button>
 
-          {/* Refund */}
-          <RefundBlock order={order} onDone={onClose} />
+            {showFinancialTools && (
+              <div className="p-4 border-t border-white/10 space-y-4 bg-black/30">
+                <AmountsBlock order={order} />
+                <RefundBlock order={order} onDone={onClose} />
+              </div>
+            )}
+          </div>
 
           {/* Email Notification Toggle & Language Selection */}
           <div className="p-3.5 rounded-xl border border-cyan-500/25 bg-cyan-500/5 space-y-2">
@@ -1572,64 +1808,70 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             )}
 
             {/* Incomplete Order Payment Reminder Trigger */}
-            <div className="pt-2.5 mt-2 border-t border-cyan-500/15 flex items-center justify-between gap-3 flex-wrap">
-              <div className="text-[11.5px] text-cyan-200/90 leading-relaxed max-w-md">
-                💬 <strong className="text-white">إشعار طلب غير مكتمل:</strong> إرسال إيميل رسمي للزبون ينبهه بأن طلبه غير مكتمل مع زر مباشر يفتح الواتساب لاستكمال الدفع عبر (كليك / زين كاش / بطاقة).
+            {(status === "pending" || !order.paid_jod) && (
+              <div className="pt-2.5 mt-2 border-t border-cyan-500/15 flex items-center justify-between gap-3 flex-wrap">
+                <div className="text-[11.5px] text-cyan-200/90 leading-relaxed max-w-md">
+                  💬 <strong className="text-white">إشعار طلب غير مكتمل:</strong> إرسال إيميل رسمي للزبون ينبهه بأن طلبه غير مكتمل مع زر مباشر يفتح الواتساب لاستكمال الدفع.
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={sendPaymentReminder}
+                  disabled={sendingPaymentReminder}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-8 px-3.5 shadow-sm shadow-emerald-500/20"
+                  title="إرسال إشعار استكمال الدفع على إيميل العميل"
+                >
+                  {sendingPaymentReminder ? (
+                    <Loader2 size={13} className="ml-1 animate-spin" />
+                  ) : (
+                    <Mail size={13} className="ml-1" />
+                  )}
+                  إرسال تذكير الدفع بالواتساب
+                </Button>
               </div>
-              <Button
-                type="button"
-                size="sm"
-                onClick={sendPaymentReminder}
-                disabled={sendingPaymentReminder}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-8 px-3.5 shadow-sm shadow-emerald-500/20"
-                title="إرسال إشعار استكمال الدفع على إيميل العميل"
-              >
-                {sendingPaymentReminder ? (
-                  <Loader2 size={13} className="ml-1 animate-spin" />
-                ) : (
-                  <Mail size={13} className="ml-1" />
-                )}
-                إرسال إشعار الواتساب للعميل
-              </Button>
-            </div>
+            )}
           </div>
 
-          {/* Actions */}
-          <div className="gx-od-actions flex justify-between items-center gap-2 flex-wrap border-t border-white/10 pt-4">
-            <div className="flex gap-2 flex-wrap">
-              {status !== "cancelled" && (
-                <Button variant="outline" onClick={cancelOrder} className="border-rose-500/40 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300">
-                  <XCircle size={15} className="ml-1" /> إلغاء
+          {/* Actions - Clean, Hierarchy-focused & Organized */}
+          <div className="gx-od-actions flex justify-between items-center gap-3 flex-wrap border-t border-white/10 pt-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              {status !== "delivered" && status !== "cancelled" && (
+                <Button
+                  onClick={markDelivered}
+                  className="bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:opacity-95 text-slate-950 font-black px-5 shadow-lg shadow-cyan-500/25 h-10 text-sm"
+                >
+                  <Send size={15} className="ml-1.5" /> تسليم الطلب وإرسال الأكواد للعميل
                 </Button>
               )}
               {status === "pending" && (
-                <Button onClick={() => { setStatus("paid"); onSave(buildPatch("paid")); }} className="bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-500/20">
-                  <CheckCircle2 size={15} className="ml-1" /> تأكيد الدفع
+                <Button
+                  onClick={() => { setStatus("paid"); onSave(buildPatch("paid")); }}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 px-4 shadow-md shadow-emerald-500/20"
+                >
+                  <CheckCircle2 size={15} className="ml-1.5" /> تأكيد استلام الدفع
                 </Button>
               )}
-              <Button
-                type="button"
-                onClick={sendPaymentReminder}
-                disabled={sendingPaymentReminder}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-500/20"
-                title="إرسال إيميل رسمي للعميل يحتوي رابط الواتساب وبيانات الدفع"
-              >
-                {sendingPaymentReminder ? (
-                  <Loader2 size={15} className="ml-1 animate-spin" />
-                ) : (
-                  <Mail size={15} className="ml-1" />
-                )}
-                💬 إشعار استكمال الدفع (واتساب + إيميل)
-              </Button>
-              {status !== "delivered" && status !== "cancelled" && (
-                <Button onClick={markDelivered} className="bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg shadow-cyan-500/20">
-                  <CheckCircle2 size={15} className="ml-1" /> تسليم + إشعار
+              {status !== "cancelled" && (
+                <Button
+                  variant="outline"
+                  onClick={cancelOrder}
+                  className="border-rose-500/40 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 h-10"
+                >
+                  <XCircle size={15} className="ml-1" /> إلغاء الطلب
                 </Button>
               )}
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <Button variant="ghost" onClick={onClose}>إغلاق</Button>
-              <Button onClick={save} className="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold">حفظ التعديلات</Button>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button variant="ghost" onClick={onClose} className="h-10 px-4 text-cyan-100/70 hover:text-white">
+                إغلاق
+              </Button>
+              <Button
+                onClick={save}
+                className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-bold h-10 px-5 shadow-sm"
+              >
+                حفظ التعديلات
+              </Button>
             </div>
           </div>
         </div>

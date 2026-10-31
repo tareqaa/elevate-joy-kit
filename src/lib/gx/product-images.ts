@@ -108,6 +108,23 @@ export const CANONICAL_VARIANT_IMAGES: Record<string, string> = {
   "gc-playstation": "/app/assets/img/playstation-card.jpg",
   "psn-card": "/app/assets/img/playstation-card.jpg",
 
+  // iTunes & Apple Gift Cards (Official Store Design)
+  "itunes": "/app/assets/img/itunes-card.png",
+  "apple": "/app/assets/img/itunes-card.png",
+  "card-itunes": "/app/assets/img/itunes-card.png",
+  "card-apple": "/app/assets/img/itunes-card.png",
+  "gc-itunes": "/app/assets/img/itunes-card.png",
+  "gc-apple": "/app/assets/img/itunes-card.png",
+  "apple-gift-card": "/app/assets/img/itunes-card.png",
+  "itunes-gift-card": "/app/assets/img/itunes-card.png",
+  "itunes-us-5": "/app/assets/img/itunes-card.png",
+  "itunes-us-10": "/app/assets/img/itunes-card.png",
+  "itunes-us-15": "/app/assets/img/itunes-card.png",
+  "itunes-us-20": "/app/assets/img/itunes-card.png",
+  "itunes-us-25": "/app/assets/img/itunes-card.png",
+  "itunes-us-50": "/app/assets/img/itunes-card.png",
+  "itunes-us-100": "/app/assets/img/itunes-card.png",
+
   // Fortnite V-Bucks Packs (Official Artwork matching cards & catalog)
   "fn-vb-800": "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_800_EGS_Portrait_1200x1600_1200x1600-79529d8c20514e82ae2ebce58991b912",
   "fn-vb-2400": "https://cdn1.epicgames.com/offer/fn/EN_FNECO_41-00_RMT_CoreV-BucksPacks_2400_EGS_Landscape_2560x1440_2560x1440-e51d802c9d414431973ae3e2ba60528d",
@@ -343,6 +360,22 @@ export function resolveProductImage(options: ResolveImageOptions): string {
     cleanName.includes("psn")
   ) {
     return "/app/assets/img/playstation-store-card.jpg";
+  }
+
+  // 11. iTunes & Apple Gift Cards (Official Store Design)
+  if (
+    cleanSlug.includes("itunes") ||
+    cleanSlug.includes("apple") ||
+    cleanId.includes("itunes") ||
+    cleanId.includes("apple") ||
+    cleanName.includes("itunes") ||
+    cleanName.includes("apple") ||
+    cleanName.includes("آيتونز") ||
+    cleanName.includes("ايتونز") ||
+    cleanName.includes("آبل") ||
+    cleanName.includes("ابل")
+  ) {
+    return "/app/assets/img/itunes-card.png";
   }
 
   // 10. Direct match by slug in canonical registry

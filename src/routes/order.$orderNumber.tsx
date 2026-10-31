@@ -36,45 +36,71 @@ function OrderDetailsPage() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [revealedKeys, setRevealedKeys] = useState<Record<number, boolean>>({});
 
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    setError(null);
-
-    getOrderByNumberFn({
-      data: {
-        orderNumber,
-        orderToken: order_token || undefined,
-      },
-    })
-      .then((res) => {
-        if (!mounted) return;
-        if (res.ok && res.order) {
-          setOrder(res.order);
-          setIsLocked(Boolean(res.isLocked));
-          const delCodes = (res.order.delivery_data && (res.order.delivery_data as any).codes) || [];
-          const map: Record<number, boolean> = {};
-          if (Array.isArray(delCodes)) {
-            delCodes.forEach((c: any, i: number) => {
-              if (c.revealed_at) map[i] = true;
-            });
-          }
-          setRevealedKeys(map);
-        } else {
-          setError(res.error || (isAr ? "لم يتم العثور على هذا الطلب" : "Order not found"));
-        }
-      })
-      .catch((err) => {
-        if (mounted) setError(err.message || (isAr ? "حدث خطأ أثناء تحميل الطلب" : "Failed to load order"));
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
+  const fetchOrder = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
+    try {
+      const res = await getOrderByNumberFn({
+        data: {
+          orderNumber,
+          orderToken: order_token || undefined,
+        },
       });
+      if (res.ok && res.order) {
+        setOrder(res.order);
+        setIsLocked(Boolean(res.isLocked));
+        const delCodes = (res.order.delivery_data && (res.order.delivery_data as any).codes) || [];
+        const map: Record<number, boolean> = {};
+        if (Array.isArray(delCodes)) {
+          delCodes.forEach((c: any, i: number) => {
+            if (c.revealed_at) map[i] = true;
+          });
+        }
+        setRevealedKeys(map);
+      } else if (!isBackground) {
+        setError(res.error || (isAr ? "لم يتم العثور على هذا الطلب" : "Order not found"));
+      }
+    } catch (err: any) {
+      if (!isBackground) setError(err.message || (isAr ? "حدث خطأ أثناء تحميل الطلب" : "Failed to load order"));
+    } finally {
+      if (!isBackground) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrder(false);
+  }, [orderNumber, order_token, isAr]);
+
+  // Realtime subscription: When admin modifies delivery_data or cancels a code, sync instantly!
+  useEffect(() => {
+    if (!order?.id) return;
+    const channel = supabase
+      .channel(`order-live-${order.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+          filter: `id=eq.${order.id}`,
+        },
+        () => {
+          fetchOrder(true);
+        }
+      )
+      .subscribe();
+
+    // 4-second background heartbeat while viewing order
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        fetchOrder(true);
+      }
+    }, 4000);
 
     return () => {
-      mounted = false;
+      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
-  }, [orderNumber, order_token, isAr]);
+  }, [order?.id, orderNumber, order_token]);
 
   const copyToClipboard = async (text: string, id: string) => {
     try {
