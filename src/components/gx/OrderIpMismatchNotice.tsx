@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
-import { ShieldAlert, RefreshCw, KeyRound, LogIn, ShoppingBag, ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
+import { ShieldAlert, RefreshCw, KeyRound, LogIn, ShoppingBag, ArrowLeft, ArrowRight, ExternalLink, UserPlus } from "lucide-react";
 
 export interface OrderIpMismatchNoticeProps {
   orderNumber?: string | null;
@@ -145,16 +145,16 @@ export function OrderIpMismatchNotice({
         >
           <div style={{ fontSize: "14px", color: "#f1f5f9", fontWeight: 700, marginBottom: "8px" }}>
             {isAr
-              ? "1. استخدم البريد الإلكتروني الذي استخدمته عند شراء المنتج لإنشاء طلب إعادة تعيين كلمة المرور من هذا الرابط."
-              : "1. Use the email address you used when purchasing the product to create a password reset request from this link."}
+              ? "1. التوجه إلى صفحة تسجيل الدخول أو إنشاء حساب جديد بنفس البريد الإلكتروني الذي أتممت به الشراء."
+              : "1. Go to the login or registration page using the same email address used during purchase."}
           </div>
-          <div style={{ fontSize: "13.5px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            <span>{isAr ? "رابط إعادة تعيين كلمة المرور:" : "Password reset link:"}</span>
+          <div style={{ fontSize: "13.5px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <span>{isAr ? "الروابط الرسمية:" : "Official links:"}</span>
             <Link
               to="/auth"
-              search={{ mode: "reset", email: customerEmail || undefined, redirect: returnUrl }}
+              search={{ mode: "signin", email: customerEmail || undefined, redirect: returnUrl }}
               style={{
-                color: "#38bdf8",
+                color: "#00e5ff",
                 fontWeight: 800,
                 textDecoration: "underline",
                 display: "inline-flex",
@@ -162,8 +162,24 @@ export function OrderIpMismatchNotice({
                 gap: "4px",
               }}
             >
-              <KeyRound size={14} />
-              <span>{isAr ? "نسيت كلمة المرور" : "Forgot Password"}</span>
+              <LogIn size={14} />
+              <span>{isAr ? "تسجيل الدخول" : "Sign In"}</span>
+            </Link>
+            <span style={{ color: "rgba(255, 255, 255, 0.2)" }}>|</span>
+            <Link
+              to="/auth"
+              search={{ mode: "signup", email: customerEmail || undefined, redirect: returnUrl }}
+              style={{
+                color: "#38bdf8",
+                fontWeight: 700,
+                textDecoration: "underline",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              <UserPlus size={14} />
+              <span>{isAr ? "إنشاء حساب جديد" : "Create Account"}</span>
             </Link>
             {customerEmail && (
               <span
@@ -171,8 +187,8 @@ export function OrderIpMismatchNotice({
                   fontSize: "11.5px",
                   padding: "2px 8px",
                   borderRadius: "6px",
-                  backgroundColor: "rgba(56, 189, 248, 0.12)",
-                  color: "#38bdf8",
+                  backgroundColor: "rgba(0, 229, 255, 0.12)",
+                  color: "#00e5ff",
                   fontWeight: 600,
                 }}
               >
@@ -191,10 +207,28 @@ export function OrderIpMismatchNotice({
             padding: "16px 20px",
           }}
         >
-          <div style={{ fontSize: "14px", color: "#f1f5f9", fontWeight: 700 }}>
+          <div style={{ fontSize: "14px", color: "#f1f5f9", fontWeight: 700, marginBottom: "8px" }}>
             {isAr
-              ? "2. قم بإنشاء كلمة مرور جديدة عبر رابط إعادة تعيين كلمة المرور المرسل إلى بريدك الإلكتروني."
-              : "2. Create a new password from the password reset link sent to your email address."}
+              ? "2. في حال الشراء كزائر ولم تقم بتعيين كلمة مرور لحسابك بعد، يمكنك تعيين كلمة مرور جديدة عبر رابط الاستعادة."
+              : "2. If you checked out as a guest and have not set a password, set a new password via the reset link."}
+          </div>
+          <div style={{ fontSize: "13.5px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <span>{isAr ? "رابط تعيين / استعادة كلمة المرور:" : "Password setup link:"}</span>
+            <Link
+              to="/auth"
+              search={{ mode: "reset", email: customerEmail || undefined, redirect: returnUrl }}
+              style={{
+                color: "#38bdf8",
+                fontWeight: 800,
+                textDecoration: "underline",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              <KeyRound size={14} />
+              <span>{isAr ? "استعادة / تعيين كلمة المرور" : "Reset Password"}</span>
+            </Link>
           </div>
         </div>
 
@@ -209,16 +243,16 @@ export function OrderIpMismatchNotice({
         >
           <div style={{ fontSize: "14px", color: "#f1f5f9", fontWeight: 700, marginBottom: "8px" }}>
             {isAr
-              ? "3. يمكنك تسجيل الدخول إلى حسابك بكلمة المرور الجديدة وبريدك الإلكتروني."
-              : "3. You can log in to your account with the new password and your email address."}
+              ? "3. سجّل الدخول بكلمة المرور الخاصة بك والبريد الإلكتروني الذي أتممت به الشراء."
+              : "3. Log in to your account with your password and the purchase email address."}
           </div>
           <div style={{ fontSize: "13.5px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            <span>{isAr ? "رابط تسجيل الدخول:" : "Login Link:"}</span>
+            <span>{isAr ? "الرابط:" : "Link:"}</span>
             <Link
               to="/auth"
               search={{ mode: "signin", email: customerEmail || undefined, redirect: returnUrl }}
               style={{
-                color: "#38bdf8",
+                color: "#00e5ff",
                 fontWeight: 800,
                 textDecoration: "underline",
                 display: "inline-flex",
@@ -227,7 +261,7 @@ export function OrderIpMismatchNotice({
               }}
             >
               <LogIn size={14} />
-              <span>{isAr ? "تسجيل الدخول" : "Login"}</span>
+              <span>{isAr ? "تسجيل الدخول إلى حسابي" : "Sign In to Account"}</span>
             </Link>
           </div>
         </div>
@@ -243,13 +277,14 @@ export function OrderIpMismatchNotice({
         >
           <div style={{ fontSize: "14px", color: "#f1f5f9", fontWeight: 700, marginBottom: "8px" }}>
             {isAr
-              ? "4. بعد تسجيل الدخول، يمكنك الوصول إلى المنتج الذي اشتريته من صفحة مشترياتي."
-              : "4. After logging in, you can access the product you purchased from the Purchased Product page."}
+              ? "4. بعد تسجيل الدخول، توجّه إلى صفحة مشترياتي (طلباتي) في حسابك؛ ستظهر لك أكواد ومفاتيح طلبك فوراً وبأمان."
+              : "4. After logging in, go to My Purchases in your account where your digital keys and codes will be ready immediately."}
           </div>
           <div style={{ fontSize: "13.5px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            <span>{isAr ? "الرابط:" : "Link:"}</span>
+            <span>{isAr ? "رابط مشترياتي:" : "Direct link:"}</span>
             <Link
               to="/account"
+              search={{ tab: "orders" }}
               style={{
                 color: "#00e5ff",
                 fontWeight: 800,
@@ -260,13 +295,13 @@ export function OrderIpMismatchNotice({
               }}
             >
               <ShoppingBag size={14} />
-              <span>{isAr ? "مشترياتي" : "My Purchases"}</span>
+              <span>{isAr ? "مشترياتي (/account?tab=orders)" : "My Purchases (/account?tab=orders)"}</span>
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Re-check Action & Support */}
+      {/* Action Buttons */}
       <div
         style={{
           display: "flex",
@@ -280,6 +315,7 @@ export function OrderIpMismatchNotice({
       >
         <Link
           to="/account"
+          search={{ tab: "orders" }}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -344,34 +380,6 @@ export function OrderIpMismatchNotice({
           <ExternalLink size={13} style={{ opacity: 0.7 }} />
         </a>
       </div>
-
-      {/* Security IP Diagnostics (Subtle) */}
-      {(purchaseIp || currentIp) && (
-        <div
-          style={{
-            marginTop: "20px",
-            textAlign: "center",
-            fontSize: "11px",
-            color: "#64748b",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "12px",
-            flexWrap: "wrap",
-          }}
-        >
-          {purchaseIp && (
-            <span>
-              🔒 {isAr ? "IP الشراء:" : "Purchase IP:"} <code style={{ color: "#94a3b8" }}>{purchaseIp}</code>
-            </span>
-          )}
-          {currentIp && (
-            <span>
-              🌐 {isAr ? "IP الحالي:" : "Current IP:"} <code style={{ color: "#94a3b8" }}>{currentIp}</code>
-            </span>
-          )}
-        </div>
-      )}
     </div>
   );
 }

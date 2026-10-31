@@ -1235,7 +1235,37 @@ export const getOrderByTokenFn = createServerFn({ method: "POST" })
         };
       }
 
-      // --- Security & Anti-Fraud: IP Address Verification ---
+      // Check caller identity
+      let callerUser: { id: string; email?: string } | null = null;
+      const authHeader = getRequestHeader("authorization");
+      const token = data.accessToken || (authHeader?.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : null);
+      if (token) {
+        try {
+          const { data: userData } = await getPublicClient().auth.getUser(token);
+          if (userData?.user) {
+            callerUser = {
+              id: userData.user.id,
+              email: (userData.user.email || "").toLowerCase().trim(),
+            };
+          }
+        } catch {}
+      }
+
+      const isOwnerOrAdmin = Boolean(
+        (callerUser && order.user_id && callerUser.id === order.user_id) ||
+        (callerUser?.email && (callerUser.email === (order.customer_email || "").toLowerCase().trim() ||
+                               callerUser.email === (verified.email || "").toLowerCase().trim())) ||
+        (await isCallerOwnerOrAdmin(order.user_id))
+      );
+
+      // If user is authenticated as the order owner or admin:
+      // They have already proven account identity via password login,
+      // so grant full access without IP mismatch blocking!
+      if (isOwnerOrAdmin) {
+        return { ok: true, ipMismatch: false, order, verifiedEmail: verified.email, isLocked: false };
+      }
+
+      // --- Security & Anti-Fraud: IP Address Verification for unauthenticated / guest token links ---
       let currentIp: string | null = null;
       try {
         currentIp = resolveSafeClientIp(getRequestHeader);
@@ -1247,9 +1277,9 @@ export const getOrderByTokenFn = createServerFn({ method: "POST" })
       const normPurchase = purchaseIp ? normalizeIp(purchaseIp) : "";
       const normCurrent = currentIp ? normalizeIp(currentIp) : "";
 
-      // Strict Rule: If the order has a recorded purchase IP, and current visitor IP differs:
+      // Strict Rule: If visitor is NOT logged in and current IP differs from purchase IP:
       // The secret email token link NEVER reveals the codes directly from an unknown/different IP.
-      // The visitor must follow the 4 steps (log in with password) and view via "My Purchases" (/account).
+      // The visitor must follow the steps (log in with password) and view via "My Purchases" (/account).
       if (normPurchase && normCurrent && normPurchase !== normCurrent) {
         return {
           ok: true,
@@ -1370,7 +1400,12 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
         (await isCallerOwnerOrAdmin(order.user_id))
       );
 
-      // Security & Anti-Fraud: IP Address Verification for secret token links
+      // If user is authenticated as the order owner or admin, allow immediate access:
+      if (isOwner || isAdminCaller) {
+        return { ok: true, ipMismatch: false, order, isLocked: false };
+      }
+
+      // Security & Anti-Fraud: IP Address Verification for secret token links (when not logged in)
       // The secret token link NEVER reveals the codes directly from an unknown/different IP.
       // The visitor must log in and view via "My Purchases" (/account).
       if (hasValidToken) {
@@ -1400,12 +1435,8 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
             isLocked: true,
           };
         }
-      }
 
-      // 2. Authorize if cryptographically signed token is valid (and IP matches), or if logged-in user is owner or admin
-      const isAuthorized = Boolean(hasValidToken) || isOwner || isAdminCaller;
-
-      if (isAuthorized) {
+        // Token is valid and IP matches:
         return { ok: true, ipMismatch: false, order, isLocked: false };
       }
 
@@ -1543,8 +1574,9 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
         return { ok: false };
       }
 
-      // If token was used, strictly enforce purchase IP matching (anti-fraud protection):
-      if (tokenAuthorized) {
+      // If token was used without an active owner/admin session, enforce purchase IP matching:
+      const isOwnerOrAdmin = await isCallerOwnerOrAdmin(current.user_id);
+      if (!isOwnerOrAdmin && tokenAuthorized) {
         const purchaseIp = (current.client_ip || "").trim();
         const normPurchase = purchaseIp ? normalizeIp(purchaseIp) : "";
         const normCurrent = ip ? normalizeIp(ip) : "";
