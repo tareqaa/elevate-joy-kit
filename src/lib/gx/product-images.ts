@@ -162,10 +162,6 @@ export const CANONICAL_VARIANT_IMAGES: Record<string, string> = {
   "gemini-18": "/app/assets/img/gemini-logo.png",
   "gemini-plus-3m": "/app/assets/img/gemini-logo.png",
   "gemini-pro-3m": "/app/assets/img/gemini-logo.png",
-
-  // PlayStation (Unified Official Store Design)
-  "playstation": "/app/assets/img/playstation-store-card.jpg",
-  "psn": "/app/assets/img/playstation-store-card.jpg",
 };
 
 export interface ResolveImageOptions {

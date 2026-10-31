@@ -1,4 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
+import { resolveSafeClientIp } from "./ip";
 import { z } from "zod";
 import crypto from "node:crypto";
 import { getPublicClient, assertAdminCaller, getVerifiedCaller, getUserScopedClient } from "@/lib/gx/supabase-request";
@@ -1421,6 +1423,16 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
         }
       }
 
+      let ip: string | null = null;
+      try {
+        ip = resolveSafeClientIp(getRequestHeader);
+      } catch {
+        ip = null;
+      }
+      const country = getRequestHeader("cf-ipcountry")?.trim() || null;
+      const city = getRequestHeader("cf-ipcity")?.trim() || null;
+      const userAgent = (getRequestHeader("user-agent") || "").slice(0, 300).trim() || null;
+
       const now = new Date().toISOString();
       const { data: current } = await (supabase as any)
         .from("orders")
@@ -1438,21 +1450,42 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
       const codes = Array.isArray(deliveryData.codes) ? [...deliveryData.codes] : [];
 
       if (typeof data.codeIndex === "number" && codes[data.codeIndex]) {
-        if (!codes[data.codeIndex].revealed_at) {
-          codes[data.codeIndex] = {
-            ...codes[data.codeIndex],
-            revealed_at: now,
-          };
-          deliveryData.codes = codes;
-        }
-      } else if (data.codeIndex === undefined) {
-        // If no codeIndex specified, stamp all unrevealed codes
-        codes.forEach((c: any, idx: number) => {
-          if (!c.revealed_at) {
-            codes[idx] = { ...c, revealed_at: now };
-          }
-        });
+        const target = codes[data.codeIndex];
+        const prevCount = Number(target.reveal_count) || (target.revealed_at ? 1 : 0);
+        codes[data.codeIndex] = {
+          ...target,
+          revealed_at: target.revealed_at || now,
+          revealed_ip: target.revealed_ip || ip,
+          revealed_country: target.revealed_country || country,
+          revealed_city: target.revealed_city || city,
+          revealed_ua: target.revealed_ua || userAgent,
+          reveal_count: prevCount + 1,
+          last_revealed_at: now,
+          last_revealed_ip: ip,
+        };
         deliveryData.codes = codes;
+      } else if (data.codeIndex === undefined && codes.length === 1) {
+        // If single code in order and no index passed, stamp it
+        const target = codes[0];
+        const prevCount = Number(target.reveal_count) || (target.revealed_at ? 1 : 0);
+        codes[0] = {
+          ...target,
+          revealed_at: target.revealed_at || now,
+          revealed_ip: target.revealed_ip || ip,
+          revealed_country: target.revealed_country || country,
+          revealed_city: target.revealed_city || city,
+          revealed_ua: target.revealed_ua || userAgent,
+          reveal_count: prevCount + 1,
+          last_revealed_at: now,
+          last_revealed_ip: ip,
+        };
+        deliveryData.codes = codes;
+      }
+
+      if (ip) {
+        deliveryData.last_reveal_ip = ip;
+        deliveryData.last_reveal_country = country;
+        deliveryData.last_reveal_city = city;
       }
 
       await (supabase as any)

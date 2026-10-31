@@ -16,6 +16,7 @@ import {
   Search, Download, Volume2, VolumeX, RefreshCw, Filter, Bell,
   CheckCircle2, XCircle, Clock, CreditCard, Package as PackageIcon,
   Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor, Mail, Copy, Eye, Lock,
+  Calendar, Globe, KeyRound,
 } from "lucide-react";
 import { sendOrderStatusEmail, sendIncompleteOrderPaymentEmail, getOrderSecretLinkFn } from "@/lib/gx/order-email.functions";
 import { detectRegionCode, formatFullRegion } from "@/lib/gx/region";
@@ -104,6 +105,28 @@ function formatOrderTime(isoStr?: string | null): string {
     });
   } catch {
     return isoStr;
+  }
+}
+
+function formatRevealDateTime(isoStr?: string | null): { date: string; time: string; full: string } {
+  if (!isoStr) return { date: "—", time: "—", full: "—" };
+  try {
+    const d = new Date(isoStr);
+    const date = d.toLocaleDateString("ar-EG", {
+      weekday: "short",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    });
+    const time = d.toLocaleTimeString("ar-EG", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+    return { date, time, full: `${time} • ${date}` };
+  } catch {
+    return { date: isoStr, time: isoStr, full: isoStr };
   }
 }
 
@@ -474,68 +497,102 @@ function OrdersAdmin() {
                       </span>
                     </td>
                     <td>
-                      {o.codes_revealed_at ? (
-                        <div className="flex flex-col gap-1 items-start">
-                          <span
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-300 bg-emerald-500/15 px-2.5 py-1 rounded-lg border border-emerald-500/35 whitespace-nowrap shadow-sm"
-                            title={`أول فتح: ${new Date(o.codes_revealed_at).toLocaleString("ar-EG")} • مرات الكشف: ${o.codes_reveal_count ?? 1}`}
-                          >
-                            <Eye size={12} className="text-emerald-400 shrink-0" />
-                            <span>انفتح: {formatOrderTime(o.codes_revealed_at)}</span>
-                          </span>
-                          <span className="text-[10.5px] text-cyan-200/70 font-mono">
-                            {new Date(o.codes_revealed_at).toLocaleDateString("ar-EG", { month: "numeric", day: "numeric" })}
-                            {o.codes_reveal_count && o.codes_reveal_count > 1 ? ` (${o.codes_reveal_count}x مرات)` : " (مرة واحدة)"}
-                          </span>
-                        </div>
-                      ) : o.status === "delivered" ? (
-                        (() => {
-                          const delData = o.delivery_data && typeof o.delivery_data === "object" ? (o.delivery_data as any) : {};
-                          const rowCodes = Array.isArray(delData.codes) ? delData.codes : [];
-                          const isRowTopup = rowCodes.length > 0 && rowCodes.every((c: any) => c.kind === "topup");
-                          if (isRowTopup) {
-                            return (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/30 whitespace-nowrap">
-                                <CheckCircle2 size={11} className="text-emerald-400" />
-                                <span>شحن مباشر ✓</span>
-                              </span>
-                            );
-                          }
-                          const revCount = rowCodes.filter((c: any) => Boolean(c.revealed_at)).length;
-                          if (rowCodes.length > 0) {
-                            if (revCount === rowCodes.length) {
-                              return (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/35 whitespace-nowrap shadow-sm">
-                                  <CheckCircle2 size={11} className="text-emerald-400" />
-                                  <span>كُشفت كلها ({rowCodes.length}/{rowCodes.length})</span>
-                                </span>
-                              );
-                            }
-                            if (revCount > 0) {
-                              return (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-300 bg-cyan-500/15 px-2 py-0.5 rounded-md border border-cyan-500/35 whitespace-nowrap shadow-sm">
-                                  <Eye size={11} className="text-cyan-400" />
-                                  <span>مكشوف {revCount} من {rowCodes.length}</span>
-                                </span>
-                              );
-                            }
-                            return (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300/80 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 whitespace-nowrap">
-                                <Lock size={11} className="text-amber-400/80" />
-                                <span>0/{rowCodes.length} لم يُكشف</span>
-                              </span>
-                            );
-                          }
+                      {(() => {
+                        const delData = o.delivery_data && typeof o.delivery_data === "object" ? (o.delivery_data as any) : {};
+                        const rowCodes: any[] = Array.isArray(delData.codes) ? delData.codes : [];
+                        const isRowTopup = rowCodes.length > 0 && rowCodes.every((c: any) => c.kind === "topup");
+
+                        if (isRowTopup) {
                           return (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300/80 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 whitespace-nowrap">
-                              <Lock size={11} className="text-amber-400/80" />
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/30 whitespace-nowrap">
+                              <CheckCircle2 size={11} className="text-emerald-400" />
+                              <span>شحن مباشر ✓</span>
+                            </span>
+                          );
+                        }
+
+                        const totalCodes = rowCodes.length;
+                        const revCodes = rowCodes.filter((c: any) => Boolean(c.revealed_at));
+                        const revCount = revCodes.length;
+                        const lastRevCode = revCodes.slice().sort((a, b) => new Date(b.revealed_at).getTime() - new Date(a.revealed_at).getTime())[0];
+                        const displayDate = lastRevCode?.revealed_at || o.codes_revealed_at;
+                        const displayIp = lastRevCode?.revealed_ip || delData.last_reveal_ip || o.client_ip;
+
+                        if (totalCodes > 0) {
+                          if (revCount === totalCodes) {
+                            return (
+                              <div className="flex flex-col gap-1 items-start">
+                                <span
+                                  className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-300 bg-emerald-500/15 px-2.5 py-1 rounded-lg border border-emerald-500/35 whitespace-nowrap shadow-sm"
+                                  title={`كُشفت جميع الأكواد (${totalCodes}/${totalCodes})${displayIp ? ` • IP: ${displayIp}` : ""}${displayDate ? ` • ${formatRevealDateTime(displayDate).full}` : ""}`}
+                                >
+                                  <CheckCircle2 size={12} className="text-emerald-400 shrink-0" />
+                                  <span>كُشفت كلها ({totalCodes}/{totalCodes})</span>
+                                </span>
+                                {displayDate && (
+                                  <span className="text-[10px] text-cyan-200/80 font-mono">
+                                    {formatOrderTime(displayDate)}
+                                    {displayIp ? ` • ${displayIp}` : ""}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          }
+
+                          if (revCount > 0) {
+                            return (
+                              <div className="flex flex-col gap-1 items-start">
+                                <span
+                                  className="inline-flex items-center gap-1.5 text-xs font-bold text-cyan-300 bg-cyan-500/15 px-2.5 py-1 rounded-lg border border-cyan-500/35 whitespace-nowrap shadow-sm"
+                                  title={`كُشف ${revCount} من أصل ${totalCodes} كود${displayIp ? ` • IP: ${displayIp}` : ""}${displayDate ? ` • ${formatRevealDateTime(displayDate).full}` : ""}`}
+                                >
+                                  <Eye size={12} className="text-cyan-400 shrink-0" />
+                                  <span>كُشف {revCount} من {totalCodes}</span>
+                                </span>
+                                <span className="text-[10px] text-amber-300/90 font-mono">
+                                  {totalCodes - revCount} كود مقفل
+                                  {displayDate ? ` • ${formatOrderTime(displayDate)}` : ""}
+                                </span>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <span
+                              className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300/80 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/30 whitespace-nowrap"
+                              title={`يوجد ${totalCodes} كود لم يقم العميل بفتح أي منها بعد`}
+                            >
+                              <Lock size={11} className="text-amber-400" />
+                              <span>لم يُكشف (0/{totalCodes})</span>
+                            </span>
+                          );
+                        }
+
+                        if (o.codes_revealed_at) {
+                          return (
+                            <div className="flex flex-col gap-1 items-start">
+                              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-300 bg-emerald-500/15 px-2.5 py-1 rounded-lg border border-emerald-500/35 whitespace-nowrap shadow-sm">
+                                <Eye size={12} className="text-emerald-400 shrink-0" />
+                                <span>انفتح: {formatOrderTime(o.codes_revealed_at)}</span>
+                              </span>
+                              <span className="text-[10px] text-cyan-200/70 font-mono">
+                                {new Date(o.codes_revealed_at).toLocaleDateString("ar-EG", { month: "numeric", day: "numeric" })}
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        if (o.status === "delivered") {
+                          return (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300/70 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 whitespace-nowrap">
+                              <Lock size={11} className="text-amber-400" />
                               <span>لم يُكشف بعد</span>
                             </span>
                           );
-                        })()
-                      ) : (
-                        <span className="text-cyan-100/30 text-xs">—</span>
-                      )}
+                        }
+
+                        return <span className="text-cyan-100/30 text-xs">—</span>;
+                      })()}
                     </td>
                     <td>
                       <button className="gx-adm-btn-primary" onClick={() => setSelected(o)}>إكمال / تعديل</button>
@@ -610,7 +667,23 @@ function QuickFulfill({ onPick }: { onPick: (o: OrderWithEmail) => void }) {
 }
 
 type CodeKind = "code" | "account" | "topup";
-type DeliveryCode = { label: string; value: string; email?: string; password?: string; kind?: CodeKind; region?: string; extra?: string; revealed_at?: string | null };
+type DeliveryCode = {
+  label: string;
+  value: string;
+  email?: string;
+  password?: string;
+  kind?: CodeKind;
+  region?: string;
+  extra?: string;
+  revealed_at?: string | null;
+  revealed_ip?: string | null;
+  revealed_country?: string | null;
+  revealed_city?: string | null;
+  revealed_ua?: string | null;
+  reveal_count?: number | null;
+  last_revealed_at?: string | null;
+  last_revealed_ip?: string | null;
+};
 
 function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
   const [status, setStatus] = useState(order.status);
@@ -622,15 +695,22 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
 
   const initialCodes = (() => {
     if (existingDelivery.codes && existingDelivery.codes.length > 0) {
-      return existingDelivery.codes.map((c) => ({
+      return existingDelivery.codes.map((c: any) => ({
         kind: (c.kind || (c.email ? "account" : "code")) as CodeKind,
         label: c.label || "",
         value: c.value || "",
         email: c.email || "",
         password: c.password || "",
-        extra: (c as { extra?: string }).extra || (c.kind === "account" && c.value ? c.value : "") || "",
+        extra: c.extra || (c.kind === "account" && c.value ? c.value : "") || "",
         region: c.region || "",
-        revealed_at: (c as any).revealed_at ?? null,
+        revealed_at: c.revealed_at ?? null,
+        revealed_ip: c.revealed_ip ?? null,
+        revealed_country: c.revealed_country ?? null,
+        revealed_city: c.revealed_city ?? null,
+        revealed_ua: c.revealed_ua ?? null,
+        reveal_count: c.reveal_count ?? null,
+        last_revealed_at: c.last_revealed_at ?? null,
+        last_revealed_ip: c.last_revealed_ip ?? null,
       }));
     }
     const seeded: DeliveryCode[] = [];
@@ -682,7 +762,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
       setRevealInfo((prev) => ({ ...prev, loading: true }));
       const { data, error } = await (supabase as any)
         .from("orders")
-        .select("codes_revealed_at, codes_last_revealed_at, codes_reveal_count")
+        .select("delivery_data, codes_revealed_at, codes_last_revealed_at, codes_reveal_count")
         .eq("id", order.id)
         .maybeSingle();
       if (!error && data) {
@@ -692,7 +772,26 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           count: data.codes_reveal_count ?? 0,
           loading: false,
         });
-        toast.success("تم تحديث حالة استلام وكشف الكود");
+        if (data.delivery_data && typeof data.delivery_data === "object" && Array.isArray(data.delivery_data.codes)) {
+          setCodes(data.delivery_data.codes.map((c: any) => ({
+            kind: (c.kind || (c.email ? "account" : "code")) as CodeKind,
+            label: c.label || "",
+            value: c.value || "",
+            email: c.email || "",
+            password: c.password || "",
+            extra: c.extra || (c.kind === "account" && c.value ? c.value : "") || "",
+            region: c.region || "",
+            revealed_at: c.revealed_at ?? null,
+            revealed_ip: c.revealed_ip ?? null,
+            revealed_country: c.revealed_country ?? null,
+            revealed_city: c.revealed_city ?? null,
+            revealed_ua: c.revealed_ua ?? null,
+            reveal_count: c.reveal_count ?? null,
+            last_revealed_at: c.last_revealed_at ?? null,
+            last_revealed_ip: c.last_revealed_ip ?? null,
+          })));
+        }
+        toast.success("تم تحديث حالة استلام وكشف الأكواد مباشرة");
       } else {
         setRevealInfo((prev) => ({ ...prev, loading: false }));
       }
@@ -756,6 +855,13 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
         // Keys always carry a region; accounts and top-ups never do.
         region: kind === "code" ? ((c.region || "").trim() || "Global") : "",
         revealed_at: c.revealed_at ?? null,
+        revealed_ip: c.revealed_ip ?? null,
+        revealed_country: c.revealed_country ?? null,
+        revealed_city: c.revealed_city ?? null,
+        revealed_ua: c.revealed_ua ?? null,
+        reveal_count: c.reveal_count ?? null,
+        last_revealed_at: c.last_revealed_at ?? null,
+        last_revealed_ip: c.last_revealed_ip ?? null,
       };
     }).filter((c) => c.label || c.value || c.email || c.password || c.extra);
 
@@ -1041,95 +1147,125 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           </div>
 
           {/* Code Reveal Status Banner */}
-          {codes.length > 0 && codes.every((c) => c.kind === "topup") ? (
-            <div className="border border-emerald-500/40 rounded-xl p-4 bg-gradient-to-r from-emerald-950/70 via-emerald-900/40 to-cyan-950/60 shadow-md">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.25)]">
-                  <CheckCircle2 size={22} />
-                </div>
-                <div>
-                  <div className="text-sm font-extrabold text-emerald-300">
-                    ⚡ طلب شحن وتعبئة مباشر على حساب العميل
-                  </div>
-                  <div className="text-xs text-emerald-100/90 mt-1 leading-relaxed">
-                    تم تنفيذ وشحن هذا الطلب مباشرة على حساب/معرّف العميل دون الحاجة لأكواد تفعيل رقمية أو إجراء كشف.
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div
-              className={`border rounded-xl p-4 transition-all shadow-md ${revealInfo.revealed_at
-                  ? "bg-gradient-to-r from-emerald-950/70 via-emerald-900/40 to-cyan-950/60 border-emerald-500/40 shadow-emerald-950/30"
-                  : "bg-amber-950/30 border-amber-500/30 shadow-amber-950/20"
-                }`}
-            >
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${revealInfo.revealed_at
-                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.25)]"
-                        : "bg-amber-500/20 text-amber-400 border-amber-500/40"
-                      }`}
-                  >
-                    {revealInfo.revealed_at ? <Eye size={22} /> : <Lock size={20} />}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`text-sm font-extrabold ${revealInfo.revealed_at ? "text-emerald-300" : "text-amber-300"
-                          }`}
-                      >
-                        {revealInfo.revealed_at
-                          ? "🔓 العميل فتح وكشف الكود / بيانات الحساب"
-                          : "🔒 لم يتم كشف الكود أو بيانات الحساب من قبل العميل حتى الآن"}
-                      </span>
-                      {revealInfo.revealed_at && (
-                        <span className="text-[11px] font-mono font-bold bg-emerald-500/25 px-2 py-0.5 rounded text-emerald-200 border border-emerald-500/35">
-                          عدد مرات الكشف: {revealInfo.count || 1}
-                        </span>
-                      )}
+          {(() => {
+            const isTopupOrder = codes.length > 0 && codes.every((c) => c.kind === "topup");
+            if (isTopupOrder) {
+              return (
+                <div className="border border-emerald-500/40 rounded-xl p-4 bg-gradient-to-r from-emerald-950/70 via-emerald-900/40 to-cyan-950/60 shadow-md">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.25)]">
+                      <CheckCircle2 size={22} />
                     </div>
-                    <div
-                      className={`text-xs mt-1 leading-relaxed ${revealInfo.revealed_at ? "text-emerald-100/90" : "text-amber-200/80"
-                        }`}
-                    >
-                      {revealInfo.revealed_at ? (
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span>وقت أول كشف:</span>
-                          <strong className="text-white font-mono bg-black/45 px-2 py-0.5 rounded border border-white/10" dir="ltr">
-                            {formatOrderFullDateTime(revealInfo.revealed_at)}
-                          </strong>
-                          {revealInfo.last_revealed_at && revealInfo.last_revealed_at !== revealInfo.revealed_at && (
-                            <>
-                              <span className="text-emerald-400/60">•</span>
-                              <span>آخر كشف:</span>
-                              <strong className="text-cyan-200 font-mono bg-black/45 px-2 py-0.5 rounded border border-white/10" dir="ltr">
-                                {formatOrderFullDateTime(revealInfo.last_revealed_at)}
-                              </strong>
-                            </>
-                          )}
-                        </div>
-                      ) : (
-                        "محمي: لا يتم تسجيل الكشف في النظام إلا عندما يقوم العميل بالموافقة على الشروط ووضع إشارة الصح والنقر على كشف الكود/الحساب من صفحة طلباتي أو رابط التوكن الموثق."
-                      )}
+                    <div>
+                      <div className="text-sm font-extrabold text-emerald-300">
+                        ⚡ طلب شحن وتعبئة مباشر على حساب العميل
+                      </div>
+                      <div className="text-xs text-emerald-100/90 mt-1 leading-relaxed">
+                        تم تنفيذ وشحن هذا الطلب مباشرة على حساب/معرّف العميل دون الحاجة لأكواد تفعيل رقمية أو إجراء كشف.
+                      </div>
                     </div>
                   </div>
                 </div>
+              );
+            }
 
-                <button
-                  type="button"
-                  onClick={refreshRevealStatus}
-                  disabled={revealInfo.loading}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/40 hover:bg-black/60 border border-white/10 text-cyan-300 hover:text-cyan-200 text-xs font-semibold transition-all shrink-0 cursor-pointer"
-                  title="تحديث حالة فتح الكود مباشرة من قاعدة البيانات"
-                >
-                  <RefreshCw size={13} className={revealInfo.loading ? "animate-spin text-cyan-400" : ""} />
-                  <span>{revealInfo.loading ? "جارٍ التحقق..." : "تحديث حالة الكود"}</span>
-                </button>
+            const total = codes.length;
+            const revList = codes.filter((c) => Boolean(c.revealed_at));
+            const revCount = revList.length;
+            const unrevCount = total - revCount;
+            const isAllRev = total > 0 && revCount === total;
+            const isPartialRev = total > 0 && revCount > 0 && revCount < total;
+
+            const themeClasses = isAllRev
+              ? "bg-gradient-to-r from-emerald-950/80 via-emerald-900/50 to-cyan-950/70 border-emerald-500/40 shadow-emerald-950/40"
+              : isPartialRev
+              ? "bg-gradient-to-r from-cyan-950/80 via-amber-950/50 to-black/80 border-cyan-500/40 shadow-cyan-950/30"
+              : "bg-gradient-to-r from-amber-950/40 via-stone-900/40 to-black/60 border-amber-500/30 shadow-amber-950/20";
+
+            return (
+              <div className={`border rounded-xl p-4 transition-all shadow-md ${themeClasses}`}>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${
+                        isAllRev
+                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.25)]"
+                          : isPartialRev
+                          ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-[0_0_15px_rgba(0,229,255,0.25)]"
+                          : "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                      }`}
+                    >
+                      {isAllRev ? <Eye size={22} /> : isPartialRev ? <AlertTriangle size={22} /> : <Lock size={20} />}
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`text-sm font-extrabold ${
+                            isAllRev ? "text-emerald-300" : isPartialRev ? "text-cyan-200" : "text-amber-300"
+                          }`}
+                        >
+                          {isAllRev
+                            ? `🔓 جميع الأكواد مكشوفة ومستلمة (${revCount}/${total} كود)`
+                            : isPartialRev
+                            ? `⚠️ كشف جزئي: تم كشف ${revCount} من أصل ${total} كود`
+                            : total > 0
+                            ? `🔒 جميع الأكواد مقفلة ومحمية (0/${total} كود مكشوف)`
+                            : "📦 بانتظار إضافة بيانات التسليم والأكواد"}
+                        </span>
+
+                        {isPartialRev && (
+                          <span className="text-[11px] font-bold bg-amber-500/25 text-amber-200 px-2 py-0.5 rounded border border-amber-500/40">
+                            يوجد {unrevCount} كود لم يفتحه العميل بعد
+                          </span>
+                        )}
+
+                        {revealInfo.count > 0 && (
+                          <span className="text-[11px] font-mono font-bold bg-black/40 px-2 py-0.5 rounded text-cyan-200 border border-white/10">
+                            مرات الكشف: {revealInfo.count}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-xs mt-1.5 leading-relaxed text-cyan-100/85">
+                        {isAllRev ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span>قام العميل بكشف واستلام جميع الأكواد عبر الرابط بنجاح.</span>
+                            {revealInfo.revealed_at && (
+                              <span className="text-emerald-300 font-mono" dir="ltr">
+                                أول فتح: {formatOrderTime(revealInfo.revealed_at)}
+                              </span>
+                            )}
+                          </div>
+                        ) : isPartialRev ? (
+                          <span>
+                            العميل كشف بعض الأكواد فقط، بينما لا تزال بقية الأكواد مقفلة ومحمية. يمكنك رؤية وقت وتاريخ و IP كشف كل كود بشكل مستقل في بطاقات الأكواد أدناه.
+                          </span>
+                        ) : total > 0 ? (
+                          <span>
+                            محمي: الأكواد لا تزال مشفرة ومقفلة. لا يتم تسجيل الكشف إلا عندما يوافق العميل على الشروط وينقر على إظهار الكود من الرابط.
+                          </span>
+                        ) : (
+                          <span>أضف الأكواد بالأسفل ثم سلّم الطلب لإتاحة الرابط للعميل.</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={refreshRevealStatus}
+                    disabled={revealInfo.loading}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/50 hover:bg-black/70 border border-cyan-500/30 text-cyan-300 hover:text-cyan-200 text-xs font-bold transition-all shrink-0 cursor-pointer shadow-sm"
+                    title="تحديث حالة فتح الأكواد مباشرة من قاعدة البيانات"
+                  >
+                    <RefreshCw size={13} className={revealInfo.loading ? "animate-spin text-cyan-400" : ""} />
+                    <span>{revealInfo.loading ? "جارٍ التحقق..." : "تحديث حالة الأكواد"}</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           <SecurityBlock order={order} />
 
@@ -1181,27 +1317,6 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             </div>
             {codes.length === 0 && <div className="text-xs text-cyan-100/50 text-center py-3">لا يوجد بيانات تسليم — أضف كود أو حساب أو تعبئة</div>}
             <div>
-              {codes.length > 0 && (
-                <div className="flex items-center justify-between gap-2 p-2.5 mb-3 rounded-lg bg-black/40 border border-white/10 text-xs flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-cyan-200">إحصائية كشف الأكواد:</span>
-                    <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
-                      codes.filter((cd) => Boolean(cd.revealed_at)).length === codes.length
-                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                        : codes.some((cd) => Boolean(cd.revealed_at))
-                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                        : "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                    }`}>
-                      تم كشف {codes.filter((cd) => Boolean(cd.revealed_at)).length} من أصل {codes.length} كود
-                    </span>
-                  </div>
-                  {codes.some((cd) => !cd.revealed_at) && (
-                    <span className="text-[10.5px] text-amber-300/80">
-                      يوجد {codes.filter((cd) => !cd.revealed_at).length} كود لم يفتحه العميل بعد
-                    </span>
-                  )}
-                </div>
-              )}
               {codes.map((c, i) => {
                 const kind = c.kind || "code";
                 const isAccount = kind === "account";
@@ -1213,12 +1328,12 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                         {isTopup ? "تعبئة" : isAccount ? "حساب" : "كود"}
                       </span>
                       {c.revealed_at ? (
-                        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 rounded shrink-0" title={`تم الكشف بتاريخ ${formatOrderFullDateTime(c.revealed_at)}`}>
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 rounded shrink-0">
                           <CheckCircle2 size={12} className="text-emerald-400" />
-                          <span>مكشوف: {formatOrderTime(c.revealed_at)}</span>
+                          <span>مكشوف ✓</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-amber-300/90 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded shrink-0">
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-amber-300/90 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded shrink-0">
                           <Lock size={11} className="text-amber-400" />
                           <span>لم يُكشف بعد</span>
                         </span>
@@ -1299,8 +1414,91 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                         )}
                       </div>
                     )}
-                  </div>
 
+                    {/* Per-Code Detailed Reveal Box */}
+                    {c.revealed_at ? (
+                      <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-emerald-950/80 via-emerald-900/40 to-black/60 border border-emerald-500/35 text-xs shadow-md">
+                        <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-emerald-500/20">
+                          <div className="flex items-center gap-2 font-extrabold text-emerald-300">
+                            <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
+                            <span>تم فتح وكشف هذا الكود من قِبل العميل</span>
+                            {(c.reveal_count || 1) > 1 && (
+                              <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-emerald-500/25 border border-emerald-500/40 rounded text-emerald-200">
+                                كُشف {c.reveal_count} مرات
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10.5px] font-bold text-emerald-300/90 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded">
+                            كود #{i + 1}
+                          </span>
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 gap-2 mt-2.5">
+                          {/* Date & Time */}
+                          <div className="flex items-start gap-2.5 bg-black/40 p-2.5 rounded-lg border border-emerald-500/20">
+                            <div className="w-7 h-7 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                              <Calendar size={14} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[10.5px] text-cyan-200/70 font-semibold">تاريخ ووقت الكشف بالزبط:</span>
+                              <span className="font-extrabold text-white text-xs font-mono mt-0.5" dir="ltr">
+                                {formatRevealDateTime(c.revealed_at).full}
+                              </span>
+                              <span className="text-[10px] text-emerald-300/80 mt-0.5">
+                                الساعة: {formatRevealDateTime(c.revealed_at).time}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* IP & Location */}
+                          <div className="flex items-start gap-2.5 bg-black/40 p-2.5 rounded-lg border border-emerald-500/20">
+                            <div className="w-7 h-7 rounded-md bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 mt-0.5">
+                              <Globe size={14} />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-[10.5px] text-cyan-200/70 font-semibold">عنوان IP للجهاز الذي فتح الكود:</span>
+                              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                <span className="font-extrabold font-mono text-cyan-200 text-xs tracking-wider bg-black/50 px-2 py-0.5 rounded border border-cyan-500/30" dir="ltr">
+                                  {c.revealed_ip || (order as any).client_ip || "127.0.0.1"}
+                                </span>
+                                {(c.revealed_country || c.revealed_city) && (
+                                  <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/35">
+                                    {[c.revealed_country, c.revealed_city].filter(Boolean).join(" - ")}
+                                  </span>
+                                )}
+                              </div>
+                              {c.revealed_ua && (
+                                <span className="text-[9.5px] font-mono text-cyan-100/50 truncate mt-1 max-w-[260px]" dir="ltr" title={c.revealed_ua}>
+                                  {c.revealed_ua}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {c.last_revealed_at && c.last_revealed_at !== c.revealed_at && (
+                          <div className="mt-2 pt-2 border-t border-emerald-500/15 flex items-center gap-2 text-[10.5px] text-cyan-200/70 flex-wrap font-mono">
+                            <Clock size={12} className="text-cyan-400 shrink-0" />
+                            <span>آخر فتح مسجل لهذا الكود:</span>
+                            <strong className="text-white" dir="ltr">{formatRevealDateTime(c.last_revealed_at).full}</strong>
+                            {c.last_revealed_ip && (
+                              <span>(IP: <strong className="text-cyan-200" dir="ltr">{c.last_revealed_ip}</strong>)</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-2.5 p-2.5 rounded-xl bg-amber-950/20 border border-amber-500/20 text-xs flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 text-amber-300/90 font-bold text-[11px]">
+                          <Lock size={13} className="text-amber-400 shrink-0" />
+                          <span>هذا الكود محمي ومقفل — لم يقم العميل بكشفه عبر الرابط حتى الآن</span>
+                        </div>
+                        <span className="text-[10px] text-amber-300/60 font-mono bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                          كود #{i + 1} لم يُكشف بعد
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>

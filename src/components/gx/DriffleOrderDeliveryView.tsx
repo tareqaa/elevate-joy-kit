@@ -262,6 +262,8 @@ export type DeliveryCode = {
   password?: string;
   region?: string;
   extra?: string;
+  revealed_at?: string | null;
+  revealed_ip?: string | null;
 };
 
 
@@ -1779,13 +1781,9 @@ export function DriffleOrderDeliveryView({
                               </>
                             )}
                           </button>
-                          {revealedDate ? (
+                          {revealedDate && (
                             <span style={{ fontSize: "11px", color: "#34d399", fontWeight: 700 }}>
                               ✓ {isAr ? "تم الكشف:" : "Revealed:"} {new Date(revealedDate).toLocaleDateString(isAr ? "ar-EG" : "en-US", { month: "numeric", day: "numeric" })}
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: "11px", color: "#fbbf24", fontWeight: 700 }}>
-                              🔒 {isAr ? "لم يتم الكشف بعد" : "Not yet revealed"}
                             </span>
                           )}
                         </div>
@@ -2408,8 +2406,10 @@ export function DriffleOrderDeliveryView({
 
                         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                           {activeUnit.siblingUnits.map((sib) => {
+                            const isSibRevealed = Boolean(sib.unitIndex === selectedItemIdx || sib.code?.revealed_at || revealedKeys[sib.unitIndex]);
                             const isSibCurrent = sib.unitIndex === selectedItemIdx;
-                            const sibCodeVal = sib.code?.value || sib.code?.extra || sib.code?.password || "";
+                            const rawCodeVal = sib.code?.value || sib.code?.extra || sib.code?.password || "";
+                            const sibCodeVal = isSibRevealed ? rawCodeVal : "•••• - •••• - •••• - ••••";
                             const sibKeyId = `sib-code-${sib.unitIndex}`;
 
                             return (
@@ -2449,7 +2449,7 @@ export function DriffleOrderDeliveryView({
                                       fontFamily: "'Fira Code', 'Cascadia Code', monospace",
                                       fontSize: "13px",
                                       fontWeight: 700,
-                                      color: sibCodeVal ? (isSibCurrent ? accentCyan : textPrimary) : textMuted,
+                                      color: isSibRevealed && sibCodeVal ? (isSibCurrent ? accentCyan : textPrimary) : textMuted,
                                       direction: "ltr",
                                       unicodeBidi: "isolate",
                                       overflow: "hidden",
@@ -2457,14 +2457,14 @@ export function DriffleOrderDeliveryView({
                                       whiteSpace: "nowrap",
                                     }}
                                   >
-                                    {sibCodeVal || (isAr ? "قيد التجهيز..." : "Pending...")}
+                                    {isSibRevealed ? (sibCodeVal || (isAr ? "قيد التجهيز..." : "Pending...")) : (isAr ? "🔒 محمي حتى الكشف" : "🔒 Locked until reveal")}
                                   </span>
                                 </div>
 
-                                {sibCodeVal ? (
+                                {isSibRevealed && rawCodeVal ? (
                                   <button
                                     type="button"
-                                    onClick={() => onCopyKey(sibCodeVal, sibKeyId)}
+                                    onClick={() => onCopyKey(rawCodeVal, sibKeyId)}
                                     style={{
                                       display: "inline-flex",
                                       alignItems: "center",

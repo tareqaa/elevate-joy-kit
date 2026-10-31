@@ -93,15 +93,6 @@ function OrderDetailsPage() {
       setCopiedKey(id);
       toast.success(isAr ? "تم نسخ الكود بنجاح!" : "Copied to clipboard!");
       setTimeout(() => setCopiedKey(null), 2500);
-
-      if (order_token || order?.order_number) {
-        markCodeRevealedFn({
-          data: {
-            orderToken: order_token ? order_token.trim() : undefined,
-            orderNumber: order?.order_number ? String(order.order_number).trim() : undefined,
-          },
-        }).catch(() => {});
-      }
     } catch {
       toast.error(isAr ? "فشل النسخ تلقائياً" : "Failed to copy");
     }
@@ -113,13 +104,25 @@ function OrderDetailsPage() {
     const tok = typeof order_token === "string" ? order_token.trim() : undefined;
     if (tok || num) {
       try {
-        await markCodeRevealedFn({
+        const res: any = await markCodeRevealedFn({
           data: {
             orderToken: tok,
             orderNumber: num,
             codeIndex: idx,
           },
         });
+        if (res && res.codes) {
+          setOrder((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              delivery_data: {
+                ...(prev.delivery_data || {}),
+                codes: res.codes,
+              },
+            };
+          });
+        }
       } catch {}
     }
   };
