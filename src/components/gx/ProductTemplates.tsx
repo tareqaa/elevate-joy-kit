@@ -273,27 +273,7 @@ function VariantCard({
           : undefined
       }
     >
-      <div className="prod-thumb" style={{ background: theme?.bg || p.thumbBg || undefined, position: "relative" }}>
-        {isOutOfStock && (
-          <div
-            style={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              backgroundColor: "rgba(239, 68, 68, 0.92)",
-              color: "#ffffff",
-              fontSize: 10.5,
-              fontWeight: 800,
-              padding: "2px 7px",
-              borderRadius: 6,
-              zIndex: 3,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-              letterSpacing: 0.2,
-            }}
-          >
-            {lang === "en" ? "Sold Out" : "نفدت الكمية"}
-          </div>
-        )}
+      <div className="prod-thumb" style={{ background: theme?.bg || p.thumbBg || undefined }}>
         {thumbContent}
       </div>
       <div className="prod-body">
