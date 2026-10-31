@@ -51,21 +51,42 @@ export function resolveSafeClientIp(
   getHeader: (name: string) => string | undefined | null
 ): string {
   // 1. Cloudflare edge header (authoritative on Cloudflare runtime)
-  const cfIp = getHeader("cf-connecting-ip")?.trim();
+  const cfIp = (getHeader("cf-connecting-ip") || getHeader("CF-Connecting-IP"))?.trim();
   if (cfIp && isValidIp(cfIp)) {
     return normalizeIp(cfIp);
   }
 
-  // 2. X-Real-IP (set by many reverse proxies for the direct client)
-  const realIp = getHeader("x-real-ip")?.trim();
+  // 2. True-Client-IP (Cloudflare Enterprise / Akamai)
+  const trueClientIp = (getHeader("true-client-ip") || getHeader("True-Client-IP"))?.trim();
+  if (trueClientIp && isValidIp(trueClientIp)) {
+    return normalizeIp(trueClientIp);
+  }
+
+  // 3. Vercel client IP header (authoritative on Vercel Edge / Serverless)
+  const vercelIp = (getHeader("x-vercel-forwarded-for") || getHeader("X-Vercel-Forwarded-For"))?.trim();
+  if (vercelIp) {
+    const hops = vercelIp.split(",").map((h) => h.trim()).filter(Boolean);
+    for (const cand of hops) {
+      if (isValidIp(cand)) return normalizeIp(cand);
+    }
+  }
+
+  // 4. X-Real-IP (set by reverse proxies for the direct client)
+  const realIp = (getHeader("x-real-ip") || getHeader("X-Real-IP"))?.trim();
   if (realIp && isValidIp(realIp)) {
     return normalizeIp(realIp);
   }
 
-  // 3. X-Forwarded-For:
+  // 5. X-Client-IP
+  const xClientIp = (getHeader("x-client-ip") || getHeader("X-Client-IP"))?.trim();
+  if (xClientIp && isValidIp(xClientIp)) {
+    return normalizeIp(xClientIp);
+  }
+
+  // 6. X-Forwarded-For:
   // Proxies append to the end. The right-most entries represent the most trusted hops.
   // We inspect from right to left to find the nearest valid IP hop.
-  const xForwardedFor = getHeader("x-forwarded-for");
+  const xForwardedFor = getHeader("x-forwarded-for") || getHeader("X-Forwarded-For");
   if (xForwardedFor) {
     const hops = xForwardedFor.split(",").map((h) => h.trim()).filter(Boolean);
     for (let i = hops.length - 1; i >= 0; i--) {

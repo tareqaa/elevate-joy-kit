@@ -1236,76 +1236,35 @@ export const getOrderByTokenFn = createServerFn({ method: "POST" })
       }
 
       // --- Security & Anti-Fraud: IP Address Verification ---
-      // Check if caller is authenticated as the order owner or admin
-      let callerUser: { id: string; email?: string } | null = null;
-      const authHeader = getRequestHeader("authorization");
-      const token = data.accessToken || (authHeader?.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : null);
-      if (token) {
-        try {
-          const { data: userData } = await getPublicClient().auth.getUser(token);
-          if (userData?.user) {
-            callerUser = {
-              id: userData.user.id,
-              email: (userData.user.email || "").toLowerCase().trim(),
-            };
-          }
-        } catch {
-          // ignore invalid token
-        }
+      let currentIp: string | null = null;
+      try {
+        currentIp = resolveSafeClientIp(getRequestHeader);
+      } catch {
+        currentIp = null;
       }
 
-      let isOwnerOrAdmin = false;
-      if (callerUser) {
-        if (order.user_id && callerUser.id === order.user_id) {
-          isOwnerOrAdmin = true;
-        } else if (
-          callerUser.email &&
-          (callerUser.email === (order.customer_email || "").toLowerCase().trim() ||
-           callerUser.email === (verified.email || "").toLowerCase().trim())
-        ) {
-          isOwnerOrAdmin = true;
-        } else if (token) {
-          try {
-            const userClient = getUserScopedClient(token);
-            const { data: isAdmin } = await (userClient as any).rpc("has_role", {
-              _user_id: callerUser.id,
-              _role: "admin",
-            });
-            if (isAdmin === true) isOwnerOrAdmin = true;
-          } catch {}
-        }
-      }
+      const purchaseIp = (order.client_ip || "").trim();
+      const normPurchase = purchaseIp ? normalizeIp(purchaseIp) : "";
+      const normCurrent = currentIp ? normalizeIp(currentIp) : "";
 
-      // If caller is NOT authenticated as owner or admin, enforce purchase IP check:
-      if (!isOwnerOrAdmin) {
-        let currentIp: string | null = null;
-        try {
-          currentIp = resolveSafeClientIp(getRequestHeader);
-        } catch {
-          currentIp = null;
-        }
-
-        const purchaseIp = (order.client_ip || "").trim();
-        const normPurchase = purchaseIp ? normalizeIp(purchaseIp) : "";
-        const normCurrent = currentIp ? normalizeIp(currentIp) : "";
-
-        // If the order has a recorded purchase IP, and current visitor IP differs:
-        if (normPurchase && normCurrent && normPurchase !== normCurrent) {
-          return {
-            ok: true,
-            ipMismatch: true,
-            purchaseIp,
-            currentIp,
-            customerEmail: order.customer_email || verified.email || null,
-            orderNumber: order.order_number,
-            order: {
-              ...maskOrderForPublic(order),
-              delivery_data: null, // Zero sensitive keys/codes returned!
-            },
-            verifiedEmail: verified.email,
-            isLocked: true,
-          };
-        }
+      // Strict Rule: If the order has a recorded purchase IP, and current visitor IP differs:
+      // The secret email token link NEVER reveals the codes directly from an unknown/different IP.
+      // The visitor must follow the 4 steps (log in with password) and view via "My Purchases" (/account).
+      if (normPurchase && normCurrent && normPurchase !== normCurrent) {
+        return {
+          ok: true,
+          ipMismatch: true,
+          purchaseIp,
+          currentIp,
+          customerEmail: order.customer_email || verified.email || null,
+          orderNumber: order.order_number,
+          order: {
+            ...maskOrderForPublic(order),
+            delivery_data: null, // Zero sensitive keys/codes returned!
+          },
+          verifiedEmail: verified.email,
+          isLocked: true,
+        };
       }
 
       return { ok: true, ipMismatch: false, order, verifiedEmail: verified.email, isLocked: false };
@@ -1411,8 +1370,10 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
         (await isCallerOwnerOrAdmin(order.user_id))
       );
 
-      // If visitor has valid token but is not authenticated as owner/admin, check IP:
-      if (hasValidToken && !isOwner && !isAdminCaller) {
+      // Security & Anti-Fraud: IP Address Verification for secret token links
+      // The secret token link NEVER reveals the codes directly from an unknown/different IP.
+      // The visitor must log in and view via "My Purchases" (/account).
+      if (hasValidToken) {
         let currentIp: string | null = null;
         try {
           currentIp = resolveSafeClientIp(getRequestHeader);
@@ -1432,7 +1393,10 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
             currentIp,
             customerEmail: order.customer_email || tokenCheck?.email || null,
             orderNumber: order.order_number,
-            order: maskOrderForPublic(order),
+            order: {
+              ...maskOrderForPublic(order),
+              delivery_data: null, // Zero sensitive keys/codes returned!
+            },
             isLocked: true,
           };
         }
@@ -1579,20 +1543,17 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
         return { ok: false };
       }
 
-      // If token was used without active owner/admin session, enforce purchase IP matching:
+      // If token was used, strictly enforce purchase IP matching (anti-fraud protection):
       if (tokenAuthorized) {
-        const isOwnerOrAdmin = await isCallerOwnerOrAdmin(current.user_id);
-        if (!isOwnerOrAdmin) {
-          const purchaseIp = (current.client_ip || "").trim();
-          const normPurchase = purchaseIp ? normalizeIp(purchaseIp) : "";
-          const normCurrent = ip ? normalizeIp(ip) : "";
-          if (normPurchase && normCurrent && normPurchase !== normCurrent) {
-            return {
-              ok: false,
-              ipMismatch: true,
-              error: "عنوان IP الحالي غير مطابق لعنوان الشراء. يرجى تسجيل الدخول بنفس الحساب للوصول إلى طلبك.",
-            };
-          }
+        const purchaseIp = (current.client_ip || "").trim();
+        const normPurchase = purchaseIp ? normalizeIp(purchaseIp) : "";
+        const normCurrent = ip ? normalizeIp(ip) : "";
+        if (normPurchase && normCurrent && normPurchase !== normCurrent) {
+          return {
+            ok: false,
+            ipMismatch: true,
+            error: "عنوان IP الحالي غير مطابق لعنوان الشراء. يرجى تسجيل الدخول بنفس الحساب للوصول إلى طلبك من مشترياتي.",
+          };
         }
       }
 

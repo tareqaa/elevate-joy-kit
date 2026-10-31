@@ -33,6 +33,7 @@ export function OrderCompletedPage() {
   const [error, setError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [revealedKeys, setRevealedKeys] = useState<Record<number, boolean>>({});
+  const [isLocked, setIsLocked] = useState(false);
   const [ipMismatchInfo, setIpMismatchInfo] = useState<{
     mismatch: boolean;
     purchaseIp?: string | null;
@@ -76,8 +77,10 @@ export function OrderCompletedPage() {
             orderNumber: (res as any).orderNumber || (res as any).order?.order_number,
           });
           setOrder((res as any).order);
+          setIsLocked(true);
         } else {
           setIpMismatchInfo(null);
+          setIsLocked(Boolean((res as any).isLocked));
           setOrder((prev: any) => {
             if (!prev?.delivery_data?.codes || !res.order?.delivery_data?.codes) {
               return res.order;
@@ -209,6 +212,7 @@ export function OrderCompletedPage() {
         order={order}
         loading={loading}
         error={error}
+        isLocked={isLocked}
         orderToken={order_token}
         revealedKeys={revealedKeys}
         copiedKey={copiedKey}

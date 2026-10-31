@@ -1406,7 +1406,7 @@ export function DriffleOrderDeliveryView({
         {/* =========================================================
             MAIN CONTENT (WHEN LOADED & UNLOCKED)
            ========================================================= */}
-        {!loading && order && !isLocked && !isCancelledOrder && (
+        {!loading && order && !isLocked && !isCancelledOrder && !ipMismatchInfo?.mismatch && (
           <div style={{ display: "flex", flexDirection: "column", gap: "22px", width: "100%" }}>
             {/* ── PENDING PAYMENT ALERT BANNER (If order is incomplete) ── */}
             {order.status === "pending" && (

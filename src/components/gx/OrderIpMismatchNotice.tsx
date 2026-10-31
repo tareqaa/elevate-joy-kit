@@ -278,6 +278,27 @@ export function OrderIpMismatchNotice({
           paddingTop: "24px",
         }}
       >
+        <Link
+          to="/account"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "11px 22px",
+            borderRadius: "12px",
+            background: "linear-gradient(135deg, #00e5ff 0%, #0098d4 100%)",
+            color: "#07090e",
+            fontWeight: 800,
+            fontSize: "13.5px",
+            textDecoration: "none",
+            boxShadow: "0 4px 16px rgba(0, 229, 255, 0.3)",
+            transition: "transform 0.15s ease",
+          }}
+        >
+          <ShoppingBag size={16} />
+          <span>{isAr ? "الانتقال إلى مشترياتي" : "Go to My Purchases"}</span>
+        </Link>
+
         {onRefresh && (
           <button
             type="button"
@@ -286,20 +307,18 @@ export function OrderIpMismatchNotice({
               display: "inline-flex",
               alignItems: "center",
               gap: "8px",
-              padding: "11px 22px",
+              padding: "11px 20px",
               borderRadius: "12px",
-              background: "linear-gradient(135deg, #00e5ff 0%, #0098d4 100%)",
-              color: "#07090e",
-              fontWeight: 800,
-              fontSize: "13.5px",
-              border: "none",
+              backgroundColor: "rgba(255, 255, 255, 0.08)",
+              border: "1px solid rgba(255, 255, 255, 0.16)",
+              color: "#ffffff",
+              fontWeight: 700,
+              fontSize: "13px",
               cursor: "pointer",
-              boxShadow: "0 4px 16px rgba(0, 229, 255, 0.3)",
-              transition: "transform 0.15s ease",
             }}
           >
-            <RefreshCw size={15} />
-            <span>{isAr ? "🔄 لقد قمت بتسجيل الدخول، تحقق الآن" : "🔄 I have logged in, verify now"}</span>
+            <RefreshCw size={14} />
+            <span>{isAr ? "إعادة فحص الاتصال" : "Re-check Connection"}</span>
           </button>
         )}
 
@@ -313,15 +332,15 @@ export function OrderIpMismatchNotice({
             gap: "8px",
             padding: "11px 20px",
             borderRadius: "12px",
-            backgroundColor: "rgba(255, 255, 255, 0.05)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
-            color: "#ffffff",
+            backgroundColor: "rgba(255, 255, 255, 0.04)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            color: "#94a3b8",
             fontWeight: 700,
             fontSize: "13px",
             textDecoration: "none",
           }}
         >
-          <span>{isAr ? "تواصل مع الدعم الفني للمساعدة" : "Contact Support for Help"}</span>
+          <span>{isAr ? "تواصل مع الدعم الفني" : "Contact Support"}</span>
           <ExternalLink size={13} style={{ opacity: 0.7 }} />
         </a>
       </div>
