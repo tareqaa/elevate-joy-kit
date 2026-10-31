@@ -276,7 +276,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     }
 
     if (clean.includes("playstation") || cleanSlug.includes("playstation") || cleanSlug.includes("psn")) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/playstation-card.jpg`;
+      return `${CDN_ASSETS_BASE}/app/assets/img/playstation-store-card.jpg`;
     }
 
     if (clean.includes("steam") || cleanSlug.includes("steam")) {
@@ -313,7 +313,7 @@ export function sanitizeImageForEmail(url?: string | null, name?: string, slug?:
     cleanName.includes("سوني") ||
     cleanName.includes("psn")
   ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/playstation-card.jpg`;
+    return `${CDN_ASSETS_BASE}/app/assets/img/playstation-store-card.jpg`;
   }
 
   if (
@@ -1201,6 +1201,13 @@ export const getOrderByTokenFn = createServerFn({ method: "POST" })
       // Even with a valid cryptographic token, digital product delivery data (keys/codes/accounts)
       // must NEVER be revealed unless the order has actually been marked completed or delivered!
       const status = (order.status || "").toLowerCase();
+      if (status === "cancelled") {
+        return {
+          ok: false,
+          isCancelled: true,
+          error: "تم إلغاء هذا الطلب نهائياً من قبل إدارة المتجر. تم إيقاف وإلغاء صلاحية هذا الرابط تماماً.",
+        };
+      }
       const isDeliveredOrCompleted = status === "completed" || status === "delivered";
 
       if (!isDeliveredOrCompleted) {
@@ -1284,6 +1291,16 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
         return { ok: false, error: "لم يتم العثور على هذا الطلب" };
       }
 
+      const status = (order.status || "").toLowerCase();
+      const isAdminCaller = await isCallerAdmin();
+      if (status === "cancelled" && !isAdminCaller) {
+        return {
+          ok: false,
+          isCancelled: true,
+          error: "تم إلغاء هذا الطلب نهائياً من قبل إدارة المتجر. تم إيقاف وإلغاء صلاحية هذا الرابط تماماً.",
+        };
+      }
+
       // 2. Authorize if cryptographically signed token is valid, or if logged-in user is owner or admin
       const isAuthorized = Boolean(hasValidToken) || (await isCallerOwnerOrAdmin(order.user_id));
 
@@ -1325,6 +1342,21 @@ function maskOrderForPublic(order: Record<string, any>): Record<string, any> {
 }
 
 /** True when the verified signed-in caller owns the order or is an admin. */
+async function isCallerAdmin(): Promise<boolean> {
+  try {
+    const caller = await getVerifiedCaller();
+    if (!caller?.userId) return false;
+    const userClient = getUserScopedClient(caller.token);
+    const { data: isAdmin } = await (userClient as any).rpc("has_role", {
+      _user_id: caller.userId,
+      _role: "admin",
+    });
+    return isAdmin === true;
+  } catch {
+    return false;
+  }
+}
+
 async function isCallerOwnerOrAdmin(orderUserId: string | null | undefined): Promise<boolean> {
   try {
     const caller = await getVerifiedCaller();
@@ -1352,6 +1384,7 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
       .object({
         orderToken: z.string().trim().max(4096).optional(),
         orderNumber: z.string().trim().max(64).optional(),
+        codeIndex: z.number().int().min(0).optional(),
       })
       .refine((d) => Boolean(d.orderToken || d.orderNumber), {
         message: "orderToken or orderNumber required",
@@ -1388,38 +1421,58 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
         }
       }
 
-      // Primary: call SECURITY DEFINER RPC to bypass RLS update restriction
-      try {
-        const { data: rpcRes, error: rpcErr } = await (supabase.rpc as any)("mark_order_code_revealed", {
-          p_order_number: num,
-        });
-        if (!rpcErr && rpcRes && rpcRes.ok) {
-          return { ok: true, revealed_at: rpcRes.revealed_at, count: rpcRes.reveal_count };
-        }
-      } catch {}
-
-      // Fallback: direct update
       const now = new Date().toISOString();
       const { data: current } = await (supabase as any)
         .from("orders")
-        .select("id, codes_revealed_at, codes_reveal_count")
+        .select("id, delivery_data, codes_revealed_at, codes_reveal_count")
         .eq("order_number", num)
         .maybeSingle();
 
-      if (current) {
-        await (supabase as any)
-          .from("orders")
-          .update({
-            codes_revealed_at: current.codes_revealed_at || now,
-            codes_last_revealed_at: now,
-            codes_reveal_count: (current.codes_reveal_count || 0) + 1,
-          })
-          .eq("id", current.id);
+      if (!current) {
+        return { ok: false };
       }
 
-      return { ok: true, revealed_at: current?.codes_revealed_at || now };
-    } catch {
+      const deliveryData = (current.delivery_data && typeof current.delivery_data === "object")
+        ? { ...(current.delivery_data as Record<string, any>) }
+        : {};
+      const codes = Array.isArray(deliveryData.codes) ? [...deliveryData.codes] : [];
+
+      if (typeof data.codeIndex === "number" && codes[data.codeIndex]) {
+        if (!codes[data.codeIndex].revealed_at) {
+          codes[data.codeIndex] = {
+            ...codes[data.codeIndex],
+            revealed_at: now,
+          };
+          deliveryData.codes = codes;
+        }
+      } else if (data.codeIndex === undefined) {
+        // If no codeIndex specified, stamp all unrevealed codes
+        codes.forEach((c: any, idx: number) => {
+          if (!c.revealed_at) {
+            codes[idx] = { ...c, revealed_at: now };
+          }
+        });
+        deliveryData.codes = codes;
+      }
+
+      await (supabase as any)
+        .from("orders")
+        .update({
+          delivery_data: deliveryData,
+          codes_revealed_at: current.codes_revealed_at || now,
+          codes_last_revealed_at: now,
+          codes_reveal_count: (current.codes_reveal_count || 0) + 1,
+        })
+        .eq("id", current.id);
+
+      return {
+        ok: true,
+        codeIndex: data.codeIndex,
+        revealed_at: now,
+        codes: deliveryData.codes,
+      };
+    } catch (err: any) {
+      console.error("markCodeRevealedFn error:", err);
       return { ok: false };
     }
   });
-

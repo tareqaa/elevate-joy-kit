@@ -162,6 +162,10 @@ export const CANONICAL_VARIANT_IMAGES: Record<string, string> = {
   "gemini-18": "/app/assets/img/gemini-logo.png",
   "gemini-plus-3m": "/app/assets/img/gemini-logo.png",
   "gemini-pro-3m": "/app/assets/img/gemini-logo.png",
+
+  // PlayStation (Unified Official Store Design)
+  "playstation": "/app/assets/img/playstation-store-card.jpg",
+  "psn": "/app/assets/img/playstation-store-card.jpg",
 };
 
 export interface ResolveImageOptions {
@@ -342,7 +346,7 @@ export function resolveProductImage(options: ResolveImageOptions): string {
     cleanName.includes("سوني") ||
     cleanName.includes("psn")
   ) {
-    return "/app/assets/img/playstation-card.jpg";
+    return "/app/assets/img/playstation-store-card.jpg";
   }
 
   // 10. Direct match by slug in canonical registry

@@ -501,6 +501,31 @@ function OrdersAdmin() {
                               </span>
                             );
                           }
+                          const revCount = rowCodes.filter((c: any) => Boolean(c.revealed_at)).length;
+                          if (rowCodes.length > 0) {
+                            if (revCount === rowCodes.length) {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/35 whitespace-nowrap shadow-sm">
+                                  <CheckCircle2 size={11} className="text-emerald-400" />
+                                  <span>كُشفت كلها ({rowCodes.length}/{rowCodes.length})</span>
+                                </span>
+                              );
+                            }
+                            if (revCount > 0) {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-300 bg-cyan-500/15 px-2 py-0.5 rounded-md border border-cyan-500/35 whitespace-nowrap shadow-sm">
+                                  <Eye size={11} className="text-cyan-400" />
+                                  <span>مكشوف {revCount} من {rowCodes.length}</span>
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300/80 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 whitespace-nowrap">
+                                <Lock size={11} className="text-amber-400/80" />
+                                <span>0/{rowCodes.length} لم يُكشف</span>
+                              </span>
+                            );
+                          }
                           return (
                             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300/80 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 whitespace-nowrap">
                               <Lock size={11} className="text-amber-400/80" />
@@ -585,7 +610,7 @@ function QuickFulfill({ onPick }: { onPick: (o: OrderWithEmail) => void }) {
 }
 
 type CodeKind = "code" | "account" | "topup";
-type DeliveryCode = { label: string; value: string; email?: string; password?: string; kind?: CodeKind; region?: string; extra?: string };
+type DeliveryCode = { label: string; value: string; email?: string; password?: string; kind?: CodeKind; region?: string; extra?: string; revealed_at?: string | null };
 
 function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClose: () => void; onSave: (p: Record<string, unknown>) => void }) {
   const [status, setStatus] = useState(order.status);
@@ -605,6 +630,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
         password: c.password || "",
         extra: (c as { extra?: string }).extra || (c.kind === "account" && c.value ? c.value : "") || "",
         region: c.region || "",
+        revealed_at: (c as any).revealed_at ?? null,
       }));
     }
     const seeded: DeliveryCode[] = [];
@@ -729,6 +755,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
         extra,
         // Keys always carry a region; accounts and top-ups never do.
         region: kind === "code" ? ((c.region || "").trim() || "Global") : "",
+        revealed_at: c.revealed_at ?? null,
       };
     }).filter((c) => c.label || c.value || c.email || c.password || c.extra);
 
@@ -1154,17 +1181,49 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             </div>
             {codes.length === 0 && <div className="text-xs text-cyan-100/50 text-center py-3">لا يوجد بيانات تسليم — أضف كود أو حساب أو تعبئة</div>}
             <div>
+              {codes.length > 0 && (
+                <div className="flex items-center justify-between gap-2 p-2.5 mb-3 rounded-lg bg-black/40 border border-white/10 text-xs flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-cyan-200">إحصائية كشف الأكواد:</span>
+                    <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
+                      codes.filter((cd) => Boolean(cd.revealed_at)).length === codes.length
+                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                        : codes.some((cd) => Boolean(cd.revealed_at))
+                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+                        : "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                    }`}>
+                      تم كشف {codes.filter((cd) => Boolean(cd.revealed_at)).length} من أصل {codes.length} كود
+                    </span>
+                  </div>
+                  {codes.some((cd) => !cd.revealed_at) && (
+                    <span className="text-[10.5px] text-amber-300/80">
+                      يوجد {codes.filter((cd) => !cd.revealed_at).length} كود لم يفتحه العميل بعد
+                    </span>
+                  )}
+                </div>
+              )}
               {codes.map((c, i) => {
                 const kind = c.kind || "code";
                 const isAccount = kind === "account";
                 const isTopup = kind === "topup";
                 return (
                   <div key={i} className="gx-od-code">
-                    <div className="flex gap-2 items-center mb-2">
+                    <div className="flex gap-2 items-center mb-2 flex-wrap">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isTopup ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : isAccount ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"}`}>
                         {isTopup ? "تعبئة" : isAccount ? "حساب" : "كود"}
                       </span>
-                      <Input placeholder={isTopup ? "الوصف (مثلاً: شحن 1000 UC · اشتراك شهر)" : "الوصف (مثلاً: كود PS 25$ / حساب Netflix)"} value={c.label} onChange={(e) => updateCode(i, { label: e.target.value })} className="gx-adm-input flex-1 h-9 text-sm" />
+                      {c.revealed_at ? (
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 rounded shrink-0" title={`تم الكشف بتاريخ ${formatOrderFullDateTime(c.revealed_at)}`}>
+                          <CheckCircle2 size={12} className="text-emerald-400" />
+                          <span>مكشوف: {formatOrderTime(c.revealed_at)}</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-amber-300/90 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded shrink-0">
+                          <Lock size={11} className="text-amber-400" />
+                          <span>لم يُكشف بعد</span>
+                        </span>
+                      )}
+                      <Input placeholder={isTopup ? "الوصف (مثلاً: شحن 1000 UC · اشتراك شهر)" : "الوصف (مثلاً: كود PS 25$ / حساب Netflix)"} value={c.label} onChange={(e) => updateCode(i, { label: e.target.value })} className="gx-adm-input flex-1 h-9 text-sm min-w-[200px]" />
                       <button type="button" onClick={() => removeCode(i)} className="text-rose-400 hover:text-rose-300 p-1.5 rounded hover:bg-rose-500/10" title="حذف">
                         <XCircle size={16} />
                       </button>

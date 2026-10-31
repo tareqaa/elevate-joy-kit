@@ -52,9 +52,14 @@ function OrderDetailsPage() {
         if (res.ok && res.order) {
           setOrder(res.order);
           setIsLocked(Boolean(res.isLocked));
-          if (res.order.codes_revealed_at) {
-            const map: Record<number, boolean> = {}; for (let k = 0; k < 100; k++) map[k] = true; setRevealedKeys(map);
+          const delCodes = (res.order.delivery_data && (res.order.delivery_data as any).codes) || [];
+          const map: Record<number, boolean> = {};
+          if (Array.isArray(delCodes)) {
+            delCodes.forEach((c: any, i: number) => {
+              if (c.revealed_at) map[i] = true;
+            });
           }
+          setRevealedKeys(map);
         } else {
           setError(res.error || (isAr ? "لم يتم العثور على هذا الطلب" : "Order not found"));
         }
@@ -105,25 +110,17 @@ function OrderDetailsPage() {
   const handleRevealKey = async (idx: number) => {
     setRevealedKeys((prev) => ({ ...prev, [idx]: true }));
     const num = order?.order_number ? String(order.order_number).trim() : undefined;
-    if (num) {
-      try {
-        await (supabase.rpc as any)("mark_order_code_revealed", {
-          p_order_number: num,
-          p_order_id: order?.id || null,
-        });
-      } catch {}
-    }
-    if (order_token || num) {
+    const tok = typeof order_token === "string" ? order_token.trim() : undefined;
+    if (tok || num) {
       try {
         await markCodeRevealedFn({
           data: {
-            orderToken: order_token ? order_token.trim() : undefined,
+            orderToken: tok,
             orderNumber: num,
+            codeIndex: idx,
           },
         });
-      } catch {
-        // silent
-      }
+      } catch {}
     }
   };
 

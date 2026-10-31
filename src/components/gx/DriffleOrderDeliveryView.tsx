@@ -140,7 +140,7 @@ export function getProductCoverImage(
     cleanName.includes("بلايستيشن") ||
     cleanName.includes("سوني")
   ) {
-    return "/app/assets/img/playstation-card.jpg";
+    return "/app/assets/img/playstation-store-card.jpg";
   }
   if (
     cleanSlug.includes("xbox") ||
@@ -635,6 +635,11 @@ export function DriffleOrderDeliveryView({
   // Product images database cache
   const [dbImageMap, setDbImageMap] = useState<Record<string, string>>({});
 
+  const isCancelledOrder = Boolean(
+    (order?.status || "").toLowerCase() === "cancelled" ||
+    (error && (error.includes("إلغاء") || error.includes("cancelled") || error.includes("ملغي")))
+  );
+
   const deliveryCodes: DeliveryCode[] = useMemo(() => {
     if (!order?.delivery_data || typeof order.delivery_data !== "object") return [];
     const codes = (order.delivery_data as any).codes;
@@ -647,116 +652,84 @@ export function DriffleOrderDeliveryView({
   }, [order]);
 
   const deliverableUnits = useMemo<DeliverableUnit[]>(() => {
-    const units: DeliverableUnit[] = [];
-    const codesPool = [...deliveryCodes];
+    if (deliveryCodes.length > 0) {
+      return deliveryCodes.map((c, idx) => {
+        const matchingItem = items.find((it: any) => {
+          const itName = (it.name || "").trim().toLowerCase();
+          const cLbl = (c.label || "").trim().toLowerCase();
+          return itName && (cLbl.includes(itName) || itName.includes(cLbl.replace(/\s*\(\d+\/\d+\)$/, "")));
+        }) || (items[idx] || items[0] || null);
 
+        const isThisTopup = Boolean(c?.kind === "topup" || matchingItem?.delivery_type === "topup");
+        const isThisAccount = !isThisTopup && Boolean(
+          c?.kind === "account" || (c && c.email && !c.value) || matchingItem?.delivery_type === "account"
+        );
+
+        // Respect admin-edited title: code.label comes first!
+        const unitLabel = (c.label && c.label.trim()) || matchingItem?.name || (isAr ? "منتج رقمي" : "Digital Product");
+
+        const coverImg = getProductCoverImage(
+          matchingItem?.image,
+          unitLabel || matchingItem?.name,
+          matchingItem?.product_slug || matchingItem?.slug,
+          dbImageMap
+        );
+
+        const regionBadge = formatFullRegion(
+          {
+            region: c.region || matchingItem?.region,
+            cartId: matchingItem?.cartId || matchingItem?.id,
+            name: unitLabel,
+            slug: matchingItem?.product_slug || matchingItem?.slug,
+          },
+          isAr ? "ar" : "en",
+          { withDetails: false }
+        );
+
+        return {
+          unitIndex: idx,
+          item: matchingItem || { name: unitLabel },
+          itemIndex: idx,
+          unitInItem: 1,
+          totalUnitsInItem: 1,
+          unitLabel,
+          code: c,
+          coverImg,
+          regionBadge,
+          isAccount: isThisAccount,
+          isTopup: isThisTopup,
+          platform: matchingItem?.platform,
+          siblingUnits: [{ unitIndex: idx, unitInItem: 1, code: c }],
+        };
+      });
+    }
+
+    const units: DeliverableUnit[] = [];
     if (items && items.length > 0) {
       items.forEach((it: any, itemIdx: number) => {
         const qty = Math.max(1, Number(it.qty ?? it.quantity) || 1);
         const coverImg = getProductCoverImage(it.image, it.name, it.product_slug || it.slug, dbImageMap);
-        const itemName = (it.name || "").trim().toLowerCase();
-
-        const itemCodes: (DeliveryCode | null)[] = [];
+        const regionBadge = formatFullRegion({ region: it.region, name: it.name }, isAr ? "ar" : "en");
         for (let k = 0; k < qty; k++) {
-          let matched: DeliveryCode | null = null;
-          if (itemName) {
-            const foundIdx = codesPool.findIndex((c) => {
-              const lbl = (c.label || "").trim().toLowerCase();
-              return Boolean(lbl && (lbl.includes(itemName) || itemName.includes(lbl.replace(/\s*\(\d+\/\d+\)$/, ""))));
-            });
-            if (foundIdx !== -1) {
-              matched = codesPool.splice(foundIdx, 1)[0];
-            }
-          }
-          if (!matched && codesPool.length > 0) {
-            matched = codesPool.shift() || null;
-          }
-          itemCodes.push(matched);
-        }
-
-        const startIndex = units.length;
-        const siblingUnitsRef: Array<{
-          unitIndex: number;
-          unitInItem: number;
-          code: DeliveryCode | null;
-        }> = [];
-
-        for (let k = 0; k < qty; k++) {
-          siblingUnitsRef.push({
-            unitIndex: startIndex + k,
-            unitInItem: k + 1,
-            code: itemCodes[k] || null,
-          });
-        }
-
-        for (let k = 0; k < qty; k++) {
-          const assignedCode = itemCodes[k] || null;
-          const isThisTopup = Boolean(
-            assignedCode?.kind === "topup" ||
-            it?.delivery_type === "topup"
-          );
-          const isThisAccount = !isThisTopup && Boolean(
-            assignedCode?.kind === "account" ||
-            (assignedCode && assignedCode.email && !assignedCode.value) ||
-            it?.delivery_type === "account"
-          );
-          const regionBadge = formatFullRegion(
-            {
-              region: assignedCode?.region || it.region,
-              cartId: it.cartId || it.id,
-              name: it.name,
-              slug: it.product_slug || it.slug,
-            },
-            isAr ? "ar" : "en",
-            { withDetails: false }
-          );
-
-          const unitLabel = qty > 1
-            ? (isAr ? `${it.name} (كود ${k + 1} من ${qty})` : `${it.name} (Key ${k + 1} of ${qty})`)
-            : (it.name || (isAr ? "منتج رقمي" : "Digital Product"));
-
+          const uIdx = units.length;
           units.push({
-            unitIndex: startIndex + k,
+            unitIndex: uIdx,
             item: it,
             itemIndex: itemIdx,
             unitInItem: k + 1,
             totalUnitsInItem: qty,
-            unitLabel,
-            code: assignedCode,
+            unitLabel: qty > 1 ? `${it.name} (كود ${k + 1} من ${qty})` : (it.name || "منتج رقمي"),
+            code: null,
             coverImg,
             regionBadge,
-            isAccount: isThisAccount,
-            isTopup: isThisTopup,
-            platform: it.platform,
-            siblingUnits: siblingUnitsRef,
+            isAccount: it?.delivery_type === "account",
+            isTopup: it?.delivery_type === "topup",
+            platform: it?.platform,
+            siblingUnits: [{ unitIndex: uIdx, unitInItem: k + 1, code: null }],
           });
         }
       });
     }
-
-    while (codesPool.length > 0) {
-      const extraCode = codesPool.shift()!;
-      const isThisTopup = extraCode?.kind === "topup";
-      const isThisAccount = !isThisTopup && Boolean(
-        extraCode?.kind === "account" || (extraCode && extraCode.email && !extraCode.value)
-      );
-      const uIdx = units.length;
-      units.push({
-        unitIndex: uIdx,
-        item: { name: extraCode.label || (isAr ? "منتج رقمي إضافي" : "Extra Product") },
-        itemIndex: -1,
-        unitInItem: 1,
-        totalUnitsInItem: 1,
-        unitLabel: extraCode.label || (isAr ? "منتج رقمي" : "Digital Product"),
-        code: extraCode,
-        coverImg: "/app/assets/img/gx-logo.png",
-        regionBadge: extraCode.region || "Global",
-        isAccount: isThisAccount,
-        isTopup: isThisTopup,
-        siblingUnits: [{ unitIndex: uIdx, unitInItem: 1, code: extraCode }],
-      });
-    }
-
     return units;
   }, [items, deliveryCodes, dbImageMap, isAr]);
 
@@ -849,27 +822,14 @@ export function DriffleOrderDeliveryView({
   // Explicit confirmation to reveal code/account - records reveal strictly after agreement
   const handleConfirmReveal = async (idx: number) => {
     onRevealKey(idx);
-    const unit = deliverableUnits[idx];
-    if (unit?.siblingUnits) {
-      unit.siblingUnits.forEach((s) => {
-        onRevealKey(s.unitIndex);
-      });
-    }
     const num = order?.order_number ? String(order.order_number).trim() : undefined;
-    if (num) {
-      try {
-        await (supabase.rpc as any)("mark_order_code_revealed", {
-          p_order_number: num,
-          p_order_id: order?.id || null,
-        });
-      } catch {}
-    }
     if (order?.order_number || orderToken) {
       try {
         await markCodeRevealedFn({
           data: {
             orderToken: orderToken ? orderToken.trim() : undefined,
             orderNumber: num,
+            codeIndex: idx,
           },
         });
       } catch {}
@@ -1067,8 +1027,115 @@ export function DriffleOrderDeliveryView({
           </div>
         )}
 
+        {/* DEAD LINK FOR CANCELLED ORDERS */}
+        {!loading && isCancelledOrder && (
+          <div
+            style={{
+              borderRadius: "20px",
+              backgroundColor: cardBg,
+              border: "1px solid rgba(239, 68, 68, 0.4)",
+              background: "linear-gradient(180deg, rgba(239, 68, 68, 0.08) 0%, rgba(15, 18, 25, 0.95) 100%)",
+              padding: "50px 24px",
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "20px",
+              animation: "drfFadeUp 0.4s ease",
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(239, 68, 68, 0.12)",
+            }}
+          >
+            <div
+              style={{
+                width: "68px",
+                height: "68px",
+                borderRadius: "50%",
+                backgroundColor: "rgba(239, 68, 68, 0.15)",
+                border: "2px solid rgba(239, 68, 68, 0.4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ef4444",
+                boxShadow: "0 0 25px rgba(239, 68, 68, 0.25)",
+              }}
+            >
+              <AlertTriangle style={{ width: "34px", height: "34px" }} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxWidth: "520px" }}>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  alignSelf: "center",
+                  padding: "4px 14px",
+                  borderRadius: "20px",
+                  backgroundColor: "rgba(239, 68, 68, 0.15)",
+                  border: "1px solid rgba(239, 68, 68, 0.35)",
+                  color: "#f87171",
+                  fontSize: "12px",
+                  fontWeight: 800,
+                }}
+              >
+                <span>⛔ {isAr ? "رابط ملغي وغير صالح" : "Dead / Inactive Link"}</span>
+              </div>
+              <h2 style={{ fontSize: "20px", fontWeight: 900, color: textPrimary, margin: "6px 0 0" }}>
+                {isAr ? "تم إلغاء هذا الطلب نهائياً" : "This Order Has Been Cancelled"}
+              </h2>
+              <p style={{ fontSize: "13.5px", color: textSecondary, margin: 0, lineHeight: 1.65 }}>
+                {isAr
+                  ? "تم إيقاف وإلغاء صلاحية هذا الرابط تماماً نظراً لإلغاء الطلب من قبل إدارة المتجر. لا تتوفر أي أكواد أو تفاصيل تفعيل لهذا الطلب."
+                  : "This link has been permanently disabled and invalidated because the order was cancelled by store management. No activation codes or details are available."}
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center", marginTop: "8px" }}>
+              <Link
+                to="/"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "12px 24px",
+                  borderRadius: "12px",
+                  background: `linear-gradient(135deg, ${accentCyan}, #0098d4)`,
+                  color: "#07090e",
+                  fontWeight: 900,
+                  fontSize: "13.5px",
+                  textDecoration: "none",
+                  boxShadow: "0 4px 18px rgba(0, 229, 255, 0.3)",
+                }}
+              >
+                <ShoppingBag style={{ width: "16px", height: "16px" }} />
+                <span>{isAr ? "تصفح المتجر 🛍️" : "Visit Store 🛍️"}</span>
+              </Link>
+              <a
+                href="https://wa.me/962776252313"
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "12px 22px",
+                  borderRadius: "12px",
+                  backgroundColor: "rgba(255, 255, 255, 0.05)",
+                  border: `1px solid ${cardBorder}`,
+                  color: textPrimary,
+                  fontWeight: 800,
+                  fontSize: "13.5px",
+                  textDecoration: "none",
+                }}
+              >
+                <WhatsAppSvg size={17} color="#25D366" />
+                <span>{isAr ? "الدعم الفني عبر واتساب" : "WhatsApp Support"}</span>
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* ERROR STATE */}
-        {!loading && error && (
+        {!loading && !isCancelledOrder && error && (
           <div
             style={{
               borderRadius: "18px",
@@ -1207,7 +1274,7 @@ export function DriffleOrderDeliveryView({
         {/* =========================================================
             MAIN CONTENT (WHEN LOADED & UNLOCKED)
            ========================================================= */}
-        {!loading && order && !isLocked && (
+        {!loading && order && !isLocked && !isCancelledOrder && (
           <div style={{ display: "flex", flexDirection: "column", gap: "22px", width: "100%" }}>
             {/* ── PENDING PAYMENT ALERT BANNER (If order is incomplete) ── */}
             {order.status === "pending" && (
@@ -1477,44 +1544,26 @@ export function DriffleOrderDeliveryView({
                 {isAr ? "المنتجات في طلبك ومفاتيح التفعيل" : "Your Products & Activation Keys"}
               </h2>
 
-              {/* LIST OF ITEMS */}
-              {items.map((it: any, itemIdx: number) => {
-                const coverImg = getProductCoverImage(it.image, it.name, it.product_slug || it.slug, dbImageMap);
-                const isKeyRevealed = Boolean(revealedKeys[itemIdx]);
-
-                const itemCode = deliveryCodes[itemIdx] || deliveryCodes[0] || null;
-                const itemRegionBadge = formatFullRegion(
-                  {
-                    region: itemCode?.region || it.region,
-                    cartId: it.cartId || it.id,
-                    name: it.name,
-                    slug: it.product_slug || it.slug,
-                  },
-                  isAr ? "ar" : "en",
-                  { withDetails: false }
-                );
-
-                const isThisTopup = Boolean(
-                  itemCode?.kind === "topup" ||
-                  it?.delivery_type === "topup"
-                );
-                const isThisAccount = !isThisTopup && Boolean(
-                  itemCode?.kind === "account" ||
-                  (itemCode && itemCode.email && !itemCode.value) ||
-                  it?.delivery_type === "account"
-                );
+              {/* LIST OF INDEPENDENT CODE PRODUCTS */}
+              {deliverableUnits.map((unit, unitIdx) => {
+                const isKeyRevealed = Boolean(unit.code?.revealed_at || revealedKeys[unitIdx]);
+                const isThisTopup = Boolean(unit.isTopup);
+                const isThisAccount = Boolean(unit.isAccount);
+                const itemCode = unit.code;
+                const revealedDate = itemCode?.revealed_at;
 
                 return (
                   <div
-                    key={itemIdx}
+                    key={unitIdx}
                     style={{
                       borderRadius: "16px",
                       backgroundColor: cardBg,
-                      border: `1px solid ${cardBorder}`,
+                      border: `1px solid ${isKeyRevealed ? "rgba(16, 185, 129, 0.25)" : cardBorder}`,
                       overflow: "hidden",
                       width: "100%",
                       boxSizing: "border-box",
-                      transition: "border-color 0.2s ease",
+                      transition: "all 0.2s ease",
+                      boxShadow: isKeyRevealed ? "0 4px 20px rgba(0, 0, 0, 0.3)" : "none",
                     }}
                   >
                     <div
@@ -1529,8 +1578,8 @@ export function DriffleOrderDeliveryView({
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "14px", minWidth: 0, flex: 1 }}>
                         <img
-                          src={coverImg}
-                          alt={it.name}
+                          src={unit.coverImg}
+                          alt={unit.unitLabel}
                           onError={(e) => {
                             const target = e.currentTarget;
                             if (!target.dataset.triedFallback) {
@@ -1552,14 +1601,14 @@ export function DriffleOrderDeliveryView({
                         <div style={{ display: "flex", flexDirection: "column", gap: "7px", minWidth: 0 }}>
                           <h3
                             style={{
-                              fontSize: "14px",
+                              fontSize: "14.5px",
                               fontWeight: 800,
                               color: textPrimary,
                               margin: 0,
                               lineHeight: 1.45,
                             }}
                           >
-                            {it.name}
+                            {unit.unitLabel}
                           </h3>
                           <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                             <span
@@ -1588,9 +1637,9 @@ export function DriffleOrderDeliveryView({
                               }}
                             >
                               <Globe style={{ width: "10px", height: "10px" }} />
-                              {isThisTopup ? (isAr ? "شحن مباشر" : "TOP-UP") : isThisAccount ? (isAr ? "حساب جاهز" : "ACCOUNT") : itemRegionBadge}
+                              {isThisTopup ? (isAr ? "شحن مباشر" : "TOP-UP") : isThisAccount ? (isAr ? "حساب جاهز" : "ACCOUNT") : unit.regionBadge}
                             </span>
-                            {it.platform && (
+                            {unit.platform && (
                               <span
                                 style={{
                                   display: "inline-flex",
@@ -1605,8 +1654,27 @@ export function DriffleOrderDeliveryView({
                                   color: textSecondary,
                                 }}
                               >
-                                {detectPlatformIcon(it.platform, it.name)}
-                                {it.platform}
+                                {detectPlatformIcon(unit.platform, unit.unitLabel)}
+                                {unit.platform}
+                              </span>
+                            )}
+                            {revealedDate && (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  padding: "2px 8px",
+                                  borderRadius: "6px",
+                                  backgroundColor: "rgba(16, 185, 129, 0.12)",
+                                  border: "1px solid rgba(16, 185, 129, 0.3)",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                  color: "#34d399",
+                                }}
+                              >
+                                <CheckCircle2 style={{ width: "11px", height: "11px" }} />
+                                <span>{isAr ? "تم الكشف:" : "Revealed:"} {new Date(revealedDate).toLocaleTimeString(isAr ? "ar-EG" : "en-US", { hour: "2-digit", minute: "2-digit" })}</span>
                               </span>
                             )}
                           </div>
@@ -1653,63 +1721,74 @@ export function DriffleOrderDeliveryView({
                           )}
                         </div>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleOpenReveal(itemIdx)}
-                          style={{
-                            background: isKeyRevealed
-                              ? isThisAccount
-                                ? "rgba(168, 85, 247, 0.15)"
-                                : "rgba(0, 229, 255, 0.12)"
-                              : isThisAccount
-                              ? "linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)"
-                              : `linear-gradient(135deg, ${accentCyan}, #0098d4)`,
-                            color: isKeyRevealed
-                              ? isThisAccount ? "#c084fc" : accentCyan
-                              : isThisAccount ? "#ffffff" : "#07090e",
-                            border: isKeyRevealed
-                              ? `1px solid ${isThisAccount ? "rgba(168, 85, 247, 0.35)" : "rgba(0, 229, 255, 0.3)"}`
-                              : "none",
-                            borderRadius: "10px",
-                            padding: "10px 20px",
-                            fontWeight: 900,
-                            fontSize: "12.5px",
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "7px",
-                            boxShadow: isKeyRevealed
-                              ? "none"
-                              : isThisAccount
-                              ? "0 4px 14px rgba(168, 85, 247, 0.3)"
-                              : "0 4px 14px rgba(0, 229, 255, 0.25)",
-                            transition: "all 0.15s ease",
-                          }}
-                        >
-                          {isKeyRevealed ? (
-                            <>
-                              <Check style={{ width: "14px", height: "14px" }} />
-                              <span>
-                                {isThisAccount
-                                  ? isAr ? "عرض بيانات الحساب المستلم" : "View Account Details"
-                                  : isAr ? "عرض الكود المستلم" : "View Key"}
-                              </span>
-                            </>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: isAr ? "flex-start" : "flex-end", gap: "6px" }}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenReveal(unitIdx)}
+                            style={{
+                              background: isKeyRevealed
+                                ? isThisAccount
+                                  ? "rgba(168, 85, 247, 0.15)"
+                                  : "rgba(0, 229, 255, 0.12)"
+                                : isThisAccount
+                                ? "linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)"
+                                : `linear-gradient(135deg, ${accentCyan}, #0098d4)`,
+                              color: isKeyRevealed
+                                ? isThisAccount ? "#c084fc" : accentCyan
+                                : isThisAccount ? "#ffffff" : "#07090e",
+                              border: isKeyRevealed
+                                ? `1px solid ${isThisAccount ? "rgba(168, 85, 247, 0.35)" : "rgba(0, 229, 255, 0.3)"}`
+                                : "none",
+                              borderRadius: "10px",
+                              padding: "10px 20px",
+                              fontWeight: 900,
+                              fontSize: "12.5px",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "7px",
+                              boxShadow: isKeyRevealed
+                                ? "none"
+                                : isThisAccount
+                                ? "0 4px 14px rgba(168, 85, 247, 0.3)"
+                                : "0 4px 14px rgba(0, 229, 255, 0.25)",
+                              transition: "all 0.15s ease",
+                            }}
+                          >
+                            {isKeyRevealed ? (
+                              <>
+                                <Check style={{ width: "14px", height: "14px" }} />
+                                <span>
+                                  {isThisAccount
+                                    ? isAr ? "عرض بيانات الحساب المستلم" : "View Account Details"
+                                    : isAr ? "عرض الكود المستلم" : "View Key"}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                {isThisAccount ? (
+                                  <UserIcon style={{ width: "14px", height: "14px" }} />
+                                ) : (
+                                  <KeyRound style={{ width: "14px", height: "14px" }} />
+                                )}
+                                <span>
+                                  {isThisAccount
+                                    ? isAr ? "عرض تفاصيل الحساب" : "View Account Details"
+                                    : isAr ? "إظهار الكود 🔑" : "Reveal Key 🔑"}
+                                </span>
+                              </>
+                            )}
+                          </button>
+                          {revealedDate ? (
+                            <span style={{ fontSize: "11px", color: "#34d399", fontWeight: 700 }}>
+                              ✓ {isAr ? "تم الكشف:" : "Revealed:"} {new Date(revealedDate).toLocaleDateString(isAr ? "ar-EG" : "en-US", { month: "numeric", day: "numeric" })}
+                            </span>
                           ) : (
-                            <>
-                              {isThisAccount ? (
-                                <UserIcon style={{ width: "14px", height: "14px" }} />
-                              ) : (
-                                <KeyRound style={{ width: "14px", height: "14px" }} />
-                              )}
-                              <span>
-                                {isThisAccount
-                                  ? isAr ? "عرض تفاصيل الحساب" : "View Account Details"
-                                  : isAr ? "كشف كود التفعيل" : "Reveal Key"}
-                              </span>
-                            </>
+                            <span style={{ fontSize: "11px", color: "#fbbf24", fontWeight: 700 }}>
+                              🔒 {isAr ? "لم يتم الكشف بعد" : "Not yet revealed"}
+                            </span>
                           )}
-                        </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1907,7 +1986,7 @@ export function DriffleOrderDeliveryView({
                       lineHeight: 1.4,
                     }}
                   >
-                    {activeItem.name}
+                    {activeUnit?.unitLabel || activeItem.name}
                   </h4>
                   {activeItem.slug && (
                     <Link
