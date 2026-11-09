@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletion_otps: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          otp_code: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          otp_code: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_activity_log: {
         Row: {
           action: string
@@ -1463,6 +1493,7 @@ export type Database = {
           avatar_id: string | null
           avatar_url: string | null
           created_at: string
+          deletion_reason: string | null
           email: string | null
           full_name: string | null
           gx_coins: number
@@ -1470,6 +1501,7 @@ export type Database = {
           level: number
           level_code: string
           orders_count: number
+          scheduled_deletion_at: string | null
           store_credit_jod: number
           total_refunded_jod: number
           total_spent: number
@@ -1483,6 +1515,7 @@ export type Database = {
           avatar_id?: string | null
           avatar_url?: string | null
           created_at?: string
+          deletion_reason?: string | null
           email?: string | null
           full_name?: string | null
           gx_coins?: number
@@ -1490,6 +1523,7 @@ export type Database = {
           level?: number
           level_code?: string
           orders_count?: number
+          scheduled_deletion_at?: string | null
           store_credit_jod?: number
           total_refunded_jod?: number
           total_spent?: number
@@ -1503,6 +1537,7 @@ export type Database = {
           avatar_id?: string | null
           avatar_url?: string | null
           created_at?: string
+          deletion_reason?: string | null
           email?: string | null
           full_name?: string | null
           gx_coins?: number
@@ -1510,6 +1545,7 @@ export type Database = {
           level?: number
           level_code?: string
           orders_count?: number
+          scheduled_deletion_at?: string | null
           store_credit_jod?: number
           total_refunded_jod?: number
           total_spent?: number
@@ -2327,6 +2363,10 @@ export type Database = {
         Args: { _tournament_id: string; _user_id: string }
         Returns: Json
       }
+      admin_delete_user_permanently: {
+        Args: { _target_user_id: string }
+        Returns: Json
+      }
       admin_finalize_tournament: {
         Args: { _top?: number; _tournament_id: string }
         Returns: Json
@@ -2400,6 +2440,7 @@ export type Database = {
         Args: { _order_number: string; _reason?: string }
         Returns: Json
       }
+      cancel_scheduled_deletion: { Args: never; Returns: Json }
       check_password_reset_cooldown: { Args: { _email: string }; Returns: Json }
       claim_unregistered_credits_for_user: {
         Args: { _user_id: string }
@@ -2459,10 +2500,6 @@ export type Database = {
       }
       get_my_loyalty: { Args: never; Returns: Json }
       get_order_by_number: { Args: { _order_number: string }; Returns: Json }
-      get_order_for_paypal_checkout: {
-        Args: { _order_number: string }
-        Returns: Json
-      }
       get_public_profile: {
         Args: { _username: string }
         Returns: {
@@ -2612,8 +2649,17 @@ export type Database = {
         Args: { _kind?: string; _order_id: string; _ratio: number }
         Returns: number
       }
+      request_account_deletion_otp: { Args: never; Returns: Json }
       reveal_order_codes: { Args: { _order_id: string }; Returns: Json }
       revoke_ineligible_rewards: { Args: { _user_id: string }; Returns: Json }
+      schedule_account_deletion: {
+        Args: { _otp_code: string; _reason?: string }
+        Returns: Json
+      }
+      schedule_account_deletion_direct: {
+        Args: { _reason?: string }
+        Returns: Json
+      }
       search_public_profiles: {
         Args: { _limit?: number; _q: string }
         Returns: {
@@ -2623,6 +2669,10 @@ export type Database = {
           level: number
           username: string
         }[]
+      }
+      set_user_preferred_language: {
+        Args: { _email: string; _lang: string }
+        Returns: undefined
       }
       spend_gx_coins: {
         Args: { _coins: number; _order_id: string }
@@ -2701,6 +2751,7 @@ export type Database = {
         Args: { _code: string; _subtotal_jod: number }
         Returns: Json
       }
+      verify_and_delete_account: { Args: { _otp_code: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user"

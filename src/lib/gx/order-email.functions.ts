@@ -335,6 +335,22 @@ export const sendPaymentConfirmedEmail = createServerFn({ method: "POST" })
       .parse(data)
   )
   .handler(async ({ data }) => {
+    // Admin-only: payment confirmations may only be sent by store staff,
+    // and only for an order that actually exists.
+    try {
+      await assertAdminCaller();
+    } catch {
+      return { ok: false, error: "Unauthorized" };
+    }
+    const svc = getServerServiceClient();
+    const { data: order } = await (svc as any)
+      .from("orders")
+      .select("id")
+      .eq("order_number", data.orderNumber)
+      .maybeSingle();
+    if (!order) {
+      return { ok: false, error: "Order not found" };
+    }
     return sendPaymentConfirmedEmailDirect(data);
   });
 

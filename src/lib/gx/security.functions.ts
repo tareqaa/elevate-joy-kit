@@ -65,16 +65,26 @@ export const recordAuthAttemptServer = createServerFn({ method: "POST" })
       failureReason: data.failureReason,
     });
 
-    // If login was successful and we have a userId, register/update device session
-    if (data.type === "login_success" && data.userId) {
-      registerUserDevice({
-        userId: data.userId,
-        email: data.email,
-        ip,
-        userAgent: ua,
-        headers: getRequestHeader,
-        deviceId: data.deviceId,
-      });
+    // If login was successful, register/update the device session — but only
+    // for the account proven by the caller's verified session token. A userId
+    // supplied in the request body is never trusted.
+    if (data.type === "login_success") {
+      const caller = await getVerifiedCaller();
+      if (caller) {
+        let verifiedEmail = data.email;
+        try {
+          const { data: userRes } = await getUserScopedClient(caller.token).auth.getUser(caller.token);
+          if (userRes?.user?.email) verifiedEmail = userRes.user.email;
+        } catch {}
+        registerUserDevice({
+          userId: caller.userId,
+          email: verifiedEmail,
+          ip,
+          userAgent: ua,
+          headers: getRequestHeader,
+          deviceId: data.deviceId,
+        });
+      }
     }
 
     return { ok: true, eventId: event.id };
