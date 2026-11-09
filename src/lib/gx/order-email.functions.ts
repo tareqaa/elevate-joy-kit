@@ -336,7 +336,7 @@ export const sendPaymentConfirmedEmail = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     // Admin-only: payment confirmations may only be sent by store staff,
-    // and only for a real order whose recipient matches the order's email.
+    // and only for an order that actually exists.
     try {
       await assertAdminCaller();
     } catch {
@@ -345,7 +345,7 @@ export const sendPaymentConfirmedEmail = createServerFn({ method: "POST" })
     const svc = getServerServiceClient();
     const { data: order } = await (svc as any)
       .from("orders")
-      .select("order_number, customer_email, user_id")
+      .select("id")
       .eq("order_number", data.orderNumber)
       .maybeSingle();
     if (!order) {
