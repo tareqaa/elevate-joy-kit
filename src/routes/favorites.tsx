@@ -45,7 +45,7 @@ function FavoritesPage() {
         }}
       >
         <div className="wrap" style={{ maxWidth: 1240, margin: "0 auto", padding: "0 24px" }}>
-          {/* Top Bar: Driffle-Style Clean Header */}
+          {/* Top Bar: Clean Header */}
           <div
             style={{
               display: "flex",
@@ -82,7 +82,7 @@ function FavoritesPage() {
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              {/* Search Box matching Driffle top-right search */}
+              {/* Search Box */}
               <div
                 style={{
                   position: "relative",

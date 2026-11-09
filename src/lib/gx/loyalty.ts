@@ -21,8 +21,105 @@ export const XP_PER_JOD = 100;
 export const COINS_PER_JOD = 10;
 /** 1000 GX Coins = 1 JOD */
 export const COINS_PER_JOD_REDEEM = 1000;
-/** GX Coins can cover at most 50% of an order */
-export const MAX_COINS_DISCOUNT_RATIO = 0.5;
+/** GX Coins can cover at most 25% of eligible products (Games & Digital Subscriptions) */
+export const MAX_COINS_DISCOUNT_RATIO = 0.25;
+
+/**
+ * Checks if a cart item or product represents a gift card (which is excluded from GX Coins).
+ */
+export function isGiftCardItem(item: {
+  cartId?: string | null;
+  product?: string | null;
+  productSlug?: string | null;
+  slug?: string | null;
+  categorySlug?: string | null;
+  category?: string | null;
+  deliveryType?: string | null;
+  productType?: string | null;
+  name?: string | null;
+} | null | undefined): boolean {
+  if (!item) return false;
+  const cId = (item.cartId || "").toLowerCase();
+  const prod = (item.product || item.productSlug || item.slug || "").toLowerCase();
+  const cat = (item.categorySlug || item.category || "").toLowerCase();
+  const deliv = (item.deliveryType || item.productType || "").toLowerCase();
+  const name = (item.name || "").toLowerCase();
+
+  // Explicit gift card delivery type or category
+  if (deliv === "giftcard" || deliv === "gift-card") return true;
+  if (
+    cat === "gift-cards" ||
+    cat.startsWith("gc-") ||
+    cat.includes("giftcard") ||
+    cat.includes("بطاقات الهدايا") ||
+    cat.includes("بطاقات شحن")
+  ) {
+    return true;
+  }
+
+  // Denominations or slug prefixes
+  if (
+    cId.startsWith("gc-") ||
+    cId.startsWith("psn-") ||
+    cId.startsWith("xbox-tr-") ||
+    cId.startsWith("xbox-us-") ||
+    cId.startsWith("xbox-ae-") ||
+    cId.startsWith("xbox-sa-") ||
+    cId.startsWith("apple-") ||
+    cId.startsWith("itunes-") ||
+    cId.startsWith("google-") ||
+    cId.startsWith("gp-") ||
+    cId.startsWith("steam-") ||
+    cId.startsWith("razer-")
+  ) {
+    return true;
+  }
+
+  if (
+    prod.startsWith("gc-") ||
+    prod === "gift-cards" ||
+    prod === "playstation" ||
+    prod === "xbox-gc" ||
+    prod === "itunes" ||
+    prod === "google-play"
+  ) {
+    return true;
+  }
+
+  if (
+    name.includes("gift card") ||
+    name.includes("بطاقة شحن") ||
+    name.includes("بطاقات هدايا") ||
+    name.includes("بطاقة هدايا") ||
+    name.includes("بطاقات شحن")
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Checks if a cart item is eligible for GX Coins redemption.
+ * Per policy: GX Coins are ONLY valid on games and digital subscriptions. Gift cards are strictly excluded.
+ */
+export function isEligibleForCoins(item: {
+  cartId?: string | null;
+  product?: string | null;
+  productSlug?: string | null;
+  slug?: string | null;
+  categorySlug?: string | null;
+  category?: string | null;
+  deliveryType?: string | null;
+  productType?: string | null;
+  name?: string | null;
+} | null | undefined): boolean {
+  if (!item) return false;
+  if (isGiftCardItem(item)) return false;
+  const cat = (item.categorySlug || item.category || "").toLowerCase();
+  if (cat === "social-media" || cat.includes("سوشال")) return false;
+  return true;
+}
 
 
 export function coinsToJod(coins: number): number {

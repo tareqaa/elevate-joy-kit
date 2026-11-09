@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { getPublicClient, assertAdminCaller } from "@/lib/gx/supabase-request";
+import { getPublicClient } from "@/lib/gx/supabase-request";
+import { assertAdminCaller } from "@/lib/gx/supabase-auth.server";
 import { getResendApiKey } from "./resend-key";
-import { renderDriffleEmail, escapeHtml } from "./email-theme";
-import { resolveProductEmailImage } from "./order-email.functions";
+import { renderGxStoreEmail, escapeHtml } from "./email-theme";
+import { resolveProductEmailImage } from "./order-email.server";
 
 const SENDER_EMAIL = "GX Store <support@gxstore.me>";
 
@@ -44,7 +45,7 @@ export const sendRestockNotificationEmail = createServerFn({ method: "POST" })
       const supabase = getPublicClient();
       const resolvedImg = await resolveProductEmailImage(supabase, { name: productName });
 
-      const html = renderDriffleEmail({
+      const html = renderGxStoreEmail({
         lang: "ar",
         subject,
         headline: "🎉 أصبح متوفراً الآن!",

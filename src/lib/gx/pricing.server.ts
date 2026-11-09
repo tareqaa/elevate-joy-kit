@@ -34,6 +34,27 @@ type IncomingItem = {
 const roundJod = (n: number) => Math.round(n * 1000) / 1000;
 
 
+export const AUTHORITATIVE_STATIC_PRICES: Record<string, number> = {
+  "ms365-acct-12": 5,
+  "win-11-pro-retail": 7,
+  "win-11-pro-oem": 5,
+  "windows-11-pro-retail": 7,
+  "windows-11-pro-oem": 5,
+  "notion-biz-3m": 6,
+  "notion-business": 6,
+  "gemini-plus-6m": 4,
+  "gemini-plus-3m": 4,
+  "gemini": 4,
+  // PlayStation Saudi Store (SAR)
+  "psn-sa-50": 11.5,
+  "psn-sa-100": 23,
+  "psn-sa-150": 34.5,
+  "psn-sa-200": 46,
+  "psn-sa-300": 69,
+  "psn-sa-400": 92,
+  "psn-sa-500": 115,
+};
+
 /** Reads the live price overrides from the database. */
 export async function loadCatalogPriceOverrides(
   supabase: SupabaseClient<any, any, any>,
@@ -45,11 +66,123 @@ export async function loadCatalogPriceOverrides(
       .eq("key", "catalog_prices")
       .maybeSingle();
     const v = (data as { value?: unknown } | null)?.value;
-    return v && typeof v === "object" && !Array.isArray(v)
+    const base = v && typeof v === "object" && !Array.isArray(v)
       ? (v as Record<string, { price?: number }>)
+      : {};
+    return {
+      ...base,
+      "ms365-acct-12": { price: 5 },
+      "win-11-pro-retail": { price: 7 },
+      "win-11-pro-oem": { price: 5 },
+      "windows-11-pro-retail": { price: 7 },
+      "windows-11-pro-oem": { price: 5 },
+      "notion-biz-3m": { price: 6 },
+      "notion-business": { price: 6 },
+      "gemini-plus-6m": { price: 4 },
+      "gemini-plus-3m": { price: 4 },
+      "gemini": { price: 4 },
+      "psn-sa-50": { price: 11.5 },
+      "psn-sa-100": { price: 23 },
+      "psn-sa-150": { price: 34.5 },
+      "psn-sa-200": { price: 46 },
+      "psn-sa-300": { price: 69 },
+      "psn-sa-400": { price: 92 },
+      "psn-sa-500": { price: 115 },
+    };
+  } catch {
+    return {
+      "ms365-acct-12": { price: 5 },
+      "win-11-pro-retail": { price: 7 },
+      "win-11-pro-oem": { price: 5 },
+      "windows-11-pro-retail": { price: 7 },
+      "windows-11-pro-oem": { price: 5 },
+      "notion-biz-3m": { price: 6 },
+      "notion-business": { price: 6 },
+      "gemini-plus-6m": { price: 4 },
+      "gemini-plus-3m": { price: 4 },
+      "gemini": { price: 4 },
+      "psn-sa-50": { price: 11.5 },
+      "psn-sa-100": { price: 23 },
+      "psn-sa-150": { price: 34.5 },
+      "psn-sa-200": { price: 46 },
+      "psn-sa-300": { price: 69 },
+      "psn-sa-400": { price: 92 },
+      "psn-sa-500": { price: 115 },
+    };
+  }
+}
+
+/** Reads product stock limits from site_settings. */
+export async function loadStockLimits(
+  supabase: SupabaseClient<any, any, any>,
+): Promise<Record<string, number | null>> {
+  try {
+    const { data } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "product_stock_limits")
+      .maybeSingle();
+    const v = (data as { value?: unknown } | null)?.value;
+    return v && typeof v === "object" && !Array.isArray(v)
+      ? (v as Record<string, number | null>)
       : {};
   } catch {
     return {};
+  }
+}
+
+/**
+ * Validates that no items in the cart are sold out or forbidden.
+ */
+export function verifyCartStockLimits(
+  items: IncomingItem[],
+  stockLimits: Record<string, number | null>,
+): void {
+  for (const it of items) {
+    const cartId = String(it?.cartId ?? "").trim().toLowerCase();
+    const slug = String(it?.product_slug ?? "").trim().toLowerCase();
+    const name = String(it?.name ?? "").trim().toLowerCase();
+
+    // 1. Social media products are permanently sold out
+    if (
+      cartId.startsWith("fb-fol") ||
+      cartId.startsWith("fb-lik") ||
+      cartId.startsWith("ig-fol") ||
+      cartId.startsWith("ig-lik") ||
+      cartId.startsWith("tiktok-") ||
+      cartId.startsWith("tt-") ||
+      cartId.startsWith("tw-") ||
+      cartId.startsWith("twitter-") ||
+      slug === "social-media" ||
+      slug.startsWith("social-media") ||
+      slug.startsWith("instagram-") ||
+      slug.startsWith("facebook-") ||
+      slug.startsWith("tiktok-") ||
+      slug.startsWith("twitter-") ||
+      name.includes("متابعين") ||
+      name.includes("لايكات") ||
+      name.includes("social")
+    ) {
+      throw new Error(`عذراً، المنتج (${it.name || cartId}) غير متوفر حالياً`);
+    }
+
+    // 2. Check product_stock_limits
+    if (stockLimits && typeof stockLimits === "object") {
+      const keys: string[] = [];
+      if (cartId) {
+        keys.push(cartId);
+        const dashIdx = cartId.lastIndexOf("-");
+        if (dashIdx > 0) keys.push(cartId.substring(0, dashIdx));
+      }
+      if (slug && !keys.includes(slug)) keys.push(slug);
+
+      for (const k of keys) {
+        const v = stockLimits[k];
+        if (v !== undefined && v !== null && Number(v) <= 0) {
+          throw new Error(`عذراً، المنتج (${it.name || cartId}) نفد من المخزون حالياً`);
+        }
+      }
+    }
   }
 }
 
@@ -87,6 +220,13 @@ export async function loadDbBasePrices(
       if (prod.slug && prod.base_price_jod != null) {
         out.set(String(prod.slug), Number(prod.base_price_jod) || 0);
       }
+    }
+  }
+
+  // Ensure authoritative static prices for M365 and separated Windows products are always populated
+  for (const [k, p] of Object.entries(AUTHORITATIVE_STATIC_PRICES)) {
+    if (ids.includes(k)) {
+      out.set(k, p);
     }
   }
 

@@ -75,8 +75,8 @@ export function useLoyaltyCopy(): LoyaltyCopy {
     };
 
     const redeem = isAr
-      ? `كل ${redeemCoins} عملة = خصم ${redeemValue}، والعملات تغطي حتى ${maxPct} من قيمة الطلب.`
-      : `${redeemCoins} coins = ${redeemValue} off, and coins can cover up to ${maxPct} of the order.`;
+      ? `كل ${redeemCoins} عملة = خصم ${redeemValue}، والعملات تغطي حتى ${maxPct} من قيمة الألعاب والاشتراكات المؤهلة (تُستثنى بطاقات الهدايا).`
+      : `${redeemCoins} coins = ${redeemValue} off, covering up to ${maxPct} of eligible games & digital subscriptions (gift cards excluded).`;
 
     const summary = (bonusPct?: number | null) => `${earnCoins(bonusPct)} ${redeem}`;
 

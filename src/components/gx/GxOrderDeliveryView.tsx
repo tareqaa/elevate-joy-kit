@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveProductImage } from "@/lib/gx/product-images";
 import { OrderIpMismatchNotice } from "./OrderIpMismatchNotice";
 import { formatFullRegion } from "@/lib/gx/region";
+import { resolveProductActivationGuide } from "@/lib/gx/activation-guide";
 import {
   Check,
   Copy,
@@ -31,7 +32,28 @@ import {
   Clock,
   User as UserIcon,
   XCircle,
+  Zap,
 } from "lucide-react";
+
+/* ────────────────────────────────────────────────────────────────
+   DELIVERY DATA PARSER HELPER
+   ──────────────────────────────────────────────────────────────── */
+
+export function parseDeliveryData(data: any): Record<string, any> {
+  if (!data) return {};
+  if (typeof data === "object" && !Array.isArray(data)) return data;
+  if (typeof data === "string") {
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
 
 /* ────────────────────────────────────────────────────────────────
    PLATFORM ICON SVGs
@@ -305,7 +327,7 @@ export interface DeliverableUnit {
   }>;
 }
 
-export interface DriffleOrderDeliveryViewProps {
+export interface GxOrderDeliveryViewProps {
   order: any;
   loading: boolean;
   error: string | null;
@@ -321,8 +343,1159 @@ export interface DriffleOrderDeliveryViewProps {
     currentIp?: string | null;
     customerEmail?: string | null;
     orderNumber?: string | null;
+    accountMismatch?: boolean;
+    callerEmail?: string | null;
   } | null;
   onRefresh?: () => void;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   ORDER TIMELINE STEPPER BAR (4-Step Continuous Animated Rail)
+   1. السلة (Cart)
+   2. الدفع (Payment)
+   3. قيد التحضير (Preparation)
+   4. استلام المنتج (Product Delivery)
+   Continuous base rail passes through circle centers. Zero gaps, zero text overlap.
+   ──────────────────────────────────────────────────────────────── */
+
+interface OrderStepperLineProps {
+  currentStep: 2 | 3 | 4;
+  isAr: boolean;
+  accentCyan: string;
+}
+
+function OrderStepperLine({ currentStep, isAr, accentCyan }: OrderStepperLineProps) {
+  const steps = [
+    { num: 1, label: isAr ? "السلة" : "Cart" },
+    { num: 2, label: isAr ? "الدفع" : "Payment" },
+    { num: 3, label: isAr ? "قيد التحضير" : "Preparation" },
+    { num: 4, label: isAr ? "استلام المنتج" : "Delivery" },
+  ];
+
+  // Continuous progress bar width: 33.3% at step 2, 66.6% at step 3, 100% at step 4
+  const progressPercent = currentStep === 2 ? 33.333 : currentStep === 3 ? 66.666 : 100;
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        maxWidth: "560px",
+        margin: "0 auto 10px",
+        padding: "12px 16px 14px",
+        boxSizing: "border-box",
+        animation: "drfFadeUp 0.3s ease",
+      }}
+    >
+      {/* ── 1. CONTINUOUS BASE RAIL (Runs precisely through circle centers) ── */}
+      <div
+        style={{
+          position: "absolute",
+          top: "28px",
+          left: "50px",
+          right: "50px",
+          height: "3px",
+          backgroundColor: "#202a3c",
+          borderRadius: "3px",
+          zIndex: 1,
+        }}
+      >
+        {/* ── 2. ACTIVE PROGRESS FILL ── */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            ...(isAr ? { right: 0 } : { left: 0 }),
+            width: `${progressPercent}%`,
+            background: isAr
+              ? "linear-gradient(-90deg, #00e5ff 0%, #00b4d8 100%)"
+              : "linear-gradient(90deg, #00e5ff 0%, #00b4d8 100%)",
+            boxShadow: "0 0 10px rgba(0, 229, 255, 0.65)",
+            borderRadius: "3px",
+            transition: "width 0.45s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        />
+      </div>
+
+      {/* ── 3. STEP ITEMS (Circles & Labels) ── */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 2,
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          width: "100%",
+        }}
+      >
+        {steps.map((st) => {
+          const isDone = st.num < currentStep;
+          const isActive = st.num === currentStep;
+
+          return (
+            <div
+              key={st.num}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "68px",
+                flexShrink: 0,
+              }}
+            >
+              {/* Circle Badge */}
+              <div
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: isActive
+                    ? accentCyan
+                    : isDone
+                    ? "#0b1320"
+                    : "#0a0f18",
+                  border: isActive
+                    ? `2px solid ${accentCyan}`
+                    : isDone
+                    ? `2px solid ${accentCyan}`
+                    : "2px solid #243044",
+                  color: isActive
+                    ? "#07090e"
+                    : isDone
+                    ? accentCyan
+                    : "#64748b",
+                  fontWeight: 900,
+                  fontSize: "13px",
+                  boxShadow: isActive
+                    ? "0 0 16px rgba(0, 229, 255, 0.75)"
+                    : isDone
+                    ? "0 0 6px rgba(0, 229, 255, 0.25)"
+                    : "none",
+                  animation: isActive ? "drfPulseCircle 2.2s infinite ease-in-out" : undefined,
+                  transition: "all 0.3s ease",
+                }}
+              >
+                {isDone ? (
+                  <Check style={{ width: "15px", height: "15px", strokeWidth: 3 }} />
+                ) : (
+                  <span>{st.num}</span>
+                )}
+              </div>
+
+              {/* Label Underneath */}
+              <span
+                style={{
+                  marginTop: "8px",
+                  fontSize: "12.5px",
+                  fontWeight: isActive ? 800 : isDone ? 700 : 600,
+                  color: isActive ? accentCyan : isDone ? "#e2e8f0" : "#64748b",
+                  textAlign: "center",
+                  whiteSpace: "nowrap",
+                  letterSpacing: "-0.2px",
+                }}
+              >
+                {st.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────
+   ORDER PROGRESS & DETAILS COMPONENTS (Inspired by G2G)
+   Structured, clean, dignified - zero repetition or gimmick copy.
+   ──────────────────────────────────────────────────────────────── */
+
+interface OrderStatusViewProps {
+  order: any;
+  isAr: boolean;
+  cardBg: string;
+  cardBorder: string;
+  textPrimary: string;
+  textSecondary: string;
+  accentCyan: string;
+  dbImageMap: Record<string, string>;
+  onRefresh?: () => void;
+}
+
+/**
+ * 1. ORDER ACTIVITY TIMELINE (سجل ومراحل سير الطلب - Like G2G)
+ */
+function OrderActivityTimeline({
+  order,
+  isAr,
+  cardBg,
+  cardBorder,
+  textPrimary,
+  textSecondary,
+  accentCyan,
+  currentStatus,
+}: {
+  order: any;
+  isAr: boolean;
+  cardBg: string;
+  cardBorder: string;
+  textPrimary: string;
+  textSecondary: string;
+  accentCyan: string;
+  currentStatus: "pending" | "processing" | "delivered";
+}) {
+  const formattedDate = order?.created_at
+    ? new Date(order.created_at).toLocaleDateString(isAr ? "ar-JO" : "en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
+
+  const isPending = currentStatus === "pending";
+  const isProcessing = currentStatus === "processing";
+  const isDelivered = currentStatus === "delivered";
+
+  const milestones = [
+    {
+      title: isAr ? "استلام وتسجيل الطلب" : "Order Placed",
+      desc: isAr ? "تم استلام الطلب وتوليد الفاتورة بنجاح في النظام" : "Order submitted and invoice created successfully",
+      time: formattedDate,
+      state: "completed" as const,
+    },
+    {
+      title: isAr ? "مراجعة وتأكيد استلام الدفع" : "Payment Verification",
+      desc: isPending
+        ? isAr
+          ? "جاري التحقق من عملية الدفع ومطابقة التحويل من قِبل الإدارة"
+          : "Verifying payment transfer with store management"
+        : isAr
+        ? "تم تأكيد استلام المبلغ الإجمالي للطلب بنجاح"
+        : "Payment confirmed and verified successfully",
+      time: isPending ? (isAr ? "قيد المراجعة الآن" : "Under review") : formattedDate,
+      state: isPending ? ("active" as const) : ("completed" as const),
+    },
+    {
+      title: isAr ? "تجهيز المنتجات والأكواد" : "Keys & Products Preparation",
+      desc: isPending
+        ? isAr
+          ? "تبدأ مرحلة التجهيز فور تأكيد استلام الدفع مباشرة"
+          : "Preparation starts immediately after payment confirmation"
+        : isProcessing
+        ? isAr
+          ? "يعمل فريق المتجر الآن على تجهيز الأكواد الرقمية للطلب"
+          : "Store team is currently preparing your digital codes"
+        : isAr
+        ? "تم الانتهاء من تجهيز كافة الأكواد الرقمية"
+        : "Digital codes preparation completed",
+      time: isPending ? (isAr ? "المرحلة القادمة" : "Upcoming") : isProcessing ? (isAr ? "قيد التنفيذ الآن ⚡" : "In progress ⚡") : (isAr ? "مكتمل" : "Completed"),
+      state: isPending ? ("upcoming" as const) : isProcessing ? ("active" as const) : ("completed" as const),
+    },
+    {
+      title: isAr ? "تسليم الأكواد والتفعيل" : "Delivery & Activation",
+      desc: isDelivered
+        ? isAr
+          ? "تم تسليم جميع الأكواد بنجاح، يمكنك نسخها واستخدامها الآن"
+          : "Codes delivered successfully, ready to copy and redeem"
+        : isAr
+        ? "ستظهر مفاتيح التفعيل وكود الحساب مباشرة هنا فور الانتهاء"
+        : "Activation keys will appear directly here once ready",
+      time: isDelivered ? (isAr ? "تم التسليم" : "Delivered") : (isAr ? "المرحلة الأخيرة" : "Final step"),
+      state: isDelivered ? ("completed" as const) : ("upcoming" as const),
+    },
+  ];
+
+  return (
+    <div
+      style={{
+        borderRadius: "16px",
+        backgroundColor: cardBg,
+        border: `1px solid ${cardBorder}`,
+        padding: "20px 22px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "18px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <h3 style={{ fontSize: "14px", fontWeight: 800, color: textPrimary, margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+          <Clock style={{ width: "16px", height: "16px", color: accentCyan }} />
+          {isAr ? "سجل ومراحل تنفيذ الطلب" : "Order Activity Timeline"}
+        </h3>
+        <span
+          style={{
+            fontSize: "11px",
+            fontWeight: 700,
+            color: isPending ? "#fbbf24" : accentCyan,
+            backgroundColor: isPending ? "rgba(245, 158, 11, 0.1)" : "rgba(0, 229, 255, 0.1)",
+            padding: "3px 10px",
+            borderRadius: "6px",
+            border: `1px solid ${isPending ? "rgba(245, 158, 11, 0.25)" : "rgba(0, 229, 255, 0.25)"}`,
+          }}
+        >
+          {isPending
+            ? isAr ? "المرحلة 2: بانتظار تأكيد الدفع" : "Step 2: Awaiting Payment"
+            : isProcessing
+            ? isAr ? "المرحلة 3: قيد التجهيز الآن" : "Step 3: Preparing Keys"
+            : isAr ? "المرحلة 4: تم التسليم" : "Step 4: Delivered"}
+        </span>
+      </div>
+
+      {/* Timeline items list */}
+      <div style={{ display: "flex", flexDirection: "column", position: "relative" }}>
+        {milestones.map((m, idx) => {
+          const isLast = idx === milestones.length - 1;
+          const isDone = m.state === "completed";
+          const isActive = m.state === "active";
+
+          return (
+            <div key={idx} style={{ display: "flex", gap: "14px", position: "relative", minHeight: isLast ? "auto" : "60px" }}>
+              {/* Timeline Indicator Column */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "20px", flexShrink: 0 }}>
+                {isDone ? (
+                  <div
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      backgroundColor: "rgba(16, 185, 129, 0.15)",
+                      border: "1.5px solid #10b981",
+                      color: "#10b981",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Check style={{ width: "11px", height: "11px", strokeWidth: 3 }} />
+                  </div>
+                ) : isActive ? (
+                  <div
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      backgroundColor: isPending ? "rgba(245, 158, 11, 0.2)" : "rgba(0, 229, 255, 0.2)",
+                      border: `1.5px solid ${isPending ? "#fbbf24" : accentCyan}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: `0 0 10px ${isPending ? "rgba(245, 158, 11, 0.6)" : "rgba(0, 229, 255, 0.6)"}`,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: isPending ? "#fbbf24" : accentCyan,
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      backgroundColor: "rgba(255, 255, 255, 0.04)",
+                      border: "1.5px solid rgba(255, 255, 255, 0.15)",
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+
+                {/* Vertical connecting line */}
+                {!isLast && (
+                  <div
+                    style={{
+                      width: "1.5px",
+                      flex: 1,
+                      backgroundColor: isDone ? "#10b981" : "rgba(255, 255, 255, 0.1)",
+                      margin: "4px 0",
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Text Information */}
+              <div style={{ flex: 1, paddingBottom: isLast ? "0" : "16px" }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
+                  <span
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: isActive ? 800 : isDone ? 700 : 600,
+                      color: isActive ? (isPending ? "#fbbf24" : accentCyan) : isDone ? textPrimary : "rgba(255, 255, 255, 0.4)",
+                    }}
+                  >
+                    {m.title}
+                  </span>
+                  <span style={{ fontSize: "11px", color: textSecondary, fontWeight: 600 }}>
+                    {m.time}
+                  </span>
+                </div>
+                <p style={{ margin: "3px 0 0", fontSize: "12px", color: textSecondary, lineHeight: 1.5 }}>
+                  {m.desc}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 2. ORDER ITEMS CARD (تفاصيل المنتجات - مرتب وأنيق بدون حشو)
+ */
+function OrderItemsCard({
+  items,
+  isAr,
+  cardBg,
+  cardBorder,
+  textPrimary,
+  textSecondary,
+  accentCyan,
+  dbImageMap,
+}: {
+  items: any[];
+  isAr: boolean;
+  cardBg: string;
+  cardBorder: string;
+  textPrimary: string;
+  textSecondary: string;
+  accentCyan: string;
+  dbImageMap: Record<string, string>;
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: "16px",
+        backgroundColor: cardBg,
+        border: `1px solid ${cardBorder}`,
+        padding: "18px 20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "14px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <h3 style={{ fontSize: "14px", fontWeight: 800, color: textPrimary, margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+          <ShoppingBag style={{ width: "16px", height: "16px", color: accentCyan }} />
+          {isAr ? `المنتجات في هذا الطلب (${items.length})` : `Order Items (${items.length})`}
+        </h3>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        {items.map((it: any, idx: number) => {
+          const coverImg = getProductCoverImage(it.image, it.name, it.product_slug || it.slug, dbImageMap);
+          const qty = Math.max(1, Number(it.qty ?? it.quantity) || 1);
+          const regionBadge = formatFullRegion(
+            {
+              region: it.region,
+              cartId: it.cartId || it.id || it.sku,
+              name: it.name,
+              slug: it.product_slug || it.slug,
+            },
+            isAr ? "ar" : "en"
+          );
+
+          return (
+            <div
+              key={idx}
+              style={{
+                borderRadius: "12px",
+                backgroundColor: "rgba(255, 255, 255, 0.025)",
+                border: "1px solid rgba(255, 255, 255, 0.07)",
+                padding: "12px 14px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flex: "1 1 auto" }}>
+                <img
+                  src={coverImg}
+                  alt={it.name || "Product"}
+                  style={{
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "10px",
+                    objectFit: "cover",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    backgroundColor: "rgba(255, 255, 255, 0.03)",
+                    flexShrink: 0,
+                  }}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/app/assets/img/gx-logo.png";
+                  }}
+                />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: "13.5px", fontWeight: 800, color: textPrimary, lineHeight: 1.4 }}>
+                    {it.name || (isAr ? "منتج رقمي" : "Digital Product")}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px", flexWrap: "wrap" }}>
+                    {regionBadge && (
+                      <span
+                        style={{
+                          fontSize: "10.5px",
+                          color: accentCyan,
+                          fontWeight: 800,
+                          backgroundColor: "rgba(0, 229, 255, 0.08)",
+                          padding: "1px 7px",
+                          borderRadius: "4px",
+                          border: "1px solid rgba(0, 229, 255, 0.2)",
+                        }}
+                      >
+                        {regionBadge}
+                      </span>
+                    )}
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: "#cbd5e1",
+                        fontWeight: 700,
+                        backgroundColor: "rgba(255, 255, 255, 0.06)",
+                        padding: "1px 7px",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      ×{qty}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Item Price on opposite side */}
+              {it.price !== undefined && (
+                <div style={{ fontSize: "13.5px", fontWeight: 800, color: textPrimary, flexShrink: 0 }} dir="ltr">
+                  {(Number(it.price) * qty).toFixed(2)} <span style={{ fontSize: "11px", color: textSecondary }}>{isAr ? "د.أ" : "JOD"}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 3. ORDER SUMMARY TABLE (ملخص الطلب المالي والمعلومات - Like G2G Image 4)
+ */
+function OrderSummaryTable({
+  order,
+  isAr,
+  cardBg,
+  cardBorder,
+  textPrimary,
+  textSecondary,
+  accentCyan,
+  isPending,
+}: {
+  order: any;
+  isAr: boolean;
+  cardBg: string;
+  cardBorder: string;
+  textPrimary: string;
+  textSecondary: string;
+  accentCyan: string;
+  isPending: boolean;
+}) {
+  const [copiedNum, setCopiedNum] = useState(false);
+
+  const handleCopyOrderNum = () => {
+    if (order?.order_number) {
+      if (navigator?.clipboard?.writeText) {
+        navigator.clipboard.writeText(String(order.order_number));
+      }
+      setCopiedNum(true);
+      toast.success(isAr ? "تم نسخ رقم الطلب بنجاح!" : "Order number copied!");
+      setTimeout(() => setCopiedNum(false), 2000);
+    }
+  };
+
+  const formattedDate = order?.created_at
+    ? new Date(order.created_at).toLocaleDateString(isAr ? "ar-JO" : "en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
+
+  const deliveryData = parseDeliveryData(order?.delivery_data);
+  const subtotalJod = Number(order?.total_jod || 0);
+  const rawPm = String(deliveryData.payment_method || order?.payment_method || "").toLowerCase().trim();
+  const isBinance = rawPm === "binance_pay" || rawPm === "binance" || Boolean(deliveryData.binance_order_id || deliveryData.binance_id);
+
+  const calculatedBinanceFee = isBinance ? Math.round(subtotalJod * 0.03 * 100) / 100 : 0;
+  const feeJod = Number(deliveryData.fee_jod ?? calculatedBinanceFee);
+  const feeRate = deliveryData.fee_rate || "3%";
+  const totalWithFeeJod = Number(deliveryData.total_with_fee_jod ?? (subtotalJod + feeJod));
+  const totalUsdt = deliveryData.total_usdt ?? (isBinance && totalWithFeeJod > 0 ? (totalWithFeeJod * 1.41).toFixed(2) : null);
+
+  const paymentMethodLabel = (() => {
+    if (rawPm === "cliq") return isAr ? "خدمة كليك (CliQ) 🇯🇴" : "CliQ (Jordan) 🇯🇴";
+    if (isBinance) return isAr ? "بايننس باي (Binance Pay) 🟡" : "Binance Pay 🟡";
+    if (rawPm === "gx_wallet") return isAr ? "محفظة GX Wallet 🌐" : "GX Wallet 🌐";
+    if (rawPm === "card") return isAr ? "بطاقة بنكية (Visa / MC) 💳" : "Bank Card (Visa / MC) 💳";
+    return isAr ? "دفع إلكتروني مباشر" : "Direct Electronic Payment";
+  })();
+
+  return (
+    <div
+      style={{
+        borderRadius: "16px",
+        backgroundColor: cardBg,
+        border: `1px solid ${cardBorder}`,
+        padding: "18px 20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "14px",
+      }}
+    >
+      <h3 style={{ fontSize: "14px", fontWeight: 800, color: textPrimary, margin: 0 }}>
+        {isAr ? "ملخص الطلب والبيانات المالية" : "Order Summary & Details"}
+      </h3>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(135px, 1fr))",
+          gap: "12px",
+          borderRadius: "12px",
+          backgroundColor: "rgba(255, 255, 255, 0.02)",
+          border: "1px solid rgba(255, 255, 255, 0.06)",
+          padding: "14px 16px",
+        }}
+      >
+        {/* Row 1: Order No */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+          <span style={{ fontSize: "11px", color: textSecondary, fontWeight: 700 }}>
+            {isAr ? "رقم الطلب" : "Order No."}
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "13px", fontWeight: 900, color: textPrimary, fontFamily: "monospace" }} dir="ltr">
+              #{order?.order_number}
+            </span>
+            <button
+              type="button"
+              onClick={handleCopyOrderNum}
+              style={{
+                background: "none",
+                border: "none",
+                color: copiedNum ? "#10b981" : accentCyan,
+                cursor: "pointer",
+                padding: "2px",
+                display: "flex",
+                alignItems: "center",
+              }}
+              title={isAr ? "نسخ" : "Copy"}
+            >
+              {copiedNum ? <Check style={{ width: "13px", height: "13px" }} /> : <Copy style={{ width: "13px", height: "13px" }} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: Date */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+          <span style={{ fontSize: "11px", color: textSecondary, fontWeight: 700 }}>
+            {isAr ? "تاريخ تقديم الطلب" : "Placed On"}
+          </span>
+          <span style={{ fontSize: "12.5px", fontWeight: 800, color: textPrimary }}>
+            {formattedDate}
+          </span>
+        </div>
+
+        {/* Row 3: Payment Status */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+          <span style={{ fontSize: "11px", color: textSecondary, fontWeight: 700 }}>
+            {isAr ? "حالة الدفع" : "Payment Status"}
+          </span>
+          <span
+            style={{
+              fontSize: "12.5px",
+              fontWeight: 800,
+              color: isPending ? "#fbbf24" : "#10b981",
+            }}
+          >
+            {isPending ? (isAr ? "بانتظار التأكيد ⏳" : "Awaiting Confirmation ⏳") : (isAr ? "تم التأكيد بنجاح ✓" : "Paid ✓")}
+          </span>
+        </div>
+
+        {/* Row 4: Payment Method */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+          <span style={{ fontSize: "11px", color: textSecondary, fontWeight: 700 }}>
+            {isAr ? "طريقة الدفع" : "Payment Method"}
+          </span>
+          <span style={{ fontSize: "12.5px", fontWeight: 800, color: textPrimary }}>
+            {paymentMethodLabel}
+          </span>
+        </div>
+      </div>
+
+      {/* Financial Breakdown (Products Subtotal, Service Fee if any, Total) */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          paddingTop: "10px",
+          borderTop: "1px solid rgba(255, 255, 255, 0.07)",
+          fontSize: "13px",
+        }}
+      >
+        {feeJod > 0 && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: textSecondary }}>
+              <span>{isAr ? "قيمة المنتجات:" : "Products Subtotal:"}</span>
+              <span dir="ltr" style={{ fontWeight: 700, color: textPrimary }}>
+                {subtotalJod.toFixed(2)} {isAr ? "د.أ" : "JOD"}
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: "#38bdf8" }}>
+              <span>{isAr ? `رسوم الخدمة (${feeRate}):` : `Service Fee (${feeRate}):`}</span>
+              <span dir="ltr" style={{ fontWeight: 700 }}>
+                +{feeJod.toFixed(2)} {isAr ? "د.أ" : "JOD"}
+              </span>
+            </div>
+          </>
+        )}
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingTop: feeJod > 0 ? "8px" : "0",
+            borderTop: feeJod > 0 ? "1px dashed rgba(255, 255, 255, 0.07)" : "none",
+          }}
+        >
+          <span style={{ fontSize: "13.5px", fontWeight: 800, color: textPrimary }}>
+            {isAr ? "المبلغ الإجمالي:" : "Total Amount:"}
+          </span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: isAr ? "flex-start" : "flex-end" }}>
+            <div style={{ fontSize: "18px", fontWeight: 900, color: isPending ? "#fbbf24" : "#10b981", display: "flex", alignItems: "center", gap: "4px" }} dir="ltr">
+              <span>{totalWithFeeJod.toFixed(2)}</span>
+              <span style={{ fontSize: "12px", color: textSecondary }}>{isAr ? "د.أ" : "JOD"}</span>
+            </div>
+            {totalUsdt && (
+              <span style={{ fontSize: "12px", fontWeight: 800, color: "#F0B90B" }} dir="ltr">
+                (≈ {totalUsdt} USDT)
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 4. ORDER PAYMENT PENDING VIEW (لما يطلب جديد وبانتظار تأكيد الدفع)
+ */
+function OrderPaymentPendingView({
+  order,
+  isAr,
+  cardBg,
+  cardBorder,
+  textPrimary,
+  textSecondary,
+  accentCyan,
+  dbImageMap,
+}: OrderStatusViewProps) {
+  const items = Array.isArray(order?.items) ? order.items : [];
+
+  const [copiedOrderId, setCopiedOrderId] = useState(false);
+  const [copiedPayId, setCopiedPayId] = useState(false);
+  const [copiedUsdt, setCopiedUsdt] = useState(false);
+  const [copiedCliqAlias, setCopiedCliqAlias] = useState(false);
+
+  const deliveryData = parseDeliveryData(order?.delivery_data);
+  const subtotalJod = Number(order?.total_jod || 0);
+  const rawPm = String(deliveryData.payment_method || order?.payment_method || "").toLowerCase().trim();
+  const isBinance = rawPm === "binance_pay" || rawPm === "binance" || Boolean(deliveryData.binance_order_id || deliveryData.binance_id);
+
+  const calculatedBinanceFee = isBinance ? Math.round(subtotalJod * 0.03 * 100) / 100 : 0;
+  const feeJod = Number(deliveryData.fee_jod ?? calculatedBinanceFee);
+  const totalWithFeeJod = Number(deliveryData.total_with_fee_jod ?? (subtotalJod + feeJod));
+  const totalUsdt = deliveryData.total_usdt ?? (isBinance && totalWithFeeJod > 0 ? (totalWithFeeJod * 1.41).toFixed(2) : null);
+
+  const waHelpUrl = isBinance
+    ? `https://wa.me/962776252313?text=${encodeURIComponent(
+        isAr
+          ? `مرحباً متجر GX Store 👋 أود الاستفسار عن التحقق من طلبي رقم #${order?.order_number} (الدفع عبر Binance Pay - رقم العملية: ${deliveryData.binance_order_id || deliveryData.binance_id || "—"}). المبلغ: ${totalUsdt || ""} USDT.`
+          : `Hello GX Store 👋 Inquiring about Binance Pay verification for order #${order?.order_number} (Binance ID: ${deliveryData.binance_order_id || deliveryData.binance_id || "—"}). Total: ${totalUsdt || ""} USDT.`
+      )}`
+    : `https://wa.me/962776252313?text=${encodeURIComponent(
+        isAr
+          ? `مرحباً متجر GX Store 👋 أود إرسال إشعار تحويل CliQ لطلبي رقم #${order?.order_number}. المبلغ: ${Number(order?.total_jod || 0).toFixed(2)} د.أ.`
+          : `Hello GX Store 👋 Inquiring about CliQ payment confirmation for order #${order?.order_number}. Amount: ${Number(order?.total_jod || 0).toFixed(2)} JOD.`
+      )}`;
+
+  const handleCopy = (text: string, setCopied: (v: boolean) => void, msgAr: string, msgEn: string) => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success(isAr ? msgAr : msgEn);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "18px",
+        width: "100%",
+        animation: "drfFadeUp 0.3s ease",
+      }}
+    >
+      {/* ── TOP STATUS BANNER ── */}
+      <div
+        style={{
+          borderRadius: "18px",
+          backgroundColor: cardBg,
+          border: isBinance ? "1px solid rgba(240, 185, 11, 0.35)" : "1px solid rgba(245, 158, 11, 0.35)",
+          background: isBinance
+            ? "linear-gradient(180deg, rgba(240, 185, 11, 0.10) 0%, rgba(17, 19, 23, 0.96) 100%)"
+            : "linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, rgba(17, 19, 23, 0.96) 100%)",
+          padding: "24px 24px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+          boxShadow: isBinance ? "0 8px 30px rgba(240, 185, 11, 0.08)" : "0 8px 30px rgba(0, 0, 0, 0.3)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "5px 12px",
+              borderRadius: "8px",
+              backgroundColor: isBinance ? "rgba(240, 185, 11, 0.16)" : "rgba(245, 158, 11, 0.16)",
+              color: isBinance ? "#fde047" : "#fbbf24",
+              fontSize: "12px",
+              fontWeight: 800,
+              border: isBinance ? "1px solid rgba(240, 185, 11, 0.3)" : "1px solid rgba(245, 158, 11, 0.3)",
+            }}
+          >
+            <Clock style={{ width: "13px", height: "13px" }} />
+            <span>{isAr ? "حالة الدفع: ⏳ قيد التحقق والمراجعة" : "Payment Status: ⏳ Pending Verification"}</span>
+          </span>
+
+          <span style={{ fontSize: "12px", color: textSecondary, fontFamily: "monospace", fontWeight: 700 }} dir="ltr">
+            #{order?.order_number}
+          </span>
+        </div>
+
+        <div>
+          <h2 style={{ fontSize: "20px", fontWeight: 900, color: textPrimary, margin: "0 0 8px" }}>
+            {isBinance
+              ? (isAr ? "تم استلام طلبك وبانتظار التحقق من دفعة Binance Pay" : "Order Received — Awaiting Binance Pay Verification")
+              : (isAr ? "تم استلام طلبك وبانتظار تأكيد استلام تحويل CliQ" : "Order Received — Awaiting CliQ Payment Confirmation")}
+          </h2>
+          <p style={{ margin: 0, fontSize: "13.5px", color: textSecondary, lineHeight: 1.7 }}>
+            {isBinance
+              ? (isAr
+                  ? "تم تسجيل طلبك وتفاصيل عملية الدفع بنجاح. نقوم حالياً بمطابقة الدفعة للتأكد من وصولها، وقد تستغرق هذه العملية بعض الوقت. بمجرد تأكيد الدفع، سيتم تجهيز طلبك وتسليم أكوادك فوراً، ولا يلزمك اتخاذ أي إجراء إضافي حالياً."
+                  : "Your order and payment details have been recorded successfully. We are currently verifying the payment, which may take some time. Once confirmed, your order will be fulfilled and codes delivered immediately. No further action is required from you.")
+              : (isAr
+                  ? "تم تسجيل طلبك بنجاح. نقوم حالياً بالتحقق من عملية الدفع ومطابقة التحويل لتأكيد الطلب والانتقال مباشرة لمرحلة التجهيز والتسليم الفوري."
+                  : "Your order has been recorded successfully. We are currently verifying the payment transfer to confirm your order and proceed directly to delivery.")}
+          </p>
+        </div>
+
+        {/* Detailed Payment Card */}
+        {isBinance ? (
+          <div
+            style={{
+              marginTop: "4px",
+              padding: "16px 18px",
+              borderRadius: "14px",
+              backgroundColor: "rgba(240, 185, 11, 0.05)",
+              border: "1px solid rgba(240, 185, 11, 0.25)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "14px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", borderBottom: "1px solid rgba(240, 185, 11, 0.15)", paddingBottom: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "16px" }}>🟡</span>
+                <strong style={{ fontSize: "13.5px", color: "#F0B90B", fontWeight: 800 }}>
+                  {isAr ? "بيانات الدفع عبر بايننس باي (Binance Pay)" : "Binance Pay Payment Details"}
+                </strong>
+              </div>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  color: "#fbbf24",
+                  backgroundColor: "rgba(251, 191, 36, 0.12)",
+                  padding: "2px 8px",
+                  borderRadius: "6px",
+                  border: "1px solid rgba(251, 191, 36, 0.25)",
+                }}
+              >
+                {isAr ? "⏳ بانتظار مطابقة الإشعار" : "⏳ Awaiting Match"}
+              </span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", fontSize: "12.5px" }}>
+              {/* Customer Binance Order ID */}
+              {(deliveryData.binance_order_id || deliveryData.binance_id) && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span style={{ color: "#9ca3af", fontSize: "11px", fontWeight: 700 }}>
+                    {isAr ? "رقم عملية بايننس (Binance Order ID):" : "Your Binance Order ID:"}
+                  </span>
+                  <div>
+                    <code style={{ color: "#00e5ff", fontFamily: "monospace", fontSize: "13.5px", fontWeight: 800, background: "rgba(0, 229, 255, 0.08)", padding: "3px 10px", borderRadius: "6px", border: "1px solid rgba(0, 229, 255, 0.2)" }}>
+                      {String(deliveryData.binance_order_id || deliveryData.binance_id)}
+                    </code>
+                  </div>
+                </div>
+              )}
+
+              {/* Store Binance Pay ID */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ color: "#9ca3af", fontSize: "11px", fontWeight: 700 }}>
+                  {isAr ? "معرّف المتجر في بايننس (Pay ID):" : "Store Binance Pay ID:"}
+                </span>
+                <div>
+                  <code style={{ color: "#F0B90B", fontFamily: "monospace", fontSize: "13.5px", fontWeight: 800, background: "rgba(240, 185, 11, 0.08)", padding: "3px 10px", borderRadius: "6px", border: "1px solid rgba(240, 185, 11, 0.2)" }}>
+                    835207366
+                  </code>
+                </div>
+              </div>
+
+              {/* Required Transfer Amount with 3% fee */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ color: "#9ca3af", fontSize: "11px", fontWeight: 700 }}>
+                  {isAr ? "المبلغ المطلوب بالكامل (شاملاً رسوم 3%):" : "Total Required (incl. 3% fee):"}
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ color: "#ffffff", fontWeight: 900, fontSize: "14px", background: "rgba(240, 185, 11, 0.18)", padding: "3px 10px", borderRadius: "6px", border: "1px solid rgba(240, 185, 11, 0.35)" }}>
+                    {totalUsdt ? `${totalUsdt} USDT` : `${totalWithFeeJod.toFixed(2)} JOD`}
+                  </span>
+                  <span style={{ fontSize: "11.5px", color: textSecondary }}>
+                    ({totalWithFeeJod.toFixed(2)} {isAr ? "د.أ" : "JOD"})
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div
+            style={{
+              marginTop: "4px",
+              padding: "16px 18px",
+              borderRadius: "14px",
+              backgroundColor: "rgba(0, 229, 255, 0.05)",
+              border: "1px solid rgba(0, 229, 255, 0.25)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "16px" }}>🇯🇴</span>
+                <strong style={{ fontSize: "13.5px", color: accentCyan, fontWeight: 800 }}>
+                  {isAr ? "الدفع عبر خدمة كليك (CliQ)" : "CliQ Payment Details"}
+                </strong>
+              </div>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  color: accentCyan,
+                  backgroundColor: "rgba(0, 229, 255, 0.12)",
+                  padding: "2px 8px",
+                  borderRadius: "6px",
+                  border: "1px solid rgba(0, 229, 255, 0.25)",
+                }}
+              >
+                {isAr ? "⏳ بانتظار استلام التحويل البنكي" : "⏳ Awaiting Bank Transfer"}
+              </span>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", fontSize: "12.5px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ color: "#9ca3af" }}>{isAr ? "الاسم المستعار (CliQ Alias):" : "CliQ Alias:"}</span>
+                <code style={{ color: accentCyan, fontFamily: "monospace", fontSize: "13.5px", fontWeight: 800, background: "rgba(0, 229, 255, 0.08)", padding: "3px 10px", borderRadius: "6px", border: "1px solid rgba(0, 229, 255, 0.2)" }}>
+                  GXSTORE
+                </code>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ color: "#9ca3af" }}>{isAr ? "المبلغ المطلوب:" : "Amount:"}</span>
+                <strong style={{ color: "#ffffff", fontSize: "14px", fontWeight: 900 }}>
+                  {Number(order?.total_jod || 0).toFixed(2)} {isAr ? "د.أ" : "JOD"}
+                </strong>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── ORDER ACTIVITY TIMELINE (Like G2G) ── */}
+      <OrderActivityTimeline
+        order={order}
+        isAr={isAr}
+        cardBg={cardBg}
+        cardBorder={cardBorder}
+        textPrimary={textPrimary}
+        textSecondary={textSecondary}
+        accentCyan={accentCyan}
+        currentStatus="pending"
+      />
+
+      {/* ── ORDER ITEMS CARD (Like G2G) ── */}
+      <OrderItemsCard
+        items={items}
+        isAr={isAr}
+        cardBg={cardBg}
+        cardBorder={cardBorder}
+        textPrimary={textPrimary}
+        textSecondary={textSecondary}
+        accentCyan={accentCyan}
+        dbImageMap={dbImageMap}
+      />
+
+      {/* ── ORDER SUMMARY TABLE (Like G2G) ── */}
+      <OrderSummaryTable
+        order={order}
+        isAr={isAr}
+        cardBg={cardBg}
+        cardBorder={cardBorder}
+        textPrimary={textPrimary}
+        textSecondary={textSecondary}
+        accentCyan={accentCyan}
+        isPending={true}
+      />
+    </div>
+  );
+}
+
+/**
+ * 5. ORDER PREPARATION VIEW (بعد تأكيد استلام الدفع والطلب قيد التحضير والتجهيز)
+ */
+function OrderPreparationView({
+  order,
+  isAr,
+  cardBg,
+  cardBorder,
+  textPrimary,
+  textSecondary,
+  accentCyan,
+  dbImageMap,
+}: OrderStatusViewProps) {
+  const items = Array.isArray(order?.items) ? order.items : [];
+
+  const waHelpUrl = `https://wa.me/962776252313?text=${encodeURIComponent(
+    isAr
+      ? `مرحباً متجر GX Store 👋 أود الاستفسار عن طلبي رقم #${order?.order_number} (الطلب قيد التحضير والتجهيز).`
+      : `Hello GX Store 👋 Inquiring about my order #${order?.order_number} (in preparation).`
+  )}`;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "18px",
+        width: "100%",
+        animation: "drfFadeUp 0.3s ease",
+      }}
+    >
+      {/* ── TOP STATUS BANNER ── */}
+      <div
+        style={{
+          borderRadius: "16px",
+          backgroundColor: cardBg,
+          border: "1px solid rgba(0, 229, 255, 0.3)",
+          background: "linear-gradient(180deg, rgba(0, 229, 255, 0.08) 0%, rgba(17, 19, 23, 0.95) 100%)",
+          padding: "24px 22px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span
+            style={{
+              padding: "4px 10px",
+              borderRadius: "6px",
+              backgroundColor: "rgba(0, 229, 255, 0.15)",
+              color: accentCyan,
+              fontSize: "11px",
+              fontWeight: 800,
+            }}
+          >
+            {isAr ? "تم تأكيد الدفع • قيد التجهيز ⚡" : "Payment Confirmed • In Preparation ⚡"}
+          </span>
+        </div>
+        <h2 style={{ fontSize: "18px", fontWeight: 900, color: textPrimary, margin: 0 }}>
+          {isAr ? "طلبك قيد التحضير والتجهيز الآن" : "Your Order is Being Prepared"}
+        </h2>
+        <p style={{ margin: 0, fontSize: "13px", color: textSecondary, lineHeight: 1.6 }}>
+          {isAr
+            ? "تم تأكيد استلام الدفع بنجاح. يعمل فريق المتجر حالياً على إعداد وتجهيز الأكواد الرقمية، وستظهر مباشرة في الخطوة التالية فور الانتهاء."
+            : "Payment confirmed successfully. Our store team is preparing your digital codes, and they will appear directly here once ready."}
+        </p>
+      </div>
+
+      {/* ── ORDER ACTIVITY TIMELINE (Like G2G) ── */}
+      <OrderActivityTimeline
+        order={order}
+        isAr={isAr}
+        cardBg={cardBg}
+        cardBorder={cardBorder}
+        textPrimary={textPrimary}
+        textSecondary={textSecondary}
+        accentCyan={accentCyan}
+        currentStatus="processing"
+      />
+
+      {/* ── ORDER ITEMS CARD (Like G2G) ── */}
+      <OrderItemsCard
+        items={items}
+        isAr={isAr}
+        cardBg={cardBg}
+        cardBorder={cardBorder}
+        textPrimary={textPrimary}
+        textSecondary={textSecondary}
+        accentCyan={accentCyan}
+        dbImageMap={dbImageMap}
+      />
+
+      {/* ── ORDER SUMMARY TABLE (Like G2G) ── */}
+      <OrderSummaryTable
+        order={order}
+        isAr={isAr}
+        cardBg={cardBg}
+        cardBorder={cardBorder}
+        textPrimary={textPrimary}
+        textSecondary={textSecondary}
+        accentCyan={accentCyan}
+        isPending={false}
+      />
+    </div>
+  );
 }
 
 /* ────────────────────────────────────────────────────────────────
@@ -636,7 +1809,7 @@ function ReviewOrderModal({
    MAIN COMPONENT
    ──────────────────────────────────────────────────────────────── */
 
-export function DriffleOrderDeliveryView({
+export function GxOrderDeliveryView({
   order,
   loading,
   error,
@@ -648,7 +1821,7 @@ export function DriffleOrderDeliveryView({
   onCopyKey,
   ipMismatchInfo,
   onRefresh,
-}: DriffleOrderDeliveryViewProps) {
+}: GxOrderDeliveryViewProps) {
   const { lang, dir } = useLang();
   const isAr = lang === "ar";
 
@@ -665,14 +1838,35 @@ export function DriffleOrderDeliveryView({
   // Product images database cache
   const [dbImageMap, setDbImageMap] = useState<Record<string, string>>({});
 
+  const statusLower = (order?.status || "").toLowerCase();
   const isCancelledOrder = Boolean(
-    (order?.status || "").toLowerCase() === "cancelled" ||
+    statusLower === "cancelled" ||
     (error && (error.includes("إلغاء") || error.includes("cancelled") || error.includes("ملغي")))
   );
+  const isPendingOrder = Boolean(!isCancelledOrder && statusLower === "pending");
+  const isProcessingOrder = Boolean(!isCancelledOrder && (statusLower === "paid" || statusLower === "processing"));
+  const isDeliveredOrder = Boolean(statusLower === "delivered" || statusLower === "completed");
+  const currentStep: 2 | 3 | 4 = isDeliveredOrder ? 4 : isProcessingOrder ? 3 : 2;
+
+  const [revealedModalKey, setRevealedModalKey] = useState<DeliveryCode | null>(null);
+  const prevStatusRef = React.useRef(order?.status);
+
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    const current = order?.status;
+    if (
+      prev &&
+      (prev.toLowerCase() === "paid" || prev.toLowerCase() === "processing" || prev.toLowerCase() === "pending") &&
+      (current?.toLowerCase() === "delivered" || current?.toLowerCase() === "completed")
+    ) {
+      toast.success(isAr ? "🎉 مبروك! تم تجهيز وتسليم طلبك بنجاح!" : "🎉 Congratulations! Your order is delivered!");
+    }
+    prevStatusRef.current = current;
+  }, [order?.status, isAr]);
 
   const deliveryCodes: DeliveryCode[] = useMemo(() => {
-    if (!order?.delivery_data || typeof order.delivery_data !== "object") return [];
-    const codes = (order.delivery_data as any).codes;
+    const delData = parseDeliveryData(order?.delivery_data);
+    const codes = delData.codes;
     return Array.isArray(codes) ? codes : [];
   }, [order]);
 
@@ -979,6 +2173,42 @@ export function DriffleOrderDeliveryView({
             0%, 100% { box-shadow: 0 0 15px rgba(0, 229, 255, 0.15); }
             50% { box-shadow: 0 0 25px rgba(0, 229, 255, 0.35); }
           }
+          @keyframes drfRadarPing {
+            0% { transform: scale(0.85); opacity: 0.9; }
+            50% { transform: scale(1.4); opacity: 0.35; }
+            100% { transform: scale(1.9); opacity: 0; }
+          }
+          @keyframes drfLiveBadgePulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.35; transform: scale(0.85); }
+          }
+          @keyframes drfGlowPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 229, 255, 0.25), inset 0 0 15px rgba(0, 229, 255, 0.15); }
+            50% { box-shadow: 0 0 35px rgba(0, 229, 255, 0.55), inset 0 0 25px rgba(0, 229, 255, 0.3); }
+          }
+          @keyframes drfCelebrationPop {
+            0% { transform: scale(0.95); opacity: 0; }
+            50% { transform: scale(1.02); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          @keyframes drfPulseCircle {
+            0%, 100% {
+              box-shadow: 0 0 16px rgba(0, 229, 255, 0.6), 0 0 28px rgba(0, 229, 255, 0.25);
+              transform: scale(1);
+            }
+            50% {
+              box-shadow: 0 0 26px rgba(0, 229, 255, 0.95), 0 0 42px rgba(0, 229, 255, 0.45);
+              transform: scale(1.08);
+            }
+          }
+          @keyframes drfLineFlow {
+            0% {
+              background-position: 0% 50%;
+            }
+            100% {
+              background-position: 200% 50%;
+            }
+          }
           @media (max-width: 640px) {
             .drf-unit-card-inner {
               flex-direction: column !important;
@@ -1031,90 +2261,13 @@ export function DriffleOrderDeliveryView({
         }}
       >
         {/* =========================================================
-            HEADER STEPPER (Driffle Exact 3 Steps)
+            HEADER STEPPER (4-Step Animated Interactive Line)
            ========================================================= */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "8px 0",
-            animation: "drfFadeUp 0.3s ease",
-          }}
-        >
-          {/* Step 1: Cart */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <div
-              style={{
-                width: "28px",
-                height: "28px",
-                borderRadius: "50%",
-                backgroundColor: "rgba(0, 229, 255, 0.12)",
-                border: "1px solid rgba(0, 229, 255, 0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: accentCyan,
-              }}
-            >
-              <Check style={{ width: "14px", height: "14px" }} />
-            </div>
-            <span style={{ fontSize: "12.5px", fontWeight: 700, color: textSecondary }}>
-              {isAr ? "السلة" : "Cart"}
-            </span>
-          </div>
-
-          <div style={{ width: "32px", height: "1px", backgroundColor: "rgba(255, 255, 255, 0.12)" }} />
-
-          {/* Step 2: Checkout */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <div
-              style={{
-                width: "28px",
-                height: "28px",
-                borderRadius: "50%",
-                backgroundColor: "rgba(0, 229, 255, 0.12)",
-                border: "1px solid rgba(0, 229, 255, 0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: accentCyan,
-              }}
-            >
-              <Check style={{ width: "14px", height: "14px" }} />
-            </div>
-            <span style={{ fontSize: "12.5px", fontWeight: 700, color: textSecondary }}>
-              {isAr ? "الدفع" : "Checkout"}
-            </span>
-          </div>
-
-          <div style={{ width: "32px", height: "1px", backgroundColor: "rgba(255, 255, 255, 0.12)" }} />
-
-          {/* Step 3: Reveal / Delivery (Active) */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <div
-              style={{
-                width: "28px",
-                height: "28px",
-                borderRadius: "50%",
-                background: `linear-gradient(135deg, ${accentCyan}, #0098d4)`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#07090e",
-                fontWeight: 900,
-                fontSize: "12px",
-                boxShadow: "0 0 16px rgba(0, 229, 255, 0.4)",
-              }}
-            >
-              3
-            </div>
-            <span style={{ fontSize: "12.5px", fontWeight: 800, color: accentCyan }}>
-              {isAr ? "الاستلام والتفعيل" : "Reveal Product"}
-            </span>
-          </div>
-        </div>
+        <OrderStepperLine
+          currentStep={currentStep}
+          isAr={isAr}
+          accentCyan={accentCyan}
+        />
 
         {/* LOADING STATE */}
         {loading && (
@@ -1312,7 +2465,7 @@ export function DriffleOrderDeliveryView({
           </div>
         )}
 
-        {/* IP MISMATCH FRAUD PROTECTION NOTICE */}
+        {/* IP MISMATCH OR ACCOUNT MISMATCH FRAUD PROTECTION NOTICE */}
         {!loading && !isCancelledOrder && ipMismatchInfo?.mismatch && (
           <OrderIpMismatchNotice
             orderNumber={ipMismatchInfo.orderNumber || order?.order_number}
@@ -1320,12 +2473,14 @@ export function DriffleOrderDeliveryView({
             orderToken={orderToken}
             purchaseIp={ipMismatchInfo.purchaseIp}
             currentIp={ipMismatchInfo.currentIp}
+            accountMismatch={ipMismatchInfo.accountMismatch}
+            callerEmail={ipMismatchInfo.callerEmail}
             onRefresh={onRefresh}
           />
         )}
 
         {/* LOCKED ORDER STATE */}
-        {!loading && order && isLocked && !ipMismatchInfo?.mismatch && (
+        {!loading && order && isLocked && !isPendingOrder && !isProcessingOrder && !ipMismatchInfo?.mismatch && (
           <div
             style={{
               borderRadius: "18px",
@@ -1403,103 +2558,41 @@ export function DriffleOrderDeliveryView({
           </div>
         )}
 
+        {/* PENDING PAYMENT STATE (لما واحد يطلب جديد - Step 2) */}
+        {!loading && order && isPendingOrder && !isCancelledOrder && !ipMismatchInfo?.mismatch && (
+          <OrderPaymentPendingView
+            order={order}
+            isAr={isAr}
+            cardBg={cardBg}
+            cardBorder={cardBorder}
+            textPrimary={textPrimary}
+            textSecondary={textSecondary}
+            accentCyan={accentCyan}
+            dbImageMap={dbImageMap}
+            onRefresh={onRefresh}
+          />
+        )}
+
+        {/* ORDER IN PREPARATION STATE (بعد تأكيد الدفع - Step 3) */}
+        {!loading && order && isProcessingOrder && !isCancelledOrder && !ipMismatchInfo?.mismatch && (
+          <OrderPreparationView
+            order={order}
+            isAr={isAr}
+            cardBg={cardBg}
+            cardBorder={cardBorder}
+            textPrimary={textPrimary}
+            textSecondary={textSecondary}
+            accentCyan={accentCyan}
+            dbImageMap={dbImageMap}
+            onRefresh={onRefresh}
+          />
+        )}
+
         {/* =========================================================
-            MAIN CONTENT (WHEN LOADED & UNLOCKED)
+            MAIN CONTENT (WHEN LOADED & UNLOCKED & READY/DELIVERED - Step 4)
            ========================================================= */}
-        {!loading && order && !isLocked && !isCancelledOrder && !ipMismatchInfo?.mismatch && (
+        {!loading && order && !isPendingOrder && !isProcessingOrder && (!isLocked || isDeliveredOrder) && !isCancelledOrder && !ipMismatchInfo?.mismatch && (
           <div style={{ display: "flex", flexDirection: "column", gap: "22px", width: "100%" }}>
-            {/* ── PENDING PAYMENT ALERT BANNER (If order is incomplete) ── */}
-            {order.status === "pending" && (
-              <div
-                style={{
-                  borderRadius: "18px",
-                  backgroundColor: cardBg,
-                  border: "1px solid rgba(245, 158, 11, 0.4)",
-                  background: "linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(37, 211, 102, 0.08) 100%)",
-                  padding: "20px 24px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "18px",
-                  flexWrap: "wrap",
-                  boxShadow: "0 10px 32px rgba(0, 0, 0, 0.5)",
-                  animation: "drfFadeUp 0.4s ease",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "14px", flex: "1 1 300px" }}>
-                  <div
-                    style={{
-                      width: "48px",
-                      height: "48px",
-                      borderRadius: "14px",
-                      backgroundColor: "rgba(245, 158, 11, 0.15)",
-                      border: "1px solid rgba(245, 158, 11, 0.35)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fbbf24",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Clock style={{ width: "24px", height: "24px" }} />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span
-                        style={{
-                          padding: "2px 8px",
-                          borderRadius: "6px",
-                          backgroundColor: "rgba(245, 158, 11, 0.2)",
-                          color: "#fbbf24",
-                          fontSize: "11px",
-                          fontWeight: 800,
-                        }}
-                      >
-                        {isAr ? "طلب غير مكتمل" : "Incomplete Order"}
-                      </span>
-                      <h3 style={{ fontSize: "16px", fontWeight: 800, color: textPrimary, margin: 0 }}>
-                        {isAr ? "الطلب بانتظار إتمام الدفع ⏳" : "Order Pending Payment ⏳"}
-                      </h3>
-                    </div>
-                    <p style={{ fontSize: "13px", color: "#cbd5e1", margin: 0, lineHeight: 1.55 }}>
-                      {isAr
-                        ? "لإتمام الدفع وتأكيد الحجز الفوري للمنتجات، تواصل معنا عبر الواتساب لتزويدك ببيانات الدفع (كليك CliQ / زين كاش / بطاقة)."
-                        : "To complete payment and confirm your order, contact us on WhatsApp for payment details (CliQ / Zain Cash / Card)."}
-                    </p>
-                  </div>
-                </div>
-
-                <a
-                  href={`https://wa.me/962776252313?text=${encodeURIComponent(
-                    isAr
-                      ? `مرحباً متجر GX Store 👋\nأود استكمال الدفع لطلبي:\n📦 رقم الطلب: #${order.order_number}\n💰 المبلغ المطلوب: ${Number(order.total_jod || 0).toFixed(2)} د.أ\n🔗 رابط الطلب: https://gxstore.me/order/${order.order_number}\n\nأرجو تزويدي ببيانات الدفع (كليك CliQ / زين كاش / بطاقة). شكراً لكم!`
-                      : `Hi GX Store 👋\nI would like to complete payment for order #${order.order_number}\nAmount: ${Number(order.total_jod || 0).toFixed(2)} JOD\nLink: https://gxstore.me/order/${order.order_number}`
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "12px 24px",
-                    borderRadius: "12px",
-                    backgroundColor: "#25D366",
-                    background: "linear-gradient(135deg, #25D366 0%, #1ebe5d 100%)",
-                    color: "#051c14",
-                    fontWeight: 900,
-                    fontSize: "13.5px",
-                    textDecoration: "none",
-                    boxShadow: "0 6px 20px rgba(37, 211, 102, 0.35)",
-                    flexShrink: 0,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <WhatsAppSvg size={18} color="#051c14" />
-                  <span>{isAr ? "استكمال الدفع عبر واتساب" : "Complete via WhatsApp"}</span>
-                </a>
-              </div>
-            )}
-
             {/* ── SECTION 1: ORDER SUMMARY & DETAILS (AT THE VERY TOP) ── */}
             <div
               style={{
@@ -1635,12 +2728,29 @@ export function DriffleOrderDeliveryView({
                   );
                 })}
 
-                {order.discount_jod && Number(order.discount_jod) > 0 && (
+                {Number(order.discount_jod || 0) > 0 ? (
                   <div style={{ display: "flex", justifyContent: "space-between", color: "#10b981", fontWeight: 700 }}>
                     <span>{isAr ? "الخصم" : "Discount"}</span>
                     <span dir="ltr">-{Number(order.discount_jod).toFixed(2)} JOD</span>
                   </div>
-                )}
+                ) : null}
+
+                {(() => {
+                  const delData = parseDeliveryData(order?.delivery_data);
+                  const rawPm = String(delData.payment_method || order?.payment_method || "").toLowerCase().trim();
+                  const isBin = rawPm === "binance_pay" || rawPm === "binance" || Boolean(delData.binance_order_id || delData.binance_id);
+                  const subTotal = Number(orderTotal || order?.total_jod || 0);
+                  const calcFee = isBin ? Math.round(subTotal * 0.03 * 100) / 100 : 0;
+                  const feeJod = Number(delData.fee_jod ?? calcFee);
+                  const feeRate = delData.fee_rate || "3%";
+                  if (feeJod <= 0) return null;
+                  return (
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#38bdf8", fontWeight: 700 }}>
+                      <span>{isAr ? `رسوم الخدمة (${feeRate})` : `Service Fee (${feeRate})`}</span>
+                      <span dir="ltr">+{feeJod.toFixed(2)} JOD</span>
+                    </div>
+                  );
+                })()}
 
                 <div
                   style={{
@@ -1655,9 +2765,37 @@ export function DriffleOrderDeliveryView({
                   }}
                 >
                   <span style={{ color: textPrimary }}>{isAr ? "الإجمالي الكلي:" : "Total Paid:"}</span>
-                  <span style={{ color: accentCyan, fontSize: "16px", fontWeight: 900 }} dir="ltr">
-                    {Number(orderTotal).toFixed(2)} JOD
-                  </span>
+                  <div style={{ textAlign: isAr ? "left" : "right" }}>
+                    <span style={{ color: accentCyan, fontSize: "16px", fontWeight: 900 }} dir="ltr">
+                      {(() => {
+                        const delData = parseDeliveryData(order?.delivery_data);
+                        const rawPm = String(delData.payment_method || order?.payment_method || "").toLowerCase().trim();
+                        const isBin = rawPm === "binance_pay" || rawPm === "binance" || Boolean(delData.binance_order_id || delData.binance_id);
+                        const subTotal = Number(orderTotal || order?.total_jod || 0);
+                        const calcFee = isBin ? Math.round(subTotal * 0.03 * 100) / 100 : 0;
+                        const feeJod = Number(delData.fee_jod ?? calcFee);
+                        const totalWithFee = Number(delData.total_with_fee_jod ?? (subTotal + feeJod));
+                        return totalWithFee.toFixed(2);
+                      })()}{" "}
+                      JOD
+                    </span>
+                    {(() => {
+                      const delData = parseDeliveryData(order?.delivery_data);
+                      const rawPm = String(delData.payment_method || order?.payment_method || "").toLowerCase().trim();
+                      const isBin = rawPm === "binance_pay" || rawPm === "binance" || Boolean(delData.binance_order_id || delData.binance_id);
+                      const subTotal = Number(orderTotal || order?.total_jod || 0);
+                      const calcFee = isBin ? Math.round(subTotal * 0.03 * 100) / 100 : 0;
+                      const feeJod = Number(delData.fee_jod ?? calcFee);
+                      const totalWithFee = Number(delData.total_with_fee_jod ?? (subTotal + feeJod));
+                      const totalUsdt = delData.total_usdt ?? (isBin && totalWithFee > 0 ? (totalWithFee * 1.41).toFixed(2) : null);
+                      if (!totalUsdt) return null;
+                      return (
+                        <div style={{ color: "#F0B90B", fontSize: "12px", fontWeight: 800 }} dir="ltr">
+                          ({totalUsdt} USDT)
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             </div>
@@ -2942,34 +4080,66 @@ export function DriffleOrderDeliveryView({
                 </div>
 
                 {/* Expanded Activation Guide */}
-                {showGuide && (
-                  <div
-                    style={{
-                      borderRadius: "12px",
-                      background: "rgba(0, 0, 0, 0.25)",
-                      border: "1px solid rgba(0, 229, 255, 0.08)",
-                      padding: "16px 18px",
-                      fontSize: "12px",
-                      color: textSecondary,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "8px",
-                      lineHeight: 1.7,
-                      animation: "drfFadeUp 0.25s ease",
-                      marginTop: "4px",
-                    }}
-                  >
-                    <div style={{ fontWeight: 800, color: accentCyan, display: "flex", alignItems: "center", gap: "6px" }}>
-                      <Sparkles style={{ width: "14px", height: "14px" }} />
-                      <span>{isAr ? "طريقة استرداد وتفعيل الكود:" : "How to redeem:"}</span>
+                {showGuide && (() => {
+                  const itemGuide = resolveProductActivationGuide(
+                    {
+                      name: activeItem?.name,
+                      slug: (activeItem as any)?.slug || (activeItem as any)?.product_slug,
+                      platform: (activeItem as any)?.platform,
+                    },
+                    isAr ? "ar" : "en"
+                  );
+
+                  return (
+                    <div
+                      style={{
+                        borderRadius: "12px",
+                        background: "rgba(0, 0, 0, 0.35)",
+                        border: "1px solid rgba(0, 229, 255, 0.2)",
+                        padding: "16px 18px",
+                        fontSize: "12px",
+                        color: textSecondary,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                        lineHeight: 1.7,
+                        animation: "drfFadeUp 0.25s ease",
+                        marginTop: "6px",
+                      }}
+                    >
+                      <div style={{ fontWeight: 800, color: accentCyan, display: "flex", alignItems: "center", gap: "6px" }}>
+                        <Sparkles style={{ width: "14px", height: "14px" }} />
+                        <span>{itemGuide.title}</span>
+                      </div>
+                      <ol style={{ margin: 0, paddingLeft: isAr ? "0" : "18px", paddingRight: isAr ? "18px" : "0", display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {itemGuide.steps.map((step, sIdx) => (
+                          <li key={sIdx} style={{ color: textPrimary }}>{step}</li>
+                        ))}
+                      </ol>
+                      {itemGuide.directUrl && (
+                        <div style={{ marginTop: "6px", paddingTop: "8px", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                          <a
+                            href={itemGuide.directUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              color: accentCyan,
+                              textDecoration: "underline",
+                              fontWeight: 700,
+                              fontSize: "11.5px",
+                            }}
+                          >
+                            <ExternalLink style={{ width: "12px", height: "12px" }} />
+                            <span>{isAr ? "فتح صفحة التفعيل المباشرة 🔗" : "Open direct redemption link 🔗"}</span>
+                          </a>
+                        </div>
+                      )}
                     </div>
-                    <ol style={{ margin: 0, paddingLeft: "18px", paddingRight: "18px", display: "flex", flexDirection: "column", gap: "4px" }}>
-                      <li>{isAr ? "انسخ الكود أو الرابط الموضح أعلاه." : "Copy the digital key or credentials shown above."}</li>
-                      <li>{isAr ? "انتقل إلى الموقع أو التطبيق الرسمي للخدمة وسجل الدخول بحسابك." : "Log in to the official service."}</li>
-                      <li>{isAr ? "ألصق الرمز في خانة استرداد الرموز (Redeem Code) للتفعيل الفوري." : "Paste your key into the Redeem Code section."}</li>
-                    </ol>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             )}
 

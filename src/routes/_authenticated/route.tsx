@@ -40,6 +40,16 @@ export const Route = createFileRoute("/_authenticated")({
     }
 
     cachedUser = data.session.user;
+
+    // Any access to authenticated routes clears pending deletion
+    if (data.session.user.id) {
+      void (supabase.rpc as any)("cancel_scheduled_deletion");
+      void supabase
+        .from("profiles")
+        .update({ scheduled_deletion_at: null, deletion_reason: null } as any)
+        .eq("id", data.session.user.id);
+    }
+
     return { user: data.session.user };
   },
   component: AuthedLayout,

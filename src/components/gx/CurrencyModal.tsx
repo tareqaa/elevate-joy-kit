@@ -31,7 +31,9 @@ export function CurrencyModal({ open, onClose }: { open: boolean; onClose: () =>
         <div className="cm-select-wrap">
           <select value={value} onChange={(e) => setValue(e.target.value)}>
             {Object.entries(CURRENCIES).map(([code, info]) => (
-              <option key={code} value={code}>{code} — {info.label}</option>
+              <option key={code} value={code}>
+                {code} — {langValue === "en" ? info.labelEn : info.labelAr}
+              </option>
             ))}
           </select>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M6 9l6 6 6-6" /></svg>

@@ -1,5 +1,5 @@
 import { resolveRegionLabel } from "@/lib/gx/region";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
@@ -10,7 +10,7 @@ import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
 import { useSiteSettings, getEffectiveStockLimit } from "@/lib/gx/site-settings";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { OrderConfirmedModal } from "@/components/gx/OrderConfirmedModal";
-import { coinsToJod, jodToCoins, MAX_COINS_DISCOUNT_RATIO } from "@/lib/gx/loyalty";
+import { coinsToJod, jodToCoins, MAX_COINS_DISCOUNT_RATIO, isEligibleForCoins, isGiftCardItem } from "@/lib/gx/loyalty";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState, useMemo } from "react";
 import {
@@ -92,14 +92,19 @@ function CheckoutStepper({ stage, onStepClick }: { stage: 1 | 2; onStepClick: (s
 }
 
 function CartPage() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const cart = useCart();
+
+  useEffect(() => {
+    document.title = lang === "en" ? "Shopping Cart | GX Store" : "السلة | متجر GX Store";
+  }, [lang]);
   const { currency } = useCurrency();
   const [stage, setStage] = useState<1 | 2>(1);
   const [confirmed, setConfirmed] = useState<{
     orderNumber: string;
     waUrl: string | null;
-    paymentMethod?: "cliq" | "card" | "gx_wallet";
+    paymentMethod?: "cliq" | "card" | "gx_wallet" | "binance_pay";
+    orderToken?: string;
   } | null>(null);
 
   // --- Strict IP-Based Country Detection (Phone number has NO effect) ---
@@ -125,18 +130,48 @@ function CartPage() {
     };
   }, []);
 
-  // ONLY based on IP address: JO = Jordan (CliQ only), anything else = other countries (Visa only)
+  // ONLY based on IP address: JO = Jordan (CliQ only), anything else = international (Binance Pay)
   const isJordan = ipCountry === "JO";
 
-  const [paymentMethod, setPaymentMethod] = useState<"cliq" | "card">(isJordan ? "cliq" : "card");
+  // Check admin role to allow full preview of all payment options
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void supabase.auth.getSession().then(async ({ data: sess }) => {
+      const uid = sess.session?.user?.id;
+      if (!uid) {
+        if (active) setIsAdmin(false);
+        return;
+      }
+      try {
+        const { data } = await supabase.rpc("has_role", { _user_id: uid, _role: "admin" });
+        if (active) setIsAdmin(Boolean(data));
+      } catch {
+        if (active) setIsAdmin(false);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const [paymentMethod, setPaymentMethod] = useState<"cliq" | "binance_pay">(
+    isJordan ? "cliq" : "binance_pay"
+  );
+  const [userPickedMethod, setUserPickedMethod] = useState(false);
 
   useEffect(() => {
-    if (isJordan && paymentMethod !== "cliq") {
-      setPaymentMethod("cliq");
-    } else if (!isJordan && paymentMethod !== "card") {
-      setPaymentMethod("card");
+    if (!isAdmin) {
+      setPaymentMethod(isJordan ? "cliq" : "binance_pay");
+    } else if (!userPickedMethod) {
+      setPaymentMethod(isJordan ? "cliq" : "binance_pay");
     }
-  }, [isJordan, paymentMethod]);
+  }, [isJordan, isAdmin, userPickedMethod]);
+
+  const handleSelectPaymentMethod = (m: "cliq" | "binance_pay") => {
+    setUserPickedMethod(true);
+    setPaymentMethod(m);
+  };
 
   return (
     <StoreShell>
@@ -156,14 +191,14 @@ function CartPage() {
           {cart.items.length === 0 ? (
             <CartList />
           ) : stage === 1 ? (
-            <div className="gx-eneba-grid">
+            <div className="gx-checkout-grid">
               {/* Right column in RTL: Cart Items */}
-              <div className="gx-eneba-main">
+              <div className="gx-checkout-main">
                 <CartList />
               </div>
 
               {/* Left column in RTL: Delivery & Summary */}
-              <div className="gx-eneba-side">
+              <div className="gx-checkout-side">
                 <CartCustomerContactCard />
                 <CartSummaryStage1
                   onContinue={() => {
@@ -174,13 +209,14 @@ function CartPage() {
               </div>
             </div>
           ) : (
-            <div className="gx-eneba-grid">
+            <div className="gx-checkout-grid">
               {/* Right column in RTL: Payment Methods */}
-              <div className="gx-eneba-main">
+              <div className="gx-checkout-main">
                 <CartPaymentStage2
                   paymentMethod={paymentMethod}
-                  setPaymentMethod={setPaymentMethod}
+                  setPaymentMethod={handleSelectPaymentMethod}
                   isJordan={isJordan}
+                  isAdmin={isAdmin}
                   onBack={() => {
                     setStage(1);
                     window.scrollTo({ top: 80, behavior: "smooth" });
@@ -189,10 +225,11 @@ function CartPage() {
               </div>
 
               {/* Left column in RTL: Order Recap */}
-              <div className="gx-eneba-side">
+              <div className="gx-checkout-side">
                 <CartOrderRecapStage2
                   paymentMethod={paymentMethod}
                   isJordan={isJordan}
+                  isAdmin={isAdmin}
                   onEditEmail={() => {
                     setStage(1);
                     window.scrollTo({ top: 80, behavior: "smooth" });
@@ -208,6 +245,7 @@ function CartPage() {
       {confirmed && (
         <OrderConfirmedModal
           orderNumber={confirmed.orderNumber}
+          orderToken={confirmed.orderToken}
           waUrl={confirmed.waUrl}
           paymentMethod={confirmed.paymentMethod}
           onClose={() => {
@@ -456,7 +494,7 @@ function CartList() {
   }
 
   return (
-    <div className="cart-list-card gx-eneba-cart-card">
+    <div className="cart-list-card gx-checkout-cart-card">
       <div className="cart-list-head">
         <h2>{t("cart.shopping_cart")} ({cart.count})</h2>
         <span
@@ -491,7 +529,7 @@ function CartList() {
         );
 
         return (
-          <div key={it.cartId} className={`cart-row gx-eneba-row ${isSoldOut ? "is-sold-out" : ""}`} style={isSoldOut ? { opacity: 0.72 } : undefined}>
+          <div key={it.cartId} className={`cart-row gx-checkout-row ${isSoldOut ? "is-sold-out" : ""}`} style={isSoldOut ? { opacity: 0.72 } : undefined}>
             <CartItemThumb item={it} size={70} />
 
             <div className="cr-info">
@@ -952,11 +990,20 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
     onContinue();
   }
 
+  // Eligible subtotal for coins (only games & digital subscriptions; gift cards excluded)
+  const eligibleItems = cart.items.filter((it) => isEligibleForCoins(it));
+  const eligibleSubtotal = eligibleItems.reduce(
+    (sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 1),
+    0
+  );
+  const hasGiftCards = cart.items.some((it) => isGiftCardItem(it));
+  const hasOnlyGiftCards = cart.items.length > 0 && eligibleItems.length === 0;
+
   // Coins calculations
   const coinsBalance = balance?.coins ?? 0;
   const creditBalance = balance?.credit ?? 0;
 
-  const payableForCoins = Math.max(0, cart.subtotalJOD - (cart.coupon?.discount_jod ?? 0));
+  const payableForCoins = Math.max(0, eligibleSubtotal - (cart.coupon?.discount_jod ?? 0));
   const capJod = Math.round(payableForCoins * MAX_COINS_DISCOUNT_RATIO * 100) / 100;
   const maxCoinsForOrder = jodToCoins(capJod);
   const usableCoins = Math.min(coinsBalance, maxCoinsForOrder);
@@ -970,11 +1017,11 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
   const usableCredit = Math.round(Math.min(creditBalance, payableForCredit) * 100) / 100;
 
   return (
-    <div className="summary-card gx-eneba-summary-card">
+    <div className="summary-card gx-checkout-summary-card">
       <h3 className="gx-summary-title">{t("cart.summary_box")}</h3>
 
       {/* Prominent Action Button at TOP */}
-      <button className="btn btn-primary btn-block gx-eneba-cta" onClick={handleAdvance}>
+      <button className="btn btn-primary btn-block gx-checkout-cta" onClick={handleAdvance}>
         {t("cart.continue_to_payment")} {dir === "rtl" ? "←" : "→"}
       </button>
 
@@ -1119,15 +1166,38 @@ function CartSummaryStage1({ onContinue }: { onContinue: () => void }) {
                       {t("cart.coins_cancel_btn")}
                     </button>
                   </div>
+                ) : hasOnlyGiftCards ? (
+                  <div
+                    style={{
+                      fontSize: "12.5px",
+                      color: "#fbbf24",
+                      background: "rgba(245, 158, 11, 0.08)",
+                      padding: "12px 14px",
+                      borderRadius: "10px",
+                      border: "1px solid rgba(245, 158, 11, 0.2)",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {isAr
+                      ? "⚠️ عملات GX Coins متاحة فقط للألعاب والاشتراكات الرقمية، ولا يمكن استخدامها على بطاقات الهدايا (Gift Cards)."
+                      : "⚠️ GX Coins are only redeemable on games and digital subscriptions, and cannot be used on gift cards."}
+                  </div>
                 ) : usableCoins < 1 ? (
                   <div className="gx-sl-hint">{t("cart.coins_low")}</div>
                 ) : (
                   <div className="gx-sl-action-box">
                     <div className="gx-sl-hint">
                       {isAr
-                        ? `يمكنك خصم حتى ${format(maxCoinsDiscountJod)} باستخدام ${usableCoins.toLocaleString("en-US")} عملة.`
-                        : `Knock off up to ${format(maxCoinsDiscountJod)} with ${usableCoins.toLocaleString("en-US")} coins.`}
+                        ? `يمكنك خصم حتى ${format(maxCoinsDiscountJod)} (بحد أقصى 25% من قيمة الألعاب والاشتراكات المؤهلة) باستخدام ${usableCoins.toLocaleString("en-US")} عملة.`
+                        : `Knock off up to ${format(maxCoinsDiscountJod)} (max 25% of eligible games & subscriptions) with ${usableCoins.toLocaleString("en-US")} coins.`}
                     </div>
+                    {hasGiftCards && (
+                      <div style={{ fontSize: "11.5px", color: "#94a3b8", marginBottom: "8px" }}>
+                        {isAr
+                          ? "ℹ️ ملاحظة: تُستثنى بطاقات الهدايا في السلة من احتساب خصم العملات."
+                          : "ℹ️ Note: Gift cards in cart are excluded from coins discount."}
+                      </div>
+                    )}
 
                     <div className="gx-sl-preset-row">
                       {[
@@ -1293,11 +1363,13 @@ function CartPaymentStage2({
   paymentMethod,
   setPaymentMethod,
   isJordan,
+  isAdmin,
   onBack,
 }: {
-  paymentMethod: "cliq" | "card";
-  setPaymentMethod: (m: "cliq" | "card") => void;
+  paymentMethod: "cliq" | "binance_pay";
+  setPaymentMethod: (m: "cliq" | "binance_pay") => void;
   isJordan: boolean;
+  isAdmin?: boolean;
   onBack: () => void;
 }) {
   const { t, dir, lang } = useLang();
@@ -1309,11 +1381,6 @@ function CartPaymentStage2({
       <div className="gx-pm-header">
         <div className="gx-pm-header-info">
           <h2>{t("cart.payment_method_title")}</h2>
-          <p>
-            {isJordan
-              ? (isAr ? "طريقة الدفع المتاحة داخل الأردن عبر كليك (CliQ) — بدون أي رسوم إضافية 🇯🇴" : "Available payment method in Jordan via CliQ (0% extra fees) 🇯🇴")
-              : (isAr ? "طريقة الدفع المتاحة لجميع الدول عبر البطاقات البنكية (Visa / Mastercard) 💳" : "Available payment method for international orders via Bank Cards (Visa / Mastercard) 💳")}
-          </p>
         </div>
         <button type="button" className="gx-pm-back-pill" onClick={onBack}>
           <span className="gx-arr">{dir === "rtl" ? "→" : "←"}</span> {t("cart.shopping_cart")}
@@ -1322,8 +1389,8 @@ function CartPaymentStage2({
 
       {/* Payment Selection List (Spacious & Cleanly Separated) */}
       <div className="gx-pm-tiles-list">
-        {/* CliQ Option - Available ONLY for Jordan orders */}
-        {isJordan && (
+        {/* CliQ Option (Jordan or Admin only) */}
+        {(isJordan || isAdmin) && (
           <div
             className={"gx-pm-tile " + (paymentMethod === "cliq" ? "active" : "")}
             onClick={() => setPaymentMethod("cliq")}
@@ -1348,11 +1415,11 @@ function CartPaymentStage2({
           </div>
         )}
 
-        {/* Visa / Mastercard Option - Available ONLY for international / non-Jordan orders */}
-        {!isJordan && (
+        {/* Binance Pay Option (International or Admin only) */}
+        {(!isJordan || isAdmin) && (
           <div
-            className={"gx-pm-tile " + (paymentMethod === "card" ? "active" : "")}
-            onClick={() => setPaymentMethod("card")}
+            className={"gx-pm-tile " + (paymentMethod === "binance_pay" ? "active" : "")}
+            onClick={() => setPaymentMethod("binance_pay")}
           >
             <div className="gx-pm-radio">
               <div className="gx-pm-radio-ring">
@@ -1362,14 +1429,14 @@ function CartPaymentStage2({
 
             <div className="gx-pm-info">
               <div className="gx-pm-name-row">
-                <span className="gx-pm-name">{t("cart.method_card")}</span>
+                <span className="gx-pm-name">{t("cart.method_binance")}</span>
               </div>
-              <p className="gx-pm-desc">{t("cart.method_card_desc")}</p>
+              <p className="gx-pm-desc">{t("cart.method_binance_desc")}</p>
             </div>
 
-            {/* Visa / Mastercard Official Vector Badge */}
-            <div className="gx-pm-logo card">
-              <img src="/app/assets/img/cards-logo.svg" alt="Visa / Mastercard" />
+            {/* Binance Pay Logo */}
+            <div className="gx-pm-logo binance" style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#0b0e11", border: "1px solid rgba(240, 185, 11, 0.25)", overflow: "hidden", padding: 6 }}>
+              <img src="/app/assets/img/binance-logo.svg" alt="Binance Pay" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
             </div>
           </div>
         )}
@@ -1382,13 +1449,15 @@ function CartPaymentStage2({
 function CartOrderRecapStage2({
   paymentMethod,
   isJordan,
+  isAdmin,
   onEditEmail,
   onConfirmed,
 }: {
-  paymentMethod: "cliq" | "card";
+  paymentMethod: "cliq" | "binance_pay";
   isJordan: boolean;
+  isAdmin?: boolean;
   onEditEmail: () => void;
-  onConfirmed: (data: { orderNumber: string; waUrl: string | null; paymentMethod?: "cliq" | "card" }) => void;
+  onConfirmed: (data: { orderNumber: string; waUrl: string | null; paymentMethod?: "cliq" | "binance_pay"; orderToken?: string }) => void;
 }) {
   const cart = useCart();
   const { format } = useCurrency();
@@ -1396,6 +1465,9 @@ function CartOrderRecapStage2({
   const isAr = lang !== "en";
   const [busy, setBusy] = useState(false);
   const [showFeeInfo, setShowFeeInfo] = useState(false);
+  const [binanceOrderId, setBinanceOrderId] = useState("");
+  const [binanceError, setBinanceError] = useState(false);
+  const [copiedBinanceId, setCopiedBinanceId] = useState(false);
   const site = useSiteSettings();
   const [signedInUser, setSignedInUser] = useState<{ id: string; email: string } | null>(() => readStoredUser());
 
@@ -1419,12 +1491,13 @@ function CartOrderRecapStage2({
       cart.creditJOD
   );
 
-  const cardServiceFeeJOD =
-    paymentMethod === "card" && netBeforeFee > 0
-      ? Math.round(((netBeforeFee * 0.04) + 0.30) * 1000) / 1000
+  const binanceFeeJOD =
+    paymentMethod === "binance_pay" && netBeforeFee > 0
+      ? Math.round(netBeforeFee * 0.03 * 1000) / 1000
       : 0;
 
-  const finalTotalJOD = Math.round((netBeforeFee + cardServiceFeeJOD) * 1000) / 1000;
+  const finalTotalJOD = Math.round((netBeforeFee + binanceFeeJOD) * 1000) / 1000;
+  const finalTotalUSDT = (finalTotalJOD * 1.41).toFixed(2);
 
   async function handleCheckout() {
     if (site.maintenance_mode) {
@@ -1432,9 +1505,16 @@ function CartOrderRecapStage2({
       toast.error(site.maintenance_message || (lang === "ar" ? "الموقع تحت الصيانة حالياً" : "The store is currently under maintenance"));
       return;
     }
+    if (paymentMethod === "binance_pay" && !binanceOrderId.trim()) {
+      setBinanceError(true);
+      const { toast } = await import("sonner");
+      toast.error(isAr ? "يرجى إدخال رقم الـ Order ID الخاص ببايننس باي" : "Please enter your Binance Pay Order ID");
+      return;
+    }
+    setBinanceError(false);
     setBusy(true);
     try {
-      const submitted = await cart.submitOrder(paymentMethod);
+      const submitted = await cart.submitOrder(paymentMethod, binanceOrderId.trim() || null);
       if (!submitted?.order_number) {
         const { toast } = await import("sonner");
         toast.error(t("cart.checkout_saving"));
@@ -1443,7 +1523,17 @@ function CartOrderRecapStage2({
       const orderNumber = submitted.order_number;
       const url = cart.buildWhatsAppUrl(orderNumber, paymentMethod);
       cart.clear();
-      onConfirmed({ orderNumber, waUrl: url, paymentMethod });
+
+      if (paymentMethod === "binance_pay") {
+        if (submitted.order_token) {
+          window.location.href = `/order/completed?order_token=${encodeURIComponent(submitted.order_token)}`;
+        } else {
+          window.location.href = `/order/${orderNumber}`;
+        }
+        return;
+      }
+
+      onConfirmed({ orderNumber, waUrl: url, paymentMethod, orderToken: submitted.order_token });
     } catch (e) {
       const { toast } = await import("sonner");
       const msg = e instanceof Error ? e.message : String(e ?? "");
@@ -1454,7 +1544,7 @@ function CartOrderRecapStage2({
   }
 
   return (
-    <div className="summary-card gx-eneba-summary-card">
+    <div className="summary-card gx-checkout-summary-card">
       <h3 className="gx-summary-title">{t("cart.order_recap")}</h3>
 
       {/* Compact items list in recap */}
@@ -1533,8 +1623,8 @@ function CartOrderRecapStage2({
           <span>{format(cart.subtotalJOD)}</span>
         </div>
 
-        {/* Payment Gateway Processing Fee (Visa / Mastercard) */}
-        {paymentMethod === "card" && (
+        {/* Binance Pay Processing Fee (3% with info button) */}
+        {paymentMethod === "binance_pay" && (
           <div className="summary-line gx-fee-summary-line" style={{ color: "#38bdf8" }}>
             <div className="gx-fee-label-col">
               <span>{isAr ? "رسوم الخدمة" : "Service Fee"}</span>
@@ -1543,12 +1633,12 @@ function CartOrderRecapStage2({
                 className="gx-fee-q-btn"
                 onClick={() => setShowFeeInfo(true)}
                 aria-label={isAr ? "شرح رسوم الخدمة" : "Service fee info"}
-                title={isAr ? "اضغط لمعرفة سبب وتفاصيل رسوم معالجة بوابات الدفع" : "Click to view gateway fee details"}
+                title={isAr ? "اضغط لمعرفة سبب وتفاصيل رسوم الخدمة" : "Click to view service fee details"}
               >
                 ?
               </button>
             </div>
-            <span className="gx-fee-val">+{format(cardServiceFeeJOD)}</span>
+            <span className="gx-fee-val">+{format(binanceFeeJOD)}</span>
           </div>
         )}
 
@@ -1574,7 +1664,82 @@ function CartOrderRecapStage2({
           <span className="lbl">{t("cart.total")}</span>
           <span className="val">{format(finalTotalJOD)}</span>
         </div>
+
+        {/* Total Payable in USDT for Binance Pay */}
+        {paymentMethod === "binance_pay" && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: "10px", background: "rgba(240, 185, 11, 0.12)", border: "1px solid rgba(240, 185, 11, 0.35)", marginTop: 10 }}>
+            <span style={{ fontSize: "13px", fontWeight: 700, color: "#f0b90b" }}>
+              {isAr ? "المبلغ المطلوب بـ USDT:" : "Total in USDT:"}
+            </span>
+            <span style={{ fontSize: "17px", fontWeight: 900, color: "#fff", letterSpacing: "0.5px" }}>
+              {finalTotalUSDT} USDT
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Interactive Binance Pay Card with ID, Link, and Order ID Input */}
+      {paymentMethod === "binance_pay" && (
+        <div style={{ marginTop: 14, padding: "14px", borderRadius: "12px", background: "linear-gradient(145deg, rgba(240, 185, 11, 0.08), rgba(11, 14, 17, 0.85))", border: "1px solid rgba(240, 185, 11, 0.28)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: "11px", color: "#f0b90b", fontWeight: 700, textTransform: "uppercase" }}>
+                {isAr ? "معرّف بايننس باي (Pay ID)" : "Binance Pay ID"}
+              </div>
+              <div style={{ fontSize: "19px", fontWeight: 900, color: "#fff", letterSpacing: "1px", marginTop: "2px" }}>
+                835207366
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                void navigator.clipboard.writeText("835207366");
+                setCopiedBinanceId(true);
+                setTimeout(() => setCopiedBinanceId(false), 2000);
+              }}
+              style={{ padding: "6px 12px", borderRadius: "8px", background: copiedBinanceId ? "#10b981" : "rgba(240, 185, 11, 0.2)", color: copiedBinanceId ? "#fff" : "#f0b90b", border: "1px solid rgba(240, 185, 11, 0.4)", cursor: "pointer", fontSize: "12px", fontWeight: 700 }}
+            >
+              {copiedBinanceId ? (isAr ? "تم النسخ ✓" : "Copied ✓") : (isAr ? "نسخ الـ ID 📋" : "Copy ID 📋")}
+            </button>
+          </div>
+
+          <a
+            href="https://www.binance.com/en/my/wallet/account/payment"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", width: "100%", padding: "10px", borderRadius: "8px", background: "#f0b90b", color: "#000", fontWeight: 800, fontSize: "13px", textDecoration: "none", marginBottom: 14 }}
+          >
+            <span>{isAr ? "فتح صفحة Binance Pay للدفع المباشر ↗" : "Open Binance Pay to Pay ↗"}</span>
+          </a>
+
+          <div>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#e2e8f0", marginBottom: 6 }}>
+              {isAr ? "أدخل رقم الـ Order ID من بايننس بعد التحويل *" : "Enter Binance Order ID after transfer *"}
+            </label>
+            <input
+              type="text"
+              dir="ltr"
+              placeholder={isAr ? "مثال: 1234567890..." : "e.g. 1234567890..."}
+              value={binanceOrderId}
+              onChange={(e) => {
+                setBinanceOrderId(e.target.value);
+                if (binanceError) setBinanceError(false);
+              }}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", background: "rgba(0,0,0,0.5)", border: binanceError ? "1px solid #ef4444" : "1px solid rgba(255,255,255,0.18)", color: "#fff", fontSize: "14px", outline: "none", boxSizing: "border-box" }}
+            />
+            {binanceError && (
+              <span style={{ display: "block", color: "#ef4444", fontSize: "11px", marginTop: 4 }}>
+                {isAr ? "يرجى إدخال رقم الـ Order ID لتأكيد الدفع" : "Please enter your Binance Order ID"}
+              </span>
+            )}
+            <p style={{ fontSize: "11px", color: "#94a3b8", marginTop: 6, lineHeight: 1.4 }}>
+              {isAr
+                ? "بعد إتمام التحويل عبر بايننس، الصق رقم الـ Order ID هنا ثم اضغط إكمال الدفع."
+                : "After completing transfer via Binance, paste the Order ID here then click Complete Payment."}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Primary Action Button */}
       <button
@@ -1585,9 +1750,9 @@ function CartOrderRecapStage2({
       >
         {busy
           ? t("cart.checkout_saving")
-          : isJordan
-          ? (isAr ? "إتمام الطلب والدفع عبر كليك 🚀" : "Complete & Pay via CliQ 🚀")
-          : (isAr ? "إتمام الدفع عبر البطاقة البنكية 💳" : "Complete & Pay via Card 💳")}
+          : paymentMethod === "binance_pay"
+          ? (isAr ? `إكمال الدفع (${finalTotalUSDT} USDT)` : `Complete Payment (${finalTotalUSDT} USDT)`)
+          : (isAr ? "إكمال الدفع" : "Complete Payment")}
       </button>
 
       {/* Fee Explanation Modal */}
@@ -1603,8 +1768,8 @@ function CartOrderRecapStage2({
           >
             <div className="gx-fee-modal-head">
               <div className="gx-fee-modal-title">
-                <span style={{ fontSize: 20 }}>💳</span>
-                <h4>{isAr ? "رسوم معالجة بوابات الدفع (Visa / Mastercard)" : "Payment Processing Fees"}</h4>
+                <span style={{ fontSize: 20 }}>⚙️</span>
+                <h4>{isAr ? "رسوم خدمة المعالجة (Binance Pay)" : "Binance Pay Processing Fee"}</h4>
               </div>
               <button
                 type="button"
@@ -1619,30 +1784,15 @@ function CartOrderRecapStage2({
             <div className="gx-fee-modal-body">
               <p>
                 {isAr
-                  ? "تُفرض هذه الرسوم لتغطية تكاليف الربط والمعالجة البنكية الآمنة التي تقتطعها بوابات الدفع الإلكتروني والشبكات المصرفية العالمية (Visa و Mastercard) عن كل عملية شراء، بنسبة 4% بالإضافة إلى 0.30 د.أ رسوم ثابتة."
-                  : "This fee covers the electronic gateway connection and secure banking processing charges applied by international card networks (Visa & Mastercard) at 4% + 0.30 JOD fixed per transaction."}
+                  ? "تُفرض هذه الرسوم بنسبة 3% لتغطية تكاليف معالجة التحويلات الرقمية وضمان تأكيد وسرعة معالجة الطلبات الدولية عبر شبكة بايننس باي (Binance Pay)."
+                  : "This 3% fee covers digital transaction processing and instant confirmation across Binance Pay for international orders."}
               </p>
               <div className="gx-fee-calc-box">
                 <div className="gx-fee-calc-row">
-                  <span>{isAr ? "نسبة المعالجة البنكية:" : "Processing Rate:"}</span>
-                  <strong>4%</strong>
-                </div>
-                <div className="gx-fee-calc-row">
-                  <span>{isAr ? "الرسوم الثابتة للعملية:" : "Fixed Gateway Fee:"}</span>
-                  <strong>{format(0.30)}</strong>
+                  <span>{isAr ? "نسبة المعالجة:" : "Processing Rate:"}</span>
+                  <strong>3%</strong>
                 </div>
               </div>
-              {/* Saving Tip: Only shown for Jordan since CliQ is exclusive to Jordan */}
-              {isJordan && (
-                <div className="gx-fee-tip-box">
-                  <span style={{ fontSize: 18, flexShrink: 0 }}>💡</span>
-                  <p>
-                    {isAr
-                      ? "نصيحة للتوفير: يمكنك تجنب هذه الرسوم بالكامل بنسبة 100% باختيار طريقة الدفع كليك (CliQ) بدون أي رسوم إضافية 🇯🇴."
-                      : "Saving Tip: You can completely avoid this fee by paying via CliQ with 0% extra fees 🇯🇴."}
-                  </p>
-                </div>
-              )}
             </div>
 
             <div className="gx-fee-modal-footer">
@@ -1752,12 +1902,12 @@ const checkoutCss = `
 }
 
 /* 2-Column Grid */
-.gx-eneba-grid{display:grid;grid-template-columns:1fr 370px;gap:24px;align-items:start}
-.gx-eneba-main{display:flex;flex-direction:column;gap:20px}
-.gx-eneba-side{display:flex;flex-direction:column;gap:18px}
+.gx-checkout-grid{display:grid;grid-template-columns:1fr 370px;gap:24px;align-items:start}
+.gx-checkout-main{display:flex;flex-direction:column;gap:20px}
+.gx-checkout-side{display:flex;flex-direction:column;gap:18px}
 
-.gx-eneba-cart-card{border-radius:18px;border:1px solid rgba(0,229,255,.16);background:linear-gradient(180deg,rgba(18,22,34,.7),rgba(10,13,22,.85))}
-.gx-eneba-row{position:relative;border-bottom:1px solid rgba(255,255,255,.06)!important;padding:16px 0!important}
+.gx-checkout-cart-card{border-radius:18px;border:1px solid rgba(0,229,255,.16);background:linear-gradient(180deg,rgba(18,22,34,.7),rgba(10,13,22,.85))}
+.gx-checkout-row{position:relative;border-bottom:1px solid rgba(255,255,255,.06)!important;padding:16px 0!important}
 .gx-row-trash{background:transparent;border:none;color:#64748b;cursor:pointer;padding:8px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .18s}
 .gx-row-trash:hover{color:#ff5470;background:rgba(255,84,112,.1)}
 
@@ -1965,10 +2115,10 @@ const checkoutCss = `
 .gx-help-tooltip-wrap:hover .gx-help-tooltip-popover{opacity:1!important;visibility:visible;bottom:calc(100% + 6px)}
 
 /* Summary Card */
-.gx-eneba-summary-card{border-radius:18px;padding:18px;border:1px solid rgba(0,229,255,.16);background:linear-gradient(180deg,rgba(18,22,34,.7),rgba(10,13,22,.85))}
+.gx-checkout-summary-card{border-radius:18px;padding:18px;border:1px solid rgba(0,229,255,.16);background:linear-gradient(180deg,rgba(18,22,34,.7),rgba(10,13,22,.85))}
 .gx-summary-title{margin:0 0 14px;font-size:16px;font-weight:900;color:#f1f5f9}
-.gx-eneba-cta{background:linear-gradient(135deg,#00e5ff,#00b4d8)!important;color:#020b14!important;font-weight:900!important;font-size:15.5px!important;padding:13px!important;border-radius:12px!important;box-shadow:0 8px 24px -4px rgba(0,229,255,.5)!important}
-.gx-eneba-cta:hover{transform:translateY(-1px);box-shadow:0 10px 28px -4px rgba(0,229,255,.65)!important}
+.gx-checkout-cta{background:linear-gradient(135deg,#00e5ff,#00b4d8)!important;color:#020b14!important;font-weight:900!important;font-size:15.5px!important;padding:13px!important;border-radius:12px!important;box-shadow:0 8px 24px -4px rgba(0,229,255,.5)!important}
+.gx-checkout-cta:hover{transform:translateY(-1px);box-shadow:0 10px 28px -4px rgba(0,229,255,.65)!important}
 
 /* Payment Stage 2: Spacious & Separated Tiles */
 .gx-payment-stage-wrapper {
@@ -2341,12 +2491,12 @@ const checkoutCss = `
   box-shadow: 0 10px 25px -4px rgba(0, 229, 255, 0.6);
 }
 
-.cart-list-card, .gx-eneba-cart-card, .cart-row, .gx-eneba-row {
+.cart-list-card, .gx-checkout-cart-card, .cart-row, .gx-checkout-row {
   overflow: visible !important;
 }
 
 @media (max-width:900px){
-  .gx-eneba-grid{grid-template-columns:1fr}
+  .gx-checkout-grid{grid-template-columns:1fr}
   .gx-stepper-container{padding:10px 14px !important}
   .gx-pm-tile{padding:16px 18px;gap:14px}
   .gx-pm-logo{min-width:90px;height:38px}

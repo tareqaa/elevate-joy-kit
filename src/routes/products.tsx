@@ -231,6 +231,10 @@ function AllProductsPage() {
   const { products } = Route.useLoaderData();
   const { lang } = useLang();
   const ar = lang === "ar";
+
+  useEffect(() => {
+    document.title = ar ? "جميع المنتجات والاشتراكات | متجر GX Store" : "All Products & Subscriptions | GX Store";
+  }, [ar]);
   const pick = (arText?: string | null, enText?: string | null) =>
     (ar ? arText || enText : enText || arText) || "";
 

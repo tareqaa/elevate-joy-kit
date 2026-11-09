@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getFormattedInternationalPhone } from "./country-phone";
 import { isRememberContactEnabled } from "./contact-storage";
 import { resolveProductImage } from "./product-images";
+import { isEligibleForCoins } from "./loyalty";
+import { useLang } from "./i18n";
 
 
 type CartItem = {
@@ -94,11 +96,50 @@ type Ctx = {
   isDrawerOpen: boolean;
   openDrawer: () => void;
   closeDrawer: () => void;
-  submitOrder: (paymentMethod?: "cliq" | "card" | "gx_wallet") => Promise<{ order_number: string } | null>;
-  buildWhatsAppUrl: (orderNumber?: string, paymentMethod?: "cliq" | "card" | "gx_wallet") => string | null;
+  submitOrder: (paymentMethod?: "cliq" | "card" | "gx_wallet" | "binance_pay", binanceOrderId?: string | null) => Promise<{ id?: string; order_number: string; order_token?: string } | null>;
+  buildWhatsAppUrl: (orderNumber?: string, paymentMethod?: "cliq" | "card" | "gx_wallet" | "binance_pay") => string | null;
 };
 
-const CartContext = createContext<Ctx | null>(null);
+// Keep a single context instance across HMR module replacements, otherwise a
+// hot update recreates the context while the mounted provider still holds the
+// old one → "useCart must be used inside CartProvider".
+const g = globalThis as unknown as { __gxCartContext?: React.Context<Ctx | null> };
+const CartContext = g.__gxCartContext ?? createContext<Ctx | null>(null);
+g.__gxCartContext = CartContext;
+
+const DEFAULT_CART_CTX: Ctx = {
+  items: [],
+  count: 0,
+  subtotalJOD: 0,
+  totalJOD: 0,
+  notes: "",
+  setNotes: () => {},
+  contact: { name: "", countryCode: "+962", phone: "", type: "whatsapp", email: "" },
+  setContact: () => {},
+  coupon: null,
+  applyCoupon: async () => ({ ok: false, message: "غير متاح" }),
+  removeCoupon: () => {},
+  coins: null,
+  applyCoins: async () => ({ ok: false, message: "غير متاح" }),
+  removeCoins: () => {},
+  creditJOD: 0,
+  applyCredit: async () => ({ ok: false, message: "غير متاح" }),
+  removeCredit: () => {},
+  add: () => {},
+  addSnap: () => {},
+  buyNow: () => {},
+  buyNowSnap: () => {},
+  addCustom: () => {},
+  changeQty: () => {},
+  updateItemTarget: () => {},
+  remove: () => {},
+  clear: () => {},
+  isDrawerOpen: false,
+  openDrawer: () => {},
+  closeDrawer: () => {},
+  submitOrder: async () => null,
+  buildWhatsAppUrl: () => null,
+};
 
 const DEFAULT_CONTACT: ContactInfo = { name: "", countryCode: "+962", phone: "", type: "whatsapp", email: "" };
 
@@ -222,6 +263,8 @@ function resolve(items: CartItem[]): ResolvedItem[] {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { lang } = useLang();
+  const isAr = lang === "ar";
   const [rawItems, setRawItems] = useState<CartItem[]>(() => {
     if (typeof window === "undefined") return [];
     return loadRaw();
@@ -443,7 +486,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session?.user) return { ok: false, message: "سجّل الدخول لاستخدام GX Coins" };
-      const base = Math.max(0, subtotalJOD - (coupon?.discount_jod ?? 0));
+
+      // Coins can only be applied to games and digital subscriptions (gift cards excluded)
+      const eligibleItems = items.filter((it) => isEligibleForCoins(it));
+      if (eligibleItems.length === 0) {
+        return {
+          ok: false,
+          message: "عملات GX Coins متاحة فقط للألعاب والاشتراكات الرقمية، ولا يمكن استخدامها على بطاقات الهدايا",
+        };
+      }
+
+      const eligibleSubtotal = eligibleItems.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 1), 0);
+      const base = Math.max(0, eligibleSubtotal - (coupon?.discount_jod ?? 0));
+      if (base <= 0) {
+        return { ok: false, message: "قيمة المنتجات المؤهلة مغطاة بالكامل بواسطة الكوبون" };
+      }
+
       const { data, error } = await supabase.rpc("redeem_gx_coins", { _coins: amount, _subtotal_jod: base });
       if (error) return { ok: false, message: error.message };
       const res = data as unknown as { valid?: boolean; coins?: number; discount_jod?: number; message?: string } | null;
@@ -454,7 +512,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       console.warn("[GX] applyCoins failed", e);
       return { ok: false, message: "تعذّر استخدام العملات" };
     }
-  }, [items, subtotalJOD, coupon]);
+  }, [items, coupon]);
 
   // Coins discount can never exceed the payable amount.
   useEffect(() => {
@@ -690,31 +748,44 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   const buildWhatsAppUrl = useCallback(
-    (orderNumber?: string, paymentMethod?: "cliq" | "card" | "gx_wallet") => {
+    (orderNumber?: string, paymentMethod?: "cliq" | "card" | "gx_wallet" | "binance_pay") => {
       if (!orderNumber && items.length === 0) return null;
       const orderId = orderNumber || "GX-" + Date.now().toString().slice(-6);
 
       let lines = "";
       if (items.length > 0) {
         lines = items
-          .map((it, i) => {
+          .map((it) => {
             const lineTotal = it.price * it.qty;
-            let block = `🔹 *${it.name}*\n   • الكمية: ${it.qty} | السعر: ${format(lineTotal)}`;
+            let block = isAr
+              ? `🔹 *${it.name}*\n   • الكمية: ${it.qty} | السعر: ${format(lineTotal)}`
+              : `🔹 *${it.name}*\n   • Quantity: ${it.qty} | Price: ${format(lineTotal)}`;
             if (it.usernames?.length) {
-              const users = it.usernames.map((u, k) => `     - ${u}`).join("\n");
-              block += `\n   • بيانات الحساب:\n${users}`;
+              const users = it.usernames.map((u) => `     - ${u}`).join("\n");
+              block += isAr
+                ? `\n   • بيانات الحساب:\n${users}`
+                : `\n   • Account Details:\n${users}`;
             }
             return block;
           })
           .join("\n\n");
       }
 
-      const pmLabel =
-        paymentMethod === "cliq"
-          ? "خدمة كليك (CliQ) 🇯🇴"
-          : paymentMethod === "card"
-          ? "فيزا / ماستركارد (Visa / Mastercard) 💳"
-          : "محفظة GX (GX Wallet) 🌐";
+      const pmLabel = isAr
+        ? (paymentMethod === "cliq"
+            ? "خدمة كليك (CliQ) 🇯🇴"
+            : paymentMethod === "binance_pay"
+            ? "بايننس باي (Binance Pay) 🌐"
+            : paymentMethod === "card"
+            ? "فيزا / ماستركارد (Visa / Mastercard) 💳"
+            : "محفظة GX (GX Wallet) 🌐")
+        : (paymentMethod === "cliq"
+            ? "CliQ (Jordan) 🇯🇴"
+            : paymentMethod === "binance_pay"
+            ? "Binance Pay 🌐"
+            : paymentMethod === "card"
+            ? "Visa / Mastercard 💳"
+            : "GX Wallet 🌐");
 
       const freshResolved = resolve(rawItems);
       const freshSubtotal = freshResolved.reduce((s, i) => s + i.price * i.qty, 0);
@@ -723,42 +794,71 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const freshAppliedCredit = Math.min(creditJOD, freshAfterCoins);
       const freshNet = Math.max(0, freshAfterCoins - freshAppliedCredit);
       const serviceFeeJOD =
-        paymentMethod === "card" && freshNet > 0
+        paymentMethod === "binance_pay" && freshNet > 0
+          ? Math.round(freshNet * 0.03 * 1000) / 1000
+          : paymentMethod === "card" && freshNet > 0
           ? Math.round(((freshNet * 0.04) + 0.30) * 1000) / 1000
           : 0;
       const finalTotalJOD = Math.round((freshNet + serviceFeeJOD) * 1000) / 1000;
 
-      let msg = `🎮 *طلب جديد من متجر GX Store* 🎮
+      let msg = "";
+      if (isAr) {
+        msg = `🎮 *طلب جديد من متجر GX Store* 🎮
 ━━━━━━━━━━━━━━━━━━━━
 📋 *رقم الطلب:* ${orderId}
 💳 *طريقة الدفع:* ${pmLabel}
 💰 *المجموع الإجمالي:* ${format(finalTotalJOD)}`;
 
-      if (contact.email?.trim()) {
-        msg += `\n📧 *البريد الإلكتروني:* ${contact.email.trim()}`;
-      }
+        if (contact.email?.trim()) {
+          msg += `\n📧 *البريد الإلكتروني:* ${contact.email.trim()}`;
+        }
 
-      if (contact.phone?.trim()) {
-        msg += `\n📱 *رقم الواتساب للتواصل:* ${getFormattedInternationalPhone(contact.phone, contact.countryCode)}`;
-      }
+        if (contact.phone?.trim()) {
+          msg += `\n📱 *رقم الواتساب للتواصل:* ${getFormattedInternationalPhone(contact.phone, contact.countryCode)}`;
+        }
 
-      if (serviceFeeJOD > 0) {
-        msg += `\n⚙️ *رسوم الخدمة:* ${format(serviceFeeJOD)}`;
-      }
+        if (serviceFeeJOD > 0) {
+          msg += `\n⚙️ *رسوم الخدمة:* ${format(serviceFeeJOD)}`;
+        }
 
-      if (lines) {
-        msg += `\n\n📦 *المنتجات المطلوبة:*\n${lines}`;
-      }
+        if (lines) {
+          msg += `\n\n📦 *المنتجات المطلوبة:*\n${lines}`;
+        }
 
-      msg += `\n\n━━━━━━━━━━━━━━━━━━━━\n✨ *أرجو تأكيد الطلب وتزويدي بتفاصيل التفعيل.*\nشكراً لكم!`;
+        msg += `\n\n━━━━━━━━━━━━━━━━━━━━\n✨ *أرجو تأكيد الطلب وتزويدي بتفاصيل التفعيل.*\nشكراً لكم!`;
+      } else {
+        msg = `🎮 *New Order from GX Store* 🎮
+━━━━━━━━━━━━━━━━━━━━
+📋 *Order Number:* ${orderId}
+💳 *Payment Method:* ${pmLabel}
+💰 *Total Amount:* ${format(finalTotalJOD)}`;
+
+        if (contact.email?.trim()) {
+          msg += `\n📧 *Email:* ${contact.email.trim()}`;
+        }
+
+        if (contact.phone?.trim()) {
+          msg += `\n📱 *WhatsApp Number:* ${getFormattedInternationalPhone(contact.phone, contact.countryCode)}`;
+        }
+
+        if (serviceFeeJOD > 0) {
+          msg += `\n⚙️ *Processing Fee:* ${format(serviceFeeJOD)}`;
+        }
+
+        if (lines) {
+          msg += `\n\n📦 *Ordered Items:*\n${lines}`;
+        }
+
+        msg += `\n\n━━━━━━━━━━━━━━━━━━━━\n✨ *Please confirm my order and provide the activation details.*\nThank you!`;
+      }
 
       const encoded = encodeURIComponent(msg);
       return "https://wa.me/962776252313?text=" + encoded;
     },
-    [items, contact.email, contact.phone, contact.countryCode, format, coupon, coins, creditJOD, rawItems]
+    [items, contact.email, contact.phone, contact.countryCode, format, coupon, coins, creditJOD, rawItems, isAr]
   );
 
-  const submitOrder = useCallback(async (paymentMethod?: "cliq" | "card" | "gx_wallet") => {
+  const submitOrder = useCallback(async (paymentMethod?: "cliq" | "card" | "gx_wallet" | "binance_pay", binanceOrderId?: string | null) => {
     if (items.length === 0) return null;
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
@@ -787,7 +887,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const freshAppliedCredit = Math.min(creditJOD, freshAfterCoins);
       const freshNet = Math.max(0, freshAfterCoins - freshAppliedCredit);
       const freshServiceFeeJOD =
-        paymentMethod === "card" && freshNet > 0
+        paymentMethod === "binance_pay" && freshNet > 0
+          ? Math.round(freshNet * 0.03 * 1000) / 1000
+          : paymentMethod === "card" && freshNet > 0
           ? Math.round(((freshNet * 0.04) + 0.30) * 1000) / 1000
           : 0;
       const freshTotalJOD = Math.round((freshNet + freshServiceFeeJOD) * 1000) / 1000;
@@ -811,6 +913,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           customerWhatsapp: contactValue,
           customerEmail: email || null,
           paymentMethod: paymentMethod || null,
+          binanceOrderId: binanceOrderId?.trim() || null,
           contactType,
           coupon: coupon
             ? {
@@ -822,6 +925,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             : null,
           coins: coins ? { coins: coins.coins, discount_jod: coins.discount_jod } : null,
           creditJod: appliedCredit > 0 ? appliedCredit : 0,
+          lang: (typeof window !== "undefined" && localStorage.getItem("gx_lang") === "en") ? "en" : "ar",
         },
       });
       // Persist contact to the signed-in user's profile so it auto-fills next time.
@@ -872,6 +976,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 export function useCart(): Ctx {
   const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used inside CartProvider");
+  if (!ctx) return DEFAULT_CART_CTX;
   return ctx;
 }

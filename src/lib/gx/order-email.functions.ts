@@ -2,681 +2,49 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { resolveSafeClientIp, normalizeIp } from "./ip";
 import { z } from "zod";
-import crypto from "node:crypto";
-import { getPublicClient, assertAdminCaller, getVerifiedCaller, getUserScopedClient } from "@/lib/gx/supabase-request";
-import { createClient } from "@supabase/supabase-js";
-import { supabaseEnv, supabaseFetch } from "@/lib/gx/supabase-request";
-import type { Database } from "@/integrations/supabase/types";
-import { resolveProductImage } from "./product-images";
+import { getPublicClient, getUserScopedClient } from "@/lib/gx/supabase-request";
+import { assertAdminCaller, getVerifiedCaller } from "@/lib/gx/supabase-auth.server";
 import { getResendApiKey } from "./resend-key";
 import { formatFullRegion } from "./region";
-import { renderDriffleEmail, escapeHtml, type EmailProductItem } from "./email-theme";
+import { renderGxStoreEmail, escapeHtml, type EmailProductItem } from "./email-theme";
+import { resolveProductActivationGuide } from "./activation-guide";
+import {
+  generateOrderToken,
+  verifyOrderToken,
+  getServerServiceClient,
+  resolveProductEmailImage,
+  sendBinanceOrderReceivedEmailDirect,
+  sendPaymentConfirmedEmailDirect,
+  type OrderItemEmail,
+  type SendOrderStatusEmailInput,
+  type SendBinanceOrderReceivedEmailInput,
+  type SendPaymentConfirmedEmailInput,
+  CDN_ASSETS_BASE,
+  OFFICIAL_LOGO_URL,
+  toAbsoluteUrl,
+  sanitizeImageForEmail,
+  sanitizeDeliveryDataForPendingOrLocked,
+} from "./order-email.server";
+
+export type { OrderItemEmail, SendOrderStatusEmailInput, SendBinanceOrderReceivedEmailInput, SendPaymentConfirmedEmailInput };
 
 const SENDER_EMAIL = "GX Store <noreply@gxstore.me>";
-export const CDN_ASSETS_BASE = "https://cdn.jsdelivr.net/gh/tareqaa/elevate-joy-kit@main/public";
-export const OFFICIAL_LOGO_URL = `${CDN_ASSETS_BASE}/app/assets/img/gx-logo.png`;
 
-function getOrderTokenSecret(): string {
-  const secret =
-    process.env.ORDER_TOKEN_SECRET ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SUPABASE_SECRET_KEY ||
-    process.env.SERVICE_ROLE_KEY;
-  if (secret && secret.trim()) return secret.trim();
-  // Fail closed: never sign or accept order links with a key that lives in source code.
-  throw new Error("Order link signing key is not configured (ORDER_TOKEN_SECRET)");
-}
-
-/**
- * Generates an unguessable cryptographic token for an order (GX Store Secure Token).
- * Embeds 256 bits of pure cryptographic CSPRNG randomness (nonce) + HMAC-SHA256 signature,
- * making brute-force or dictionary guessing mathematically impossible (2^256 entropy).
- * STRICT RULE: Only issued upon order completion/delivery to reveal digital products.
- */
-export function generateOrderToken(orderNumber: string, email?: string | null, orderId?: string | null): string {
-  const header = Buffer.from(JSON.stringify({ typ: "GX-SECURE-TOKEN", alg: "HS256", v: 2 })).toString("base64url");
-  const nonce = crypto.randomBytes(32).toString("base64url"); // 256 bits of pure randomness
-  const iat = Math.floor(Date.now() / 1000);
-  const exp = iat + 180 * 24 * 60 * 60; // 180 days validity
-
-  const payload = Buffer.from(
-    JSON.stringify({
-      orderNumber: (orderNumber || "").trim().toUpperCase(),
-      orderId: orderId || null,
-      email: (email || "").toLowerCase().trim(),
-      nonce, // Unpredictable salt prevents guessing even if order number is known
-      iat,
-      exp,
-    })
-  ).toString("base64url");
-
-  const signature = crypto
-    .createHmac("sha256", getOrderTokenSecret())
-    .update(`${header}.${payload}`)
-    .digest("base64url");
-
-  return `${header}.${payload}.${signature}`;
-}
-
-/**
- * Validates the cryptographic order token and extracts order details.
- * Uses constant-time comparison to prevent timing attacks.
- */
-export function verifyOrderToken(token: string): { valid: boolean; orderNumber?: string; email?: string; error?: string } {
+function getServerHeader(headerName: string): string | undefined {
   try {
-    if (!token || typeof token !== "string") {
-      return { valid: false, error: "رمز الطلب مفقود" };
-    }
-    const clean = token.trim();
-    const parts = clean.split(".");
-    if (parts.length !== 3) {
-      return { valid: false, error: "صيغة رمز الطلب غير صحيحة" };
-    }
-    const [headerB64, payloadB64, signature] = parts;
-    const sigBuf = Buffer.from(signature);
-
-    // 1. Verify with current server master secret
-    const expectedSig = crypto
-      .createHmac("sha256", getOrderTokenSecret())
-      .update(`${headerB64}.${payloadB64}`)
-      .digest("base64url");
-    const expBuf = Buffer.from(expectedSig);
-
-    let isValid = sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf);
-
-    // 2. Legacy fallback for previously sent emails — only with a real server-side
-    //    secret. Never fall back to the public anon key or a literal in source code,
-    //    because anyone could use those to forge order links.
-    const legacySecret = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-    if (!isValid && legacySecret) {
-      const legacyExpected = crypto
-        .createHmac("sha256", legacySecret)
-        .update(`${headerB64}.${payloadB64}`)
-        .digest("base64url");
-      const legacyExpBuf = Buffer.from(legacyExpected);
-      if (sigBuf.length === legacyExpBuf.length && crypto.timingSafeEqual(sigBuf, legacyExpBuf)) {
-        isValid = true;
-      }
-    }
-
-    if (!isValid) {
-      return { valid: false, error: "رمز الطلب غير صحيح أو تم التلاعب به" };
-    }
-
-    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"));
-    if (!payload.orderNumber) {
-      return { valid: false, error: "الرمز لا يحتوي على رقم طلب صالح" };
-    }
-
-    // Verify expiration timestamp
-    if (payload.exp && typeof payload.exp === "number") {
-      const now = Math.floor(Date.now() / 1000);
-      if (now > payload.exp) {
-        return { valid: false, error: "انتهت صلاحية رمز هذا الطلب" };
-      }
-    }
-
-    return {
-      valid: true,
-      orderNumber: payload.orderNumber,
-      email: payload.email,
-    };
-  } catch (err: any) {
-    console.error("verifyOrderToken failed:", err?.message);
-    return { valid: false, error: "فشل التحقق من صحة الرمز" };
+    return getRequestHeader(headerName);
+  } catch {
+    return undefined;
   }
 }
 
-function getServerServiceClient() {
-  const { url, key: defaultKey } = supabaseEnv();
-  const serviceKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SUPABASE_SECRET_KEY ||
-    process.env.SERVICE_ROLE_KEY;
-  const key = serviceKey || defaultKey;
-  return createClient<Database>(url, key, {
-    global: { fetch: supabaseFetch(key) },
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-  });
+function getServerIp(): string | null {
+  try {
+    return resolveSafeClientIp(getRequestHeader);
+  } catch {
+    return null;
+  }
 }
-
-export function toAbsoluteUrl(url?: string | null): string {
-  if (!url || !url.trim()) return "";
-  let clean = url.trim();
-
-  // If pointing to gxstore.me assets or relative path, redirect to high-availability global CDN
-  if (clean.includes("gxstore.me/app/assets/")) {
-    clean = clean.replace("https://gxstore.me", CDN_ASSETS_BASE).replace("http://gxstore.me", CDN_ASSETS_BASE);
-  } else if (clean.startsWith("/")) {
-    clean = `${CDN_ASSETS_BASE}${clean}`;
-  } else if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
-    clean = `${CDN_ASSETS_BASE}/${clean}`;
-  }
-
-  // Gmail strictly blocks SVGs: automatically rewrite any SVG extension to PNG
-  return clean.replace(/\.svg(\?.*)?$/i, ".png$1");
-}
-
-/**
- * Resolves verified, email-compatible (Gmail, Outlook, Apple Mail) raster PNG/JPG cover images.
- * Always returns a guaranteed accessible HTTPS URL on global CDN or external storage.
- */
-export function sanitizeImageForEmail(url?: string | null, name?: string, slug?: string, cartId?: string): string {
-  const cleanName = (name || "").toLowerCase();
-  const cleanSlug = (slug || "").toLowerCase();
-  const cleanId = (cartId || "").toLowerCase();
-
-  // 1. Check canonical unified registry first (TOD variants, Valorant, Discord, Game Pass, Roblox, Gemini, etc.)
-  const canonical = resolveProductImage({
-    cartId: cleanId || cleanSlug,
-    slug: cleanSlug,
-    name: cleanName,
-  });
-  if (canonical) {
-    return toAbsoluteUrl(canonical);
-  }
-
-  // 2. If a URL is provided (e.g. from Supabase products table or order items)
-  if (url && typeof url === "string" && url.trim()) {
-    let clean = url.trim();
-
-    // Specific products FIRST before generic brand overrides!
-    if (
-      clean.includes("xbox-game-pass-ultimate") ||
-      cleanSlug.includes("ultimate") ||
-      cleanName.includes("ultimate") ||
-      cleanName.includes("التيمت") ||
-      cleanName.includes("التميت")
-    ) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/xbox-game-pass-ultimate.jpg`;
-    }
-
-    if (
-      clean.includes("pc-game-pass") ||
-      cleanSlug.includes("pc-game-pass") ||
-      (cleanName.includes("game pass") && cleanName.includes("pc")) ||
-      (cleanName.includes("قيم باس") && cleanName.includes("pc"))
-    ) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/pc-game-pass.jpg`;
-    }
-
-    if (
-      clean.includes("roblox") ||
-      cleanSlug.includes("roblox") ||
-      cleanName.includes("roblox") ||
-      cleanName.includes("روبلوكس") ||
-      cleanName.includes("robux") ||
-      cleanName.includes("روبوكس")
-    ) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/roblox-robux.jpg`;
-    }
-
-    // Map specific known SVG/legacy paths to verified CDN assets
-    if (
-      clean.includes("gemini") ||
-      cleanSlug.includes("gemini") ||
-      cleanName.includes("gemini") ||
-      cleanName.includes("جيمناي") ||
-      cleanName.includes("جيميناي") ||
-      cleanName.includes("جيميني") ||
-      cleanName.includes("google ai") ||
-      cleanName.includes("قوقل ai")
-    ) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/gemini-logo.png`;
-    }
-
-    if (
-      clean.includes("autodesk") ||
-      cleanSlug.includes("autodesk") ||
-      cleanSlug.includes("autocad") ||
-      cleanName.includes("autodesk") ||
-      cleanName.includes("اوتوديسك")
-    ) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/autodesk-logo.png`;
-    }
-
-    if (
-      clean.includes("microsoft365") ||
-      cleanSlug.includes("microsoft") ||
-      cleanSlug.includes("office") ||
-      cleanSlug.includes("365") ||
-      cleanName.includes("microsoft") ||
-      cleanName.includes("مايكروسوفت")
-    ) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/microsoft365-logo.png`;
-    }
-
-    if (
-      clean.includes("windows") ||
-      cleanSlug.includes("windows") ||
-      cleanName.includes("windows") ||
-      cleanName.includes("ويندوز")
-    ) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/windows-logo.png`;
-    }
-
-    if (
-      clean.includes("linkedin") ||
-      cleanSlug.includes("linkedin") ||
-      cleanName.includes("linkedin") ||
-      cleanName.includes("لينكد") ||
-      cleanName.includes("لينكدإن")
-    ) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/linkedin.png`;
-    }
-
-    if (clean.includes("facebook")) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/facebook-logo.png`;
-    }
-
-    if (clean.includes("instagram")) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/instagram-logo.png`;
-    }
-
-    if (
-      clean.includes("itunes") ||
-      cleanSlug.includes("itunes") ||
-      cleanName.includes("itunes") ||
-      cleanName.includes("آيتونز") ||
-      cleanName.includes("ايتونز") ||
-      clean.includes("apple") ||
-      cleanSlug.includes("apple") ||
-      cleanName.includes("آبل") ||
-      cleanName.includes("ابل")
-    ) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/itunes-card.png`;
-    }
-
-    if (clean.includes("playstation") || cleanSlug.includes("playstation") || cleanSlug.includes("psn")) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/playstation-store-card.jpg`;
-    }
-
-    if (clean.includes("steam") || cleanSlug.includes("steam")) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/steam.jpg`;
-    }
-
-    if (clean.includes("xbox") || cleanSlug.includes("xbox")) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/xbox.jpg`;
-    }
-
-    // Convert any generic relative or absolute path via toAbsoluteUrl
-    const abs = toAbsoluteUrl(clean);
-    if (abs) return abs;
-  }
-
-  // 2. Fallback to catalog brand matching if no URL was supplied
-  if (
-    cleanSlug.includes("gemini") ||
-    cleanName.includes("gemini") ||
-    cleanName.includes("جيمناي") ||
-    cleanName.includes("جيميناي") ||
-    cleanName.includes("جيميني") ||
-    cleanName.includes("google ai") ||
-    cleanName.includes("قوقل ai")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/gemini-logo.png`;
-  }
-
-  if (
-    cleanSlug.includes("playstation") ||
-    cleanSlug.includes("psn") ||
-    cleanName.includes("playstation") ||
-    cleanName.includes("بلايستيشن") ||
-    cleanName.includes("سوني") ||
-    cleanName.includes("psn")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/playstation-store-card.jpg`;
-  }
-
-  if (
-    cleanSlug === "xbox-game-pass-ultimate" ||
-    cleanId.startsWith("gpu-") ||
-    cleanSlug.startsWith("gpu-") ||
-    cleanName.includes("ultimate") ||
-    cleanName.includes("التيمت") ||
-    cleanName.includes("التميت")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/xbox-game-pass-ultimate.jpg`;
-  }
-
-  if (
-    cleanSlug === "pc-game-pass" ||
-    cleanId.startsWith("pcgp-") ||
-    cleanSlug.startsWith("pcgp-") ||
-    (cleanName.includes("game pass") && cleanName.includes("pc")) ||
-    (cleanName.includes("قيم باس") && cleanName.includes("pc"))
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/pc-game-pass.jpg`;
-  }
-
-  if (
-    cleanSlug.includes("xbox") ||
-    cleanName.includes("xbox") ||
-    cleanName.includes("اكس بوكس")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/xbox.jpg`;
-  }
-
-  if (
-    cleanSlug.includes("itunes") ||
-    cleanSlug.includes("apple") ||
-    cleanName.includes("itunes") ||
-    cleanName.includes("ايتونز") ||
-    cleanName.includes("apple")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/itunes.jpg`;
-  }
-
-  if (
-    cleanSlug.includes("steam") ||
-    cleanName.includes("steam") ||
-    cleanName.includes("ستيم")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/steam.jpg`;
-  }
-
-  if (
-    cleanSlug.includes("pubg") ||
-    cleanName.includes("pubg") ||
-    cleanName.includes("ببجي")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/pubg-mobile.webp`;
-  }
-
-  if (
-    cleanSlug.includes("freefire") ||
-    cleanSlug.includes("free-fire") ||
-    cleanName.includes("freefire") ||
-    cleanName.includes("فري فاير")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/free-fire.png`;
-  }
-
-  if (
-    cleanSlug.includes("fortnite") ||
-    cleanName.includes("fortnite") ||
-    cleanName.includes("فورتنايت") ||
-    cleanName.includes("فورت نايت") ||
-    cleanName.includes("v-bucks")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/fortnite-logo.png`;
-  }
-
-  if (
-    cleanSlug.includes("roblox") ||
-    cleanName.includes("roblox") ||
-    cleanName.includes("روبلوكس") ||
-    cleanName.includes("robux")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/roblox-robux.jpg`;
-  }
-
-  if (
-    cleanSlug.includes("canva") ||
-    cleanName.includes("canva") ||
-    cleanName.includes("كانفا")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/canva-logo.png`;
-  }
-
-  if (
-    cleanSlug.includes("snapchat") ||
-    cleanName.includes("snapchat") ||
-    cleanName.includes("سناب")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/snapchat-logo.png`;
-  }
-
-  if (
-    cleanSlug.includes("nordvpn") ||
-    cleanName.includes("nordvpn") ||
-    cleanName.includes("نورد")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/nordvpn.jpg`;
-  }
-
-  if (
-    cleanSlug.includes("headspace") ||
-    cleanName.includes("headspace") ||
-    cleanName.includes("هيد سبيس")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/headspace.jpg`;
-  }
-
-  if (
-    cleanSlug.includes("notion") ||
-    cleanName.includes("notion") ||
-    cleanName.includes("نوشن")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/notion.jpg`;
-  }
-
-  if (cleanSlug.includes("realms")) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/minecraft-realms-plus.png`;
-  }
-
-  if (cleanSlug.includes("lovable") || cleanName.includes("lovable") || cleanName.includes("لوفابل")) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/lovable.webp`;
-  }
-
-  if (
-    cleanSlug.includes("linkedin") ||
-    cleanName.includes("linkedin") ||
-    cleanName.includes("لينكد") ||
-    cleanName.includes("لينكدإن")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/linkedin.png`;
-  }
-
-  if (
-    cleanSlug.includes("duolingo") ||
-    cleanName.includes("duolingo") ||
-    cleanName.includes("دولينجو") ||
-    cleanName.includes("دولينقو")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/duolingo-super.png`;
-  }
-
-  if (
-    cleanSlug.includes("autodesk") ||
-    cleanName.includes("autodesk") ||
-    cleanName.includes("أوتوديسك")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/autodesk-cover.jpg`;
-  }
-
-  const isExplicitTod =
-    cleanSlug === "tod" ||
-    cleanSlug.startsWith("tod-") ||
-    cleanName.startsWith("tod") ||
-    cleanName.includes("تود") ||
-    cleanName.includes(" tod");
-
-  if (isExplicitTod && !cleanSlug.includes("autodesk")) {
-    if (cleanSlug.includes("4k") || cleanName.includes("4k")) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/tod-4k-card.jpg`;
-    }
-    if (cleanSlug.includes("mobile") || cleanName.includes("mobile") || cleanName.includes("موبايل")) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/tod-mobile-card.jpg`;
-    }
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/tod-standard-card.jpg`;
-  }
-
-  if (
-    cleanSlug.includes("youtube") ||
-    cleanName.includes("youtube") ||
-    cleanName.includes("يوتيوب")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/youtube-premium.jpg`;
-  }
-
-  if (
-    cleanSlug.includes("discord") ||
-    cleanSlug.includes("nitro") ||
-    cleanName.includes("discord") ||
-    cleanName.includes("nitro") ||
-    cleanName.includes("نيترو") ||
-    cleanName.includes("دسكورد") ||
-    cleanName.includes("ديسكورد")
-  ) {
-    if (cleanSlug.includes("boost") || cleanName.includes("boost") || cleanName.includes("بوست")) {
-      return `${CDN_ASSETS_BASE}/app/assets/img/catalog/discord-boost-14x-1m.png`;
-    }
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/discord-nitro-1-month.png`;
-  }
-
-  if (
-    cleanSlug.includes("windows") ||
-    cleanName.includes("windows") ||
-    cleanName.includes("ويندوز")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/windows-logo.png`;
-  }
-
-  if (
-    cleanSlug.includes("microsoft") ||
-    cleanSlug.includes("office") ||
-    cleanSlug.includes("365") ||
-    cleanName.includes("microsoft") ||
-    cleanName.includes("office") ||
-    cleanName.includes("اوفيس") ||
-    cleanName.includes("مايكروسوفت")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/microsoft365-logo.png`;
-  }
-
-  if (
-    cleanSlug.includes("autodesk") ||
-    cleanSlug.includes("autocad") ||
-    cleanName.includes("autodesk") ||
-    cleanName.includes("autocad") ||
-    cleanName.includes("اوتوديسك") ||
-    cleanName.includes("اوتوكاد")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/autodesk-logo.png`;
-  }
-
-  if (
-    cleanSlug.includes("capcut") ||
-    cleanName.includes("capcut") ||
-    cleanName.includes("كاب كات")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/capcut-pro.png`;
-  }
-
-  if (
-    cleanSlug.includes("adobe-acrobat") ||
-    cleanName.includes("acrobat") ||
-    cleanName.includes("اكروبات")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/adobe-acrobat.jpg`;
-  }
-
-  if (
-    cleanSlug.includes("adobe-express") ||
-    cleanName.includes("express")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/catalog/adobe-express.jpg`;
-  }
-
-  if (
-    cleanSlug.includes("adobe") ||
-    cleanName.includes("adobe") ||
-    cleanName.includes("ادوبي")
-  ) {
-    return `${CDN_ASSETS_BASE}/app/assets/img/adobe-cc.webp`;
-  }
-
-  return OFFICIAL_LOGO_URL;
-}
-
-/**
- * Dynamically resolves the current product image from the live database or catalog.
- * Guarantees that any addition or edit to products in the store is immediately reflected in all outgoing emails.
- */
-export async function resolveProductEmailImage(
-  supabase: any,
-  item: { name?: string; slug?: string; image?: string; id?: string; variant?: string; cartId?: string }
-): Promise<string> {
-  let dbImage: string | null = null;
-
-  if (supabase) {
-    try {
-      // 1. Precise lookup by slug
-      if (item.slug && item.slug.trim()) {
-        const { data: prod } = await supabase
-          .from("products")
-          .select("image_url, icon_image_url")
-          .eq("slug", item.slug.trim())
-          .maybeSingle();
-        if (prod && (prod.image_url || prod.icon_image_url)) {
-          dbImage = prod.image_url || prod.icon_image_url;
-        }
-      }
-
-      // 2. Lookup by id if available
-      if (!dbImage && item.id && item.id.trim()) {
-        const { data: prod } = await supabase
-          .from("products")
-          .select("image_url, icon_image_url")
-          .eq("id", item.id.trim())
-          .maybeSingle();
-        if (prod && (prod.image_url || prod.icon_image_url)) {
-          dbImage = prod.image_url || prod.icon_image_url;
-        }
-      }
-
-      // 3. Fallback to product name keyword matching in DB
-      if (!dbImage && item.name && item.name.trim()) {
-        const cleanName = item.name
-          .replace(/\(.*?\)/g, "")
-          .replace(/[—\-|].*/, "")
-          .trim();
-        if (cleanName.length >= 3) {
-          const { data: prods } = await supabase
-            .from("products")
-            .select("image_url, icon_image_url, slug")
-            .or(`name_ar.ilike.%${cleanName}%,name_en.ilike.%${cleanName}%,slug.ilike.%${cleanName}%`)
-            .limit(1);
-          if (prods && prods[0] && (prods[0].image_url || prods[0].icon_image_url)) {
-            dbImage = prods[0].image_url || prods[0].icon_image_url;
-          }
-        }
-      }
-    } catch (err) {
-      console.warn("Dynamic product image lookup warning:", err);
-    }
-  }
-
-  // Priority: Live DB product image (reflects store additions/edits) -> item image -> keyword fallback
-  const rawCandidate = dbImage || item.image || null;
-  return sanitizeImageForEmail(rawCandidate, item.name, item.slug, item.variant || item.cartId);
-}
-
-export type OrderItemEmail = {
-  name: string;
-  qty?: number;
-  price?: number;
-  image?: string;
-  region?: string;
-  variant?: string;
-  slug?: string;
-};
-
-export type SendOrderStatusEmailInput = {
-  orderNumber: string;
-  status: "delivered" | "cancelled";
-  customerEmail: string;
-  customerName?: string;
-  totalJod: number;
-  subtotalJod?: number;
-  discountJod?: number;
-  paymentMethod?: string;
-  items?: OrderItemEmail[];
-  notes?: string;
-  createdAt?: string;
-  lang?: "ar" | "en";
-};
 
 export const sendOrderStatusEmail = createServerFn({ method: "POST" })
   .validator((data: unknown) =>
@@ -830,7 +198,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
         ? `<div style="font-weight:700;color:#38bdf8;margin-bottom:6px;">${isAr ? "💡 تعليمات وملاحظات الطلب:" : "💡 Order Instructions & Notes:"}</div><div>${escapeHtml(notes.trim())}</div>`
         : undefined;
 
-      const html = renderDriffleEmail({
+      const html = renderGxStoreEmail({
         lang: isAr ? "ar" : "en",
         subject,
         headline: isDelivered
@@ -931,6 +299,83 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
       console.error("Error sending order status email:", err);
       return { ok: false, error: err?.message || "Internal error sending email" };
     }
+  });
+
+/**
+ * Server function to notify customer that payment was received and confirmed.
+ */
+export const sendPaymentConfirmedEmail = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z
+      .object({
+        orderNumber: z.string().trim().min(1),
+        customerEmail: z.string().trim().email(),
+        customerName: z.string().optional(),
+        totalJod: z.number(),
+        subtotalJod: z.number().optional(),
+        discountJod: z.number().optional(),
+        paymentMethod: z.string().optional(),
+        items: z
+          .array(
+            z.object({
+              name: z.string(),
+              qty: z.number().optional(),
+              price: z.number().optional(),
+              image: z.string().optional(),
+              region: z.string().optional(),
+              variant: z.string().optional(),
+              slug: z.string().optional(),
+            })
+          )
+          .optional(),
+        notes: z.string().optional(),
+        createdAt: z.string().optional(),
+        lang: z.enum(["ar", "en"]).default("ar"),
+      })
+      .parse(data)
+  )
+  .handler(async ({ data }) => {
+    return sendPaymentConfirmedEmailDirect(data);
+  });
+
+/**
+ * Server function to notify customer that their Binance Pay order was received and is verifying.
+ */
+export const sendBinanceOrderReceivedEmail = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z
+      .object({
+        orderNumber: z.string().trim().min(1),
+        orderToken: z.string().optional(),
+        customerEmail: z.string().trim().email(),
+        customerName: z.string().optional(),
+        binanceOrderId: z.string().trim().min(1),
+        totalJod: z.number(),
+        subtotalJod: z.number().optional(),
+        feeJod: z.number().optional(),
+        totalWithFeeJod: z.number().optional(),
+        totalUsdt: z.string().optional(),
+        items: z
+          .array(
+            z.object({
+              name: z.string(),
+              qty: z.number().optional(),
+              price: z.number().optional(),
+              image: z.string().optional(),
+              region: z.string().optional(),
+              variant: z.string().optional(),
+              slug: z.string().optional(),
+            })
+          )
+          .optional(),
+        notes: z.string().optional(),
+        createdAt: z.string().optional(),
+        lang: z.enum(["ar", "en"]).default("ar"),
+      })
+      .parse(data)
+  )
+  .handler(async ({ data }) => {
+    return sendBinanceOrderReceivedEmailDirect(data);
   });
 
 /**
@@ -1083,7 +528,7 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
         };
       });
 
-      const html = renderDriffleEmail({
+      const html = renderGxStoreEmail({
         lang: isAr ? "ar" : "en",
         subject,
         headline: isAr ? "طلبك بانتظار إتمام الدفع 💳" : "Complete your payment",
@@ -1228,7 +673,7 @@ export const getOrderByTokenFn = createServerFn({ method: "POST" })
           ok: true,
           order: {
             ...order,
-            delivery_data: null, // Strictly masked for non-delivered orders!
+            delivery_data: sanitizeDeliveryDataForPendingOrLocked(order.delivery_data),
           },
           verifiedEmail: verified.email,
           isLocked: true,
@@ -1237,7 +682,7 @@ export const getOrderByTokenFn = createServerFn({ method: "POST" })
 
       // Check caller identity
       let callerUser: { id: string; email?: string } | null = null;
-      const authHeader = getRequestHeader("authorization");
+      const authHeader = await getServerHeader("authorization");
       const token = data.accessToken || (authHeader?.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : null);
       if (token) {
         try {
@@ -1268,7 +713,7 @@ export const getOrderByTokenFn = createServerFn({ method: "POST" })
       // --- Security & Anti-Fraud: IP Address Verification for unauthenticated / guest token links ---
       let currentIp: string | null = null;
       try {
-        currentIp = resolveSafeClientIp(getRequestHeader);
+        currentIp = await getServerIp();
       } catch {
         currentIp = null;
       }
@@ -1290,7 +735,7 @@ export const getOrderByTokenFn = createServerFn({ method: "POST" })
           orderNumber: order.order_number,
           order: {
             ...maskOrderForPublic(order),
-            delivery_data: null, // Zero sensitive keys/codes returned!
+            delivery_data: sanitizeDeliveryDataForPendingOrLocked(order.delivery_data),
           },
           verifiedEmail: verified.email,
           isLocked: true,
@@ -1379,7 +824,7 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
 
       // Check caller identity
       let callerUser: { id: string; email?: string } | null = null;
-      const authHeader = getRequestHeader("authorization");
+      const authHeader = await getServerHeader("authorization");
       const token = data.accessToken || (authHeader?.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : null);
       if (token) {
         try {
@@ -1411,7 +856,7 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
       if (hasValidToken) {
         let currentIp: string | null = null;
         try {
-          currentIp = resolveSafeClientIp(getRequestHeader);
+          currentIp = await getServerIp();
         } catch {
           currentIp = null;
         }
@@ -1430,7 +875,7 @@ export const getOrderByNumberFn = createServerFn({ method: "POST" })
             orderNumber: order.order_number,
             order: {
               ...maskOrderForPublic(order),
-              delivery_data: null, // Zero sensitive keys/codes returned!
+              delivery_data: sanitizeDeliveryDataForPendingOrLocked(order.delivery_data),
             },
             isLocked: true,
           };
@@ -1468,7 +913,11 @@ const PRIVATE_ORDER_FIELDS = [
 function maskOrderForPublic(order: Record<string, any>): Record<string, any> {
   const masked: Record<string, any> = { ...order };
   for (const key of PRIVATE_ORDER_FIELDS) {
-    if (key in masked) masked[key] = null;
+    if (key === "delivery_data") {
+      masked[key] = sanitizeDeliveryDataForPendingOrLocked(order.delivery_data);
+    } else if (key in masked) {
+      masked[key] = null;
+    }
   }
   return masked;
 }
@@ -1555,13 +1004,13 @@ export const markCodeRevealedFn = createServerFn({ method: "POST" })
 
       let ip: string | null = null;
       try {
-        ip = resolveSafeClientIp(getRequestHeader);
+        ip = await getServerIp();
       } catch {
         ip = null;
       }
-      const country = getRequestHeader("cf-ipcountry")?.trim() || null;
-      const city = getRequestHeader("cf-ipcity")?.trim() || null;
-      const userAgent = (getRequestHeader("user-agent") || "").slice(0, 300).trim() || null;
+      const country = (await getServerHeader("cf-ipcountry"))?.trim() || null;
+      const city = (await getServerHeader("cf-ipcity"))?.trim() || null;
+      const userAgent = ((await getServerHeader("user-agent")) || "").slice(0, 300).trim() || null;
 
       const now = new Date().toISOString();
       const { data: current } = await (supabase as any)

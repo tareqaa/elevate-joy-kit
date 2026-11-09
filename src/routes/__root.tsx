@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  ScrollRestoration,
 } from "@tanstack/react-router";
 import { useEffect, useState, useRef, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
@@ -13,6 +14,8 @@ import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { checkDeviceSessionStatusServer } from "@/lib/gx/security.functions";
 import { CurrencyProvider } from "@/lib/gx/currency";
 import { CartProvider } from "@/lib/gx/cart";
 import { LanguageProvider } from "@/lib/gx/i18n";
@@ -65,12 +68,26 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error: rawError, reset }: { error: unknown; reset: () => void }) {
   const error = rawError as Error;
-  console.error(error);
+  console.error("[TanStack Root Error]", rawError);
   const router = useRouter();
   const en = boundaryLang() === "en";
+
   useEffect(() => {
+    if ((rawError as any)?.to) {
+      void router.navigate({ to: (rawError as any).to });
+      return;
+    }
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+  }, [rawError]);
+
+  const msg =
+    error instanceof Response
+      ? `HTTP ${error.status}: ${error.statusText || ""}`
+      : error instanceof Error
+        ? error.message || error.name
+        : typeof rawError === "string"
+          ? rawError
+          : "";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -78,6 +95,11 @@ function ErrorComponent({ error: rawError, reset }: { error: unknown; reset: () 
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           {en ? "Something went wrong loading this page" : "صار خطأ بتحميل الصفحة"}
         </h1>
+        {msg && (
+          <p className="mt-3 rounded-lg border border-red-500/20 bg-red-500/10 p-2.5 text-xs text-red-300 font-mono text-center break-words max-w-sm mx-auto" dir="ltr">
+            {msg}
+          </p>
+        )}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => { router.invalidate(); reset(); }}
@@ -99,28 +121,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "GX Store | متجر ألعاب واشتراكات رقمية" },
+      { title: "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار" },
       {
         name: "description",
         content:
-          "GX Store متجر رقمي للألعاب والاشتراكات. اشتراكات، بطاقات هدايا، عملات ألعاب وخدمات رقمية بتفعيل سريع وأسعار منافسة.",
+          "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.",
       },
       { property: "og:site_name", content: "GX Store" },
-      { property: "og:title", content: "GX Store | متجر ألعاب واشتراكات رقمية" },
+      { property: "og:title", content: "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار" },
       {
         property: "og:description",
         content:
-          "GX Store متجر رقمي للألعاب والاشتراكات. اشتراكات، بطاقات هدايا، عملات ألعاب وخدمات رقمية بتفعيل سريع وأسعار منافسة.",
+          "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://gxstore.me/" },
       { property: "og:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
+      { property: "og:image:secure_url", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
+      { property: "og:image:type", content: "image/jpeg" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "GX Store" },
+      { property: "og:logo", content: "https://gxstore.me/app/assets/img/gx-logo.png" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "GX Store | متجر ألعاب واشتراكات رقمية" },
+      { name: "twitter:title", content: "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار" },
       {
         name: "twitter:description",
         content:
-          "GX Store متجر رقمي للألعاب والاشتراكات. اشتراكات، بطاقات هدايا، عملات ألعاب وخدمات رقمية بتفعيل سريع وأسعار منافسة.",
+          "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.",
       },
       { name: "twitter:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
       { name: "theme-color", content: "#090b10" },
@@ -133,6 +161,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/favicon.ico", sizes: "any" },
       { rel: "icon", href: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
       { rel: "icon", href: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+      { rel: "icon", href: "/android-chrome-512x512.png", type: "image/png", sizes: "512x512" },
+      { rel: "icon", href: "/android-chrome-192x192.png", type: "image/png", sizes: "192x192" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
       { rel: "manifest", href: "/site.webmanifest" },
     ],
@@ -144,20 +174,69 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 const PRE_HYDRATE_LANG = `
-(function(){try{
-  var s=localStorage.getItem('gx_lang');
-  if(s!=='ar'&&s!=='en')return;
-  var h=document.documentElement;
-  h.setAttribute('lang',s);
-  h.setAttribute('dir',s==='ar'?'rtl':'ltr');
-  if(s!=='ar'){
-    h.setAttribute('data-lang-pending','1');
-    var st=document.createElement('style');
-    st.id='gx-lang-gate';
-    st.textContent='html[data-lang-pending] body{visibility:hidden!important}';
-    document.head.appendChild(st);
-  }
-}catch(e){}})();
+(function(){
+  try {
+    var s = localStorage.getItem('gx_lang');
+    var isAr = true;
+
+    if (s === 'en') {
+      isAr = false;
+    } else if (s === 'ar') {
+      isAr = true;
+    } else {
+      // First visit / no saved preference: detect from cached country or timezone (0ms)
+      var cachedCc = (localStorage.getItem('gx_country_code') || localStorage.getItem('gx_lang_geo_cc') || '').toUpperCase();
+      var ARAB_COUNTRIES = {JO:1,PS:1,SA:1,AE:1,KW:1,QA:1,OM:1,BH:1,IQ:1,EG:1,MA:1,DZ:1,TN:1,LB:1,SY:1,YE:1,LY:1,SD:1,MR:1,SO:1,DJ:1,KM:1};
+      
+      if (cachedCc) {
+        isAr = !!ARAB_COUNTRIES[cachedCc];
+      } else {
+        var tz = '';
+        try { tz = (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || ''; } catch(e){}
+        var isArabTz = /amman|riyadh|cairo|dubai|abu_dhabi|baghdad|kuwait|qatar|bahrain|muscat|beirut|damascus|jerusalem|gaza|hebron|khartoum|tripoli|algiers|tunis|casablanca|sanaa|aden|nouakchott|mogadishu|djibouti/i.test(tz);
+        var navLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
+        var isArNav = navLang.indexOf('ar') === 0;
+
+        // If visiting from a non-Arab timezone (e.g. Istanbul, Europe, US, etc.), prioritize English
+        if (tz && !isArabTz) {
+          isAr = false;
+        } else if (isArabTz) {
+          isAr = true;
+        } else {
+          isAr = isArNav;
+        }
+      }
+    }
+
+    var h = document.documentElement;
+    if (!isAr) {
+      h.setAttribute('lang', 'en');
+      h.setAttribute('dir', 'ltr');
+      var enTitle = "GX Store | Buy Games, Giftcard & Top ups cheaper";
+      document.title = enTitle;
+      var tTag = document.querySelector('title');
+      if (tTag) tTag.textContent = enTitle;
+
+      try {
+        if (!localStorage.getItem('gx_lang')) localStorage.setItem('gx_lang', 'en');
+        if (!localStorage.getItem('gx_currency')) localStorage.setItem('gx_currency', 'USD');
+      } catch(e){}
+
+      h.setAttribute('data-lang-pending', '1');
+      var st = document.createElement('style');
+      st.id = 'gx-lang-gate';
+      st.textContent = 'html[data-lang-pending] body{visibility:hidden!important}';
+      document.head.appendChild(st);
+    } else {
+      h.setAttribute('lang', 'ar');
+      h.setAttribute('dir', 'rtl');
+      var arTitle = "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار";
+      document.title = arTitle;
+      var tTagAr = document.querySelector('title');
+      if (tTagAr) tTagAr.textContent = arTitle;
+    }
+  } catch(e){}
+})();
 `;
 
 const META_PIXEL_CODE = `
@@ -285,6 +364,7 @@ function AppGate({ authReady }: { authReady: boolean }) {
       </div>
 
       <div style={{ opacity: isRevealed ? 1 : 0, transition: "opacity 0.4s ease", minHeight: "100vh" }}>
+        <ScrollRestoration />
         <Outlet />
       </div>
       <Toaster richColors position="top-center" />
@@ -301,6 +381,13 @@ function RootComponent() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setAuthReady(true);
       if (session?.user?.id) {
+        // Auto-cancel scheduled account deletion if user visits with active session
+        void (supabase.rpc as any)("cancel_scheduled_deletion");
+        void supabase
+          .from("profiles")
+          .update({ scheduled_deletion_at: null, deletion_reason: null } as any)
+          .eq("id", session.user.id);
+
         supabase.rpc("claim_unregistered_credits_for_user", { _user_id: session.user.id })
           .then(
             (res) => {
@@ -318,7 +405,19 @@ function RootComponent() {
       router.invalidate();
       if (event !== "SIGNED_OUT") {
         queryClient.invalidateQueries();
-        if (event === "SIGNED_IN" && session?.user?.id) {
+        if ((event === "SIGNED_IN" || event === "USER_UPDATED") && session?.user?.id) {
+          // Auto-cancel scheduled account deletion whenever user signs in
+          void (supabase.rpc as any)("cancel_scheduled_deletion").then(({ data }: any) => {
+            if ((data as any)?.reactivated) {
+              queryClient.invalidateQueries();
+            }
+          });
+          void supabase
+            .from("profiles")
+            .update({ scheduled_deletion_at: null, deletion_reason: null } as any)
+            .eq("id", session.user.id)
+            .then(() => queryClient.invalidateQueries());
+
           supabase.rpc("claim_unregistered_credits_for_user", { _user_id: session.user.id })
             .then(
               (res) => {
@@ -345,6 +444,47 @@ function RootComponent() {
       if (typeof window !== "undefined") {
         window.removeEventListener("gx-auth-changed", onAuthChanged);
       }
+    };
+  }, [router, queryClient]);
+
+  // Active check to enforce device session revocation across other browsers
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let timer: any = null;
+    let cancelled = false;
+
+    async function checkMyDevice() {
+      try {
+        const { data: sess } = await supabase.auth.getSession();
+        if (!sess.session?.user) return;
+
+        const devId = localStorage.getItem("gx_device_id");
+        if (!devId) return;
+
+        const res = await checkDeviceSessionStatusServer({ data: { deviceId: devId } });
+        if (!cancelled && res.revoked) {
+          localStorage.removeItem("gx_device_id");
+          await supabase.auth.signOut({ scope: "local" });
+          toast.error(
+            document.documentElement.lang === "ar"
+              ? "تم إنهاء جلستك من هذا الجهاز من جلسة أخرى."
+              : "Your session on this device has been revoked."
+          );
+          router.invalidate();
+          queryClient.invalidateQueries();
+          window.location.href = "/auth";
+        }
+      } catch {}
+    }
+
+    timer = setInterval(checkMyDevice, 10_000);
+    window.addEventListener("focus", checkMyDevice);
+
+    return () => {
+      cancelled = true;
+      if (timer) clearInterval(timer);
+      window.removeEventListener("focus", checkMyDevice);
     };
   }, [router, queryClient]);
 

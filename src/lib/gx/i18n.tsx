@@ -43,10 +43,29 @@ function langFromCountry(cc: string): Lang {
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  // Must match SSR on first render to avoid hydration mismatch.
-  const [lang, setLangState] = useState<Lang>("ar");
+  const [lang, setLangState] = useState<Lang>(() => {
+    if (typeof window === "undefined") return "ar";
+    try {
+      const saved = readSaved();
+      if (saved) return saved;
+      const instantCc = getUnifiedCountryCode();
+      if (instantCc) {
+        return langFromCountry(instantCc);
+      }
+      const navLang = (navigator.language || (navigator as any).userLanguage || "").toLowerCase();
+      const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone || "" : "";
+      const isArabTz = /amman|riyadh|cairo|dubai|abu_dhabi|baghdad|kuwait|qatar|bahrain|muscat|beirut|damascus|jerusalem|gaza|hebron|khartoum|tripoli|algiers|tunis|casablanca|sanaa|aden|nouakchott|mogadishu|djibouti/i.test(tz);
 
-  // Saved choice wins; otherwise detect by visitor location (NOT device language)
+      if (!navLang.startsWith("ar") && !isArabTz) {
+        return "en";
+      }
+    } catch {
+      /* noop */
+    }
+    return "ar";
+  });
+
+  // Saved choice wins; otherwise detect by visitor location and browser locale
   useEffect(() => {
     const saved = readSaved();
     if (saved) { setLangState(saved); return; }
@@ -57,11 +76,22 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (instantCc) {
       const detected = langFromCountry(instantCc);
       setLangState(detected);
+    } else {
+      // Check if browser language is non-Arabic and timezone is non-Arab
+      const navLang = (navigator.language || (navigator as any).userLanguage || "").toLowerCase();
+      const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone || "" : "";
+      const isArabTz = /amman|riyadh|cairo|dubai|abu_dhabi|baghdad|kuwait|qatar|bahrain|muscat|beirut|damascus|jerusalem|gaza|hebron|khartoum|tripoli|algiers|tunis|casablanca|sanaa|aden|nouakchott|mogadishu|djibouti/i.test(tz);
+
+      if (!navLang.startsWith("ar") && !isArabTz) {
+        setLangState("en");
+      } else {
+        setLangState("ar");
+      }
     }
 
     // In background, hook into single deduplicated country fetch
     void fetchUserCountryOnce().then((cc) => {
-      if (cc && !readSaved()) {
+      if (cc && !localStorage.getItem("gx_lang_manual") && !readSaved()) {
         const detected = langFromCountry(cc);
         try {
           localStorage.setItem(GEO_KEY, cc.toUpperCase());
@@ -72,6 +102,116 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+
+  // Common title mappings between Arabic and English for browser tab
+  const TITLE_MAP_AR_TO_EN: Record<string, string> = {
+    "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار": "GX Store | Buy Games, Giftcard & Top ups cheaper",
+    "GX Store | متجر ألعاب واشتراكات رقمية": "GX Store | Buy Games, Giftcard & Top ups cheaper",
+    "متجر ألعاب واشتراكات رقمية | GX Store": "GX Store | Buy Games, Giftcard & Top ups cheaper",
+    "متجر ألعاب واشتراكات رقمية": "Buy Games, Giftcard & Top ups cheaper",
+    "GX Store | Digital Games & Subscriptions": "GX Store | Buy Games, Giftcard & Top ups cheaper",
+    "بطاقات بلايستيشن": "PlayStation Gift Cards",
+    "السلة": "Shopping Cart",
+    "كافة المنتجات والاشتراكات": "All Products & Subscriptions",
+    "الاشتراكات الرقمية": "Digital Subscriptions",
+    "ألعاب وستيم": "Games & Steam",
+    "بطاقات هدايا وشحن": "Gift Cards & Top-ups",
+    "البرامج والتطبيقات": "Apps & Software",
+    "خدمات السوشال ميديا": "Social Media Services",
+    "شحن فورت نايت": "Fortnite Top-up",
+    "المفضلة": "Favorites",
+    "حسابي": "My Account",
+    "لوحة الإدارة": "Admin Dashboard",
+    "تسجيل الدخول": "Sign In",
+    "الأسئلة الشائعة": "FAQ",
+    "سياسة الخصوصية": "Privacy Policy",
+    "الشروط والأحكام": "Terms & Conditions",
+    "الدعم الفني": "Support",
+    "الأقسام": "Categories",
+  };
+
+  const TITLE_MAP_EN_TO_AR: Record<string, string> = {
+    "GX Store | Buy Games, Giftcard & Top ups cheaper": "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار",
+    "Buy Games, Giftcard & Top ups cheaper | GX Store": "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار",
+    "Buy Games, Giftcard & Top ups cheaper": "اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار",
+    "GX Store | Digital Games & Subscriptions": "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار",
+    "Digital Games & Subscriptions | GX Store": "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار",
+    "PlayStation Gift Cards": "بطاقات بلايستيشن",
+    "Shopping Cart": "السلة",
+    "All Products & Subscriptions": "كافة المنتجات والاشتراكات",
+    "Digital Subscriptions": "الاشتراكات الرقمية",
+    "Games & Steam": "ألعاب وستيم",
+    "Gift Cards & Top-ups": "بطاقات هدايا وشحن",
+    "Apps & Software": "البرامج والتطبيقات",
+    "Social Media Services": "خدمات السوشال ميديا",
+    "Fortnite Top-up": "شحن فورت نايت",
+    "Favorites": "المفضلة",
+    "My Account": "حسابي",
+    "Admin Dashboard": "لوحة الإدارة",
+    "Sign In": "تسجيل الدخول",
+    "FAQ": "الأسئلة الشائعة",
+    "Privacy Policy": "سياسة الخصوصية",
+    "Terms & Conditions": "الشروط والأحكام",
+    "Support": "الدعم الفني",
+    "Categories": "الأقسام",
+  };
+
+  // Synchronize document.title dynamically with selected language
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const syncTitle = () => {
+      const cur = document.title ? document.title.trim() : "";
+      if (!cur) {
+        document.title =
+          lang === "en"
+            ? "GX Store | Buy Games, Giftcard & Top ups cheaper"
+            : "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار";
+        return;
+      }
+
+      if (lang === "en") {
+        if (TITLE_MAP_AR_TO_EN[cur]) {
+          document.title = TITLE_MAP_AR_TO_EN[cur];
+          return;
+        }
+        if (cur.includes("متجر ألعاب واشتراكات رقمية") || cur.includes("اشتري ألعاب") || cur === "GX Store") {
+          document.title = "GX Store | Buy Games, Giftcard & Top ups cheaper";
+          return;
+        }
+        if (cur.includes("| متجر GX Store")) {
+          const base = cur.replace(/\s*\|\s*متجر\s*GX\s*Store/gi, "").trim();
+          const translated = TITLE_MAP_AR_TO_EN[base] || base;
+          document.title = `${translated} | GX Store`;
+          return;
+        }
+      } else {
+        if (TITLE_MAP_EN_TO_AR[cur]) {
+          document.title = TITLE_MAP_EN_TO_AR[cur];
+          return;
+        }
+        if (cur.includes("Buy Games") || cur.includes("Digital Games & Subscriptions") || cur === "GX Store") {
+          document.title = "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار";
+          return;
+        }
+        if (cur.includes("| GX Store") && !cur.includes("| متجر GX Store")) {
+          const base = cur.replace(/\s*\|\s*GX\s*Store/gi, "").trim();
+          const translated = TITLE_MAP_EN_TO_AR[base] || base;
+          document.title = `${translated} | متجر GX Store`;
+          return;
+        }
+      }
+    };
+
+    syncTitle();
+
+    // Observe title tag in case router replaces it
+    const titleEl = document.querySelector("title");
+    if (!titleEl) return;
+    const observer = new MutationObserver(() => syncTitle());
+    observer.observe(titleEl, { childList: true, characterData: true, subtree: true });
+    return () => observer.disconnect();
+  }, [lang]);
 
   // Reflect on <html> and lift the pre-hydration gate
   useEffect(() => {
@@ -86,7 +226,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
-    try { localStorage.setItem(STORAGE_KEY, l); } catch { /* noop */ }
+    try {
+      localStorage.setItem(STORAGE_KEY, l);
+      localStorage.setItem("gx_lang_manual", "1");
+    } catch { /* noop */ }
   }, []);
 
   const t = useCallback((key: string) => {
@@ -101,8 +244,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   return <LangContext.Provider value={value}>{children}</LangContext.Provider>;
 }
 
+const DEFAULT_LANG_CTX: Ctx = {
+  lang: "ar",
+  dir: "rtl",
+  setLang: () => {},
+  t: (key: string) => UI_TRANSLATIONS.ar[key] || key,
+  pick: <T,>(ar: T, _en: T): T => ar,
+};
+
 export function useLang(): Ctx {
   const ctx = useContext(LangContext);
-  if (!ctx) throw new Error("useLang must be used inside LanguageProvider");
+  if (!ctx) return DEFAULT_LANG_CTX;
   return ctx;
 }

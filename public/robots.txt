@@ -11,6 +11,31 @@ Allow: /policy
 Allow: /privacy-policy
 Allow: /app/assets/
 
+# AI Crawlers & LLM Agents (ChatGPT, Claude, Gemini, Perplexity)
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /llms.txt
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: anthropic-ai
+Allow: /
+Allow: /llms.txt
+
+User-agent: Google-Extended
+Allow: /
+Allow: /llms.txt
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+
 # Disallow private accounts, checkout, and internal utility paths
 Disallow: /admin
 Disallow: /admin/
@@ -27,6 +52,7 @@ Disallow: /*?*preview=
 Disallow: /*?*search=
 Disallow: /mcp
 
-# Host & Canonical Sitemap
+# Host, Canonical Sitemap & LLMs Manifest
 Host: https://gxstore.me
 Sitemap: https://gxstore.me/sitemap.xml
+# LLMs reference: https://gxstore.me/llms.txt

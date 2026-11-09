@@ -1014,6 +1014,45 @@ html[dir="rtl"] .car-nav svg {
   }
 }
 
+
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .hero-inner {
+    padding: 32px 36px !important;
+    gap: 24px !important;
+  }
+  .hero-text {
+    max-width: 56% !important;
+  }
+  .hero h1 {
+    font-size: 30px !important;
+    line-height: 1.3 !important;
+    margin-bottom: 12px !important;
+  }
+  .hero p {
+    font-size: 13.5px !important;
+    margin-bottom: 18px !important;
+    max-width: 100% !important;
+  }
+  .hero-visual {
+    width: 200px !important;
+    height: 200px !important;
+    flex-shrink: 0 !important;
+  }
+  .orb {
+    width: 180px !important;
+    height: 180px !important;
+  }
+  .orb-core {
+    width: 145px !important;
+    height: 145px !important;
+  }
+  .orb-core svg {
+    width: 66px !important;
+    height: 66px !important;
+  }
+}
+
 @media(max-width: 768px) {
   .hero-arrow-out {
     display: none !important;
@@ -1211,6 +1250,45 @@ html[dir="rtl"] .car-nav svg {
 
   .hero-car-dots {
     bottom: 10px;
+  }
+}
+
+
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .hero-inner {
+    padding: 32px 36px !important;
+    gap: 24px !important;
+  }
+  .hero-text {
+    max-width: 56% !important;
+  }
+  .hero h1 {
+    font-size: 30px !important;
+    line-height: 1.3 !important;
+    margin-bottom: 12px !important;
+  }
+  .hero p {
+    font-size: 13.5px !important;
+    margin-bottom: 18px !important;
+    max-width: 100% !important;
+  }
+  .hero-visual {
+    width: 200px !important;
+    height: 200px !important;
+    flex-shrink: 0 !important;
+  }
+  .orb {
+    width: 180px !important;
+    height: 180px !important;
+  }
+  .orb-core {
+    width: 145px !important;
+    height: 145px !important;
+  }
+  .orb-core svg {
+    width: 66px !important;
+    height: 66px !important;
   }
 }
 

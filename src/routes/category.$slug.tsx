@@ -275,8 +275,20 @@ export const Route = createFileRoute("/category/$slug")({
           name.includes("valorant")
         );
       });
-    } else if (category.slug === "design" || category.slug === "apps" || category.slug === "software" || category.slug === "ai") {
-      // البرامج والتطبيقات: تشمل تطبيقات الذكاء الاصطناعي (Gemini, Lovable, Notion, etc.)
+    } else if (category.slug === "ai") {
+      // فقط تطبيقات الذكاء الاصطناعي: جيمناي و Lovable
+      categoryProducts = allProducts.filter((p) => {
+        const s = (p.slug || "").toLowerCase();
+        const n = (p.nameAr || "").toLowerCase();
+        return (
+          s.includes("gemini") ||
+          s.includes("lovable") ||
+          n.includes("جيمناي") ||
+          n.includes("لوفابل")
+        );
+      });
+    } else if (category.slug === "design" || category.slug === "apps" || category.slug === "software") {
+      // البرامج والتطبيقات: تشمل التصميم، أنظمة التشغيل، الهندسة، الـ VPN، والذكاء الاصطناعي
       const matchingAll = allProducts.filter((p) => {
         const s = (p.slug || "").toLowerCase();
         return (
@@ -491,6 +503,13 @@ function CategoryPage() {
   const { format } = useCurrency();
   const pick = (ar?: string | null, en?: string | null) => (lang === "en" ? en || ar : ar || en) || "";
 
+  useEffect(() => {
+    if (!category) return;
+    const isEn = lang === "en";
+    const name = isEn ? (category.nameEn || category.nameAr) : (category.nameAr || category.nameEn);
+    document.title = isEn ? `${name} | GX Store` : `${name} | متجر GX Store`;
+  }, [category, lang]);
+
   const catName = pick(category.nameAr, category.nameEn);
   const theme = getCategoryTheme(category.slug);
   const hasChildren = (category.children ?? []).length > 0;
@@ -605,22 +624,23 @@ function CategoryPage() {
         renderLogo: () => <AllPlatformsIcon />,
         match: () => true,
       },
-      // 1. تطبيقات الذكاء الاصطناعي (AI)
+      // 1. تطبيقات الذكاء الاصطناعي (AI - Gemini & Lovable strictly)
       {
         id: "ai",
         nameAr: "تطبيقات الذكاء الاصطناعي",
         nameEn: "AI Tools & Apps",
         color: "#8b5cf6",
         glow: "rgba(139, 92, 246, 0.45)",
-        match: (p: CatalogStoreProduct) =>
-          (p.slug || "").includes("gemini") ||
-          (p.slug || "").includes("lovable") ||
-          (p.slug || "").includes("notion") ||
-          (p.slug || "").includes("chatgpt") ||
-          (p.slug || "").includes("midjourney") ||
-          (p.slug || "").includes("claude") ||
-          (p.nameAr || "").includes("ذكاء") ||
-          (p.nameAr || "").toLowerCase().includes("ai"),
+        match: (p: CatalogStoreProduct) => {
+          const s = (p.slug || "").toLowerCase();
+          const n = (p.nameAr || "").toLowerCase();
+          return (
+            s.includes("gemini") ||
+            s.includes("lovable") ||
+            n.includes("جيمناي") ||
+            n.includes("لوفابل")
+          );
+        },
       },
       {
         id: "gemini",
@@ -647,7 +667,7 @@ function CategoryPage() {
       },
       {
         id: "notion",
-        nameAr: "Notion AI",
+        nameAr: "Notion",
         nameEn: "Notion",
         color: "#ffffff",
         glow: "rgba(255, 255, 255, 0.4)",
@@ -1232,7 +1252,7 @@ function CategoryPage() {
         nameEn: "iTunes",
         color: "#ffffff",
         glow: "rgba(255, 255, 255, 0.4)",
-        logoSrc: "/app/assets/img/itunes-logo.svg",
+        logoSrc: "/app/assets/img/itunes-icon.png",
         directLink: "/product/itunes",
         count: 7,
         match: (p: CatalogStoreProduct) =>

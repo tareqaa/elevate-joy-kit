@@ -1,19 +1,37 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLang } from "@/lib/gx/i18n";
 import { useAuthActions } from "@/lib/gx/use-auth-actions";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, KeyRound, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+type AuthMode = "signin" | "signup" | "reset" | "reset_otp" | "reset_new_password" | "signup_otp" | "2fa";
+
 export function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { t } = useLang();
-  const { signIn, signUp, resetPassword, signInWithGoogle, verify2fa, cancel2fa } = useAuthActions();
-  const [mode, setMode] = useState<"signin" | "signup" | "reset" | "2fa">("signin");
+  const { t, lang } = useLang();
+  const ar = lang === "ar";
+  const {
+    signIn,
+    signUp,
+    resetPassword,
+    verifyPasswordResetOtp,
+    updatePassword,
+    verifySignUpOtp,
+    signInWithGoogle,
+    verify2fa,
+    cancel2fa,
+  } = useAuthActions();
+
+  const [mode, setMode] = useState<AuthMode>("signin");
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState("");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+  const [otpCode, setOtpCode] = useState("");
   const [username, setUsername] = useState("");
   const [msg, setMsg] = useState<{ text: string; ok?: boolean } | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const resetAll = useCallback(() => {
     if (typeof window !== "undefined") {
@@ -25,7 +43,11 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
     setMsg(null);
     setEmail("");
     setPass("");
+    setNewPass("");
+    setConfirmPass("");
+    setOtpCode("");
     setUsername("");
+    setResendCooldown(0);
   }, []);
 
   const handleClose = async () => {
@@ -36,14 +58,10 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
     onClose();
   };
 
-  // Reset completely whenever modal is closed
   useEffect(() => {
-    if (!open) {
-      resetAll();
-    }
+    if (!open) resetAll();
   }, [open, resetAll]);
 
-  // Reset completely if user signs out anywhere
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
@@ -60,10 +78,42 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
     return () => document.removeEventListener("keydown", onKey);
   }, [open, mode, mfaFactorId]);
 
+  // Resend countdown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  async function handleResendCode() {
+    if (resendCooldown > 0 || !email) return;
+    setMsg({ text: "..." });
+    if (mode === "reset_otp") {
+      const res = await resetPassword(email);
+      if (!res.ok) {
+        setMsg({ text: res.error || (ar ? "تعذّر إعادة إرسال الرمز" : "Failed to resend code") });
+        return;
+      }
+      setResendCooldown(15);
+      setMsg({ text: t("auth.reset_sent"), ok: true });
+    } else if (mode === "signup_otp") {
+      const res = await signUp(email, pass, username, "/");
+      if (!res.ok) {
+        setMsg({ text: res.error || (ar ? "تعذّر إعادة إرسال الرمز" : "Failed to resend code") });
+        return;
+      }
+      setResendCooldown(15);
+      setMsg({ text: t("auth.reset_sent"), ok: true });
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setMsg({ text: "..." });
 
+    // 1. 2FA verification
     if (mode === "2fa") {
       if (!mfaFactorId) return;
       const res = await verify2fa(mfaFactorId, mfaCode);
@@ -81,12 +131,77 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
       return;
     }
 
+    // 2. Request Password Reset OTP
     if (mode === "reset") {
       const res = await resetPassword(email);
       if (!res.ok) return setMsg({ text: res.error ?? "" });
+      setMode("reset_otp");
+      setOtpCode("");
+      setNewPass("");
+      setConfirmPass("");
+      setResendCooldown(15);
       return setMsg({ text: t("auth.reset_sent"), ok: true });
     }
 
+    // 3. Verify Password Reset OTP (Step 1)
+    if (mode === "reset_otp") {
+      const cleanOtp = otpCode.trim().replace(/\D/g, "");
+      if (cleanOtp.length < 6 || cleanOtp.length > 10) {
+        return setMsg({ text: t("auth.otp_invalid") });
+      }
+
+      const res = await verifyPasswordResetOtp(email, cleanOtp);
+      if (!res.ok) {
+        return setMsg({ text: res.error ?? t("auth.otp_invalid") });
+      }
+
+      setMode("reset_new_password");
+      return setMsg({ text: ar ? "تم التحقق من الرمز بنجاح! أدخل كلمة المرور الجديدة." : "Code verified! Please enter your new password.", ok: true });
+    }
+
+    // 3.5 Set New Password after OTP verified (Step 2)
+    if (mode === "reset_new_password") {
+      if (newPass.length < 6) {
+        return setMsg({ text: ar ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters" });
+      }
+      if (newPass !== confirmPass) {
+        return setMsg({ text: t("auth.passwords_dont_match") });
+      }
+
+      const res = await updatePassword(newPass);
+      if (!res.ok) {
+        return setMsg({ text: res.error ?? "Failed to update password" });
+      }
+
+      setMsg({ text: t("auth.password_updated"), ok: true });
+      setTimeout(() => {
+        resetAll();
+        onClose();
+      }, 700);
+      return;
+    }
+
+    // 4. Verify Sign-Up OTP
+    if (mode === "signup_otp") {
+      const cleanOtp = otpCode.trim().replace(/\D/g, "");
+      if (cleanOtp.length < 6 || cleanOtp.length > 10) {
+        return setMsg({ text: t("auth.otp_invalid") });
+      }
+
+      const res = await verifySignUpOtp(email, cleanOtp);
+      if (!res.ok) {
+        return setMsg({ text: res.error ?? t("auth.otp_invalid") });
+      }
+
+      setMsg({ text: t("auth.signup_success_login"), ok: true });
+      setTimeout(() => {
+        resetAll();
+        onClose();
+      }, 700);
+      return;
+    }
+
+    // 5. Sign-In
     if (mode === "signin") {
       const res = await signIn(email, pass);
       if (!res.ok) return setMsg({ text: res.error ?? "" });
@@ -109,11 +224,24 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
         onClose();
       }, 500);
     } else {
+      // 6. Sign-Up initial request
       const res = await signUp(email, pass, username, "/");
       if (!res.ok) {
         return setMsg({ text: res.error === "invalid_username" ? t("auth.username_pattern_err") : (res.error ?? "") });
       }
-      setMsg({ text: t("auth.signup_ok"), ok: true });
+
+      if (res.requiresOtp) {
+        setMode("signup_otp");
+        setOtpCode("");
+        setResendCooldown(15);
+        setMsg({ text: t("auth.reset_sent"), ok: true });
+      } else {
+        setMsg({ text: t("auth.signup_ok"), ok: true });
+        setTimeout(() => {
+          resetAll();
+          onClose();
+        }, 500);
+      }
     }
   }
 
@@ -131,6 +259,8 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
     if (!res.ok) setMsg({ text: res.error ?? "Google sign-in failed" });
   }
 
+  const isOtpScreen = mode === "reset_otp" || mode === "reset_new_password" || mode === "signup_otp" || mode === "2fa";
+
   return (
     <div className={"gx-auth-modal" + (open ? " open" : "")}>
       <div className="gx-auth-modal__scrim" onClick={handleClose} />
@@ -139,25 +269,36 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
         <div className="gx-auth-modal__avatar">
           {mode === "2fa" ? (
             <ShieldCheck className="w-7 h-7 text-primary" />
+          ) : mode === "reset_otp" || mode === "signup_otp" ? (
+            <KeyRound className="w-7 h-7 text-primary" />
           ) : (
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
           )}
         </div>
-        {mode !== "2fa" && (
+
+        {!isOtpScreen && (
           <div className="gx-auth-modal__tabs">
-            <button type="button" className={mode === "signin" ? "on" : ""} onClick={() => setMode("signin")}>{t("auth.tab_signin")}</button>
-            <button type="button" className={mode === "signup" ? "on" : ""} onClick={() => setMode("signup")}>{t("auth.tab_signup")}</button>
+            <button type="button" className={mode === "signin" ? "on" : ""} onClick={() => { setMode("signin"); setMsg(null); }}>{t("auth.tab_signin")}</button>
+            <button type="button" className={mode === "signup" ? "on" : ""} onClick={() => { setMode("signup"); setMsg(null); }}>{t("auth.tab_signup")}</button>
           </div>
         )}
+
         <h3 className="gx-auth-modal__title">
           {mode === "2fa"
             ? t("auth.2fa_title")
+            : mode === "reset_otp"
+            ? (ar ? "التحقق من الرمز" : "Verify Code")
+            : mode === "reset_new_password"
+            ? (ar ? "تعيين كلمة المرور الجديدة" : "Set New Password")
+            : mode === "signup_otp"
+            ? t("auth.signup_verify_title")
             : mode === "signin"
             ? t("auth.signin_btn")
             : mode === "signup"
             ? t("auth.signup_btn")
             : t("auth.reset_title")}
         </h3>
+
         <form className="gx-auth-modal__form" onSubmit={submit}>
           {mode === "2fa" ? (
             <>
@@ -181,6 +322,120 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
               <button type="button" className="gx-auth-modal__link" onClick={handleCancel2fa}>
                 {t("auth.2fa_cancel_btn")}
               </button>
+            </>
+          ) : mode === "reset_otp" ? (
+            <>
+              <p style={{ fontSize: "12px", color: "var(--color-muted-foreground, #a1a1aa)", textAlign: "center", margin: "0 0 10px" }}>
+                {t("auth.otp_sent_to")} <b dir="ltr" style={{ color: "#ffffff" }}>{email}</b>
+              </p>
+              <label>{t("auth.otp_code")}</label>
+              <input
+                type="text"
+                dir="ltr"
+                autoFocus
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={10}
+                required
+                placeholder="123456"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                style={{
+                  textAlign: "center",
+                  letterSpacing: otpCode.length > 6 ? "5px" : "8px",
+                  fontSize: "1.3rem",
+                  fontWeight: 700,
+                }}
+              />
+              <button type="submit" className="gx-auth-modal__submit" disabled={otpCode.length < 6}>
+                {ar ? "التحقق من الرمز" : "Verify Code"}
+              </button>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px", fontSize: "12px" }}>
+                <button
+                  type="button"
+                  className="gx-auth-modal__link"
+                  disabled={resendCooldown > 0}
+                  onClick={handleResendCode}
+                  style={{ opacity: resendCooldown > 0 ? 0.6 : 1 }}
+                >
+                  {resendCooldown > 0 ? `${t("auth.otp_resend_wait")} (${resendCooldown}s)` : t("auth.otp_resend")}
+                </button>
+                <button type="button" className="gx-auth-modal__link" onClick={() => setMode("reset")}>
+                  {t("auth.back_signin")}
+                </button>
+              </div>
+            </>
+          ) : mode === "reset_new_password" ? (
+            <>
+              <p style={{ fontSize: "12px", color: "var(--color-muted-foreground, #a1a1aa)", textAlign: "center", margin: "0 0 10px" }}>
+                {ar ? "أدخل كلمة المرور الجديدة لحسابك" : "Enter your new account password"}
+              </p>
+              <label>{t("auth.new_password")}</label>
+              <input
+                type="password"
+                dir="ltr"
+                autoFocus
+                placeholder="••••••"
+                minLength={6}
+                required
+                value={newPass}
+                onChange={(e) => setNewPass(e.target.value)}
+              />
+              <label>{t("auth.confirm_password")}</label>
+              <input
+                type="password"
+                dir="ltr"
+                placeholder="••••••"
+                minLength={6}
+                required
+                value={confirmPass}
+                onChange={(e) => setConfirmPass(e.target.value)}
+              />
+              <button type="submit" className="gx-auth-modal__submit" disabled={newPass.length < 6 || confirmPass.length < 6}>
+                {t("auth.update_password")}
+              </button>
+            </>
+          ) : mode === "signup_otp" ? (
+            <>
+              <p style={{ fontSize: "12px", color: "var(--color-muted-foreground, #a1a1aa)", textAlign: "center", margin: "0 0 10px" }}>
+                {t("auth.otp_sent_to")} <b dir="ltr" style={{ color: "#ffffff" }}>{email}</b>
+              </p>
+              <label>{t("auth.otp_code")}</label>
+              <input
+                type="text"
+                dir="ltr"
+                autoFocus
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={10}
+                required
+                placeholder="123456"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                style={{
+                  textAlign: "center",
+                  letterSpacing: otpCode.length > 6 ? "5px" : "8px",
+                  fontSize: "1.3rem",
+                  fontWeight: 700,
+                }}
+              />
+              <button type="submit" className="gx-auth-modal__submit" disabled={otpCode.length < 6}>
+                {t("auth.signup_confirm_btn")}
+              </button>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px", fontSize: "12px" }}>
+                <button
+                  type="button"
+                  className="gx-auth-modal__link"
+                  disabled={resendCooldown > 0}
+                  onClick={handleResendCode}
+                  style={{ opacity: resendCooldown > 0 ? 0.6 : 1 }}
+                >
+                  {resendCooldown > 0 ? `${t("auth.otp_resend_wait")} (${resendCooldown}s)` : t("auth.otp_resend")}
+                </button>
+                <button type="button" className="gx-auth-modal__link" onClick={() => { setMode("signup"); setMsg(null); }}>
+                  {t("auth.back_signin")}
+                </button>
+              </div>
             </>
           ) : (
             <>
@@ -208,7 +463,8 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
             </>
           )}
         </form>
-        {mode !== "2fa" && (
+
+        {!isOtpScreen && (
           <>
             <div className="gx-auth-modal__divider"><span>{t("auth.or_social")}</span></div>
             <div className="gx-auth-modal__social">

@@ -57,7 +57,9 @@ export function RecentlyViewedSection() {
           {/* Cards Track using the standard unified StoreProductCard */}
           <div className="gx-cards-carousel-track" ref={scrollRef}>
             {validItems.map((item) => {
-              const productLink = item.link || (item.cartId && item.cartId !== item.slug ? `/product/${item.slug}#${item.cartId}` : `/product/${item.slug}`);
+              const productLink = item.link && !item.link.includes("#")
+                ? item.link
+                : `/product/${item.slug}${item.cartId && item.cartId !== item.slug ? `?variant=${encodeURIComponent(item.cartId)}` : ""}`;
               const isSpecificPack = Boolean(item.cartId && item.cartId !== item.slug) || item.price > 0;
 
               return (

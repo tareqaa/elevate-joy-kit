@@ -1,6 +1,6 @@
 /**
  * GX STORE — UNIFIED EMAIL THEME & BUILDER
- * Pixel-perfect dark theme modeled after Driffle email specifications:
+ * Clean premium dark theme modeled after GX Store specifications:
  * - Clean deep charcoal card surface (#141416) on dark background (#0d0d0f)
  * - Centered high-res store logo header
  * - Royal Blue primary action button (#2563eb)
@@ -28,6 +28,9 @@ export interface EmailProductItem {
   price?: string;
   qty?: number;
   credentialsHtml?: string;
+  activationTitle?: string;
+  activationSteps?: string[];
+  directUrl?: string;
 }
 
 export interface EmailBreakdownRow {
@@ -37,12 +40,15 @@ export interface EmailBreakdownRow {
   isTotal?: boolean;
 }
 
-export interface RenderDriffleEmailOptions {
+export interface RenderGxStoreEmailOptions {
   lang: "ar" | "en";
   subject: string;
   headline: string;
   greetingText: string;
-  bodyText: string;
+  bodyText?: string;
+  bodyHtml?: string;
+  preCtaHtml?: string;
+  postCtaHtml?: string;
   introDetailsText?: string;
   ctaButton?: {
     text: string;
@@ -79,7 +85,7 @@ export function escapeHtml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
-export function renderDriffleEmail(opts: RenderDriffleEmailOptions): string {
+export function renderGxStoreEmail(opts: RenderGxStoreEmailOptions): string {
   const isAr = opts.lang === "ar";
   const dir = isAr ? "rtl" : "ltr";
   const align = isAr ? "right" : "left";
@@ -133,6 +139,29 @@ export function renderDriffleEmail(opts: RenderDriffleEmailOptions): string {
                 : ""
             }
             ${p.credentialsHtml ? p.credentialsHtml : ""}
+            ${
+              p.activationSteps && p.activationSteps.length > 0
+                ? `
+                  <div style="background:#18181b;border:1px solid #27272a;border-radius:10px;padding:14px 16px;margin:14px auto 0;max-width:500px;text-align:${align};line-height:1.7;">
+                    <div style="font-weight:700;color:#38bdf8;font-size:13px;margin-bottom:8px;">
+                      🔑 ${escapeHtml(p.activationTitle || (isAr ? "طريقة التفعيل والاسترداد:" : "How to redeem and activate:"))}
+                    </div>
+                    <ol style="margin:0;padding-${isAr ? "right" : "left"}:20px;padding-${isAr ? "left" : "right"}:0;color:#d4d4d8;font-size:12.5px;text-align:${align};">
+                      ${p.activationSteps.map((step) => `<li style="margin-bottom:6px;">${escapeHtml(step)}</li>`).join("")}
+                    </ol>
+                    ${
+                      p.directUrl
+                        ? `<div style="margin-top:10px;padding-top:8px;border-top:1px solid #27272a;text-align:${align};">
+                            <a href="${escapeHtml(p.directUrl)}" target="_blank" style="color:#00e5ff;font-size:12px;text-decoration:underline;">
+                              ${isAr ? "اضغط هنا للتوجه مباشرة لصفحة التفعيل 🔗" : "Click here to open direct redemption link 🔗"}
+                            </a>
+                           </div>`
+                        : ""
+                    }
+                  </div>
+                `
+                : ""
+            }
           </div>
         `;
       })
@@ -242,10 +271,19 @@ export function renderDriffleEmail(opts: RenderDriffleEmailOptions): string {
                 ${escapeHtml(opts.greetingText)}
               </p>
 
-              <!-- Body Text -->
-              <p style="margin:0 0 14px;font-size:14.5px;color:#d4d4d8;line-height:1.75;">
-                ${escapeHtml(opts.bodyText)}
-              </p>
+              <!-- Body Text / HTML -->
+              <div style="margin:0 0 14px;font-size:14.5px;color:#d4d4d8;line-height:1.75;">
+                ${
+                  opts.bodyHtml
+                    ? opts.bodyHtml
+                    : escapeHtml(opts.bodyText || "")
+                        .split(/\n\s*\n/)
+                        .map((p) => `<p style="margin:0 0 12px;font-size:14.5px;color:#d4d4d8;line-height:1.75;">${p.replace(/\n/g, "<br>")}</p>`)
+                        .join("")
+                }
+              </div>
+
+              ${opts.preCtaHtml || ""}
 
               ${
                 opts.introDetailsText
@@ -253,7 +291,7 @@ export function renderDriffleEmail(opts: RenderDriffleEmailOptions): string {
                   : ""
               }
 
-              <!-- Big Primary CTA Button (Driffle Blue) -->
+              <!-- Big Primary CTA Button (GX Blue) -->
               ${
                 opts.ctaButton
                   ? `
@@ -265,6 +303,8 @@ export function renderDriffleEmail(opts: RenderDriffleEmailOptions): string {
               `
                   : ""
               }
+
+              ${opts.postCtaHtml || ""}
 
               ${
                 opts.notesHtml
@@ -355,6 +395,183 @@ export function renderDriffleEmail(opts: RenderDriffleEmailOptions): string {
                 ${receivedReason}
               </p>
               <p style="margin:0 0 18px;font-size:12.5px;">
+                <a href="https://gxstore.me/support" target="_blank" style="color:#a1a1aa;text-decoration:underline;">
+                  ${supportLinkText}
+                </a>
+              </p>
+              <!-- Social Channels -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto;">
+                <tr>
+                  <td style="padding:0 8px;">
+                    <a href="https://www.instagram.com/gxstore_jo/" target="_blank" title="Instagram" style="text-decoration:none;">
+                      <img src="${CDN_ASSETS_BASE}/app/assets/img/instagram-logo.png" alt="Instagram" width="22" height="22" style="display:block;opacity:0.8;" />
+                    </a>
+                  </td>
+                  <td style="padding:0 8px;">
+                    <a href="https://facebook.com" target="_blank" title="Facebook" style="text-decoration:none;">
+                      <img src="${CDN_ASSETS_BASE}/app/assets/img/facebook-logo.png" alt="Facebook" width="22" height="22" style="display:block;opacity:0.8;" />
+                    </a>
+                  </td>
+                  <td style="padding:0 8px;">
+                    <a href="https://wa.me/962776252313" target="_blank" title="WhatsApp" style="text-decoration:none;">
+                      <span style="display:inline-block;background-color:#25D366;color:#ffffff;border-radius:50%;width:22px;height:22px;line-height:22px;text-align:center;font-size:12px;font-weight:700;">💬</span>
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+export interface RenderGxAuthOtpEmailOptions {
+  lang: "ar" | "en";
+  purpose: "reset" | "signup";
+  otpCode: string;
+  email: string;
+}
+
+export function renderGxAuthOtpEmail(opts: RenderGxAuthOtpEmailOptions): string {
+  const isAr = opts.lang === "ar";
+  const isReset = opts.purpose === "reset";
+  const dir = isAr ? "rtl" : "ltr";
+  const align = isAr ? "right" : "left";
+
+  const subject = isReset
+    ? (isAr ? "رمز استعادة كلمة المرور | متجر GX Store" : "Password Reset Code | GX Store")
+    : (isAr ? "رمز تفعيل الحساب | متجر GX Store" : "Account Verification Code | GX Store");
+
+  const headline = isReset
+    ? (isAr ? "رمز استعادة كلمة المرور" : "Password Reset Code")
+    : (isAr ? "رمز تفعيل حسابك الجديد" : "Account Verification Code");
+
+  const greeting = isAr ? "عميلنا العزيز 💙،" : "Dear Valued Customer 💙,";
+
+  const message = isReset
+    ? (isAr
+        ? "تلقينا طلباً لتعيين كلمة مرور جديدة لحسابك في متجر GX Store. استخدم رمز التحقق التالي لإتمام تعيين كلمة المرور:"
+        : "We received a request to set a new password for your GX Store account. Use the following verification code to complete the process:")
+    : (isAr
+        ? "شكراً لانضمامك إلى متجر GX Store! استخدم رمز التحقق التالي لتفعيل حسابك والبدء فوراً:"
+        : "Welcome to GX Store! Use the following verification code to activate your account and get started:");
+
+  const notice = isReset
+    ? (isAr
+        ? "إذا لم تكن قد طلبت تعيين كلمة المرور، يمكنك تجاهل هذه الرسالة بأمان؛ حسابك محمي بالكامل ولن يتم تطبيق أي تغيير دون إدخال هذا الرمز."
+        : "If you did not request a password reset, you can safely ignore this email; your account remains secure and no changes will occur without this code.")
+    : (isAr
+        ? "إذا لم تقم بإنشاء حساب في متجر GX Store، يمكنك تجاهل هذه الرسالة."
+        : "If you did not sign up for a GX Store account, you can safely ignore this email.");
+
+  const copyrightText = isAr
+    ? `جميع الحقوق محفوظة © ${new Date().getFullYear()} متجر GX Store.`
+    : `Copyright © ${new Date().getFullYear()} GX Store. All rights reserved.`;
+
+  const receivedReason = isAr
+    ? "تلقيت هذه الرسالة لأنك طلبت رمز أمان لحسابك في متجر GX Store."
+    : "You received this email because you requested a security code for your GX Store account.";
+
+  const supportLinkText = isAr ? "خدمة العملاء والدعم الفني" : "Customer Support";
+
+  return `<!DOCTYPE html>
+<html lang="${opts.lang}" dir="${dir}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(subject)}</title>
+  <style>
+    @media only screen and (max-width: 600px) {
+      .outer-wrap { padding: 12px 8px !important; }
+      .main-card { width: 100% !important; max-width: 100% !important; border-radius: 12px !important; }
+      .content-area { padding: 24px 18px 20px !important; }
+      .header-area { padding: 22px 18px 16px !important; }
+      .footer-area { padding: 22px 18px !important; }
+      .otp-code { font-size: 32px !important; letter-spacing: 8px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#0d0d0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f4f4f5;direction:${dir};text-align:${align};-webkit-font-smoothing:antialiased;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="outer-wrap" style="background-color:#0d0d0f;width:100%;padding:32px 12px;">
+    <tr>
+      <td align="center">
+        <!-- Main Card Container -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="main-card" style="max-width:540px;width:100%;margin:0 auto;background-color:#141416;border:1px solid #232326;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.6);">
+          
+          <!-- Top Header: Logo Only -->
+          <tr>
+            <td class="header-area" style="padding:28px 24px 20px;text-align:center;">
+              <a href="https://gxstore.me" target="_blank" style="text-decoration:none;display:inline-block;">
+                <img src="${OFFICIAL_LOGO_URL}" alt="GX Store" width="125" height="auto" style="max-width:125px;height:auto;display:block;margin:0 auto;" />
+              </a>
+            </td>
+          </tr>
+
+          <!-- Content Body -->
+          <tr>
+            <td class="content-area" style="padding:4px 28px 28px;">
+              <!-- Headline -->
+              <h1 style="margin:0 0 14px;color:#ffffff;font-size:23px;font-weight:800;line-height:1.3;letter-spacing:-0.3px;">
+                ${escapeHtml(headline)}
+              </h1>
+
+              <!-- Greeting -->
+              <p style="margin:0 0 10px;font-size:15px;font-weight:700;color:#ffffff;line-height:1.6;">
+                ${escapeHtml(greeting)}
+              </p>
+
+              <!-- Message -->
+              <p style="margin:0 0 18px;font-size:14.5px;color:#d4d4d8;line-height:1.7;">
+                ${escapeHtml(message)}
+              </p>
+
+              <!-- OTP Code Display Card -->
+              <div style="background:#090b10;border:2px dashed #00e5ff;border-radius:14px;padding:22px 16px;text-align:center;margin:24px 0 20px;">
+                <div style="font-size:12px;color:#71717a;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+                  ${isAr ? "رمز التحقق (OTP)" : "Verification Code (OTP)"}
+                </div>
+                <div class="otp-code" style="font-size:40px;font-weight:900;letter-spacing:12px;color:#00e5ff;font-family:Consolas,Monaco,'Courier New',monospace;direction:ltr;display:inline-block;padding-left:12px;">
+                  ${escapeHtml(opts.otpCode)}
+                </div>
+                <div style="margin-top:12px;font-size:12px;color:#a1a1aa;line-height:1.6;">
+                  ${isAr ? "⏳ صالح لمدة 15 دقيقة فقط • يرجى عدم مشاركة هذا الرمز مع أي شخص" : "⏳ Valid for 15 minutes only • Please do not share this code with anyone"}
+                </div>
+              </div>
+
+              <!-- Security Notice -->
+              <div style="background:#18181b;border:1px solid #27272a;border-radius:10px;padding:14px 16px;margin:20px 0 24px;font-size:13px;color:#a1a1aa;line-height:1.65;">
+                <span style="color:#f59e0b;font-weight:700;">🔒 ${isAr ? "تنبيه أمان:" : "Security Alert:"}</span> ${escapeHtml(notice)}
+              </div>
+
+              <!-- Friendly Sign-off -->
+              <div style="font-size:14px;color:#d4d4d8;line-height:1.7;margin-top:20px;">
+                ${
+                  isAr
+                    ? `<p style="margin:0 0 4px;font-weight:700;color:#ffffff;">مع أطيب التحيات،<br>فريق GX Store</p>`
+                    : `<p style="margin:0 0 4px;font-weight:700;color:#ffffff;">Best regards,<br>Team GX Store</p>`
+                }
+              </div>
+            </td>
+          </tr>
+
+          <!-- Dark Footer Box -->
+          <tr>
+            <td class="footer-area" style="background-color:#0c0c0e;border-top:1px solid #232326;padding:24px 20px;text-align:center;">
+              <a href="https://gxstore.me" target="_blank" style="text-decoration:none;display:inline-block;margin-bottom:12px;">
+                <img src="${OFFICIAL_LOGO_URL}" alt="GX Store" width="100" height="auto" style="max-width:100px;height:auto;display:block;margin:0 auto;" />
+              </a>
+              <p style="margin:0 0 6px;font-size:12px;color:#71717a;font-weight:500;">
+                ${copyrightText}
+              </p>
+              <p style="margin:0 0 14px;font-size:11.5px;color:#52525b;">
+                ${receivedReason}
+              </p>
+              <p style="margin:0 0 16px;font-size:12.5px;">
                 <a href="https://gxstore.me/support" target="_blank" style="color:#a1a1aa;text-decoration:underline;">
                   ${supportLinkText}
                 </a>

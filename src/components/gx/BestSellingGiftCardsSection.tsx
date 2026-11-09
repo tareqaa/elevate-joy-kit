@@ -69,7 +69,7 @@ export const BEST_SELLING_GIFT_CARDS: GiftCardItem[] = [
     nameAr: "بطاقات آبل وآيتونز",
     nameEn: "iTunes & Apple Gift Cards",
     startingPrice: 2.22,
-    iconImage: "/app/assets/img/itunes-card.png",
+    iconImage: "/app/assets/img/itunes-logo.svg",
     bgGradient: "linear-gradient(135deg, rgba(241, 7, 163, 0.22), rgba(123, 47, 247, 0.12))",
     badgeAr: "كود تفعيل",
     badgeEn: "Digital Code",
@@ -170,6 +170,7 @@ export function BestSellingGiftCardsSection() {
               <div key={card.id} className="gx-carousel-giftcard-col">
                 <Link
                   to={card.link as never}
+                  resetScroll={true}
                   className="gx-gamepoint-card"
                   style={{ background: card.bgGradient }}
                 >

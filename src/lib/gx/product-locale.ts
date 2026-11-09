@@ -18,6 +18,189 @@ type ProductI18n = {
 };
 
 export const PRODUCTS_EN: Record<string, ProductI18n> = {
+  "tod": {
+    "name": "TOD TV Streaming",
+    "tagline": "Watch live Premier League, Champions League & entertainment",
+    "description": "Official TOD voucher subscriptions in 1080p FHD and 4K with beIN Sports channels and unlimited on-demand movies & series.",
+    "category": "Streaming Subscriptions",
+    "deliveryMethod": "Official 100% discount voucher code applied directly to your personal TOD account without requiring bank payment methods."
+  },
+  "linkedin-career-3m": {
+    "name": "LinkedIn Premium Career (3 Months)",
+    "tagline": "LinkedIn Premium Career for 3 months",
+    "description": "Official LinkedIn Premium Career activation link for 3 full months with 5 InMails and competitive applicant insights.",
+    "category": "Software & Apps",
+    "deliveryMethod": "Official activation link from LinkedIn delivered instantly to your order page."
+  },
+  "linkedin-career-12m": {
+    "name": "LinkedIn Premium Career (12 Months)",
+    "tagline": "LinkedIn Premium Career for a full year",
+    "description": "Annual LinkedIn Premium Career subscription with unlimited profile searches, InMails, and LinkedIn Learning courses.",
+    "category": "Software & Apps",
+    "deliveryMethod": "Official direct activation on your personal account."
+  },
+  "linkedin-business-12m": {
+    "name": "LinkedIn Premium Business (12 Months)",
+    "tagline": "LinkedIn Premium Business for a full year",
+    "description": "Full annual LinkedIn Business plan featuring 15 monthly InMails, complete business insights, and unlimited browsing.",
+    "category": "Software & Apps",
+    "deliveryMethod": "Official direct activation on your personal LinkedIn profile by our verified support team."
+  },
+  "fortnite-crew": {
+    "name": "Fortnite Crew",
+    "tagline": "Monthly Crew subscription with Battle Pass & 1,000 V-Bucks",
+    "description": "Get the current Battle Pass, 1,000 V-Bucks, and exclusive monthly Crew Pack outfits with instant official top-up.",
+    "category": "Games",
+    "deliveryMethod": "Direct top-up to your Epic Games account via official channels."
+  },
+  "adobe-express": {
+    "name": "Adobe Express Premium",
+    "tagline": "Adobe Express Premium for a full year",
+    "description": "Access thousands of premium templates, Adobe Stock photos, fonts, and generative AI features on your personal Adobe account.",
+    "category": "Software & Apps",
+    "deliveryMethod": "Direct activation on your personal Adobe ID email without password sharing."
+  },
+  "notion-business": {
+    "name": "Notion Business + AI",
+    "tagline": "Notion Business with 300 AI credits monthly",
+    "description": "3-month official subscription to Notion Business including Notion AI, unlimited team workspaces, and advanced analytics.",
+    "category": "Software & Apps",
+    "deliveryMethod": "Official direct activation link or invite to your personal workspace."
+  },
+  "adobe-acrobat-standard": {
+    "name": "Adobe Acrobat Standard DC",
+    "tagline": "Official Adobe Acrobat for 2 devices",
+    "description": "Create, edit, convert, and sign PDF documents with the industry-standard PDF solution on Windows and Mac.",
+    "category": "Software & Apps",
+    "deliveryMethod": "Official genuine product key delivered instantly with easy redemption steps."
+  },
+  "headspace": {
+    "name": "Headspace Plus",
+    "tagline": "Headspace Plus meditation & mindfulness for 1 year",
+    "description": "Unlimited access to hundreds of guided meditations, sleepcasts, bedtime audio, and mindful movement sessions.",
+    "category": "Subscriptions",
+    "deliveryMethod": "Direct activation code or invite for your personal Headspace account."
+  },
+  "nordvpn": {
+    "name": "NordVPN Plus",
+    "tagline": "Fast & secure VPN with Threat Protection",
+    "description": "High-speed encrypted VPN with malware protection, tracker blocker, and cross-platform support for unlimited devices.",
+    "category": "Software & Apps",
+    "deliveryMethod": "Official digital key or dedicated verified account delivered instantly."
+  },
+  "minecraft-realms-plus": {
+    "name": "Minecraft Realms Plus",
+    "tagline": "Private cloud server for you and 10 friends",
+    "description": "24/7 dedicated private Minecraft server with 150+ free Marketplace packs, cross-play on PC and consoles.",
+    "category": "Games",
+    "deliveryMethod": "Official digital code redeemable at redeem.microsoft.com."
+  },
+  "valorant": {
+    "name": "Valorant Points (TR)",
+    "tagline": "Instant VP recharge for Turkish region accounts",
+    "description": "Direct digital prepaid code to buy skins, weapons, and Battle Passes on Valorant Turkey servers at the best prices.",
+    "category": "Games",
+    "deliveryMethod": "Instant digital code redeemable in-game via Prepaid Cards & Codes."
+  },
+  "valorant-eu": {
+    "name": "Valorant Points (EU)",
+    "tagline": "Instant VP recharge for European accounts",
+    "description": "Official European Valorant Points code delivered instantly for weapon skins, agents, and Battle Passes.",
+    "category": "Games",
+    "deliveryMethod": "Instant digital code redeemable in-game."
+  },
+  "lovable-lite-12m": {
+    "name": "Lovable Pro / Lite (12 Months)",
+    "tagline": "Full-stack AI developer & code builder for a year",
+    "description": "Build, launch, and iterate full-stack web applications with advanced AI engineering capabilities.",
+    "category": "Artificial Intelligence",
+    "deliveryMethod": "Official direct invitation or activation link delivered after checkout."
+  },
+  "duolingo-super-12-months": {
+    "name": "Duolingo Super (12 Months)",
+    "tagline": "Ad-free language learning with unlimited hearts",
+    "description": "Master any language with personalized practice, unlimited hearts, and offline lessons for a full 12 months.",
+    "category": "Subscriptions",
+    "deliveryMethod": "Official family invite link sent to your email to join with your personal Duolingo account."
+  },
+  "free-fire-diamonds": {
+    "name": "Free Fire Diamonds",
+    "tagline": "Direct instant diamonds top-up via Player ID",
+    "description": "Top up Free Fire Diamonds directly using your numerical Player ID without password sharing.",
+    "category": "Games",
+    "deliveryMethod": "Direct top-up to your game account via Player ID within minutes."
+  },
+  "youtube-premium": {
+    "name": "YouTube Premium",
+    "tagline": "Ad-free videos, background play & YouTube Music",
+    "description": "Enjoy uninterrupted YouTube without ads, background playback, offline downloads, and full YouTube Music Premium.",
+    "category": "Streaming Subscriptions",
+    "deliveryMethod": "Official Google Family invite sent to your personal Gmail address."
+  },
+  "duolingo": {
+    "name": "Duolingo Super",
+    "tagline": "Ad-free learning with unlimited hearts",
+    "description": "Official Duolingo Super membership on your own account with full progress tracking and zero ads.",
+    "category": "Subscriptions",
+    "deliveryMethod": "Official invite link sent to your email."
+  },
+  "itunes": {
+    "name": "iTunes & Apple Gift Cards",
+    "tagline": "Official Apple & iTunes digital gift cards",
+    "description": "Top up your Apple Account balance to buy apps, games, iCloud storage, Apple Music, and in-app purchases across US, Saudi, and UAE stores.",
+    "category": "Digital Gift Cards",
+    "deliveryMethod": "Instant 16-digit digital code delivered on screen, redeemable in the App Store."
+  },
+  "playstation": {
+    "name": "PlayStation PSN Gift Cards",
+    "tagline": "Official PlayStation Store wallet top-up",
+    "description": "Add funds to your PSN wallet to purchase games, add-ons, and PlayStation Plus on US, Saudi, and UAE PlayStation accounts.",
+    "category": "Digital Gift Cards",
+    "deliveryMethod": "Instant 12-digit digital code delivered on screen, redeemable on PS4/PS5 or PlayStation Store."
+  },
+  "xbox": {
+    "name": "Xbox & Game Pass Gift Cards",
+    "tagline": "Official Xbox gift cards and subscriptions",
+    "description": "Add credit to your Microsoft account or get Game Pass Ultimate codes for PC and Xbox consoles.",
+    "category": "Digital Gift Cards",
+    "deliveryMethod": "Instant 25-character digital key redeemable at redeem.microsoft.com."
+  },
+  "google-play": {
+    "name": "Google Play Gift Cards",
+    "tagline": "Google Play balance for Android apps & in-game purchases",
+    "description": "Top up your Google Play account to purchase games, apps, movies, books, and in-game items across US, Saudi, and UAE regions.",
+    "category": "Digital Gift Cards",
+    "deliveryMethod": "Instant digital code redeemable at play.google.com/redeem."
+  },
+  "game-pass": {
+    "name": "Xbox Game Pass Ultimate",
+    "tagline": "Hundreds of games on Xbox and PC including Day One releases",
+    "description": "Includes Xbox Live Gold, EA Play membership, and cloud gaming on supported devices with exclusive perks.",
+    "category": "Games",
+    "deliveryMethod": "Official 25-digit code or verified account delivered instantly."
+  },
+  "pc-games": {
+    "name": "PC Games & CD Keys",
+    "tagline": "Official Steam, Rockstar, and Epic digital games",
+    "description": "100% genuine game keys with instant digital delivery and lifetime ownership on your gaming library.",
+    "category": "Games",
+    "deliveryMethod": "Instant digital product key delivered with full redemption instructions."
+  },
+  "sony": {
+    "name": "PlayStation Plus",
+    "tagline": "Essential, Extra, and Deluxe memberships",
+    "description": "Online multiplayer, monthly games, and catalog access on your PlayStation 4 and PlayStation 5.",
+    "category": "Digital Gift Cards",
+    "deliveryMethod": "Instant digital voucher code."
+  },
+  "streaming": {
+    "name": "Streaming Subscriptions",
+    "tagline": "TOD, YouTube Premium, and entertainment platforms",
+    "description": "Premium streaming subscriptions with instant activation and full warranty.",
+    "category": "Streaming Subscriptions",
+    "deliveryMethod": "Instant voucher or invite to your personal account."
+  },
+
   snapchat: {
     name: "Snapchat+",
     tagline: "Activate Snapchat+ the easiest, fastest way",
@@ -68,19 +251,33 @@ export const PRODUCTS_EN: Record<string, ProductI18n> = {
     deliveryMethod: "We activate the official All Apps plan on your Autodesk account via email, without asking for your password.",
   },
   gemini: {
-    name: "Gemini Pro",
-    tagline: "Gemini Pro for 18 months",
-    description: "Access to Gemini Advanced models, higher usage limits and Google apps integration — all on your personal account.",
-    category: "Artificial Intelligence",
+    name: "Google Gemini Plus",
+    tagline: "Official 6-month activation link • No credit card required • 10-hour activation window",
+    description: "Official Google Gemini Plus 6-month subscription via direct activation link. No credit card required. Note: Must be clicked and redeemed within 10 hours of delivery (link valid for 10 hours only; warranty void after 10 hours).",
+    category: "AI & Software",
     identifierLabel: "Google account email",
-    deliveryMethod: "We send you an activation link for your personal Google account — click it and the subscription activates instantly without asking for your password.",
+    deliveryMethod: "We deliver an official activation link to redeem on your personal Google account. No credit card or password required.",
+  },
+  "windows-11-pro-retail": {
+    name: "Windows 11 Pro Retail",
+    tagline: "Official Retail license linked to Microsoft account (transferable)",
+    description: "Genuine Windows 11 Pro Retail key. Binds to your Microsoft account and can be transferred to a new PC. Full official updates and lifetime activation.",
+    category: "Software & Apps",
+    deliveryMethod: "Instant delivery of the official 25-character digital Product Key with detailed activation instructions.",
+  },
+  "windows-11-pro-oem": {
+    name: "Windows 11 Pro OEM",
+    tagline: "Official OEM license tied to motherboard for lifetime",
+    description: "Genuine Windows 11 Pro OEM key. Binds to your PC motherboard for lifetime activation. Unlimited reinstalls on the same PC.",
+    category: "Software & Apps",
+    deliveryMethod: "Instant delivery of the official 25-character digital Product Key with detailed activation instructions.",
   },
   windows: {
-    name: "Windows Activation",
-    tagline: "Official activation keys for Windows 10 & 11",
-    description: "Choose the edition (Pro or Home) and binding method (OEM to device or Account) — official lifetime activation.",
+    name: "Windows 11 Pro Retail",
+    tagline: "Official Retail license linked to Microsoft account (transferable)",
+    description: "Genuine Windows 11 Pro Retail key. Binds to your Microsoft account and can be transferred to a new PC. Full official updates and lifetime activation.",
     category: "Software & Apps",
-    deliveryMethod: "We send the official Product Key with detailed activation steps. OEM keys bind to the motherboard; Account keys bind to your Microsoft account.",
+    deliveryMethod: "Instant delivery of the official 25-character digital Product Key with detailed activation instructions.",
   },
   fortnite: {
     name: "Fortnite",
@@ -104,6 +301,8 @@ const PLAN_LABELS_EN: Record<string, string> = {
   "ms365-fam-12": "Family plan (5 users) — 12 months",
   "autodesk-12": "12 months — All Apps",
   "gemini-18": "18 months",
+  "win-11-pro-retail": "Windows 11 Pro Retail — Official Key",
+  "win-11-pro-oem": "Windows 11 Pro OEM — Official Key",
   "win-pro-oem": "Windows 10/11 Pro — OEM (Motherboard)",
   "win-pro-acct": "Windows 10/11 Pro — Account",
   "win-home-oem": "Windows 10/11 Home — OEM (Motherboard)",
@@ -252,12 +451,12 @@ const FORTNITE_DELIVERY_EN = {
 /* --- FAQ translations --- */
 export const FAQ_EN = [
   // Ordering & delivery
-  { icon: "🛒", title: "How do I order from the store?", desc: "Pick your product, add it to the cart, then press \"Checkout via WhatsApp\". We review the order and confirm availability, price and payment method before we start." },
+  { icon: "🛒", title: "How do I order from the store?", desc: "Select your product, add it to your cart, and complete payment directly on the website based on your location. Your digital activation code or account top-up details will appear instantly on your order page and email." },
   { icon: "🌍", title: "Do you deliver worldwide?", desc: "Yes. All our products are digital, so we deliver anywhere in the world. Some region-locked items (gift cards, game currency) require you to pick the matching region for your account." },
   { icon: "⏱️", title: "How long does delivery take?", desc: "Processing starts once payment is confirmed. Most digital orders arrive within minutes and up to a couple of hours, depending on the product, availability and region." },
-  { icon: "✅", title: "How do I know my order is confirmed?", desc: "You get a WhatsApp confirmation plus an in-account notification, and the order appears in \"My orders\" with a live status: pending, processing, delivered." },
-  { icon: "💳", title: "What payment methods do you accept?", desc: "Payment is arranged over WhatsApp: local transfers, e-wallets and other available methods. You can also pay part of the order with store credit or GX Coins." },
-  { icon: "💰", title: "Are the displayed prices final?", desc: "Prices are shown in your local currency using live exchange rates and are updated continuously. The final price is confirmed on WhatsApp before payment." },
+  { icon: "✅", title: "How do I know my order is confirmed?", desc: "You receive an instant notification in your account and via email, and the order appears in \"My orders\" with real-time status: pending, processing, or delivered." },
+  { icon: "💳", title: "What payment methods do you accept?", desc: "We accept fast and secure global payment methods: Instant checkout via Binance Pay in digital USDT, as well as Store Credit and GX Coins reward balance to cover all or part of your order." },
+  { icon: "💰", title: "Are the displayed prices final?", desc: "Yes, displayed prices are final and inclusive, shown in your local currency or in USD/USDT using real-time exchange rates with zero hidden fees." },
 
   // Loyalty: XP, levels, coins, credit
   { icon: "⚡", title: "What is XP and how do I earn it?", desc: "Every {UNIT} of order value earns you {XP_PER_UNIT} XP. XP raises your level, and each level unlocks a bigger coin bonus, avatars and level coupons." },

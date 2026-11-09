@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown, Eye, EyeOff, AlertTriangle, Globe, KeyRound, Lock, Wallet, FileText } from "lucide-react";
+import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown, Eye, EyeOff, AlertTriangle, Globe, KeyRound, Lock, Wallet, FileText, Trash2, Mail, Loader2, X, HelpCircle, Sparkles, ExternalLink } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
 import { GxProfile } from "@/components/gx/GxProfile";
@@ -20,8 +20,12 @@ import { OrderReviewInline } from "@/components/gx/OrderReviewInline";
 import { useAuthActions } from "@/lib/gx/use-auth-actions";
 import { linkMyPastOrders } from "@/lib/gx/loyalty";
 import { markCodeRevealedFn } from "@/lib/gx/order-email.functions";
-import { formatFullRegion } from "@/lib/gx/region";
 import { useSiteSettings } from "@/lib/gx/site-settings";
+import { formatFullRegion } from "@/lib/gx/region";
+import { scheduleAccountDeletionDirectFn } from "@/lib/gx/account-deletion.functions";
+import { resolveProductActivationGuide } from "@/lib/gx/activation-guide";
+import { ActiveDevicesCard } from "@/components/gx/ActiveDevicesCard";
+import { recordAuthAttemptServer } from "@/lib/gx/security.functions";
 
 type AccountTab = "profile" | "orders" | "wheel" | "security";
 
@@ -576,6 +580,7 @@ function DeliveryBlock({
   const [open, setOpen] = useState(isTopup);
   const [confirming, setConfirming] = useState(false);
   const [agreeChecked, setAgreeChecked] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   const fullRegionBadge = formatFullRegion(
     {
@@ -788,6 +793,58 @@ function DeliveryBlock({
             <span className="font-mono text-sm tracking-[0.25em] text-muted-foreground" dir="ltr">••••-••••-••••</span>
           </div>
         )}
+
+        {/* Activation Guide Toggle & Content */}
+        <div className="pt-2 border-t border-white/5 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setShowGuide(!showGuide)}
+              className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors py-1 px-1.5 rounded hover:bg-cyan-500/10"
+            >
+              <HelpCircle className="h-3.5 w-3.5 text-cyan-400" />
+              <span>{showGuide ? (ar ? "إخفاء طريقة التفعيل" : "Hide Activation Guide") : (ar ? "طريقة التفعيل والاسترداد" : "How to Redeem / Activate")}</span>
+            </button>
+          </div>
+
+          {showGuide && (() => {
+            const guide = resolveProductActivationGuide(
+              {
+                name: itemContext?.name || data.label,
+                slug: (itemContext as any)?.product_slug || (itemContext as any)?.slug,
+                region: data.region || itemContext?.region,
+              },
+              lang
+            );
+
+            return (
+              <div className="rounded-xl border border-cyan-500/25 bg-cyan-950/30 p-3.5 text-xs text-muted-foreground space-y-2.5 animate-in fade-in-50 duration-200">
+                <div className="flex items-center gap-1.5 font-bold text-cyan-400">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>{guide.title}</span>
+                </div>
+                <ol className="list-decimal list-inside space-y-1.5 text-slate-200 text-[11.5px] leading-relaxed">
+                  {guide.steps.map((step, sIdx) => (
+                    <li key={sIdx} className="text-slate-200">{step}</li>
+                  ))}
+                </ol>
+                {guide.directUrl && (
+                  <div className="pt-2 border-t border-white/10">
+                    <a
+                      href={guide.directUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 underline font-semibold text-[11px]"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      <span>{ar ? "فتح صفحة التفعيل المباشرة 🔗" : "Open direct redemption link 🔗"}</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
       </div>
 
       {open && <div className="sr-only">{t("acc.your_codes")}</div>}
@@ -874,9 +931,24 @@ function SecurityTab({ email }: { email: string }) {
     if (pw.length < 6) { toast.error(t("acc.password_short")); return; }
     if (pw !== pw2) { toast.error(t("acc.password_mismatch")); return; }
     setSaving(true);
-    const { error } = await supabase.auth.updateUser({ password: pw });
+    const { data: updateData, error } = await supabase.auth.updateUser({ password: pw });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
+
+    try {
+      const userEmail = updateData?.user?.email || email || "";
+      if (userEmail) {
+        void recordAuthAttemptServer({
+          data: {
+            email: userEmail,
+            type: "reset_success",
+            status: "success",
+            userId: updateData?.user?.id,
+          },
+        }).catch(() => {});
+      }
+    } catch {}
+
     setPw(""); setPw2("");
     toast.success(t("acc.password_changed"));
   }
@@ -924,6 +996,8 @@ function SecurityTab({ email }: { email: string }) {
         </Card>
       </div>
       <TwoFactorCard />
+      <ActiveDevicesCard />
+      <DeleteAccountCard email={email} />
     </div>
   );
 }
@@ -1109,5 +1183,242 @@ function TwoFactorCard() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function DeleteAccountCard({ email }: { email: string }) {
+  const { lang, dir } = useLang();
+  const isAr = lang === "ar";
+  const [modalOpen, setModalOpen] = useState(false);
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !busy) setModalOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [modalOpen, busy]);
+
+  function openModal() {
+    setConfirmEmail("");
+    setReason("");
+    setModalOpen(true);
+  }
+
+  async function handleDeleteAccount(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    const cleanInput = confirmEmail.trim().toLowerCase();
+    const cleanActual = (email || "").trim().toLowerCase();
+
+    if (!cleanInput) {
+      toast.error(isAr ? "يرجى كتابة بريدك الإلكتروني للتأكيد" : "Please enter your sign-in email");
+      return;
+    }
+    if (cleanInput !== cleanActual) {
+      toast.error(isAr ? "البريد المدخل لا يطابق بريد حسابك الحالي" : "Email does not match your account email");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const accessToken = sess?.session?.access_token;
+      if (!accessToken) {
+        toast.error(isAr ? "يرجى تسجيل الدخول أولاً" : "Please log in first");
+        setBusy(false);
+        return;
+      }
+
+      // 1. Execute direct Supabase RPC with the user's authenticated session
+      const { data: directRpcRes, error: directRpcErr } = await (supabase as any).rpc("schedule_account_deletion_direct", {
+        _reason: reason.trim() || null,
+      });
+
+      // 2. Call server function to deliver Resend confirmation email
+      try {
+        await scheduleAccountDeletionDirectFn({
+          data: {
+            accessToken,
+            reason: reason.trim() || undefined,
+            email: cleanActual,
+            lang: isAr ? "ar" : "en",
+          },
+        });
+      } catch (fnErr) {
+        console.warn("[GX] Server email function notice:", fnErr);
+      }
+
+      if (directRpcErr && !directRpcRes?.ok) {
+        toast.error(directRpcErr?.message || (isAr ? "تعذّر تقديم طلب حذف الحساب" : "Failed to delete account"));
+        setBusy(false);
+        return;
+      }
+
+      toast.success(
+        isAr
+          ? "تم استلام طلب حذف حسابك بنجاح. سيتم حذفه بعد 14 يوماً، وتم إرسال تفاصيل الإشعار لبريدك الإلكتروني."
+          : "We've received your request to delete your account. It will be deleted in 14 days. Confirmation email sent."
+      );
+
+      try {
+        localStorage.removeItem("gx_profile_cache");
+        sessionStorage.clear();
+      } catch {}
+
+      await supabase.auth.signOut();
+      window.location.replace("/");
+    } catch (err: any) {
+      toast.error(err.message || (isAr ? "حدث خطأ غير متوقع" : "Unexpected error"));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      {/* Clean, simple card without drama */}
+      <Card className="border-white/10 bg-white/[0.02]">
+        <CardHeader>
+          <CardTitle className="text-base font-bold text-foreground">
+            {isAr ? "حذف الحساب" : "Delete account"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {isAr
+              ? "سيتم حذف حسابك نهائياً بعد 14 يوماً من طلب الحذف. يمكنك التراجع واستعادة حسابك تلقائياً في أي وقت بمجرد تسجيل الدخول خلال هذه المدة."
+              : "Your account will be permanently deleted 14 days after your request. You can cancel and reactivate your account anytime simply by logging back in during this period."}
+          </p>
+          <div className="pt-1">
+            <Button
+              variant="outline"
+              onClick={openModal}
+              className="text-red-400 border-red-500/30 hover:bg-red-500/10 hover:text-red-300 font-semibold"
+            >
+              {isAr ? "حذف الحساب" : "Delete account"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* G2A-Style Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" dir={dir}>
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0e121b] p-6 sm:p-8 shadow-2xl text-foreground animate-in fade-in zoom-in-95 duration-200">
+            {/* Close button */}
+            <div className="flex justify-end -mt-2 -mr-2 mb-2">
+              <button
+                type="button"
+                onClick={() => !busy && setModalOpen(false)}
+                disabled={busy}
+                className="text-muted-foreground hover:text-white p-1 rounded-lg hover:bg-white/5 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* G2A Monitor & Phone SVG Illustration */}
+            <div className="flex justify-center mb-5">
+              <div className="relative inline-block">
+                {/* Desktop Screen */}
+                <div className="w-24 h-16 rounded-lg bg-[#182030] border-2 border-slate-600/60 p-1 flex flex-col justify-between shadow-xl">
+                  <div className="w-full h-8 rounded bg-[#0b0f19] border border-slate-700/60 flex flex-col p-1 gap-1">
+                    <div className="w-8 h-1 rounded-full bg-slate-600" />
+                    <div className="w-full h-1 rounded bg-slate-800" />
+                    <div className="w-3/4 h-1 rounded bg-slate-800" />
+                  </div>
+                  <div className="w-5 h-1 rounded bg-slate-600 mx-auto" />
+                </div>
+                {/* Mobile Phone */}
+                <div className="absolute -left-3 bottom-0 w-8 h-12 rounded-md bg-[#0b0f19] border-2 border-slate-500 p-0.5 flex flex-col justify-between shadow-xl">
+                  <div className="w-2 h-0.5 rounded-full bg-slate-600 mx-auto" />
+                  <div className="space-y-0.5 my-auto">
+                    <div className="w-full h-0.5 rounded bg-slate-700" />
+                    <div className="w-2/3 h-0.5 rounded bg-slate-700" />
+                  </div>
+                  <div className="w-1.5 h-1.5 rounded-full border border-slate-600 mx-auto" />
+                </div>
+                {/* Red Circular Badge with white X */}
+                <div className="absolute -right-2 -bottom-2 w-8 h-8 rounded-full bg-[#dc2626] border-2 border-[#0e121b] flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                  ✕
+                </div>
+              </div>
+            </div>
+
+            {/* Form (Direct G2A style without OTP code) */}
+            <form onSubmit={handleDeleteAccount} className="space-y-4">
+              <div className="text-center">
+                <h3 className="font-extrabold text-xl text-white mb-2">
+                  {isAr ? "هل ترغب في حذف حسابك؟" : "Delete your account?"}
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
+                  {isAr
+                    ? "سيتم حذف حسابك في متجر GX Store نهائياً بعد 14 يوماً بشرط عدم تسجيل الدخول خلال هذه الفترة. بعد حذف الحساب، لن تتمكن من الوصول إلى بياناتك أو سجل طلباتك أو برامج المكافآت."
+                    : "Your GX Store account will be permanently deleted in 14 days on condition that you don't sign in during that time. After you delete your account, you will no longer have access to your data on GX Store and to your membership programs."}
+                </p>
+              </div>
+
+              <div className="space-y-1.5 pt-2">
+                <label className="text-xs font-semibold text-slate-200 block text-right">
+                  {isAr ? "أدخل البريد الإلكتروني الذي تستخدمه لتسجيل الدخول *" : "Enter the email you use to sign in *"}
+                </label>
+                <Input
+                  type="email"
+                  required
+                  placeholder="name@example.com"
+                  value={confirmEmail}
+                  onChange={(e) => setConfirmEmail(e.target.value)}
+                  dir="ltr"
+                  className="h-10 bg-[#141a29] border-slate-700 text-white placeholder:text-slate-500 text-sm focus:border-blue-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-200 block text-right">
+                  {isAr ? "أخبرنا لماذا تحذف حسابك" : "Tell us why you're deleting your account"}
+                </label>
+                <select
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-full h-10 rounded-md border border-slate-700 bg-[#141a29] px-3 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                  dir={dir}
+                >
+                  <option value="">{isAr ? "اختر..." : "Select"}</option>
+                  <option value="لم أعد أستخدم المتجر">{isAr ? "لم أعد أستخدم المتجر" : "I don't use this store anymore"}</option>
+                  <option value="لدي حساب آخر">{isAr ? "لدي حساب آخر" : "I have another account"}</option>
+                  <option value="واجهت مشكلة فنية أو بالدعم">{isAr ? "واجهت مشكلة فنية أو بالدعم" : "Encountered technical issues"}</option>
+                  <option value="سبب آخر">{isAr ? "سبب آخر" : "Other reason"}</option>
+                </select>
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  disabled={busy || !confirmEmail.trim()}
+                  className="w-full h-11 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold text-sm shadow-md transition"
+                >
+                  {busy ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {isAr ? "جارٍ الحذف وتسجيل الخروج..." : "Deleting and signing out..."}
+                    </span>
+                  ) : (
+                    isAr ? "حذف الحساب" : "Delete account"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

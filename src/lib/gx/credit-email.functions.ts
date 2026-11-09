@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { assertAdminCaller, getUserScopedClient } from "@/lib/gx/supabase-request";
+import { getUserScopedClient } from "@/lib/gx/supabase-request";
+import { assertAdminCaller } from "@/lib/gx/supabase-auth.server";
 import { getResendApiKey } from "./resend-key";
-import { renderDriffleEmail } from "./email-theme";
+import { renderGxStoreEmail } from "./email-theme";
 
 const SENDER_EMAIL = "GX Store <support@gxstore.me>";
 
@@ -218,7 +219,7 @@ export const sendCreditNotificationEmail = createServerFn({ method: "POST" })
         ? "يسرنا إعلامك بأنه تم شحن محفظتك في متجر GX Store برصيد مالي جديد يمكنك استخدامه مباشرة عند الشراء في أي وقت."
         : `يسعدنا إعلامك بأنه تم تخصيص وإيداع رصيد بقيمة ${formattedAmount} لبريدك الإلكتروني، وهو محجوز لك حالياً في محفظة المتجر.`;
 
-      const html = renderDriffleEmail({
+      const html = renderGxStoreEmail({
         lang: "ar",
         subject,
         headline: headerTitle,

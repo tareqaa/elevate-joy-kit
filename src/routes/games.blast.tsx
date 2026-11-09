@@ -4,6 +4,7 @@ import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useLang } from "@/lib/gx/i18n";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { resolveActiveTournamentId, startTournamentRun, readTournamentStanding } from "@/lib/gx/games/use-tournament-run";
 import {
   BOARD_SIZE,
@@ -521,6 +522,8 @@ function BlastPage() {
           // engine that drove this game and only ever forwards the score it
           // recomputes itself — a raw claimed score is never trusted.
           try {
+            const { data: sessData } = await supabase.auth.getSession();
+            const accessToken = sessData?.session?.access_token || undefined;
             const { submitBlastRun } = await import("@/lib/gx/games/blast.server");
             const res = await submitBlastRun({
               data: {
@@ -529,11 +532,14 @@ function BlastPage() {
                 seed: game.seed,
                 moves: game.moves,
                 claimedScore: game.score,
+                accessToken,
               },
             });
             if (!res.ok) {
               if (res.error === "tournament_full") {
                 toast.error(ar ? "اكتمل عدد اللاعبين في هذه البطولة" : "This tournament is full");
+              } else if (res.error === "service_key_missing") {
+                console.warn("[Blast] SUPABASE_SERVICE_ROLE_KEY is not configured yet in .env; skipping remote tournament leaderboard sync.");
               } else if (res.error !== "run_too_short") {
                 console.error("Blast score submission failed:", res.error);
               }

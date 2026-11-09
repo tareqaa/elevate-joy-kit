@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { getPublicClient, getVerifiedCaller } from "@/lib/gx/supabase-request";
+import { getPublicClient } from "@/lib/gx/supabase-request";
+import { getVerifiedCaller } from "@/lib/gx/supabase-auth.server";
 
 export const validateCouponFn = createServerFn({ method: "POST" })
   .validator((data: unknown) =>

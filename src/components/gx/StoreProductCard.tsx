@@ -316,10 +316,10 @@ export function StoreProductCard({
     }
     if (slug === "adobe") return <AdobePoster />;
     if (slug === "canva") return <CanvaPoster />;
-    if (slug === "windows") {
+    if (slug === "windows" || slug === "windows-11-pro-retail" || slug === "windows-11-pro-oem" || slug.startsWith("windows-11-")) {
       const winImg =
         imageUrl ||
-        resolveProductImage({ cartId: finalCartId, slug: "windows", name }) ||
+        resolveProductImage({ cartId: finalCartId, slug, name }) ||
         "/app/assets/img/catalog/windows-cover.jpg";
       return (
         <CardProductImage
@@ -457,7 +457,7 @@ export function StoreProductCard({
       className={`prod-card ${isOutOfStock ? "is-sold-out" : ""}`}
       style={isOutOfStock ? { opacity: 0.72, filter: "grayscale(0.38)" } : undefined}
     >
-      {/* Top-Left Driffle-Style Bookmark Wishlist Ribbon */}
+      {/* Top-Left Bookmark Wishlist Ribbon */}
       <button
         type="button"
         className={`prod-fav-bookmark ${isFavorited ? "is-active" : ""}`}
@@ -481,7 +481,7 @@ export function StoreProductCard({
         />
       </button>
 
-      <Link to={finalLink as never} style={{ display: "contents" }}>
+      <Link to={finalLink as never} resetScroll={true} style={{ display: "contents" }}>
         <div className="prod-thumb" style={{ background: bgStyle }}>
           {renderThumbnail()}
         </div>
@@ -502,6 +502,7 @@ export function StoreProductCard({
 
         <Link
           to={finalLink as never}
+          resetScroll={true}
           style={{ textDecoration: "none", color: "inherit", display: "block" }}
         >
           <div
@@ -699,6 +700,7 @@ export function StoreProductCard({
               <div className="buy-actions">
                 <Link
                   to={finalLink as never}
+                  resetScroll={true}
                   className="buy-now-btn gx-browse-offers-btn"
                   style={{
                     textDecoration: "none",

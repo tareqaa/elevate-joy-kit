@@ -6,7 +6,7 @@ import { useLang } from "@/lib/gx/i18n";
 import { getOrderByNumberFn, markCodeRevealedFn } from "@/lib/gx/order-email.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { DriffleOrderDeliveryView } from "@/components/gx/DriffleOrderDeliveryView";
+import { GxOrderDeliveryView } from "@/components/gx/GxOrderDeliveryView";
 
 export const Route = createFileRoute("/order/$orderNumber")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -29,6 +29,22 @@ function OrderDetailsPage() {
   const { lang } = useLang();
   const isAr = lang === "ar";
 
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = isAr
+        ? `طلب #${orderNumber} | متجر GX Store`
+        : `Order #${orderNumber} | GX Store`;
+    }
+  }, [orderNumber, isAr]);
+
+  // Seamless security redirect: Always unify token views onto /order/completed?order_token=...
+  // to remove order numbers from URL path and prevent any tampering.
+  useEffect(() => {
+    if (order_token && order_token.trim()) {
+      window.location.replace(`/order/completed?order_token=${encodeURIComponent(order_token.trim())}`);
+    }
+  }, [order_token]);
+
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<any>(null);
   const [isLocked, setIsLocked] = useState(false);
@@ -41,6 +57,8 @@ function OrderDetailsPage() {
     currentIp?: string | null;
     customerEmail?: string | null;
     orderNumber?: string | null;
+    accountMismatch?: boolean;
+    callerEmail?: string | null;
   } | null>(null);
 
   const fetchOrder = async (isBackground = false) => {
@@ -58,9 +76,11 @@ function OrderDetailsPage() {
       });
 
       if (res.ok && res.order) {
-        if ((res as any).ipMismatch) {
+        if ((res as any).ipMismatch || (res as any).accountMismatch) {
           setIpMismatchInfo({
             mismatch: true,
+            accountMismatch: Boolean((res as any).accountMismatch),
+            callerEmail: (res as any).callerEmail,
             purchaseIp: (res as any).purchaseIp,
             currentIp: (res as any).currentIp,
             customerEmail: (res as any).customerEmail,
@@ -132,12 +152,12 @@ function OrderDetailsPage() {
       )
       .subscribe();
 
-    // 4-second background heartbeat while viewing order
+    // Fast 2.5-second background heartbeat while viewing order to guarantee near-instant transition
     const interval = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
         fetchOrder(true);
       }
-    }, 4000);
+    }, 2500);
 
     return () => {
       supabase.removeChannel(channel);
@@ -198,7 +218,7 @@ function OrderDetailsPage() {
 
   return (
     <StoreShell>
-      <DriffleOrderDeliveryView
+      <GxOrderDeliveryView
         order={order}
         loading={loading}
         error={error}

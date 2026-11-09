@@ -96,6 +96,7 @@ function FlippyPage() {
 
     // Check authentication
     const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token || undefined;
     if (!sessionData?.session?.user) {
       toast.info(
         lang === "ar" 
@@ -125,13 +126,17 @@ function FlippyPage() {
     try {
       const { submitFlippyRun } = await import("@/lib/gx/games/flippy.server");
       const res = await submitFlippyRun({
-        data: { tournamentId: activeTid, runId, log: runLog, claimedScore: score },
+        data: { tournamentId: activeTid, runId, log: runLog, claimedScore: score, accessToken },
       });
       if (!res.ok) {
         const reason = res.error ?? "unknown";
         if (reason === "run_too_short") return;
         if (reason === "tournament_full") {
           toast.error(lang === "ar" ? "اكتمل عدد اللاعبين في هذه البطولة" : "This tournament is full");
+          return;
+        }
+        if (reason === "service_key_missing") {
+          console.warn("[Flippy] SUPABASE_SERVICE_ROLE_KEY is not configured yet in .env; skipping remote tournament leaderboard sync.");
           return;
         }
         console.error("Flippy score submission failed:", reason);

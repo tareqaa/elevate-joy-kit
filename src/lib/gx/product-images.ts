@@ -4,7 +4,7 @@
  * Guarantees 100% identical imagery across:
  * 1. Product page poster & cards (GxProductTemplate)
  * 2. Cart drawer & cart page (CartThumb / cart.tsx)
- * 3. Order confirmation & inventory screen (DriffleOrderDeliveryView)
+ * 3. Order confirmation & inventory screen (GxOrderDeliveryView)
  * 4. Customer order confirmation emails (order-email.functions.ts)
  * ============================================================
  */
@@ -62,7 +62,16 @@ export const CANONICAL_VARIANT_IMAGES: Record<string, string> = {
 
   // EA Sports FC 27
   "ea-fc-27-pc": "/app/assets/img/catalog/ea-fc-27-pc.png",
-  "ea-fc-27-xbox": "/app/assets/img/catalog/ea-fc-27-xbox.jpg",
+  "ea-fc-27-xbox": "/app/assets/img/catalog/ea-fc-27-xbox.png",
+
+  // Minecraft
+  "minecraft-java-bedrock": "/app/assets/img/catalog/minecraft-java-bedrock.png",
+
+  // Windows
+  "windows-11-pro-retail": "/app/assets/img/catalog/windows-cover.jpg",
+  "win-11-pro-retail": "/app/assets/img/catalog/windows-cover.jpg",
+  "windows-11-pro-oem": "/app/assets/img/catalog/windows-cover.jpg",
+  "win-11-pro-oem": "/app/assets/img/catalog/windows-cover.jpg",
 
   // Euro Truck Simulator 2
   "euro-truck-simulator-2": "/app/assets/img/catalog/euro-truck-simulator-2.jpg",
@@ -177,6 +186,7 @@ export const CANONICAL_VARIANT_IMAGES: Record<string, string> = {
   // Google Gemini / AI
   "gemini": "/app/assets/img/gemini-logo.png",
   "gemini-18": "/app/assets/img/gemini-logo.png",
+  "gemini-plus-6m": "/app/assets/img/gemini-logo.png",
   "gemini-plus-3m": "/app/assets/img/gemini-logo.png",
   "gemini-pro-3m": "/app/assets/img/gemini-logo.png",
 };
@@ -219,13 +229,25 @@ export function resolveProductImage(options: ResolveImageOptions): string {
     return "https://cdn1.epicgames.com/offer/fn/FNECO_41-30_August_Crew_Lineup_EGS_Launcher_Blade_1200x1600_1200x1600-911e7061d0aa458aa67d4e5897fcb473";
   }
 
+  // 1.2 Prioritize official provided image (thumbnail / canonical poster)
+  // This guarantees 100% identity between thumbnail and product page/cart/delivery for all catalog products!
+  if (fallback && typeof fallback === "string" && fallback.trim()) {
+    return fallback.trim();
+  }
+
   // 2. Autodesk specific resolution (must be BEFORE any 'tod' check to avoid 'autodesk' matching)
   if (cleanSlug.includes("autodesk") || cleanId.includes("autodesk") || cleanName.includes("autodesk") || cleanName.includes("أوتوديسك")) {
     return "/app/assets/img/catalog/autodesk-cover.jpg";
   }
 
-  // 3. Windows specific resolution
-  if (cleanSlug.includes("windows") || cleanId.startsWith("win-") || cleanName.includes("windows") || cleanName.includes("ويندوز")) {
+  // 3. Windows specific resolution (scoped strictly to Windows OS activation products)
+  if (
+    cleanSlug === "windows" ||
+    cleanSlug === "windows-11-pro-retail" ||
+    cleanSlug === "windows-11-pro-oem" ||
+    cleanSlug.startsWith("windows-11-") ||
+    cleanId.startsWith("win-")
+  ) {
     return "/app/assets/img/catalog/windows-cover.jpg";
   }
 
@@ -289,7 +311,7 @@ export function resolveProductImage(options: ResolveImageOptions): string {
   ) {
     return "/app/assets/img/catalog/valorant-eu-cover.jpg";
   }
-  if (cleanId.includes("valorant") || cleanSlug.includes("valorant") || cleanName.includes("فالورانت") || cleanName.includes("ترك")) {
+  if (cleanId.includes("valorant") || cleanSlug.includes("valorant") || cleanName.includes("فالورانت")) {
     return "/app/assets/img/catalog/valorant-tr-cover.jpg";
   }
 
@@ -306,10 +328,7 @@ export function resolveProductImage(options: ResolveImageOptions): string {
   // 6. Xbox Game Pass Ultimate
   if (
     cleanSlug === "xbox-game-pass-ultimate" ||
-    cleanId.startsWith("gpu-") ||
-    cleanName.includes("ultimate") ||
-    cleanName.includes("التيمت") ||
-    cleanName.includes("التميت")
+    cleanId.startsWith("gpu-")
   ) {
     return "/app/assets/img/catalog/xbox-game-pass-ultimate.jpg";
   }
@@ -317,9 +336,7 @@ export function resolveProductImage(options: ResolveImageOptions): string {
   // 7. PC Game Pass
   if (
     cleanSlug === "pc-game-pass" ||
-    cleanId.startsWith("pcgp-") ||
-    (cleanName.includes("game pass") && cleanName.includes("pc")) ||
-    (cleanName.includes("قيم باس") && cleanName.includes("pc"))
+    cleanId.startsWith("pcgp-")
   ) {
     return "/app/assets/img/catalog/pc-game-pass.jpg";
   }

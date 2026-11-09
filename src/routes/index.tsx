@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useSiteSettings } from "@/lib/gx/site-settings";
+import { useLang } from "@/lib/gx/i18n";
 import { SECTION_REGISTRY } from "@/lib/gx/sections/registry";
 import { containerMaxWidth, sectionWrapperStyle, themeToCssVars, type HomeLayout, type Section } from "@/lib/gx/sections/types";
 import { AnimatedSection } from "@/components/gx/AnimatedSection";
@@ -12,14 +13,66 @@ import { AnimatedSection } from "@/components/gx/AnimatedSection";
 
 const ORGANIZATION_SCHEMA = {
   "@context": "https://schema.org",
-  "@type": "Organization",
+  "@type": ["OnlineStore", "Organization"],
   name: "GX Store",
-  alternateName: ["GXStore", "متجر GX", "GX Store Jordan"],
+  alternateName: ["GXStore", "متجر GX Store", "متجر GX", "GX Store Jordan", "جي اكس ستور"],
   url: "https://gxstore.me/",
-  logo: "https://gxstore.me/app/assets/img/gx-logo.png",
+  logo: {
+    "@type": "ImageObject",
+    url: "https://gxstore.me/app/assets/img/gx-logo.png",
+    contentUrl: "https://gxstore.me/app/assets/img/gx-logo.png",
+    width: 512,
+    height: 512,
+    caption: "GX Store Logo"
+  },
   image: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg",
   description:
-    "GX Store متجر رقمي للألعاب والاشتراكات. اشتراكات، بطاقات هدايا، عملات ألعاب وخدمات رقمية بتفعيل سريع وأسعار منافسة.",
+    "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق. متجر GX Store هو الوجهة الأولى والأرخص لشراء بطاقات بلايستيشن ستور (PlayStation Store Gift Cards) واشتراكات الألعاب الرقمية في الأردن والشرق الأوسط.",
+  slogan: "Buy Games, Giftcard & Top ups cheaper | أرخص بطاقات بلايستيشن وألعاب في الأردن والشرق الأوسط",
+  priceRange: "$ - Cheapest / Lowest Prices Guaranteed",
+  knowsAbout: [
+    "أرخص بطاقات بلايستيشن ستور",
+    "Cheapest PlayStation Gift Cards",
+    "PlayStation Store US Cheapest Cards",
+    "بطاقات ستور بلايستيشن سعودي بأرخص سعر",
+    "بطاقات بلايستيشن إماراتي مخفضة",
+    "PlayStation Store Gift Cards Jordan",
+    "Video Games",
+    "PC Games",
+    "Steam Keys",
+    "PlayStation Store Gift Cards",
+    "Xbox Gift Cards",
+    "Apple iTunes Cards",
+    "Google Play Cards",
+    "Razer Gold",
+    "Fortnite V-Bucks & Crew",
+    "Roblox Robux",
+    "Free Fire Diamonds",
+    "Valorant Points",
+    "YouTube Premium Subscriptions",
+    "LinkedIn Premium Subscriptions",
+    "Microsoft 365 & Office",
+    "Windows 10 & 11 Pro Keys",
+    "Adobe Creative Cloud",
+    "Canva Pro",
+    "Discord Nitro",
+    "NordVPN & ExpressVPN",
+    "TOD TV Subscriptions"
+  ],
+  areaServed: [
+    { "@type": "Country", name: "Jordan" },
+    { "@type": "Country", name: "Saudi Arabia" },
+    { "@type": "Country", name: "United Arab Emirates" },
+    { "@type": "Country", name: "Kuwait" },
+    { "@type": "Country", name: "Qatar" },
+    { "@type": "Country", name: "Oman" },
+    { "@type": "Country", name: "Bahrain" },
+    { "@type": "Country", name: "Egypt" },
+    { "@type": "Country", name: "Iraq" },
+    { "@type": "AdministrativeArea", name: "Worldwide" }
+  ],
+  paymentAccepted: ["CliQ", "Credit Card", "Debit Card", "GX Wallet", "Apple Pay"],
+  currenciesAccepted: ["JOD", "USD", "SAR", "AED", "KWD", "QAR", "BHD", "OMR", "EUR"],
   contactPoint: {
     "@type": "ContactPoint",
     telephone: "+962776252313",
@@ -27,7 +80,47 @@ const ORGANIZATION_SCHEMA = {
     areaServed: ["JO", "SA", "AE", "KW", "QA", "OM", "BH", "EG", "IQ"],
     availableLanguage: ["Arabic", "English"],
   },
-  sameAs: ["https://wa.me/962776252313"],
+  sameAs: [
+    "https://wa.me/962776252313",
+    "https://www.instagram.com/gxstore_jo/",
+    "https://www.facebook.com/GXSTORE.JO"
+  ],
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "GX Store Digital Catalog",
+    itemListElement: [
+      {
+        "@type": "OfferCatalog",
+        name: "الاشتراكات الرقمية / Digital Subscriptions",
+        description: "YouTube Premium, Discord Nitro, LinkedIn Premium, TOD TV, Canva Pro"
+      },
+      {
+        "@type": "OfferCatalog",
+        name: "ألعاب ومفاتيح التفعيل / Games & Keys",
+        description: "Steam Keys, EA Sports FC 27, PC Games, Xbox Games"
+      },
+      {
+        "@type": "OfferCatalog",
+        name: "أرخص بطاقات بلايستيشن ستور / Cheapest PlayStation Cards",
+        description: "أرخص بطاقات بلايستيشن ستور في الأردن والشرق الأوسط (المتجر الأمريكي والسعودي والإماراتي) بتسليم فوري وضمان رسمي بأقل الأسعار."
+      },
+      {
+        "@type": "OfferCatalog",
+        name: "بطاقات الهدايا والشحن / Gift Cards",
+        description: "PlayStation Cards, Xbox Gift Cards, Apple iTunes, Google Play, Razer Gold"
+      },
+      {
+        "@type": "OfferCatalog",
+        name: "شحن عملات الألعاب / In-Game Currency",
+        description: "Fortnite V-Bucks, Roblox Robux, Free Fire Diamonds, Valorant Points"
+      },
+      {
+        "@type": "OfferCatalog",
+        name: "البرامج وأنظمة التشغيل / Software & OS",
+        description: "Windows 11 Pro, Microsoft 365, Adobe Creative Cloud, Autodesk"
+      }
+    ]
+  }
 };
 
 const WEBSITE_SCHEMA = {
@@ -102,34 +195,39 @@ const SITE_NAVIGATION_SCHEMA = {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "GX Store | متجر ألعاب واشتراكات رقمية" },
+      { title: "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار" },
       {
         name: "description",
         content:
-          "GX Store متجر رقمي للألعاب والاشتراكات. اشتراكات، بطاقات هدايا، عملات ألعاب وخدمات رقمية بتفعيل سريع وأسعار منافسة.",
+          "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.",
       },
       { property: "og:site_name", content: "GX Store" },
-      { property: "og:title", content: "GX Store | متجر ألعاب واشتراكات رقمية" },
+      { property: "og:title", content: "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار" },
       {
         property: "og:description",
         content:
-          "GX Store متجر رقمي للألعاب والاشتراكات. اشتراكات، بطاقات هدايا، عملات ألعاب وخدمات رقمية بتفعيل سريع وأسعار منافسة.",
+          "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://gxstore.me/" },
       { property: "og:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
+      { property: "og:image:secure_url", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "GX Store - Buy Games, Giftcard & Top ups cheaper" },
+      { property: "og:logo", content: "https://gxstore.me/app/assets/img/gx-logo.png" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "GX Store | متجر ألعاب واشتراكات رقمية" },
+      { name: "twitter:title", content: "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار" },
       {
         name: "twitter:description",
         content:
-          "GX Store متجر رقمي للألعاب والاشتراكات. اشتراكات، بطاقات هدايا، عملات ألعاب وخدمات رقمية بتفعيل سريع وأسعار منافسة.",
+          "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.",
       },
       { name: "twitter:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
       {
         name: "keywords",
         content:
-          "GX Store, GXStore, GX Store Jordan, متجر GX, متجر ألعاب, متجر اشتراكات, اشتراكات رقمية, بطاقات ألعاب, شحن ألعاب, فورت نايت, ستيم, ألعاب PC, بطاقات بلايستيشن, بطاقات إكسبوكس",
+          "GX Store, GXStore, GX Store Jordan, متجر GX, أرخص بطاقات بلايستيشن, ارخص بطاقات بلايستيشن في الأردن, بطاقات بلايستيشن ستور أمريكي, بطاقات ستور سعودي رخيص, بطاقات بلايستيشن إماراتي, Cheapest PlayStation Gift Cards, Buy Games Cheaper, متجر ألعاب, متجر اشتراكات, اشتراكات رقمية, بطاقات ألعاب, شحن ألعاب, فورت نايت, ستيم, ألعاب PC, بطاقات إكسبوكس, شحن روبلوكس, يوتيوب بريميوم, ويندوز أصلي, أوفيس 365, كليك",
       },
       {
         name: "robots",
@@ -146,7 +244,16 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const { home_layout } = useSiteSettings();
+  const { lang } = useLang();
   const [draftLayout, setDraftLayout] = useState<HomeLayout | null>(null);
+
+  useEffect(() => {
+    document.title =
+      lang === "en"
+        ? "GX Store | Buy Games, Giftcard & Top ups cheaper"
+        : "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار";
+  }, [lang]);
+
   const isDraftPreview =
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("preview") === "draft";
 

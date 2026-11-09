@@ -185,9 +185,38 @@ const SYNONYM_MAP: Record<string, string[]> = {
   vp: ["valorant", "فالورانت", "فالورنت", "نقاط فالورانت", "valorant points"],
 
   // Minecraft
-  ماينكرافت: ["minecraft", "ماين كرافت"],
-  "ماين كرافت": ["minecraft", "ماينكرافت"],
-  minecraft: ["ماينكرافت", "ماين كرافت"],
+  ماين: ["minecraft", "ماينكرافت", "ماين كرافت", "ماين كرفت"],
+  كرافت: ["minecraft", "ماينكرافت", "ماين كرافت", "ماين كرفت"],
+  ماينكرافت: ["minecraft", "ماين كرافت", "ماين", "كرافت", "ماين كرفت"],
+  "ماين كرافت": ["minecraft", "ماينكرافت", "ماين", "كرافت", "ماين كرفت"],
+  "ماين كرفت": ["minecraft", "ماينكرافت", "ماين كرافت"],
+  minecraft: ["ماينكرافت", "ماين كرافت", "ماين", "كرافت", "ماين كرفت"],
+  mine: ["minecraft", "ماين"],
+  craft: ["minecraft", "كرافت"],
+
+  // Roblox & Robux
+  روبلوكس: ["roblox", "robux", "روبوكس", "روبلكس", "روبكس"],
+  روبلكس: ["roblox", "robux", "روبوكس", "روبلوكس"],
+  روبوكس: ["robux", "roblox", "روبلوكس", "روبلكس", "روبكس"],
+  روبكس: ["robux", "roblox", "روبلوكس"],
+  roblox: ["روبلوكس", "روبوكس", "روبلكس", "روبكس", "robux"],
+  robux: ["روبوكس", "روبلوكس", "roblox", "روبكس"],
+
+  // PUBG & UC
+  ببجي: ["pubg", "بوبجي", "شدات ببجي", "uc"],
+  بوبجي: ["pubg", "ببجي", "شدات ببجي", "uc"],
+  pubg: ["ببجي", "بوبجي", "شدات ببجي", "uc"],
+  uc: ["pubg", "ببجي", "شدات"],
+
+  // AI & Productivity (Gemini, Lovable, Notion)
+  جيمناي: ["gemini", "google gemini", "جوجل جيمناي", "جيمني", "ذكاء اصطناعي", "ai"],
+  جيمني: ["gemini", "جيمناي", "google gemini"],
+  gemini: ["جيمناي", "جيمني", "google gemini", "جوجل", "ذكاء اصطناعي", "ai"],
+  لوفابل: ["lovable", "لوف ابل", "ذكاء اصطناعي", "ai"],
+  "لوف ابل": ["lovable", "لوفابل"],
+  lovable: ["لوفابل", "لوف ابل", "ذكاء اصطناعي", "ai"],
+  نوشن: ["notion", "notion business", "نوشن بزنس"],
+  notion: ["نوشن", "notion business", "نوشن بزنس"],
 
   // Google Play
   "جوجل بلاي": ["google play", "قوقل بلاي", "جوجل", "بطاقة جوجل بلاي", "بطاقة قوقل بلاي", "بطاقات جوجل بلاي", "شحن جوجل بلاي"],
@@ -253,6 +282,28 @@ export function buildSearchHaystack(item: SearchableItem): string {
 
   if (item.descriptionAr) parts.push(item.descriptionAr.slice(0, 300));
   if (item.descriptionEn) parts.push(item.descriptionEn.slice(0, 300));
+
+  // Bilingual aliases & transliterations for products
+  const combined = `${item.slug} ${item.nameEn || ""} ${item.nameAr || ""}`.toLowerCase();
+  if (combined.includes("minecraft")) parts.push("ماين كرافت", "ماينكرافت", "ماين كرفت", "ماين", "كرافت");
+  if (combined.includes("roblox") || combined.includes("robux")) parts.push("روبلوكس", "روبوكس", "روبلكس", "روبكس");
+  if (combined.includes("pubg")) parts.push("ببجي", "بوبجي", "شدات");
+  if (combined.includes("valorant")) parts.push("فالورانت", "فالورنت", "شحن فالورانت");
+  if (combined.includes("gemini")) parts.push("جيمناي", "جيمني", "ذكاء اصطناعي", "قوقل جيمناي", "جوجل جيمناي");
+  if (combined.includes("lovable")) parts.push("لوفابل", "لوف ابل", "ذكاء اصطناعي");
+  if (combined.includes("notion")) parts.push("نوشن", "نوشن بزنس");
+  if (combined.includes("windows")) parts.push("ويندوز", "ويندوز 11", "ويندوز 10", "ريتيل", "retail", "oem");
+  if (combined.includes("office") || combined.includes("365")) parts.push("اوفيس", "مايكروسوفت", "أوفيس");
+  if (combined.includes("tod")) parts.push("تود", "بي ان سبورت");
+  if (combined.includes("youtube")) parts.push("يوتيوب", "يوتيوب بريميوم");
+  if (combined.includes("playstation") || combined.includes("psn")) parts.push("بلايستيشن", "سوني");
+  if (combined.includes("xbox")) parts.push("اكسبوكس", "اكس بوكس", "قيم باس", "جيم باس");
+  if (combined.includes("steam")) parts.push("ستيم");
+  if (combined.includes("canva")) parts.push("كانفا");
+  if (combined.includes("adobe")) parts.push("ادوبي", "أدوبي", "فوتوشوب");
+  if (combined.includes("discord")) parts.push("ديسكورد", "دسكورد", "نيترو");
+  if (combined.includes("linkedin")) parts.push("لينكد ان", "لينكدإن", "لينكدان");
+  if (combined.includes("fortnite")) parts.push("فورت نايت", "فورتنايت", "كرو");
 
   // Add space-collapsed versions of English name and slug so compound words like "gamepass" match "game pass"
   if (item.nameEn) {
@@ -344,6 +395,28 @@ export function matchSearchQuery(
     const normSlugNoSpace = normSlug.replace(/\s+/g, "");
 
     let score = 0;
+    let allOriginalTermsMatch = true;
+
+    // 0. Full Phrase Synonym Match (e.g., "ماين كرافت" matching item with "minecraft")
+    if (fullPhraseSyns && fullPhraseSyns.length > 0) {
+      for (const syn of fullPhraseSyns) {
+        const normSyn = normalizeSearchText(syn);
+        if (!normSyn) continue;
+        if (normNameAr === normSyn || normNameEn === normSyn || normSlug === normSyn) {
+          score += 480;
+          allOriginalTermsMatch = true;
+        } else if (normNameAr.startsWith(normSyn) || normNameEn.startsWith(normSyn) || normSlug.startsWith(normSyn)) {
+          score += 350;
+          allOriginalTermsMatch = true;
+        } else if (normNameAr.includes(normSyn) || normNameEn.includes(normSyn) || normSlug.includes(normSyn)) {
+          score += 280;
+          allOriginalTermsMatch = true;
+        } else if (hasTermInHaystack(haystack, normSyn, words)) {
+          score += 200;
+          allOriginalTermsMatch = true;
+        }
+      }
+    }
 
     // 1. Exact Match on name (Massive bonus)
     if (normNameAr === cleanQ || normNameEn === cleanQ || normSlug === cleanQ) {
@@ -387,7 +460,6 @@ export function matchSearchQuery(
     }
 
     // 5. Check each term in original query
-    let allOriginalTermsMatch = true;
     for (const term of queryTerms) {
       if (hasTermInHaystack(haystack, term, words)) {
         score += 30;
@@ -396,7 +468,7 @@ export function matchSearchQuery(
         const syns = SYNONYM_MAP[term];
         const synMatch = syns && syns.some((s) => hasTermInHaystack(haystack, normalizeSearchText(s), words));
         if (synMatch) {
-          score += 20;
+          score += 25;
         } else {
           allOriginalTermsMatch = false;
         }
@@ -424,7 +496,7 @@ export function matchSearchQuery(
     }
 
     // Only include if there is a real match
-    if (score > 0 && (allOriginalTermsMatch || score >= 60)) {
+    if (score > 0 && (allOriginalTermsMatch || score >= 50)) {
       results.push({ item, score });
     }
   }
@@ -677,38 +749,173 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           continue; // Skip generic container
         }
 
-        // --- Special Case B: Windows (All products are digital keys / activation codes) ---
-        if (p.slug === "windows" && prodVariants.length > 0) {
-          for (const v of prodVariants) {
-            const variantItem: SearchableItem = {
-              id: `${p.id}-${v.cart_id || v.id}`,
-              slug: "windows",
-              type: "product",
-              nameAr: `تفعيل ويندوز — ${v.label_ar}`,
-              nameEn: `Windows Activation — ${v.label_en || v.label_ar}`,
-              taglineAr: "مفتاح تفعيل رقمي أصلي 100% مدى الحياة",
-              taglineEn: "Official digital activation key 100% lifetime",
-              categoryNameAr: categoryNameAr || "برامج وأنظمة",
-              categoryNameEn: categoryNameEn || "Software",
-              categorySlug,
-              parentCategorySlug: rootCategorySlug,
-              platform: "Microsoft Windows",
-              deliveryType: "code", // Strictly key / code
-              region: "Global",
-              badge: v.tag_ar && v.tag_ar !== "none" ? v.tag_ar : null,
-              priceJod: Number(v.price_jod),
-              oldPriceJod: v.old_price_jod ? Number(v.old_price_jod) : null,
-              imageUrl: p.image_url,
-              icon: "🪟",
-              iconImage: p.icon_image_url || p.image_url,
-              thumbBg: p.thumb_bg || "linear-gradient(145deg,#0a2540,#04101c)",
-              variantLabels: ["windows", "ويندوز", "تفعيل ويندوز", "مفتاح", "key", "pro", "home", v.label_ar, v.label_en || ""],
-              link: `/product/windows?variant=${encodeURIComponent(v.cart_id || v.id)}#${v.cart_id || v.id}`,
-            };
-            variantItem.normalizedHaystack = buildSearchHaystack(variantItem);
-            items.push(variantItem);
-          }
+        // --- Special Case B: Windows (Separated into Retail 7 JOD & OEM 5 JOD) ---
+        if (p.slug === "windows" || p.slug === "windows-11-pro-retail" || p.slug === "windows-11-pro-oem") {
+          const retailItem: SearchableItem = {
+            id: `${p.id}-retail`,
+            slug: "windows-11-pro-retail",
+            type: "product",
+            nameAr: "Windows 11 Pro Retail | كود رقمي أصلي",
+            nameEn: "Windows 11 Pro Retail | Official Digital Key",
+            taglineAr: "تفعيل رسمي أصلي يرتبط بحساب مايكروسوفت وقابل للنقل بين الأجهزة",
+            taglineEn: "Official Retail license linked to Microsoft account (transferable)",
+            categoryNameAr: categoryNameAr || "البرامج والتطبيقات",
+            categoryNameEn: categoryNameEn || "Apps & Software",
+            categorySlug: "design",
+            parentCategorySlug: "design",
+            platform: "Microsoft Windows",
+            deliveryType: "code",
+            region: "Global",
+            badge: "قابل للنقل",
+            priceJod: 7,
+            oldPriceJod: 15,
+            imageUrl: "/app/assets/img/catalog/windows-cover.jpg",
+            icon: "🪟",
+            iconImage: "/app/assets/img/catalog/windows-cover.jpg",
+            thumbBg: "linear-gradient(145deg,#0a2540,#04101c)",
+            variantLabels: ["windows", "ويندوز", "تفعيل ويندوز", "مفتاح", "key", "pro", "retail", "ريتيل", "windows 11 pro retail"],
+            link: "/product/windows-11-pro-retail",
+          };
+          retailItem.normalizedHaystack = buildSearchHaystack(retailItem);
+          items.push(retailItem);
+
+          const oemItem: SearchableItem = {
+            id: `${p.id}-oem`,
+            slug: "windows-11-pro-oem",
+            type: "product",
+            nameAr: "Windows 11 Pro OEM | كود رقمي أصلي",
+            nameEn: "Windows 11 Pro OEM | Official Digital Key",
+            taglineAr: "تفعيل رسمي أصلي يرتبط باللوحة الأم (Motherboard) للجهاز مدى الحياة",
+            taglineEn: "Official OEM license permanently tied to motherboard for lifetime",
+            categoryNameAr: categoryNameAr || "البرامج والتطبيقات",
+            categoryNameEn: categoryNameEn || "Apps & Software",
+            categorySlug: "design",
+            parentCategorySlug: "design",
+            platform: "Microsoft Windows",
+            deliveryType: "code",
+            region: "Global",
+            badge: "الأكثر طلباً",
+            priceJod: 5,
+            oldPriceJod: 12,
+            imageUrl: "/app/assets/img/catalog/windows-cover.jpg",
+            icon: "🪟",
+            iconImage: "/app/assets/img/catalog/windows-cover.jpg",
+            thumbBg: "linear-gradient(145deg,#0a2540,#04101c)",
+            variantLabels: ["windows", "ويندوز", "تفعيل ويندوز", "مفتاح", "key", "pro", "oem", "او اي ام", "windows 11 pro oem"],
+            link: "/product/windows-11-pro-oem",
+          };
+          oemItem.normalizedHaystack = buildSearchHaystack(oemItem);
+          items.push(oemItem);
           continue; // Skip generic container
+        }
+
+        // --- Special Case: Google Gemini Plus (Only single 6-Month Activation Link, 4 JOD) ---
+        if (p.slug === "gemini" || p.slug.startsWith("gemini-")) {
+          const geminiItem: SearchableItem = {
+            id: `${p.id}-gemini-plus-6m`,
+            slug: "gemini",
+            type: "product",
+            nameAr: "Google Gemini Plus | اشتراك 6 أشهر",
+            nameEn: "Google Gemini Plus — 6 Months",
+            taglineAr: "رابط تفعيل رسمي 6 أشهر • لا يتطلب بطاقة بنكية (Credit Card) • صلاحية الرابط 10 ساعات من التسليم",
+            taglineEn: "Official 6-month activation link • No credit card required • Link valid for 10 hours from delivery",
+            descriptionAr: p.description_ar,
+            descriptionEn: p.description_en,
+            categoryNameAr: "البرامج والتطبيقات",
+            categoryNameEn: "Apps & Software",
+            categorySlug: "design",
+            parentCategorySlug: "design",
+            platform: "Google AI",
+            deliveryType: "link",
+            region: "Global",
+            badge: "رابط تفعيل • 6 أشهر",
+            priceJod: 4,
+            oldPriceJod: 8,
+            imageUrl: "/app/assets/img/gemini-logo.svg",
+            icon: "✨",
+            iconImage: "/app/assets/img/gemini-logo.svg",
+            thumbBg: p.thumb_bg || "linear-gradient(145deg,#2a1a4a,#0e0820)",
+            variantLabels: [
+              "جيمناي", "جيمني", "جوجل جيمناي", "قوقل جيمناي", "ذكاء اصطناعي", "ai",
+              "gemini", "google gemini", "gemini plus", "جيمناي بلس", "رابط تفعيل", "6 اشهر", "6 أشهر"
+            ],
+            link: "/product/gemini",
+          };
+          geminiItem.normalizedHaystack = buildSearchHaystack(geminiItem);
+          items.push(geminiItem);
+          continue; // Skip generic container & pro variants!
+        }
+
+        // --- Special Case: Notion Business (3 Months, 6 JOD) ---
+        if (p.slug === "notion-business" || p.slug === "notion") {
+          const notionItem: SearchableItem = {
+            id: p.id,
+            slug: "notion-business",
+            type: "product",
+            nameAr: "Notion Business — اشتراك 3 أشهر",
+            nameEn: "Notion Business — 3 Months",
+            taglineAr: "مساحة عمل رقمية شاملة مع 300 رصيد شهرياً",
+            taglineEn: "All-in-one digital workspace with 300 monthly AI credits",
+            descriptionAr: p.description_ar,
+            descriptionEn: p.description_en,
+            categoryNameAr: "البرامج والتطبيقات",
+            categoryNameEn: "Apps & Software",
+            categorySlug: "design",
+            parentCategorySlug: "design",
+            platform: "Notion",
+            deliveryType: "code",
+            region: "Global",
+            badge: "300 رصيد شهرياً • 6 دنانير",
+            priceJod: 6,
+            oldPriceJod: 30,
+            imageUrl: "/app/assets/img/catalog/notion.png",
+            icon: "📝",
+            iconImage: "/app/assets/img/catalog/notion.svg",
+            thumbBg: p.thumb_bg || "linear-gradient(145deg,#1f232b,#0f1115)",
+            variantLabels: [
+              "notion", "نوشن", "notion business", "نوشن بزنس", "ذكاء اصطناعي", "ai", "3 اشهر", "3 أشهر"
+            ],
+            link: "/product/notion-business",
+          };
+          notionItem.normalizedHaystack = buildSearchHaystack(notionItem);
+          items.push(notionItem);
+          continue;
+        }
+
+        // --- Special Case: Microsoft 365 (Dedicated Account 12 Months, 5 JOD) ---
+        if (p.slug === "microsoft365" || p.slug === "ms365") {
+          const m365Item: SearchableItem = {
+            id: p.id,
+            slug: "microsoft365",
+            type: "product",
+            nameAr: "Microsoft 365 | حساب جاهز (12 شهر)",
+            nameEn: "Microsoft 365 | Dedicated Account (12 Months)",
+            taglineAr: "اشتراك Microsoft 365 رسمي — حساب جاهز بكامل برامج أوفيس و1TB سحابي",
+            taglineEn: "Official Microsoft 365 — Full Office suite with 1TB cloud storage",
+            descriptionAr: p.description_ar,
+            descriptionEn: p.description_en,
+            categoryNameAr: "البرامج والتطبيقات",
+            categoryNameEn: "Apps & Software",
+            categorySlug: "design",
+            parentCategorySlug: "design",
+            platform: "Microsoft",
+            deliveryType: "account",
+            region: "Global",
+            badge: "الأكثر طلباً",
+            priceJod: 5,
+            oldPriceJod: 10,
+            imageUrl: p.image_url || "/app/assets/img/catalog/microsoft-365.jpg",
+            icon: "💼",
+            iconImage: p.icon_image_url || p.image_url,
+            thumbBg: p.thumb_bg || "linear-gradient(145deg,#0a1a36,#050d1c)",
+            variantLabels: [
+              "مايكروسوفت", "اوفيس", "أوفيس", "microsoft", "office", "365", "microsoft 365", "m365", "حساب"
+            ],
+            link: "/product/microsoft365",
+          };
+          m365Item.normalizedHaystack = buildSearchHaystack(m365Item);
+          items.push(m365Item);
+          continue;
         }
 
         // --- Special Case C: Gift Cards (PlayStation, Xbox, iTunes, Google Play) ---
@@ -778,9 +985,94 @@ export async function fetchLiveSearchIndex(): Promise<SearchableItem[]> {
           masterItem.normalizedHaystack = buildSearchHaystack(masterItem);
           items.push(masterItem);
 
-          // 2. Add each specific variant card offer (e.g. 10$ سعودي، 20$ أمريكي، 50$ إماراتي...)
-          if (prodVariants.length > 0) {
-            for (const v of prodVariants) {
+          // 2. Add each specific variant card offer (e.g. 50 ر.س سعودي، 20$ أمريكي، 50$ إماراتي...)
+          const variantsToLoop = p.slug === "playstation"
+            ? [
+                ...prodVariants.filter(
+                  (v) => (v.plan_group || "").toLowerCase() !== "sa" && !(v.cart_id || "").startsWith("psn-sa-")
+                ),
+                {
+                  id: "psn-sa-50",
+                  cart_id: "psn-sa-50",
+                  label_ar: "50 ر.س",
+                  label_en: "50 SAR",
+                  price_jod: 11.5,
+                  old_price_jod: null,
+                  region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+                  plan_group: "sa",
+                  delivery_type: "code",
+                },
+                {
+                  id: "psn-sa-100",
+                  cart_id: "psn-sa-100",
+                  label_ar: "100 ر.س",
+                  label_en: "100 SAR",
+                  price_jod: 23,
+                  old_price_jod: null,
+                  region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+                  plan_group: "sa",
+                  delivery_type: "code",
+                },
+                {
+                  id: "psn-sa-150",
+                  cart_id: "psn-sa-150",
+                  label_ar: "150 ر.س",
+                  label_en: "150 SAR",
+                  price_jod: 34.5,
+                  old_price_jod: null,
+                  region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+                  plan_group: "sa",
+                  delivery_type: "code",
+                },
+                {
+                  id: "psn-sa-200",
+                  cart_id: "psn-sa-200",
+                  label_ar: "200 ر.س",
+                  label_en: "200 SAR",
+                  price_jod: 46,
+                  old_price_jod: null,
+                  region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+                  plan_group: "sa",
+                  delivery_type: "code",
+                },
+                {
+                  id: "psn-sa-300",
+                  cart_id: "psn-sa-300",
+                  label_ar: "300 ر.س",
+                  label_en: "300 SAR",
+                  price_jod: 69,
+                  old_price_jod: null,
+                  region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+                  plan_group: "sa",
+                  delivery_type: "code",
+                },
+                {
+                  id: "psn-sa-400",
+                  cart_id: "psn-sa-400",
+                  label_ar: "400 ر.س",
+                  label_en: "400 SAR",
+                  price_jod: 92,
+                  old_price_jod: null,
+                  region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+                  plan_group: "sa",
+                  delivery_type: "code",
+                },
+                {
+                  id: "psn-sa-500",
+                  cart_id: "psn-sa-500",
+                  label_ar: "500 ر.س",
+                  label_en: "500 SAR",
+                  price_jod: 115,
+                  old_price_jod: null,
+                  region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+                  plan_group: "sa",
+                  delivery_type: "code",
+                },
+              ]
+            : prodVariants;
+
+          if (variantsToLoop.length > 0) {
+            for (const v of variantsToLoop) {
               const regionRaw = v.region || "";
               const regParts = regionRaw.split("|").map((s: string) => s.trim());
               const regAr = regParts[0] ? regParts[0].replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "").trim() : "عالمي";
@@ -1005,7 +1297,7 @@ export function invalidateSearchCache(): void {
 }
 
 /* ============================================================
-   RECENT & POPULAR SEARCHES HELPERS (Eneba / G2A Style)
+   RECENT & POPULAR SEARCHES HELPERS (GX Store Native)
    ============================================================ */
 
 const RECENT_KEY = "gx_recent_searches";

@@ -8,7 +8,8 @@
    ============================================================ */
 
 import { createServerFn } from "@tanstack/react-start";
-import { getPublicClient, getVerifiedCaller, getUserScopedClient } from "@/lib/gx/supabase-request";
+import { getPublicClient, getUserScopedClient } from "@/lib/gx/supabase-request";
+import { getVerifiedCaller } from "@/lib/gx/supabase-auth.server";
 import { isAdminUser } from "@/lib/gx/pricing.server";
 import { resolveStrictDeliveryType } from "@/lib/gx/delivery-types";
 import { rankRelatedProducts } from "@/lib/gx/recommendations";
@@ -74,6 +75,7 @@ export type CatalogProduct = {
   deliveryMethodEn: string | null;
   deliveryDetails: DeliveryDetails | null;
   deliveryInstructionsAr?: string | null;
+  deliveryInstructionsEn?: string | null;
   importantNotes?: string[] | null;
   pageTemplate: string;
   deliveryType: string;
@@ -173,6 +175,27 @@ export const purgeCatalogCacheFn = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const CANONICAL_CATALOG_OVERRIDES: Overrides = {
+  "ms365-acct-12": { price: 5, oldPrice: 10 },
+  "win-11-pro-retail": { price: 7, oldPrice: 15 },
+  "win-11-pro-oem": { price: 5, oldPrice: 12 },
+  "windows-11-pro-retail": { price: 7, oldPrice: 15 },
+  "windows-11-pro-oem": { price: 5, oldPrice: 12 },
+  "notion-biz-3m": { price: 6, oldPrice: 30 },
+  "notion-business": { price: 6, oldPrice: 30 },
+  "gemini-plus-6m": { price: 4, oldPrice: 8 },
+  "gemini-plus-3m": { price: 4, oldPrice: 8 },
+  "gemini": { price: 4, oldPrice: 8 },
+  // PlayStation Saudi Store (SAR)
+  "psn-sa-50": { price: 11.5 },
+  "psn-sa-100": { price: 23 },
+  "psn-sa-150": { price: 34.5 },
+  "psn-sa-200": { price: 46 },
+  "psn-sa-300": { price: 69 },
+  "psn-sa-400": { price: 92 },
+  "psn-sa-500": { price: 115 },
+};
+
 async function loadOverrides(supabase: ReturnType<typeof getPublicClient>): Promise<Overrides> {
   const now = Date.now();
   if (now < overridesCache.expiresAt) {
@@ -189,8 +212,9 @@ async function loadOverrides(supabase: ReturnType<typeof getPublicClient>): Prom
   }
   const v = (data as { value?: unknown } | null)?.value;
   const res = v && typeof v === "object" && !Array.isArray(v) ? (v as Overrides) : {};
-  overridesCache = { data: res, expiresAt: now + CACHE_TTL_MS };
-  return res;
+  const merged: Overrides = { ...CANONICAL_CATALOG_OVERRIDES, ...res, ...CANONICAL_CATALOG_OVERRIDES };
+  overridesCache = { data: merged, expiresAt: now + CACHE_TTL_MS };
+  return merged;
 }
 
 export const getCatalogProduct = createServerFn({ method: "GET" })
@@ -207,11 +231,16 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
       }
     }
 
+    const isWinRetail = data.slug === "windows-11-pro-retail" || data.slug === "windows";
+    const isWinOem = data.slug === "windows-11-pro-oem";
+
     const querySlug =
       data.slug === "linkedin"
         ? "linkedin-career-3m"
         : data.slug === "duolingo"
         ? "duolingo-super-12-months"
+        : (isWinRetail || isWinOem)
+        ? "windows"
         : data.slug;
 
     const supabase = getPublicClient();
@@ -374,6 +403,7 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
           ? (p.delivery_details as DeliveryDetails)
           : null,
       deliveryInstructionsAr: p.delivery_instructions_ar ?? null,
+      deliveryInstructionsEn: p.delivery_instructions_en ?? null,
       importantNotes: (() => {
         if (p.delivery_details && typeof p.delivery_details === "object" && Array.isArray((p.delivery_details as any).important_notes)) {
           return (p.delivery_details as any).important_notes;
@@ -401,6 +431,249 @@ export const getCatalogProduct = createServerFn({ method: "GET" })
         descEn: f.desc_en ?? f.desc_ar ?? null,
       })),
     };
+
+    // Specific custom overrides for Windows separation and M365 account
+    if (isWinRetail) {
+      product.slug = data.slug === "windows" ? "windows" : "windows-11-pro-retail";
+      product.nameAr = "Windows 11 Pro Retail | كود رقمي أصلي";
+      product.nameEn = "Windows 11 Pro Retail | Official Digital Key";
+      product.taglineAr = "تفعيل رسمي أصلي يرتبط بحساب مايكروسوفت وقابل للنقل بين الأجهزة";
+      product.taglineEn = "Official Retail license linked to Microsoft account (transferable)";
+      product.descriptionAr = "مفتاح تفعيل ويندوز 11 برو (Windows 11 Pro) نسخة ريتيل (Retail) أصلية 100% ورسمية من مايكروسوفت. يرتبط التفعيل بحساب مايكروسوفت الشخصي الخاص بك، ويتميز بإمكانية نقله من جهاز إلى جهاز آخر في حال قمت بترقية جهازك أو تغييره في المستقبل. يدعم التثبيت النظيف وتلقي جميع التحديثات الأمنية الرسمية مدى الحياة.";
+      product.descriptionEn = "Genuine Windows 11 Pro Retail digital activation key. Binds directly to your personal Microsoft account and can be transferred to a new PC in the future. Full official updates and permanent lifetime activation.";
+      product.basePriceJod = 7;
+      product.oldPriceJod = 15;
+      product.deliveryMethodAr = "استلام فوري لمفتاح التفعيل الرقمي المكون من 25 حرفاً ورقماً في صفحة تفاصيل طلبك مع خطوات التنشيط المعتمدة.";
+      product.deliveryMethodEn = "Instant digital delivery of your official 25-character product key with step-by-step activation instructions.";
+      product.variants = [
+        {
+          cartId: "win-11-pro-retail",
+          labelAr: "Windows 11 Pro Retail — تفعيل رسمي",
+          labelEn: "Windows 11 Pro Retail — Official Key",
+          price: 7,
+          oldPrice: 15,
+          tagAr: "قابل للنقل",
+          tagEn: "Transferable",
+          planGroup: null,
+          region: "عالمي | Global | 🌐",
+          deliveryType: "code",
+        },
+      ];
+      product.features = [
+        { icon: "🔑", titleAr: "مفتاح ريتيل أصلي 100%", titleEn: "100% Genuine Retail Key", descAr: "مفتاح رسمي من مايكروسوفت يُفعل جهازك مباشرة من خوادم الشركة.", descEn: "Official Microsoft product key activating directly with Microsoft servers." },
+        { icon: "🔄", titleAr: "قابل للنقل لجهاز جديد", titleEn: "Transferable to New PC", descAr: "يرتبط بحساب مايكروسوفت ويمكن نقله لجهاز آخر في حال الترقية.", descEn: "Binds to your Microsoft account and can be transferred to another device." },
+        { icon: "♾️", titleAr: "تفعيل دائم مدى الحياة", titleEn: "Lifetime Activation", descAr: "تفعيل رسمي دائم لا ينتهي ولا يتطلب أي رسوم أو تجديد شهري.", descEn: "Permanent lifetime activation without expiration or recurring fees." },
+        { icon: "🛡️", titleAr: "جميع التحديثات الرسمية", titleEn: "All Official Updates", descAr: "يدعم جميع تحديثات مايكروسوفت الأمنية وتحديثات الميزات تلقائياً.", descEn: "Full access to Windows security updates and feature releases." },
+      ];
+    } else if (isWinOem) {
+      product.slug = "windows-11-pro-oem";
+      product.nameAr = "Windows 11 Pro OEM | كود رقمي أصلي";
+      product.nameEn = "Windows 11 Pro OEM | Official Digital Key";
+      product.taglineAr = "تفعيل رسمي أصلي يرتبط باللوحة الأم (Motherboard) للجهاز مدى الحياة";
+      product.taglineEn = "Official OEM license permanently tied to motherboard for lifetime";
+      product.descriptionAr = "مفتاح تفعيل ويندوز 11 برو (Windows 11 Pro) نسخة أصلية OEM معتمدة 100%. يرتبط التفعيل باللوحة الأم (Motherboard) الخاصة بجهازك بشكل دائم ومدى الحياة، ويتيح لك إعادة تثبيت الويندوز على نفس الجهاز في أي وقت دون أن تفقد التفعيل. يدعم جميع التحديثات الرسمية من مايكروسوفت.";
+      product.descriptionEn = "Genuine Windows 11 Pro OEM product key. Permanently binds to your PC motherboard for lifetime activation. Supports unlimited reinstalls on the same PC and full official updates.";
+      product.basePriceJod = 5;
+      product.oldPriceJod = 12;
+      product.deliveryMethodAr = "استلام فوري لمفتاح التفعيل الرقمي المكون من 25 حرفاً ورقماً في صفحة تفاصيل طلبك مع خطوات التنشيط المعتمدة.";
+      product.deliveryMethodEn = "Instant digital delivery of your official 25-character product key with step-by-step activation instructions.";
+      product.variants = [
+        {
+          cartId: "win-11-pro-oem",
+          labelAr: "Windows 11 Pro OEM — تفعيل رسمي",
+          labelEn: "Windows 11 Pro OEM — Official Key",
+          price: 5,
+          oldPrice: 12,
+          tagAr: "الأكثر طلباً",
+          tagEn: "Best Value",
+          planGroup: null,
+          region: "عالمي | Global | 🌐",
+          deliveryType: "code",
+        },
+      ];
+      product.features = [
+        { icon: "🔑", titleAr: "مفتاح OEM أصلي 100%", titleEn: "100% Genuine OEM Key", descAr: "مفتاح رسمي من مايكروسوفت يُفعل جهازك مباشرة من خوادم الشركة.", descEn: "Official Microsoft product key activating directly with Microsoft servers." },
+        { icon: "🖥️", titleAr: "يرتبط بالمذربورد مدى الحياة", titleEn: "Tied to Motherboard for Life", descAr: "يرتبط بلوحة الأم لجهازك بشكل دائم ويبقى مفعّلاً مدى الحياة.", descEn: "Permanently bound to your motherboard for lifetime validity on that machine." },
+        { icon: "🔄", titleAr: "إعادة تثبيت غير محدودة", titleEn: "Unlimited Reinstalls", descAr: "يمكنك إعادة تثبيت الويندوز على نفس الجهاز متى شئت دون فقدان التنشيط.", descEn: "Reinstall Windows on the same machine anytime without losing activation." },
+        { icon: "🛡️", titleAr: "جميع التحديثات الرسمية", titleEn: "All Official Updates", descAr: "يدعم جميع تحديثات مايكروسوفت الأمنية وتحديثات الميزات تلقائياً.", descEn: "Full access to Windows security updates and feature releases." },
+      ];
+    } else if (p.slug === "microsoft365") {
+      product.basePriceJod = 5;
+      product.oldPriceJod = 10;
+      product.nameAr = "Microsoft 365 | حساب جاهز (12 شهر)";
+      product.nameEn = "Microsoft 365 | Dedicated Account (12 Months)";
+      product.taglineAr = "اشتراك Microsoft 365 رسمي — حساب جاهز بكامل برامج أوفيس و1TB سحابي";
+      product.taglineEn = "Official Microsoft 365 — Full Office suite with 1TB cloud storage";
+      product.descriptionAr = "اشتراك Microsoft 365 الرسمي لمدة 12 شهراً عبر حساب جاهز ومخصص لك من متجر GX Store. يشمل جميع برامج أوفيس الأصلية والكاملة: Word و Excel و PowerPoint و Outlook و OneNote، بالإضافة إلى مساحة تخزين سحابية ضخمة 1 تيرابايت على OneDrive. يعمل على حتى 5 أجهزة في وقت واحد (ويندوز، ماك، آيفون، أندرويد).";
+      product.descriptionEn = "Official 12-month Microsoft 365 dedicated account from GX Store. Full access to Word, Excel, PowerPoint, Outlook, OneNote, and 1TB OneDrive cloud storage across up to 5 devices simultaneously.";
+      product.deliveryMethodAr = "تسليم فوري ومباشر لبيانات الحساب الجاهز (الإيميل وكلمة المرور) مع إمكانية تغيير كلمة المرور وتعيين طرق الأمان الخاصة بك فوراً.";
+      product.deliveryMethodEn = "Instant delivery of your dedicated account credentials (email and password) with full access to change password and secure your account.";
+      product.variants = [
+        {
+          cartId: "ms365-acct-12",
+          labelAr: "حساب جاهز من عندنا — 12 شهر",
+          labelEn: "Dedicated Account — 12 Months",
+          price: 5,
+          oldPrice: 10,
+          tagAr: "الأكثر طلباً",
+          tagEn: "Best Deal",
+          planGroup: null,
+          region: "عالمي | Global | 🌐",
+          deliveryType: "account",
+        },
+      ];
+      product.features = [
+        { icon: "📝", titleAr: "كل تطبيقات Office الأصلية", titleEn: "All Genuine Office Apps", descAr: "Word, Excel, PowerPoint, Outlook, OneNote — نسخ كاملة ورسمية للكمبيوتر والماك والموبايل.", descEn: "Word, Excel, PowerPoint, Outlook, OneNote — full official versions for PC, Mac and mobile." },
+        { icon: "☁️", titleAr: "1 تيرا بايت OneDrive", titleEn: "1TB OneDrive Cloud", descAr: "مساحة تخزين سحابية ضخمة 1TB لحفظ ومزامنة ملفاتك وصورك بأمان وسهولة.", descEn: "Huge 1TB secure cloud storage for files, photos and seamless syncing across devices." },
+        { icon: "💻", titleAr: "يعمل على 5 أجهزة", titleEn: "Works on up to 5 Devices", descAr: "استخدم حسابك على حتى 5 أجهزة في نفس الوقت (كمبيوتر، تابلت، هاتف ذكي).", descEn: "Use your account on up to 5 devices at once (Windows, Mac, iOS, Android)." },
+        { icon: "⚡", titleAr: "تسليم فوري وضمان كامل", titleEn: "Instant Delivery & Full Warranty", descAr: "استلم الحساب فوراً بعد الدفع مع ضمان ذهبي شامل طوال فترة الاشتراك.", descEn: "Instant automated delivery after payment with complete golden warranty for full duration." },
+      ];
+    } else if (data.slug === "gemini" || p.slug === "gemini" || p.slug.startsWith("gemini-")) {
+      product.slug = "gemini";
+      product.nameAr = "Google Gemini Plus | اشتراك 6 أشهر";
+      product.nameEn = "Google Gemini Plus — 6 Months";
+      product.basePriceJod = 4;
+      product.oldPriceJod = 8;
+      product.taglineAr = "رابط تفعيل رسمي 6 أشهر • لا يتطلب بطاقة بنكية (Credit Card) • صلاحية الرابط 10 ساعات من التسليم";
+      product.taglineEn = "Official 6-month activation link • No credit card required • Link valid for 10 hours from delivery";
+      product.descriptionAr = "اشتراك Google Gemini Plus الرسمي لمدة 6 أشهر عبر رابط تفعيل رسمي لحساب Google الخاص بك. استمتع بأحدث قدرات الذكاء الاصطناعي وحدود استخدام عالية.\n\nتعليمات وشروط هامة جداً:\n• لا يلزم إضافة أي بطاقة بنكية (Credit Card) لتفعيل الاشتراك.\n• يجب الدخول إلى الرابط وتفعيله خلال 10 ساعات فقط من وقت التسليم.\n• صلاحية رابط التفعيل 10 ساعات فقط — ينتهي الضمان تماماً ولا يقدم المتجر أي ضمان إذا لم يتم تفعيل الرابط خلال 10 ساعات من استلامه.";
+      product.descriptionEn = "Official 6-month Google Gemini Plus subscription via direct official activation link for your Google account.\n\nImportant instructions & terms:\n• No credit card required to activate.\n• You must open and activate the link within 10 hours of delivery.\n• Link is valid for 10 hours only — warranty expires completely if not activated within 10 hours.";
+      product.deliveryMethodAr = "رابط تفعيل رسمي يوصلك فوراً بعد الدفع. تضغط على الرابط وتسجل الدخول بحساب Google الشخصي ليتفعل الاشتراك فوراً بدون أي فيزا أو بطاقة بنكية.";
+      product.deliveryMethodEn = "Official activation link delivered instantly after payment. Click the link and sign in to your personal Google account to activate immediately without any credit card.";
+      product.deliveryType = "link";
+      product.imageUrl = "/app/assets/img/gemini-logo.svg";
+      product.iconImage = "/app/assets/img/gemini-logo.svg";
+      product.icon = "✨";
+      product.variants = [
+        {
+          cartId: "gemini-plus-6m",
+          labelAr: "Google Gemini Plus | اشتراك 6 أشهر (رابط تفعيل)",
+          labelEn: "Google Gemini Plus — 6 Months (Activation Link)",
+          price: 4,
+          oldPrice: 8,
+          tagAr: "رابط تفعيل 6 أشهر",
+          tagEn: "6-Month Link",
+          planGroup: null,
+          region: "عالمي | Global | 🌐",
+          deliveryType: "link",
+        },
+      ];
+      product.features = [
+        { icon: "✨", titleAr: "اشتراك 6 أشهر كاملة", titleEn: "Full 6 Months Access", descAr: "وصول رسمي لقدرات Gemini المتقدمة لمدة 6 أشهر كاملة.", descEn: "Official access to advanced Gemini AI capabilities for 6 months." },
+        { icon: "💳", titleAr: "بدون Credit Card", titleEn: "No Credit Card Required", descAr: "لا يلزم إضافة أي بطاقة بنكية أو فيزا إطلاقاً لتفعيل الرابط.", descEn: "No credit card or banking details needed to activate." },
+        { icon: "⏳", titleAr: "صلاحية الرابط 10 ساعات", titleEn: "10-Hour Link Validity", descAr: "يجب الدخول وتفعيل الرابط خلال 10 ساعات فقط من وقت التسليم.", descEn: "Must open and activate the link within 10 hours of delivery." },
+        { icon: "🛡️", titleAr: "تنبيه الضمان", titleEn: "Warranty Notice", descAr: "لا يشمل الضمان الرابط إذا لم يتم الدخول وتفعيله خلال الـ 10 ساعات الأولى.", descEn: "Warranty does not cover links not activated within the first 10 hours." },
+      ];
+    } else if (data.slug === "notion-business" || p.slug === "notion-business" || p.slug === "notion") {
+      product.basePriceJod = 6;
+      product.oldPriceJod = 30;
+      product.variants = [
+        {
+          cartId: "notion-biz-3m",
+          labelAr: "Notion Business — اشتراك 3 أشهر",
+          labelEn: "Notion Business — 3 Months",
+          price: 6,
+          oldPrice: 30,
+          tagAr: "300 رصيد شهرياً",
+          tagEn: "300 Credits/mo",
+          planGroup: null,
+          region: "عالمي | Global | 🌐",
+          deliveryType: "code",
+        },
+      ];
+    } else if (data.slug === "playstation" || p.slug === "playstation") {
+      const saudiVariants: CatalogVariant[] = [
+        {
+          cartId: "psn-sa-50",
+          labelAr: "50 ر.س",
+          labelEn: "50 SAR",
+          price: 11.5,
+          oldPrice: null,
+          tagAr: null,
+          tagEn: null,
+          planGroup: "sa",
+          region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+          deliveryType: "code",
+        },
+        {
+          cartId: "psn-sa-100",
+          labelAr: "100 ر.س",
+          labelEn: "100 SAR",
+          price: 23,
+          oldPrice: null,
+          tagAr: "الأكثر طلباً",
+          tagEn: "Popular",
+          planGroup: "sa",
+          region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+          deliveryType: "code",
+        },
+        {
+          cartId: "psn-sa-150",
+          labelAr: "150 ر.س",
+          labelEn: "150 SAR",
+          price: 34.5,
+          oldPrice: null,
+          tagAr: null,
+          tagEn: null,
+          planGroup: "sa",
+          region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+          deliveryType: "code",
+        },
+        {
+          cartId: "psn-sa-200",
+          labelAr: "200 ر.س",
+          labelEn: "200 SAR",
+          price: 46,
+          oldPrice: null,
+          tagAr: null,
+          tagEn: null,
+          planGroup: "sa",
+          region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+          deliveryType: "code",
+        },
+        {
+          cartId: "psn-sa-300",
+          labelAr: "300 ر.س",
+          labelEn: "300 SAR",
+          price: 69,
+          oldPrice: null,
+          tagAr: null,
+          tagEn: null,
+          planGroup: "sa",
+          region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+          deliveryType: "code",
+        },
+        {
+          cartId: "psn-sa-400",
+          labelAr: "400 ر.س",
+          labelEn: "400 SAR",
+          price: 92,
+          oldPrice: null,
+          tagAr: null,
+          tagEn: null,
+          planGroup: "sa",
+          region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+          deliveryType: "code",
+        },
+        {
+          cartId: "psn-sa-500",
+          labelAr: "500 ر.س",
+          labelEn: "500 SAR",
+          price: 115,
+          oldPrice: null,
+          tagAr: null,
+          tagEn: null,
+          planGroup: "sa",
+          region: "السعودية (KSA)|Saudi Arabia (KSA)|🇸🇦",
+          deliveryType: "code",
+        },
+      ];
+
+      const otherVariants = (product.variants || []).filter(
+        (v) => (v.planGroup || "").toLowerCase() !== "sa" && !v.cartId.startsWith("psn-sa-")
+      );
+      product.variants = [...otherVariants, ...saudiVariants];
+    }
 
     productCache.set(data.slug, { data: product, expiresAt: now + CACHE_TTL_MS });
     return product;
@@ -510,21 +783,78 @@ export const getCatalogCategory = createServerFn({ method: "GET" })
           productSlug: prod?.slug ?? null,
         };
       }),
-      products: (prods ?? []).map((p: Record<string, any>) => ({
-        id: p.id,
-        slug: p.slug,
-        cartId: p.slug,
-        nameAr: p.name_ar,
-        nameEn: p.name_en || p.name_ar,
-        taglineAr: p.tagline_ar ?? p.description_ar ?? null,
-        taglineEn: p.tagline_en ?? p.description_en ?? null,
-        imageUrl: p.image_url ?? p.icon_image_url ?? null,
-        icon: p.icon ?? "🎮",
-        iconImage: p.icon_image_url ?? p.image_url ?? null,
-        thumbBg: p.thumb_bg ?? null,
-        basePriceJod: Number(p.base_price_jod) || null,
-        badge: p.badge ?? null,
-      })),
+      products: (() => {
+        const out: CatalogCategoryProductItem[] = [];
+        for (const p of (prods ?? []) as Record<string, any>[]) {
+          if (p.slug === "windows") {
+            out.push({
+              id: p.id + "-retail",
+              slug: "windows-11-pro-retail",
+              cartId: "win-11-pro-retail",
+              nameAr: "Windows 11 Pro Retail",
+              nameEn: "Windows 11 Pro Retail",
+              taglineAr: "تفعيل رسمي أصلي يرتبط بحساب مايكروسوفت وقابل للنقل",
+              taglineEn: "Official Retail license linked to Microsoft account (transferable)",
+              imageUrl: "/app/assets/img/catalog/windows-cover.jpg",
+              icon: "🪟",
+              iconImage: "/app/assets/img/catalog/windows-cover.jpg",
+              thumbBg: p.thumb_bg ?? "linear-gradient(145deg,#0a2540,#04101c)",
+              basePriceJod: 7,
+              badge: "Retail • 7 دنانير",
+            });
+            out.push({
+              id: p.id + "-oem",
+              slug: "windows-11-pro-oem",
+              cartId: "win-11-pro-oem",
+              nameAr: "Windows 11 Pro OEM",
+              nameEn: "Windows 11 Pro OEM",
+              taglineAr: "تفعيل رسمي أصلي يرتبط باللوحة الأم (Motherboard) للجهاز مدى الحياة",
+              taglineEn: "Official OEM license permanently tied to motherboard for lifetime",
+              imageUrl: "/app/assets/img/catalog/windows-cover.jpg",
+              icon: "🪟",
+              iconImage: "/app/assets/img/catalog/windows-cover.jpg",
+              thumbBg: p.thumb_bg ?? "linear-gradient(145deg,#0a2540,#04101c)",
+              basePriceJod: 5,
+              badge: "OEM • 5 دنانير",
+            });
+            continue;
+          }
+          if (p.slug === "microsoft365") {
+            out.push({
+              id: p.id,
+              slug: p.slug,
+              cartId: "ms365-acct-12",
+              nameAr: "Microsoft 365 | حساب جاهز (12 شهر)",
+              nameEn: "Microsoft 365 | Dedicated Account (12 Months)",
+              taglineAr: "اشتراك Microsoft 365 رسمي — حساب جاهز بكامل برامج أوفيس و1TB سحابي",
+              taglineEn: "Official Microsoft 365 — Full Office suite with 1TB cloud storage",
+              imageUrl: p.image_url ?? p.icon_image_url ?? null,
+              icon: p.icon ?? "🅼",
+              iconImage: p.icon_image_url ?? p.image_url ?? null,
+              thumbBg: p.thumb_bg ?? null,
+              basePriceJod: 5,
+              badge: "حساب جاهز • 5 دنانير",
+            });
+            continue;
+          }
+          out.push({
+            id: p.id,
+            slug: p.slug,
+            cartId: p.slug,
+            nameAr: p.name_ar,
+            nameEn: p.name_en || p.name_ar,
+            taglineAr: p.tagline_ar ?? p.description_ar ?? null,
+            taglineEn: p.tagline_en ?? p.description_en ?? null,
+            imageUrl: p.image_url ?? p.icon_image_url ?? null,
+            icon: p.icon ?? "🎮",
+            iconImage: p.icon_image_url ?? p.image_url ?? null,
+            thumbBg: p.thumb_bg ?? null,
+            basePriceJod: Number(p.base_price_jod) || null,
+            badge: p.badge ?? null,
+          });
+        }
+        return out;
+      })(),
     };
 
     categoryCache.set(data.slug, { data: category, expiresAt: now + CACHE_TTL_MS });
@@ -816,6 +1146,66 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
         continue;
       }
 
+      // 2b. WINDOWS 11 SEPARATION: Two dedicated, distinct products (Retail 7 JOD, OEM 5 JOD)
+      if (p.slug === "windows") {
+        // Product 1: Windows 11 Pro Retail
+        items.push({
+          id: p.id + "-retail",
+          slug: "windows-11-pro-retail",
+          cartId: "win-11-pro-retail",
+          nameAr: "Windows 11 Pro Retail",
+          nameEn: "Windows 11 Pro Retail",
+          taglineAr: "تفعيل رسمي أصلي يرتبط بحساب مايكروسوفت وقابل للنقل",
+          taglineEn: "Official Retail license linked to Microsoft account (transferable)",
+          basePriceJod: 7,
+          oldPriceJod: 15,
+          badge: "Retail • قابل للنقل",
+          snapDuration: null,
+          categorySlug: "design",
+          parentCategorySlug: "design",
+          categoryNameAr: "البرامج والتطبيقات",
+          categoryNameEn: "Apps & Software",
+          thumbBg: p.thumb_bg ?? "linear-gradient(145deg,#0a2540,#04101c)",
+          icon: p.icon ?? "🪟",
+          iconImage: p.icon_image_url ?? p.image_url ?? "/app/assets/img/catalog/windows-cover.jpg",
+          imageUrl: "/app/assets/img/catalog/windows-cover.jpg",
+          platform: "Microsoft",
+          region: "عالمي | Global | 🌐",
+          productType: "key",
+          createdAt: p.created_at || null,
+          sortOrder: p.sort_order ?? 8,
+        });
+
+        // Product 2: Windows 11 Pro OEM
+        items.push({
+          id: p.id + "-oem",
+          slug: "windows-11-pro-oem",
+          cartId: "win-11-pro-oem",
+          nameAr: "Windows 11 Pro OEM",
+          nameEn: "Windows 11 Pro OEM",
+          taglineAr: "تفعيل رسمي أصلي يرتبط باللوحة الأم (Motherboard) للجهاز مدى الحياة",
+          taglineEn: "Official OEM license permanently tied to motherboard for lifetime",
+          basePriceJod: 5,
+          oldPriceJod: 12,
+          badge: "OEM • مذربورد",
+          snapDuration: null,
+          categorySlug: "design",
+          parentCategorySlug: "design",
+          categoryNameAr: "البرامج والتطبيقات",
+          categoryNameEn: "Apps & Software",
+          thumbBg: p.thumb_bg ?? "linear-gradient(145deg,#0a2540,#04101c)",
+          icon: p.icon ?? "🪟",
+          iconImage: p.icon_image_url ?? p.image_url ?? "/app/assets/img/catalog/windows-cover.jpg",
+          imageUrl: "/app/assets/img/catalog/windows-cover.jpg",
+          platform: "Microsoft",
+          region: "عالمي | Global | 🌐",
+          productType: "key",
+          createdAt: p.created_at || null,
+          sortOrder: (p.sort_order ?? 8) + 1,
+        });
+        continue;
+      }
+
       // 3. PRODUCTS WITH INDIVIDUAL EDITIONS/VARIANTS
       // (Windows Pro OEM/Account, Fortnite Crew/V-Bucks, Snapchat, Microsoft 365, Adobe, etc.)
       for (const v of vars) {
@@ -825,9 +1215,9 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           continue;
         }
         const o = v.cart_id ? overrides[v.cart_id] : undefined;
-        const price = typeof o?.price === "number" && o.price >= 0 ? o.price : Number(v.price_jod) || 0;
+        let price = typeof o?.price === "number" && o.price >= 0 ? o.price : Number(v.price_jod) || 0;
         const rawOld = o && "oldPrice" in o ? o.oldPrice : v.old_price_jod;
-        const oldPrice = typeof rawOld === "number" && rawOld > 0 ? Number(rawOld) : null;
+        let oldPrice = typeof rawOld === "number" && rawOld > 0 ? Number(rawOld) : null;
 
         let nameAr = p.name_ar;
         let nameEn = p.name_en || p.name_ar;
@@ -921,15 +1311,17 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
             productType = "topup";
           }
         } else if (p.slug === "microsoft365") {
+          // Only "حساب من عندنا" (Account from us) is available, priced at 5 JOD
+          if (v.cart_id !== "ms365-acct-12") continue;
+          price = 5;
+          oldPrice = 10;
           platform = "Microsoft";
-          nameAr = `Microsoft 365 — ${v.label_ar}`;
-          nameEn = `Microsoft 365 — ${v.label_en || v.label_ar}`;
-          taglineAr = "تطبيقات أوفيس كاملة مع مساحة سحابية 1TB";
-          taglineEn = "Full Office apps suite with 1TB cloud storage";
-          badge = v.tag_ar || "Microsoft";
-          if (v.cart_id?.includes("acct")) productType = "account";
-          else if (v.cart_id?.includes("key")) productType = "key";
-          else productType = "subscription";
+          nameAr = "Microsoft 365 | حساب جاهز (12 شهر)";
+          nameEn = "Microsoft 365 | Dedicated Account (12 Months)";
+          taglineAr = "اشتراك Microsoft 365 رسمي — حساب جاهز بكامل برامج أوفيس و1TB سحابي";
+          taglineEn = "Official Microsoft 365 — Full Office suite with 1TB cloud storage";
+          badge = "حساب جاهز • 5 دنانير";
+          productType = "account";
         } else if (p.slug === "adobe") {
           platform = "Adobe";
           productType = "activation";
@@ -954,29 +1346,32 @@ export const getAllCatalogProducts = createServerFn({ method: "GET" })
           nameAr = `Autodesk All Apps — ${v.label_ar}`;
           nameEn = `Autodesk All Apps — ${v.label_en || v.label_ar}`;
         } else if (p.slug === "gemini" || p.slug.startsWith("gemini-")) {
-          platform = "Google AI";
-          productType = "activation";
           const cid = (v.cart_id || "").toLowerCase();
-          if (cid.includes("plus")) {
-            nameAr = "Google Gemini Plus | اشتراك 3 أشهر";
-            nameEn = "Google Gemini Plus — 3 Months";
-            taglineAr = "خاص بالحسابات التي لم يسبق لها الاشتراك • ذكاء اصطناعي فائق من Google";
-            taglineEn = "For accounts without prior subscription • Advanced Google AI";
-            badge = "1 دينار فقط";
-            imageUrl = "/app/assets/img/gemini-logo.svg";
-          } else if (cid.includes("pro")) {
-            nameAr = "Google Gemini Pro | اشتراك 3 أشهر";
-            nameEn = "Google Gemini Pro — 3 Months";
-            taglineAr = "خاص بالحسابات التي لم يسبق لها الاشتراك • وصول كامل لقدرات Gemini Pro المتقدمة";
-            taglineEn = "For accounts without prior subscription • Full Gemini Pro capabilities";
-            badge = v.tag_ar || "الأكثر طلباً";
-            imageUrl = "/app/assets/img/gemini-logo.svg";
-          } else {
-            nameAr = `Google Gemini — ${v.label_ar}`;
-            nameEn = `Google Gemini — ${v.label_en || v.label_ar}`;
-            badge = "ذكاء اصطناعي";
-            imageUrl = "/app/assets/img/gemini-logo.svg";
+          // Remove Gemini Pro completely — ensure only single 6-month Plus variant exists
+          if (cid.includes("pro") && vars.some((other) => (other.cart_id || "").toLowerCase().includes("plus"))) {
+            continue;
           }
+          price = 4;
+          oldPrice = 8;
+          platform = "Google AI";
+          productType = "link";
+          nameAr = "Google Gemini Plus | اشتراك 6 أشهر";
+          nameEn = "Google Gemini Plus — 6 Months";
+          taglineAr = "رابط تفعيل رسمي 6 أشهر • لا يتطلب بطاقة بنكية (Credit Card) • صلاحية الرابط 10 ساعات من التسليم";
+          taglineEn = "Official 6-month activation link • No credit card required • Link valid for 10 hours from delivery";
+          badge = "رابط تفعيل • 6 أشهر";
+          imageUrl = "/app/assets/img/gemini-logo.svg";
+        } else if (p.slug === "notion-business" || p.slug === "notion" || v.cart_id === "notion-biz-3m") {
+          price = 6;
+          oldPrice = 30;
+          platform = "Notion";
+          productType = "key";
+          nameAr = "Notion Business — اشتراك 3 أشهر";
+          nameEn = "Notion Business — 3 Months";
+          taglineAr = "مساحة عمل رقمية شاملة مع 300 رصيد شهرياً";
+          taglineEn = "All-in-one digital workspace with 300 monthly AI credits";
+          badge = "300 رصيد شهرياً • 6 دنانير";
+          imageUrl = "/app/assets/img/catalog/notion.png";
         } else if (p.slug === "fc-27") {
           platform = "Steam";
           productType = "key";

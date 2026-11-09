@@ -1,11 +1,11 @@
-import { resolveRegionLabel } from "@/lib/gx/region";
+import { resolveRegionLabel, formatFullRegion } from "@/lib/gx/region";
 /* ============================================================
    GX STORE — DYNAMIC PRODUCT TEMPLATES
    One component per `products.page_template` value. All of them
    render from the database DTO returned by catalog.functions.ts.
    ============================================================ */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import type { CatalogProduct, CatalogVariant } from "@/lib/gx/catalog.functions";
 import { useCurrency } from "@/lib/gx/currency";
@@ -21,6 +21,8 @@ import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
 import { GxProductTemplate } from "@/components/gx/GxProductTemplate";
 import { RelatedProductsSection } from "@/components/gx/RelatedProductsSection";
 import type { CatalogStoreProduct } from "@/lib/gx/catalog.functions";
+import { resolveProductActivationGuide } from "@/lib/gx/activation-guide";
+import { Sparkles, ExternalLink, ShieldCheck } from "lucide-react";
 
 const pick = (lang: Lang, ar: string | null | undefined, en: string | null | undefined) =>
   (lang === "en" ? en || ar : ar || en) || "";
@@ -700,17 +702,7 @@ export function GiftCardTemplate({ product, initialVariant }: { product: Catalog
         else code = "global";
       }
 
-      const [ar, en] = (v.region || "").split("|");
-      let name = (lang === "en" ? en || ar : ar || en) || "";
-      if (code === "global" || (v.cartId || "").includes("razer")) {
-        name = lang === "en" ? "Global 🌐" : "عالمي (Global) 🌐";
-      } else if (!name || name === "XX" || name === "GB") {
-        if (code === "gb") name = lang === "en" ? "United Kingdom (UK) 🇬🇧" : "بريطانيا (UK) 🇬🇧";
-        else if (code === "us") name = lang === "en" ? "United States (USA) 🇺🇸" : "أمريكا (USA) 🇺🇸";
-        else if (code === "sa") name = lang === "en" ? "Saudi Arabia (KSA) 🇸🇦" : "السعودية (KSA) 🇸🇦";
-        else if (code === "ae") name = lang === "en" ? "United Arab Emirates (UAE) 🇦🇪" : "الإمارات (UAE) 🇦🇪";
-        else if (code === "tr") name = lang === "en" ? "Turkey 🇹🇷" : "تركيا 🇹🇷";
-      }
+      const name = formatFullRegion({ region: v.region || code, cartId: v.cartId }, lang, { withDetails: true });
 
       if (!map.has(code)) map.set(code, { code, name, items: [] });
       map.get(code)!.items.push(v);
@@ -733,6 +725,13 @@ export function GiftCardTemplate({ product, initialVariant }: { product: Catalog
 
   const [selectedRegion, setSelectedRegion] = useState<string>(initialRegion);
 
+  // Guarantee page starts scrolled to the very top upon entering gift card page
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+  }, [product.slug]);
+
   const visibleRegions = useMemo(() => {
     if (selectedRegion === "all") return regions;
     return regions.filter((r) => r.code === selectedRegion);
@@ -743,6 +742,75 @@ export function GiftCardTemplate({ product, initialVariant }: { product: Catalog
   ) : (
     <span style={{ fontSize: 44, lineHeight: 1 }}>{product.icon}</span>
   );
+
+  const renderDenomLabel = (d: { label: string; cartId?: string; planGroup?: string | null }, regionCode: string) => {
+    const raw = (d.label || "").trim();
+    const cartId = (d.cartId || "").toLowerCase();
+    const isPsn = (product.slug || "").toLowerCase().includes("playstation") || cartId.startsWith("psn-");
+    const rCode = (d.planGroup || regionCode || "").toLowerCase();
+
+    let main = raw;
+    let eqAmount = "";
+    let currencySymbol = "";
+
+    if (raw.includes("≈") || raw.includes("=")) {
+      const sep = raw.includes("≈") ? "≈" : "=";
+      const parts = raw.split(sep);
+      main = parts[0]?.trim() || raw;
+      const right = parts.slice(1).join(sep).trim();
+      const numMatch = right.match(/([\d.]+)/);
+      if (numMatch) {
+        eqAmount = numMatch[1];
+        if (rCode === "ae" || cartId.includes("-ae-") || right.includes("درهم") || right.includes("AED") || right.includes("د.إ")) {
+          currencySymbol = lang === "en" ? "AED" : "د.إ";
+        } else if (rCode === "sa" || cartId.includes("-sa-") || right.includes("ريال") || right.includes("SAR") || right.includes("ر.س")) {
+          currencySymbol = lang === "en" ? "SAR" : "ر.س";
+        } else {
+          currencySymbol = right.replace(numMatch[1], "").trim();
+        }
+      }
+    } else if (isPsn && !raw.includes("ر.س") && !raw.includes("SAR") && !raw.includes("ريال") && !cartId.includes("-sa-") && rCode !== "sa") {
+      const match = raw.match(/(\d+)/);
+      const amount = match ? Number(match[1]) : 0;
+      if (amount > 0) {
+        if (rCode === "ae" || cartId.includes("-ae-")) {
+          eqAmount = String(amount * 4);
+          currencySymbol = lang === "en" ? "AED" : "د.إ";
+        }
+      }
+    }
+
+    if (eqAmount && currencySymbol) {
+      return (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 4 }}>
+          <span style={{ fontSize: "19px", fontWeight: 900, lineHeight: 1.15 }}>
+            {main}
+          </span>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: "11px",
+              fontWeight: 800,
+              color: "#10b981",
+              background: "rgba(16, 185, 129, 0.08)",
+              border: "1px solid rgba(16, 185, 129, 0.22)",
+              borderRadius: "6px",
+              padding: "2px 8px",
+              lineHeight: "15px",
+            }}
+          >
+            <span style={{ fontSize: "12px", fontWeight: 900, opacity: 0.85 }}>≈</span>
+            <span>{eqAmount}</span>
+            <span style={{ fontSize: "10px", opacity: 0.9 }}>{currencySymbol}</span>
+          </span>
+        </div>
+      );
+    }
+
+    return <span style={{ fontSize: "19px", fontWeight: 900 }}>{raw}</span>;
+  };
 
   return (
     <>
@@ -845,7 +913,7 @@ export function GiftCardTemplate({ product, initialVariant }: { product: Catalog
                   <div className="denom-grid" style={{ ["--gc-accent" as string]: product.accentColor || "var(--accent)" } as React.CSSProperties}>
                     {region.items.map((d) => (
                       <div key={d.cartId} className="denom-card">
-                        <div className="dc-value">{d.label}</div>
+                        <div className="dc-value">{renderDenomLabel(d, region.code)}</div>
                         <div className="dc-price"><span>{format(d.price)}</span></div>
                         <BuyActions
                           cartId={d.cartId}
@@ -862,6 +930,106 @@ export function GiftCardTemplate({ product, initialVariant }: { product: Catalog
               );
             })
           )}
+
+          {/* Activation Instructions Section */}
+          {(() => {
+            const guide = resolveProductActivationGuide(
+              {
+                name: product.nameAr,
+                nameAr: product.nameAr,
+                nameEn: product.nameEn,
+                slug: product.slug,
+                platform: product.platform || undefined,
+                deliveryInstructionsAr: product.deliveryInstructionsAr || undefined,
+                deliveryInstructionsEn: (product as any).deliveryInstructionsEn || undefined,
+              },
+              lang
+            );
+
+            return (
+              <div
+                style={{
+                  marginTop: 40,
+                  borderRadius: 16,
+                  background: "linear-gradient(145deg, rgba(16, 24, 39, 0.7), rgba(9, 11, 16, 0.9))",
+                  border: "1px solid rgba(0, 229, 255, 0.15)",
+                  padding: "24px 28px",
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        background: "rgba(0, 229, 255, 0.12)",
+                        color: "var(--cyan)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Sparkles size={18} />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#ffffff" }}>
+                        {guide.title}
+                      </h3>
+                      <span style={{ fontSize: 12, color: "var(--cyan)", fontWeight: 600 }}>
+                        {guide.platformName}
+                      </span>
+                    </div>
+                  </div>
+                  {guide.directUrl && (
+                    <a
+                      href={guide.directUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "8px 16px",
+                        borderRadius: 8,
+                        background: "rgba(0, 229, 255, 0.1)",
+                        border: "1px solid rgba(0, 229, 255, 0.3)",
+                        color: "var(--cyan)",
+                        fontWeight: 700,
+                        fontSize: 12,
+                        textDecoration: "none",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <ExternalLink size={13} />
+                      <span>{lang === "ar" ? "رابط صفحة التفعيل المباشر 🔗" : "Direct Redemption Link 🔗"}</span>
+                    </a>
+                  )}
+                </div>
+
+                <ol
+                  style={{
+                    margin: 0,
+                    paddingLeft: lang === "ar" ? 0 : 20,
+                    paddingRight: lang === "ar" ? 20 : 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                    fontSize: 13.5,
+                    lineHeight: 1.7,
+                    color: "#cbd5e1",
+                  }}
+                >
+                  {guide.steps.map((step, idx) => (
+                    <li key={idx} style={{ color: "#e2e8f0" }}>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            );
+          })()}
         </div>
       </section>
     </>

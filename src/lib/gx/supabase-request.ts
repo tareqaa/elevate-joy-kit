@@ -7,7 +7,6 @@
    ============================================================ */
 
 import { createClient } from "@supabase/supabase-js";
-import { getRequestHeader } from "@tanstack/react-start/server";
 import type { Database } from "@/integrations/supabase/types";
 
 function isNewSupabaseApiKey(value: string): boolean {
@@ -79,10 +78,8 @@ export function getUserScopedClient(token: string) {
  * SECURITY: this is the only legitimate source of a caller's identity in a
  * server function. Never trust a userId passed in the request body.
  */
-export async function getVerifiedCaller(): Promise<{ userId: string; token: string } | null> {
-  const authHeader = getRequestHeader("authorization");
-  if (!authHeader?.toLowerCase().startsWith("bearer ")) return null;
-  const token = authHeader.slice(7).trim();
+export async function getVerifiedCaller(explicitToken?: string | null): Promise<{ userId: string; token: string } | null> {
+  const token = explicitToken?.trim() || null;
   if (!token) return null;
   try {
     const { data, error } = await getPublicClient().auth.getUser(token);
@@ -97,8 +94,8 @@ export async function getVerifiedCaller(): Promise<{ userId: string; token: stri
  * Ensures the caller is authenticated AND has the 'admin' app role in Supabase.
  * Throws an Error if unauthenticated or not an admin.
  */
-export async function assertAdminCaller(): Promise<{ userId: string; token: string }> {
-  const caller = await getVerifiedCaller();
+export async function assertAdminCaller(explicitToken?: string | null): Promise<{ userId: string; token: string }> {
+  const caller = await getVerifiedCaller(explicitToken);
   if (!caller) {
     throw new Error("Unauthorized: authentication required");
   }

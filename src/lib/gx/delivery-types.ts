@@ -129,9 +129,11 @@ export function resolveStrictDeliveryType(item: {
     return "code";
   }
 
-  // 3. Activation Link (Canva, NordVPN, Lovable, LinkedIn, Autodesk, YouTube Premium, or explicit link/invite)
+  // 3. Activation Link (Gemini Plus, Canva, NordVPN, Lovable, LinkedIn, Autodesk, YouTube Premium, or explicit link/invite)
   if (
     pt === "link" ||
+    s === "gemini" ||
+    s.startsWith("gemini") ||
     s === "canva" ||
     s === "nordvpn" ||
     s.includes("lovable") ||
@@ -148,10 +150,9 @@ export function resolveStrictDeliveryType(item: {
     return "link";
   }
 
-  // 4. Ready Account (Gemini, ChatGPT, accounts with email/pass)
+  // 4. Ready Account (ChatGPT, accounts with email/pass)
   if (
     pt === "account" ||
-    s === "gemini" ||
     s.includes("chatgpt") ||
     c.includes("acct") ||
     c.includes("acc-") ||

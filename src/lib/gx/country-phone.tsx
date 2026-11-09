@@ -198,7 +198,7 @@ const CURRENCY_TO_COUNTRY: Record<string, string> = {
   DZD: "DZ",
   TND: "TN",
   USD: "US",
-  EUR: "JO", // Fallback to Jordan for generic EUR
+  EUR: "DE",
 };
 
 const CACHE_COUNTRY_KEY = "gx_country_code";
@@ -216,9 +216,10 @@ export function detectCountryFromTimezone(): string | null {
   try {
     const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone || "" : "";
     if (!tz) return null;
+    // Arab Countries (22 Nations)
     if (tz.includes("Amman")) return "JO";
     if (tz.includes("Riyadh")) return "SA";
-    if (tz.includes("Dubai")) return "AE";
+    if (tz.includes("Dubai") || tz.includes("Abu_Dhabi")) return "AE";
     if (tz.includes("Kuwait")) return "KW";
     if (tz.includes("Qatar")) return "QA";
     if (tz.includes("Bahrain")) return "BH";
@@ -232,8 +233,50 @@ export function detectCountryFromTimezone(): string | null {
     if (tz.includes("Tunis")) return "TN";
     if (tz.includes("Algiers")) return "DZ";
     if (tz.includes("Casablanca")) return "MA";
-    if (tz.includes("Istanbul")) return "TR";
+    if (tz.includes("Khartoum")) return "SD";
+    if (tz.includes("Aden") || tz.includes("Sanaa")) return "YE";
+    if (tz.includes("Nouakchott")) return "MR";
+    if (tz.includes("Mogadishu")) return "SO";
+    if (tz.includes("Djibouti")) return "DJ";
+    if (tz.includes("Comoro")) return "KM";
+
+    // International / Non-Arab
+    if (tz.includes("Istanbul") || tz.includes("Turkey")) return "TR";
     if (tz.includes("London")) return "GB";
+    if (tz.includes("Berlin") || tz.includes("Frankfurt")) return "DE";
+    if (tz.includes("Paris")) return "FR";
+    if (tz.includes("Rome")) return "IT";
+    if (tz.includes("Madrid")) return "ES";
+    if (tz.includes("Amsterdam")) return "NL";
+    if (tz.includes("Brussels")) return "BE";
+    if (tz.includes("Vienna")) return "AT";
+    if (tz.includes("Athens")) return "GR";
+    if (tz.includes("Dublin")) return "IE";
+    if (tz.includes("Lisbon")) return "PT";
+    if (tz.includes("Helsinki")) return "FI";
+    if (tz.includes("Stockholm")) return "SE";
+    if (tz.includes("Oslo")) return "NO";
+    if (tz.includes("Copenhagen")) return "DK";
+    if (tz.includes("Warsaw")) return "PL";
+    if (tz.includes("Prague")) return "CZ";
+    if (tz.includes("Zurich")) return "CH";
+    if (tz.includes("Moscow")) return "RU";
+    if (tz.includes("Kiev") || tz.includes("Kyiv")) return "UA";
+    if (tz.includes("Toronto") || tz.includes("Vancouver") || tz.includes("Montreal") || tz.includes("Edmonton")) return "CA";
+    if (tz.includes("Tokyo")) return "JP";
+    if (tz.includes("Seoul")) return "KR";
+    if (tz.includes("Singapore")) return "SG";
+    if (tz.includes("Sydney") || tz.includes("Melbourne") || tz.includes("Brisbane") || tz.includes("Perth")) return "AU";
+    if (tz.includes("Auckland")) return "NZ";
+    if (tz.includes("Kolkata") || tz.includes("Calcutta")) return "IN";
+    if (tz.includes("Karachi")) return "PK";
+    if (tz.includes("Jakarta")) return "ID";
+    if (tz.includes("Bangkok")) return "TH";
+    if (tz.includes("Manila")) return "PH";
+    if (tz.includes("Kuala_Lumpur")) return "MY";
+    if (tz.includes("Johannesburg")) return "ZA";
+    if (tz.includes("Sao_Paulo")) return "BR";
+    if (tz.includes("Buenos_Aires")) return "AR";
     if (tz.startsWith("America/")) return "US";
   } catch {
     /* noop */
@@ -301,7 +344,19 @@ export function getUnifiedCountryCode(): string {
     return tzCountry;
   }
 
-  // 6. Safe fallback (Jordan)
+  // 6. Non-Arab fallback: if timezone or browser locale is clearly non-Arab, default to US (USD) instead of JO
+  try {
+    const tz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone || "" : "";
+    const isArabTz = /amman|riyadh|cairo|dubai|abu_dhabi|baghdad|kuwait|qatar|bahrain|muscat|beirut|damascus|jerusalem|gaza|hebron|khartoum|tripoli|algiers|tunis|casablanca|sanaa|aden|nouakchott|mogadishu|djibouti/i.test(tz);
+    const navLang = typeof navigator !== "undefined" ? (navigator.language || (navigator as any).userLanguage || "").toLowerCase() : "";
+    if (!isArabTz && !navLang.startsWith("ar")) {
+      return "US";
+    }
+  } catch {
+    /* noop */
+  }
+
+  // 7. Safe fallback (Jordan) for Arab region
   return "JO";
 }
 
@@ -404,6 +459,45 @@ export function detectUserCountry(): CountryInfo {
   const code = getUnifiedCountryCode();
   const match = COUNTRIES.find((c) => c.code === code);
   return match || COUNTRIES[0];
+}
+
+/**
+ * React hook that provides the user's detected country and keeps it reactive to live updates.
+ */
+export function useUserCountry(): { code: string; ar: string; en: string } {
+  const [geo, setGeo] = useState<{ code: string; ar: string; en: string }>(() => {
+    const c = detectUserCountry();
+    return {
+      code: c.code,
+      ar: c.nameAr,
+      en: c.nameEn,
+    };
+  });
+
+  useEffect(() => {
+    void fetchUserCountryOnce().then((code) => {
+      if (code) {
+        const c = COUNTRIES.find((x) => x.code === code);
+        if (c) {
+          setGeo({ code: c.code, ar: c.nameAr, en: c.nameEn });
+        }
+      }
+    });
+
+    const handler = (e: Event) => {
+      const code = (e as CustomEvent).detail;
+      if (code) {
+        const c = COUNTRIES.find((x) => x.code === code);
+        if (c) {
+          setGeo({ code: c.code, ar: c.nameAr, en: c.nameEn });
+        }
+      }
+    };
+    window.addEventListener("gx:country-detected", handler);
+    return () => window.removeEventListener("gx:country-detected", handler);
+  }, []);
+
+  return geo;
 }
 
 /**

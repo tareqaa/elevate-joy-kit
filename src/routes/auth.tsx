@@ -1,127 +1,82 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { createFileRoute, useNavigate, useSearch, Link } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useLang } from "@/lib/gx/i18n";
 import { useAuthActions } from "@/lib/gx/use-auth-actions";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, KeyRound } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (
-    search: Record<string, unknown>
-  ): { redirect?: string; mode?: "signin" | "signup" | "reset"; email?: string } => ({
+  ssr: false,
+  validateSearch: (search: Record<string, unknown>): { redirect?: string; mode?: "signin" | "signup" | "reset"; email?: string } => ({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
-    mode:
-      search.mode === "reset" || search.mode === "signup" || search.mode === "signin"
-        ? (search.mode as "signin" | "signup" | "reset")
-        : undefined,
+    mode: search.mode === "signup" ? "signup" : search.mode === "reset" ? "reset" : search.mode === "signin" ? "signin" : undefined,
     email: typeof search.email === "string" ? search.email : undefined,
   }),
   head: () => ({
     meta: [
-      { title: "تسجيل الدخول | متجر GX Store" },
-      { name: "description", content: "سجّل الدخول إلى حسابك في متجر GX Store لمتابعة طلباتك واشتراكاتك الرقمية." },
+      { title: "تسجيل الدخول / حساب جديد | متجر GX Store" },
+      { name: "description", content: "سجّل الدخول إلى حسابك في متجر GX Store لمتابعة طلباتك أو إنشاء حساب جديد." },
+      { name: "robots", content: "noindex, follow" },
     ],
   }),
   component: AuthPage,
 });
 
-function getSafeRedirect(customRedirect?: string): string {
-  if (customRedirect && customRedirect.startsWith("/") && !customRedirect.startsWith("//") && !customRedirect.startsWith("/auth")) {
-    return customRedirect;
-  }
-  if (typeof window === "undefined") return "/account";
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const r = params.get("redirect");
-    if (r && r.startsWith("/") && !r.startsWith("//") && !r.startsWith("/auth")) {
-      return r;
-    }
-  } catch {
-    // ignore
-  }
-  return "/account";
-}
+type AuthMode = "signin" | "signup" | "reset" | "reset_otp" | "reset_new_password" | "signup_otp" | "2fa";
 
 function AuthPage() {
-  const { redirect, mode: searchMode, email: searchEmail } = Route.useSearch();
-  const safeTarget = getSafeRedirect(redirect);
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const ar = lang === "ar";
+  const search = useSearch({ from: "/auth" });
   const navigate = useNavigate();
-  const { signIn, signUp, resetPassword, signInWithGoogle, verify2fa, cancel2fa } = useAuthActions();
+
+  const {
+    signIn,
+    signUp,
+    resetPassword,
+    verifyPasswordResetOtp,
+    updatePassword,
+    verifySignUpOtp,
+    signInWithGoogle,
+    verify2fa,
+    cancel2fa,
+  } = useAuthActions();
+
+  const [mode, setMode] = useState<AuthMode>(
+    search.mode === "signup" ? "signup" : search.mode === "reset" ? "reset" : "signin"
+  );
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"signin" | "signup" | "reset" | "2fa">(searchMode || "signin");
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const checkSessionAndAal = async (session: any) => {
-      if (!session || cancelled) return;
-      try {
-        const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-        if (cancelled) return;
-
-        // If user has 2FA enabled and hasn't verified yet:
-        if (aal && aal.currentLevel === "aal1" && aal.nextLevel === "aal2") {
-          if (typeof window !== "undefined") {
-            try { sessionStorage.setItem("gx_2fa_pending", "true"); } catch { /* noop */ }
-          }
-          try {
-            const { data: factors } = await supabase.auth.mfa.listFactors();
-            if (cancelled) return;
-            const totp = factors?.totp?.find((f) => f.status === "verified") || factors?.all?.find((f) => f.status === "verified");
-            if (totp) {
-              setMfaFactorId(totp.id);
-            }
-          } catch {
-            // ignore
-          }
-          setMode("2fa");
-          return;
-        }
-
-        if (typeof window !== "undefined") {
-          try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
-        }
-        // Only redirect if fully verified
-        if (aal && (aal.currentLevel === "aal2" || (aal.currentLevel === "aal1" && aal.nextLevel === "aal1"))) {
-          navigate({ to: safeTarget });
-        }
-      } catch {
-        // noop
-      }
-    };
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) void checkSessionAndAal(data.session);
-    });
-
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        void checkSessionAndAal(session);
-      } else if (event === "SIGNED_OUT") {
-        if (typeof window !== "undefined") {
-          try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
-        }
-        setMode("signin");
-        setMfaFactorId(null);
-        setMfaCode("");
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
-  }, [navigate, safeTarget]);
-
-  const [siEmail, setSiEmail] = useState(searchEmail || "");
+  // Sign-in state
+  const [siEmail, setSiEmail] = useState(search.email || "");
   const [siPass, setSiPass] = useState("");
-  const [suUsername, setSuUsername] = useState("");
-  const [suEmail, setSuEmail] = useState("");
+
+  // Sign-up state
+  const [suEmail, setSuEmail] = useState(search.email || "");
   const [suPass, setSuPass] = useState("");
+  const [suUsername, setSuUsername] = useState("");
+
+  // OTP state
+  const [otpCode, setOtpCode] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+
+  const safeTarget = search.redirect && search.redirect.startsWith("/") && !search.redirect.startsWith("//")
+    ? search.redirect
+    : "/account";
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
@@ -178,16 +133,115 @@ function AuthPage() {
     if (!res.ok) {
       return toast.error(res.error === "invalid_username" ? t("auth.username_pattern_err") : res.error);
     }
-    toast.success(t("auth.signup_ok"));
+
+    if (res.requiresOtp) {
+      setMode("signup_otp");
+      setOtpCode("");
+      setResendCooldown(15);
+      toast.success(t("auth.reset_sent"));
+    } else {
+      toast.success(t("auth.signup_ok"));
+      navigate({ to: safeTarget });
+    }
   }
 
-  async function handleReset(e: React.FormEvent) {
+  async function handleResetRequest(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     const res = await resetPassword(siEmail);
     setLoading(false);
-    if (!res.ok) return toast.error(res.error);
+    if (!res.ok) {
+      if (res.isGuestOnly) {
+        toast.info(res.error, { duration: 9000 });
+        setSuEmail(siEmail);
+        setMode("signup");
+        return;
+      }
+      return toast.error(res.error);
+    }
+    setMode("reset_otp");
+    setOtpCode("");
+    setNewPass("");
+    setConfirmPass("");
+    setResendCooldown(15);
     toast.success(t("auth.reset_sent"));
+  }
+
+  async function handleVerifyResetOtp(e: React.FormEvent) {
+    e.preventDefault();
+    const cleanOtp = otpCode.trim().replace(/\D/g, "");
+    if (cleanOtp.length < 6 || cleanOtp.length > 10) {
+      return toast.error(t("auth.otp_invalid"));
+    }
+
+    setLoading(true);
+    const res = await verifyPasswordResetOtp(siEmail, cleanOtp);
+    setLoading(false);
+    if (!res.ok) {
+      return toast.error(res.error || t("auth.otp_invalid"));
+    }
+
+    setMode("reset_new_password");
+    toast.success(ar ? "تم التحقق من الرمز بنجاح! يمكنك الآن تعيين كلمة المرور الجديدة." : "Code verified! Please set your new password.");
+  }
+
+  async function handleSetNewPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (newPass.length < 6) {
+      return toast.error(ar ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل" : "Password must be at least 6 characters");
+    }
+    if (newPass !== confirmPass) {
+      return toast.error(t("auth.passwords_dont_match"));
+    }
+
+    setLoading(true);
+    const res = await updatePassword(newPass);
+    setLoading(false);
+    if (!res.ok) {
+      return toast.error(res.error || "Failed to update password");
+    }
+
+    toast.success(t("auth.password_updated"));
+    navigate({ to: safeTarget });
+  }
+
+  async function handleVerifySignUpOtp(e: React.FormEvent) {
+    e.preventDefault();
+    const cleanOtp = otpCode.trim().replace(/\D/g, "");
+    if (cleanOtp.length < 6 || cleanOtp.length > 10) {
+      return toast.error(t("auth.otp_invalid"));
+    }
+
+    setLoading(true);
+    const res = await verifySignUpOtp(suEmail, cleanOtp);
+    setLoading(false);
+    if (!res.ok) {
+      return toast.error(res.error || t("auth.otp_invalid"));
+    }
+
+    toast.success(t("auth.signup_success_login"));
+    navigate({ to: safeTarget });
+  }
+
+  async function handleResendCode() {
+    if (resendCooldown > 0) return;
+    const targetEmail = mode === "reset_otp" ? siEmail : suEmail;
+    if (!targetEmail) return;
+
+    setLoading(true);
+    if (mode === "reset_otp") {
+      const res = await resetPassword(targetEmail);
+      setLoading(false);
+      if (!res.ok) return toast.error(res.error);
+      setResendCooldown(15);
+      toast.success(t("auth.reset_sent"));
+    } else if (mode === "signup_otp") {
+      const res = await signUp(suEmail, suPass, suUsername, safeTarget);
+      setLoading(false);
+      if (!res.ok) return toast.error(res.error);
+      setResendCooldown(15);
+      toast.success(t("auth.reset_sent"));
+    }
   }
 
   async function handleGoogle() {
@@ -196,6 +250,7 @@ function AuthPage() {
     if (!res.ok) { setLoading(false); toast.error(res.error); }
   }
 
+  const isOtpScreen = mode === "reset_otp" || mode === "reset_new_password" || mode === "signup_otp" || mode === "2fa";
 
   return (
     <div className="gx-auth-root">
@@ -208,7 +263,7 @@ function AuthPage() {
         </Link>
 
         <div className="gx-auth-card">
-          {mode !== "2fa" && (
+          {!isOtpScreen && (
             <div className="gx-auth-tabs">
               <button className={mode === "signin" ? "on" : ""} onClick={() => setMode("signin")} type="button">{t("auth.tab_signin")}</button>
               <button className={mode === "signup" ? "on" : ""} onClick={() => setMode("signup")} type="button">{t("auth.tab_signup")}</button>
@@ -222,6 +277,12 @@ function AuthPage() {
               ? t("auth.create_account")
               : mode === "2fa"
               ? t("auth.2fa_title")
+              : mode === "reset_otp"
+              ? (ar ? "التحقق من الرمز" : "Verify Code")
+              : mode === "reset_new_password"
+              ? (ar ? "تعيين كلمة المرور الجديدة" : "Set New Password")
+              : mode === "signup_otp"
+              ? t("auth.signup_verify_title")
               : t("auth.reset_title")}
           </h1>
           <p className="gx-auth-sub">
@@ -231,6 +292,12 @@ function AuthPage() {
               ? t("auth.signup_desc")
               : mode === "2fa"
               ? t("auth.2fa_desc")
+              : mode === "reset_otp"
+              ? `${t("auth.otp_sent_to")} ${siEmail}`
+              : mode === "reset_new_password"
+              ? (ar ? "أدخل كلمة المرور الجديدة لحسابك" : "Enter your new account password")
+              : mode === "signup_otp"
+              ? `${t("auth.otp_sent_to")} ${suEmail}`
               : t("auth.reset_btn")}
           </p>
 
@@ -262,6 +329,121 @@ function AuthPage() {
                 {t("auth.2fa_cancel_btn")}
               </button>
             </form>
+          ) : mode === "reset_otp" ? (
+            <form onSubmit={handleVerifyResetOtp} className="gx-auth-form">
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "8px" }}>
+                <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(0, 229, 255, 0.12)", border: "1.5px solid rgba(0, 229, 255, 0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <KeyRound style={{ width: "24px", height: "24px", color: "#00e5ff" }} />
+                </div>
+              </div>
+              <label>{t("auth.otp_code")}</label>
+              <input
+                type="text"
+                required
+                autoFocus
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={10}
+                dir="ltr"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                placeholder="123456"
+                style={{
+                  textAlign: "center",
+                  letterSpacing: otpCode.length > 6 ? "5px" : "8px",
+                  fontSize: "1.3rem",
+                  fontWeight: 700,
+                }}
+              />
+              <button type="submit" className="gx-auth-btn primary" disabled={loading || otpCode.length < 6}>
+                {loading ? "..." : (ar ? "التحقق من الرمز" : "Verify Code")}
+              </button>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "12px", fontSize: "13px" }}>
+                <button
+                  type="button"
+                  className="gx-auth-linkbtn"
+                  disabled={loading || resendCooldown > 0}
+                  onClick={handleResendCode}
+                  style={{ opacity: resendCooldown > 0 ? 0.6 : 1, margin: 0 }}
+                >
+                  {resendCooldown > 0 ? `${t("auth.otp_resend_wait")} (${resendCooldown}s)` : t("auth.otp_resend")}
+                </button>
+                <button type="button" className="gx-auth-linkbtn" onClick={() => setMode("reset")} style={{ margin: 0 }}>
+                  {t("auth.back_signin")}
+                </button>
+              </div>
+            </form>
+          ) : mode === "reset_new_password" ? (
+            <form onSubmit={handleSetNewPassword} className="gx-auth-form">
+              <label>{t("auth.new_password")}</label>
+              <input
+                type="password"
+                required
+                autoFocus
+                minLength={6}
+                dir="ltr"
+                value={newPass}
+                onChange={(e) => setNewPass(e.target.value)}
+                placeholder="••••••"
+              />
+              <label>{t("auth.confirm_password")}</label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                dir="ltr"
+                value={confirmPass}
+                onChange={(e) => setConfirmPass(e.target.value)}
+                placeholder="••••••"
+              />
+              <button type="submit" className="gx-auth-btn primary" disabled={loading || newPass.length < 6 || confirmPass.length < 6}>
+                {loading ? "..." : t("auth.update_password")}
+              </button>
+            </form>
+          ) : mode === "signup_otp" ? (
+            <form onSubmit={handleVerifySignUpOtp} className="gx-auth-form">
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "8px" }}>
+                <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(0, 229, 255, 0.12)", border: "1.5px solid rgba(0, 229, 255, 0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <KeyRound style={{ width: "24px", height: "24px", color: "#00e5ff" }} />
+                </div>
+              </div>
+              <label>{t("auth.otp_code")}</label>
+              <input
+                type="text"
+                required
+                autoFocus
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={10}
+                dir="ltr"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                placeholder="123456"
+                style={{
+                  textAlign: "center",
+                  letterSpacing: otpCode.length > 6 ? "5px" : "8px",
+                  fontSize: "1.3rem",
+                  fontWeight: 700,
+                }}
+              />
+              <button type="submit" className="gx-auth-btn primary" disabled={loading || otpCode.length < 6}>
+                {loading ? "..." : t("auth.signup_confirm_btn")}
+              </button>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "12px", fontSize: "13px" }}>
+                <button
+                  type="button"
+                  className="gx-auth-linkbtn"
+                  disabled={loading || resendCooldown > 0}
+                  onClick={handleResendCode}
+                  style={{ opacity: resendCooldown > 0 ? 0.6 : 1, margin: 0 }}
+                >
+                  {resendCooldown > 0 ? `${t("auth.otp_resend_wait")} (${resendCooldown}s)` : t("auth.otp_resend")}
+                </button>
+                <button type="button" className="gx-auth-linkbtn" onClick={() => setMode("signup")} style={{ margin: 0 }}>
+                  {t("auth.back_signin")}
+                </button>
+              </div>
+            </form>
           ) : mode === "signin" ? (
             <form onSubmit={handleSignIn} className="gx-auth-form">
               <label>{t("auth.email")}</label>
@@ -274,7 +456,7 @@ function AuthPage() {
               <button type="button" className="gx-auth-linkbtn" onClick={() => setMode("reset")}>{t("auth.forgot")}</button>
             </form>
           ) : mode === "reset" ? (
-            <form onSubmit={handleReset} className="gx-auth-form">
+            <form onSubmit={handleResetRequest} className="gx-auth-form">
               <label>{t("auth.email")}</label>
               <input type="email" required dir="ltr" value={siEmail} onChange={(e) => setSiEmail(e.target.value)} placeholder="you@email.com" />
               <button type="submit" className="gx-auth-btn primary" disabled={loading}>
@@ -296,7 +478,7 @@ function AuthPage() {
             </form>
           )}
 
-          {mode !== "2fa" && (
+          {!isOtpScreen && (
             <>
               <div className="gx-auth-divider"><span>{t("auth.or")}</span></div>
 

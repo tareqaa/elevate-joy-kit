@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { FeatureAccordion } from "@/components/gx/Primitives";
 import { useLang } from "@/lib/gx/i18n";
+import { useCurrency } from "@/lib/gx/currency";
+import { useUserCountry } from "@/lib/gx/country-phone";
 import { FAQ_EN } from "@/lib/gx/product-locale";
 import { useLoyaltyCopy } from "@/lib/gx/loyalty-copy";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
@@ -19,12 +21,12 @@ export const Route = createFileRoute("/faq")({
 
 const FAQ_AR = [
   // الطلب والتسليم
-  { icon: "🛒", title: "كيف أطلب من المتجر؟", desc: "اختار المنتج المناسب، أضفه للسلة، وبعدها اضغط «إتمام الطلب عبر واتساب». بنراجع طلبك معك ونؤكد التوفر والسعر وطريقة الدفع قبل البدء بالتنفيذ." },
+  { icon: "🛒", title: "كيف أطلب من المتجر؟", desc: "اختار المنتج المناسب، أضفه للسلة، وأكمل الدفع مباشرة على الموقع حسب بلدك. بيوصلك كودك الرقمي أو بيانات طلبك فوراً على صفحة الطلب وبريدك الإلكتروني." },
   { icon: "🌍", title: "هل التوصيل متاح لكل الدول؟", desc: "نعم، كل منتجاتنا رقمية فبنوصلك بأي مكان بالعالم. بعض المنتجات مرتبطة بمنطقة معيّنة (بطاقات وعملات ألعاب) فلازم تختار المنطقة الي بتناسب حسابك." },
   { icon: "⏱️", title: "كم وقت التسليم؟", desc: "يبدأ تجهيز الطلب بعد تأكيد الدفع. أغلب الطلبات الرقمية بتوصل خلال دقائق إلى ساعتين، وقد يختلف الوقت حسب نوع المنتج والتوفر والمنطقة." },
-  { icon: "✅", title: "كيف أعرف أن طلبي تم تأكيده؟", desc: "بنرسل لك تأكيد عبر واتساب، وبيوصلك إشعار داخل حسابك، وبتلاقي الطلب في صفحة «طلباتي» مع حالته: قيد الانتظار، قيد التنفيذ، تم التسليم." },
-  { icon: "💳", title: "شو طرق الدفع المتاحة؟", desc: "بنتفق على طريقة الدفع عبر واتساب (حوالات محلية، محافظ إلكترونية، وطرق أخرى متاحة). كمان بتقدر تدفع جزء من الطلب برصيد المتجر أو GX Coins." },
-  { icon: "💰", title: "هل الأسعار الظاهرة نهائية؟", desc: "الأسعار بتظهر بعملتك المحلية حسب سعر الصرف المباشر وبتتحدث باستمرار، والتأكيد النهائي للسعر والتوفر بيتم عبر واتساب قبل الدفع." },
+  { icon: "✅", title: "كيف أعرف أن طلبي تم تأكيده؟", desc: "بيوصلك إشعار فوري داخل حسابك وبريدك الإلكتروني، وبتلاقي الطلب في صفحة «طلباتي» مع حالته مباشرة: قيد الانتظار، قيد التنفيذ، أو تم التسليم." },
+  { icon: "💳", title: "شو طرق الدفع المتاحة؟", desc: "نوفر وسائل دفع متعددة وفورية: الدفع المباشر عبر كليك (CliQ)، المحافظ الإلكترونية المعتمدة (زين كاش، أمنية، ويوالت UWallet)، بالإضافة إلى بايننس باي (Binance Pay) بعملة USDT الرقمية، كما يمكنك استخدام رصيد المتجر أو GX Coins لتغطية قيمة الطلب أو جزء منه." },
+  { icon: "💰", title: "هل الأسعار الظاهرة نهائية؟", desc: "نعم، الأسعار الظاهرة نهائية وشاملة، وتظهر بعملتك المحلية أو بالدولار الأمريكي / USDT وفق سعر الصرف اللحظي دون أي رسوم خفية." },
 
   // الولاء: XP، المستويات، العملات، الرصيد
   { icon: "⚡", title: "شو هي نقاط XP وكيف بجمعها؟", desc: "مقابل كل {UNIT} من قيمة طلبك تكسب {XP_PER_UNIT} نقطة خبرة (XP). النقاط بترفع مستواك، وكل مستوى بيفتح لك مكافأة عملات أعلى وأفاتارات وكوبونات خاصة بالمستوى." },
@@ -46,9 +48,29 @@ const FAQ_AR = [
 
 function FaqPage() {
   const { t, lang } = useLang();
+  const { currency } = useCurrency();
+  const country = useUserCountry();
   const copy = useLoyaltyCopy();
-  const faq = (lang === "en" ? FAQ_EN : FAQ_AR).map((f) => ({ ...f, desc: copy.fill(f.desc) }));
+
   const isAr = lang !== "en";
+  const isJordan = country.code === "JO" || currency === "JOD";
+
+  const paymentDesc = isAr
+    ? (isJordan
+        ? "نوفر وسائل دفع متعددة وفورية: الدفع المباشر عبر كليك (CliQ)، المحافظ الإلكترونية المعتمدة (زين كاش، أمنية، ويوالت UWallet)، بالإضافة إلى بايننس باي (Binance Pay) بعملة USDT الرقمية، كما يمكنك الدفع باستخدام رصيد المتجر أو عملات المكافآت GX Coins."
+        : "نوفر وسائل دفع رقمية سريعة وآمنة عالمياً: الدفع المباشر والآمن عبر بايننس باي (Binance Pay) بعملة USDT الرقمية، بالإضافة إلى إمكانية الدفع عبر رصيد المتجر (Store Credit) وعملات المكافآت GX Coins لتغطية كامل قيمة الطلب أو جزء منه.")
+    : (isJordan
+        ? "We offer fast and secure payment options: Instant checkout via CliQ, certified electronic wallets (Zain Cash, Umniah, UWallet), Binance Pay in digital USDT, as well as Store Credit and GX Coins."
+        : "We accept fast and secure global payment methods: Instant checkout via Binance Pay in digital USDT, as well as Store Credit and GX Coins reward balance to cover all or part of your order.");
+
+  const rawList = (lang === "en" ? FAQ_EN : FAQ_AR).map((f, idx) => {
+    if (idx === 4) {
+      return { ...f, desc: paymentDesc };
+    }
+    return f;
+  });
+
+  const faq = rawList.map((f) => ({ ...f, desc: copy.fill(f.desc) }));
   const groups = [
     { title: isAr ? "🛍️ الطلب والتسليم" : "🛍️ Ordering & delivery", items: faq.slice(0, 6) },
     { title: isAr ? "🎖️ نظام الولاء: XP و GX Coins" : "🎖️ Loyalty: XP & GX Coins", items: faq.slice(6, 11) },

@@ -16,10 +16,55 @@ import {
   Search, Download, Volume2, VolumeX, RefreshCw, Filter, Bell,
   CheckCircle2, XCircle, Clock, CreditCard, Package as PackageIcon,
   Undo2, AlertTriangle, Loader2, ShieldAlert, Ban, ShieldCheck, Monitor, Mail, Copy, Eye, Lock,
-  Calendar, Globe, KeyRound, Check, DollarSign, Plus, ChevronDown, ChevronUp, Send,
+  Calendar, Globe, KeyRound, Check, DollarSign, Plus, ChevronDown, ChevronUp, Send, Pencil,
+  Trash2, Minus, Save,
 } from "lucide-react";
-import { sendOrderStatusEmail, sendIncompleteOrderPaymentEmail, getOrderSecretLinkFn } from "@/lib/gx/order-email.functions";
+import { sendOrderStatusEmail, sendPaymentConfirmedEmail, sendIncompleteOrderPaymentEmail, getOrderSecretLinkFn } from "@/lib/gx/order-email.functions";
 import { detectRegionCode, formatFullRegion } from "@/lib/gx/region";
+
+const QUICK_CATALOG_PRESETS = [
+  // iTunes / Apple
+  { name: "بطاقات آيتونز ($5 أمريكي)", price: 4.15, slug: "itunes" },
+  { name: "بطاقات آيتونز ($10 أمريكي)", price: 8.00, slug: "itunes" },
+  { name: "بطاقات آيتونز ($15 أمريكي)", price: 11.50, slug: "itunes" },
+  { name: "بطاقات آيتونز ($20 أمريكي)", price: 15.00, slug: "itunes" },
+  { name: "بطاقات آيتونز ($25 أمريكي)", price: 18.75, slug: "itunes" },
+  { name: "بطاقات آيتونز ($50 أمريكي)", price: 37.00, slug: "itunes" },
+  { name: "بطاقات آيتونز ($100 أمريكي)", price: 73.00, slug: "itunes" },
+  // PlayStation
+  { name: "بطاقات بلايستيشن ($10 أمريكي)", price: 8.00, slug: "playstation" },
+  { name: "بطاقات بلايستيشن ($20 أمريكي)", price: 15.00, slug: "playstation" },
+  { name: "بطاقات بلايستيشن ($25 أمريكي)", price: 18.75, slug: "playstation" },
+  { name: "بطاقات بلايستيشن ($50 أمريكي)", price: 37.00, slug: "playstation" },
+  { name: "بطاقات بلايستيشن ($100 أمريكي)", price: 73.00, slug: "playstation" },
+  // Xbox
+  { name: "بطاقات إكسبوكس ($10 أمريكي)", price: 7.75, slug: "xbox" },
+  { name: "بطاقات إكسبوكس ($15 أمريكي)", price: 11.25, slug: "xbox" },
+  { name: "بطاقات إكسبوكس ($25 أمريكي)", price: 18.00, slug: "xbox" },
+  { name: "بطاقات إكسبوكس ($50 أمريكي)", price: 36.00, slug: "xbox" },
+  { name: "Xbox Game Pass Ultimate (1 شهر)", price: 8.50, slug: "xbox-game-pass-ultimate" },
+  // Razer Gold
+  { name: "بطاقات ريزر جولد ($5 أمريكي)", price: 4.10, slug: "razer-gold" },
+  { name: "بطاقات ريزر جولد ($10 أمريكي)", price: 8.00, slug: "razer-gold" },
+  { name: "بطاقات ريزر جولد ($20 أمريكي)", price: 15.50, slug: "razer-gold" },
+  { name: "بطاقات ريزر جولد ($50 أمريكي)", price: 38.00, slug: "razer-gold" },
+  // Steam
+  { name: "بطاقات ستيم ($5 أمريكي)", price: 4.25, slug: "steam" },
+  { name: "بطاقات ستيم ($10 أمريكي)", price: 8.25, slug: "steam" },
+  { name: "بطاقات ستيم ($20 أمريكي)", price: 16.00, slug: "steam" },
+  { name: "بطاقات ستيم ($50 أمريكي)", price: 39.00, slug: "steam" },
+  // Games & Top-ups
+  { name: "روبلوكس (800 Robux)", price: 7.50, slug: "roblox" },
+  { name: "روبلوكس (1000 Robux)", price: 9.00, slug: "roblox" },
+  { name: "روبلوكس (2000 Robux)", price: 17.50, slug: "roblox" },
+  { name: "فورتنايت (1000 V-Bucks)", price: 7.50, slug: "fortnite" },
+  // Subscriptions
+  { name: "اشتراك TOD بجميع الباقات (12 شهر)", price: 29.00, slug: "tod" },
+  { name: "يوتيوب بريميوم (12 شهر)", price: 14.00, slug: "youtube-premium" },
+  { name: "شاهد VIP شامل الباقات (12 شهر)", price: 22.00, slug: "shahid-vip" },
+  { name: "ديسكورد نيترو (1 شهر)", price: 3.50, slug: "discord-nitro" },
+  { name: "حساب Microsoft 365 (12 شهر)", price: 7.00, slug: "microsoft-365" },
+];
 
 
 export const Route = createFileRoute("/_authenticated/admin/orders")({
@@ -489,7 +534,57 @@ function OrdersAdmin() {
                         <span className="text-cyan-100/40">—</span>
                       )}
                     </td>
-                    <td className="font-bold">{Number(o.total_jod).toFixed(2)}<span className="text-xs text-cyan-400/70 me-1"> د.أ</span></td>
+                    <td className="font-bold">
+                      {(() => {
+                        const delData = o.delivery_data && typeof o.delivery_data === "object" ? (o.delivery_data as any) : {};
+                        const feeJod = Number(delData.fee_jod || 0);
+                        const totalWithFee = Number(delData.total_with_fee_jod || (Number(o.total_jod) + feeJod));
+                        if (feeJod > 0) {
+                          return (
+                            <div>
+                              <div className="text-white font-mono text-sm font-extrabold">
+                                {totalWithFee.toFixed(2)}
+                                <span className="text-xs text-cyan-400/80 me-1"> د.أ</span>
+                              </div>
+                              <div className="text-[10px] text-amber-300 font-mono">
+                                (شامل ضريبة 3%: +{feeJod.toFixed(2)})
+                              </div>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div>{Number(o.total_jod).toFixed(2)}<span className="text-xs text-cyan-400/70 me-1"> د.أ</span></div>
+                        );
+                      })()}
+                      {(() => {
+                        const delData = o.delivery_data && typeof o.delivery_data === "object" ? (o.delivery_data as any) : {};
+                        const pm = (delData.payment_method || "").toLowerCase();
+                        if (pm === "binance_pay" || pm === "binance") {
+                          return (
+                            <div className="mt-0.5 flex items-center gap-1">
+                              <span className="text-[10px] font-extrabold bg-amber-500/20 text-yellow-300 border border-amber-500/40 px-1.5 py-0.2 rounded whitespace-nowrap">
+                                🟡 Binance Pay
+                              </span>
+                              {delData.total_usdt && (
+                                <span className="text-[10px] font-mono text-white/90">
+                                  {delData.total_usdt}U
+                                </span>
+                              )}
+                            </div>
+                          );
+                        }
+                        if (pm === "cliq") {
+                          return (
+                            <div className="mt-0.5">
+                              <span className="text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 px-1.5 py-0.2 rounded whitespace-nowrap">
+                                🇯🇴 كليك
+                              </span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </td>
                     <td>
                       <span className={`gx-adm-badge ${STATUS_COLOR[o.status]}`}>
                         <Ico size={12} />
@@ -698,9 +793,381 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
   const [status, setStatus] = useState(order.status);
   const [notes, setNotes] = useState(order.admin_notes ?? "");
   const [notifyCustomer, setNotifyCustomer] = useState(true);
-  const [emailLang, setEmailLang] = useState<"ar" | "en">("ar");
+  const initialEmailLang = (order.delivery_data && typeof order.delivery_data === "object" && (order.delivery_data as any).lang === "en") ? "en" : "ar";
+  const [emailLang, setEmailLang] = useState<"ar" | "en">(initialEmailLang);
+
+  useEffect(() => {
+    const dLang = order.delivery_data && typeof order.delivery_data === "object" ? (order.delivery_data as any).lang : null;
+    if (dLang === "en" || dLang === "ar") {
+      setEmailLang(dLang);
+    }
+  }, [order.id, (order.delivery_data as any)?.lang]);
+
   const [showFinancialTools, setShowFinancialTools] = useState(false);
-  const items = Array.isArray(order.items) ? order.items : [];
+
+  type EditableOrderItem = {
+    cartId?: string;
+    id?: string;
+    name: string;
+    qty: number;
+    price: number;
+    product_slug?: string | null;
+    slug?: string | null;
+    usernames?: string[] | null;
+    region?: string | null;
+  };
+
+  const [isEditingItems, setIsEditingItems] = useState(false);
+  const [localItems, setLocalItems] = useState<EditableOrderItem[]>(() => {
+    return (Array.isArray(order.items) ? order.items : []).map((it: any) => ({
+      cartId: it.cartId || it.id || "",
+      name: it.name || "منتج",
+      qty: Math.max(1, Number(it.qty || it.quantity || 1)),
+      price: Number(it.price || 0),
+      product_slug: it.product_slug || it.slug || "",
+      usernames: it.usernames || null,
+      region: it.region || "",
+    }));
+  });
+  const [localTotal, setLocalTotal] = useState(Number(order.total_jod || 0));
+  const [localSubtotal, setLocalSubtotal] = useState(Number(order.subtotal_jod ?? order.total_jod ?? 0));
+  const [isReverting, setIsReverting] = useState(false);
+
+  // Synchronize localItems and totals whenever order updates in cache/database
+  useEffect(() => {
+    if (!isEditingItems) {
+      const itemsArr = Array.isArray(order.items) ? order.items : [];
+      setLocalItems(itemsArr.map((it: any) => ({
+        cartId: it.cartId || it.id || "",
+        name: it.name || "منتج",
+        qty: Math.max(1, Number(it.qty || it.quantity || 1)),
+        price: Number(it.price || 0),
+        product_slug: it.product_slug || it.slug || "",
+        usernames: it.usernames || null,
+        region: it.region || "",
+      })));
+      setLocalTotal(Number(order.total_jod || 0));
+      setLocalSubtotal(Number(order.subtotal_jod ?? order.total_jod ?? 0));
+    }
+  }, [order.items, order.total_jod, order.subtotal_jod, isEditingItems]);
+
+  // Edit draft state
+  const [draftItems, setDraftItems] = useState<EditableOrderItem[]>([]);
+  const [draftSubtotal, setDraftSubtotal] = useState<number>(0);
+  const [draftTotal, setDraftTotal] = useState<number>(0);
+  const [manualTotalOverride, setManualTotalOverride] = useState(false);
+  const [autoSyncCodes, setAutoSyncCodes] = useState(true);
+  const [isSavingItems, setIsSavingItems] = useState(false);
+
+  // Quick add state
+  const [selectedPresetIndex, setSelectedPresetIndex] = useState<string>("");
+  const [customItemName, setCustomItemName] = useState("");
+  const [customItemPrice, setCustomItemPrice] = useState("");
+  const [customItemQty, setCustomItemQty] = useState("1");
+
+  const startEditingItems = () => {
+    const cloned = localItems.map((it) => ({ ...it }));
+    setDraftItems(cloned);
+    const sub = cloned.reduce((acc, it) => acc + (Number(it.price || 0) * Number(it.qty || 1)), 0);
+    const roundedSub = Math.round(sub * 1000) / 1000;
+    setDraftSubtotal(roundedSub);
+    const discount = Number(order.discount_jod || 0);
+    const roundedTot = Math.max(0, Math.round((roundedSub - discount) * 1000) / 1000);
+    setDraftTotal(roundedTot);
+    setManualTotalOverride(false);
+    setIsEditingItems(true);
+  };
+
+  const updateDraftSubtotalAndTotal = (items: EditableOrderItem[], overrideTotal?: number) => {
+    const sub = items.reduce((acc, it) => acc + (Number(it.price || 0) * Number(it.qty || 1)), 0);
+    const roundedSub = Math.round(sub * 1000) / 1000;
+    setDraftSubtotal(roundedSub);
+    if (overrideTotal != null) {
+      setDraftTotal(overrideTotal);
+    } else if (!manualTotalOverride) {
+      const discount = Number(order.discount_jod || 0);
+      const roundedTot = Math.max(0, Math.round((roundedSub - discount) * 1000) / 1000);
+      setDraftTotal(roundedTot);
+    }
+  };
+
+  const handleItemQtyChange = (index: number, newQty: number) => {
+    if (newQty < 1 || newQty > 99) return;
+    const next = draftItems.map((item, i) => (i === index ? { ...item, qty: newQty } : item));
+    setDraftItems(next);
+    updateDraftSubtotalAndTotal(next);
+  };
+
+  const handleItemPriceChange = (index: number, priceStr: string) => {
+    const p = parseFloat(priceStr);
+    const next = draftItems.map((item, i) => (i === index ? { ...item, price: isNaN(p) ? 0 : p } : item));
+    setDraftItems(next);
+    updateDraftSubtotalAndTotal(next);
+  };
+
+  const handleItemNameChange = (index: number, name: string) => {
+    const next = draftItems.map((item, i) => (i === index ? { ...item, name } : item));
+    setDraftItems(next);
+  };
+
+  const handleRemoveItem = (index: number) => {
+    if (draftItems.length <= 1) {
+      toast.error("يجب أن يحتوي الطلب على صنف واحد على الأقل");
+      return;
+    }
+    const next = draftItems.filter((_, i) => i !== index);
+    setDraftItems(next);
+    updateDraftSubtotalAndTotal(next);
+  };
+
+  const handleAddPresetItem = () => {
+    if (selectedPresetIndex === "") return;
+    const idx = parseInt(selectedPresetIndex, 10);
+    const preset = QUICK_CATALOG_PRESETS[idx];
+    if (!preset) return;
+    const newItem: EditableOrderItem = {
+      cartId: `${preset.slug}-${Date.now()}`,
+      product_slug: preset.slug,
+      name: preset.name,
+      qty: 1,
+      price: preset.price,
+    };
+    const next = [...draftItems, newItem];
+    setDraftItems(next);
+    updateDraftSubtotalAndTotal(next);
+    setSelectedPresetIndex("");
+    toast.success(`تمت إضافة "${preset.name}" إلى مسودة الطلب`);
+  };
+
+  const handleAddCustomItem = () => {
+    const name = customItemName.trim();
+    const price = parseFloat(customItemPrice);
+    const qty = parseInt(customItemQty, 10) || 1;
+    if (!name) {
+      toast.error("يرجى كتابة اسم المنتج");
+      return;
+    }
+    if (isNaN(price) || price < 0) {
+      toast.error("يرجى تحديد سعر صالح للمنتج");
+      return;
+    }
+    const newItem: EditableOrderItem = {
+      cartId: `custom-${Date.now()}`,
+      name,
+      qty: Math.max(1, Math.min(99, qty)),
+      price,
+    };
+    const next = [...draftItems, newItem];
+    setDraftItems(next);
+    updateDraftSubtotalAndTotal(next);
+    setCustomItemName("");
+    setCustomItemPrice("");
+    setCustomItemQty("1");
+    toast.success(`تمت إضافة "${name}" إلى مسودة الطلب`);
+  };
+
+  const handleCancelEditingDraft = () => {
+    setDraftItems(localItems.map((it) => ({ ...it })));
+    setDraftSubtotal(localSubtotal);
+    setDraftTotal(localTotal);
+    setManualTotalOverride(false);
+    setSelectedPresetIndex("");
+    setCustomItemName("");
+    setCustomItemPrice("");
+    setCustomItemQty("1");
+    setIsEditingItems(false);
+    toast.info("تم إلغاء التعديل والعودة دون تطبيق أي تغييرات");
+  };
+
+  const handleSaveDraftItems = async () => {
+    if (draftItems.length === 0) {
+      toast.error("لا يمكن حفظ الطلب بدون منتجات");
+      return;
+    }
+    setIsSavingItems(true);
+    try {
+      const cleanItems = draftItems.map((it) => ({
+        cartId: it.cartId || it.product_slug || "custom-item",
+        product_slug: it.product_slug || null,
+        name: it.name.trim() || "منتج",
+        qty: Math.max(1, Math.min(99, Math.floor(Number(it.qty) || 1))),
+        price: Math.max(0, Math.round(Number(it.price || 0) * 1000) / 1000),
+        usernames: it.usernames || null,
+        region: it.region || null,
+      }));
+
+      const existingDel = order.delivery_data && typeof order.delivery_data === "object"
+        ? (order.delivery_data as Record<string, unknown>)
+        : {};
+
+      let newDeliveryData = { ...existingDel };
+
+      // Snapshot original order data before first edit so admin can revert at any time!
+      if (!existingDel.original_items) {
+        newDeliveryData.original_items = (Array.isArray(order.items) && order.items.length > 0) ? order.items : localItems;
+        newDeliveryData.original_total_jod = order.total_jod ?? localTotal;
+        newDeliveryData.original_subtotal_jod = order.subtotal_jod ?? localSubtotal;
+        newDeliveryData.original_codes = existingDel.codes || codes;
+      }
+      newDeliveryData.is_edited_by_admin = true;
+      newDeliveryData.last_edited_at = new Date().toISOString();
+
+      // Recalculate fees if Binance Pay
+      const pm = (existingDel.payment_method || "").toString().toLowerCase();
+      if (pm === "binance_pay" || pm === "binance") {
+        const feeJod = Math.round((draftTotal * 0.03) * 1000) / 1000;
+        const totalWithFee = Math.round((draftTotal + feeJod) * 1000) / 1000;
+        newDeliveryData.fee_jod = feeJod;
+        newDeliveryData.total_with_fee_jod = totalWithFee;
+        newDeliveryData.fee_rate = "3%";
+        newDeliveryData.tax_amount = feeJod;
+        newDeliveryData.total_usdt = (totalWithFee * 1.41).toFixed(2);
+      }
+
+      // Sync codes if autoSyncCodes is checked
+      let updatedCodes = [...codes];
+      if (autoSyncCodes) {
+        cleanItems.forEach((it) => {
+          const qty = it.qty || 1;
+          const detected = detectRegionCode({
+            region: it.region,
+            cartId: it.cartId,
+            name: it.name,
+            slug: it.product_slug,
+          });
+          const defaultReg = detected === "global" ? "Global" : detected.toUpperCase();
+          const existingMatches = updatedCodes.filter((c) => c.label && c.label.includes(it.name)).length;
+          const needed = qty - existingMatches;
+          for (let k = 0; k < needed; k++) {
+            updatedCodes.push({
+              kind: "code",
+              label: qty > 1 ? `${it.name} (${existingMatches + k + 1}/${qty})` : it.name,
+              value: "",
+              email: "",
+              password: "",
+              extra: "",
+              region: defaultReg,
+            });
+          }
+        });
+        newDeliveryData.codes = updatedCodes;
+        setCodes(updatedCodes);
+      }
+
+      const patch: Record<string, unknown> = {
+        items: cleanItems,
+        subtotal_jod: draftSubtotal,
+        total_jod: draftTotal,
+        delivery_data: newDeliveryData,
+      };
+
+      const { error } = await supabase
+        .from("orders")
+        .update(patch as never)
+        .eq("id", order.id);
+
+      if (error) throw error;
+
+      setLocalItems(cleanItems);
+      setLocalSubtotal(draftSubtotal);
+      setLocalTotal(draftTotal);
+      setIsEditingItems(false);
+      toast.success(`تم تحديث منتجات وقيمة الطلب بنجاح — الإجمالي: ${draftTotal.toFixed(2)} د.أ ✓`);
+      qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+    } catch (err: any) {
+      toast.error(err?.message || "حدث خطأ أثناء حفظ التعديلات");
+    } finally {
+      setIsSavingItems(false);
+    }
+  };
+
+  const handleRevertToOriginalOrder = async () => {
+    const existingDel = order.delivery_data && typeof order.delivery_data === "object"
+      ? (order.delivery_data as Record<string, unknown>)
+      : {};
+
+    const origItems = existingDel.original_items as any[];
+    const origTotal = Number(existingDel.original_total_jod ?? order.total_jod ?? 0);
+    const origSubtotal = Number(existingDel.original_subtotal_jod ?? order.subtotal_jod ?? origTotal);
+    const origCodes = (existingDel.original_codes as DeliveryCode[]) || [];
+
+    if (!origItems || !Array.isArray(origItems) || origItems.length === 0) {
+      toast.error("لا توجد نسخة أصلية محفوظة مسبقاً لهذا الطلب. يمكنك تعديل الكمية يدوياً وحفظها.");
+      return;
+    }
+
+    if (!confirm("هل أنت متأكد من التراجع عن جميع التعديلات واسترجاع الطلب الأصلي كما اشتراه العميل؟")) {
+      return;
+    }
+
+    setIsReverting(true);
+    try {
+      const newDel = { ...existingDel };
+      newDel.is_edited_by_admin = false;
+      newDel.reverted_at = new Date().toISOString();
+      delete newDel.original_items;
+      delete newDel.original_total_jod;
+      delete newDel.original_subtotal_jod;
+      delete newDel.original_codes;
+      if (origCodes.length > 0) {
+        newDel.codes = origCodes;
+      }
+
+      // If Binance Pay, recalculate fee for original amount
+      const pm = (existingDel.payment_method || "").toString().toLowerCase();
+      if (pm === "binance_pay" || pm === "binance") {
+        const feeJod = Math.round((origTotal * 0.03) * 1000) / 1000;
+        const totalWithFee = Math.round((origTotal + feeJod) * 1000) / 1000;
+        newDel.fee_jod = feeJod;
+        newDel.total_with_fee_jod = totalWithFee;
+        newDel.fee_rate = "3%";
+        newDel.tax_amount = feeJod;
+        newDel.total_usdt = (totalWithFee * 1.41).toFixed(2);
+      }
+
+      const patch: Record<string, unknown> = {
+        items: origItems,
+        subtotal_jod: origSubtotal,
+        total_jod: origTotal,
+        delivery_data: newDel,
+      };
+
+      const { error } = await supabase
+        .from("orders")
+        .update(patch as never)
+        .eq("id", order.id);
+
+      if (error) throw error;
+
+      const restoredLocal = origItems.map((it: any) => ({
+        cartId: it.cartId || it.id || "",
+        name: it.name || "منتج",
+        qty: Math.max(1, Number(it.qty || it.quantity || 1)),
+        price: Number(it.price || 0),
+        product_slug: it.product_slug || it.slug || "",
+        usernames: it.usernames || null,
+        region: it.region || "",
+      }));
+
+      setLocalItems(restoredLocal);
+      setLocalSubtotal(origSubtotal);
+      setLocalTotal(origTotal);
+      if (origCodes.length > 0) {
+        setCodes(origCodes);
+      }
+      setIsEditingItems(false);
+      onSave(patch);
+      toast.success(`تم التراجع عن التعديل واسترجاع الأصناف والقيمة الأصلية (${origTotal.toFixed(2)} د.أ) بنجاح ✓`);
+      qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+    } catch (err: any) {
+      toast.error(err?.message || "حدث خطأ أثناء استرجاع الطلب الأصلي");
+    } finally {
+      setIsReverting(false);
+    }
+  };
+
   const existingDelivery = order.delivery_data && typeof order.delivery_data === "object" ? order.delivery_data as { codes?: DeliveryCode[] } : {};
 
   const initialCodes = (() => {
@@ -732,7 +1199,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
       }));
     }
     const seeded: DeliveryCode[] = [];
-    (items as Array<{ name?: string; qty?: number; cartId?: string; id?: string; slug?: string; product_slug?: string; region?: string }>).forEach((it) => {
+    (localItems as Array<{ name?: string; qty?: number; cartId?: string; id?: string; slug?: string; product_slug?: string; region?: string }>).forEach((it) => {
       const qty = Math.max(1, Number(it.qty) || 1);
       const detected = detectRegionCode({
         region: it.region,
@@ -949,6 +1416,9 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
       status: nextStatus,
       paid_jod: effectivePaid,
       admin_notes: notes.trim() || null,
+      items: localItems,
+      subtotal_jod: localSubtotal,
+      total_jod: localTotal,
       delivery_data: {
         ...existingDel,
         codes: cleanCodes,
@@ -970,7 +1440,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
     const targetEmail = order.user_email || order.customer_email || (order.delivery_data && typeof order.delivery_data === "object" ? (order.delivery_data as any).customer_email : null);
     if (notifyCustomer && targetEmail && targetEmail.includes("@")) {
       try {
-        const emailItems = (Array.isArray(order.items) ? order.items : []).map((it: any, itemIdx: number) => {
+        const emailItems = localItems.map((it: any, itemIdx: number) => {
           const matchingCode = codes[itemIdx] || codes[0] || null;
           const fullRegion = formatFullRegion(
             {
@@ -1019,6 +1489,58 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
         console.error("Order delivery email failed:", err);
         toast.warning("تم تسليم الطلب، لكن تعذر إرسال الإيميل للعميل.");
       }
+    }
+  }
+
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
+
+  async function confirmPaymentReceipt() {
+    setConfirmingPayment(true);
+    try {
+      setStatus("paid");
+      onSave(buildPatch("paid"));
+
+      const targetEmail = order.user_email || order.customer_email || (order.delivery_data && typeof order.delivery_data === "object" ? (order.delivery_data as any).customer_email : null);
+      if (notifyCustomer && targetEmail && targetEmail.includes("@")) {
+        const emailItems = localItems.map((it: any) => ({
+          name: it.name || "منتج رقمي",
+          qty: it.qty || it.quantity || 1,
+          price: it.price != null ? Number(it.price) : undefined,
+          image: it.image || it.image_url || undefined,
+          region: it.region || undefined,
+          variant: it.variant || undefined,
+          slug: it.product_slug || it.slug || it.cartId || it.id || undefined,
+        }));
+
+        const emailRes = await sendPaymentConfirmedEmail({
+          data: {
+            orderNumber: order.order_number,
+            customerEmail: targetEmail.trim(),
+            customerName: order.customer_name || undefined,
+            totalJod: Number(order.total_jod || 0),
+            subtotalJod: Number(order.subtotal_jod ?? order.total_jod ?? 0),
+            discountJod: Number(order.discount_jod || 0),
+            paymentMethod: (order.delivery_data as any)?.payment_method || "",
+            items: emailItems,
+            notes: notes.trim() || undefined,
+            createdAt: order.created_at,
+            lang: emailLang,
+          },
+        });
+
+        if (emailRes && !emailRes.ok) {
+          toast.warning(`تم تأكيد استلام الدفع، لكن تعذر إرسال الإيميل للعميل: ${emailRes.error || "مفتاح البريد غير مهيأ"}`);
+        } else {
+          toast.success(`تم تأكيد استلام الدفع وإرسال إشعار التأكيد للعميل (${targetEmail}) بنجاح!`);
+        }
+      } else {
+        toast.success("تم تأكيد استلام الدفع وتحديث حالة الطلب!");
+      }
+    } catch (err: any) {
+      console.error("Confirm payment receipt error:", err);
+      toast.error(err?.message || "حدث خطأ أثناء تأكيد استلام الدفع");
+    } finally {
+      setConfirmingPayment(false);
     }
   }
 
@@ -1082,7 +1604,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
 
     setSendingPaymentReminder(true);
     try {
-      const emailItems = (Array.isArray(order.items) ? order.items : []).map((it: any) => ({
+      const emailItems = localItems.map((it: any) => ({
         name: it.name || "منتج رقمي",
         qty: it.qty || it.quantity || 1,
         price: it.price != null ? Number(it.price) : undefined,
@@ -1213,9 +1735,97 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
               </div>
             </div>
             <div className="gx-od-tile">
-              <div className="k">الإجمالي</div>
-              <div className="v text-emerald-300">{Number(order.total_jod).toFixed(2)} <span className="text-xs text-cyan-400/70">د.أ</span></div>
+              <div className="flex items-center justify-between">
+                <div className="k">الإجمالي</div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isEditingItems) startEditingItems();
+                    setTimeout(() => {
+                      document.getElementById("gx-admin-items-editor")?.scrollIntoView({ behavior: "smooth" });
+                    }, 80);
+                  }}
+                  className="text-[11px] text-cyan-400 hover:text-cyan-300 underline font-semibold flex items-center gap-1 cursor-pointer"
+                  title="تعديل منتجات الطلب، الكميات، أو القيمة الإجمالية"
+                >
+                  <Pencil size={11} /> تعديل القيمة والمنتجات
+                </button>
+              </div>
+              <div className="v text-emerald-300 font-mono text-base font-extrabold">
+                {(() => {
+                  const delData = order.delivery_data && typeof order.delivery_data === "object" ? (order.delivery_data as any) : {};
+                  const feeJod = Number(delData.fee_jod || 0);
+                  const totalWithFee = Number(delData.total_with_fee_jod || (localTotal + feeJod));
+                  if (feeJod > 0) {
+                    return (
+                      <div>
+                        <div>
+                          {totalWithFee.toFixed(2)} <span className="text-xs text-cyan-400/70">د.أ (شامل رسوم الخدمة)</span>
+                        </div>
+                        <div className="text-xs text-amber-300/90 font-normal mt-0.5">
+                          الأساسي: {localTotal.toFixed(2)} د.أ + رسوم الخدمة (3%): {feeJod.toFixed(2)} د.أ
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <>
+                      {localTotal.toFixed(2)} <span className="text-xs text-cyan-400/70">د.أ</span>
+                    </>
+                  );
+                })()}
+              </div>
             </div>
+            {(() => {
+              const delData = order.delivery_data && typeof order.delivery_data === "object" ? (order.delivery_data as any) : {};
+              const pm = (delData.payment_method || "").toLowerCase();
+              if (pm === "binance_pay" || pm === "binance") {
+                return (
+                  <div className="gx-od-tile col-span-full border border-amber-500/40 bg-amber-950/20 rounded-xl p-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">🟡</span>
+                        <span className="font-extrabold text-yellow-300 text-sm">طريقة الدفع: بايننس باي (Binance Pay)</span>
+                        <span className="text-xs bg-amber-500/20 text-yellow-200 border border-amber-500/30 px-2 py-0.5 rounded font-mono">
+                          ID: 835207366
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {delData.fee_jod && Number(delData.fee_jod) > 0 && (
+                          <span className="text-xs font-semibold text-amber-200 bg-black/40 px-2 py-1 rounded border border-amber-500/30 font-mono">
+                            رسوم الخدمة (3%): +{Number(delData.fee_jod).toFixed(2)} د.أ
+                          </span>
+                        )}
+                        {delData.total_usdt && (
+                          <div className="text-sm font-extrabold text-white bg-black/50 px-2.5 py-1 rounded border border-white/10 font-mono">
+                            المطلوب: {delData.total_usdt} USDT
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {delData.binance_order_id && (
+                      <div className="mt-2 text-xs flex items-center gap-2 flex-wrap bg-black/40 p-2 rounded-lg border border-amber-500/20">
+                        <span className="text-amber-200/80 font-bold">رقم عملية التحويل من العميل (Binance Order ID):</span>
+                        <span className="font-mono font-black text-cyan-300 text-sm select-all tracking-wider">
+                          {delData.binance_order_id}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              if (pm === "cliq") {
+                return (
+                  <div className="gx-od-tile col-span-full border border-cyan-500/30 bg-cyan-950/20 rounded-xl p-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">🇯🇴</span>
+                      <span className="font-bold text-cyan-200 text-sm">طريقة الدفع: كليك (CliQ - الأردن)</span>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
 
           {/* Code Reveal Status Banner */}
@@ -1251,21 +1861,20 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             const themeClasses = isAllRev
               ? "bg-gradient-to-r from-emerald-950/80 via-emerald-900/50 to-cyan-950/70 border-emerald-500/40 shadow-emerald-950/40"
               : isPartialRev
-              ? "bg-gradient-to-r from-cyan-950/80 via-amber-950/50 to-black/80 border-cyan-500/40 shadow-cyan-950/30"
-              : "bg-gradient-to-r from-amber-950/40 via-stone-900/40 to-black/60 border-amber-500/30 shadow-amber-950/20";
+                ? "bg-gradient-to-r from-cyan-950/80 via-amber-950/50 to-black/80 border-cyan-500/40 shadow-cyan-950/30"
+                : "bg-gradient-to-r from-amber-950/40 via-stone-900/40 to-black/60 border-amber-500/30 shadow-amber-950/20";
 
             return (
               <div className={`border rounded-xl p-4 transition-all shadow-md ${themeClasses}`}>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${
-                        isAllRev
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${isAllRev
                           ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.25)]"
                           : isPartialRev
-                          ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-[0_0_15px_rgba(0,229,255,0.25)]"
-                          : "bg-amber-500/20 text-amber-400 border-amber-500/40"
-                      }`}
+                            ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-[0_0_15px_rgba(0,229,255,0.25)]"
+                            : "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                        }`}
                     >
                       {isAllRev ? <Eye size={22} /> : isPartialRev ? <AlertTriangle size={22} /> : <Lock size={20} />}
                     </div>
@@ -1273,17 +1882,16 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className={`text-sm font-extrabold ${
-                            isAllRev ? "text-emerald-300" : isPartialRev ? "text-cyan-200" : "text-amber-300"
-                          }`}
+                          className={`text-sm font-extrabold ${isAllRev ? "text-emerald-300" : isPartialRev ? "text-cyan-200" : "text-amber-300"
+                            }`}
                         >
                           {isAllRev
                             ? `🔓 جميع الأكواد مكشوفة ومستلمة (${revCount}/${total} كود)`
                             : isPartialRev
-                            ? `⚠️ كشف جزئي: تم كشف ${revCount} من أصل ${total} كود`
-                            : total > 0
-                            ? `🔒 جميع الأكواد مقفلة ومحمية (0/${total} كود مكشوف)`
-                            : "📦 بانتظار إضافة بيانات التسليم والأكواد"}
+                              ? `⚠️ كشف جزئي: تم كشف ${revCount} من أصل ${total} كود`
+                              : total > 0
+                                ? `🔒 جميع الأكواد مقفلة ومحمية (0/${total} كود مكشوف)`
+                                : "📦 بانتظار إضافة بيانات التسليم والأكواد"}
                         </span>
 
                         {isPartialRev && (
@@ -1343,27 +1951,328 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
 
 
 
-          {/* Products */}
-          <div className="gx-od-sec">
-            <div className="gx-od-sec-h">
-              <div className="gx-od-sec-t"><PackageIcon size={14} /> المنتجات ({items.length})</div>
+          {/* Products & Items Editor */}
+          <div className="gx-od-sec" id="gx-admin-items-editor">
+            <div className="gx-od-sec-h flex items-center justify-between">
+              <div className="gx-od-sec-t">
+                <PackageIcon size={14} /> المنتجات ({localItems.length})
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isEditingItems) {
+                    handleCancelEditingDraft();
+                  } else {
+                    startEditingItems();
+                  }
+                }}
+                className="text-xs text-cyan-300 hover:text-white font-bold flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/15 border border-cyan-500/30 hover:bg-cyan-500/25 transition cursor-pointer shadow-sm"
+              >
+                <Pencil size={12} />
+                {isEditingItems ? "إلغاء وضع التعديل (دون حفظ) ✕" : "تعديل المنتجات والكميات ✎"}
+              </button>
             </div>
-            <div>
-              {(items as Array<{ name?: string; qty?: number; price?: number; usernames?: string[] }>).map((it, i) => (
-                <div key={i} className="gx-od-item">
-                  <div>
-                    <div className="font-semibold text-cyan-100">{it.name}</div>
-                    {it.usernames && it.usernames.length > 0 && (
-                      <div className="text-[11px] text-cyan-400/70 mt-0.5">يوزرات: {it.usernames.join(", ")}</div>
-                    )}
+
+            {/* Revert Banner if previously edited */}
+            {(() => {
+              const delData = order.delivery_data && typeof order.delivery_data === "object" ? (order.delivery_data as any) : {};
+              const hasBeenEdited = Boolean(delData.is_edited_by_admin && delData.original_items);
+              if (!hasBeenEdited) return null;
+              return (
+                <div className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle size={16} className="text-amber-400 shrink-0" />
+                    <div>
+                      <div className="text-xs font-bold text-amber-200">
+                        تم تعديل هذا الطلب إدارياً {delData.original_total_jod != null ? `(الإجمالي الأصلي: ${Number(delData.original_total_jod).toFixed(2)} د.أ)` : ""}
+                      </div>
+                      <div className="text-[11px] text-amber-400/80">
+                        يمكنك التراجع عن جميع التعديلات واسترجاع أصناف وكميات الطلب الأصلية كما اشتراها العميل.
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <div className="text-cyan-400/70 text-xs">× {it.qty}</div>
-                    <div className="font-mono font-bold text-emerald-300">{((it.price ?? 0) * (it.qty ?? 1)).toFixed(2)}</div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRevertToOriginalOrder}
+                    disabled={isReverting}
+                    className="h-8 text-xs font-bold border-amber-500/50 bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 hover:text-white cursor-pointer"
+                  >
+                    {isReverting ? "جاري الاسترجاع..." : "↶ تراجع عن التعديل واسترجاع الطلب الأصلي"}
+                  </Button>
+                </div>
+              );
+            })()}
+
+            {!isEditingItems ? (
+              <div>
+                {localItems.map((it, i) => (
+                  <div key={i} className="gx-od-item">
+                    <div>
+                      <div className="font-semibold text-cyan-100">{it.name}</div>
+                      {it.usernames && it.usernames.length > 0 && (
+                        <div className="text-[11px] text-cyan-400/70 mt-0.5">يوزرات: {it.usernames.join(", ")}</div>
+                      )}
+                    </div>
+                    <div className="text-left">
+                      <div className="text-cyan-400/70 text-xs">× {it.qty}</div>
+                      <div className="font-mono font-bold text-emerald-300">
+                        {((Number(it.price) || 0) * (Number(it.qty) || 1)).toFixed(2)} د.أ
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-3.5 rounded-xl border border-cyan-400/30 bg-cyan-950/20 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-white/10">
+                  <div>
+                    <div className="text-xs font-bold text-cyan-200 flex items-center gap-1.5">
+                      <span>📦 تعديل أصناف وكميات الطلب مباشرة</span>
+                      <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/30 font-mono">
+                        وضع التعديل
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      عدّل الكميات، غيّر الأسعار، أضف أو احذف منتجات وسيتم تحديث إجمالي الطلب تلقائياً.
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+
+                {/* Editable Items List */}
+                <div className="space-y-2.5">
+                  {draftItems.map((it, i) => (
+                    <div
+                      key={i}
+                      className="p-3 rounded-lg bg-black/50 border border-white/10 hover:border-cyan-400/30 transition space-y-2"
+                    >
+                      <div>
+                        <Label className="text-[10px] text-cyan-200/70 font-semibold mb-1 block">اسم المنتج:</Label>
+                        <Input
+                          value={it.name}
+                          onChange={(e) => handleItemNameChange(i, e.target.value)}
+                          placeholder="اسم المنتج..."
+                          className="gx-adm-input text-xs font-semibold h-8"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
+                        {/* Price Input */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] text-slate-400">سعر الوحدة:</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={it.price}
+                            onChange={(e) => handleItemPriceChange(i, e.target.value)}
+                            className="gx-adm-input w-24 h-7 text-xs font-mono font-bold text-emerald-300"
+                            dir="ltr"
+                          />
+                          <span className="text-[10px] text-cyan-400/80">د.أ</span>
+                        </div>
+
+                        {/* Quantity Controls */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] text-slate-400">الكمية:</span>
+                          <button
+                            type="button"
+                            onClick={() => handleItemQtyChange(i, it.qty - 1)}
+                            disabled={it.qty <= 1}
+                            className="w-7 h-7 rounded bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-white/10 grid place-items-center text-white transition cursor-pointer"
+                            title="تقليل الكمية"
+                          >
+                            <Minus size={13} />
+                          </button>
+                          <span className="w-8 text-center font-mono font-bold text-sm text-cyan-200">
+                            {it.qty}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleItemQtyChange(i, it.qty + 1)}
+                            disabled={it.qty >= 99}
+                            className="w-7 h-7 rounded bg-white/10 hover:bg-white/20 disabled:opacity-40 grid place-items-center text-white transition cursor-pointer"
+                            title="زيادة الكمية"
+                          >
+                            <Plus size={13} />
+                          </button>
+                        </div>
+
+                        {/* Line Total */}
+                        <div className="text-left font-mono font-black text-sm text-emerald-400">
+                          {((Number(it.price) || 0) * (Number(it.qty) || 1)).toFixed(2)} د.أ
+                        </div>
+
+                        {/* Delete Item */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(i)}
+                          className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/15 p-1.5 rounded transition cursor-pointer"
+                          title="حذف هذا الصنف من الطلب"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add New Item Section */}
+                <div className="p-3 rounded-lg border border-cyan-500/25 bg-cyan-500/5 space-y-2.5">
+                  <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                    <Plus size={13} />
+                    <span>إضافة منتج أو بطاقة جديدة إلى الطلب</span>
+                  </div>
+
+                  {/* 1. Quick Add from Catalog Presets */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <select
+                      value={selectedPresetIndex}
+                      onChange={(e) => setSelectedPresetIndex(e.target.value)}
+                      className="gx-adm-input flex-1 min-w-[200px] h-8 text-xs font-semibold bg-[#0b101c] text-cyan-100"
+                    >
+                      <option value="">⚡ اختر من المنتجات والبطاقات الشائعة لإضافتها فوراً...</option>
+                      {QUICK_CATALOG_PRESETS.map((p, idx) => (
+                        <option key={idx} value={idx}>
+                          {p.name} — {p.price.toFixed(2)} د.أ
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleAddPresetItem}
+                      disabled={selectedPresetIndex === ""}
+                      className="px-3 py-1.5 rounded-lg bg-cyan-500 text-black font-bold text-xs hover:bg-cyan-400 disabled:opacity-40 transition cursor-pointer"
+                    >
+                      + إضافة المختار
+                    </button>
+                  </div>
+
+                  {/* 2. Custom Item Add */}
+                  <div className="pt-2 border-t border-cyan-500/15 flex items-center gap-2 flex-wrap">
+                    <Input
+                      value={customItemName}
+                      onChange={(e) => setCustomItemName(e.target.value)}
+                      placeholder="أو اكتب اسم منتج مخصص..."
+                      className="gx-adm-input flex-1 min-w-[150px] h-8 text-xs"
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={customItemPrice}
+                      onChange={(e) => setCustomItemPrice(e.target.value)}
+                      placeholder="السعر د.أ"
+                      className="gx-adm-input w-24 h-8 text-xs font-mono font-bold text-emerald-300"
+                      dir="ltr"
+                    />
+                    <Input
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={customItemQty}
+                      onChange={(e) => setCustomItemQty(e.target.value)}
+                      placeholder="الكمية"
+                      className="gx-adm-input w-16 h-8 text-xs font-mono text-center"
+                      dir="ltr"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomItem}
+                      className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition cursor-pointer border border-white/15"
+                    >
+                      + صنف مخصص
+                    </button>
+                  </div>
+                </div>
+
+                {/* Totals Summary & Manual Adjustment */}
+                <div className="p-3 rounded-lg bg-black/60 border border-emerald-500/30 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-300">
+                    <span>مجموع المنتجات الجديد (Subtotal):</span>
+                    <span className="font-mono font-bold text-cyan-200">{draftSubtotal.toFixed(2)} د.أ</span>
+                  </div>
+
+                  {Number(order.discount_jod || 0) > 0 && (
+                    <div className="flex items-center justify-between text-xs text-amber-300">
+                      <span>خصم الكوبونات / الرصيد:</span>
+                      <span className="font-mono font-bold">-{Number(order.discount_jod).toFixed(2)} د.أ</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-white font-black">الإجمالي المطلوب للطلب:</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={draftTotal}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          setDraftTotal(isNaN(val) ? 0 : val);
+                          setManualTotalOverride(true);
+                        }}
+                        className="gx-adm-input w-28 h-8 font-mono font-black text-emerald-300 text-sm"
+                        dir="ltr"
+                      />
+                      <span className="text-xs text-cyan-300 font-bold">د.أ</span>
+                      {manualTotalOverride && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setManualTotalOverride(false);
+                            updateDraftSubtotalAndTotal(draftItems);
+                          }}
+                          className="text-[11px] text-cyan-400 hover:underline mr-1 cursor-pointer"
+                        >
+                          (إعادة الحساب التلقائي)
+                        </button>
+                      )}
+                    </div>
+
+                    <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={autoSyncCodes}
+                        onChange={(e) => setAutoSyncCodes(e.target.checked)}
+                        className="rounded border-cyan-500 text-cyan-500 accent-cyan-500 cursor-pointer"
+                      />
+                      <span>مزامنة خانات الأكواد للكميات والأصناف الجديدة تلقائياً</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Save & Cancel Buttons */}
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelEditingDraft}
+                    disabled={isSavingItems}
+                    className="h-8 text-xs cursor-pointer"
+                  >
+                    إلغاء المسودة دون حفظ
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleSaveDraftItems}
+                    disabled={isSavingItems}
+                    className="h-8 text-xs font-bold bg-gradient-to-r from-emerald-500 to-cyan-500 text-black hover:opacity-95 cursor-pointer shadow-md"
+                  >
+                    {isSavingItems ? (
+                      <>
+                        <Loader2 size={13} className="ml-1 animate-spin" /> جاري الحفظ...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={13} className="ml-1" /> حفظ تعديلات المنتجات والقيمة
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Status */}
@@ -1398,15 +2307,14 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                   <div key={i} className={`gx-od-code ${isCancelled ? "border-rose-500/50 bg-rose-950/25" : ""}`}>
                     <div className="flex gap-2 items-center mb-2 flex-wrap justify-between">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                          isCancelled
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isCancelled
                             ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
                             : isTopup
-                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                            : isAccount
-                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
-                            : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                        }`}>
+                              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                              : isAccount
+                                ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
+                                : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+                          }`}>
                           {isTopup ? "تعبئة" : isAccount ? "حساب" : "كود"} #{i + 1}
                         </span>
 
@@ -1509,8 +2417,8 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                                 type="button"
                                 onClick={() => updateCode(i, { region: r.code })}
                                 className={`text-[10px] px-2 py-0.5 rounded-md border font-bold transition flex items-center gap-1 ${isSelected
-                                    ? "bg-cyan-500/25 text-cyan-200 border-cyan-400/60 shadow-[0_0_8px_rgba(0,229,255,0.25)]"
-                                    : "bg-white/5 text-cyan-100/60 border-white/10 hover:bg-white/10 hover:text-white"
+                                  ? "bg-cyan-500/25 text-cyan-200 border-cyan-400/60 shadow-[0_0_8px_rgba(0,229,255,0.25)]"
+                                  : "bg-white/5 text-cyan-100/60 border-white/10 hover:bg-white/10 hover:text-white"
                                   }`}
                               >
                                 <span>{r.code}</span>
@@ -1734,13 +2642,13 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
                 </div>
                 <div>
                   <div className="text-xs font-bold text-foreground flex items-center gap-2">
-                    <span>خيارات مالية ومحاسبية متقدمة (تعديل القيمة، رصيد GX Coins، و Refund)</span>
+                    <span>خيارات استرجاع الرصيد (Refund) وتسوية عملات GX Coins</span>
                     <span className="text-[10px] text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono">
-                      اختياري / متقدم
+                      استرجاع / عملات
                     </span>
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-0.5">
-                    تعديل إجمالي الطلب يدوياً، تسوية عملات GX المستخدمة، أو إجراء استرجاع مالي لرصيد العميل
+                    إجراء استرجاع مالي لرصيد محفظة العميل أو تسوية عملات GX المستخدمة بالطلب
                   </div>
                 </div>
               </div>
@@ -1845,10 +2753,15 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
               )}
               {status === "pending" && (
                 <Button
-                  onClick={() => { setStatus("paid"); onSave(buildPatch("paid")); }}
+                  onClick={confirmPaymentReceipt}
+                  disabled={confirmingPayment}
                   className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 px-4 shadow-md shadow-emerald-500/20"
                 >
-                  <CheckCircle2 size={15} className="ml-1.5" /> تأكيد استلام الدفع
+                  {confirmingPayment ? (
+                    <><Loader2 size={15} className="ml-1.5 animate-spin" /> جارٍ التأكيد والإرسال...</>
+                  ) : (
+                    <><CheckCircle2 size={15} className="ml-1.5" /> تأكيد استلام الدفع</>
+                  )}
                 </Button>
               )}
               {status !== "cancelled" && (
@@ -2081,18 +2994,26 @@ function AmountsBlock({ order }: { order: OrderWithEmail }) {
   const couponDisc = Math.max(Number(order.discount_jod ?? 0) - Number(order.coins_discount_jod ?? 0), 0);
   const newTotal = Math.max(sub - couponDisc - coinsDisc, 0);
   const delta = c - Number(order.coins_used ?? 0);
-  const valid = Number.isFinite(sub) && sub >= 0 && Number.isFinite(c) && c >= 0 && c <= maxCoins && reason.trim().length >= 3;
+  const valid = Number.isFinite(sub) && sub >= 0 && Number.isFinite(c) && c >= 0 && c <= maxCoins;
+
+  const REASON_PRESETS = [
+    "تعديل إداري لقيمة الطلب",
+    "خصم إضافي للعميل",
+    "تسوية فرق دفع",
+    "تعديل الكمية",
+  ];
 
   async function save() {
     setBusy(true);
+    const effectiveReason = reason.trim() || "تعديل إداري لقيمة الطلب";
     const { data, error } = await supabase.rpc("admin_set_order_amounts", {
-      _order_id: order.id, _subtotal_jod: sub, _coins_used: c, _reason: reason.trim(),
+      _order_id: order.id, _subtotal_jod: sub, _coins_used: c, _reason: effectiveReason,
     });
     setBusy(false);
     const res = data as { ok?: boolean; message?: string; coins_delta?: number } | null;
     if (error || !res?.ok) { toast.error(error?.message || res?.message || "فشل تعديل القيمة"); return; }
     toast.success(
-      `تم تحديث الطلب — الإجمالي ${newTotal.toFixed(2)} د.أ` +
+      `تم تحديث قيمة الطلب بنجاح — الإجمالي ${newTotal.toFixed(2)} د.أ` +
       (res.coins_delta ? (res.coins_delta > 0 ? ` • خصم ${res.coins_delta} GX` : ` • إرجاع ${-res.coins_delta} GX`) : ""),
     );
     setReason("");
@@ -2101,9 +3022,11 @@ function AmountsBlock({ order }: { order: OrderWithEmail }) {
   }
 
   return (
-    <div className="gx-od-sec">
+    <div id="gx-admin-amounts-block" className="gx-od-sec border border-amber-500/30 bg-amber-500/5">
       <div className="gx-od-sec-h">
-        <div className="gx-od-sec-t">💰 القيمة و GX Coins</div>
+        <div className="gx-od-sec-t text-amber-300 font-bold flex items-center gap-2">
+          <span>💰 تعديل قيمة الطلب و GX Coins</span>
+        </div>
         <span className="gx-adm-badge bg-amber-500/15 text-amber-300 border-amber-500/40">
           مستخدم: {Number(order.coins_used ?? 0)} GX
           {Number(order.coins_refunded ?? 0) > 0 ? ` • مُعاد: ${Number(order.coins_refunded)}` : ""}
@@ -2114,37 +3037,58 @@ function AmountsBlock({ order }: { order: OrderWithEmail }) {
         <div className="text-xs text-fuchsia-200/80">تم استرجاع هذا الطلب — لا يمكن تعديل قيمته أو عملاته.</div>
       ) : (
         <>
-          <div className="grid sm:grid-cols-3 gap-2 items-end">
+          <div className="grid sm:grid-cols-3 gap-2.5 items-end">
             <div>
-              <Label className="text-[11px] text-cyan-100/60">القيمة قبل الخصم (د.أ)</Label>
+              <Label className="text-[11px] text-cyan-100/70 font-semibold">القيمة الإجمالية قبل الخصم (د.أ)</Label>
               <Input dir="ltr" inputMode="decimal" value={subtotal} onChange={(e) => setSubtotal(e.target.value)}
-                className="gx-adm-input h-9 text-sm font-mono" />
+                className="gx-adm-input h-9 text-sm font-mono font-bold text-amber-200" />
             </div>
             <div>
-              <Label className="text-[11px] text-cyan-100/60">GX Coins المستخدمة (حد أقصى {maxCoins})</Label>
+              <Label className="text-[11px] text-cyan-100/70 font-semibold">GX Coins المستخدمة (حد أقصى {maxCoins})</Label>
               <Input dir="ltr" inputMode="numeric" value={coins} onChange={(e) => setCoins(e.target.value)}
                 className="gx-adm-input h-9 text-sm font-mono" />
             </div>
             <div>
-              <Label className="text-[11px] text-cyan-100/60">السبب (إلزامي)</Label>
-              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثلاً: تعديل الكمية"
+              <Label className="text-[11px] text-cyan-100/70 font-semibold">سبب التعديل</Label>
+              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="مثلاً: تعديل إداري لقيمة الطلب"
                 className="gx-adm-input h-9 text-sm" />
             </div>
           </div>
-          <div className="text-[11px] text-cyan-100/60 mt-2 flex flex-wrap gap-x-4 gap-y-1">
+
+          {/* Quick Reason Chips */}
+          <div className="flex items-center gap-1.5 flex-wrap mt-2">
+            <span className="text-[10px] text-muted-foreground ml-1">أسباب سريعة:</span>
+            {REASON_PRESETS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setReason(p)}
+                className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${reason === p
+                    ? "bg-amber-500/30 border-amber-400 text-amber-200"
+                    : "bg-white/5 border-white/10 text-cyan-200/70 hover:text-white hover:bg-white/10"
+                  }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          <div className="text-[11.5px] text-cyan-100/80 mt-2.5 p-2 rounded-lg bg-black/40 border border-white/5 flex flex-wrap gap-x-5 gap-y-1 items-center">
             <span>خصم العملات: <b className="text-amber-300 font-mono">{coinsDisc.toFixed(2)}</b> د.أ</span>
-            <span>خصم الكوبون: <b className="font-mono">{couponDisc.toFixed(2)}</b> د.أ</span>
-            <span>الإجمالي الجديد: <b className="text-emerald-300 font-mono">{newTotal.toFixed(2)}</b> د.أ</span>
+            <span>خصم الكوبون: <b className="font-mono text-cyan-300">{couponDisc.toFixed(2)}</b> د.أ</span>
+            <span className="bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+              الإجمالي النهائي بعد التعديل: <b className="text-emerald-300 font-mono text-sm">{newTotal.toFixed(2)}</b> د.أ
+            </span>
             {delta !== 0 && (
               <span className={delta > 0 ? "text-rose-300" : "text-emerald-300"}>
                 {delta > 0 ? `سيتم خصم ${delta} GX من العميل` : `سيتم إرجاع ${-delta} GX للعميل`}
               </span>
             )}
           </div>
-          {c > maxCoins && <div className="text-[10px] text-rose-400 mt-1">العملات تتجاوز 50% من قيمة الطلب</div>}
-          <div className="mt-3">
-            <Button onClick={save} disabled={!valid || busy} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold h-9 disabled:opacity-45">
-              {busy ? <><Loader2 size={14} className="ml-1 animate-spin" /> جاري الحفظ…</> : "حفظ القيمة والعملات"}
+          {c > maxCoins && <div className="text-[10px] text-rose-400 mt-1 font-medium">⚠️ العملات تتجاوز 50% من قيمة الطلب المسموح بها</div>}
+          <div className="mt-3 flex items-center gap-2">
+            <Button onClick={save} disabled={!valid || busy} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold h-9 px-4 shadow-sm disabled:opacity-45">
+              {busy ? <><Loader2 size={14} className="ml-1 animate-spin" /> جاري الحفظ…</> : "حفظ وتثبيت القيمة الجديدة"}
             </Button>
           </div>
         </>

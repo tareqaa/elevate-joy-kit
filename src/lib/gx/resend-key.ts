@@ -10,11 +10,11 @@
 
 import {
   getPublicClient,
-  getVerifiedCaller,
   getUserScopedClient,
   supabaseEnv,
   supabaseFetch,
 } from "@/lib/gx/supabase-request";
+import { getVerifiedCaller } from "@/lib/gx/supabase-auth.server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -99,3 +99,4 @@ export async function getResendApiKey(): Promise<string> {
 
   return cachedKey || "";
 }
+

@@ -1,5 +1,6 @@
 import { detectRegionCode, regionLabel, regionFlag } from "@/lib/gx/region";
 import type { Product } from "@/data/products";
+import { useLang } from "@/lib/gx/i18n";
 
 /* Brand icon renderers — ported from public/app/assets/js/brand-icons.js */
 
@@ -228,6 +229,8 @@ export function AdobePoster({ duration }: { duration?: string }) {
 }
 
 export function CanvaPoster({ duration }: { duration?: string }) {
+  const { lang } = useLang();
+  const isEn = lang === "en";
   return (
     <div
       style={{
@@ -260,7 +263,7 @@ export function CanvaPoster({ duration }: { duration?: string }) {
           CANVA PRO
         </div>
         <div style={{ color: "rgba(255,255,255,0.85)", fontWeight: 800, fontSize: 12, letterSpacing: 0.5, marginTop: 2, fontFamily: "'Tajawal', sans-serif" }}>
-          {duration || "اشتراك سنوي رسمي"}
+          {isEn ? (duration || "Official Annual Subscription") : (duration || "اشتراك سنوي رسمي")}
         </div>
       </div>
     </div>
@@ -274,6 +277,8 @@ export function WindowsPoster({
   planLabel?: string;
   cartId?: string;
 } = {}) {
+  const { lang } = useLang();
+  const isEn = lang === "en";
   const lbl = (planLabel || "").toLowerCase();
   const cid = (cartId || "").toLowerCase();
 
@@ -283,7 +288,13 @@ export function WindowsPoster({
   const isAcct = lbl.includes("account") || lbl.includes("acct") || cid.includes("acct");
 
   const editionTitle = isHome ? "WINDOWS 11 HOME" : "WINDOWS 11 PRO";
-  const editionSub = isOem
+  const editionSub = isEn
+    ? isOem
+      ? "OEM • Motherboard License"
+      : isAcct
+      ? "ACCOUNT • Account Linked"
+      : "Official Lifetime License"
+    : isOem
     ? "OEM • تفعيل مذربورد"
     : isAcct
     ? "ACCOUNT • ربط بالحساب"
@@ -380,6 +391,8 @@ export function TodPoster({
   cartId?: string;
   name?: string;
 } = {}) {
+  const { lang } = useLang();
+  const isEn = lang === "en";
   const cid = (cartId || "").toLowerCase();
   const n = (name || "").toLowerCase();
 
@@ -403,16 +416,16 @@ export function TodPoster({
   }
 
   let planTitle = "TOD";
-  let planSubtitle = "جهازين معاً (شاشات وكمبيوتر)";
+  let planSubtitle = isEn ? "2 Devices (Screens & PC)" : "جهازين معاً (شاشات وكمبيوتر)";
   let bgGradient = "radial-gradient(circle at 50% 25%, #3c1a78 0%, #240e4f 50%, #12052c 100%)";
 
   if (isMobile) {
     planTitle = "TOD Mobile";
-    planSubtitle = "جهاز واحد فقط (موبايل أو تابلت)";
+    planSubtitle = isEn ? "1 Device Only (Mobile or Tablet)" : "جهاز واحد فقط (موبايل أو تابلت)";
     bgGradient = "radial-gradient(circle at 50% 25%, #32166e 0%, #1d0a44 50%, #0d0322 100%)";
   } else if (is4k) {
     planTitle = "TOD 4K";
-    planSubtitle = "جهازين معاً • Ultra HD 4K";
+    planSubtitle = isEn ? "2 Devices • Ultra HD 4K" : "جهازين معاً • Ultra HD 4K";
     bgGradient = "radial-gradient(circle at 50% 25%, #461456 0%, #260738 50%, #0e021a 100%)";
   }
 
@@ -465,9 +478,15 @@ export function TodPoster({
             lineHeight: 1.2,
           }}
         >
-          <span>{durationAr}</span>
-          <span style={{ opacity: 0.5 }}>•</span>
-          <span>{durationLabel}</span>
+          {isEn ? (
+            <span>{durationLabel}</span>
+          ) : (
+            <>
+              <span>{durationAr}</span>
+              <span style={{ opacity: 0.5 }}>•</span>
+              <span>{durationLabel}</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -588,6 +607,8 @@ export function GiftCardPoster({
   name?: string;
   region?: string;
 }) {
+  const { lang } = useLang();
+  const isEn = lang === "en";
   const denom = extractDenomination(name, cartId);
   const showDenom = denom && denom !== "CARD";
 
@@ -599,7 +620,7 @@ export function GiftCardPoster({
   const isRazer = slug.includes("razer") || (cartId || "").includes("razer") || slug.startsWith("gc-razer");
 
   let brandName = "GIFT CARD";
-  let brandSub = "DIGITAL GIFT CARD • بطاقة رقمية";
+  let brandSub = isEn ? "DIGITAL GIFT CARD" : "DIGITAL GIFT CARD • بطاقة رقمية";
   let brandLogo = "/app/assets/img/cards-logo.svg";
   let bgGradient = "linear-gradient(145deg, #1e293b 0%, #0f172a 60%, #020617 100%)";
   let ambientColor = "rgba(0, 229, 255, 0.25)";
@@ -607,7 +628,7 @@ export function GiftCardPoster({
 
   if (isPlaystation) {
     brandName = "PLAYSTATION STORE";
-    brandSub = "DIGITAL GIFT CARD • بطاقة بلايستيشن";
+    brandSub = isEn ? "DIGITAL GIFT CARD • PLAYSTATION" : "DIGITAL GIFT CARD • بطاقة بلايستيشن";
     brandLogo = "/app/assets/img/playstation-logo.svg";
     bgGradient = "linear-gradient(145deg, #00439c 0%, #00266e 50%, #001238 100%)";
     ambientColor = "rgba(0, 112, 209, 0.45)";
@@ -633,31 +654,31 @@ export function GiftCardPoster({
     );
   } else if (isXbox) {
     brandName = "XBOX STORE";
-    brandSub = "DIGITAL GIFT CARD • بطاقة إكسبوكس";
+    brandSub = isEn ? "DIGITAL GIFT CARD • XBOX" : "DIGITAL GIFT CARD • بطاقة إكسبوكس";
     brandLogo = "/app/assets/img/xbox-logo.svg";
     bgGradient = "linear-gradient(145deg, #107c10 0%, #0c590c 50%, #032b03 100%)";
     ambientColor = "rgba(16, 124, 65, 0.45)";
   } else if (isSteam) {
     brandName = "STEAM WALLET";
-    brandSub = "DIGITAL GIFT CARD • رصيد ستيم";
+    brandSub = isEn ? "DIGITAL GIFT CARD • STEAM WALLET" : "DIGITAL GIFT CARD • رصيد ستيم";
     brandLogo = "/app/assets/img/steam-logo.svg";
     bgGradient = "linear-gradient(145deg, #1e2837 0%, #171a21 55%, #0b0e14 100%)";
     ambientColor = "rgba(0, 229, 255, 0.35)";
   } else if (isItunes) {
     brandName = "APPLE GIFT CARD";
-    brandSub = "DIGITAL GIFT CARD • بطاقة آبل";
+    brandSub = isEn ? "DIGITAL GIFT CARD • APPLE" : "DIGITAL GIFT CARD • بطاقة آبل";
     brandLogo = "/app/assets/img/itunes-logo.svg";
     bgGradient = "linear-gradient(145deg, #701a75 0%, #3b0764 55%, #180326 100%)";
     ambientColor = "rgba(241, 7, 163, 0.45)";
   } else if (isGooglePlay) {
     brandName = "GOOGLE PLAY";
-    brandSub = "DIGITAL GIFT CARD • بطاقة جوجل بلاي";
+    brandSub = isEn ? "DIGITAL GIFT CARD • GOOGLE PLAY" : "DIGITAL GIFT CARD • بطاقة جوجل بلاي";
     brandLogo = "/app/assets/img/googleplay-logo.png";
     bgGradient = "linear-gradient(145deg, #047857 0%, #064e3b 55%, #022c22 100%)";
     ambientColor = "rgba(52, 168, 83, 0.45)";
   } else if (isRazer) {
     brandName = "RAZER GOLD";
-    brandSub = "GLOBAL PIN • بطاقة ريزر جولد";
+    brandSub = isEn ? "GLOBAL PIN • RAZER GOLD" : "GLOBAL PIN • بطاقة ريزر جولد";
     brandLogo = "/app/assets/img/razer-logo.png";
     bgGradient = "linear-gradient(145deg, #072610 0%, #03170a 55%, #010c05 100%)";
     ambientColor = "rgba(0, 231, 0, 0.45)";
@@ -861,7 +882,7 @@ export function GiftCardPoster({
           }}
         >
           <span style={{ color: "#00e5ff" }}>⚡</span>
-          <span>تفعيل فوري</span>
+          <span>{isEn ? "Instant Delivery" : "تفعيل فوري"}</span>
         </div>
 
         <div

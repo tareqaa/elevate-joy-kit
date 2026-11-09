@@ -18,6 +18,11 @@ vi.mock("@/lib/gx/supabase-request", () => ({
   getUserScopedClient: vi.fn(),
 }));
 
+vi.mock("@/lib/gx/supabase-auth.server", () => ({
+  getVerifiedCaller: vi.fn(),
+  assertAdminCaller: vi.fn(),
+}));
+
 vi.mock("@/lib/gx/pricing.server", () => ({
   isAdminUser: vi.fn(),
 }));
@@ -28,7 +33,8 @@ import { sanitizeRichText } from "../sections/rich-text";
 import { handlePasswordReset } from "../auth.functions";
 import { resolveSafeClientIp, isValidIp } from "../ip";
 import { assertSafeImageUpload } from "../safe-image";
-import { getVerifiedCaller, getUserScopedClient } from "@/lib/gx/supabase-request";
+import { getUserScopedClient } from "@/lib/gx/supabase-request";
+import { getVerifiedCaller } from "@/lib/gx/supabase-auth.server";
 import { isAdminUser } from "@/lib/gx/pricing.server";
 
 const mockStartContext = {
@@ -344,7 +350,7 @@ describe("SEC-08: handlePasswordReset hardening", () => {
     // Must return ok: true with generic message, NOT exposing "User not found"
     expect(res.ok).toBe(true);
     expect(res.message).toBe(
-      "إذا كان هذا البريد مسجلاً لدينا، فسيتم إرسال رابط استعادة كلمة المرور إليه."
+      "إذا كان هذا البريد مسجلاً لدينا، فسيتم إرسال رمز التحقق (OTP) المكوّن من 6 أرقام إليه."
     );
   });
 });

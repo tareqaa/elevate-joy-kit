@@ -1,7 +1,7 @@
 import { csvRow } from "@/lib/gx/csv";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Pager, usePager } from "@/components/gx/Pager";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -18,7 +18,9 @@ import {
   ArrowUpDown, Sparkles, Ticket, History, UserPlus, Mail, Clock,
   CheckCircle2, Trash2, AlertCircle,
 } from "lucide-react";
+import { Lock, Eye, EyeOff } from "lucide-react";
 import { sendCreditNotificationEmail } from "@/lib/gx/credit-email.functions";
+import { adminDeleteUserPermanentlyFn } from "@/lib/gx/account-deletion.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
   head: () => ({ meta: [{ title: "المستخدمون — لوحة التحكم" }] }),
@@ -41,6 +43,8 @@ type UserRow = {
   created_at: string;
   roles: string[];
   orders_count: number;
+  scheduled_deletion_at?: string | null;
+  deletion_reason?: string | null;
 };
 
 type PendingEmailCredit = {
@@ -70,6 +74,99 @@ function UsersAdmin() {
   const [sort, setSort] = useState<SortKey>("recent");
   const [detailUser, setDetailUser] = useState<UserRow | null>(null);
   const [showPreCreditModal, setShowPreCreditModal] = useState(false);
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState<UserRow | null>(null);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const deleteUserPermanently = useMutation({
+    mutationFn: async ({ targetUserId, adminPassword }: { targetUserId: string; adminPassword: string }) => {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess?.session?.access_token;
+      const userEmail = sess?.session?.user?.email;
+
+      if (!adminPassword || !adminPassword.trim()) {
+        throw new Error("يرجى إدخال كلمة مرور حسابك لتأكيد الحذف");
+      }
+
+      if (userEmail) {
+        const { error: verifyErr } = await supabase.auth.signInWithPassword({
+          email: userEmail,
+          password: adminPassword,
+        });
+        if (verifyErr) {
+          throw new Error("كلمة مرور حساب المشرف غير صحيحة، تم رفض طلب الحذف");
+        }
+      }
+
+      if (token) {
+        const srvRes = await adminDeleteUserPermanentlyFn({
+          data: { accessToken: token, targetUserId, adminPassword },
+        });
+        if (srvRes && !srvRes.ok) {
+          throw new Error(srvRes.error || "فشل حذف الحساب");
+        }
+        return srvRes;
+      }
+
+      const { data, error } = await (supabase.rpc as any)("admin_delete_user_permanently", {
+        _target_user_id: targetUserId,
+      });
+      if (error) throw error;
+      if (data && !data.ok) throw new Error(data.message || "فشل حذف الحساب");
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("تم حذف حساب المستخدم وكافة بياناته نهائياً بنجاح");
+      setDeleteConfirmUser(null);
+      setAdminPassword("");
+      setPasswordError(null);
+      if (detailUser) setDetailUser(null);
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "تعذر حذف الحساب نهائياً");
+      setPasswordError(err?.message || "تعذر إتمام العملية");
+    },
+  });
+
+  const cancelScheduledDeletion = useMutation({
+    mutationFn: async (targetUserId: string) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ scheduled_deletion_at: null, deletion_reason: null } as any)
+        .eq("id", targetUserId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم إلغاء جدولة الحذف واستعادة الحساب بنجاح");
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      if (detailUser) {
+        setDetailUser({
+          ...detailUser,
+          scheduled_deletion_at: null,
+          deletion_reason: null,
+        });
+      }
+    },
+    onError: (err: any) => toast.error(err?.message || "تعذر إلغاء الحذف"),
+  });
+
+  useEffect(() => {
+    const ch = supabase
+      .channel("admin-users-profiles-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["admin-users"] });
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [qc]);
 
   const pendingCreditsQ = useQuery({
     queryKey: ["admin-pending-email-credits"],
@@ -345,6 +442,11 @@ function UsersAdmin() {
                             <div className="text-[11px] text-muted-foreground truncate" dir="ltr">
                               {u.email}
                             </div>
+                            {u.scheduled_deletion_at && (
+                              <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] mt-0.5 inline-flex items-center gap-1 font-sans">
+                                <Clock size={10} /> مجدول للحذف ({Math.max(1, Math.ceil((new Date(u.scheduled_deletion_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} يوم متبقي)
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -364,13 +466,26 @@ function UsersAdmin() {
                         {new Date(u.created_at).toLocaleDateString("ar-JO")}
                       </td>
                       <td className="p-2">
-                        <div className="flex gap-1 justify-end">
+                        <div className="flex gap-1 justify-end items-center">
                           <Button size="sm" variant="outline" onClick={() => setDetailUser(u)}>الملف</Button>
                           <Button size="sm" variant={isAdmin ? "outline" : "default"}
                             className={isAdmin ? "" : "bg-cyan-500 hover:bg-cyan-400 text-black"}
                             onClick={() => toggleAdmin.mutate({ userId: u.id, makeAdmin: !isAdmin })}
                             disabled={toggleAdmin.isPending}>
                             {isAdmin ? <><ShieldOff size={13} className="ml-1" /> سحب</> : <><ShieldCheck size={13} className="ml-1" /> منح</>}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/15 h-8 w-8 p-0"
+                            title="حذف الحساب نهائياً وفورياً دون انتظار 14 يوم"
+                            onClick={() => {
+                              setDeleteConfirmUser(u);
+                              setAdminPassword("");
+                              setPasswordError(null);
+                            }}
+                          >
+                            <Trash2 size={13} />
                           </Button>
                         </div>
                       </td>
@@ -424,7 +539,157 @@ function UsersAdmin() {
         isCancelling={cancelPreCredit.isPending}
       />
 
-      <UserDetailDialog user={detailUser} onClose={() => setDetailUser(null)} />
+      <UserDetailDialog
+        user={detailUser}
+        onClose={() => setDetailUser(null)}
+        onDeleteUser={(u) => {
+          setDeleteConfirmUser(u);
+          setAdminPassword("");
+          setPasswordError(null);
+        }}
+        onCancelDeletion={(uid) => cancelScheduledDeletion.mutate(uid)}
+        isCancellingDeletion={cancelScheduledDeletion.isPending}
+      />
+
+      <Dialog
+        open={!!deleteConfirmUser}
+        onOpenChange={(open) => {
+          if (!open && !deleteUserPermanently.isPending) {
+            setDeleteConfirmUser(null);
+            setAdminPassword("");
+            setPasswordError(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md border-rose-500/30 bg-background/95 backdrop-blur-xl" dir="rtl">
+          <DialogHeader>
+            <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/20 grid place-items-center text-rose-400 mb-2">
+              <Trash2 size={24} />
+            </div>
+            <DialogTitle className="text-lg font-bold text-rose-400">
+              حذف الحساب نهائياً وفورياً
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed pt-1">
+              أنت على وشك حذف حساب المستخدم بالكامل من السيرفر وقاعدة البيانات دون انتظار مهلة الـ 14 يوماً.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteConfirmUser && (
+            <div className="space-y-3 py-2 text-xs">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full overflow-hidden bg-cyan-500/10 border border-cyan-500/30 grid place-items-center shrink-0">
+                  {deleteConfirmUser.avatar_url ? (
+                    <img src={deleteConfirmUser.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xs font-bold text-cyan-300">
+                      {(deleteConfirmUser.username || deleteConfirmUser.email || "GX").slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold truncate text-foreground" dir="ltr">
+                    {deleteConfirmUser.username ? `@${deleteConfirmUser.username}` : deleteConfirmUser.email}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground truncate" dir="ltr">
+                    {deleteConfirmUser.email}
+                  </div>
+                </div>
+              </div>
+
+              {deleteConfirmUser.scheduled_deletion_at && (
+                <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-2.5 text-[11px] text-amber-200">
+                  ⚠️ المستخدم مجدول للحذف التلقائي بتاريخ: {new Date(deleteConfirmUser.scheduled_deletion_at).toLocaleDateString("ar-JO")}.
+                  <br />بالضغط على تأكيد سيتم حذفه ومسحه نهائياً باللحظة دون انتظار المهلة.
+                </div>
+              )}
+
+              <div className="rounded-lg border border-rose-500/20 bg-rose-950/20 p-3 space-y-1.5 text-[11px] text-rose-200/90 leading-relaxed">
+                <div className="font-semibold text-rose-300">الآثار الفورية للحذف:</div>
+                <ul className="list-disc list-inside space-y-0.5 text-rose-200/80">
+                  <li>حذف هوية المستخدم من auth.users ولن يتمكن من الدخول مجدداً.</li>
+                  <li>مسح الملف الشخصي وكافة بيانات المحفظة والرصيد والعملات.</li>
+                  <li>تنظيف سجلات الطلبات والكوبونات والشارات المرتبطة به.</li>
+                  <li><strong>هذا الإجراء فوري ونهائي ولا يمكن التراجع عنه.</strong></li>
+                </ul>
+              </div>
+
+              {/* Admin Password Confirmation */}
+              <div className="rounded-xl border border-rose-500/30 bg-rose-950/30 p-3.5 space-y-2">
+                <label className="text-xs font-semibold text-rose-200 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Lock size={14} className="text-rose-400" />
+                    تأكيد الأمان: أدخل كلمة مرور حسابك (الأدمن)
+                  </span>
+                  <span className="text-[10px] text-rose-400/80 font-normal">إلزامي للمتابعة</span>
+                </label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="كلمة مرور حسابك الحالية..."
+                    value={adminPassword}
+                    onChange={(e) => {
+                      setAdminPassword(e.target.value);
+                      if (passwordError) setPasswordError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && adminPassword.trim() && !deleteUserPermanently.isPending) {
+                        deleteUserPermanently.mutate({ targetUserId: deleteConfirmUser.id, adminPassword });
+                      }
+                    }}
+                    className="bg-black/50 border-rose-500/40 text-foreground placeholder:text-muted-foreground focus-visible:ring-rose-500 text-sm pl-9 pr-3"
+                    dir="ltr"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+                {passwordError && (
+                  <div className="text-[11px] text-rose-400 font-medium flex items-center gap-1 pt-0.5">
+                    <AlertCircle size={12} className="shrink-0" />
+                    <span>{passwordError}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0 mt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteConfirmUser(null);
+                setAdminPassword("");
+                setPasswordError(null);
+              }}
+              disabled={deleteUserPermanently.isPending}
+            >
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              className="bg-rose-600 hover:bg-rose-700 font-bold disabled:opacity-50"
+              onClick={() => {
+                if (deleteConfirmUser) {
+                  if (!adminPassword.trim()) {
+                    setPasswordError("يرجى إدخال كلمة مرور حسابك لتأكيد الحذف");
+                    return;
+                  }
+                  deleteUserPermanently.mutate({ targetUserId: deleteConfirmUser.id, adminPassword });
+                }
+              }}
+              disabled={deleteUserPermanently.isPending || !adminPassword.trim()}
+            >
+              {deleteUserPermanently.isPending ? "جارٍ التحقق والحذف..." : "تأكيد وحذف الحساب نهائياً"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <PreRegistrationCreditDialog
         open={showPreCreditModal}
@@ -456,7 +721,19 @@ function StatCard({ label, value, color }: { label: string; value: number | stri
 
 type DetailTab = "overview" | "orders" | "ledger" | "rewards";
 
-function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: () => void }) {
+function UserDetailDialog({
+  user,
+  onClose,
+  onDeleteUser,
+  onCancelDeletion,
+  isCancellingDeletion,
+}: {
+  user: UserRow | null;
+  onClose: () => void;
+  onDeleteUser?: (user: UserRow) => void;
+  onCancelDeletion?: (userId: string) => void;
+  isCancellingDeletion?: boolean;
+}) {
   const qc = useQueryClient();
   const [tab, setTab] = useState<DetailTab>("overview");
   const [coinsDelta, setCoinsDelta] = useState("");
@@ -597,6 +874,39 @@ function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: ()
 
         {user && (
           <div className="space-y-4">
+            {user.scheduled_deletion_at && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 flex items-start gap-3 text-xs text-amber-200">
+                <AlertCircle size={18} className="text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="font-bold text-amber-300 flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span>المستخدم طلب حذف حسابه (مهلة 14 يوماً)</span>
+                      <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px]">
+                        {Math.max(1, Math.ceil((new Date(user.scheduled_deletion_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} يوم متبقي
+                      </Badge>
+                    </div>
+                    {onCancelDeletion && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={isCancellingDeletion}
+                        onClick={() => onCancelDeletion(user.id)}
+                        className="h-7 text-[11px] font-semibold text-emerald-300 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20"
+                      >
+                        {isCancellingDeletion ? "جارٍ الإلغاء..." : "إلغاء جدولة الحذف وتنشيط الحساب"}
+                      </Button>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-amber-200/80 leading-relaxed">
+                    موعد الحذف النهائي المجدول: {new Date(user.scheduled_deletion_at).toLocaleString("ar-JO")}
+                    {user.deletion_reason ? ` • سبب الحذف: "${user.deletion_reason}"` : ""}
+                  </div>
+                  <div className="text-[10px] text-amber-300/70 pt-0.5">
+                    * ملاحظة: يتم إلغاء الحذف واستعادة الحساب تلقائياً بمجرد تسجيل دخول المستخدم، كما يمكنك كمسؤول إلغاء الحذف فوراً بالزر أعلاه أو الحذف النهائي بالزر أسفل النافذة.
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex gap-1 bg-white/5 rounded-lg p-1 border border-white/10 w-fit">
               {tabs.map((t) => (
                 <button key={t.k} onClick={() => setTab(t.k)}
@@ -778,15 +1088,33 @@ function UserDetailDialog({ user, onClose }: { user: UserRow | null; onClose: ()
           </div>
         )}
 
-        <DialogFooter className="gap-2">
-          {user?.username && (
-            <a href={`/u/${user.username}`} target="_blank" rel="noreferrer">
-              <Button variant="outline"><ExternalLink size={13} className="ml-1" /> الملف العام</Button>
-            </a>
+        <DialogFooter className="gap-2 sm:justify-between items-center">
+          {onDeleteUser && (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              className="bg-rose-600 hover:bg-rose-700 text-white font-bold gap-1.5"
+              onClick={() => {
+                if (user) {
+                  onClose();
+                  onDeleteUser(user);
+                }
+              }}
+            >
+              <Trash2 size={13} /> حذف الحساب نهائياً وفورياً
+            </Button>
           )}
-          <Link to="/admin/orders" onClick={onClose}>
-            <Button variant="outline">فتح كل الطلبات</Button>
-          </Link>
+          <div className="flex gap-2 items-center mr-auto">
+            {user?.username && (
+              <a href={`/u/${user.username}`} target="_blank" rel="noreferrer">
+                <Button variant="outline"><ExternalLink size={13} className="ml-1" /> الملف العام</Button>
+              </a>
+            )}
+            <Link to="/admin/orders" onClick={onClose}>
+              <Button variant="outline">فتح كل الطلبات</Button>
+            </Link>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

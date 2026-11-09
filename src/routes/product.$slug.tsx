@@ -1,11 +1,12 @@
 import { safeJsonLd } from "@/lib/gx/json-ld";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { createFileRoute, notFound, useNavigate, redirect } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { getCatalogProduct, getRelatedCatalogProducts } from "@/lib/gx/catalog.functions";
 import { ProductTemplate } from "@/components/gx/ProductTemplates";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { trackRecentlyViewed } from "@/lib/gx/recently-viewed";
+import { useLang } from "@/lib/gx/i18n";
 
 export const Route = createFileRoute("/product/$slug")({
   staleTime: 0,
@@ -95,7 +96,38 @@ function ProductPage() {
   const { product, relatedProducts } = Route.useLoaderData();
   const search = Route.useSearch();
   const navigate = useNavigate();
+  const { lang } = useLang();
   const preselectedVariant = search.variant || search.plan || search.cartId || search.id;
+
+  // Always scroll to the top when navigating to or switching product pages
+  useLayoutEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      const raf = requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
+      const t = setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 60);
+      return () => {
+        cancelAnimationFrame(raf);
+        clearTimeout(t);
+      };
+    }
+  }, [product?.slug]);
+
+  useEffect(() => {
+    if (!product) return;
+    const isEn = lang === "en";
+    const name = isEn ? (product.nameEn || product.nameAr) : (product.nameAr || product.nameEn);
+    document.title = isEn ? `${name} | GX Store` : `${name} | متجر GX Store`;
+  }, [product, lang]);
 
   // Auto-redirect Crew requests on Fortnite to dedicated Fortnite Crew page
   useEffect(() => {
@@ -251,7 +283,7 @@ function ProductPage() {
       trackRecentlyViewed({
         slug: product.slug,
         cartId: finalVarCartId,
-        link: finalVarCartId && finalVarCartId !== product.slug ? `/product/${product.slug}#${finalVarCartId}` : `/product/${product.slug}`,
+        link: finalVarCartId && finalVarCartId !== product.slug ? `/product/${product.slug}?variant=${encodeURIComponent(finalVarCartId)}` : `/product/${product.slug}`,
         nameAr: resolvedNameAr,
         nameEn: resolvedNameEn,
         taglineAr: resolvedDescAr,

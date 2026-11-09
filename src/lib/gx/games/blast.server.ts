@@ -11,7 +11,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { verifyRun } from "./blast-engine";
-import { getVerifiedCaller } from "@/lib/gx/supabase-request";
+import { getVerifiedCaller } from "@/lib/gx/supabase-auth.server";
 
 const submittedMoveSchema = z.object({
   trayIndex: z.number().int(),
@@ -27,6 +27,7 @@ const inputSchema = z.object({
   seed: z.string().min(1).max(128),
   moves: z.array(submittedMoveSchema).max(5000),
   claimedScore: z.number().int().min(0).max(10_000_000),
+  accessToken: z.string().optional().nullable(),
 });
 
 export type SubmitBlastRunResult = { ok: boolean; error?: string; best?: number };
@@ -34,7 +35,7 @@ export type SubmitBlastRunResult = { ok: boolean; error?: string; best?: number 
 export const submitBlastRun = createServerFn({ method: "POST" })
   .validator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }): Promise<SubmitBlastRunResult> => {
-    const caller = await getVerifiedCaller();
+    const caller = await getVerifiedCaller(data.accessToken);
     if (!caller) return { ok: false, error: "auth_required" };
 
     const result = verifyRun({
@@ -50,6 +51,16 @@ export const submitBlastRun = createServerFn({ method: "POST" })
         moveIndex: result.moveIndex,
       });
       return { ok: false, error: "verification_failed" };
+    }
+
+    const serviceKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_SECRET_KEY ||
+      process.env.SERVICE_ROLE_KEY;
+
+    if (!serviceKey) {
+      console.warn("submitBlastRun: SUPABASE_SERVICE_ROLE_KEY is missing in environment variables. Tournament score cannot be saved to the database without the service role secret.");
+      return { ok: false, error: "service_key_missing" };
     }
 
     // Only the server's service role may save a score (the database function is

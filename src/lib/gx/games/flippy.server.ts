@@ -11,7 +11,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { replayFlippyRun, FLIPPY_MAX_STEPS } from "./flippy-engine";
-import { getVerifiedCaller } from "@/lib/gx/supabase-request";
+import { getVerifiedCaller } from "@/lib/gx/supabase-auth.server";
 
 const dim = z.number().int().min(200).max(4000);
 
@@ -30,6 +30,7 @@ const inputSchema = z.object({
     steps: z.number().int().min(1).max(FLIPPY_MAX_STEPS),
   }),
   claimedScore: z.number().int().min(0).max(100_000),
+  accessToken: z.string().optional().nullable(),
 });
 
 export type SubmitFlippyRunResult = { ok: boolean; error?: string; score?: number; best_score?: number };
@@ -37,7 +38,7 @@ export type SubmitFlippyRunResult = { ok: boolean; error?: string; score?: numbe
 export const submitFlippyRun = createServerFn({ method: "POST" })
   .validator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }): Promise<SubmitFlippyRunResult> => {
-    const caller = await getVerifiedCaller();
+    const caller = await getVerifiedCaller(data.accessToken);
     if (!caller) return { ok: false, error: "auth_required" };
 
     const result = replayFlippyRun(data.log);
@@ -47,6 +48,16 @@ export const submitFlippyRun = createServerFn({ method: "POST" })
         reason: result.valid ? "score_mismatch" : result.reason,
       });
       return { ok: false, error: "verification_failed" };
+    }
+
+    const serviceKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_SECRET_KEY ||
+      process.env.SERVICE_ROLE_KEY;
+
+    if (!serviceKey) {
+      console.warn("submitFlippyRun: SUPABASE_SERVICE_ROLE_KEY is missing in environment variables. Tournament score cannot be saved to the database without the service role secret.");
+      return { ok: false, error: "service_key_missing" };
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

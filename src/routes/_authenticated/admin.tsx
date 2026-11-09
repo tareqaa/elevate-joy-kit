@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AdminCommandPalette } from "@/components/gx/admin/AdminCommandPalette";
 import {
   LayoutDashboard, Package, Users, Search, Bell, ChevronLeft, ChevronRight,
-  Store, User, LogOut, X, Command, ShoppingBag, Activity, Settings, Ticket, Home, Star, Sparkles, Smile, Award, Trophy, Disc3, Gamepad2, Puzzle, Headphones, Boxes,
+  Store, User, LogOut, X, Command, ShoppingBag, Activity, Settings, Ticket, Home, Star, Sparkles, Smile, Award, Trophy, Disc3, Gamepad2, Puzzle, Headphones, Boxes, ShieldAlert,
 } from "lucide-react";
 
 // Cache the admin-role check per user for the lifetime of the tab so moving
@@ -70,6 +70,7 @@ const NAV: NavItem[] = [
   { to: "/admin/tournaments", label: "البطولات", Icon: Gamepad2 },
   { to: "/admin/mini-games", label: "الألعاب المصغّرة", Icon: Puzzle },
   { to: "/admin/activity", label: "سجل النشاطات", Icon: Activity },
+  { to: "/admin/security", label: "الأمان ومحاولات الدخول", Icon: ShieldAlert },
   { to: "/admin/settings", label: "الإعدادات", Icon: Settings },
 ];
 

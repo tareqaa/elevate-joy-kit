@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
-import { OrderCompletedPage } from "./order.completed";
+import { OrderCompletedView } from "@/components/gx/OrderCompletedView";
 
 export const Route = createFileRoute("/guest/order/completed")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -14,5 +14,10 @@ export const Route = createFileRoute("/guest/order/completed")({
     ],
     links: STORE_HEAD_LINKS,
   }),
-  component: OrderCompletedPage,
+  component: GuestOrderCompletedRouteComponent,
 });
+
+function GuestOrderCompletedRouteComponent() {
+  const { order_token } = Route.useSearch();
+  return <OrderCompletedView orderToken={order_token} />;
+}

@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
-import { loadCatalogPriceOverrides, priceCartItems, isAdminUser, loadDbBasePrices } from "./pricing.server";
+import { loadCatalogPriceOverrides, priceCartItems, isAdminUser, loadDbBasePrices, loadStockLimits, verifyCartStockLimits } from "./pricing.server";
 import { supabaseFetch, supabaseEnv } from "@/lib/gx/supabase-request";
+import { generateOrderToken, sendBinanceOrderReceivedEmailDirect } from "./order-email.server";
 
 
 type CreateOrderInput = {
@@ -11,7 +12,8 @@ type CreateOrderInput = {
   customerName?: string | null;
   customerWhatsapp?: string | null;
   customerEmail?: string | null;
-  paymentMethod?: "cliq" | "gx_wallet" | "card" | null;
+  paymentMethod?: "cliq" | "gx_wallet" | "card" | "binance_pay" | null;
+  binanceOrderId?: string | null;
   contactType?: "whatsapp" | "telegram" | null;
   deliveryData?: Record<string, unknown>;
   userId?: string | null;
@@ -27,6 +29,8 @@ type CreateOrderInput = {
   } | null;
   /** Store credit (refund balance) applied to this order, in JOD. */
   creditJod?: number | null;
+  /** Active UI language when order was placed ("ar" | "en"). */
+  lang?: "ar" | "en" | null;
   /** Caller's Supabase access token (used when no service-role key is set). */
   accessToken?: string | null;
   /** Request fingerprint captured on the server (IP / device / geo). */
@@ -128,9 +132,14 @@ export async function createStoreOrder(input: CreateOrderInput) {
 
 
   const deliveryData: Record<string, unknown> = { ...(input.deliveryData ?? {}) };
+  deliveryData.lang = input.lang || "ar";
   if (input.contactType) deliveryData.contact_type = input.contactType;
   if (input.customerEmail) deliveryData.customer_email = input.customerEmail.trim().toLowerCase();
   if (input.paymentMethod) deliveryData.payment_method = input.paymentMethod;
+  if (input.binanceOrderId) deliveryData.binance_order_id = input.binanceOrderId.trim();
+  if (input.paymentMethod === "binance_pay") {
+    deliveryData.binance_id = "835207366";
+  }
   // Only the code travels with the order note; the discount is whatever the
   // database says it is.
   if (input.coupon?.code) deliveryData.coupon = { code: input.coupon.code };
@@ -139,11 +148,13 @@ export async function createStoreOrder(input: CreateOrderInput) {
   // Nothing money-related from the client is trusted. Every line is re-priced
   // from the catalog + live overrides, and the total is rebuilt from scratch.
   const rawItems = Array.isArray(input.items) ? (input.items as unknown as any[]) : [];
-  const [overrides, isAdmin, basePrices] = await Promise.all([
+  const [overrides, isAdmin, basePrices, stockLimits] = await Promise.all([
     loadCatalogPriceOverrides(supabase),
     isAdminUser(supabase, input.userId),
     loadDbBasePrices(supabase, rawItems.map((it) => String(it?.cartId ?? ""))),
+    loadStockLimits(supabase),
   ]);
+  verifyCartStockLimits(rawItems as any, stockLimits);
   const priced = priceCartItems(rawItems, overrides, { allowCustom: isAdmin, basePrices });
 
   const subtotal = priced.subtotal;
@@ -162,6 +173,24 @@ export async function createStoreOrder(input: CreateOrderInput) {
   // input.coupon.discount_jod / .id / .userCouponId are IGNORED on purpose:
   // the coupon is re-read and re-priced from the database by its code alone.
   const couponCode = input.coupon?.code?.trim() || null;
+
+  let clientNetTotal = Number(input.totalJOD ?? 0);
+  if (input.paymentMethod === "binance_pay") {
+    const feeJod = Math.round((clientNetTotal - (clientNetTotal / 1.03)) * 1000) / 1000;
+    deliveryData.fee_jod = feeJod;
+    deliveryData.total_with_fee_jod = clientNetTotal;
+    deliveryData.fee_rate = "3%";
+    deliveryData.tax_amount = feeJod;
+    deliveryData.total_usdt = (clientNetTotal * 1.41).toFixed(2);
+    clientNetTotal = Math.round((clientNetTotal / 1.03) * 1000) / 1000;
+  } else if (input.paymentMethod === "card") {
+    if (clientNetTotal > 0.30) {
+      const netEstimate = Math.round(((clientNetTotal - 0.30) / 1.04) * 1000) / 1000;
+      deliveryData.fee_jod = Math.round((clientNetTotal - netEstimate) * 1000) / 1000;
+      deliveryData.total_with_fee_jod = clientNetTotal;
+      clientNetTotal = netEstimate;
+    }
+  }
 
   // ---- Single atomic purchase transaction ---------------------------------
   // Everything that follows (coupon validation + redemption, balance checks,
@@ -182,7 +211,7 @@ export async function createStoreOrder(input: CreateOrderInput) {
     _coins_used: coinsUsed,
     _credit_jod: creditJod,
     // Used for nothing but the integrity check inside the transaction.
-    _client_total: Number(input.totalJOD ?? 0),
+    _client_total: clientNetTotal,
   });
 
   if (error) throw new Error(error.message);
@@ -201,7 +230,37 @@ export async function createStoreOrder(input: CreateOrderInput) {
     } catch { /* noop */ }
   }
 
-  return { id: result.id as string, order_number: result.order_number };
+  const orderToken = generateOrderToken(result.order_number, input.customerEmail, result.id as string);
+
+  // If Binance Pay order, send immediate receipt & verification email
+  if ((input.paymentMethod === "binance_pay" || input.binanceOrderId) && input.customerEmail) {
+    try {
+      void sendBinanceOrderReceivedEmailDirect({
+        orderNumber: result.order_number,
+        orderToken,
+        customerEmail: input.customerEmail,
+        customerName: input.customerName || undefined,
+        binanceOrderId: input.binanceOrderId || (deliveryData.binance_order_id as string) || "N/A",
+        totalJod: clientNetTotal,
+        subtotalJod: subtotal,
+        feeJod: Number(deliveryData.fee_jod || 0),
+        totalWithFeeJod: Number(deliveryData.total_with_fee_jod || (clientNetTotal + Number(deliveryData.fee_jod || 0))),
+        totalUsdt: String(deliveryData.total_usdt || ""),
+        items: (Array.isArray(verifiedItems) ? (verifiedItems as any[]) : []).map((it) => ({
+          name: it.name,
+          qty: it.qty,
+          price: it.price,
+          slug: it.product_slug || it.cartId,
+        })),
+        notes: (input.deliveryData?.customer_notes as string) || undefined,
+        lang: input.lang === "en" ? "en" : "ar",
+      });
+    } catch (emailErr) {
+      console.error("[Binance Order Received Email Dispatch Failed]", emailErr);
+    }
+  }
+
+  return { id: result.id as string, order_number: result.order_number, order_token: orderToken };
 }
 
 

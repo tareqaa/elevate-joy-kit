@@ -645,10 +645,25 @@ input[type="number"] {
   transform: scale(1.1);
 }
 
-/* Ensure card has high stacking context when tooltip is active */
+/* Ensure section creates a clean stacking context below sticky navbar (z-index: 2000) */
+.section {
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Ensure card has high stacking context over neighbor cards when tooltip is active, but never pierce above the sticky navbar (z-index: 2000) */
 .prod-card:has(.prod-meta-type-wrap:hover),
-.prod-card:has(.prod-meta-type-wrap.is-active) {
-  z-index: 9999 !important;
+.prod-card:has(.prod-meta-type-wrap.is-active),
+.prod-card:has(.prod-type-tooltip:hover) {
+  z-index: 60 !important;
+}
+
+/* When hovering delivery info badge or tooltip, freeze card body in place so tooltip opens cleanly without jerking or sliding */
+.prod-card:has(.prod-meta-type-wrap:hover) .prod-body,
+.prod-card:has(.prod-meta-type-wrap.is-active) .prod-body,
+.prod-card:has(.prod-type-tooltip:hover) .prod-body {
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* Tooltip Popup (Dark glass card matching screenshot with beak pointing to exclamation icon) */
@@ -673,7 +688,7 @@ input[type="number"] {
   pointer-events: none;
   direction: rtl;
   text-align: right;
-  z-index: 999999;
+  z-index: 80;
 }
 
 .prod-meta-type-wrap:hover ~ .prod-type-tooltip,
@@ -1311,7 +1326,7 @@ input[type="number"] {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
   }
 
-  /* Compact side-by-side mobile poster header (Eneba Image 1 & 3) */
+  /* Compact side-by-side mobile poster header (GX Store Native) */
   .driffle-poster-box,
   .gx-poster-box {
     width: 95px !important;
@@ -1405,7 +1420,7 @@ input[type="number"] {
     overflow: hidden !important;
   }
 
-  /* Driffle-Style Stacked Specifications Card (Image 5) */
+  /* GX Store Stacked Specifications Card */
   .driffle-specs-card,
   .gx-specs-card {
     display: flex !important;
@@ -1699,7 +1714,7 @@ input[type="number"] {
 }
 
 /* ============================================================
-   FEATURED OFFER CARD (Image 2 - Ravestore / Eneba Style)
+   FEATURED OFFER CARD (GX Store Native Style)
    ============================================================ */
 .gx-buy-card {
   background: linear-gradient(145deg, #101524 0%, #0a0d18 100%);
@@ -4474,6 +4489,12 @@ input[type="number"] {
 /* ============================================================
    MODERN HIGH-END NAVBAR (GX STORE STYLING)
    ============================================================ */
+.nav {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2000 !important;
+}
+
 .nav .wrap {
   display: flex;
   align-items: center;
@@ -4606,7 +4627,7 @@ input[type="number"] {
   filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.5));
 }
 
-/* Top-Left Driffle-Style Bookmark Wishlist Ribbon on Product Cards */
+/* Top-Left Bookmark Wishlist Ribbon on Product Cards */
 .prod-fav-bookmark {
   position: absolute;
   top: 0;
@@ -4648,7 +4669,7 @@ input[type="number"] {
   filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.5));
 }
 
-/* Active / Favorited Bookmark Ribbon matching user reference image (Driffle emerald/teal) */
+/* Active / Favorited Bookmark Ribbon */
 .prod-fav-bookmark.is-active {
   background: #00c48c !important;
   filter: drop-shadow(0 4px 14px rgba(0, 196, 140, 0.45));
@@ -4894,7 +4915,7 @@ html[dir="ltr"] .gx-nav-login-pill:hover svg {
     inset-inline-end: -2px !important;
   }
 
-  /* Login Button on mobile - icon only without text (matching Driffle & Eneba) */
+  /* Login Button on mobile - icon only without text */
   .gx-nav-login-pill {
     width: 41px !important;
     height: 41px !important;
@@ -6636,10 +6657,25 @@ html[dir="ltr"] .cat-card-big:hover .arrow-ic {
   box-shadow: 0 0 14px #ffffff !important;
 }
 
-@media (max-width: 960px) {
+@media (min-width: 541px) and (max-width: 1024px) {
   .cat-grid-big {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 16px !important;
+  }
+  .cat-card-big {
+    min-height: 160px !important;
+    padding: 18px 20px !important;
+  }
+  .cat-card-big .cat-ic {
+    width: 50px !important;
+    height: 50px !important;
+  }
+  .cat-card-big .cname-modern {
+    font-size: 19px !important;
+  }
+  .cat-sub-text {
+    font-size: 12.5px !important;
+    line-height: 1.4 !important;
   }
 }
 

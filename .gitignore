@@ -41,4 +41,5 @@ supabase/.temp/
 
 # Scratch & temporary test scripts
 scratch/
+.data/
 

@@ -1,23 +1,30 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getUnifiedCountryCode, fetchUserCountryOnce } from "./country-phone";
 
-type CurrencyInfo = { label: string; flag: string; rate: number; decimals: number };
+type CurrencyInfo = {
+  label: string;
+  labelAr: string;
+  labelEn: string;
+  flag: string;
+  rate: number;
+  decimals: number;
+};
 
 export const CURRENCIES: Record<string, CurrencyInfo> = {
-  JOD: { label: "دينار أردني", flag: "🇯🇴", rate: 1, decimals: 2 },
-  USD: { label: "دولار أمريكي", flag: "🇺🇸", rate: 1.41, decimals: 2 },
-  EUR: { label: "يورو", flag: "🇪🇺", rate: 1.30, decimals: 2 },
-  SAR: { label: "ريال سعودي", flag: "🇸🇦", rate: 5.30, decimals: 2 },
-  AED: { label: "درهم إماراتي", flag: "🇦🇪", rate: 5.18, decimals: 2 },
-  KWD: { label: "دينار كويتي", flag: "🇰🇼", rate: 0.435, decimals: 3 },
-  QAR: { label: "ريال قطري", flag: "🇶🇦", rate: 5.14, decimals: 2 },
-  OMR: { label: "ريال عماني", flag: "🇴🇲", rate: 0.543, decimals: 3 },
-  BHD: { label: "دينار بحريني", flag: "🇧🇭", rate: 0.531, decimals: 3 },
-  IQD: { label: "دينار عراقي", flag: "🇮🇶", rate: 1850, decimals: 0 },
-  EGP: { label: "جنيه مصري", flag: "🇪🇬", rate: 69, decimals: 0 },
-  MAD: { label: "درهم مغربي", flag: "🇲🇦", rate: 14, decimals: 2 },
-  DZD: { label: "دينار جزائري", flag: "🇩🇿", rate: 190, decimals: 0 },
-  TND: { label: "دينار تونسي", flag: "🇹🇳", rate: 4.4, decimals: 2 },
+  JOD: { label: "دينار أردني", labelAr: "دينار أردني", labelEn: "Jordanian Dinar", flag: "🇯🇴", rate: 1, decimals: 2 },
+  USD: { label: "دولار أمريكي", labelAr: "دولار أمريكي", labelEn: "US Dollar", flag: "🇺🇸", rate: 1.41, decimals: 2 },
+  EUR: { label: "يورو", labelAr: "يورو", labelEn: "Euro", flag: "🇪🇺", rate: 1.30, decimals: 2 },
+  SAR: { label: "ريال سعودي", labelAr: "ريال سعودي", labelEn: "Saudi Riyal", flag: "🇸🇦", rate: 5.30, decimals: 2 },
+  AED: { label: "درهم إماراتي", labelAr: "درهم إماراتي", labelEn: "UAE Dirham", flag: "🇦🇪", rate: 5.18, decimals: 2 },
+  KWD: { label: "دينار كويتي", labelAr: "دينار كويتي", labelEn: "Kuwaiti Dinar", flag: "🇰🇼", rate: 0.435, decimals: 3 },
+  QAR: { label: "ريال قطري", labelAr: "ريال قطري", labelEn: "Qatari Riyal", flag: "🇶🇦", rate: 5.14, decimals: 2 },
+  OMR: { label: "ريال عماني", labelAr: "ريال عماني", labelEn: "Omani Rial", flag: "🇴🇲", rate: 0.543, decimals: 3 },
+  BHD: { label: "دينار بحريني", labelAr: "دينار بحريني", labelEn: "Bahraini Dinar", flag: "🇧🇭", rate: 0.531, decimals: 3 },
+  IQD: { label: "دينار عراقي", labelAr: "دينار عراقي", labelEn: "Iraqi Dinar", flag: "🇮🇶", rate: 1850, decimals: 0 },
+  EGP: { label: "جنيه مصري", labelAr: "جنيه مصري", labelEn: "Egyptian Pound", flag: "🇪🇬", rate: 69, decimals: 0 },
+  MAD: { label: "درهم مغربي", labelAr: "درهم مغربي", labelEn: "Moroccan Dirham", flag: "🇲🇦", rate: 14, decimals: 2 },
+  DZD: { label: "دينار جزائري", labelAr: "دينار جزائري", labelEn: "Algerian Dinar", flag: "🇩🇿", rate: 190, decimals: 0 },
+  TND: { label: "دينار تونسي", labelAr: "دينار تونسي", labelEn: "Tunisian Dinar", flag: "🇹🇳", rate: 4.4, decimals: 2 },
 };
 
 const STORAGE_KEY = "gx_currency";
@@ -27,6 +34,22 @@ const COUNTRY_TO_CURRENCY: Record<string, string> = {
   US: "USD", CA: "USD", GB: "USD",
   DE: "EUR", FR: "EUR", IT: "EUR", ES: "EUR", NL: "EUR", BE: "EUR", AT: "EUR", GR: "EUR", PT: "EUR", IE: "EUR", FI: "EUR",
 };
+
+/**
+ * Resolves the default currency for a country.
+ * - Jordan and Palestine -> JOD
+ * - Supported regional countries -> mapped local currency (SAR, AED, KWD, etc.)
+ * - Supported Eurozone countries -> EUR
+ * - ANY OTHER country whose currency is not supported in the store (e.g. Turkey, international) -> USD
+ */
+export function resolveDefaultCurrencyForCountry(countryCode?: string | null): string {
+  if (!countryCode) return "USD";
+  const cc = countryCode.trim().toUpperCase();
+  if (cc === "JO" || cc === "PS") return "JOD";
+  const mapped = COUNTRY_TO_CURRENCY[cc];
+  if (mapped && CURRENCIES[mapped]) return mapped;
+  return "USD";
+}
 
 type Ctx = {
   currency: string;
@@ -38,7 +61,26 @@ type Ctx = {
   rate: number;
 };
 
-const CurrencyContext = createContext<Ctx | null>(null);
+// Keep a single context instance across HMR module replacements, otherwise a
+// hot update recreates the context while the mounted provider still holds the
+// old one → "useCurrency must be used inside CurrencyProvider".
+const g = globalThis as unknown as { __gxCurrencyContext?: React.Context<Ctx | null> };
+const CurrencyContext = g.__gxCurrencyContext ?? createContext<Ctx | null>(null);
+g.__gxCurrencyContext = CurrencyContext;
+
+const DEFAULT_CURRENCY_CTX: Ctx = {
+  currency: "USD",
+  setCurrency: () => {},
+  format: (jod: number) => {
+    const val = (Number(jod) || 0) * 1.41;
+    return `${val.toFixed(2)} USD`;
+  },
+  formatCoins: (coins: number) => {
+    const val = ((Number(coins) || 0) / 1000) * 1.41;
+    return `${val.toFixed(2)} USD`;
+  },
+  rate: 1.41,
+};
 
 const RATES_CACHE_KEY = "gx_fx_rates_v1";
 const RATES_TTL_MS = 6 * 60 * 60 * 1000; // refresh live market rates every 6h
@@ -69,7 +111,17 @@ async function fetchLiveRates(): Promise<Record<string, number> | null> {
 }
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
-  const [currency, setCurrencyState] = useState<string>("JOD");
+  const [currency, setCurrencyState] = useState<string>(() => {
+    if (typeof window === "undefined") return "JOD";
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved && CURRENCIES[saved]) return saved;
+      const cc = getUnifiedCountryCode();
+      return resolveDefaultCurrencyForCountry(cc);
+    } catch {
+      return "JOD";
+    }
+  });
   const [rates, setRates] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -94,14 +146,12 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     }
     // Auto-detect currency via unified country detection (instant 0ms)
     const cc = getUnifiedCountryCode();
-    if (cc && COUNTRY_TO_CURRENCY[cc] && CURRENCIES[COUNTRY_TO_CURRENCY[cc]]) {
-      setCurrencyState(COUNTRY_TO_CURRENCY[cc]);
-    }
+    setCurrencyState(resolveDefaultCurrencyForCountry(cc));
+
     // Connect to shared singleton country fetch (0 duplicate network requests)
     void fetchUserCountryOnce().then((liveCc) => {
-      if (liveCc && !localStorage.getItem(STORAGE_KEY)) {
-        const cur = COUNTRY_TO_CURRENCY[liveCc];
-        if (cur && CURRENCIES[cur]) setCurrencyState(cur);
+      if (liveCc && !localStorage.getItem("gx_currency_manual") && !localStorage.getItem(STORAGE_KEY)) {
+        setCurrencyState(resolveDefaultCurrencyForCountry(liveCc));
       }
     });
   }, []);
@@ -109,7 +159,10 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const setCurrency = useCallback((code: string) => {
     if (!CURRENCIES[code]) return;
     setCurrencyState(code);
-    localStorage.setItem(STORAGE_KEY, code);
+    try {
+      localStorage.setItem(STORAGE_KEY, code);
+      localStorage.setItem("gx_currency_manual", "1");
+    } catch { /* noop */ }
   }, []);
 
   const rate = useMemo(() => {
@@ -143,6 +196,6 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
 export function useCurrency(): Ctx {
   const ctx = useContext(CurrencyContext);
-  if (!ctx) throw new Error("useCurrency must be used inside CurrencyProvider");
+  if (!ctx) return DEFAULT_CURRENCY_CTX;
   return ctx;
 }

@@ -23,7 +23,8 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
     customerName: z.string().trim().max(120).optional().nullable(),
     customerWhatsapp: z.string().trim().max(40).optional().nullable(),
     customerEmail: z.string().trim().email().max(160).optional().nullable(),
-    paymentMethod: z.enum(["cliq", "gx_wallet", "card"]).optional().nullable(),
+    paymentMethod: z.enum(["cliq", "gx_wallet", "card", "binance_pay"]).optional().nullable(),
+    binanceOrderId: z.string().trim().max(120).optional().nullable(),
     contactType: z.enum(["whatsapp", "telegram", "email"]).optional().nullable(),
     coupon: z.object({
       id: z.string().uuid().nullable(),
@@ -36,6 +37,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       discount_jod: z.number().min(0).max(100000),
     }).nullable().optional(),
     creditJod: z.number().min(0).max(100000).nullable().optional(),
+    lang: z.enum(["ar", "en"]).optional().nullable(),
   }).parse(data))
   .handler(async ({ data }) => {
     let userId: string | null = null;
@@ -83,17 +85,20 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       customerWhatsapp: data.customerWhatsapp,
       customerEmail: data.customerEmail ?? null,
       paymentMethod: data.paymentMethod ?? null,
+      binanceOrderId: data.binanceOrderId ?? null,
       contactType: data.contactType === "email" ? null : data.contactType,
       deliveryData: {
         ...(data.notes?.trim() ? { customer_notes: data.notes.trim() } : {}),
         ...(data.customerEmail ? { customer_email: data.customerEmail.trim().toLowerCase() } : {}),
         ...(data.paymentMethod ? { payment_method: data.paymentMethod } : {}),
+        ...(data.binanceOrderId?.trim() ? { binance_order_id: data.binanceOrderId.trim() } : {}),
       },
       userId,
       accessToken,
       coupon: data.coupon ?? null,
       coins: data.coins ?? null,
       creditJod: data.creditJod ?? 0,
+      lang: data.lang || "ar",
       client: { ip, userAgent, meta: clientMeta },
     });
   });

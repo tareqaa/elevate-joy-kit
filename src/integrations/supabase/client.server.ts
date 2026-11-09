@@ -31,6 +31,14 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 import { getSupabaseUrl } from './config';
 
+export function hasServiceRoleKey(): boolean {
+  return !!(
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SECRET_KEY ||
+    process.env.SERVICE_ROLE_KEY
+  );
+}
+
 function createSupabaseAdminClient() {
   const SUPABASE_URL = getSupabaseUrl();
   const SUPABASE_SERVICE_ROLE_KEY =
@@ -38,16 +46,29 @@ function createSupabaseAdminClient() {
     process.env.SUPABASE_SECRET_KEY ||
     process.env.SERVICE_ROLE_KEY;
 
-  if (!SUPABASE_SERVICE_ROLE_KEY) {
+  const key =
+    SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    "";
+
+  if (!key) {
     const message = `Missing Supabase environment variable: SUPABASE_SERVICE_ROLE_KEY. Connect Supabase in Lovable Cloud.`;
     console.error(`[Supabase] ${message}`);
     throw new Error(message);
   }
 
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn(
+      `[Supabase] Warning: SUPABASE_SERVICE_ROLE_KEY is not set. Service-role operations (such as tournament replay verification saving) will fail until SUPABASE_SERVICE_ROLE_KEY is added to environment variables or .env.`
+    );
+  }
 
-  return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  return createClient<Database>(SUPABASE_URL, key, {
     global: {
-      fetch: createSupabaseFetch(SUPABASE_SERVICE_ROLE_KEY),
+      fetch: createSupabaseFetch(key),
     },
     auth: {
       storage: undefined,

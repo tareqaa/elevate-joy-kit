@@ -3,6 +3,7 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { supabase as defaultSupabase } from "@/integrations/supabase/client";
 import { resolveSafeClientIp } from "./ip";
+import { recordSecurityEvent } from "./security-audit.server";
 
 /* ============================================================
    PASSWORD RESET SERVER HANDLER & RATE LIMITING (SEC-08)
@@ -33,6 +34,7 @@ function checkResetIpRateLimit(ip: string): boolean {
 export type PasswordResetHandlerResult = {
   ok: boolean;
   message?: string;
+  isGuestOnly?: boolean;
 };
 
 export async function handlePasswordReset(
@@ -76,19 +78,62 @@ export async function handlePasswordReset(
       return { ok: false, message: msg };
     }
   } catch {
-    // Continue if RPC is unreachable to prevent blocking legitimate recovery
+    // ignore cooldown check errors
   }
 
-  // 3. Trigger Supabase GoTrue password reset
-  const redirectTo = data.redirectTo || undefined;
-  const { error: resetError } = await supabaseClient.auth.resetPasswordForEmail(cleanEmail, {
-    redirectTo,
-  });
+  // 2.2 Set user language preference in auth metadata so Supabase email template renders in the user's language
+  try {
+    await (supabaseClient.rpc as any)("set_user_preferred_language", {
+      _email: cleanEmail,
+      _lang: lang,
+    });
+  } catch {
+    // ignore if rpc is not present
+  }
 
-  const genericSuccessMessage =
-    lang === "ar"
-      ? "إذا كان هذا البريد مسجلاً لدينا، فسيتم إرسال رابط استعادة كلمة المرور إليه."
-      : "If this email is registered, a password reset link will be sent.";
+  // 2.5 Check if this email is an unregistered guest purchaser
+  try {
+    const { data: profile } = await (supabaseClient as any)
+      .from("profiles")
+      .select("id")
+      .ilike("email", cleanEmail)
+      .maybeSingle();
+
+    if (!profile) {
+      const { data: guestOrder } = await (supabaseClient as any)
+        .from("orders")
+        .select("id")
+        .ilike("customer_email", cleanEmail)
+        .limit(1)
+        .maybeSingle();
+
+      if (guestOrder) {
+        return {
+          ok: false,
+          isGuestOnly: true,
+          message:
+            lang === "ar"
+              ? "هذا البريد الإلكتروني لديه طلبات شراء مسجلة كزائر، ولكنه غير مسجل كحساب بعد في المتجر. يرجى الضغط على «إنشاء حساب جديد» واستخدام نفس البريد لتفعيل حسابك واستلام طلباتك."
+              : "This email has guest purchases but no account has been registered yet. Please click 'Create Account' to set a password and access your orders.",
+        };
+      }
+    }
+  } catch {}
+
+  // 3. Trigger Supabase GoTrue password reset
+  const options = data.redirectTo ? { redirectTo: data.redirectTo } : undefined;
+  const { error: resetError } = await (supabaseClient.auth.resetPasswordForEmail as any)(
+    cleanEmail,
+    options
+  );
+
+  const genericSuccessMessage = data.redirectTo
+    ? (lang === "ar"
+        ? "إذا كان هذا البريد مسجلاً لدينا، فسيتم إرسال رابط استعادة كلمة المرور إليه."
+        : "If this email is registered, a password reset link will be sent.")
+    : (lang === "ar"
+        ? "إذا كان هذا البريد مسجلاً لدينا، فسيتم إرسال رمز التحقق (OTP) المكوّن من 6 أرقام إليه."
+        : "If this email is registered, a 6-digit verification code will be sent.");
 
   if (resetError) {
     const errMsg = (resetError.message || "").toLowerCase();
@@ -135,6 +180,19 @@ export const requestPasswordResetServer = createServerFn({ method: "POST" })
       ip = resolveSafeClientIp(getRequestHeader);
     } catch {
       ip = "127.0.0.1";
+    }
+
+    try {
+      recordSecurityEvent({
+        type: "reset_request",
+        email: data.email,
+        ip,
+        userAgent: getRequestHeader("user-agent") || null,
+        headers: getRequestHeader,
+        status: "flagged",
+      });
+    } catch (err) {
+      console.error("[Auth] Failed to record reset attempt:", err);
     }
 
     return handlePasswordReset(data, ip);

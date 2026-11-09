@@ -16,13 +16,15 @@ function WhatsAppSvg() {
 
 export function OrderConfirmedModal({
   orderNumber,
+  orderToken,
   waUrl,
   paymentMethod,
   onClose,
 }: {
   orderNumber: string;
+  orderToken?: string;
   waUrl: string | null;
-  paymentMethod?: "cliq" | "card" | "gx_wallet" | null;
+  paymentMethod?: "cliq" | "card" | "gx_wallet" | "binance_pay" | null;
   onClose: () => void;
 }) {
   const { t, dir, lang } = useLang();
@@ -49,6 +51,8 @@ export function OrderConfirmedModal({
   const pmLabel = useMemo(() => {
     return paymentMethod === "cliq"
       ? (isAr ? "خدمة كليك (CliQ) 🇯🇴" : "CliQ (Jordan) 🇯🇴")
+      : paymentMethod === "binance_pay"
+      ? (isAr ? "بايننس باي (Binance Pay) 🌐" : "Binance Pay 🌐")
       : paymentMethod === "card"
       ? (isAr ? "بطاقة بنكية (Visa / Mastercard) 💳" : "Bank Card (Visa / Mastercard) 💳")
       : (isAr ? "محفظة GX (GX Wallet) 🌐" : "GX Wallet 🌐");
@@ -57,13 +61,21 @@ export function OrderConfirmedModal({
   const supportPhone = (site.support_whatsapp || "962776252313").replace(/[^0-9]/g, "");
 
   const fullOrderText = useMemo(() => {
+    if (!isAr) {
+      return `🎮 *New Order from GX Store* 🎮
+━━━━━━━━━━━━━━━━━━━━
+📋 *Order Number:* ${orderNumber}
+💳 *Payment Method:* ${pmLabel}
+━━━━━━━━━━━━━━━━━━━━
+✨ *I would like to confirm my order and receive the activation details.* Thank you!`;
+    }
     return `🎮 *طلب جديد من متجر GX Store* 🎮
 ━━━━━━━━━━━━━━━━━━━━
 📋 *رقم الطلب:* ${orderNumber}
 💳 *طريقة الدفع:* ${pmLabel}
 ━━━━━━━━━━━━━━━━━━━━
 ✨ *أود تأكيد الطلب واستلام تفاصيل التفعيل.* شكراً لكم!`;
-  }, [orderNumber, pmLabel]);
+  }, [orderNumber, pmLabel, isAr]);
 
   const effectiveWaUrl = useMemo(() => {
     if (waUrl && waUrl.trim()) return waUrl;
@@ -256,8 +268,28 @@ export function OrderConfirmedModal({
           </a>
         </div>
 
-        {/* Track in account link (if logged in) */}
-        {signedIn && (
+        {/* View / Track Order Link */}
+        {orderToken ? (
+          <Link
+            to="/order/completed"
+            search={{ order_token: orderToken }}
+            onClick={onClose}
+            style={{
+              display: "block",
+              padding: "9px 14px",
+              borderRadius: 12,
+              border: "1px solid rgba(0, 229, 255, 0.25)",
+              background: "rgba(0, 229, 255, 0.05)",
+              color: "#00e5ff",
+              fontSize: 13,
+              fontWeight: 800,
+              textDecoration: "none",
+              marginBottom: 8,
+            }}
+          >
+            📦 {t("cart.track_order")}
+          </Link>
+        ) : signedIn ? (
           <Link
             to="/account"
             search={{ tab: "orders" as const }}
@@ -277,7 +309,7 @@ export function OrderConfirmedModal({
           >
             📦 {t("cart.track_order")}
           </Link>
-        )}
+        ) : null}
 
         {/* Close Button */}
         <button

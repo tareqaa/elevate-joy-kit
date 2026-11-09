@@ -1,3 +1,5 @@
+import { GIFT_CARDS_CATALOG } from "@/data/products";
+
 /* ============================================================
    GX STORE — SINGLE SOURCE OF TRUTH FOR PRODUCT REGION LABELS
    The database `region` field always wins. Guessing from the
@@ -85,6 +87,20 @@ export function detectRegionCode(input: {
 
   const s = (input.slug || "").toLowerCase();
   const cid = (input.cartId || "").toLowerCase();
+
+  // 1. Direct authoritative lookup in gift cards catalog by denomination ID
+  if (cid) {
+    for (const platformKey in GIFT_CARDS_CATALOG) {
+      const platform = GIFT_CARDS_CATALOG[platformKey];
+      for (const reg of platform.regions || []) {
+        if (reg.denominations?.some((d) => d.id.toLowerCase() === cid)) {
+          const c = reg.code.toLowerCase().trim();
+          if (c in LABELS) return c as RegionCode;
+        }
+      }
+    }
+  }
+
   if (s === "tod" || s.startsWith("tod-") || cid.startsWith("tod-")) {
     return "jo";
   }
@@ -97,6 +113,10 @@ export function detectRegionCode(input: {
     .join(" ");
   if (hay) {
     for (const [code, re] of IMPLICIT) if (re.test(hay)) return code;
+    // If USD symbol $ or USD is present in PlayStation / Xbox / iTunes cards without explicit other region -> default to US
+    if ((hay.includes("$") || /\busd\b/i.test(hay)) && /playstation|بلايستيشن|psn|itunes|ايتونز|xbox/i.test(hay)) {
+      return "us";
+    }
     if (/global|عالمي|worldwide/i.test(hay)) return "global";
   }
 

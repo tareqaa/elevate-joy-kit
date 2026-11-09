@@ -281,7 +281,12 @@ const DEFAULTS: SiteSettings = {
 };
 
 const CACHE_KEY = "gx_site_settings_v2";
-const Ctx = createContext<SiteSettings>(DEFAULTS);
+
+// Keep a single context instance across HMR module replacements, otherwise a
+// hot update recreates the context while the mounted provider still holds the old one.
+const g = globalThis as unknown as { __gxSiteSettingsContext?: React.Context<SiteSettings> };
+const Ctx = g.__gxSiteSettingsContext ?? createContext<SiteSettings>(DEFAULTS);
+g.__gxSiteSettingsContext = Ctx;
 
 function readCache(): SiteSettings {
   if (typeof window === "undefined") return DEFAULTS;

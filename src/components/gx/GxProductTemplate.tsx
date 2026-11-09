@@ -22,8 +22,10 @@ import {
   isRememberContactEnabled,
   setRememberContactEnabled,
 } from "@/lib/gx/contact-storage";
-import { CountryPhoneInput, detectUserCountry, fetchUserCountryOnce, COUNTRIES } from "@/lib/gx/country-phone";
-import { resolveProductImage } from "@/lib/gx/product-images";
+import { CountryPhoneInput, detectUserCountry, fetchUserCountryOnce, COUNTRIES, useUserCountry } from "@/lib/gx/country-phone";
+import { resolveProductImage, CANONICAL_VARIANT_IMAGES } from "@/lib/gx/product-images";
+import { translateProductNotice, translateProductInstruction } from "@/lib/gx/product-translations";
+import { resolveProductActivationGuide } from "@/lib/gx/activation-guide";
 
 function renderStepContent(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -79,41 +81,6 @@ const COUNTRY_MAP: Record<string, { ar: string; en: string }> = {
 };
 
 
-function useUserCountry() {
-  const [geo, setGeo] = useState<{ code: string; ar: string; en: string }>(() => {
-    const c = detectUserCountry();
-    return {
-      code: c.code,
-      ar: c.nameAr,
-      en: c.nameEn,
-    };
-  });
-
-  useEffect(() => {
-    void fetchUserCountryOnce().then((code) => {
-      if (code) {
-        const c = COUNTRIES.find((x) => x.code === code);
-        if (c) {
-          setGeo({ code: c.code, ar: c.nameAr, en: c.nameEn });
-        }
-      }
-    });
-
-    const handler = (e: Event) => {
-      const code = (e as CustomEvent).detail;
-      if (code) {
-        const c = COUNTRIES.find((x) => x.code === code);
-        if (c) {
-          setGeo({ code: c.code, ar: c.nameAr, en: c.nameEn });
-        }
-      }
-    };
-    window.addEventListener("gx:country-detected", handler);
-    return () => window.removeEventListener("gx:country-detected", handler);
-  }, []);
-
-  return geo;
-}
 
 export function GxProductTemplate({
   product,
@@ -174,6 +141,42 @@ export function GxProductTemplate({
 
   const variants = useMemo(() => {
     let raw = product.variants && product.variants.length > 0 ? [...product.variants] : [];
+
+    // Dedicated Google Gemini Plus: Only single 6-Month Activation Link
+    if (product.slug === "gemini" || product.slug.startsWith("gemini-")) {
+      return [
+        {
+          cartId: "gemini-plus-6m",
+          labelAr: "Google Gemini Plus | اشتراك 6 أشهر (رابط تفعيل)",
+          labelEn: "Google Gemini Plus — 6 Months (Activation Link)",
+          price: 4.0,
+          oldPrice: 8.0,
+          tagAr: "رابط تفعيل 6 أشهر",
+          tagEn: "6-Month Link",
+          planGroup: null,
+          region: "عالمي | Global",
+          deliveryType: "link",
+        },
+      ];
+    }
+
+    // Dedicated Notion Business: 6 JOD
+    if (product.slug === "notion-business" || product.slug === "notion") {
+      return [
+        {
+          cartId: "notion-biz-3m",
+          labelAr: "اشتراك 3 أشهر (300 رصيد شهرياً)",
+          labelEn: "3 Months (300 Monthly Credits)",
+          price: 6.0,
+          oldPrice: 30.0,
+          tagAr: "300 رصيد شهرياً",
+          tagEn: "300 Credits/mo",
+          planGroup: null,
+          region: "عالمي | Global",
+          deliveryType: "key",
+        },
+      ];
+    }
 
     // Separate Fortnite V-Bucks vs Fortnite Crew
     if (product.slug === "fortnite") {
@@ -557,6 +560,18 @@ export function GxProductTemplate({
   const activeVariantLabel = pick(activeVariant?.labelAr, activeVariant?.labelEn);
 
   const displayTitle = useMemo(() => {
+    // 0. Dedicated Gemini & Notion titles
+    if (product.slug === "gemini" || product.slug.startsWith("gemini-")) {
+      return ar
+        ? "Google Gemini Plus | اشتراك 6 أشهر (رابط تفعيل)"
+        : "Google Gemini Plus — 6 Months (Activation Link)";
+    }
+    if (product.slug === "notion-business" || product.slug === "notion") {
+      return ar
+        ? "Notion Business — اشتراك 3 أشهر"
+        : "Notion Business — 3 Months";
+    }
+
     // 1. Fortnite specific titles
     if (product.slug === "fortnite") {
       const cid = (activeVariant?.cartId || "").toLowerCase();
@@ -767,15 +782,23 @@ export function GxProductTemplate({
   };
   const activeVbTier = useMemo(() => getVbucksTierStyle(activeVariant.cartId), [isFortnite, activeVariant.cartId]);
 
-  // Poster Component: Pure, clean cover art without text labels or overlays (Driffle style)
+  // Poster Component: Pure, clean cover art without text labels or overlays (GX style)
   const renderPoster = () => {
+    // 1. Variant-specific canonical card (e.g. TOD duration artwork cards, Fortnite packs)
+    const variantSpecific = activeVariant.cartId ? CANONICAL_VARIANT_IMAGES[activeVariant.cartId] : null;
+
+    // 2. The official thumbnail is the official image of the product inside its page!
     const coverSrc =
+      variantSpecific ||
+      product.imageUrl ||
+      product.iconImage ||
       resolveProductImage({
         cartId: activeVariant.cartId,
         slug: product.slug,
         name: name,
         fallback: (activeVariant as any).imageUrl || product.imageUrl || product.iconImage,
-      }) || product.imageUrl || product.iconImage || "/app/assets/img/gx-logo.png";
+      }) ||
+      "/app/assets/img/gx-logo.png";
 
     return (
       <div
@@ -1058,6 +1081,19 @@ export function GxProductTemplate({
 
   // Contextual Notice Points
   const noticePoints = useMemo(() => {
+    if (product.slug === "gemini" || product.slug.startsWith("gemini-")) {
+      return [
+        ar
+          ? "💳 لا يلزم بطاقة بنكية (Credit Card): يمكنك تفعيل الرابط على حساب Google الشخصي الخاص بك مباشرة بدون الحاجة لإضافة أي فيزا أو بطاقة دفع."
+          : "💳 No Credit Card Required: You can activate the link directly on your personal Google account without adding any payment card.",
+        ar
+          ? "⏳ يجب الدخول وتفعيل الرابط خلال 10 ساعات: صلاحية رابط التفعيل 10 ساعات فقط من وقت التسليم ويجب النقر عليه وتفعيله فور استلامه."
+          : "⏳ Must Activate Within 10 Hours: The activation link is valid for 10 hours from delivery and must be activated promptly.",
+        ar
+          ? "🛡️ تنبيه الضمان: ينتهي الضمان تماماً ولا يقدم المتجر أي ضمان إذا لم يتم الدخول وتفعيل الرابط خلال الـ 10 ساعات الأولى من التسليم."
+          : "🛡️ Warranty Policy: Warranty is void if the activation link is not used and activated within the first 10 hours of delivery.",
+      ];
+    }
     if (isValorant) {
       const isEU = (product.slug || "").includes("eu") || (activeVariant.region || "").includes("Europe") || (activeVariant.region || "").includes("أوروبا");
       return [
@@ -1173,6 +1209,11 @@ export function GxProductTemplate({
   }, [deliveryInfo.type, isSteamGameAccount, isSocialProduct, isFollowerProduct, isLikeProduct, isValorant, isFortnite, isYouTube, isYouTubeAccount, ar]);
 
   const displayNoticeList = useMemo(() => {
+    // 0. Dedicated Gemini notice points
+    if (product.slug === "gemini" || (product.slug || "").startsWith("gemini-")) {
+      return noticePoints;
+    }
+
     // 1. Prioritize database importantNotes
     if (product.importantNotes && Array.isArray(product.importantNotes) && product.importantNotes.length > 0) {
       const clean = product.importantNotes.filter((n: string) => {
@@ -1183,11 +1224,20 @@ export function GxProductTemplate({
         }
         return true;
       });
-      if (clean.length > 0) return clean;
+      if (clean.length > 0) {
+        if (!ar) {
+          // If dedicated English notice points exist for this platform/game, use them
+          if (noticePoints && noticePoints.length > 0) {
+            return noticePoints;
+          }
+          return clean.map(translateProductNotice);
+        }
+        return clean;
+      }
     }
     // 2. Specific contextual conditions
     return noticePoints;
-  }, [product.importantNotes, noticePoints]);
+  }, [product.importantNotes, noticePoints, ar]);
 
   const isNoticeHidden = useMemo(() => {
     // 1. Explicitly hide for TOD
@@ -1314,13 +1364,21 @@ export function GxProductTemplate({
     }
 
     // Custom instructions from DB (if not generic placeholder):
-    if (product.deliveryInstructionsAr && !product.deliveryInstructionsAr.includes("إعدادات النظام")) {
+    const instructionsRaw = (!ar && product.deliveryInstructionsEn)
+      ? product.deliveryInstructionsEn
+      : product.deliveryInstructionsAr;
+
+    if (instructionsRaw && !instructionsRaw.includes("إعدادات النظام") && !instructionsRaw.includes("System Settings")) {
+      let rawSteps: string[] = [];
       try {
-        const parsed = JSON.parse(product.deliveryInstructionsAr);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        const parsed = JSON.parse(instructionsRaw);
+        if (Array.isArray(parsed) && parsed.length > 0) rawSteps = parsed;
       } catch {
-        const lines = product.deliveryInstructionsAr.split("\n").map((l: string) => l.trim()).filter(Boolean);
-        if (lines.length > 0) return lines;
+        const lines = instructionsRaw.split("\n").map((l: string) => l.trim()).filter(Boolean);
+        if (lines.length > 0) rawSteps = lines;
+      }
+      if (rawSteps.length > 0) {
+        return ar ? rawSteps : rawSteps.map(translateProductInstruction);
       }
     }
 
@@ -1504,17 +1562,19 @@ export function GxProductTemplate({
         ];
       }
 
-      return [
-        ar
-          ? "استلم كود التفعيل الرقمي فوراً في صفحة تأكيد الطلب وحسابك في الموقع."
-          : "Receive the digital key instantly on the order confirmation screen.",
-        ar
-          ? "توجه إلى إعدادات النظام أو الموقع الرسمي وأدخل الكود في خانة التفعيل (Redeem / Product Key)."
-          : "Go to system settings or the official portal and enter the key.",
-        ar
-          ? "اضغط تفعيل (Activate) ليتم التحقق من الكود وتأكيد التفعيل الأصلي."
-          : "Click Activate to verify and permanently license your software.",
-      ];
+      const fallbackGuide = resolveProductActivationGuide(
+        {
+          name: product.nameAr,
+          nameAr: product.nameAr,
+          nameEn: product.nameEn,
+          slug: product.slug,
+          platform: product.platform || undefined,
+          deliveryInstructionsAr: product.deliveryInstructionsAr || undefined,
+          deliveryInstructionsEn: (product as any).deliveryInstructionsEn || undefined,
+        },
+        lang
+      );
+      return fallbackGuide.steps;
     }
 
     if (deliveryInfo.type === "account") {

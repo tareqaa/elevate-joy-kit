@@ -39,7 +39,7 @@ function HeroGamesSlide() {
   const { lang } = useLang();
   const ar = lang === "ar";
   return (
-    <Link to="/games" className="hero-inner hero-games" aria-label={ar ? "البطولات" : "Tournaments"} draggable={false}>
+    <Link to="/games" className="hero-inner hero-games" aria-label={ar ? "البطولات" : "Tournaments"} draggable={false} data-nosnippet="true">
       <div className="hg-noise" aria-hidden />
       {/* flying arcade bits (tetris blocks + pixel bird) */}
       <div className="hg-arcade" aria-hidden>
@@ -146,14 +146,11 @@ export function HeroRenderer({ data }: { data: HeroData }) {
     if (movedRef.current) { e.preventDefault(); e.stopPropagation(); movedRef.current = false; }
   };
 
-  const badge = data.badge || t("home.hero_badge");
-  const titleA = data.title_a || t("home.hero_title_a");
-  const titleB = data.title_b || t("home.hero_title_b");
-  const titleC = data.title_c || t("home.hero_title_c");
-  const subtitle = data.subtitle || t("home.hero_desc");
-  const ctaAText = data.cta_primary_text || t("home.browse_products");
+  const badge = data.badge || (ar ? "أكثر من 1000+ عميل وثقوا فينا" : "Trusted by 1,000+ customers");
+  const subtitle = data.subtitle || (ar ? "اشتراكات، بطاقات هدايا، عملات ألعاب، وحسابات" : "Subscriptions, gift cards, in-game currency and accounts");
+  const ctaAText = data.cta_primary_text || (ar ? "تصفح المنتجات" : "Browse products");
   const ctaALink = data.cta_primary_link || "#products";
-  const ctaBText = data.cta_secondary_text || t("home.see_categories");
+  const ctaBText = data.cta_secondary_text || (ar ? "شوف الأقسام" : "See categories");
   const ctaBLink = data.cta_secondary_link || "#categories";
   const basePct = slide * 100;
   return (
@@ -196,11 +193,23 @@ export function HeroRenderer({ data }: { data: HeroData }) {
                   <div className="hero-badge"><span className="dot" /> {badge}</div>
                   <h1>
                     <span className="sr-only">GX Store | </span>
-                    {titleA} <span>{titleB}</span><br />{titleC}
+                    {ar ? (
+                      <>
+                        {data.title_a || "كل منتجاتك الرقمية"}
+                        <br />
+                        <span>{data.title_c || "في مكان واحد"}</span>
+                      </>
+                    ) : (
+                      <>
+                        {data.title_a || "The"} <span>{data.title_b || "All-in-One"}</span>
+                        <br />
+                        {data.title_c || "Digital Store"}
+                      </>
+                    )}
                   </h1>
                   <RichHtml as="p" html={subtitle} />
-                  <div className="hero-ctas">
-                    <a href={ctaALink} className="btn btn-primary">{ctaAText}</a>
+                  <div className="hero-ctas" data-nosnippet="true">
+                    <a href={ctaALink} className="btn btn-primary">{ctaAText}</a>{" "}
                     <a href={ctaBLink} className="btn btn-ghost">{ctaBText}</a>
                   </div>
                 </div>
