@@ -25,7 +25,6 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RewardsRouteImport } from './routes/rewards'
 import { Route as SnapchatRouteImport } from './routes/snapchat'
 import { Route as SupportRouteImport } from './routes/support'
-import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -39,7 +38,6 @@ import { Route as OrderOrderNumberRouteImport } from './routes/order.$orderNumbe
 import { Route as OrderCompletedRouteImport } from './routes/order.completed'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
-import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminActivityRouteImport } from './routes/_authenticated/admin/activity'
 import { Route as AuthenticatedAdminAvatarsRouteImport } from './routes/_authenticated/admin/avatars'
@@ -143,12 +141,6 @@ const SupportRoute = SupportRouteImport.update({
   path: '/support',
   getParentRoute: () => rootRouteImport,
 } as any)
-const Char91DotmcpChar93ListToolsRoute =
-  Char91DotmcpChar93ListToolsRouteImport.update({
-    id: '/.mcp/list-tools',
-    path: '/.mcp/list-tools',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
   Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
     id: '/.well-known/oauth-protected-resource',
@@ -215,12 +207,6 @@ const UUsernameRoute = UUsernameRouteImport.update({
   path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
-const Char91DotmcpChar93InvokeToolToolRoute =
-  Char91DotmcpChar93InvokeToolToolRouteImport.update({
-    id: '/.mcp/invoke-tool/$tool',
-    path: '/.mcp/invoke-tool/$tool',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -369,7 +355,6 @@ export interface FileRoutesByFullPath {
   '/rewards': typeof RewardsRoute
   '/snapchat': typeof SnapchatRoute
   '/support': typeof SupportRoute
-  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/account': typeof AuthenticatedAccountRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -383,7 +368,6 @@ export interface FileRoutesByFullPath {
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/games/': typeof GamesIndexRoute
-  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/activity': typeof AuthenticatedAdminActivityRoute
   '/admin/avatars': typeof AuthenticatedAdminAvatarsRoute
   '/admin/badges': typeof AuthenticatedAdminBadgesRoute
@@ -424,7 +408,6 @@ export interface FileRoutesByTo {
   '/rewards': typeof RewardsRoute
   '/snapchat': typeof SnapchatRoute
   '/support': typeof SupportRoute
-  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/account': typeof AuthenticatedAccountRoute
   '/category/$slug': typeof CategorySlugRoute
@@ -437,7 +420,6 @@ export interface FileRoutesByTo {
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/games': typeof GamesIndexRoute
-  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/activity': typeof AuthenticatedAdminActivityRoute
   '/admin/avatars': typeof AuthenticatedAdminAvatarsRoute
   '/admin/badges': typeof AuthenticatedAdminBadgesRoute
@@ -480,7 +462,6 @@ export interface FileRoutesById {
   '/rewards': typeof RewardsRoute
   '/snapchat': typeof SnapchatRoute
   '/support': typeof SupportRoute
-  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -494,7 +475,6 @@ export interface FileRoutesById {
   '/product/$slug': typeof ProductSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/games/': typeof GamesIndexRoute
-  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/activity': typeof AuthenticatedAdminActivityRoute
   '/_authenticated/admin/avatars': typeof AuthenticatedAdminAvatarsRoute
   '/_authenticated/admin/badges': typeof AuthenticatedAdminBadgesRoute
@@ -537,7 +517,6 @@ export interface FileRouteTypes {
     | '/rewards'
     | '/snapchat'
     | '/support'
-    | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/account'
     | '/admin'
@@ -551,7 +530,6 @@ export interface FileRouteTypes {
     | '/product/$slug'
     | '/u/$username'
     | '/games/'
-    | '/.mcp/invoke-tool/$tool'
     | '/admin/activity'
     | '/admin/avatars'
     | '/admin/badges'
@@ -592,7 +570,6 @@ export interface FileRouteTypes {
     | '/rewards'
     | '/snapchat'
     | '/support'
-    | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/account'
     | '/category/$slug'
@@ -605,7 +582,6 @@ export interface FileRouteTypes {
     | '/product/$slug'
     | '/u/$username'
     | '/games'
-    | '/.mcp/invoke-tool/$tool'
     | '/admin/activity'
     | '/admin/avatars'
     | '/admin/badges'
@@ -647,7 +623,6 @@ export interface FileRouteTypes {
     | '/rewards'
     | '/snapchat'
     | '/support'
-    | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/account'
     | '/_authenticated/admin'
@@ -661,7 +636,6 @@ export interface FileRouteTypes {
     | '/product/$slug'
     | '/u/$username'
     | '/games/'
-    | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/activity'
     | '/_authenticated/admin/avatars'
     | '/_authenticated/admin/badges'
@@ -704,7 +678,6 @@ export interface RootRouteChildren {
   RewardsRoute: typeof RewardsRoute
   SnapchatRoute: typeof SnapchatRoute
   SupportRoute: typeof SupportRoute
-  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   CategorySlugRoute: typeof CategorySlugRoute
   GamesSlugRoute: typeof GamesSlugRoute
@@ -716,7 +689,6 @@ export interface RootRouteChildren {
   ProductSlugRoute: typeof ProductSlugRoute
   UUsernameRoute: typeof UUsernameRoute
   GamesIndexRoute: typeof GamesIndexRoute
-  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   GamesTIdRoute: typeof GamesTIdRoute
   GuestOrderCompletedRoute: typeof GuestOrderCompletedRoute
 }
@@ -835,13 +807,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SupportRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.mcp/list-tools': {
-      id: '/.mcp/list-tools'
-      path: '/.mcp/list-tools'
-      fullPath: '/.mcp/list-tools'
-      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/.well-known/oauth-protected-resource': {
       id: '/.well-known/oauth-protected-resource'
       path: '/.well-known/oauth-protected-resource'
@@ -931,13 +896,6 @@ declare module '@tanstack/react-router' {
       path: '/u/$username'
       fullPath: '/u/$username'
       preLoaderRoute: typeof UUsernameRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/.mcp/invoke-tool/$tool': {
-      id: '/.mcp/invoke-tool/$tool'
-      path: '/.mcp/invoke-tool/$tool'
-      fullPath: '/.mcp/invoke-tool/$tool'
-      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/': {
@@ -1185,7 +1143,6 @@ const rootRouteChildren: RootRouteChildren = {
   RewardsRoute: RewardsRoute,
   SnapchatRoute: SnapchatRoute,
   SupportRoute: SupportRoute,
-  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   CategorySlugRoute: CategorySlugRoute,
@@ -1198,7 +1155,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProductSlugRoute: ProductSlugRoute,
   UUsernameRoute: UUsernameRoute,
   GamesIndexRoute: GamesIndexRoute,
-  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   GamesTIdRoute: GamesTIdRoute,
   GuestOrderCompletedRoute: GuestOrderCompletedRoute,
 }
