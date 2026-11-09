@@ -241,41 +241,15 @@ export function StockManager() {
   }, [settingsQ.data]);
 
   // Helper setters
-  const setItemLimit = (key: string, limit: number | null, productSlug?: string) => {
+  // Each row only ever writes its own key, so marking one package sold out
+  // (or capping it) never changes the product's other packages.
+  const setItemLimit = (key: string, limit: number | null, _productSlug?: string) => {
     setLimits((prev) => {
       const next = { ...prev };
-      const keysToUpdate = new Set<string>([key]);
-      if (productSlug) keysToUpdate.add(productSlug);
-
-      // Handle aliases so parent product and variants stay perfectly in sync
-      if (key.includes("youtube") || productSlug?.includes("youtube")) {
-        keysToUpdate.add("youtube");
-        keysToUpdate.add("youtube-premium");
-        keysToUpdate.add("youtube-premium-1m");
-      }
-      if (key.includes("snap") || productSlug?.includes("snap")) {
-        keysToUpdate.add("snapchat");
-        keysToUpdate.add("snap");
-        keysToUpdate.add("snap-3");
-        keysToUpdate.add("snap-6");
-        keysToUpdate.add("snap-12");
-      }
-      if (key.includes("discord") || productSlug?.includes("discord")) {
-        keysToUpdate.add("discord");
-        keysToUpdate.add("discord-nitro");
-        keysToUpdate.add("discord-nitro-3m");
-      }
-      if (key.includes("canva") || productSlug?.includes("canva")) {
-        keysToUpdate.add("canva");
-        keysToUpdate.add("canva-pro-1y");
-      }
-
       if (limit === null || isNaN(limit) || limit < 0) {
-        keysToUpdate.forEach((k) => delete next[k]);
+        delete next[key];
       } else {
-        keysToUpdate.forEach((k) => {
-          next[k] = limit;
-        });
+        next[key] = limit;
       }
       return next;
     });
@@ -340,7 +314,7 @@ export function StockManager() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return allItems.filter((it) => {
-      const limit = limits[it.cartId] ?? (it.productSlug ? limits[it.productSlug] : undefined);
+      const limit = getEffectiveStockLimit(limits, it.cartId, it.productSlug);
       const isConfigured = limit !== undefined && limit !== null;
       const isSoldOut = isConfigured && limit <= 0;
 

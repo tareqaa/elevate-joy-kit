@@ -556,13 +556,42 @@ export function isSocialMediaStockItem(
   return false;
 }
 
+/** Product-level alias keys (never sibling packages) per product slug. */
+const PRODUCT_STOCK_ALIASES: Record<string, string[]> = {
+  youtube: ["youtube", "youtube-premium"],
+  "youtube-premium": ["youtube", "youtube-premium"],
+  snapchat: ["snapchat", "snap"],
+  snap: ["snapchat", "snap"],
+  discord: ["discord", "discord-nitro"],
+  "discord-nitro": ["discord", "discord-nitro"],
+  canva: ["canva"],
+  duolingo: ["duolingo", "duolingo-super-12-months"],
+  "duolingo-super-12-months": ["duolingo", "duolingo-super-12-months"],
+};
+
+/**
+ * Legacy single-package keys, consulted only when no specific package is asked
+ * about (e.g. a product-level badge). Never used to resolve a specific package,
+ * so one package's limit can't spill onto its siblings.
+ */
+const LEGACY_PACKAGE_ALIASES: Record<string, string[]> = {
+  youtube: ["youtube-premium-1m"],
+  "youtube-premium": ["youtube-premium-1m"],
+  discord: ["discord-nitro-3m"],
+  "discord-nitro": ["discord-nitro-3m"],
+  canva: ["canva-pro-1y"],
+  duolingo: ["duolingo-1m"],
+  "duolingo-super-12-months": ["duolingo-1m"],
+};
+
 /**
  * Universal helper to resolve effective stock limit for a product/variant.
  * Rules:
  * 0. Social media products are permanently SOLD OUT (0) across all updates & versions!
- * 1. If ANY key or alias is explicitly <= 0, the item is SOLD OUT (returns 0).
- * 2. Variant-specific positive limit wins over parent product limit.
- * 3. Returns null if limit is open/unlimited.
+ * 1. The most specific key that has a value wins: the package itself, then its
+ *    parent prefix, then the product slug, then product-level aliases.
+ *    A package's own limit (including sold out) never affects its siblings.
+ * 2. Returns null if limit is open/unlimited.
  */
 export function getEffectiveStockLimit(
   stockLimits: Record<string, number | null> | undefined,
@@ -590,46 +619,17 @@ export function getEffectiveStockLimit(
   }
   if (slug) {
     keys.push(slug);
-    if (slug === "youtube" || slug === "youtube-premium") {
-      keys.push("youtube-premium", "youtube", "youtube-premium-1m");
-    }
-    if (slug === "snapchat" || slug === "snap") {
-      keys.push("snapchat", "snap", "snap-3", "snap-6", "snap-12");
-    }
-    if (slug === "discord" || slug === "discord-nitro") {
-      keys.push("discord", "discord-nitro", "discord-nitro-3m");
-    }
-    if (slug === "canva") {
-      keys.push("canva", "canva-pro-1y");
-    }
-    if (slug === "duolingo" || slug === "duolingo-super-12-months") {
-      keys.push("duolingo", "duolingo-super-12-months", "duolingo-1m");
+    keys.push(...(PRODUCT_STOCK_ALIASES[slug] ?? []));
+    const asksForWholeProduct = !cartId || cartId === slug;
+    if (asksForWholeProduct) {
+      keys.push(...(LEGACY_PACKAGE_ALIASES[slug] ?? []));
     }
   }
 
-  // 1. Any matching key that is <= 0 means SOLD OUT (0) immediately!
   for (const k of keys) {
     const v = stockLimits[k];
-    if (v !== undefined && v !== null && Number(v) <= 0) {
-      return 0;
-    }
-  }
-
-  // 2. Specific variant limit
-  if (cartId && stockLimits[cartId] !== undefined && stockLimits[cartId] !== null) {
-    return Number(stockLimits[cartId]);
-  }
-
-  // 3. Specific slug limit
-  if (slug && stockLimits[slug] !== undefined && stockLimits[slug] !== null) {
-    return Number(stockLimits[slug]);
-  }
-
-  // 4. Any alias limit
-  for (const k of keys) {
-    const v = stockLimits[k];
-    if (v !== undefined && v !== null) {
-      return Number(v);
+    if (v !== undefined && v !== null && !Number.isNaN(Number(v))) {
+      return Math.max(0, Number(v));
     }
   }
 

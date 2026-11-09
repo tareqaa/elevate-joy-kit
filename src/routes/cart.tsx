@@ -268,6 +268,15 @@ function CartItemTargetEditor({ item }: { item: any }) {
 
   const [isEditing, setIsEditing] = useState(false);
   const [val, setVal] = useState(currentTarget);
+  const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(() => {
+    const fromPhone = resolveCountryFromPhone(currentTarget || cart.contact.phone);
+    if (fromPhone) return fromPhone;
+    if (cart.contact.countryCode) {
+      const match = COUNTRIES.find((c) => c.dialCode === cart.contact.countryCode || c.code === cart.contact.countryCode);
+      if (match) return match;
+    }
+    return detectUserCountry();
+  });
 
   // If no requirement type and no usernames, don't show
   if (reqType === "none" && (!item.usernames || item.usernames.length === 0)) {
@@ -285,15 +294,6 @@ function CartItemTargetEditor({ item }: { item: any }) {
       ? (isAr ? "🔗 رابط الحساب:" : "🔗 Link:")
       : (isAr ? "المعرّف:" : "Target:");
 
-  const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(() => {
-    const fromPhone = resolveCountryFromPhone(currentTarget || cart.contact.phone);
-    if (fromPhone) return fromPhone;
-    if (cart.contact.countryCode) {
-      const match = COUNTRIES.find((c) => c.dialCode === cart.contact.countryCode || c.code === cart.contact.countryCode);
-      if (match) return match;
-    }
-    return detectUserCountry();
-  });
   const placeholder =
     reqType === "whatsapp"
       ? selectedCountry.placeholder
