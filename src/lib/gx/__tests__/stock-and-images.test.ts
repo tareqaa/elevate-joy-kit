@@ -26,6 +26,7 @@ describe("per-package stock limits", () => {
 describe("product images", () => {
   it("Autodesk never shows a TOD picture", () => {
     const img = resolveProductImage({ cartId: "autodesk", slug: "autodesk", name: "Autodesk All Apps 1 Year" });
-    expect(img).not.toMatch(/tod/i);
+    expect(img).toBe("/app/assets/img/catalog/autodesk-cover.jpg");
+    expect(img).not.toMatch(/catalog\/(tod_|total_|one_day|one_week|1-0|4k_)/);
   });
 });
