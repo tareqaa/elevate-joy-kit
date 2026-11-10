@@ -477,7 +477,43 @@ export function useAuthActions() {
     }
   }
 
+  /**
+   * Called when the /auth page loads. After a Google (OAuth) redirect the
+   * session already exists, so we must finish the sign-in here: either ask
+   * for the 2FA code (aal1 -> aal2) or run the normal post-login tasks.
+   */
+  async function resumeExistingSession(): Promise<{ signedIn: boolean; mfaRequired?: boolean; factorId?: string }> {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+      if (!user) return { signedIn: false };
+
+      try {
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (aalData && aalData.currentLevel === "aal1" && aalData.nextLevel === "aal2") {
+          const { data: factorsData } = await supabase.auth.mfa.listFactors();
+          const totpFactor = factorsData?.totp?.find((f) => f.status === "verified");
+          if (totpFactor) return { signedIn: true, mfaRequired: true, factorId: totpFactor.id };
+        }
+      } catch {
+        // continue if MFA check fails
+      }
+
+      void recordAuthAttemptServer({
+        data: { email: user.email ?? "", type: "login_success", status: "success", userId: user.id },
+      }).catch(() => {});
+      void linkMyPastOrders();
+      try {
+        void (supabase.rpc as any)("cancel_scheduled_deletion");
+      } catch {}
+      return { signedIn: true, mfaRequired: false };
+    } catch {
+      return { signedIn: false };
+    }
+  }
+
   return {
+    resumeExistingSession,
     signIn,
     signUp,
     resetPassword,

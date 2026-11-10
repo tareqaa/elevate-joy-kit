@@ -49,6 +49,7 @@ function AuthPage() {
     signInWithGoogle,
     verify2fa,
     cancel2fa,
+    resumeExistingSession,
   } = useAuthActions();
 
   const [mode, setMode] = useState<AuthMode>(
@@ -76,6 +77,28 @@ function AuthPage() {
   const safeTarget = search.redirect && search.redirect.startsWith("/") && !search.redirect.startsWith("//")
     ? search.redirect
     : "/account";
+
+  // Returning from Google (or already signed in): finish the sign-in instead
+  // of showing the login form again. Runs once on page load only, so the
+  // password-reset / signup OTP flows (which create a session mid-page) are untouched.
+  useEffect(() => {
+    let cancelled = false;
+    void resumeExistingSession().then((res) => {
+      if (cancelled || !res.signedIn) return;
+      if (res.mfaRequired && res.factorId) {
+        try { sessionStorage.setItem("gx_2fa_pending", "true"); } catch { /* noop */ }
+        setMfaFactorId(res.factorId);
+        setMfaCode("");
+        setMode("2fa");
+        toast.info(t("auth.2fa_desc"));
+        return;
+      }
+      try { sessionStorage.removeItem("gx_2fa_pending"); } catch { /* noop */ }
+      navigate({ to: safeTarget, replace: true });
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Resend cooldown timer
   useEffect(() => {
