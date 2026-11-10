@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/lib/gx/i18n";
+import { useCurrency } from "@/lib/gx/currency";
 import { toast } from "sonner";
 import { markCodeRevealedFn } from "@/lib/gx/order-email.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -391,9 +392,9 @@ function OrderStepperLine({ currentStep, isAr, accentCyan }: OrderStepperLinePro
       <div
         style={{
           position: "absolute",
-          top: "28px",
-          left: "50px",
-          right: "50px",
+          top: "27px",
+          left: "calc(16px + 12.5%)",
+          right: "calc(16px + 12.5%)",
           height: "3px",
           backgroundColor: "#202a3c",
           borderRadius: "3px",
@@ -425,7 +426,6 @@ function OrderStepperLine({ currentStep, isAr, accentCyan }: OrderStepperLinePro
           zIndex: 2,
           display: "flex",
           alignItems: "flex-start",
-          justifyContent: "space-between",
           width: "100%",
         }}
       >
@@ -437,11 +437,14 @@ function OrderStepperLine({ currentStep, isAr, accentCyan }: OrderStepperLinePro
             <div
               key={st.num}
               style={{
+                flex: 1,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                width: "68px",
-                flexShrink: 0,
+                textAlign: "center",
+                padding: "0 2px",
+                boxSizing: "border-box",
+                minWidth: 0,
               }}
             >
               {/* Circle Badge */}
@@ -477,6 +480,7 @@ function OrderStepperLine({ currentStep, isAr, accentCyan }: OrderStepperLinePro
                     : "none",
                   animation: isActive ? "drfPulseCircle 2.2s infinite ease-in-out" : undefined,
                   transition: "all 0.3s ease",
+                  flexShrink: 0,
                 }}
               >
                 {isDone ? (
@@ -490,12 +494,14 @@ function OrderStepperLine({ currentStep, isAr, accentCyan }: OrderStepperLinePro
               <span
                 style={{
                   marginTop: "8px",
-                  fontSize: "12.5px",
+                  fontSize: "clamp(10.5px, 2.9vw, 12.5px)",
                   fontWeight: isActive ? 800 : isDone ? 700 : 600,
                   color: isActive ? accentCyan : isDone ? "#e2e8f0" : "#64748b",
                   textAlign: "center",
-                  whiteSpace: "nowrap",
-                  letterSpacing: "-0.2px",
+                  lineHeight: "1.25",
+                  wordBreak: "break-word",
+                  display: "inline-block",
+                  maxWidth: "100%",
                 }}
               >
                 {st.label}
@@ -654,7 +660,7 @@ function OrderActivityTimeline({
           const isActive = m.state === "active";
 
           return (
-            <div key={idx} style={{ display: "flex", gap: "14px", position: "relative", minHeight: isLast ? "auto" : "60px" }}>
+            <div key={idx} style={{ display: "flex", gap: "14px", position: "relative", minHeight: isLast ? "auto" : "76px" }}>
               {/* Timeline Indicator Column */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "20px", flexShrink: 0 }}>
                 {isDone ? (
@@ -725,7 +731,7 @@ function OrderActivityTimeline({
               </div>
 
               {/* Text Information */}
-              <div style={{ flex: 1, paddingBottom: isLast ? "0" : "16px" }}>
+              <div style={{ flex: 1, paddingBottom: isLast ? "0" : "26px" }}>
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
                   <span
                     style={{
@@ -740,7 +746,7 @@ function OrderActivityTimeline({
                     {m.time}
                   </span>
                 </div>
-                <p style={{ margin: "3px 0 0", fontSize: "12px", color: textSecondary, lineHeight: 1.5 }}>
+                <p style={{ margin: "4px 0 0", fontSize: "12px", color: textSecondary, lineHeight: 1.55 }}>
                   {m.desc}
                 </p>
               </div>
@@ -774,6 +780,7 @@ function OrderItemsCard({
   accentCyan: string;
   dbImageMap: Record<string, string>;
 }) {
+  const { format } = useCurrency();
   return (
     <div
       style={{
@@ -877,7 +884,7 @@ function OrderItemsCard({
               {/* Item Price on opposite side */}
               {it.price !== undefined && (
                 <div style={{ fontSize: "13.5px", fontWeight: 800, color: textPrimary, flexShrink: 0 }} dir="ltr">
-                  {(Number(it.price) * qty).toFixed(2)} <span style={{ fontSize: "11px", color: textSecondary }}>{isAr ? "د.أ" : "JOD"}</span>
+                  {format(Number(it.price) * qty)}
                 </div>
               )}
             </div>
@@ -910,6 +917,7 @@ function OrderSummaryTable({
   accentCyan: string;
   isPending: boolean;
 }) {
+  const { format } = useCurrency();
   const [copiedNum, setCopiedNum] = useState(false);
 
   const handleCopyOrderNum = () => {
@@ -1060,13 +1068,13 @@ function OrderSummaryTable({
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: textSecondary }}>
               <span>{isAr ? "قيمة المنتجات:" : "Products Subtotal:"}</span>
               <span dir="ltr" style={{ fontWeight: 700, color: textPrimary }}>
-                {subtotalJod.toFixed(2)} {isAr ? "د.أ" : "JOD"}
+                {format(subtotalJod)}
               </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: "#38bdf8" }}>
               <span>{isAr ? `رسوم الخدمة (${feeRate}):` : `Service Fee (${feeRate}):`}</span>
               <span dir="ltr" style={{ fontWeight: 700 }}>
-                +{feeJod.toFixed(2)} {isAr ? "د.أ" : "JOD"}
+                +{format(feeJod)}
               </span>
             </div>
           </>
@@ -1086,8 +1094,7 @@ function OrderSummaryTable({
           </span>
           <div style={{ display: "flex", flexDirection: "column", alignItems: isAr ? "flex-start" : "flex-end" }}>
             <div style={{ fontSize: "18px", fontWeight: 900, color: isPending ? "#fbbf24" : "#10b981", display: "flex", alignItems: "center", gap: "4px" }} dir="ltr">
-              <span>{totalWithFeeJod.toFixed(2)}</span>
-              <span style={{ fontSize: "12px", color: textSecondary }}>{isAr ? "د.أ" : "JOD"}</span>
+              <span>{format(totalWithFeeJod)}</span>
             </div>
             {totalUsdt && (
               <span style={{ fontSize: "12px", fontWeight: 800, color: "#F0B90B" }} dir="ltr">
@@ -1114,6 +1121,7 @@ function OrderPaymentPendingView({
   accentCyan,
   dbImageMap,
 }: OrderStatusViewProps) {
+  const { format, currency } = useCurrency();
   const items = Array.isArray(order?.items) ? order.items : [];
 
   const [copiedOrderId, setCopiedOrderId] = useState(false);
@@ -1140,7 +1148,7 @@ function OrderPaymentPendingView({
     : `https://wa.me/962776252313?text=${encodeURIComponent(
         isAr
           ? `مرحباً متجر GX Store 👋 أود إرسال إشعار تحويل CliQ لطلبي رقم #${order?.order_number}. المبلغ: ${Number(order?.total_jod || 0).toFixed(2)} د.أ.`
-          : `Hello GX Store 👋 Inquiring about CliQ payment confirmation for order #${order?.order_number}. Amount: ${Number(order?.total_jod || 0).toFixed(2)} JOD.`
+          : `Hello GX Store 👋 Inquiring about CliQ payment confirmation for order #${order?.order_number}. Amount: ${format(Number(order?.total_jod || 0))}.`
       )}`;
 
   const handleCopy = (text: string, setCopied: (v: boolean) => void, msgAr: string, msgEn: string) => {
@@ -1289,11 +1297,13 @@ function OrderPaymentPendingView({
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <span style={{ color: "#ffffff", fontWeight: 900, fontSize: "14px", background: "rgba(240, 185, 11, 0.18)", padding: "3px 10px", borderRadius: "6px", border: "1px solid rgba(240, 185, 11, 0.35)" }}>
-                    {totalUsdt ? `${totalUsdt} USDT` : `${totalWithFeeJod.toFixed(2)} JOD`}
+                    {totalUsdt ? `${totalUsdt} USDT` : format(totalWithFeeJod)}
                   </span>
-                  <span style={{ fontSize: "11.5px", color: textSecondary }}>
-                    ({totalWithFeeJod.toFixed(2)} {isAr ? "د.أ" : "JOD"})
-                  </span>
+                  {totalUsdt && (
+                    <span style={{ fontSize: "11.5px", color: textSecondary }}>
+                      ({format(totalWithFeeJod)})
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -1344,7 +1354,12 @@ function OrderPaymentPendingView({
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <span style={{ color: "#9ca3af" }}>{isAr ? "المبلغ المطلوب:" : "Amount:"}</span>
                 <strong style={{ color: "#ffffff", fontSize: "14px", fontWeight: 900 }}>
-                  {Number(order?.total_jod || 0).toFixed(2)} {isAr ? "د.أ" : "JOD"}
+                  {format(Number(order?.total_jod || 0))}
+                  {currency !== "JOD" && (
+                    <span style={{ fontSize: "12px", color: textSecondary, fontWeight: 600, marginInlineStart: "4px" }}>
+                      ({Number(order?.total_jod || 0).toFixed(2)} د.أ)
+                    </span>
+                  )}
                 </strong>
               </div>
             </div>
@@ -1404,6 +1419,7 @@ function OrderPreparationView({
   accentCyan,
   dbImageMap,
 }: OrderStatusViewProps) {
+  const { format, currency } = useCurrency();
   const items = Array.isArray(order?.items) ? order.items : [];
 
   const waHelpUrl = `https://wa.me/962776252313?text=${encodeURIComponent(
@@ -1823,6 +1839,7 @@ export function GxOrderDeliveryView({
   onRefresh,
 }: GxOrderDeliveryViewProps) {
   const { lang, dir } = useLang();
+  const { format, currency } = useCurrency();
   const isAr = lang === "ar";
 
   const [selectedItemIdx, setSelectedItemIdx] = useState<number | null>(null);
@@ -2722,7 +2739,7 @@ export function GxOrderDeliveryView({
                         <strong style={{ color: textSecondary, fontWeight: 500 }}>× {itemQty}</strong>
                       </span>
                       <span style={{ color: textPrimary, fontWeight: 700 }} dir="ltr">
-                        {((it.price || 0) * itemQty).toFixed(2)} JOD
+                        {format((it.price || 0) * itemQty)}
                       </span>
                     </div>
                   );
@@ -2731,7 +2748,7 @@ export function GxOrderDeliveryView({
                 {Number(order.discount_jod || 0) > 0 ? (
                   <div style={{ display: "flex", justifyContent: "space-between", color: "#10b981", fontWeight: 700 }}>
                     <span>{isAr ? "الخصم" : "Discount"}</span>
-                    <span dir="ltr">-{Number(order.discount_jod).toFixed(2)} JOD</span>
+                    <span dir="ltr">-{format(Number(order.discount_jod))}</span>
                   </div>
                 ) : null}
 
@@ -2747,7 +2764,7 @@ export function GxOrderDeliveryView({
                   return (
                     <div style={{ display: "flex", justifyContent: "space-between", color: "#38bdf8", fontWeight: 700 }}>
                       <span>{isAr ? `رسوم الخدمة (${feeRate})` : `Service Fee (${feeRate})`}</span>
-                      <span dir="ltr">+{feeJod.toFixed(2)} JOD</span>
+                      <span dir="ltr">+{format(feeJod)}</span>
                     </div>
                   );
                 })()}
@@ -2775,9 +2792,8 @@ export function GxOrderDeliveryView({
                         const calcFee = isBin ? Math.round(subTotal * 0.03 * 100) / 100 : 0;
                         const feeJod = Number(delData.fee_jod ?? calcFee);
                         const totalWithFee = Number(delData.total_with_fee_jod ?? (subTotal + feeJod));
-                        return totalWithFee.toFixed(2);
-                      })()}{" "}
-                      JOD
+                        return format(totalWithFee);
+                      })()}
                     </span>
                     {(() => {
                       const delData = parseDeliveryData(order?.delivery_data);

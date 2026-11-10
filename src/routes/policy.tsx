@@ -1,18 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 import { POLICY_EN } from "@/lib/gx/product-locale";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import type { ReactNode } from "react";
 
 export const Route = createFileRoute("/policy")({
-  head: () => ({
-    meta: [
-      { title: "Warranty & Refunds — GX Store" },
-      { name: "description", content: "GX Store warranty and refund policy details." },
-    ],
-    links: STORE_HEAD_LINKS,
-  }),
+  head: () => {
+    const isEn = getHeadLang() === "en";
+    return {
+      meta: [
+        { title: isEn ? "Warranty & Refunds | GX Store" : "الضمان والاسترجاع | متجر GX Store" },
+        {
+          name: "description",
+          content: isEn
+            ? "GX Store warranty and refund policy details."
+            : "تفاصيل وسياسة الضمان والاسترجاع في متجر GX Store.",
+        },
+      ],
+      links: STORE_HEAD_LINKS,
+    };
+  },
   component: PolicyPage,
 });
 

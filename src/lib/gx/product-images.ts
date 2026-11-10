@@ -68,10 +68,15 @@ export const CANONICAL_VARIANT_IMAGES: Record<string, string> = {
   "minecraft-java-bedrock": "/app/assets/img/catalog/minecraft-java-bedrock.png",
 
   // Windows
-  "windows-11-pro-retail": "/app/assets/img/catalog/windows-cover.jpg",
-  "win-11-pro-retail": "/app/assets/img/catalog/windows-cover.jpg",
-  "windows-11-pro-oem": "/app/assets/img/catalog/windows-cover.jpg",
-  "win-11-pro-oem": "/app/assets/img/catalog/windows-cover.jpg",
+  "windows-11-pro-retail": "/app/assets/img/catalog/win-11-pro-retail.png",
+  "win-11-pro-retail": "/app/assets/img/catalog/win-11-pro-retail.png",
+  "windows-11-pro-oem": "/app/assets/img/catalog/win-11-pro-oem.png",
+  "win-11-pro-oem": "/app/assets/img/catalog/win-11-pro-oem.png",
+  "windows": "/app/assets/img/catalog/windows-cover.jpg",
+  "win-pro-oem": "/app/assets/img/catalog/win-11-pro-oem.png",
+  "win-pro-acct": "/app/assets/img/catalog/windows-cover.jpg",
+  "win-home-oem": "/app/assets/img/catalog/win-11-pro-oem.png",
+  "win-home-acct": "/app/assets/img/catalog/windows-cover.jpg",
 
   // Euro Truck Simulator 2
   "euro-truck-simulator-2": "/app/assets/img/catalog/euro-truck-simulator-2.jpg",
@@ -90,12 +95,6 @@ export const CANONICAL_VARIANT_IMAGES: Record<string, string> = {
   "autodesk": "/app/assets/img/catalog/autodesk-cover.jpg",
   "autodesk-12": "/app/assets/img/catalog/autodesk-cover.jpg",
 
-  // Windows
-  "windows": "/app/assets/img/catalog/windows-cover.jpg",
-  "win-pro-oem": "/app/assets/img/catalog/windows-cover.jpg",
-  "win-pro-acct": "/app/assets/img/catalog/windows-cover.jpg",
-  "win-home-oem": "/app/assets/img/catalog/windows-cover.jpg",
-  "win-home-acct": "/app/assets/img/catalog/windows-cover.jpg",
 
   // Razer Gold
   "razer-gold": "/app/assets/img/razer-card.jpg",
@@ -184,11 +183,11 @@ export const CANONICAL_VARIANT_IMAGES: Record<string, string> = {
   "rbx-11100": "/app/assets/img/catalog/roblox-robux.jpg",
 
   // Google Gemini / AI
-  "gemini": "/app/assets/img/gemini-logo.png",
-  "gemini-18": "/app/assets/img/gemini-logo.png",
-  "gemini-plus-6m": "/app/assets/img/gemini-logo.png",
-  "gemini-plus-3m": "/app/assets/img/gemini-logo.png",
-  "gemini-pro-3m": "/app/assets/img/gemini-logo.png",
+  "gemini": "/app/assets/img/gemini-logo.svg",
+  "gemini-18": "/app/assets/img/gemini-logo.svg",
+  "gemini-plus-6m": "/app/assets/img/gemini-logo.svg",
+  "gemini-plus-3m": "/app/assets/img/gemini-logo.svg",
+  "gemini-pro-3m": "/app/assets/img/gemini-logo.svg",
 };
 
 export interface ResolveImageOptions {
@@ -246,9 +245,14 @@ export function resolveProductImage(options: ResolveImageOptions): string {
     cleanSlug === "windows-11-pro-retail" ||
     cleanSlug === "windows-11-pro-oem" ||
     cleanSlug.startsWith("windows-11-") ||
-    cleanId.startsWith("win-")
+    cleanId.startsWith("win-") ||
+    cleanName.includes("windows 10/11") ||
+    cleanName.includes("windows 11")
   ) {
-    return "/app/assets/img/catalog/windows-cover.jpg";
+    if (cleanId.includes("oem") || cleanSlug.includes("oem") || cleanName.includes("oem")) {
+      return "/app/assets/img/catalog/win-11-pro-oem.png";
+    }
+    return "/app/assets/img/catalog/win-11-pro-retail.png";
   }
 
   // 4. Razer Gold specific resolution
@@ -362,7 +366,7 @@ export function resolveProductImage(options: ResolveImageOptions): string {
     cleanName.includes("جيميناي") ||
     cleanName.includes("google ai")
   ) {
-    return "/app/assets/img/gemini-logo.png";
+    return "/app/assets/img/gemini-logo.svg";
   }
 
   // 10. PlayStation PSN Gift Cards (Official Store Design)

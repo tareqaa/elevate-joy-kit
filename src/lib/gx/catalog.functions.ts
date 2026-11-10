@@ -175,7 +175,7 @@ export const purgeCatalogCacheFn = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-const CANONICAL_CATALOG_OVERRIDES: Overrides = {
+export const CANONICAL_CATALOG_OVERRIDES: Overrides = {
   "ms365-acct-12": { price: 5, oldPrice: 10 },
   "win-11-pro-retail": { price: 7, oldPrice: 15 },
   "win-11-pro-oem": { price: 5, oldPrice: 12 },

@@ -2,20 +2,28 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 import { useAuthActions } from "@/lib/gx/use-auth-actions";
 import { recordAuthAttemptServer } from "@/lib/gx/security.functions";
 import { KeyRound, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/reset-password")({
   ssr: false,
-  head: () => ({
-    meta: [
-      { title: "استعادة كلمة المرور | متجر GX Store" },
-      { name: "description", content: "تعيين كلمة مرور جديدة لحسابك في متجر GX Store." },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-  }),
+  head: () => {
+    const isEn = getHeadLang() === "en";
+    return {
+      meta: [
+        { title: isEn ? "Reset Password | GX Store" : "استعادة كلمة المرور | متجر GX Store" },
+        {
+          name: "description",
+          content: isEn
+            ? "Set a new password for your GX Store account."
+            : "تعيين كلمة مرور جديدة لحسابك في متجر GX Store.",
+        },
+        { name: "robots", content: "noindex, nofollow" },
+      ],
+    };
+  },
   component: ResetPasswordPage,
 });
 

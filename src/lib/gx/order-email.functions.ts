@@ -6,6 +6,7 @@ import { getPublicClient, getUserScopedClient } from "@/lib/gx/supabase-request"
 import { assertAdminCaller, getVerifiedCaller } from "@/lib/gx/supabase-auth.server";
 import { getResendApiKey } from "./resend-key";
 import { formatFullRegion } from "./region";
+import { formatCurrencyValue } from "./currency";
 import { renderGxStoreEmail, escapeHtml, type EmailProductItem } from "./email-theme";
 import { resolveProductActivationGuide } from "./activation-guide";
 import {
@@ -74,6 +75,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
         notes: z.string().optional(),
         createdAt: z.string().optional(),
         lang: z.enum(["ar", "en"]).default("ar"),
+        currency: z.string().optional(),
       })
       .parse(data)
   )
@@ -93,17 +95,19 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
         notes,
         createdAt,
         lang = "ar",
+        currency: inputCurrency,
       } = data;
 
+      const currency = (inputCurrency || "JOD").toUpperCase().trim();
       const isAr = lang === "ar";
       const isDelivered = status === "delivered";
 
-      const formattedTotal = `${Number(totalJod).toFixed(2)} د.أ`;
-      const formattedTotalEn = `${Number(totalJod).toFixed(2)} JOD`;
-      const formattedSubtotal = `${Number(subtotalJod ?? totalJod).toFixed(2)} د.أ`;
-      const formattedSubtotalEn = `${Number(subtotalJod ?? totalJod).toFixed(2)} JOD`;
-      const formattedDiscount = discountJod && discountJod > 0 ? `-${Number(discountJod).toFixed(2)} د.أ` : null;
-      const formattedDiscountEn = discountJod && discountJod > 0 ? `-${Number(discountJod).toFixed(2)} JOD` : null;
+      const formattedTotal = formatCurrencyValue(Number(totalJod), currency, true);
+      const formattedTotalEn = formatCurrencyValue(Number(totalJod), currency, false);
+      const formattedSubtotal = formatCurrencyValue(Number(subtotalJod ?? totalJod), currency, true);
+      const formattedSubtotalEn = formatCurrencyValue(Number(subtotalJod ?? totalJod), currency, false);
+      const formattedDiscount = discountJod && discountJod > 0 ? `-${formatCurrencyValue(Number(discountJod), currency, true)}` : null;
+      const formattedDiscountEn = discountJod && discountJod > 0 ? `-${formatCurrencyValue(Number(discountJod), currency, false)}` : null;
 
       const dateObj = createdAt ? new Date(createdAt) : new Date();
       const dateFormattedEn = dateObj.toLocaleDateString("en-GB", {
@@ -182,7 +186,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
         );
 
         const priceText = item.price != null
-          ? `${Number(item.price).toFixed(2)} ${isAr ? "د.أ" : "JOD"}`
+          ? formatCurrencyValue(Number(item.price), currency, isAr)
           : "";
 
         return {
@@ -331,6 +335,7 @@ export const sendPaymentConfirmedEmail = createServerFn({ method: "POST" })
         notes: z.string().optional(),
         createdAt: z.string().optional(),
         lang: z.enum(["ar", "en"]).default("ar"),
+        currency: z.string().optional(),
       })
       .parse(data)
   )
@@ -387,6 +392,7 @@ export const sendBinanceOrderReceivedEmail = createServerFn({ method: "POST" })
         notes: z.string().optional(),
         createdAt: z.string().optional(),
         lang: z.enum(["ar", "en"]).default("ar"),
+        currency: z.string().optional(),
       })
       .parse(data)
   )
@@ -426,6 +432,7 @@ export const sendIncompleteOrderPaymentEmail = createServerFn({ method: "POST" }
         notes: z.string().optional(),
         createdAt: z.string().optional(),
         lang: z.enum(["ar", "en"]).default("ar"),
+        currency: z.string().optional(),
       })
       .parse(data)
   )
@@ -445,15 +452,17 @@ export const sendIncompleteOrderPaymentEmail = createServerFn({ method: "POST" }
         notes,
         createdAt,
         lang = "ar",
+        currency: inputCurrency,
       } = data;
 
+      const currency = (inputCurrency || "JOD").toUpperCase().trim();
       const isAr = lang === "ar";
-      const formattedTotal = `${Number(totalJod).toFixed(2)} د.أ`;
-      const formattedTotalEn = `${Number(totalJod).toFixed(2)} JOD`;
-      const formattedSubtotal = `${Number(subtotalJod ?? totalJod).toFixed(2)} د.أ`;
-      const formattedSubtotalEn = `${Number(subtotalJod ?? totalJod).toFixed(2)} JOD`;
-      const formattedDiscount = discountJod && discountJod > 0 ? `-${Number(discountJod).toFixed(2)} د.أ` : null;
-      const formattedDiscountEn = discountJod && discountJod > 0 ? `-${Number(discountJod).toFixed(2)} JOD` : null;
+      const formattedTotal = formatCurrencyValue(Number(totalJod), currency, true);
+      const formattedTotalEn = formatCurrencyValue(Number(totalJod), currency, false);
+      const formattedSubtotal = formatCurrencyValue(Number(subtotalJod ?? totalJod), currency, true);
+      const formattedSubtotalEn = formatCurrencyValue(Number(subtotalJod ?? totalJod), currency, false);
+      const formattedDiscount = discountJod && discountJod > 0 ? `-${formatCurrencyValue(Number(discountJod), currency, true)}` : null;
+      const formattedDiscountEn = discountJod && discountJod > 0 ? `-${formatCurrencyValue(Number(discountJod), currency, false)}` : null;
 
       const dateObj = createdAt ? new Date(createdAt) : new Date();
       const dateFormattedEn = dateObj.toLocaleDateString("en-GB", {
@@ -532,7 +541,7 @@ Please provide payment details (CliQ / Zain Cash / Card). Thank you!`;
         );
 
         const priceText = item.price != null
-          ? `${Number(item.price).toFixed(2)} ${isAr ? "د.أ" : "JOD"}`
+          ? formatCurrencyValue(Number(item.price), currency, isAr)
           : "";
 
         return {

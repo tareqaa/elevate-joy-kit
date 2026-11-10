@@ -51,6 +51,7 @@ export type StoreProductCardProps = {
   priceLabel?: string;
   disableTierTheme?: boolean;
   isGiftCardMaster?: boolean;
+  isOutOfStock?: boolean;
   tierTheme?: {
     bg?: string;
     border?: string;
@@ -194,6 +195,7 @@ export function StoreProductCard({
   priceLabel,
   disableTierTheme = true,
   isGiftCardMaster = false,
+  isOutOfStock: isOutOfStockProp = false,
   tierTheme,
 }: StoreProductCardProps) {
   const { format } = useCurrency();
@@ -316,10 +318,18 @@ export function StoreProductCard({
     }
     if (slug === "adobe") return <AdobePoster />;
     if (slug === "canva") return <CanvaPoster />;
-    if (slug === "windows" || slug === "windows-11-pro-retail" || slug === "windows-11-pro-oem" || slug.startsWith("windows-11-")) {
+    if (
+      slug === "windows" ||
+      slug === "windows-11-pro-retail" ||
+      slug === "windows-11-pro-oem" ||
+      slug.startsWith("windows-11-") ||
+      finalCartId.startsWith("win-") ||
+      name.toLowerCase().includes("windows 10/11") ||
+      name.toLowerCase().includes("windows 11")
+    ) {
       const winImg =
-        imageUrl ||
         resolveProductImage({ cartId: finalCartId, slug, name }) ||
+        imageUrl ||
         "/app/assets/img/catalog/windows-cover.jpg";
       return (
         <CardProductImage
@@ -449,6 +459,7 @@ export function StoreProductCard({
   );
 
   const isOutOfStock =
+    isOutOfStockProp ||
     isSocialMediaStockItem(finalCartId, slug, categorySlug, categoryName, name) ||
     (stockLimit !== null && stockLimit <= 0);
 

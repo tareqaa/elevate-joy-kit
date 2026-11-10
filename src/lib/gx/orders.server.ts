@@ -254,6 +254,7 @@ export async function createStoreOrder(input: CreateOrderInput) {
         })),
         notes: (input.deliveryData?.customer_notes as string) || undefined,
         lang: input.lang === "en" ? "en" : "ar",
+        currency: input.currency || (deliveryData.currency as string) || "USD",
       });
     } catch (emailErr) {
       console.error("[Binance Order Received Email Dispatch Failed]", emailErr);

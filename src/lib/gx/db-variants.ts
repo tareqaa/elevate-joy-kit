@@ -12,6 +12,7 @@ import { CATALOG_PRICES_CACHE, type CatalogPrices } from "./catalog-prices";
 import type { ResolvedPlan } from "@/data/products";
 import { resolveStrictDeliveryType } from "./delivery-types";
 import { resolveProductImage } from "./product-images";
+import { CANONICAL_CATALOG_OVERRIDES } from "./catalog.functions";
 
 const CACHE_KEY = "gx_db_variants_v2";
 
@@ -47,6 +48,10 @@ export function findDbPlanByCartId(cartId: string): ResolvedPlan | null {
   hydrateCache();
   const hit = map[cartId];
   if (!hit) return null;
+  const canonical = CANONICAL_CATALOG_OVERRIDES[cartId]?.price;
+  if (typeof canonical === "number" && canonical > 0) {
+    return { ...hit, price: canonical };
+  }
   const o = overrides()[cartId];
   const price = typeof o?.price === "number" && o.price >= 0 ? o.price : hit.price;
   return { ...hit, price };

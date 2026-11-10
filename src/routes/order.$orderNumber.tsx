@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 import { getOrderByNumberFn, markCodeRevealedFn } from "@/lib/gx/order-email.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,14 +12,26 @@ export const Route = createFileRoute("/order/$orderNumber")({
   validateSearch: (search: Record<string, unknown>) => ({
     order_token: typeof search.order_token === "string" ? search.order_token : "",
   }),
-  head: ({ params }) => ({
-    meta: [
-      { title: `طلب #${params.orderNumber} | متجر GX Store` },
-      { name: "description", content: `استلام وتفعيل الطلب #${params.orderNumber} من متجر GX Store` },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-    links: STORE_HEAD_LINKS,
-  }),
+  head: ({ params }) => {
+    const isEn = getHeadLang() === "en";
+    return {
+      meta: [
+        {
+          title: isEn
+            ? `Order #${params.orderNumber} | GX Store`
+            : `طلب #${params.orderNumber} | متجر GX Store`,
+        },
+        {
+          name: "description",
+          content: isEn
+            ? `Order #${params.orderNumber} delivery and activation from GX Store`
+            : `استلام وتفعيل الطلب #${params.orderNumber} من متجر GX Store`,
+        },
+        { name: "robots", content: "noindex, nofollow" },
+      ],
+      links: STORE_HEAD_LINKS,
+    };
+  },
   component: OrderDetailsPage,
 });
 

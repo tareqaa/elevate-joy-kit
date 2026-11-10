@@ -199,6 +199,8 @@ const CURRENCY_TO_COUNTRY: Record<string, string> = {
   TND: "TN",
   USD: "US",
   EUR: "DE",
+  PS: "PS",
+  ILS: "PS",
 };
 
 const CACHE_COUNTRY_KEY = "gx_country_code";

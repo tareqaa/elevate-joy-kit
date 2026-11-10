@@ -10,6 +10,14 @@ export function OrderCompletedView({ orderToken }: { orderToken?: string }) {
   const { lang } = useLang();
   const isAr = lang === "ar";
 
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.title = isAr
+        ? "استلام وتفعيل الطلب | متجر GX Store"
+        : "Order Delivery & Activation | GX Store";
+    }
+  }, [isAr]);
+
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);

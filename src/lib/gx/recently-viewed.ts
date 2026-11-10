@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { CANONICAL_CATALOG_OVERRIDES } from "./catalog.functions";
+import { PRODUCTS_CATALOG } from "@/data/products";
 
 export interface RecentlyViewedItem {
   slug: string;
@@ -15,6 +17,7 @@ export interface RecentlyViewedItem {
   categorySlug?: string | null;
   region?: string | null;
   link?: string | null;
+  isOutOfStock?: boolean;
   viewedAt: number;
 }
 
@@ -148,20 +151,104 @@ export const DEFAULT_RECENT_ITEMS: RecentlyViewedItem[] = [
   },
 ];
 
-/** Read items stored in localStorage */
+/** Reconciles a recently viewed item with current catalog prices, canonical data & active variant */
+export function reconcileItemWithLiveCatalog(
+  item: RecentlyViewedItem,
+  livePrices?: Record<string, { price: number; oldPrice?: number | null }>,
+  stockLimits?: Record<string, number>
+): RecentlyViewedItem {
+  let res = { ...item };
+
+  // 1. Dedicated Gemini update: Always keep it as the single active 6-Month subscription
+  if (res.slug === "gemini" || res.slug.startsWith("gemini-")) {
+    res.slug = "gemini";
+    res.cartId = "gemini-plus-6m";
+    res.nameAr = "Google Gemini Plus | اشتراك 6 أشهر";
+    res.nameEn = "Google Gemini Plus — 6 Months";
+    res.taglineAr = "رابط تفعيل رسمي 6 أشهر • لا يتطلب بطاقة بنكية (Credit Card) • صلاحية الرابط 10 ساعات";
+    res.taglineEn = "Official 6-month activation link • No credit card required • Link valid for 10 hours";
+    res.price = 4.0;
+    res.oldPrice = 8.0;
+    res.imageUrl = "/app/assets/img/gemini-logo.svg";
+    res.link = "/product/gemini";
+  }
+
+  // 2. Canonical Overrides (Authoritative source for PlayStation SAR, Gemini, Windows, Notion, etc.)
+  const cid = res.cartId || res.slug;
+  const canonical = CANONICAL_CATALOG_OVERRIDES[cid] || CANONICAL_CATALOG_OVERRIDES[res.slug];
+  if (canonical && typeof canonical.price === "number") {
+    res.price = canonical.price;
+    if (canonical.oldPrice !== undefined) res.oldPrice = canonical.oldPrice;
+  }
+
+  // 3. Live site_settings catalog_prices
+  if (livePrices) {
+    const liveOv = livePrices[cid] || livePrices[res.slug];
+    if (liveOv && typeof liveOv.price === "number") {
+      res.price = liveOv.price;
+      if (liveOv.oldPrice !== undefined) res.oldPrice = liveOv.oldPrice;
+    }
+  }
+
+  // 4. Fallback to PRODUCTS_CATALOG
+  const catP = PRODUCTS_CATALOG[res.slug];
+  if (catP && res.slug !== "gemini") {
+    if (!canonical && (!livePrices || !livePrices[cid])) {
+      const plan = (catP.plans || []).find((p) => p.id === cid) || (catP.plans || [])[0];
+      if (plan) {
+        res.price = plan.price;
+        res.oldPrice = plan.oldPrice ?? null;
+      }
+    }
+    if (!res.imageUrl || res.imageUrl.includes("gemini-logo.png")) {
+      res.imageUrl = catP.imageUrl || catP.iconImg || res.imageUrl;
+    }
+  }
+
+  // 5. Stock limits: if stock <= 0, mark out of stock
+  if (stockLimits) {
+    const lim = stockLimits[cid] ?? stockLimits[res.slug];
+    if (typeof lim === "number" && lim <= 0) {
+      res.isOutOfStock = true;
+    }
+  }
+
+  return res;
+}
+
+/** Read items stored in localStorage with strict product-level deduplication */
 export function getStoredRecentlyViewed(): RecentlyViewedItem[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      const legacy = localStorage.getItem("gx_recently_viewed");
+      if (legacy) {
+        raw = legacy;
+        try {
+          localStorage.removeItem("gx_recently_viewed");
+        } catch {}
+      }
+    }
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item) => {
-      if (!item || !item.slug) return false;
-      if (KNOWN_INACTIVE_SLUGS.has(item.slug)) return false;
-      if (item.cartId && KNOWN_INACTIVE_SLUGS.has(item.cartId)) return false;
-      return true;
-    });
+
+    const seenSlugs = new Set<string>();
+    const deduplicated: RecentlyViewedItem[] = [];
+
+    for (const rawItem of parsed) {
+      if (!rawItem || !rawItem.slug) continue;
+      if (KNOWN_INACTIVE_SLUGS.has(rawItem.slug)) continue;
+      if (rawItem.cartId && KNOWN_INACTIVE_SLUGS.has(rawItem.cartId)) continue;
+      // Deduplicate strictly by product slug! A product must only appear ONCE in recently viewed.
+      if (seenSlugs.has(rawItem.slug)) continue;
+      seenSlugs.add(rawItem.slug);
+
+      deduplicated.push(reconcileItemWithLiveCatalog(rawItem));
+    }
+
+    return deduplicated;
   } catch {
     return [];
   }
@@ -173,16 +260,15 @@ export function trackRecentlyViewed(item: Omit<RecentlyViewedItem, "viewedAt">) 
   if (KNOWN_INACTIVE_SLUGS.has(item.slug)) return;
   if (item.cartId && KNOWN_INACTIVE_SLUGS.has(item.cartId)) return;
   try {
-    const itemKey = item.cartId || item.slug;
-    const current = getStoredRecentlyViewed().filter((p) => {
-      const pKey = p.cartId || p.slug;
-      return pKey !== itemKey;
+    const reconciled = reconcileItemWithLiveCatalog({
+      ...item,
+      viewedAt: Date.now(),
     });
+
+    // Strictly deduplicate by slug: a product must only appear ONCE in recently viewed!
+    const current = getStoredRecentlyViewed().filter((p) => p.slug !== reconciled.slug);
     const updated: RecentlyViewedItem[] = [
-      {
-        ...item,
-        viewedAt: Date.now(),
-      },
+      reconciled,
       ...current,
     ].slice(0, MAX_ITEMS);
 
@@ -203,7 +289,7 @@ export function useRecentlyViewed(): {
   const [hasRealHistory, setHasRealHistory] = useState(false);
 
   useEffect(() => {
-    // 1. Synchronously read from localStorage and immediately prune known inactive items
+    // 1. Synchronously read from localStorage, deduplicate, reconcile and immediately prune obsolete items
     const rawStorage = (() => {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -214,8 +300,8 @@ export function useRecentlyViewed(): {
     })();
     const cleanStored = getStoredRecentlyViewed();
 
-    // If any inactive items were pruned, persist clean list to localStorage immediately
-    if (Array.isArray(rawStorage) && rawStorage.length !== cleanStored.length) {
+    // Persist the deduplicated & reconciled clean list back to localStorage immediately
+    if (Array.isArray(rawStorage)) {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanStored));
       } catch {}
@@ -229,30 +315,65 @@ export function useRecentlyViewed(): {
       setHasRealHistory(false);
     }
 
-    // 2. Dynamically check active products in Supabase:
-    // Any product deactivated or removed from database is pruned automatically from recently viewed!
+    // 2. Dynamically check active products, prices, and stock limits in Supabase:
+    // If a product is deactivated or ended, mark as out of stock (نفدت الكمية)!
     void (async () => {
-      const { data } = await supabase
-        .from("products")
-        .select("slug")
-        .eq("is_active", true);
-      if (data && Array.isArray(data)) {
-        const activeSlugs = new Set(data.map((p) => p.slug));
-        const current = getStoredRecentlyViewed();
-        const valid = current.filter((item) => activeSlugs.has(item.slug));
-        if (valid.length !== current.length) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(valid));
-          setItems(valid.length > 0 ? valid : DEFAULT_RECENT_ITEMS);
-          setHasRealHistory(valid.length > 0);
-          window.dispatchEvent(new CustomEvent("gx_recently_viewed_updated", { detail: valid }));
+      try {
+        const [{ data: products }, { data: settings }] = await Promise.all([
+          supabase.from("products").select("slug, is_active, base_price_jod").limit(2000),
+          supabase.from("site_settings").select("key, value").in("key", ["catalog_prices", "product_stock_limits"]),
+        ]);
+
+        const activeMap = new Map<string, boolean>();
+        if (products && Array.isArray(products)) {
+          for (const p of products) {
+            if (p.slug) activeMap.set(p.slug, p.is_active !== false);
+          }
         }
+
+        let livePrices: Record<string, { price: number; oldPrice?: number | null }> | undefined;
+        let stockLimits: Record<string, number> | undefined;
+
+        if (settings && Array.isArray(settings)) {
+          for (const s of settings) {
+            if (s.key === "catalog_prices" && s.value && typeof s.value === "object") {
+              livePrices = s.value as Record<string, { price: number; oldPrice?: number | null }>;
+            } else if (s.key === "product_stock_limits" && s.value && typeof s.value === "object") {
+              stockLimits = s.value as Record<string, number>;
+            }
+          }
+        }
+
+        const current = getStoredRecentlyViewed();
+        const updated = current.map((it) => {
+          const rec = reconcileItemWithLiveCatalog(it, livePrices, stockLimits);
+          // If deactivated in DB, mark out of stock
+          if (activeMap.has(rec.slug) && activeMap.get(rec.slug) === false) {
+            rec.isOutOfStock = true;
+          }
+          return rec;
+        });
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        setItems(updated.length > 0 ? updated : DEFAULT_RECENT_ITEMS);
+        setHasRealHistory(updated.length > 0);
+        window.dispatchEvent(new CustomEvent("gx_recently_viewed_updated", { detail: updated }));
+      } catch {
+        // ignore
       }
-    })().catch(() => {});
+    })();
 
     const handler = (e: Event) => {
       const custom = e as CustomEvent<RecentlyViewedItem[]>;
       if (custom.detail && Array.isArray(custom.detail) && custom.detail.length > 0) {
-        const valid = custom.detail.filter((item) => item?.slug && !KNOWN_INACTIVE_SLUGS.has(item.slug));
+        const seenSlugs = new Set<string>();
+        const valid: RecentlyViewedItem[] = [];
+        for (const item of custom.detail) {
+          if (!item?.slug || KNOWN_INACTIVE_SLUGS.has(item.slug)) continue;
+          if (seenSlugs.has(item.slug)) continue;
+          seenSlugs.add(item.slug);
+          valid.push(reconcileItemWithLiveCatalog(item));
+        }
         setItems(valid);
         setHasRealHistory(valid.length > 0);
       }

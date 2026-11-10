@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { useCart } from "@/lib/gx/cart";
 import { useCurrency } from "@/lib/gx/currency";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 import { CartItemThumb } from "@/components/gx/CartThumb";
 import { localizeResolvedName } from "@/lib/gx/product-locale";
 import { getDeliveryTypeInfo } from "@/lib/gx/delivery-types";
@@ -35,14 +35,17 @@ import {
 } from "@/lib/gx/country-phone";
 
 export const Route = createFileRoute("/cart")({
-  head: () => ({
-    meta: [
-      { title: "السلة | متجر GX Store" },
-      { name: "description", content: "سلة المشتريات — متجر GX Store" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-    links: STORE_HEAD_LINKS,
-  }),
+  head: () => {
+    const isEn = getHeadLang() === "en";
+    return {
+      meta: [
+        { title: isEn ? "Shopping Cart | GX Store" : "السلة | متجر GX Store" },
+        { name: "description", content: isEn ? "Shopping Cart — GX Store" : "سلة المشتريات — متجر GX Store" },
+        { name: "robots", content: "noindex, nofollow" },
+      ],
+      links: STORE_HEAD_LINKS,
+    };
+  },
   component: CartPage,
 });
 

@@ -1,6 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { UI_TRANSLATIONS } from "./translations";
 import { getUnifiedCountryCode, fetchUserCountryOnce } from "./country-phone";
+import { getHeadLang } from "./head-lang";
+
+export { getHeadLang };
 
 export type Lang = "ar" | "en";
 type Dir = "rtl" | "ltr";
@@ -110,9 +113,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     "متجر ألعاب واشتراكات رقمية | GX Store": "GX Store | Buy Games, Giftcard & Top ups cheaper",
     "متجر ألعاب واشتراكات رقمية": "Buy Games, Giftcard & Top ups cheaper",
     "GX Store | Digital Games & Subscriptions": "GX Store | Buy Games, Giftcard & Top ups cheaper",
+    "استلام وتفعيل الطلب | متجر GX Store": "Order Delivery & Activation | GX Store",
+    "GX Store | استلام وتفعيل الطلب": "GX Store | Order Delivery & Activation",
+    "استلام وتفعيل الطلب": "Order Delivery & Activation",
     "بطاقات بلايستيشن": "PlayStation Gift Cards",
     "السلة": "Shopping Cart",
+    "السلة | متجر GX Store": "Shopping Cart | GX Store",
     "كافة المنتجات والاشتراكات": "All Products & Subscriptions",
+    "جميع المنتجات والاشتراكات": "All Products & Subscriptions",
+    "جميع المنتجات والاشتراكات | متجر GX Store": "All Products & Subscriptions | GX Store",
     "الاشتراكات الرقمية": "Digital Subscriptions",
     "ألعاب وستيم": "Games & Steam",
     "بطاقات هدايا وشحن": "Gift Cards & Top-ups",
@@ -120,14 +129,39 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     "خدمات السوشال ميديا": "Social Media Services",
     "شحن فورت نايت": "Fortnite Top-up",
     "المفضلة": "Favorites",
+    "المفضلة — GX Store": "Favorites | GX Store",
     "حسابي": "My Account",
+    "حسابي | متجر GX Store": "My Account | GX Store",
     "لوحة الإدارة": "Admin Dashboard",
+    "لوحة الإدارة | متجر GX Store": "Admin Dashboard | GX Store",
     "تسجيل الدخول": "Sign In",
+    "تسجيل الدخول / حساب جديد": "Sign In / Register",
+    "تسجيل الدخول / حساب جديد | متجر GX Store": "Sign In / Register | GX Store",
+    "استعادة كلمة المرور": "Reset Password",
+    "استعادة كلمة المرور | متجر GX Store": "Reset Password | GX Store",
     "الأسئلة الشائعة": "FAQ",
+    "الأسئلة الشائعة | متجر GX Store": "FAQ | GX Store",
+    "FAQ — GX Store": "FAQ | GX Store",
     "سياسة الخصوصية": "Privacy Policy",
+    "سياسة الخصوصية | متجر GX Store": "Privacy Policy | GX Store",
+    "سياسة الخصوصية — متجر GX Store": "Privacy Policy | GX Store",
     "الشروط والأحكام": "Terms & Conditions",
-    "الدعم الفني": "Support",
+    "الشروط والأحكام | متجر GX Store": "Terms & Conditions | GX Store",
+    "الضمان والاسترجاع": "Warranty & Refunds",
+    "الضمان والاسترجاع — متجر GX Store": "Warranty & Refunds | GX Store",
+    "الدعم الفني": "Customer Support",
+    "الدعم الفني | متجر GX Store": "Customer Support | GX Store",
+    "الدعم": "Customer Support",
     "الأقسام": "Categories",
+    "الأقسام | متجر GX Store": "Categories | GX Store",
+    "منتج": "Product",
+    "GX Rewards — الملف الشخصي ونظام الولاء": "GX Rewards — Loyalty & Profile | GX Store",
+    "الملف الشخصي ونظام الولاء": "Loyalty & Profile",
+    "ملفات اللاعبين والمتصدرين": "Leaderboard & Player Profiles",
+    "ملفات اللاعبين والمتصدرين — GX Store": "Leaderboard & Player Profiles | GX Store",
+    "لوحة المتصدرين": "Leaderboard",
+    "مركز ألعاب وتحديات GX": "GX Games & Challenges",
+    "اشتراك سناب بلس": "Snapchat+ Subscription",
   };
 
   const TITLE_MAP_EN_TO_AR: Record<string, string> = {
@@ -136,9 +170,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     "Buy Games, Giftcard & Top ups cheaper": "اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار",
     "GX Store | Digital Games & Subscriptions": "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار",
     "Digital Games & Subscriptions | GX Store": "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار",
+    "Order Delivery & Activation | GX Store": "استلام وتفعيل الطلب | متجر GX Store",
+    "GX Store | Order Delivery & Activation": "GX Store | استلام وتفعيل الطلب",
+    "Order Delivery & Activation": "استلام وتفعيل الطلب",
     "PlayStation Gift Cards": "بطاقات بلايستيشن",
     "Shopping Cart": "السلة",
-    "All Products & Subscriptions": "كافة المنتجات والاشتراكات",
+    "Shopping Cart | GX Store": "السلة | متجر GX Store",
+    "All Products & Subscriptions": "جميع المنتجات والاشتراكات",
+    "All Products & Subscriptions | GX Store": "جميع المنتجات والاشتراكات | متجر GX Store",
     "Digital Subscriptions": "الاشتراكات الرقمية",
     "Games & Steam": "ألعاب وستيم",
     "Gift Cards & Top-ups": "بطاقات هدايا وشحن",
@@ -146,14 +185,37 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     "Social Media Services": "خدمات السوشال ميديا",
     "Fortnite Top-up": "شحن فورت نايت",
     "Favorites": "المفضلة",
+    "Favorites | GX Store": "المفضلة | متجر GX Store",
     "My Account": "حسابي",
+    "My Account | GX Store": "حسابي | متجر GX Store",
     "Admin Dashboard": "لوحة الإدارة",
+    "Admin Dashboard | GX Store": "لوحة الإدارة | متجر GX Store",
     "Sign In": "تسجيل الدخول",
+    "Sign In / Register": "تسجيل الدخول / حساب جديد",
+    "Sign In / Register | GX Store": "تسجيل الدخول / حساب جديد | متجر GX Store",
+    "Reset Password": "استعادة كلمة المرور",
+    "Reset Password | GX Store": "استعادة كلمة المرور | متجر GX Store",
     "FAQ": "الأسئلة الشائعة",
+    "FAQ | GX Store": "الأسئلة الشائعة | متجر GX Store",
     "Privacy Policy": "سياسة الخصوصية",
+    "Privacy Policy | GX Store": "سياسة الخصوصية | متجر GX Store",
     "Terms & Conditions": "الشروط والأحكام",
+    "Terms & Conditions | GX Store": "الشروط والأحكام | متجر GX Store",
+    "Warranty & Refunds": "الضمان والاسترجاع",
+    "Warranty & Refunds | GX Store": "الضمان والاسترجاع | متجر GX Store",
+    "Customer Support": "الدعم الفني",
+    "Customer Support | GX Store": "الدعم الفني | متجر GX Store",
     "Support": "الدعم الفني",
     "Categories": "الأقسام",
+    "Categories | GX Store": "الأقسام | متجر GX Store",
+    "Product": "منتج",
+    "GX Rewards — Loyalty & Profile | GX Store": "GX Rewards — الملف الشخصي ونظام الولاء",
+    "Loyalty & Profile": "الملف الشخصي ونظام الولاء",
+    "Leaderboard & Player Profiles": "ملفات اللاعبين والمتصدرين",
+    "Leaderboard & Player Profiles | GX Store": "ملفات اللاعبين والمتصدرين — GX Store",
+    "Leaderboard": "لوحة المتصدرين",
+    "GX Games & Challenges": "مركز ألعاب وتحديات GX",
+    "Snapchat+ Subscription": "اشتراك سناب بلس",
   };
 
   // Synchronize document.title dynamically with selected language
@@ -175,14 +237,40 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
           document.title = TITLE_MAP_AR_TO_EN[cur];
           return;
         }
-        if (cur.includes("متجر ألعاب واشتراكات رقمية") || cur.includes("اشتري ألعاب") || cur === "GX Store") {
+
+        // Strip prefix (GX Store | / GX Store —) or suffix (| متجر GX Store / | GX Store / — GX Store)
+        let base = cur;
+        let hadBrandWrapper = false;
+
+        if (/^GX Store\s*[\|\-—–]\s*/i.test(cur)) {
+          base = cur.replace(/^GX Store\s*[\|\-—–]\s*/i, "").trim();
+          hadBrandWrapper = true;
+        } else if (/\s*[\|\-—–]\s*(متجر\s*)?GX\s*Store$/i.test(cur)) {
+          base = cur.replace(/\s*[\|\-—–]\s*(متجر\s*)?GX\s*Store$/i, "").trim();
+          hadBrandWrapper = true;
+        }
+
+        if (TITLE_MAP_AR_TO_EN[base]) {
+          const trans = TITLE_MAP_AR_TO_EN[base];
+          document.title = hadBrandWrapper ? `${trans} | GX Store` : trans;
+          return;
+        }
+
+        // Order number pattern: "طلب #12345" -> "Order #12345 | GX Store"
+        const orderMatch = base.match(/^طلب\s*#?([A-Za-z0-9\-]+)/);
+        if (orderMatch) {
+          document.title = `Order #${orderMatch[1]} | GX Store`;
+          return;
+        }
+
+        if (base.includes("اشتري ألعاب") || base.includes("متجر ألعاب واشتراكات") || cur === "GX Store") {
           document.title = "GX Store | Buy Games, Giftcard & Top ups cheaper";
           return;
         }
-        if (cur.includes("| متجر GX Store")) {
-          const base = cur.replace(/\s*\|\s*متجر\s*GX\s*Store/gi, "").trim();
-          const translated = TITLE_MAP_AR_TO_EN[base] || base;
-          document.title = `${translated} | GX Store`;
+
+        // If title had Arabic suffix "| متجر GX Store", convert suffix to English "| GX Store"
+        if (cur.includes("متجر GX Store")) {
+          document.title = cur.replace(/متجر\s*GX\s*Store/g, "GX Store");
           return;
         }
       } else {
@@ -190,14 +278,32 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
           document.title = TITLE_MAP_EN_TO_AR[cur];
           return;
         }
-        if (cur.includes("Buy Games") || cur.includes("Digital Games & Subscriptions") || cur === "GX Store") {
-          document.title = "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار";
+
+        let base = cur;
+        let hadBrandWrapper = false;
+
+        if (/^GX Store\s*[\|\-—–]\s*/i.test(cur)) {
+          base = cur.replace(/^GX Store\s*[\|\-—–]\s*/i, "").trim();
+          hadBrandWrapper = true;
+        } else if (/\s*[\|\-—–]\s*GX\s*Store$/i.test(cur)) {
+          base = cur.replace(/\s*[\|\-—–]\s*GX\s*Store$/i, "").trim();
+          hadBrandWrapper = true;
+        }
+
+        if (TITLE_MAP_EN_TO_AR[base]) {
+          const trans = TITLE_MAP_EN_TO_AR[base];
+          document.title = hadBrandWrapper ? `${trans} | متجر GX Store` : trans;
           return;
         }
-        if (cur.includes("| GX Store") && !cur.includes("| متجر GX Store")) {
-          const base = cur.replace(/\s*\|\s*GX\s*Store/gi, "").trim();
-          const translated = TITLE_MAP_EN_TO_AR[base] || base;
-          document.title = `${translated} | متجر GX Store`;
+
+        const orderMatchEn = base.match(/^Order\s*#?([A-Za-z0-9\-]+)/i);
+        if (orderMatchEn) {
+          document.title = `طلب #${orderMatchEn[1]} | متجر GX Store`;
+          return;
+        }
+
+        if (base.includes("Buy Games") || base.includes("Digital Games & Subscriptions") || cur === "GX Store") {
+          document.title = "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار";
           return;
         }
       }

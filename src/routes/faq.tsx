@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { FeatureAccordion } from "@/components/gx/Primitives";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 import { useCurrency } from "@/lib/gx/currency";
 import { useUserCountry } from "@/lib/gx/country-phone";
 import { FAQ_EN } from "@/lib/gx/product-locale";
@@ -9,13 +9,21 @@ import { useLoyaltyCopy } from "@/lib/gx/loyalty-copy";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/faq")({
-  head: () => ({
-    meta: [
-      { title: "FAQ — GX Store" },
-      { name: "description", content: "Answers to the most common questions about ordering, delivery, and payment at GX Store." },
-    ],
-    links: STORE_HEAD_LINKS,
-  }),
+  head: () => {
+    const isEn = getHeadLang() === "en";
+    return {
+      meta: [
+        { title: isEn ? "FAQ | GX Store" : "الأسئلة الشائعة | متجر GX Store" },
+        {
+          name: "description",
+          content: isEn
+            ? "Answers to the most common questions about ordering, delivery, and payment at GX Store."
+            : "إجابات على الأسئلة الأكثر شيوعاً حول الطلب والتسليم والدفع في متجر GX Store.",
+        },
+      ],
+      links: STORE_HEAD_LINKS,
+    };
+  },
   component: FaqPage,
 });
 

@@ -11,6 +11,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { resolveProductImage } from "./product-images";
 import { getResendApiKey } from "./resend-key";
 import { renderGxStoreEmail, escapeHtml, type EmailProductItem } from "./email-theme";
+import { formatCurrencyValue } from "./currency";
 
 export const SENDER_EMAIL = "GX Store <noreply@gxstore.me>";
 export const CDN_ASSETS_BASE = "https://cdn.jsdelivr.net/gh/tareqaa/elevate-joy-kit@main/public";
@@ -595,6 +596,7 @@ export type SendBinanceOrderReceivedEmailInput = {
   notes?: string;
   createdAt?: string;
   lang?: "ar" | "en";
+  currency?: string;
 };
 
 /**
@@ -618,23 +620,33 @@ export async function sendBinanceOrderReceivedEmailDirect(input: SendBinanceOrde
       notes,
       createdAt,
       lang = "ar",
+      currency: inputCurrency,
     } = input;
 
     if (!customerEmail || !customerEmail.includes("@")) {
       return { ok: false, error: "Invalid email" };
     }
 
+    const currency = (inputCurrency || "USD").toUpperCase().trim();
     const isAr = lang === "ar";
     const effectiveTotalJod = totalWithFeeJod != null ? totalWithFeeJod : (totalJod + feeJod);
     const effectiveSubtotalJod = subtotalJod != null ? subtotalJod : totalJod;
     const effectiveUsdt = totalUsdt || (effectiveTotalJod * 1.41).toFixed(2);
 
-    const formattedSubtotal = `${Number(effectiveSubtotalJod).toFixed(2)} د.أ`;
-    const formattedSubtotalEn = `${Number(effectiveSubtotalJod).toFixed(2)} JOD`;
-    const formattedFee = feeJod > 0 ? `+${Number(feeJod).toFixed(2)} د.أ` : null;
-    const formattedFeeEn = feeJod > 0 ? `+${Number(feeJod).toFixed(2)} JOD` : null;
-    const formattedTotal = `${Number(effectiveTotalJod).toFixed(2)} د.أ (≈ ${effectiveUsdt} USDT)`;
-    const formattedTotalEn = `${Number(effectiveTotalJod).toFixed(2)} JOD (≈ ${effectiveUsdt} USDT)`;
+    const formattedSubtotal = formatCurrencyValue(effectiveSubtotalJod, currency, true);
+    const formattedSubtotalEn = formatCurrencyValue(effectiveSubtotalJod, currency, false);
+    const formattedFee = feeJod > 0 ? `+${formatCurrencyValue(feeJod, currency, true)}` : null;
+    const formattedFeeEn = feeJod > 0 ? `+${formatCurrencyValue(feeJod, currency, false)}` : null;
+
+    let formattedTotal: string;
+    let formattedTotalEn: string;
+    if (currency === "USD") {
+      formattedTotal = `${effectiveUsdt} $ (USD) (≈ ${effectiveUsdt} USDT)`;
+      formattedTotalEn = `${effectiveUsdt} USD (≈ ${effectiveUsdt} USDT)`;
+    } else {
+      formattedTotal = `${formatCurrencyValue(effectiveTotalJod, currency, true)} (≈ ${effectiveUsdt} USDT)`;
+      formattedTotalEn = `${formatCurrencyValue(effectiveTotalJod, currency, false)} (≈ ${effectiveUsdt} USDT)`;
+    }
 
     const dateObj = createdAt ? new Date(createdAt) : new Date();
     const dateFormattedEn = dateObj.toLocaleDateString("en-GB", {
@@ -668,8 +680,8 @@ export async function sendBinanceOrderReceivedEmailDirect(input: SendBinanceOrde
 
     const emailProducts: EmailProductItem[] = resolvedItems.map((it) => {
       const q = it.qty || 1;
-      const unitP = it.price != null ? `${Number(it.price).toFixed(2)} ${isAr ? "د.أ" : "JOD"}` : "";
-      const lineP = it.price != null ? `${(Number(it.price) * q).toFixed(2)} ${isAr ? "د.أ" : "JOD"}` : "";
+      const unitP = it.price != null ? formatCurrencyValue(Number(it.price), currency, isAr) : "";
+      const lineP = it.price != null ? formatCurrencyValue(Number(it.price) * q, currency, isAr) : "";
       return {
         name: it.name,
         qty: q,
@@ -857,6 +869,7 @@ export type SendPaymentConfirmedEmailInput = {
   notes?: string;
   createdAt?: string;
   lang?: "ar" | "en";
+  currency?: string;
 };
 
 /**
@@ -877,22 +890,24 @@ export async function sendPaymentConfirmedEmailDirect(input: SendPaymentConfirme
       notes,
       createdAt,
       lang = "ar",
+      currency: inputCurrency,
     } = input;
 
     if (!customerEmail || !customerEmail.includes("@")) {
       return { ok: false, error: "Invalid email" };
     }
 
+    const currency = (inputCurrency || "JOD").toUpperCase().trim();
     const isAr = lang === "ar";
     const effectiveTotalJod = Number(totalJod || 0);
     const effectiveSubtotalJod = subtotalJod != null ? Number(subtotalJod) : effectiveTotalJod;
 
-    const formattedSubtotal = `${effectiveSubtotalJod.toFixed(2)} د.أ`;
-    const formattedSubtotalEn = `${effectiveSubtotalJod.toFixed(2)} JOD`;
-    const formattedDiscount = discountJod > 0 ? `-${Number(discountJod).toFixed(2)} د.أ` : null;
-    const formattedDiscountEn = discountJod > 0 ? `-${Number(discountJod).toFixed(2)} JOD` : null;
-    const formattedTotal = `${effectiveTotalJod.toFixed(2)} د.أ`;
-    const formattedTotalEn = `${effectiveTotalJod.toFixed(2)} JOD`;
+    const formattedSubtotal = formatCurrencyValue(effectiveSubtotalJod, currency, true);
+    const formattedSubtotalEn = formatCurrencyValue(effectiveSubtotalJod, currency, false);
+    const formattedDiscount = discountJod > 0 ? `-${formatCurrencyValue(discountJod, currency, true)}` : null;
+    const formattedDiscountEn = discountJod > 0 ? `-${formatCurrencyValue(discountJod, currency, false)}` : null;
+    const formattedTotal = formatCurrencyValue(effectiveTotalJod, currency, true);
+    const formattedTotalEn = formatCurrencyValue(effectiveTotalJod, currency, false);
 
     const dateObj = createdAt ? new Date(createdAt) : new Date();
     const dateFormattedEn = dateObj.toLocaleDateString("en-GB", {
@@ -926,8 +941,8 @@ export async function sendPaymentConfirmedEmailDirect(input: SendPaymentConfirme
 
     const emailProducts: EmailProductItem[] = resolvedItems.map((it) => {
       const q = it.qty || 1;
-      const unitP = it.price != null ? `${Number(it.price).toFixed(2)} ${isAr ? "د.أ" : "JOD"}` : "";
-      const lineP = it.price != null ? `${(Number(it.price) * q).toFixed(2)} ${isAr ? "د.أ" : "JOD"}` : "";
+      const unitP = it.price != null ? formatCurrencyValue(Number(it.price), currency, isAr) : "";
+      const lineP = it.price != null ? formatCurrencyValue(Number(it.price) * q, currency, isAr) : "";
       return {
         name: it.name,
         qty: q,

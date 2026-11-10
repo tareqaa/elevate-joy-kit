@@ -784,6 +784,41 @@ export function GxProductTemplate({
 
   // Poster Component: Pure, clean cover art without text labels or overlays (GX style)
   const renderPoster = () => {
+    // Dedicated Google Gemini: Match the clean thumbnail card (purple gradient + centered SVG logo + shadow)
+    if (product.slug === "gemini" || product.slug.startsWith("gemini-")) {
+      return (
+        <div
+          className="driffle-poster-inner"
+          style={{
+            background: "linear-gradient(145deg,#2a1a4a,#0e0820)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 18,
+            overflow: "hidden",
+            width: "100%",
+            height: "100%",
+            minHeight: 280,
+            position: "relative",
+            border: "1px solid rgba(168, 85, 247, 0.22)",
+            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.45)",
+          }}
+        >
+          <img
+            src="/app/assets/img/gemini-logo.svg"
+            alt={name}
+            style={{
+              width: "72%",
+              maxWidth: 240,
+              height: "auto",
+              objectFit: "contain",
+              filter: "drop-shadow(0 10px 24px rgba(0,0,0,0.65))",
+            }}
+          />
+        </div>
+      );
+    }
+
     // 1. Variant-specific canonical card (e.g. TOD duration artwork cards, Fortnite packs)
     const variantSpecific = activeVariant.cartId ? CANONICAL_VARIANT_IMAGES[activeVariant.cartId] : null;
 

@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { useSiteSettings } from "@/lib/gx/site-settings";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 import { SECTION_REGISTRY } from "@/lib/gx/sections/registry";
 import { containerMaxWidth, sectionWrapperStyle, themeToCssVars, type HomeLayout, type Section } from "@/lib/gx/sections/types";
 import { AnimatedSection } from "@/components/gx/AnimatedSection";
@@ -72,7 +72,7 @@ const ORGANIZATION_SCHEMA = {
     { "@type": "AdministrativeArea", name: "Worldwide" }
   ],
   paymentAccepted: ["CliQ", "Credit Card", "Debit Card", "GX Wallet", "Apple Pay"],
-  currenciesAccepted: ["JOD", "USD", "SAR", "AED", "KWD", "QAR", "BHD", "OMR", "EUR"],
+  currenciesAccepted: ["JOD", "USD", "SAR", "AED", "KWD", "QAR", "BHD", "OMR", "EUR", "PS"],
   contactPoint: {
     "@type": "ContactPoint",
     telephone: "+962776252313",
@@ -193,36 +193,42 @@ const SITE_NAVIGATION_SCHEMA = {
 };
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار" },
-      {
-        name: "description",
-        content:
-          "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.",
-      },
-      { property: "og:site_name", content: "GX Store" },
-      { property: "og:title", content: "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار" },
-      {
-        property: "og:description",
-        content:
-          "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://gxstore.me/" },
-      { property: "og:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
-      { property: "og:image:secure_url", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
-      { property: "og:image:width", content: "1200" },
-      { property: "og:image:height", content: "630" },
-      { property: "og:image:alt", content: "GX Store - Buy Games, Giftcard & Top ups cheaper" },
-      { property: "og:logo", content: "https://gxstore.me/app/assets/img/gx-logo.png" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار" },
-      {
-        name: "twitter:description",
-        content:
-          "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.",
-      },
+  head: () => {
+    const isEn = getHeadLang() === "en";
+    const siteTitle = isEn
+      ? "GX Store | Buy Games, Giftcard & Top ups cheaper"
+      : "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار";
+    const siteDesc = isEn
+      ? "Discover your favorite digital store for gaming and subscriptions. Shop gift cards, keys, game top-ups, and subscriptions at competitive prices with instant delivery and reliable support."
+      : "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.";
+
+    return {
+      meta: [
+        { title: siteTitle },
+        {
+          name: "description",
+          content: siteDesc,
+        },
+        { property: "og:site_name", content: "GX Store" },
+        { property: "og:title", content: siteTitle },
+        {
+          property: "og:description",
+          content: siteDesc,
+        },
+        { property: "og:type", content: "website" },
+        { property: "og:url", content: "https://gxstore.me/" },
+        { property: "og:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
+        { property: "og:image:secure_url", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { property: "og:image:alt", content: isEn ? "GX Store - Buy Games, Giftcard & Top ups cheaper" : "GX Store | متجر ألعاب وبطاقات واشتراكات" },
+        { property: "og:logo", content: "https://gxstore.me/app/assets/img/gx-logo.png" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: siteTitle },
+        {
+          name: "twitter:description",
+          content: siteDesc,
+        },
       { name: "twitter:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
       {
         name: "keywords",
@@ -238,7 +244,8 @@ export const Route = createFileRoute("/")({
       ...STORE_HEAD_LINKS,
       { rel: "canonical", href: "https://gxstore.me/" },
     ],
-  }),
+  };
+},
   component: Home,
 });
 

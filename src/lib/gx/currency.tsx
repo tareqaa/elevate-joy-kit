@@ -25,11 +25,12 @@ export const CURRENCIES: Record<string, CurrencyInfo> = {
   MAD: { label: "درهم مغربي", labelAr: "درهم مغربي", labelEn: "Moroccan Dirham", flag: "🇲🇦", rate: 14, decimals: 2 },
   DZD: { label: "دينار جزائري", labelAr: "دينار جزائري", labelEn: "Algerian Dinar", flag: "🇩🇿", rate: 190, decimals: 0 },
   TND: { label: "دينار تونسي", labelAr: "دينار تونسي", labelEn: "Tunisian Dinar", flag: "🇹🇳", rate: 4.4, decimals: 2 },
+  PS: { label: "شيكل فلسطيني", labelAr: "شيكل فلسطيني", labelEn: "Palestinian Shekel", flag: "🇵🇸", rate: 5.25, decimals: 2 },
 };
 
 const STORAGE_KEY = "gx_currency";
 const COUNTRY_TO_CURRENCY: Record<string, string> = {
-  JO: "JOD", PS: "JOD", SA: "SAR", AE: "AED", KW: "KWD", QA: "QAR", OM: "OMR", BH: "BHD",
+  JO: "JOD", PS: "PS", SA: "SAR", AE: "AED", KW: "KWD", QA: "QAR", OM: "OMR", BH: "BHD",
   IQ: "IQD", EG: "EGP", MA: "MAD", DZ: "DZD", TN: "TND",
   US: "USD", CA: "USD", GB: "USD",
   DE: "EUR", FR: "EUR", IT: "EUR", ES: "EUR", NL: "EUR", BE: "EUR", AT: "EUR", GR: "EUR", PT: "EUR", IE: "EUR", FI: "EUR",
@@ -37,7 +38,8 @@ const COUNTRY_TO_CURRENCY: Record<string, string> = {
 
 /**
  * Resolves the default currency for a country.
- * - Jordan and Palestine -> JOD
+ * - Jordan -> JOD
+ * - Palestine -> PS (Palestinian Shekel)
  * - Supported regional countries -> mapped local currency (SAR, AED, KWD, etc.)
  * - Supported Eurozone countries -> EUR
  * - ANY OTHER country whose currency is not supported in the store (e.g. Turkey, international) -> USD
@@ -45,10 +47,47 @@ const COUNTRY_TO_CURRENCY: Record<string, string> = {
 export function resolveDefaultCurrencyForCountry(countryCode?: string | null): string {
   if (!countryCode) return "USD";
   const cc = countryCode.trim().toUpperCase();
-  if (cc === "JO" || cc === "PS") return "JOD";
+  if (cc === "JO") return "JOD";
+  if (cc === "PS") return "PS";
   const mapped = COUNTRY_TO_CURRENCY[cc];
   if (mapped && CURRENCIES[mapped]) return mapped;
   return "USD";
+}
+
+/**
+ * Pure helper to format JOD amounts to any supported currency with proper symbol/code.
+ * Safe for server-side (emails) and client-side formatting.
+ */
+export function formatCurrencyValue(
+  amountJod: number,
+  currencyCode: string = "JOD",
+  isAr: boolean = false
+): string {
+  let code = (currencyCode || "JOD").toUpperCase().trim();
+  if (code === "ILS") code = "PS";
+  const c = CURRENCIES[code] || CURRENCIES.JOD;
+  const val = (Number(amountJod) || 0) * (c.rate || 1);
+  const numStr = val.toLocaleString("en-US", {
+    minimumFractionDigits: c.decimals,
+    maximumFractionDigits: c.decimals,
+  });
+
+  if (code === "JOD") return isAr ? `${numStr} د.أ` : `${numStr} JOD`;
+  if (code === "PS") return isAr ? `${numStr} شيكل` : `${numStr} PS`;
+  if (code === "SAR") return isAr ? `${numStr} ر.س` : `${numStr} SAR`;
+  if (code === "AED") return isAr ? `${numStr} د.إ` : `${numStr} AED`;
+  if (code === "USD") return isAr ? `${numStr} $ (USD)` : `${numStr} USD`;
+  if (code === "EUR") return isAr ? `${numStr} € (EUR)` : `${numStr} EUR`;
+  if (code === "KWD") return isAr ? `${numStr} د.ك` : `${numStr} KWD`;
+  if (code === "QAR") return isAr ? `${numStr} ر.ق` : `${numStr} QAR`;
+  if (code === "OMR") return isAr ? `${numStr} ر.ع` : `${numStr} OMR`;
+  if (code === "BHD") return isAr ? `${numStr} د.ب` : `${numStr} BHD`;
+  if (code === "EGP") return isAr ? `${numStr} ج.م` : `${numStr} EGP`;
+  if (code === "IQD") return isAr ? `${numStr} د.ع` : `${numStr} IQD`;
+  if (code === "MAD") return isAr ? `${numStr} د.م` : `${numStr} MAD`;
+  if (code === "DZD") return isAr ? `${numStr} د.ج` : `${numStr} DZD`;
+  if (code === "TND") return isAr ? `${numStr} د.ت` : `${numStr} TND`;
+  return `${numStr} ${code}`;
 }
 
 type Ctx = {
@@ -102,8 +141,11 @@ async function fetchLiveRates(): Promise<Record<string, number> | null> {
     if (!rates) return null;
     const out: Record<string, number> = {};
     for (const code of Object.keys(CURRENCIES)) {
-      const r = Number(rates[code]);
+      const r = Number(rates[code] ?? (code === "PS" ? rates.ILS : undefined));
       if (Number.isFinite(r) && r > 0) out[code] = r;
+    }
+    if (rates.ILS && !out.PS) {
+      out.PS = Number(rates.ILS);
     }
     out.JOD = 1;
     return Object.keys(out).length > 1 ? out : null;
@@ -114,7 +156,8 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrencyState] = useState<string>(() => {
     if (typeof window === "undefined") return "JOD";
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      let saved = localStorage.getItem(STORAGE_KEY);
+      if (saved === "ILS") saved = "PS";
       if (saved && CURRENCIES[saved]) return saved;
       const cc = getUnifiedCountryCode();
       return resolveDefaultCurrencyForCountry(cc);
@@ -139,7 +182,11 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    let saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === "ILS") {
+      saved = "PS";
+      try { localStorage.setItem(STORAGE_KEY, "PS"); } catch { /* noop */ }
+    }
     if (saved && CURRENCIES[saved]) {
       setCurrencyState(saved);
       return;
@@ -157,16 +204,18 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setCurrency = useCallback((code: string) => {
-    if (!CURRENCIES[code]) return;
-    setCurrencyState(code);
+    let clean = (code || "JOD").toUpperCase().trim();
+    if (clean === "ILS") clean = "PS";
+    if (!CURRENCIES[clean]) return;
+    setCurrencyState(clean);
     try {
-      localStorage.setItem(STORAGE_KEY, code);
+      localStorage.setItem(STORAGE_KEY, clean);
       localStorage.setItem("gx_currency_manual", "1");
     } catch { /* noop */ }
   }, []);
 
   const rate = useMemo(() => {
-    const live = rates[currency];
+    const live = rates[currency] ?? (currency === "PS" ? rates.ILS : undefined);
     if (Number.isFinite(live) && live > 0) return live;
     return (CURRENCIES[currency] || CURRENCIES.JOD).rate;
   }, [rates, currency]);

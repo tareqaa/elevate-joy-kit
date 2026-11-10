@@ -63,7 +63,7 @@ export function RecentlyViewedSection() {
               const isSpecificPack = Boolean(item.cartId && item.cartId !== item.slug) || item.price > 0;
 
               return (
-                <div key={item.cartId ? `${item.slug}-${item.cartId}` : item.slug} className="gx-carousel-product-col">
+                <div key={item.slug} className="gx-carousel-product-col">
                   <StoreProductCard
                     slug={item.slug}
                     cartId={item.cartId || item.slug}
@@ -79,6 +79,7 @@ export function RecentlyViewedSection() {
                     showPlatformBar={true}
                     showFromLabel={!isSpecificPack}
                     priceLabel={ar ? "السعر" : "Price"}
+                    isOutOfStock={item.isOutOfStock}
                   />
                 </div>
               );

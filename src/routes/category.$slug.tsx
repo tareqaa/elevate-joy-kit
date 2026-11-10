@@ -8,7 +8,7 @@ import {
   type CatalogCategoryChild,
   type CatalogStoreProduct,
 } from "@/lib/gx/catalog.functions";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 import { useCurrency } from "@/lib/gx/currency";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
@@ -17,7 +17,7 @@ import { CatalogFilterBar } from "@/components/gx/CatalogFilterBar";
 import { CatSortDropdown, SORT_OPTIONS } from "@/components/gx/CatSortDropdown";
 import { CatPagination } from "@/components/gx/CatPagination";
 import { CatDeliveryTypeDropdown, DELIVERY_TYPE_OPTIONS } from "@/components/gx/CatDeliveryTypeDropdown";
-import { CatPriceFilterDropdown, PRICE_PRESETS } from "@/components/gx/CatPriceFilterDropdown";
+import { CatPriceFilterDropdown, PRICE_PRESETS, getPresetLabel, getPricePresetsForCurrency, AR_CURRENCY_SYMBOL } from "@/components/gx/CatPriceFilterDropdown";
 import { CatSubtypeDropdown, type SubtypeOption } from "@/components/gx/CatSubtypeDropdown";
 import { resolveStrictDeliveryType } from "@/lib/gx/delivery-types";
 
@@ -358,13 +358,17 @@ export const Route = createFileRoute("/category/$slug")({
     return { category, products: categoryProducts, allProducts };
   },
   head: ({ loaderData }) => {
+    const isEn = getHeadLang() === "en";
     const c = loaderData?.category;
-    const catName = c?.nameAr || c?.nameEn || "الأقسام";
-    const title = c ? `${catName} | متجر GX Store` : "الأقسام | متجر GX Store";
-    const desc =
-      c?.taglineAr ||
-      c?.taglineEn ||
-      `تصفح عروض ومنتجات قسم ${catName} في متجر GX Store بأفضل الأسعار والتفعيل الفوري في الأردن والشرق الأوسط.`;
+    const catName = isEn
+      ? (c?.nameEn || c?.nameAr || "Categories")
+      : (c?.nameAr || c?.nameEn || "الأقسام");
+    const title = c
+      ? (isEn ? `${catName} | GX Store` : `${catName} | متجر GX Store`)
+      : (isEn ? "Categories | GX Store" : "الأقسام | متجر GX Store");
+    const desc = isEn
+      ? (c?.taglineEn || c?.taglineAr || `Browse deals and digital products in ${catName} at GX Store with the best prices and instant delivery.`)
+      : (c?.taglineAr || c?.taglineEn || `تصفح عروض ومنتجات قسم ${catName} في متجر GX Store بأفضل الأسعار والتفعيل الفوري في الأردن والشرق الأوسط.`);
     const canonical = c ? `https://gxstore.me/category/${c.slug}` : "https://gxstore.me/products";
     const img = c?.iconImage
       ? c.iconImage.startsWith("http")
@@ -500,7 +504,7 @@ export type CategoryPlatformItem = {
 function CategoryPage() {
   const { category, products, allProducts } = Route.useLoaderData();
   const { lang, t } = useLang();
-  const { format } = useCurrency();
+  const { format, currency, rate } = useCurrency();
   const pick = (ar?: string | null, en?: string | null) => (lang === "en" ? en || ar : ar || en) || "";
 
   useEffect(() => {
@@ -1610,24 +1614,22 @@ function CategoryPage() {
     }
 
     // 4. Price range filter
+    const currRate = rate || 1;
+    const presets = getPricePresetsForCurrency(currency, currRate);
+    const activePreset = presets.find((pr) => pr.id === selectedPricePreset);
+
     if (customMinPrice !== "") {
       const minVal = parseFloat(customMinPrice);
-      if (!isNaN(minVal)) list = list.filter((p) => (p.basePriceJod || 0) >= minVal);
-    } else if (selectedPricePreset !== "all") {
-      const preset = PRICE_PRESETS.find((pr) => pr.id === selectedPricePreset);
-      if (preset?.min !== undefined) {
-        list = list.filter((p) => (p.basePriceJod || 0) >= preset.min!);
-      }
+      if (!isNaN(minVal)) list = list.filter((p) => ((p.basePriceJod || 0) * currRate) >= minVal);
+    } else if (activePreset?.min !== undefined) {
+      list = list.filter((p) => ((p.basePriceJod || 0) * currRate) >= activePreset.min!);
     }
 
     if (customMaxPrice !== "") {
       const maxVal = parseFloat(customMaxPrice);
-      if (!isNaN(maxVal)) list = list.filter((p) => (p.basePriceJod || 0) <= maxVal);
-    } else if (selectedPricePreset !== "all") {
-      const preset = PRICE_PRESETS.find((pr) => pr.id === selectedPricePreset);
-      if (preset?.max !== undefined) {
-        list = list.filter((p) => (p.basePriceJod || 0) <= preset.max!);
-      }
+      if (!isNaN(maxVal)) list = list.filter((p) => ((p.basePriceJod || 0) * currRate) <= maxVal);
+    } else if (activePreset?.max !== undefined) {
+      list = list.filter((p) => ((p.basePriceJod || 0) * currRate) <= activePreset.max!);
     }
 
     // 5. Sorting (Matches Image 3 options)
@@ -1665,6 +1667,7 @@ function CategoryPage() {
     fortniteFilter,
     isValorantMode,
     valorantRegion,
+    rate,
   ]);
 
   // 5x5 Pagination (25 items per page for lightning fast page loading)
@@ -2364,16 +2367,25 @@ function CategoryPage() {
               )}
 
               {/* Active Price Range Pill */}
-              {(selectedPricePreset !== "all" || customMinPrice || customMaxPrice) && (
+              {/* Active Price Range Pill */}
+              {((selectedPricePreset !== "all" && selectedPricePreset !== "") || customMinPrice || customMaxPrice) && (
                 <div
                   className="cat-toolbar-filter-pill"
                   style={{ borderColor: "#38bdf8", background: "rgba(56, 189, 248, 0.1)" }}
                 >
                   <span style={{ color: "#38bdf8" }}>🏷️ {lang === "en" ? "Price:" : "السعر:"}</span>
                   <span style={{ fontWeight: 800 }}>
-                    {selectedPricePreset === "custom"
-                      ? `${customMinPrice || "0"} – ${customMaxPrice || "∞"} JOD`
-                      : PRICE_PRESETS.find((p) => p.id === selectedPricePreset)?.labelAr || selectedPricePreset}
+                    {customMinPrice || customMaxPrice
+                      ? (customMinPrice && customMaxPrice
+                          ? `${customMinPrice} – ${customMaxPrice} ${lang === "ar" ? (AR_CURRENCY_SYMBOL[currency] || currency) : currency}`
+                          : customMinPrice
+                            ? `${lang === "ar" ? "أكثر من" : "Over"} ${customMinPrice} ${lang === "ar" ? (AR_CURRENCY_SYMBOL[currency] || currency) : currency}`
+                            : `${lang === "ar" ? "أقل من" : "Under"} ${customMaxPrice} ${lang === "ar" ? (AR_CURRENCY_SYMBOL[currency] || currency) : currency}`)
+                      : (() => {
+                          const presets = getPricePresetsForCurrency(currency, rate);
+                          const p = presets.find((pr) => pr.id === selectedPricePreset);
+                          return p ? (lang === "en" ? p.labelEn : p.labelAr) : selectedPricePreset;
+                        })()}
                   </span>
                   <button
                     type="button"

@@ -25,6 +25,10 @@ async function fetchLiveRates(): Promise<Record<string, number> | null> {
       const r = Number(value);
       if (Number.isFinite(r) && r > 0) out[code] = r;
     }
+    // Track official live ILS market rate for PS (Palestinian Shekel)
+    if (out.ILS && !out.PS) {
+      out.PS = out.ILS;
+    }
     return out;
   } catch {
     return null;

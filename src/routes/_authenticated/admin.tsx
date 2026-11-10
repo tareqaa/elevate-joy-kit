@@ -2,6 +2,7 @@ import { createFileRoute, redirect, Outlet, Link, useLocation, useNavigate } fro
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getHeadLang } from "@/lib/gx/i18n";
 import { AdminCommandPalette } from "@/components/gx/admin/AdminCommandPalette";
 import {
   LayoutDashboard, Package, Users, Search, Bell, ChevronLeft, ChevronRight,
@@ -34,12 +35,15 @@ export const Route = createFileRoute("/_authenticated/admin")({
     adminRoleCache = { userId: user.id, isAdmin };
     if (!isAdmin) throw redirect({ to: "/account" });
   },
-  head: () => ({
-    meta: [
-      { title: "لوحة الإدارة | متجر GX Store" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-  }),
+  head: () => {
+    const isEn = getHeadLang() === "en";
+    return {
+      meta: [
+        { title: isEn ? "Admin Dashboard | GX Store" : "لوحة الإدارة | متجر GX Store" },
+        { name: "robots", content: "noindex, nofollow" },
+      ],
+    };
+  },
   component: AdminLayout,
 });
 

@@ -237,79 +237,97 @@ export function OrderConfirmedModal({
         </p>
 
         {/* Action Button (WhatsApp) */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
-          {/* WhatsApp Button */}
-          <a
-            href={effectiveWaUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              width: "100%",
-              padding: "13px 18px",
-              borderRadius: 14,
-              textDecoration: "none",
-              background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)",
-              color: "#051c14",
-              fontSize: 14,
-              fontWeight: 900,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              boxShadow: "0 8px 24px -4px rgba(37, 211, 102, 0.5)",
-              transition: "transform 0.15s ease, filter 0.15s ease",
-              boxSizing: "border-box",
-            }}
-          >
-            <WhatsAppSvg />
-            <span>{isAr ? "متابعة الطلب عبر واتساب" : "Confirm Order on WhatsApp"}</span>
-            <ExternalLink size={15} />
-          </a>
-        </div>
+        {/* Actions Section */}
+        {(() => {
+          const isCliq = paymentMethod === "cliq";
+          return (
+            <>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: isCliq ? 6 : 14 }}>
+                {/* WhatsApp Button */}
+                <a
+                  href={effectiveWaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    width: "100%",
+                    padding: "13px 18px",
+                    borderRadius: 14,
+                    textDecoration: "none",
+                    background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)",
+                    color: "#051c14",
+                    fontSize: 14,
+                    fontWeight: 900,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                    boxShadow: "0 8px 24px -4px rgba(37, 211, 102, 0.5)",
+                    transition: "transform 0.15s ease, filter 0.15s ease",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <WhatsAppSvg />
+                  <span>
+                    {isAr
+                      ? isCliq
+                        ? "متابعة الدفع عبر واتساب"
+                        : "متابعة الطلب عبر واتساب"
+                      : isCliq
+                      ? "Proceed with Payment via WhatsApp"
+                      : "Confirm Order on WhatsApp"}
+                  </span>
+                  <ExternalLink size={15} />
+                </a>
+              </div>
 
-        {/* View / Track Order Link */}
-        {orderToken ? (
-          <Link
-            to="/order/completed"
-            search={{ order_token: orderToken }}
-            onClick={onClose}
-            style={{
-              display: "block",
-              padding: "9px 14px",
-              borderRadius: 12,
-              border: "1px solid rgba(0, 229, 255, 0.25)",
-              background: "rgba(0, 229, 255, 0.05)",
-              color: "#00e5ff",
-              fontSize: 13,
-              fontWeight: 800,
-              textDecoration: "none",
-              marginBottom: 8,
-            }}
-          >
-            📦 {t("cart.track_order")}
-          </Link>
-        ) : signedIn ? (
-          <Link
-            to="/account"
-            search={{ tab: "orders" as const }}
-            onClick={onClose}
-            style={{
-              display: "block",
-              padding: "9px 14px",
-              borderRadius: 12,
-              border: "1px solid rgba(0, 229, 255, 0.25)",
-              background: "rgba(0, 229, 255, 0.05)",
-              color: "#00e5ff",
-              fontSize: 13,
-              fontWeight: 800,
-              textDecoration: "none",
-              marginBottom: 8,
-            }}
-          >
-            📦 {t("cart.track_order")}
-          </Link>
-        ) : null}
+              {/* View / Track Order Link — Excluded for CliQ option as requested */}
+              {!isCliq && (
+                orderToken ? (
+                  <Link
+                    to="/order/completed"
+                    search={{ order_token: orderToken }}
+                    onClick={onClose}
+                    style={{
+                      display: "block",
+                      padding: "9px 14px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(0, 229, 255, 0.25)",
+                      background: "rgba(0, 229, 255, 0.05)",
+                      color: "#00e5ff",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      textDecoration: "none",
+                      marginBottom: 8,
+                    }}
+                  >
+                    📦 {t("cart.track_order")}
+                  </Link>
+                ) : signedIn ? (
+                  <Link
+                    to="/account"
+                    search={{ tab: "orders" as const }}
+                    onClick={onClose}
+                    style={{
+                      display: "block",
+                      padding: "9px 14px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(0, 229, 255, 0.25)",
+                      background: "rgba(0, 229, 255, 0.05)",
+                      color: "#00e5ff",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      textDecoration: "none",
+                      marginBottom: 8,
+                    }}
+                  >
+                    📦 {t("cart.track_order")}
+                  </Link>
+                ) : null
+              )}
+            </>
+          );
+        })()}
 
         {/* Close Button */}
         <button

@@ -1478,6 +1478,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             notes: notes.trim() || undefined,
             createdAt: order.created_at,
             lang: emailLang,
+            currency: (order as any).currency || (order.delivery_data as any)?.currency || "JOD",
           },
         });
         if (emailRes && !emailRes.ok) {
@@ -1525,6 +1526,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             notes: notes.trim() || undefined,
             createdAt: order.created_at,
             lang: emailLang,
+            currency: (order as any).currency || (order.delivery_data as any)?.currency || "JOD",
           },
         });
 
@@ -1570,6 +1572,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
             notes: cancelReason.trim() || undefined,
             createdAt: order.created_at,
             lang: emailLang,
+            currency: (order as any).currency || (order.delivery_data as any)?.currency || "JOD",
           },
         });
         if (emailRes && !emailRes.ok) {
@@ -1628,6 +1631,7 @@ function OrderDialog({ order, onClose, onSave }: { order: OrderWithEmail; onClos
           notes: notes.trim() || undefined,
           createdAt: order.created_at,
           lang: emailLang,
+          currency: (order as any).currency || (order.delivery_data as any)?.currency || "JOD",
         },
       });
 

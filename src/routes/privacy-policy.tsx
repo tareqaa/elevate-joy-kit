@@ -1,22 +1,29 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 import { useSiteSettings } from "@/lib/gx/site-settings";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 
 export const Route = createFileRoute("/privacy-policy")({
-  head: () => ({
-    meta: [
-      { title: "Privacy Policy — GX Store" },
-      { name: "description", content: "How GX Store collects, uses, shares and protects your personal data, and how to request deletion of your account." },
-      { property: "og:title", content: "Privacy Policy — GX Store" },
-      { property: "og:description", content: "How GX Store collects, uses, shares and protects your personal data." },
-      { property: "og:type", content: "article" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-    links: STORE_HEAD_LINKS,
-  }),
+  head: () => {
+    const isEn = getHeadLang() === "en";
+    const title = isEn ? "Privacy Policy | GX Store" : "سياسة الخصوصية | متجر GX Store";
+    const desc = isEn
+      ? "How GX Store collects, uses, shares and protects your personal data, and how to request deletion of your account."
+      : "كيف يجمع ويستخدم ويحمي متجر GX Store بياناتك الشخصية وسياسة الخصوصية المتبعة.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: desc },
+        { property: "og:title", content: title },
+        { property: "og:description", content: desc },
+        { property: "og:type", content: "article" },
+        { name: "twitter:card", content: "summary_large_image" },
+      ],
+      links: STORE_HEAD_LINKS,
+    };
+  },
   component: PrivacyPolicyPage,
 });
 

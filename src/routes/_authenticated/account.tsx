@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { User as UserIcon, Package, ShieldCheck, Copy, Check, Disc3, ChevronDown, Eye, EyeOff, AlertTriangle, Globe, KeyRound, Lock, Wallet, FileText, Trash2, Mail, Loader2, X, HelpCircle, Sparkles, ExternalLink } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 import { GxProfile } from "@/components/gx/GxProfile";
 import { SpinWheel } from "@/components/gx/SpinWheel";
 import { Pager, usePager } from "@/components/gx/Pager";
@@ -30,12 +30,15 @@ import { recordAuthAttemptServer } from "@/lib/gx/security.functions";
 type AccountTab = "profile" | "orders" | "wheel" | "security";
 
 export const Route = createFileRoute("/_authenticated/account")({
-  head: () => ({
-    meta: [
-      { title: "حسابي | متجر GX Store" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-  }),
+  head: () => {
+    const isEn = getHeadLang() === "en";
+    return {
+      meta: [
+        { title: isEn ? "My Account | GX Store" : "حسابي | متجر GX Store" },
+        { name: "robots", content: "noindex, nofollow" },
+      ],
+    };
+  },
   validateSearch: (s: Record<string, unknown>): { tab?: AccountTab } => ({
     tab: (typeof s.tab === "string" ? s.tab : "profile") as AccountTab,
   }),

@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { checkDeviceSessionStatusServer } from "@/lib/gx/security.functions";
 import { CurrencyProvider } from "@/lib/gx/currency";
 import { CartProvider } from "@/lib/gx/cart";
-import { LanguageProvider } from "@/lib/gx/i18n";
+import { LanguageProvider, getHeadLang } from "@/lib/gx/i18n";
 import { SiteSettingsProvider, useSiteSettings } from "@/lib/gx/site-settings";
 import { ensureStoreStyles } from "@/lib/gx/store-head";
 
@@ -117,56 +117,54 @@ function ErrorComponent({ error: rawError, reset }: { error: unknown; reset: () 
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار" },
-      {
-        name: "description",
-        content:
-          "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.",
-      },
-      { property: "og:site_name", content: "GX Store" },
-      { property: "og:title", content: "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار" },
-      {
-        property: "og:description",
-        content:
-          "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://gxstore.me/" },
-      { property: "og:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
-      { property: "og:image:secure_url", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
-      { property: "og:image:type", content: "image/jpeg" },
-      { property: "og:image:width", content: "1200" },
-      { property: "og:image:height", content: "630" },
-      { property: "og:image:alt", content: "GX Store" },
-      { property: "og:logo", content: "https://gxstore.me/app/assets/img/gx-logo.png" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار" },
-      {
-        name: "twitter:description",
-        content:
-          "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.",
-      },
-      { name: "twitter:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
-      { name: "theme-color", content: "#090b10" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&family=Almarai:wght@400;700;800&display=swap" },
-      { rel: "icon", href: "/favicon.ico", sizes: "any" },
-      { rel: "icon", href: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
-      { rel: "icon", href: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
-      { rel: "icon", href: "/android-chrome-512x512.png", type: "image/png", sizes: "512x512" },
-      { rel: "icon", href: "/android-chrome-192x192.png", type: "image/png", sizes: "192x192" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
-      { rel: "manifest", href: "/site.webmanifest" },
-    ],
-  }),
+  head: () => {
+    const isEn = getHeadLang() === "en";
+    const siteTitle = isEn
+      ? "GX Store | Buy Games, Giftcard & Top ups cheaper"
+      : "GX Store | اشتري ألعاب، بطاقات هدايا وشحن بأوفر الأسعار";
+    const siteDesc = isEn
+      ? "Discover your favorite digital store for gaming and subscriptions. Shop gift cards, keys, game top-ups, and subscriptions at competitive prices with instant delivery and reliable support."
+      : "اكتشف وجهتك المفضلة للألعاب والمنتجات الرقمية. تسوّق بطاقات الهدايا والشحن والاشتراكات بأسعار تنافسية، واستمتع بتجربة شراء سهلة وآمنة مع دعم موثوق.";
+
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title: siteTitle },
+        { name: "description", content: siteDesc },
+        { property: "og:site_name", content: "GX Store" },
+        { property: "og:title", content: siteTitle },
+        { property: "og:description", content: siteDesc },
+        { property: "og:type", content: "website" },
+        { property: "og:url", content: "https://gxstore.me/" },
+        { property: "og:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
+        { property: "og:image:secure_url", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
+        { property: "og:image:type", content: "image/jpeg" },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { property: "og:image:alt", content: "GX Store" },
+        { property: "og:logo", content: "https://gxstore.me/app/assets/img/gx-logo.png" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: siteTitle },
+        { name: "twitter:description", content: siteDesc },
+        { name: "twitter:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
+        { name: "theme-color", content: "#090b10" },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
+        { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&family=Almarai:wght@400;700;800&display=swap" },
+        { rel: "icon", href: "/favicon.ico", sizes: "any" },
+        { rel: "icon", href: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+        { rel: "icon", href: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+        { rel: "android-chrome-512x512.png", type: "image/png", sizes: "512x512", href: "/android-chrome-512x512.png" },
+        { rel: "icon", href: "/android-chrome-192x192.png", type: "image/png", sizes: "192x192" },
+        { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+        { rel: "manifest", href: "/site.webmanifest" },
+      ],
+    };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -227,6 +225,25 @@ const PRE_HYDRATE_LANG = `
       st.id = 'gx-lang-gate';
       st.textContent = 'html[data-lang-pending] body{visibility:hidden!important}';
       document.head.appendChild(st);
+
+      // Pre-hydration immediate title guard: instantly prevent any Arabic title flash
+      if (typeof MutationObserver !== 'undefined') {
+        var titleObs = new MutationObserver(function() {
+          if (document.title && /[\\u0600-\\u06FF]/.test(document.title)) {
+            var cur = document.title;
+            if (cur.indexOf('استلام') !== -1 || cur.indexOf('طلب') !== -1) {
+              document.title = 'Order Delivery & Activation | GX Store';
+            } else if (cur.indexOf('السلة') !== -1) {
+              document.title = 'Shopping Cart | GX Store';
+            } else if (cur.indexOf('حساب') !== -1) {
+              document.title = 'My Account | GX Store';
+            } else {
+              document.title = 'GX Store | Buy Games, Giftcard & Top ups cheaper';
+            }
+          }
+        });
+        if (tTag) titleObs.observe(tTag, { childList: true, characterData: true, subtree: true });
+      }
     } else {
       h.setAttribute('lang', 'ar');
       h.setAttribute('dir', 'rtl');

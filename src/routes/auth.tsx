@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, useSearch, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 import { useAuthActions } from "@/lib/gx/use-auth-actions";
 import { ShieldCheck, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,13 +13,21 @@ export const Route = createFileRoute("/auth")({
     mode: search.mode === "signup" ? "signup" : search.mode === "reset" ? "reset" : search.mode === "signin" ? "signin" : undefined,
     email: typeof search.email === "string" ? search.email : undefined,
   }),
-  head: () => ({
-    meta: [
-      { title: "تسجيل الدخول / حساب جديد | متجر GX Store" },
-      { name: "description", content: "سجّل الدخول إلى حسابك في متجر GX Store لمتابعة طلباتك أو إنشاء حساب جديد." },
-      { name: "robots", content: "noindex, follow" },
-    ],
-  }),
+  head: () => {
+    const isEn = getHeadLang() === "en";
+    return {
+      meta: [
+        { title: isEn ? "Sign In / Register | GX Store" : "تسجيل الدخول / حساب جديد | متجر GX Store" },
+        {
+          name: "description",
+          content: isEn
+            ? "Sign in to your GX Store account to track your orders or create a new account."
+            : "سجّل الدخول إلى حسابك في متجر GX Store لمتابعة طلباتك أو إنشاء حساب جديد.",
+        },
+        { name: "robots", content: "noindex, follow" },
+      ],
+    };
+  },
   component: AuthPage,
 });
 

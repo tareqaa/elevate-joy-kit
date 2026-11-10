@@ -6,7 +6,7 @@ import { getCatalogProduct, getRelatedCatalogProducts } from "@/lib/gx/catalog.f
 import { ProductTemplate } from "@/components/gx/ProductTemplates";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { trackRecentlyViewed } from "@/lib/gx/recently-viewed";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 
 export const Route = createFileRoute("/product/$slug")({
   staleTime: 0,
@@ -36,13 +36,17 @@ export const Route = createFileRoute("/product/$slug")({
     return { product, relatedProducts };
   },
   head: ({ loaderData }) => {
+    const isEn = getHeadLang() === "en";
     const p = loaderData?.product;
-    const prodName = p?.nameAr || p?.nameEn || "منتج";
-    const title = p ? `${prodName} | متجر GX Store` : "منتج | متجر GX Store";
-    const desc =
-      p?.taglineAr ||
-      p?.descriptionAr ||
-      `اشتري ${prodName} رسمي 100% بأفضل سعر وتفعيل فوري من متجر GX Store في الأردن والشرق الأوسط.`;
+    const prodName = isEn
+      ? (p?.nameEn || p?.nameAr || "Product")
+      : (p?.nameAr || p?.nameEn || "منتج");
+    const title = p
+      ? (isEn ? `${prodName} | GX Store` : `${prodName} | متجر GX Store`)
+      : (isEn ? "Product | GX Store" : "منتج | متجر GX Store");
+    const desc = isEn
+      ? (p?.taglineEn || p?.descriptionEn || `Buy 100% official ${prodName} at the best price with instant delivery from GX Store.`)
+      : (p?.taglineAr || p?.descriptionAr || `اشتري ${prodName} رسمي 100% بأفضل سعر وتفعيل فوري من متجر GX Store في الأردن والشرق الأوسط.`);
     const canonical = p ? `https://gxstore.me/product/${p.slug}` : "https://gxstore.me/products";
     const img = p?.imageUrl
       ? p.imageUrl.startsWith("http")

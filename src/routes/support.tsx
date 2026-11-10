@@ -1,22 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { toast } from "sonner";
 import { Copy, Check, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/support")({
-  head: () => ({
-    meta: [
-      { title: "الدعم الفني | متجر GX Store" },
-      {
-        name: "description",
-        content: "تواصل مع فريق الدعم الفني لمتجر GX Store مباشرة عبر واتساب.",
-      },
-    ],
-    links: STORE_HEAD_LINKS,
-  }),
+  head: () => {
+    const isEn = getHeadLang() === "en";
+    return {
+      meta: [
+        { title: isEn ? "Customer Support | GX Store" : "الدعم الفني | متجر GX Store" },
+        {
+          name: "description",
+          content: isEn
+            ? "Contact GX Store customer support directly via WhatsApp for quick assistance."
+            : "تواصل مع فريق الدعم الفني لمتجر GX Store مباشرة عبر واتساب.",
+        },
+      ],
+      links: STORE_HEAD_LINKS,
+    };
+  },
   component: SupportPage,
 });
 

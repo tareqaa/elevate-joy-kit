@@ -20,20 +20,22 @@ const TIER_COLORS = [
 ];
 
 const CURRENCY_TIER_AMOUNTS: Record<string, number[]> = {
-  JOD: [1, 2, 5, 10, 20, 50],
-  SAR: [5, 10, 20, 50, 100, 300],
-  AED: [5, 10, 20, 50, 100, 300],
-  QAR: [5, 10, 20, 50, 100, 300],
-  USD: [2, 5, 10, 20, 30, 50],
-  EUR: [2, 5, 10, 20, 30, 50],
-  KWD: [1, 2, 5, 10, 15, 25],
-  BHD: [1, 2, 5, 10, 15, 25],
-  OMR: [1, 2, 5, 10, 15, 25],
-  EGP: [50, 100, 250, 500, 1000, 2000],
-  IQD: [2000, 5000, 10000, 25000, 50000, 100000],
-  MAD: [10, 25, 50, 100, 200, 500],
-  DZD: [200, 500, 1000, 2500, 5000, 10000],
-  TND: [5, 10, 20, 50, 100, 150],
+  JOD: [1, 5, 10, 20, 50, 100],
+  SAR: [20, 50, 100, 200, 300, 500],
+  AED: [20, 50, 100, 200, 300, 500],
+  QAR: [20, 50, 100, 200, 300, 500],
+  USD: [5, 10, 20, 50, 100, 150],
+  EUR: [5, 10, 20, 50, 100, 150],
+  KWD: [2, 5, 10, 20, 30, 50],
+  BHD: [2, 5, 10, 20, 30, 50],
+  OMR: [2, 5, 10, 20, 30, 50],
+  EGP: [100, 250, 500, 1000, 2500, 5000],
+  IQD: [5000, 10000, 25000, 50000, 100000, 200000],
+  MAD: [50, 100, 200, 300, 500, 1000],
+  DZD: [500, 1000, 2500, 5000, 10000, 20000],
+  TND: [50, 100, 150, 200, 300, 500],
+  PS: [20, 50, 100, 200, 300, 500],
+  ILS: [20, 50, 100, 200, 300, 500],
 };
 
 export function DiscoverByPriceSection() {
@@ -43,12 +45,12 @@ export function DiscoverByPriceSection() {
 
   const effectiveRate = Number(rate) > 0 ? Number(rate) : 1;
   const amounts = CURRENCY_TIER_AMOUNTS[currency] || [
-    Math.round(1 * effectiveRate),
-    Math.round(2 * effectiveRate),
     Math.round(5 * effectiveRate),
     Math.round(10 * effectiveRate),
     Math.round(20 * effectiveRate),
     Math.round(50 * effectiveRate),
+    Math.round(100 * effectiveRate),
+    Math.round(150 * effectiveRate),
   ];
 
   const tiers: PriceTierConfig[] = amounts.map((amount, idx) => ({
@@ -81,7 +83,7 @@ export function DiscoverByPriceSection() {
             return (
               <Link
                 key={tier.amount}
-                to={`/products?max_price=${tier.jodMaxPrice}` as never}
+                to={`/products?max_price=${tier.amount}&curr=${currency}` as never}
                 className="gx-price-tier-card"
                 style={{ ["--tier-accent" as string]: tier.accentColor } as React.CSSProperties}
               >

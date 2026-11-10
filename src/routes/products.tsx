@@ -2,13 +2,14 @@ import React, { useState, useMemo, useEffect } from "react";
 import { createFileRoute, Link, useLocation } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
 import { getAllCatalogProducts, type CatalogStoreProduct } from "@/lib/gx/catalog.functions";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { StoreProductCard } from "@/components/gx/StoreProductCard";
 import { CatSortDropdown, SORT_OPTIONS } from "@/components/gx/CatSortDropdown";
 import { CatPagination } from "@/components/gx/CatPagination";
 import { CatDeliveryTypeDropdown, DELIVERY_TYPE_OPTIONS } from "@/components/gx/CatDeliveryTypeDropdown";
-import { CatPriceFilterDropdown, PRICE_PRESETS } from "@/components/gx/CatPriceFilterDropdown";
+import { CatPriceFilterDropdown, PRICE_PRESETS, getPresetLabel, getPricePresetsForCurrency, AR_CURRENCY_SYMBOL } from "@/components/gx/CatPriceFilterDropdown";
+import { useCurrency, CURRENCIES } from "@/lib/gx/currency";
 import { resolveStrictDeliveryType } from "@/lib/gx/delivery-types";
 import { Search, X } from "lucide-react";
 import { matchSearchQuery, type SearchableItem } from "@/lib/gx/search";
@@ -18,42 +19,47 @@ export const Route = createFileRoute("/products")({
     const products = await getAllCatalogProducts();
     return { products };
   },
-  head: () => ({
-    meta: [
-      { title: "جميع المنتجات والاشتراكات | متجر GX Store" },
-      {
-        name: "description",
-        content:
-          "تصفح جميع المنتجات الرقمية، اشتراكات الألعاب والترفيه، بطاقات الهدايا والشحن المتوفرة في متجر GX Store بتفعيل فوري وأسعار منافسة.",
-      },
-      { property: "og:site_name", content: "GX Store" },
-      { property: "og:title", content: "جميع المنتجات والاشتراكات | متجر GX Store" },
-      {
-        property: "og:description",
-        content:
-          "تصفح جميع المنتجات الرقمية، اشتراكات الألعاب والترفيه، بطاقات الهدايا والشحن المتوفرة في متجر GX Store بتفعيل فوري وأسعار منافسة.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://gxstore.me/products" },
-      { property: "og:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "جميع المنتجات والاشتراكات | متجر GX Store" },
-      {
-        name: "twitter:description",
-        content:
-          "تصفح جميع المنتجات الرقمية، اشتراكات الألعاب والترفيه، بطاقات الهدايا والشحن المتوفرة في متجر GX Store بتفعيل فوري وأسعار منافسة.",
-      },
-      { name: "twitter:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
-      {
-        name: "robots",
-        content: "index, follow, max-image-preview:large, max-snippet:-1",
-      },
-    ],
-    links: [
-      ...STORE_HEAD_LINKS,
-      { rel: "canonical", href: "https://gxstore.me/products" },
-    ],
-  }),
+  head: () => {
+    const isEn = getHeadLang() === "en";
+    const title = isEn ? "All Products & Subscriptions | GX Store" : "جميع المنتجات والاشتراكات | متجر GX Store";
+    const desc = isEn
+      ? "Browse all digital products, gaming & entertainment subscriptions, and gift cards available at GX Store with instant delivery and competitive prices."
+      : "تصفح جميع المنتجات الرقمية، اشتراكات الألعاب والترفيه، بطاقات الهدايا والشحن المتوفرة في متجر GX Store بتفعيل فوري وأسعار منافسة.";
+
+    return {
+      meta: [
+        { title },
+        {
+          name: "description",
+          content: desc,
+        },
+        { property: "og:site_name", content: "GX Store" },
+        { property: "og:title", content: title },
+        {
+          property: "og:description",
+          content: desc,
+        },
+        { property: "og:type", content: "website" },
+        { property: "og:url", content: "https://gxstore.me/products" },
+        { property: "og:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        {
+          name: "twitter:description",
+          content: desc,
+        },
+        { name: "twitter:image", content: "https://gxstore.me/app/assets/img/gx-logo-hires.jpg" },
+        {
+          name: "robots",
+          content: "index, follow, max-image-preview:large, max-snippet:-1",
+        },
+      ],
+      links: [
+        ...STORE_HEAD_LINKS,
+        { rel: "canonical", href: "https://gxstore.me/products" },
+      ],
+    };
+  },
   component: AllProductsPage,
 });
 
@@ -231,6 +237,7 @@ function AllProductsPage() {
   const { products } = Route.useLoaderData();
   const { lang } = useLang();
   const ar = lang === "ar";
+  const { currency, setCurrency, rate, format } = useCurrency();
 
   useEffect(() => {
     document.title = ar ? "جميع المنتجات والاشتراكات | متجر GX Store" : "All Products & Subscriptions | GX Store";
@@ -276,6 +283,15 @@ function AllProductsPage() {
     const maxPriceParam = params.get("max_price");
     const minPriceParam = params.get("min_price");
     const delivParam = params.get("delivery_type");
+    const currParam = params.get("curr");
+
+    if (currParam) {
+      const cleanCurr = currParam.toUpperCase().trim();
+      const mapped = cleanCurr === "ILS" ? "PS" : cleanCurr;
+      if (mapped && CURRENCIES[mapped] && mapped !== currency) {
+        setCurrency(mapped);
+      }
+    }
 
     if (catParam) {
       if (catParam === "game-currencies" || catParam === "currencies") {
@@ -377,24 +393,22 @@ function AllProductsPage() {
     }
 
     // 3. Price Range Filter
+    const currRate = rate || 1;
+    const presets = getPricePresetsForCurrency(currency, currRate);
+    const activePreset = presets.find((pr) => pr.id === selectedPricePreset);
+
     if (customMinPrice !== "") {
       const minVal = parseFloat(customMinPrice);
-      if (!isNaN(minVal)) list = list.filter((p) => (p.basePriceJod || 0) >= minVal);
-    } else if (selectedPricePreset !== "all") {
-      const preset = PRICE_PRESETS.find((pr) => pr.id === selectedPricePreset);
-      if (preset?.min !== undefined) {
-        list = list.filter((p) => (p.basePriceJod || 0) >= preset.min!);
-      }
+      if (!isNaN(minVal)) list = list.filter((p) => ((p.basePriceJod || 0) * currRate) >= minVal);
+    } else if (activePreset?.min !== undefined) {
+      list = list.filter((p) => ((p.basePriceJod || 0) * currRate) >= activePreset.min!);
     }
 
     if (customMaxPrice !== "") {
       const maxVal = parseFloat(customMaxPrice);
-      if (!isNaN(maxVal)) list = list.filter((p) => (p.basePriceJod || 0) <= maxVal);
-    } else if (selectedPricePreset !== "all") {
-      const preset = PRICE_PRESETS.find((pr) => pr.id === selectedPricePreset);
-      if (preset?.max !== undefined) {
-        list = list.filter((p) => (p.basePriceJod || 0) <= preset.max!);
-      }
+      if (!isNaN(maxVal)) list = list.filter((p) => ((p.basePriceJod || 0) * currRate) <= maxVal);
+    } else if (activePreset?.max !== undefined) {
+      list = list.filter((p) => ((p.basePriceJod || 0) * currRate) <= activePreset.max!);
     }
 
     // 4. Sorting (Matching Image 3 options)
@@ -426,7 +440,7 @@ function AllProductsPage() {
     });
 
     return list;
-  }, [products, selectedCat, sortBy, selectedDeliveryType, selectedPricePreset, customMinPrice, customMaxPrice, searchQuery]);
+  }, [products, selectedCat, sortBy, selectedDeliveryType, selectedPricePreset, customMinPrice, customMaxPrice, searchQuery, rate]);
 
   const totalPages = Math.max(1, Math.ceil(displayedProducts.length / itemsPerPage));
 
@@ -589,16 +603,24 @@ function AllProductsPage() {
               )}
 
               {/* Active Price Range Pill */}
-              {(selectedPricePreset !== "all" || customMinPrice || customMaxPrice) && (
+              {((selectedPricePreset !== "all" && selectedPricePreset !== "") || customMinPrice || customMaxPrice) && (
                 <div
                   className="cat-toolbar-filter-pill"
                   style={{ borderColor: "#38bdf8", background: "rgba(56, 189, 248, 0.1)" }}
                 >
                   <span style={{ color: "#38bdf8" }}>🏷️ {ar ? "السعر:" : "Price:"}</span>
                   <span style={{ fontWeight: 800 }}>
-                    {selectedPricePreset === "custom"
-                      ? `${customMinPrice || "0"} – ${customMaxPrice || "∞"} JOD`
-                      : PRICE_PRESETS.find((p) => p.id === selectedPricePreset)?.labelAr || selectedPricePreset}
+                    {customMinPrice || customMaxPrice
+                      ? (customMinPrice && customMaxPrice
+                          ? `${customMinPrice} – ${customMaxPrice} ${ar ? (AR_CURRENCY_SYMBOL[currency] || currency) : currency}`
+                          : customMinPrice
+                            ? `${ar ? "أكثر من" : "Over"} ${customMinPrice} ${ar ? (AR_CURRENCY_SYMBOL[currency] || currency) : currency}`
+                            : `${ar ? "أقل من" : "Under"} ${customMaxPrice} ${ar ? (AR_CURRENCY_SYMBOL[currency] || currency) : currency}`)
+                      : (() => {
+                          const presets = getPricePresetsForCurrency(currency, rate);
+                          const p = presets.find((pr) => pr.id === selectedPricePreset);
+                          return p ? (lang === "en" ? p.labelEn : p.labelAr) : selectedPricePreset;
+                        })()}
                   </span>
                   <button
                     type="button"

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { useServerFn } from "@tanstack/react-start";
 import { findPlanByCartId, PRODUCTS_CATALOG, type ResolvedPlan } from "@/data/products";
 import { findDbPlanByCartId, loadDbVariants } from "./db-variants";
+import { CANONICAL_CATALOG_OVERRIDES } from "./catalog.functions";
 import { useCurrency } from "./currency";
 import { submitStoreOrder } from "./orders.functions";
 import { validateCouponFn } from "./coupons.functions";
@@ -200,13 +201,17 @@ function resolve(items: CartItem[]): ResolvedItem[] {
         };
       }
       // 1. Database is the single source of truth for all products & variants!
+      const canonicalPrice = CANONICAL_CATALOG_OVERRIDES[cId]?.price;
       const dbPlan = findDbPlanByCartId(cId);
       const staticPlan = findPlanByCartId(cId);
       const plan = dbPlan || staticPlan;
       if (plan) {
+        // Canonical authoritative price (e.g. PlayStation SAR, Gemini, Windows) takes precedence over stale DB rows.
         // If it's a DB plan with positive price, use it.
         // If the plan has price <= 0 and item has a valid positive meta.price, prefer meta.price!
-        const price = dbPlan && dbPlan.price > 0
+        const price = typeof canonicalPrice === "number" && canonicalPrice > 0
+          ? canonicalPrice
+          : dbPlan && dbPlan.price > 0
           ? dbPlan.price
           : typeof i.meta?.price === "number" && i.meta.price > 0
           ? i.meta.price

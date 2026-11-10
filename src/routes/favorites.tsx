@@ -1,22 +1,29 @@
 import React, { useState, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { StoreShell } from "@/components/gx/StoreShell";
-import { useLang } from "@/lib/gx/i18n";
+import { useLang, getHeadLang } from "@/lib/gx/i18n";
 import { STORE_HEAD_LINKS } from "@/lib/gx/store-head";
 import { StoreProductCard } from "@/components/gx/StoreProductCard";
 import { useFavorites } from "@/lib/gx/favorites";
 import { Search, Store, Trash2, Heart, ShoppingBag } from "lucide-react";
 
 export const Route = createFileRoute("/favorites")({
-  head: () => ({
-    meta: [
-      { title: "المفضلة — GX Store" },
-      { name: "description", content: "المنتجات المحفوظة في المفضلة لديك في متجر GX Store." },
-      { property: "og:title", content: "المفضلة — GX Store" },
-      { property: "og:description", content: "قائمة المنتجات المحفوظة في المفضلة لديك." },
-    ],
-    links: STORE_HEAD_LINKS,
-  }),
+  head: () => {
+    const isEn = getHeadLang() === "en";
+    const title = isEn ? "Favorites | GX Store" : "المفضلة | متجر GX Store";
+    const desc = isEn
+      ? "Your saved favorite items and products at GX Store."
+      : "المنتجات المحفوظة في المفضلة لديك في متجر GX Store.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: desc },
+        { property: "og:title", content: title },
+        { property: "og:description", content: desc },
+      ],
+      links: STORE_HEAD_LINKS,
+    };
+  },
   component: FavoritesPage,
 });
 
