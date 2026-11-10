@@ -12,12 +12,12 @@ const loadMcp = () => import("../lib/mcp/index");
 export const Route = createFileRoute("/mcp")({
   server: {
     handlers: {
-      ANY: createTanStackMcpHandler(loadMcp as any, {
+      ANY: createTanStackMcpHandler(loadMcp, {
         resourcePath: "/mcp",
         metadataPath: "/.well-known/oauth-protected-resource",
         trustForwardedHost: true,
         trustForwardedProto: true,
-      } as any),
+      }),
     },
   },
 });
